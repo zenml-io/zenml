@@ -605,7 +605,7 @@ def test_spec_compilation(local_stack):
                 {
                     "source": "tests.unit.config.test_compiler.s1",
                     "upstream_steps": [],
-                    "pipeline_parameter_name": "s1",
+                    "invocation_id": "s1",
                 },
                 {
                     "source": "tests.unit.config.test_compiler.s2",
@@ -616,7 +616,7 @@ def test_spec_compilation(local_stack):
                             "output_name": "output",
                         }
                     },
-                    "pipeline_parameter_name": "s2",
+                    "invocation_id": "s2",
                 },
             ],
         }

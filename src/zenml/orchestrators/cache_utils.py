@@ -193,8 +193,8 @@ def create_cached_step_runs_and_prune_snapshot(
 
     for step in snapshot.step_configurations.values():
         for invocation_id in cached_invocations:
-            if invocation_id in step.spec.upstream_steps:
-                step.spec.upstream_steps.remove(invocation_id)
+            if invocation_id in step.spec.upstream_invocations:
+                step.spec.upstream_invocations.remove(invocation_id)
 
     if len(snapshot.step_configurations) == 0:
         # All steps were cached, we update the pipeline run status and

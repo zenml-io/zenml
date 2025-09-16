@@ -228,7 +228,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
             # dependencies for the active stack
             pipeline_step_name = next(iter(snapshot.step_configurations))
             image = self.get_image(
-                snapshot=snapshot, step_name=pipeline_step_name
+                snapshot=snapshot, invocation_id=pipeline_step_name
             )
 
         different_settings_found = False

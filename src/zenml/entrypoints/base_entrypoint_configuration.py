@@ -195,16 +195,16 @@ class BaseEntrypointConfiguration(ABC):
     def download_code_if_necessary(
         self,
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        invocation_id: Optional[str] = None,
     ) -> None:
         """Downloads user code if necessary.
 
         Args:
             snapshot: The snapshot for which to download the code.
-            step_name: Name of the step to be run. This will be used to
-                determine whether code download is necessary. If not given,
-                the DockerSettings of the pipeline will be used to make that
-                decision instead.
+            invocation_id: Invocation ID of the step to be run. This will be
+                used to determine whether code download is necessary. If not
+                given, the DockerSettings of the pipeline will be used to make
+                that decision instead.
 
         Raises:
             CustomFlavorImportError: If the artifact store flavor can't be
@@ -213,7 +213,7 @@ class BaseEntrypointConfiguration(ABC):
                 but the snapshot does not have a reference to any code.
         """
         should_download_code = self._should_download_code(
-            snapshot=snapshot, step_name=step_name
+            snapshot=snapshot, invocation_id=invocation_id
         )
 
         if not should_download_code:
@@ -291,23 +291,23 @@ class BaseEntrypointConfiguration(ABC):
     def _should_download_code(
         self,
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        invocation_id: Optional[str] = None,
     ) -> bool:
         """Checks whether code should be downloaded.
 
         Args:
             snapshot: The snapshot to check.
-            step_name: Name of the step to be run. This will be used to
-                determine whether code download is necessary. If not given,
-                the DockerSettings of the pipeline will be used to make that
-                decision instead.
+            invocation_id: Invocation ID of the step to be run. This will be
+                used to determine whether code download is necessary. If not
+                given, the DockerSettings of the pipeline will be used to make
+                that decision instead.
 
         Returns:
             Whether code should be downloaded.
         """
         docker_settings = (
-            snapshot.step_configurations[step_name].config.docker_settings
-            if step_name
+            snapshot.step_configurations[invocation_id].config.docker_settings
+            if invocation_id
             else snapshot.pipeline_configuration.docker_settings
         )
 

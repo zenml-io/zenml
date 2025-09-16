@@ -401,7 +401,7 @@ def test_docker_builds_collection(
     )
     second_orchestrator_build = BuildConfiguration(
         key="orchestrator",
-        step_name="step_1",
+        invocation_id="step_1",
         settings=DockerSettings(target_repository="custom_repo"),
     )
     artifact_store_build = BuildConfiguration(

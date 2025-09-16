@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-STEP_NAME_OPTION = "step_name"
+INVOCATION_ID_OPTION = "invocation_id"
 
 
 class StepEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -83,11 +83,11 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             ...
 
             cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
-            for step_name, step in pipeline.steps.items():
+            for invocation_id, step in pipeline.steps.items():
                 ...
 
                 args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, snapshot_id=snapshot.id
+                    invocation_id=invocation_id, snapshot_id=snapshot.id
                 )
                 # Run the command and pass it the arguments. Our example
                 # orchestrator here executes the entrypoint in a separate
@@ -101,7 +101,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     def post_run(
         self,
         pipeline_name: str,
-        step_name: str,
+        invocation_id: str,
     ) -> None:
         """Does cleanup or post-processing after the step finished running.
 
@@ -111,7 +111,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         Args:
             pipeline_name: Name of the parent pipeline of the step that was
                 executed.
-            step_name: Name of the step that was executed.
+            invocation_id: Invocation ID of the step that was executed.
         """
 
     @classmethod
@@ -119,10 +119,10 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """Gets all options required for running with this configuration.
 
         Returns:
-            The superclass options as well as an option for the name of the
-            step to run.
+            The superclass options as well as an option for the invocation ID
+            of the step to run.
         """
-        return super().get_entrypoint_options() | {STEP_NAME_OPTION}
+        return super().get_entrypoint_options() | {INVOCATION_ID_OPTION}
 
     @classmethod
     def get_entrypoint_arguments(
@@ -138,15 +138,15 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         `get_entrypoint_options()` method of this class.
 
         Args:
-            **kwargs: Kwargs, must include the step name.
+            **kwargs: Kwargs, must include the invocation ID.
 
         Returns:
-            The superclass arguments as well as arguments for the name of the
-            step to run.
+            The superclass arguments as well as the invocation ID of the step to
+            run.
         """
         return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{STEP_NAME_OPTION}",
-            kwargs[STEP_NAME_OPTION],
+            f"--{INVOCATION_ID_OPTION}",
+            kwargs[INVOCATION_ID_OPTION],
         ]
 
     def load_snapshot(self) -> "PipelineSnapshotResponse":
@@ -156,9 +156,9 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             The snapshot.
         """
         snapshot_id = UUID(self.entrypoint_args[SNAPSHOT_ID_OPTION])
-        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        invocation_id = self.entrypoint_args[INVOCATION_ID_OPTION]
         return Client().zen_store.get_snapshot(
-            snapshot_id=snapshot_id, step_configuration_filter=[step_name]
+            snapshot_id=snapshot_id, step_configuration_filter=[invocation_id]
         )
 
     def run(self) -> None:
@@ -169,7 +169,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        invocation_id = self.entrypoint_args[INVOCATION_ID_OPTION]
 
         # Change the working directory to make sure we're in the correct
         # directory where the files in the Docker image should be included.
@@ -178,7 +178,9 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         os.makedirs("/app", exist_ok=True)
         os.chdir("/app")
 
-        self.download_code_if_necessary(snapshot=snapshot, step_name=step_name)
+        self.download_code_if_necessary(
+            snapshot=snapshot, invocation_id=invocation_id
+        )
 
         # If the working directory is not in the sys.path, we include it to make
         # sure user code gets correctly imported.
@@ -188,12 +190,12 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         pipeline_name = snapshot.pipeline_configuration.name
 
-        step = snapshot.step_configurations[step_name]
+        step = snapshot.step_configurations[invocation_id]
         self._run_step(step, snapshot=snapshot)
 
         self.post_run(
             pipeline_name=pipeline_name,
-            step_name=step_name,
+            invocation_id=invocation_id,
         )
 
     def _run_step(

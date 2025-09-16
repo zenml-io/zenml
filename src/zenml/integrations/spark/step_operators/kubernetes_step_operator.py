@@ -128,7 +128,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
                 build = BuildConfiguration(
                     key=SPARK_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    step_name=step_name,
+                    invocation_id=step_name,
                     extra_files=extra_files,
                 )
                 builds.append(build)

@@ -163,7 +163,7 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     build_config = BuildConfiguration(
         key="key",
         settings=DockerSettings(allow_download_from_artifact_store=False),
-        step_name="step_name",
+        invocation_id="step_name",
         entrypoint="entrypoint",
         extra_files={"key": "value"},
     )

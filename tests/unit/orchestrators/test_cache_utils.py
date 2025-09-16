@@ -46,7 +46,7 @@ def _compile_step(step: BaseStep) -> Step:
         client_lazy_loaders={},
         parameters={},
         default_parameters={},
-        upstream_steps=set(),
+        upstream_invocations=set(),
         pipeline=pipeline,
     )
 

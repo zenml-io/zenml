@@ -162,42 +162,46 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         skipped_steps: List[str] = []
 
         # Run each step
-        for step_name, step in snapshot.step_configurations.items():
+        for invocation_id, step in snapshot.step_configurations.items():
             if (
                 execution_mode == ExecutionMode.STOP_ON_FAILURE
                 and failed_steps
             ):
                 logger.warning(
                     "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
-                    step_name,
+                    invocation_id,
                     ", ".join(failed_steps),
                     execution_mode,
                 )
-                skipped_steps.append(step_name)
+                skipped_steps.append(invocation_id)
                 continue
 
             if failed_upstream_steps := [
-                fs for fs in failed_steps if fs in step.spec.upstream_steps
+                fs
+                for fs in failed_steps
+                if fs in step.spec.upstream_invocations
             ]:
                 logger.warning(
                     "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
-                    step_name,
+                    invocation_id,
                     ", ".join(failed_upstream_steps),
                     execution_mode,
                 )
-                skipped_steps.append(step_name)
+                skipped_steps.append(invocation_id)
                 continue
 
             if skipped_upstream_steps := [
-                fs for fs in skipped_steps if fs in step.spec.upstream_steps
+                fs
+                for fs in skipped_steps
+                if fs in step.spec.upstream_invocations
             ]:
                 logger.warning(
                     "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
-                    step_name,
+                    invocation_id,
                     ", ".join(skipped_upstream_steps),
                     execution_mode,
                 )
-                skipped_steps.append(step_name)
+                skipped_steps.append(invocation_id)
                 continue
 
             if self.requires_resources_in_orchestration_environment(step):
@@ -205,29 +209,31 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     "Specifying step resources is not supported for the local "
                     "Docker orchestrator, ignoring resource configuration for "
                     "step %s.",
-                    step_name,
+                    invocation_id,
                 )
 
-            step_environment = step_environments[step_name]
+            step_environment = step_environments[invocation_id]
             step_environment[ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID] = (
                 orchestrator_run_id
             )
             step_environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
 
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, snapshot_id=snapshot.id
+                invocation_id=invocation_id, snapshot_id=snapshot.id
             )
 
             settings = cast(
                 LocalDockerOrchestratorSettings,
                 self.get_settings(step),
             )
-            image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = self.get_image(
+                snapshot=snapshot, invocation_id=invocation_id
+            )
 
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
-            logger.info("Running step `%s` in Docker:", step_name)
+            logger.info("Running step `%s` in Docker:", invocation_id)
 
             run_args = copy.deepcopy(settings.run_args)
             docker_environment = run_args.pop("environment", {})
@@ -256,7 +262,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                     logger.info(line.strip().decode())
             except ContainerError as e:
                 error_message = e.stderr.decode()
-                failed_steps.append(step_name)
+                failed_steps.append(invocation_id)
                 if execution_mode == ExecutionMode.FAIL_FAST:
                     raise
                 else:

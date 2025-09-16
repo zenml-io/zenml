@@ -525,20 +525,20 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
             step_name_to_dynamic_component: Dict[str, Any] = {}
             node_selector_constraint: Optional[Tuple[str, str]] = None
 
-            for step_name, step in snapshot.step_configurations.items():
+            for invocation_id, step in snapshot.step_configurations.items():
                 image = self.get_image(
                     snapshot=snapshot,
-                    step_name=step_name,
+                    invocation_id=invocation_id,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        invocation_id=invocation_id,
                         snapshot_id=snapshot.id,
                     )
                 )
                 dynamic_component = self._create_dynamic_component(
-                    image, command, arguments, step_name
+                    image, command, arguments, invocation_id
                 )
                 step_settings = cast(
                     KubeflowOrchestratorSettings, self.get_settings(step)
@@ -567,7 +567,9 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                             ],
                         )
 
-                step_name_to_dynamic_component[step_name] = dynamic_component
+                step_name_to_dynamic_component[invocation_id] = (
+                    dynamic_component
+                )
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -586,7 +588,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     step = snapshot.step_configurations[component_name]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
-                        for upstream_step_name in step.spec.upstream_steps
+                        for upstream_step_name in step.spec.upstream_invocations
                     ]
                     task = (
                         component()

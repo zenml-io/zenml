@@ -89,63 +89,69 @@ class PipelineBuildBase(BaseZenModel):
         )
 
     @staticmethod
-    def get_image_key(component_key: str, step: Optional[str] = None) -> str:
+    def get_image_key(
+        component_key: str, invocation_id: Optional[str] = None
+    ) -> str:
         """Get the image key.
 
         Args:
             component_key: The component key.
-            step: The pipeline step for which the image was built.
+            invocation_id: Step invocation ID for which the image was built.
 
         Returns:
             The image key.
         """
-        if step:
-            return f"{step}.{component_key}"
+        if invocation_id:
+            return f"{invocation_id}.{component_key}"
         else:
             return component_key
 
-    def get_image(self, component_key: str, step: Optional[str] = None) -> str:
+    def get_image(
+        self, component_key: str, invocation_id: Optional[str] = None
+    ) -> str:
         """Get the image built for a specific key.
 
         Args:
             component_key: The key for which to get the image.
-            step: The pipeline step for which to get the image. If no image
-                exists for this step, will fall back to the pipeline image for
-                the same key.
+            invocation_id: Step invocation ID for which to get the image. If no
+                image exists for this invocation, will fall back to the pipeline
+                image for the same key.
 
         Returns:
             The image name or digest.
         """
-        return self._get_item(component_key=component_key, step=step).image
+        return self._get_item(
+            component_key=component_key, invocation_id=invocation_id
+        ).image
 
     def get_settings_checksum(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, invocation_id: Optional[str] = None
     ) -> Optional[str]:
         """Get the settings checksum for a specific key.
 
         Args:
             component_key: The key for which to get the checksum.
-            step: The pipeline step for which to get the checksum. If no
-                image exists for this step, will fall back to the pipeline image
-                for the same key.
+            invocation_id: Step invocation ID for which to get the checksum. If
+                no image exists for this invocation, will fall back to the
+                pipeline image for the same key.
 
         Returns:
             The settings checksum.
         """
         return self._get_item(
-            component_key=component_key, step=step
+            component_key=component_key, invocation_id=invocation_id
         ).settings_checksum
 
     def _get_item(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, invocation_id: Optional[str] = None
     ) -> "BuildItem":
         """Get the item for a specific key.
 
         Args:
             component_key: The key for which to get the item.
-            step: The pipeline step for which to get the item. If no item
-                exists for this step, will fall back to the item for
-                the same key.
+            invocation_id: Step invocation ID for which to get the item. If no
+                item exists for this invocation, will fall back to the pipeline
+                item for the same key.
 
         Raises:
             KeyError: If no item exists for the given key.
@@ -153,10 +159,10 @@ class PipelineBuildBase(BaseZenModel):
         Returns:
             The build item.
         """
-        if step:
+        if invocation_id:
             try:
                 combined_key = self.get_image_key(
-                    component_key=component_key, step=step
+                    component_key=component_key, invocation_id=invocation_id
                 )
                 return self.images[combined_key]
             except KeyError:
@@ -301,63 +307,69 @@ class PipelineBuildResponse(
         )
 
     @staticmethod
-    def get_image_key(component_key: str, step: Optional[str] = None) -> str:
+    def get_image_key(
+        component_key: str, invocation_id: Optional[str] = None
+    ) -> str:
         """Get the image key.
 
         Args:
             component_key: The component key.
-            step: The pipeline step for which the image was built.
+            invocation_id: Step invocation ID for which the image was built.
 
         Returns:
             The image key.
         """
-        if step:
-            return f"{step}.{component_key}"
+        if invocation_id:
+            return f"{invocation_id}.{component_key}"
         else:
             return component_key
 
-    def get_image(self, component_key: str, step: Optional[str] = None) -> str:
+    def get_image(
+        self, component_key: str, invocation_id: Optional[str] = None
+    ) -> str:
         """Get the image built for a specific key.
 
         Args:
             component_key: The key for which to get the image.
-            step: The pipeline step for which to get the image. If no image
-                exists for this step, will fall back to the pipeline image for
-                the same key.
+            invocation_id: Step invocation ID for which to get the image. If
+                no image exists for this invocation, will fall back to the
+                pipeline image for the same key.
 
         Returns:
             The image name or digest.
         """
-        return self._get_item(component_key=component_key, step=step).image
+        return self._get_item(
+            component_key=component_key, invocation_id=invocation_id
+        ).image
 
     def get_settings_checksum(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, invocation_id: Optional[str] = None
     ) -> Optional[str]:
         """Get the settings checksum for a specific key.
 
         Args:
             component_key: The key for which to get the checksum.
-            step: The pipeline step for which to get the checksum. If no
-                image exists for this step, will fall back to the pipeline image
-                for the same key.
+            invocation_id: Step invocation ID for which to get the checksum. If
+                no image exists for this invocation, will fall back to the
+                pipeline image for the same key.
 
         Returns:
             The settings checksum.
         """
         return self._get_item(
-            component_key=component_key, step=step
+            component_key=component_key, invocation_id=invocation_id
         ).settings_checksum
 
     def _get_item(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, invocation_id: Optional[str] = None
     ) -> "BuildItem":
         """Get the item for a specific key.
 
         Args:
             component_key: The key for which to get the item.
-            step: The pipeline step for which to get the item. If no item
-                exists for this step, will fall back to the item for
-                the same key.
+            invocation_id: Step invocation ID for which to get the item. If no
+                item exists for this invocation, will fall back to the pipeline
+                image for the same key.
 
         Raises:
             KeyError: If no item exists for the given key.
@@ -365,10 +377,10 @@ class PipelineBuildResponse(
         Returns:
             The build item.
         """
-        if step:
+        if invocation_id:
             try:
                 combined_key = self.get_image_key(
-                    component_key=component_key, step=step
+                    component_key=component_key, invocation_id=invocation_id
                 )
                 return self.images[combined_key]
             except KeyError:

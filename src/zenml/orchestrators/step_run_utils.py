@@ -287,7 +287,7 @@ def find_cacheable_invocation_candidates(
         if not cache_enabled:
             continue
 
-        if set(step.spec.upstream_steps) - finished_invocations:
+        if set(step.spec.upstream_invocations) - finished_invocations:
             continue
 
         invocations.add(invocation_id)

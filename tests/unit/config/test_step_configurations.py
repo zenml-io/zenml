@@ -20,20 +20,20 @@ def test_step_spec_source_equality():
     """Tests the step spec equality operator regarding the source."""
     assert StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={},
     ) == StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration@zenml_1.0.0",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={},
     )
     assert StepSpec(
         source="zenml.integrations.airflow.AirflowIntegration",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={},
     ) != StepSpec(
         source="zenml.integrations.airflow.NotAirflowIntegration",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={},
     )
 
@@ -42,20 +42,20 @@ def test_step_spec_upstream_steps_equality():
     """Tests the step spec equality operator regarding the upstream steps."""
     assert StepSpec(
         source="src",
-        upstream_steps=["s1"],
+        upstream_invocations=["s1"],
         inputs={},
     ) == StepSpec(
         source="src",
-        upstream_steps=["s1"],
+        upstream_invocations=["s1"],
         inputs={},
     )
     assert StepSpec(
         source="src",
-        upstream_steps=["s1"],
+        upstream_invocations=["s1"],
         inputs={},
     ) != StepSpec(
         source="src",
-        upstream_steps=["s2"],
+        upstream_invocations=["s2"],
         inputs={},
     )
 
@@ -64,32 +64,31 @@ def test_step_spec_inputs_equality():
     """Tests the step spec equality operator regarding the inputs."""
     assert StepSpec(
         source="src",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={"key": InputSpec(step_name="s", output_name="o")},
     ) == StepSpec(
         source="src",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={"key": InputSpec(step_name="s", output_name="o")},
     )
 
     assert StepSpec(
         source="src",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={"key": InputSpec(step_name="s", output_name="o")},
     ) != StepSpec(
         source="src",
-        upstream_steps=[],
+        upstream_invocations=[],
         inputs={},
     )
 
 
-def test_step_spec_pipeline_parameter_name_equality():
-    """Tests the step spec equality operator regarding the pipeline parameter
-    name."""
+def test_step_spec_invocation_id_equality():
+    """Tests the step spec equality operator regarding the invocation id."""
     assert StepSpec(
-        source="src", upstream_steps=[], pipeline_parameter_name="name"
+        source="src", upstream_invocations=[], invocation_id="name"
     ) != StepSpec(
         source="src",
-        upstream_steps=[],
-        pipeline_parameter_name="different_name",
+        upstream_invocations=[],
+        invocation_id="different_name",
     )

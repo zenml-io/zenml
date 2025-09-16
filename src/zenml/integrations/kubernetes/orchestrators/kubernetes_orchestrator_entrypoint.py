@@ -140,7 +140,9 @@ def _reconstruct_nodes(
         The reconstructed nodes.
     """
     nodes = {
-        step_name: Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+        step_name: Node(
+            id=step_name, upstream_nodes=step.spec.upstream_invocations
+        )
         for step_name, step in snapshot.step_configurations.items()
     }
 
@@ -286,7 +288,7 @@ def main() -> None:
             },
         )
         nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+            Node(id=step_name, upstream_nodes=step.spec.upstream_invocations)
             for step_name, step in snapshot.step_configurations.items()
         ]
 
@@ -370,8 +372,8 @@ def main() -> None:
             Returns:
                 The status of the node.
             """
-            step_name = node.id
-            step_config = snapshot.step_configurations[step_name].config
+            invocation_id = node.id
+            step_config = snapshot.step_configurations[invocation_id].config
             settings = step_config.settings.get(
                 "orchestrator.kubernetes", None
             )
@@ -379,13 +381,13 @@ def main() -> None:
                 settings.model_dump() if settings else {}
             )
             if not pipeline_settings.prevent_orchestrator_pod_caching:
-                if _cache_step_run_if_possible(step_name):
+                if _cache_step_run_if_possible(invocation_id):
                     return NodeStatus.COMPLETED
 
             step_labels = base_labels.copy()
-            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
+            step_labels["step_name"] = kube_utils.sanitize_label(invocation_id)
             step_annotations = {
-                STEP_NAME_ANNOTATION_KEY: step_name,
+                STEP_NAME_ANNOTATION_KEY: invocation_id,
             }
 
             step_env = shared_env.copy()
@@ -396,10 +398,10 @@ def main() -> None:
             )
 
             image = KubernetesOrchestrator.get_image(
-                snapshot=snapshot, step_name=step_name
+                snapshot=snapshot, invocation_id=invocation_id
             )
             step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, snapshot_id=snapshot.id
+                invocation_id=invocation_id, snapshot_id=snapshot.id
             )
 
             # We set some default minimum memory resource requests for the step pod
@@ -477,7 +479,7 @@ def main() -> None:
 
             job_name = settings.job_name_prefix or ""
             random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-            job_name += f"-{random_prefix}-{step_name}-{snapshot.pipeline_configuration.name}"
+            job_name += f"-{random_prefix}-{invocation_id}-{snapshot.pipeline_configuration.name}"
             # The job name will be used as a label on the pods, so we need to make
             # sure it doesn't exceed the label length limit
             job_name = kube_utils.sanitize_label(job_name)
@@ -507,7 +509,7 @@ def main() -> None:
                     if sleep_time > 0:
                         logger.debug(
                             f"Sleeping for {sleep_time} seconds before "
-                            f"starting job for step {step_name}."
+                            f"starting job for step {invocation_id}."
                         )
                         time.sleep(sleep_time)
                     last_startup_time = now

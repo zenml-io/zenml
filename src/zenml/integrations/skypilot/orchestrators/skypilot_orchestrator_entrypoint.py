@@ -93,7 +93,7 @@ def main() -> None:
         snapshot = Client().get_snapshot(args.snapshot_id)
 
         pipeline_dag = {
-            step_name: step.spec.upstream_steps
+            step_name: step.spec.upstream_invocations
             for step_name, step in snapshot.step_configurations.items()
         }
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
@@ -126,7 +126,7 @@ def main() -> None:
         )
 
         unique_resource_configs: Dict[str, str] = {}
-        for step_name, step in snapshot.step_configurations.items():
+        for invocation_id, step in snapshot.step_configurations.items():
             settings = cast(
                 SkypilotBaseOrchestratorSettings,
                 orchestrator.get_settings(step),
@@ -160,7 +160,7 @@ def main() -> None:
             cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(
                 cluster_name_parts
             )
-            unique_resource_configs[step_name] = cluster_name
+            unique_resource_configs[invocation_id] = cluster_name
 
         run = Client().list_pipeline_runs(
             sort_by="asc:created",
@@ -176,31 +176,31 @@ def main() -> None:
             orchestrator_run_id
         )
 
-        def run_step_on_skypilot_vm(step_name: str) -> None:
+        def run_step_on_skypilot_vm(invocation_id: str) -> None:
             """Run a pipeline step in a separate Skypilot VM.
 
             Args:
-                step_name: Name of the step.
+                invocation_id: Step invocation ID.
 
             Raises:
                 Exception: If the step execution fails.
             """
-            logger.info(f"Running step `{step_name}` on a VM...")
+            logger.info(f"Running step `{invocation_id}` on a VM...")
             try:
-                cluster_name = unique_resource_configs[step_name]
+                cluster_name = unique_resource_configs[invocation_id]
 
                 image = SkypilotBaseOrchestrator.get_image(
-                    snapshot=snapshot, step_name=step_name
+                    snapshot=snapshot, invocation_id=invocation_id
                 )
 
                 step_args = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name, snapshot_id=snapshot.id
+                        invocation_id=invocation_id, snapshot_id=snapshot.id
                     )
                 )
                 arguments_str = " ".join(step_args)
 
-                step = snapshot.step_configurations[step_name]
+                step = snapshot.step_configurations[invocation_id]
                 settings = cast(
                     SkypilotBaseOrchestratorSettings,
                     orchestrator.get_settings(step),
@@ -222,7 +222,7 @@ def main() -> None:
                     use_sudo=False,  # Entrypoint doesn't use sudo
                 )
 
-                task_name = f"{snapshot.id}-{step_name}-{time.time()}"
+                task_name = f"{snapshot.id}-{invocation_id}-{time.time()}"
 
                 # Create task kwargs
                 task_kwargs = prepare_task_kwargs(
@@ -259,7 +259,7 @@ def main() -> None:
                 sky_job_get(launch_request_id, True, cluster_name)
 
                 # Pop the resource configuration for this step
-                unique_resource_configs.pop(step_name)
+                unique_resource_configs.pop(invocation_id)
 
                 if cluster_name in unique_resource_configs.values():
                     # If there are more steps using this configuration, skip deprovisioning the cluster
@@ -279,11 +279,13 @@ def main() -> None:
                     sky.stream_and_get(down_request_id)
 
                 logger.info(
-                    f"Running step `{step_name}` on a VM is completed."
+                    f"Running step `{invocation_id}` on a VM is completed."
                 )
 
             except Exception as e:
-                logger.error(f"Failed while launching step `{step_name}`: {e}")
+                logger.error(
+                    f"Failed while launching step `{invocation_id}`: {e}"
+                )
                 raise
 
         dag_runner = ThreadedDagRunner(

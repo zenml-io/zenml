@@ -28,13 +28,13 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     @staticmethod
     def get_image(
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        invocation_id: Optional[str] = None,
     ) -> str:
         """Gets the Docker image for the pipeline/a step.
 
         Args:
             snapshot: The snapshot from which to get the image.
-            step_name: Pipeline step name for which to get the image. If not
+            invocation_id: Step invocation ID for which to get the image. If not
                 given the generic pipeline image will be returned.
 
         Raises:
@@ -50,7 +50,8 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
             )
 
         return snapshot.build.get_image(
-            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
+            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+            invocation_id=invocation_id,
         )
 
     def should_build_pipeline_image(
@@ -89,7 +90,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=step_settings,
-                    step_name=name,
+                    invocation_id=name,
                 )
                 builds.append(build)
             elif not included_pipeline_build:

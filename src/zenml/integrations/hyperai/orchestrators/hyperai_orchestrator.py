@@ -209,14 +209,16 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
 
         # Add each step as a service to the Docker Compose definition
         logger.info("Preparing pipeline steps for deployment.")
-        for step_name, step in snapshot.step_configurations.items():
+        for invocation_id, step in snapshot.step_configurations.items():
             # Get image
-            image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = self.get_image(
+                snapshot=snapshot, invocation_id=invocation_id
+            )
 
             step_settings = cast(
                 HyperAIOrchestratorSettings, self.get_settings(step)
             )
-            container_name = f"{snapshot_id}-{step_name}"
+            container_name = f"{snapshot_id}-{invocation_id}"
 
             # Make Compose service definition for step
             compose_definition["services"][container_name] = {
@@ -225,7 +227,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 "network_mode": "host",
                 "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
                 "command": StepEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, snapshot_id=snapshot.id
+                    invocation_id=invocation_id, snapshot_id=snapshot.id
                 ),
                 "volumes": [
                     "{}:{}".format(
@@ -249,7 +251,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 }
 
             # Add run ID to step environment variables
-            step_env = step_environments[step_name].copy()
+            step_env = step_environments[invocation_id].copy()
 
             # Depending on whether it is a scheduled or a realtime pipeline, add
             # potential .env file to service definition for deployment ID override.
@@ -265,7 +267,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
             # Add dependency on upstream steps if applicable
-            upstream_steps = step.spec.upstream_steps
+            upstream_steps = step.spec.upstream_invocations
 
             if len(upstream_steps) > 0:
                 compose_definition["services"][container_name][

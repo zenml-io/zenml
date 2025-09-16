@@ -143,7 +143,7 @@ class ModalStepOperator(BaseStepOperator):
                 build = BuildConfiguration(
                     key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    step_name=step_name,
+                    invocation_id=step_name,
                 )
                 builds.append(build)
 
@@ -208,7 +208,7 @@ class ModalStepOperator(BaseStepOperator):
         gpu_values = get_gpu_values(settings, resource_settings)
 
         app = modal.App(
-            f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
+            f"zenml-{info.run_name}-{info.step_run_id}-{info.invocation_id}"
         )
 
         async def run_sandbox() -> asyncio.Future[None]:

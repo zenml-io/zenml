@@ -318,8 +318,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         session = self._get_sagemaker_session()
 
         sagemaker_steps = []
-        for step_name, step in snapshot.step_configurations.items():
-            step_environment = step_environments[step_name]
+        for invocation_id, step in snapshot.step_configurations.items():
+            step_environment = step_environments[invocation_id]
 
             # Sagemaker does not allow environment variables longer than 256
             # characters to be passed to Processor steps. If an environment variable
@@ -331,11 +331,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 env=step_environment,
             )
 
-            image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = self.get_image(
+                snapshot=snapshot, invocation_id=invocation_id
+            )
             command = SagemakerEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 SagemakerEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name, snapshot_id=snapshot.id
+                    invocation_id=invocation_id, snapshot_id=snapshot.id
                 )
             )
             entrypoint = command + arguments
@@ -533,10 +535,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
 
                 sagemaker_step = TrainingStep(
-                    name=step_name,
+                    name=invocation_id,
                     depends_on=cast(
                         Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
+                        step.spec.upstream_invocations,
                     ),
                     inputs=training_inputs,
                     estimator=estimator,
@@ -553,11 +555,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
 
                 sagemaker_step = ProcessingStep(
-                    name=step_name,
+                    name=invocation_id,
                     processor=processor,
                     depends_on=cast(
                         Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
+                        step.spec.upstream_invocations,
                     ),
                     inputs=processing_inputs,
                     outputs=outputs,

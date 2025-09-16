@@ -27,7 +27,7 @@ class StepRunInfo(FrozenBaseModel):
     step_run_id: UUID
     run_id: UUID
     run_name: str
-    pipeline_step_name: str
+    invocation_id: str
 
     config: StepConfiguration
     pipeline: PipelineConfiguration
@@ -56,5 +56,5 @@ class StepRunInfo(FrozenBaseModel):
             )
 
         return run.build.get_image(
-            component_key=key, step=self.pipeline_step_name
+            component_key=key, invocation_id=self.invocation_id
         )

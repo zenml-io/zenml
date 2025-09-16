@@ -133,7 +133,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 build = BuildConfiguration(
                     key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    step_name=step_name,
+                    invocation_id=step_name,
                 )
                 builds.append(build)
 
@@ -219,10 +219,10 @@ class KubernetesStepOperator(BaseStepOperator):
             "run_id": kube_utils.sanitize_label(str(info.run_id)),
             "run_name": kube_utils.sanitize_label(str(info.run_name)),
             "pipeline": kube_utils.sanitize_label(info.pipeline.name),
-            "step_name": kube_utils.sanitize_label(info.pipeline_step_name),
+            "step_name": kube_utils.sanitize_label(info.invocation_id),
         }
         step_annotations = {
-            STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
+            STEP_NAME_ANNOTATION_KEY: info.invocation_id,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
         }
 
@@ -250,7 +250,7 @@ class KubernetesStepOperator(BaseStepOperator):
 
         job_name = settings.job_name_prefix or ""
         random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
+        job_name += f"-{random_prefix}-{info.invocation_id}-{info.pipeline.name}-step-operator"
         # The job name will be used as a label on the pods, so we need to make
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)

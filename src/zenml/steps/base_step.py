@@ -515,19 +515,19 @@ class BaseStep:
             default_parameters,
         ) = self._parse_call_args(*args, **kwargs)
 
-        upstream_steps = {
+        upstream_invocations = {
             artifact.invocation_id for artifact in input_artifacts.values()
         }
         if isinstance(after, str):
-            upstream_steps.add(after)
+            upstream_invocations.add(after)
         elif isinstance(after, StepArtifact):
-            upstream_steps.add(after.invocation_id)
+            upstream_invocations.add(after.invocation_id)
         elif isinstance(after, Sequence):
             for item in after:
                 if isinstance(item, str):
-                    upstream_steps.add(item)
+                    upstream_invocations.add(item)
                 elif isinstance(item, StepArtifact):
-                    upstream_steps.add(item.invocation_id)
+                    upstream_invocations.add(item.invocation_id)
 
         invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
             step=self,
@@ -537,7 +537,7 @@ class BaseStep:
             client_lazy_loaders=client_lazy_loaders,
             parameters=parameters,
             default_parameters=default_parameters,
-            upstream_steps=upstream_steps,
+            upstream_invocations=upstream_invocations,
             custom_id=id,
             allow_id_suffix=not id,
         )

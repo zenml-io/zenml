@@ -156,7 +156,7 @@ class SagemakerStepOperator(BaseStepOperator):
                 build = BuildConfiguration(
                     key=SAGEMAKER_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    step_name=step_name,
+                    invocation_id=step_name,
                     entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
                 )
                 builds.append(build)
