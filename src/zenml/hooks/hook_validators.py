@@ -284,10 +284,6 @@ def resolve_and_validate_hook(
     # Get function signature
     sig = inspect.getfullargspec(func)
 
-    # If no hook_kwargs provided, return early with just the source
-    if hook_kwargs is None:
-        return source_utils.resolve(func), None
-
     # Validate hook arguments
     try:
         validated_kwargs = _validate_hook_arguments(
@@ -303,7 +299,7 @@ def resolve_and_validate_hook(
 
 def _validate_hook_arguments(
     sig: inspect.FullArgSpec,
-    hook_kwargs: Dict[str, Any],
+    hook_kwargs: Optional[Dict[str, Any]] = None,
     allow_exception_arg: bool = False,
 ) -> Dict[str, Any]:
     """Validate hook arguments against function signature.
@@ -322,6 +318,7 @@ def _validate_hook_arguments(
     args = sig.args.copy()
     annotations = sig.annotations
     defaults: Tuple[Any, ...] = sig.defaults or ()
+    hook_kwargs = hook_kwargs or {}
 
     # Remove 'self' parameter if present (for bound methods)
     if args and args[0] == "self":

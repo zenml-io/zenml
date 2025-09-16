@@ -720,7 +720,9 @@ class BaseStep:
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source, _ = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(
+                on_failure, allow_exception_arg=True
+            )
 
         success_hook_source = None
         if on_success:
