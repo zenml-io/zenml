@@ -47,10 +47,10 @@ from zenml.deployers.containerized_deployer import (
 )
 from zenml.deployers.exceptions import (
     DeployerError,
-    PipelineEndpointDeploymentError,
-    PipelineEndpointDeprovisionError,
-    PipelineEndpointNotFoundError,
-    PipelineLogsNotFoundError,
+    DeploymentDeprovisionError,
+    DeploymentLogsNotFoundError,
+    DeploymentNotFoundError,
+    DeploymentProvisionError,
 )
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,
@@ -58,13 +58,13 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
-from zenml.enums import PipelineEndpointStatus, StackComponentType
+from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineEndpointOperationalState,
-    PipelineEndpointResponse,
+    DeploymentOperationalState,
+    DeploymentResponse,
 )
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils
@@ -76,8 +76,8 @@ from zenml.utils.networking_utils import (
 logger = get_logger(__name__)
 
 
-class DockerPipelineEndpointMetadata(BaseModel):
-    """Metadata for a Docker pipeline endpoint."""
+class DockerDeploymentMetadata(BaseModel):
+    """Metadata for a Docker deployment."""
 
     port: Optional[int] = None
     container_id: Optional[str] = None
@@ -89,8 +89,8 @@ class DockerPipelineEndpointMetadata(BaseModel):
     @classmethod
     def from_container(
         cls, container: Container
-    ) -> "DockerPipelineEndpointMetadata":
-        """Create a DockerPipelineEndpointMetadata from a docker container.
+    ) -> "DockerDeploymentMetadata":
+        """Create a DockerDeploymentMetadata from a docker container.
 
         Args:
             container: The docker container to get the metadata for.
@@ -123,29 +123,22 @@ class DockerPipelineEndpointMetadata(BaseModel):
         )
 
     @classmethod
-    def from_endpoint(
-        cls, endpoint: PipelineEndpointResponse
-    ) -> "DockerPipelineEndpointMetadata":
-        """Create a DockerPipelineEndpointMetadata from a pipeline endpoint.
+    def from_deployment(
+        cls, deployment: DeploymentResponse
+    ) -> "DockerDeploymentMetadata":
+        """Create a DockerDeploymentMetadata from a deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the metadata for.
+            deployment: The deployment to get the metadata for.
 
         Returns:
-            The metadata for the pipeline endpoint.
+            The metadata for the deployment.
         """
-        return cls.model_validate(endpoint.endpoint_metadata)
+        return cls.model_validate(deployment.deployment_metadata)
 
 
 class DockerDeployer(ContainerizedDeployer):
     """Deployer responsible for serving pipelines locally using Docker."""
-
-    # TODO:
-
-    # * which environment variables go into the container? who provides them?
-    # * how are endpoints authenticated?
-    # * check the health status of the container too
-    # * pipeline inside pipeline
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
     _docker_client: Optional[DockerClient] = None
@@ -230,24 +223,24 @@ class DockerDeployer(ContainerizedDeployer):
             return available_port
         raise IOError(f"No free TCP ports found in range {range}")
 
-    def _get_container_id(self, endpoint: PipelineEndpointResponse) -> str:
-        """Get the docker container id associated with a pipeline endpoint.
+    def _get_container_id(self, deployment: DeploymentResponse) -> str:
+        """Get the docker container id associated with a deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the container id for.
+            deployment: The deployment to get the container id for.
 
         Returns:
-            The docker container id for the pipeline endpoint.
+            The docker container id for the deployment.
         """
-        return f"zenml-pipeline-endpoint-{endpoint.id}"
+        return f"zenml-deployment-{deployment.id}"
 
     def _get_container(
-        self, endpoint: PipelineEndpointResponse
+        self, deployment: DeploymentResponse
     ) -> Optional[Container]:
-        """Get the docker container associated with a pipeline endpoint.
+        """Get the docker container associated with a deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the container for.
+            deployment: The deployment to get the container for.
 
         Returns:
             The docker container for the service, or None if the container
@@ -255,7 +248,7 @@ class DockerDeployer(ContainerizedDeployer):
         """
         try:
             return self.docker_client.containers.get(
-                self._get_container_id(endpoint)
+                self._get_container_id(deployment)
             )
         except docker_errors.NotFound:
             # container doesn't exist yet or was removed
@@ -263,74 +256,74 @@ class DockerDeployer(ContainerizedDeployer):
 
     def _get_container_operational_state(
         self, container: Container
-    ) -> PipelineEndpointOperationalState:
-        """Get the operational state of a docker container serving a pipeline endpoint.
+    ) -> DeploymentOperationalState:
+        """Get the operational state of a docker container serving a deployment.
 
         Args:
             container: The docker container to get the operational state of.
 
         Returns:
             The operational state of the docker container serving the pipeline
-            endpoint.
+            deployment.
         """
-        metadata = DockerPipelineEndpointMetadata.from_container(container)
-        state = PipelineEndpointOperationalState(
-            status=PipelineEndpointStatus.UNKNOWN,
+        metadata = DockerDeploymentMetadata.from_container(container)
+        state = DeploymentOperationalState(
+            status=DeploymentStatus.UNKNOWN,
             metadata=metadata.model_dump(exclude_none=True),
         )
         if metadata.container_status == "running":
-            state.status = PipelineEndpointStatus.RUNNING
+            state.status = DeploymentStatus.RUNNING
         elif metadata.container_status == "exited":
-            state.status = PipelineEndpointStatus.ERROR
+            state.status = DeploymentStatus.ERROR
         elif metadata.container_status in ["created", "restarting", "paused"]:
-            state.status = PipelineEndpointStatus.PENDING
+            state.status = DeploymentStatus.PENDING
         elif metadata.container_status == "dead":
-            state.status = PipelineEndpointStatus.ERROR
+            state.status = DeploymentStatus.ERROR
         elif metadata.container_status == "removing":
-            state.status = PipelineEndpointStatus.PENDING
+            state.status = DeploymentStatus.PENDING
         elif metadata.container_status == "exited":
-            state.status = PipelineEndpointStatus.ABSENT
+            state.status = DeploymentStatus.ABSENT
         elif metadata.container_status == "dead":
-            state.status = PipelineEndpointStatus.ERROR
+            state.status = DeploymentStatus.ERROR
 
-        if state.status == PipelineEndpointStatus.RUNNING:
+        if state.status == DeploymentStatus.RUNNING:
             state.url = f"http://localhost:{metadata.port}"
-            # TODO: check if the endpoint is healthy.
+            # TODO: check if the deployment is healthy.
 
         return state
 
-    def do_provision_pipeline_endpoint(
+    def do_provision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         stack: "Stack",
         environment: Dict[str, str],
         secrets: Dict[str, str],
         timeout: int,
-    ) -> PipelineEndpointOperationalState:
+    ) -> DeploymentOperationalState:
         """Serve a pipeline as a Docker container.
 
         Args:
-            endpoint: The pipeline endpoint to serve as a Docker container.
+            deployment: The deployment to serve as a Docker container.
             stack: The stack the pipeline will be served on.
             environment: A dictionary of environment variables to set on the
-                pipeline endpoint.
+                deployment.
             secrets: A dictionary of secret environment variables to set
-                on the pipeline endpoint. These secret environment variables
+                on the deployment. These secret environment variables
                 should not be exposed as regular environment variables on the
                 deployer.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deployed.
+                deployment to be deployed.
 
         Returns:
-            The PipelineEndpointOperationalState object representing the
-            operational state of the deployed pipeline endpoint.
+            The DeploymentOperationalState object representing the
+            operational state of the deployed deployment.
 
         Raises:
-            PipelineEndpointDeploymentError: if the pipeline endpoint deployment
+            DeploymentProvisionError: if the deployment deployment
                 fails.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = deployment.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
@@ -340,21 +333,21 @@ class DockerDeployer(ContainerizedDeployer):
 
         settings = cast(
             DockerDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        existing_metadata = DockerPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        existing_metadata = DockerDeploymentMetadata.from_deployment(
+            deployment
         )
 
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
 
         entrypoint_kwargs = {
-            DEPLOYMENT_ID_OPTION: deployment.id,
+            SNAPSHOT_ID_OPTION: snapshot.id,
             PORT_OPTION: 8000,
         }
-        if endpoint.auth_key:
-            entrypoint_kwargs[AUTH_KEY_OPTION] = endpoint.auth_key
+        if deployment.auth_key:
+            entrypoint_kwargs[AUTH_KEY_OPTION] = deployment.auth_key
 
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             **entrypoint_kwargs
@@ -371,38 +364,38 @@ class DockerDeployer(ContainerizedDeployer):
         }
         environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
 
-        # check if a container already exists for the endpoint
-        container = self._get_container(endpoint)
+        # check if a container already exists for the deployment
+        container = self._get_container(deployment)
 
         if container:
             # the container exists, check if it is running
             if container.status == "running":
                 logger.debug(
-                    f"Container for pipeline endpoint '{endpoint.name}' is "
+                    f"Container for deployment '{deployment.name}' is "
                     "already running",
                 )
                 container.stop(timeout=timeout)
 
             # the container is stopped or in an error state, remove it
             logger.debug(
-                f"Removing previous container for pipeline endpoint "
-                f"'{endpoint.name}'",
+                f"Removing previous container for deployment "
+                f"'{deployment.name}'",
             )
             container.remove(force=True)
 
         logger.debug(
-            f"Starting container for pipeline endpoint '{endpoint.name}'..."
+            f"Starting container for deployment '{deployment.name}'..."
         )
 
-        assert endpoint.pipeline_deployment, "Pipeline deployment not found"
-        image = self.get_image(endpoint.pipeline_deployment)
+        assert deployment.snapshot, "Pipeline snapshot not found"
+        image = self.get_image(deployment.snapshot)
 
         try:
             self.docker_client.images.get(image)
         except docker_errors.ImageNotFound:
             logger.debug(
-                f"Pulling container image '{image}' for pipeline endpoint "
-                f"'{endpoint.name}'...",
+                f"Pulling container image '{image}' for deployment "
+                f"'{deployment.name}'...",
             )
             self.docker_client.images.pull(image)
 
@@ -452,7 +445,7 @@ class DockerDeployer(ContainerizedDeployer):
         try:
             container = self.docker_client.containers.run(
                 image=image,
-                name=self._get_container_id(endpoint),
+                name=self._get_container_id(deployment),
                 entrypoint=entrypoint,
                 command=arguments,
                 detach=True,
@@ -462,59 +455,59 @@ class DockerDeployer(ContainerizedDeployer):
                 auto_remove=False,
                 ports=ports,
                 labels={
-                    "zenml-pipeline-endpoint-uuid": str(endpoint.id),
-                    "zenml-pipeline-endpoint-name": endpoint.name,
+                    "zenml-deployment-uuid": str(deployment.id),
+                    "zenml-deployment-name": deployment.name,
                 },
                 extra_hosts=extra_hosts,
                 **run_args,
             )
 
             logger.debug(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
-                f"started with ID {self._get_container_id(endpoint)}",
+                f"Docker container for deployment '{deployment.name}' "
+                f"started with ID {self._get_container_id(deployment)}",
             )
 
         except docker_errors.DockerException as e:
-            raise PipelineEndpointDeploymentError(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentProvisionError(
+                f"Docker container for deployment '{deployment.name}' "
                 f"failed to start: {e}"
             )
 
         return self._get_container_operational_state(container)
 
-    def do_get_pipeline_endpoint(
+    def do_get_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
-    ) -> PipelineEndpointOperationalState:
-        """Get information about a docker pipeline endpoint.
+        deployment: DeploymentResponse,
+    ) -> DeploymentOperationalState:
+        """Get information about a docker deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get information about.
+            deployment: The deployment to get information about.
 
         Returns:
-            The PipelineEndpointOperationalState object representing the
-            updated operational state of the pipeline endpoint.
+            The DeploymentOperationalState object representing the
+            updated operational state of the deployment.
 
         Raises:
-            PipelineEndpointNotFoundError: if no pipeline endpoint is found
-                corresponding to the provided PipelineEndpointResponse.
+            DeploymentNotFoundError: if no deployment is found
+                corresponding to the provided DeploymentResponse.
         """
-        container = self._get_container(endpoint)
+        container = self._get_container(deployment)
         if container is None:
-            raise PipelineEndpointNotFoundError(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentNotFoundError(
+                f"Docker container for deployment '{deployment.name}' "
                 "not found"
             )
 
         return self._get_container_operational_state(container)
 
-    def do_get_pipeline_endpoint_logs(
+    def do_get_deployment_logs(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get the logs of a Docker pipeline endpoint.
+        """Get the logs of a Docker deployment.
 
         This method implements proper log streaming with support for both
         historical and real-time log retrieval. It follows the SOLID principles
@@ -522,27 +515,27 @@ class DockerDeployer(ContainerizedDeployer):
         actual log streaming.
 
         Args:
-            endpoint: The pipeline endpoint to get the logs of.
+            deployment: The deployment to get the logs of.
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
         Yields:
-            The logs of the pipeline endpoint.
+            The logs of the deployment.
 
         Raises:
-            PipelineEndpointNotFoundError: if no pipeline endpoint is found
-                corresponding to the provided PipelineEndpointResponse.
-            PipelineLogsNotFoundError: if the pipeline endpoint logs are not
+            DeploymentNotFoundError: if no deployment is found
+                corresponding to the provided DeploymentResponse.
+            DeploymentLogsNotFoundError: if the deployment logs are not
                 found.
-            DeployerError: if the pipeline endpoint logs cannot
+            DeployerError: if the deployment logs cannot
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
         # Early return pattern - handle preconditions first
-        container = self._get_container(endpoint)
+        container = self._get_container(deployment)
         if container is None:
-            raise PipelineEndpointNotFoundError(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentNotFoundError(
+                f"Docker container for deployment '{deployment.name}' "
                 "not found"
             )
 
@@ -591,52 +584,52 @@ class DockerDeployer(ContainerizedDeployer):
                             yield str(log_line).rstrip()
 
         except docker_errors.NotFound as e:
-            raise PipelineLogsNotFoundError(
-                f"Logs for pipeline endpoint '{endpoint.name}' not found: {e}"
+            raise DeploymentLogsNotFoundError(
+                f"Logs for deployment '{deployment.name}' not found: {e}"
             )
         except docker_errors.APIError as e:
             raise DeployerError(
-                f"Docker API error while retrieving logs for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Docker API error while retrieving logs for deployment "
+                f"'{deployment.name}': {e}"
             )
         except docker_errors.DockerException as e:
             raise DeployerError(
-                f"Docker error while retrieving logs for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Docker error while retrieving logs for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while retrieving logs for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Unexpected error while retrieving logs for deployment "
+                f"'{deployment.name}': {e}"
             )
 
-    def do_deprovision_pipeline_endpoint(
+    def do_deprovision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[PipelineEndpointOperationalState]:
-        """Deprovision a docker pipeline endpoint.
+    ) -> Optional[DeploymentOperationalState]:
+        """Deprovision a docker deployment.
 
         Args:
-            endpoint: The pipeline endpoint to deprovision.
+            deployment: The deployment to deprovision.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deprovisioned.
+                deployment to be deprovisioned.
 
         Returns:
-            The PipelineEndpointOperationalState object representing the
-            operational state of the deleted pipeline endpoint, or None if the
+            The DeploymentOperationalState object representing the
+            operational state of the deleted deployment, or None if the
             deletion is completed before the call returns.
 
         Raises:
-            PipelineEndpointNotFoundError: if no pipeline endpoint is found
-                corresponding to the provided PipelineEndpointResponse.
-            PipelineEndpointDeprovisionError: if the pipeline endpoint
+            DeploymentNotFoundError: if no deployment is found
+                corresponding to the provided DeploymentResponse.
+            DeploymentDeprovisionError: if the deployment
                 deprovision fails.
         """
-        container = self._get_container(endpoint)
+        container = self._get_container(deployment)
         if container is None:
-            raise PipelineEndpointNotFoundError(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentNotFoundError(
+                f"Docker container for deployment '{deployment.name}' "
                 "not found"
             )
 
@@ -644,15 +637,15 @@ class DockerDeployer(ContainerizedDeployer):
             container.stop(timeout=timeout)
             container.remove()
         except docker_errors.DockerException as e:
-            raise PipelineEndpointDeprovisionError(
-                f"Docker container for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentDeprovisionError(
+                f"Docker container for deployment '{deployment.name}' "
                 f"failed to delete: {e}"
             )
 
         state = self._get_container_operational_state(container)
         # Report a PENDING state to indicate that the deletion is in progress
         # and force the base class
-        state.status = PipelineEndpointStatus.PENDING
+        state.status = DeploymentStatus.PENDING
         return state
 
 
@@ -660,7 +653,7 @@ class DockerDeployerSettings(BaseDeployerSettings):
     """Docker deployer settings.
 
     Attributes:
-        port: The port to serve the pipeline endpoint on.
+        port: The port to serve the deployment on.
         allocate_port_if_busy: If True, allocate a free port if the configured
             port is busy.
         port_range: The range of ports to search for a free port.

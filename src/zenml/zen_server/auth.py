@@ -950,7 +950,7 @@ def generate_access_token(
             expire.
         schedule_id: The ID of the schedule to scope the token to.
         pipeline_run_id: The ID of the pipeline run to scope the token to.
-        deployment_id: The ID of the pipeline deployment to scope the token to.
+        deployment_id: The ID of the deployment to scope the token to.
 
     Returns:
         An authentication response with an access token.

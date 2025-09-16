@@ -36,11 +36,11 @@ class MockWeatherRequest(BaseModel):
 def mock_service():
     """Mock PipelineServingService."""
     service = MagicMock()
-    service.deployment_id = str(uuid4())
+    service.snapshot_id = str(uuid4())
     service.is_healthy.return_value = True
     service.last_execution_time = None
     service.get_service_info.return_value = {
-        "deployment_id": service.deployment_id,
+        "snapshot_id": service.snapshot_id,
         "pipeline_name": "test_pipeline",
         "total_executions": 0,
         "last_execution_time": None,
@@ -77,7 +77,7 @@ class TestFastAPIAppEndpoints:
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "healthy"
-            assert "deployment_id" in data
+            assert "snapshot_id" in data
             assert "pipeline_name" in data
 
     def test_health_endpoint_unhealthy(self, test_client, mock_service):
@@ -91,10 +91,10 @@ class TestFastAPIAppEndpoints:
 
     def test_info_endpoint(self, test_client, mock_service):
         """Test info endpoint."""
-        mock_service.deployment = MagicMock()
-        mock_service.deployment.pipeline_spec = MagicMock()
-        mock_service.deployment.pipeline_spec.parameters = {"city": "London"}
-        mock_service.deployment.pipeline_configuration.name = "test_pipeline"
+        mock_service.snapshot = MagicMock()
+        mock_service.snapshot.pipeline_spec = MagicMock()
+        mock_service.snapshot.pipeline_spec.parameters = {"city": "London"}
+        mock_service.snapshot.pipeline_configuration.name = "test_pipeline"
 
         with patch("zenml.deployers.serving.app._service", mock_service):
             response = test_client.get("/info")
@@ -102,7 +102,7 @@ class TestFastAPIAppEndpoints:
             assert response.status_code == 200
             data = response.json()
             assert "pipeline" in data
-            assert "deployment" in data
+            assert "snapshot" in data
             assert data["pipeline"]["name"] == "test_pipeline"
             assert data["pipeline"]["parameters"] == {"city": "London"}
 

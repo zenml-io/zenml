@@ -23,7 +23,7 @@ class _DummyPipelineConfig(BaseModel):
     name: str = "test-pipeline"
 
 
-class _DummyDeployment:
+class _DummySnapshot:
     def __init__(self) -> None:
         self.id = uuid4()
         self.pipeline_configuration = _DummyPipelineConfig()
@@ -62,7 +62,7 @@ def test_service_captures_in_memory_outputs(monkeypatch: pytest.MonkeyPatch):
     """Service should capture in-memory outputs before stopping runtime."""
 
     service = PipelineServingService(uuid4())
-    service.deployment = _DummyDeployment()
+    service.snapshot = _DummySnapshot()
     service._params_model = _DummyParams
 
     dummy_run = _DummyRun()
@@ -83,12 +83,12 @@ def test_service_captures_in_memory_outputs(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         svc_mod.run_utils,
         "create_placeholder_run",
-        lambda deployment, logs: _PH(),
+        lambda snapshot, logs: _PH(),
     )
 
     # Replace orchestrator with a dummy that records outputs into runtime
     class _DummyOrchestrator:
-        def run(self, deployment, stack, placeholder_run):  # noqa: D401
+        def run(self, snapshot, stack, placeholder_run):  # noqa: D401
             # while runtime is active, record some fast-path outputs
             runtime.record_step_outputs("step1", {"result": "fast_value"})
 
@@ -101,5 +101,5 @@ def test_service_captures_in_memory_outputs(monkeypatch: pytest.MonkeyPatch):
     assert response["outputs"]["step1.result"] == "fast_value"
     assert (
         response["metadata"]["pipeline_name"]
-        == service.deployment.pipeline_configuration.name
+        == service.snapshot.pipeline_configuration.name
     )

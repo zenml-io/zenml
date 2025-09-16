@@ -113,11 +113,12 @@ def random_str(length: int) -> str:
     return "".join(random.choices(string.ascii_letters, k=length))
 
 
-def validate_name(model: BaseModel) -> None:
+def validate_name(model: BaseModel, name_field: str = "name") -> None:
     """Validator to ensure that the given name has only allowed characters.
 
     Args:
         model: The model to validate.
+        name_field: The name of the field to validate.
 
     Raises:
         ValueError: If the name has invalid characters.
@@ -130,18 +131,18 @@ def validate_name(model: BaseModel) -> None:
     else:
         type_ = cls_name
 
-    if name := getattr(model, "name", None):
+    if name := getattr(model, name_field, None):
         diff = "".join(set(name).intersection(set(BANNED_NAME_CHARACTERS)))
         if diff:
             msg = (
-                f"The name `{name}` of the `{type_}` contains "
+                f"The {name_field} `{name}` of the `{type_}` contains "
                 f"the following forbidden characters: `{diff}`."
             )
             raise ValueError(msg)
     else:
         raise ValueError(
-            f"The class `{cls_name}` has no attribute `name` "
-            "or it is set to `None`. Cannot validate the name."
+            f"The class `{cls_name}` has no attribute `{name_field}` "
+            f"or it is set to `None`. Cannot validate the {name_field}."
         )
 
 

@@ -37,10 +37,10 @@ from zenml.config.resource_settings import ResourceSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
-    PipelineEndpointDeploymentError,
-    PipelineEndpointDeprovisionError,
-    PipelineEndpointNotFoundError,
-    PipelineLogsNotFoundError,
+    DeploymentDeprovisionError,
+    DeploymentLogsNotFoundError,
+    DeploymentNotFoundError,
+    DeploymentProvisionError,
 )
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,
@@ -48,17 +48,17 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
-from zenml.enums import PipelineEndpointStatus, StackComponentType
+from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.integrations.aws.flavors.aws_deployer_flavor import (
     AWSDeployerConfig,
     AWSDeployerSettings,
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineEndpointOperationalState,
-    PipelineEndpointResponse,
+    DeploymentOperationalState,
+    DeploymentResponse,
 )
 from zenml.stack import StackValidator
 
@@ -80,8 +80,8 @@ AWS_APP_RUNNER_MAX_SIZE = 1000
 AWS_APP_RUNNER_MAX_CONCURRENCY = 1000
 
 
-class AppRunnerPipelineEndpointMetadata(BaseModel):
-    """Metadata for an App Runner pipeline endpoint."""
+class AppRunnerDeploymentMetadata(BaseModel):
+    """Metadata for an App Runner deployment."""
 
     service_name: Optional[str] = None
     service_arn: Optional[str] = None
@@ -125,13 +125,13 @@ class AppRunnerPipelineEndpointMetadata(BaseModel):
         service: Dict[str, Any],
         region: str,
         secret_arn: Optional[str] = None,
-    ) -> "AppRunnerPipelineEndpointMetadata":
+    ) -> "AppRunnerDeploymentMetadata":
         """Create metadata from an App Runner service.
 
         Args:
             service: The App Runner service dictionary from describe_service.
             region: The AWS region.
-            secret_arn: The AWS Secrets Manager secret ARN for the pipeline endpoint.
+            secret_arn: The AWS Secrets Manager secret ARN for the deployment.
 
         Returns:
             The metadata for the App Runner service.
@@ -254,18 +254,18 @@ class AppRunnerPipelineEndpointMetadata(BaseModel):
         )
 
     @classmethod
-    def from_endpoint(
-        cls, endpoint: PipelineEndpointResponse
-    ) -> "AppRunnerPipelineEndpointMetadata":
-        """Create metadata from a pipeline endpoint.
+    def from_deployment(
+        cls, deployment: DeploymentResponse
+    ) -> "AppRunnerDeploymentMetadata":
+        """Create metadata from a deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the metadata for.
+            deployment: The deployment to get the metadata for.
 
         Returns:
-            The metadata for the pipeline endpoint.
+            The metadata for the deployment.
         """
-        return cls.model_validate(endpoint.endpoint_metadata)
+        return cls.model_validate(deployment.deployment_metadata)
 
 
 class AWSDeployer(ContainerizedDeployer):
@@ -489,25 +489,25 @@ class AWSDeployer(ContainerizedDeployer):
         return final_name
 
     def _get_service_name(
-        self, endpoint_name: str, endpoint_id: UUID, prefix: str
+        self, deployment_name: str, deployment_id: UUID, prefix: str
     ) -> str:
-        """Get the App Runner service name for a pipeline endpoint.
+        """Get the App Runner service name for a deployment.
 
         Args:
-            endpoint_name: The pipeline endpoint name.
-            endpoint_id: The pipeline endpoint ID.
+            deployment_name: The deployment name.
+            deployment_id: The deployment ID.
             prefix: The prefix to use for the service name.
 
         Returns:
             The App Runner service name that complies with all naming requirements.
         """
-        # Create a base name with endpoint name and ID for uniqueness
+        # Create a base name with deployment name and ID for uniqueness
         # Use first 8 characters of UUID to keep names manageable
-        endpoint_id_short = str(endpoint_id)[:8]
-        raw_name = f"{prefix}{endpoint_name}"
+        deployment_id_short = str(deployment_id)[:8]
+        raw_name = f"{prefix}{deployment_name}"
 
         return self._sanitize_app_runner_service_name(
-            raw_name, endpoint_id_short
+            raw_name, deployment_id_short
         )
 
     def _sanitize_auto_scaling_config_name(self, name: str) -> str:
@@ -558,7 +558,7 @@ class AWSDeployer(ContainerizedDeployer):
 
         # Final safety check - ensure minimum length of 4
         if len(sanitized) < 4:
-            # Pad with endpoint ID prefix if too short
+            # Pad with deployment ID prefix if too short
             sanitized = f"zenml-{sanitized}"[:32].rstrip("-")
 
         return sanitized
@@ -623,38 +623,38 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _get_secret_name(
         self,
-        endpoint_name: str,
-        endpoint_id: UUID,
+        deployment_name: str,
+        deployment_id: UUID,
         prefix: str,
     ) -> str:
-        """Get the Secrets Manager secret name for a pipeline endpoint.
+        """Get the Secrets Manager secret name for a deployment.
 
         Args:
-            endpoint_name: The pipeline endpoint name.
-            endpoint_id: The pipeline endpoint ID.
+            deployment_name: The deployment name.
+            deployment_id: The deployment ID.
             prefix: The prefix to use for the secret name.
 
         Returns:
             The Secrets Manager secret name.
         """
-        # Create a unique secret name with prefix and endpoint info
-        endpoint_id_short = str(endpoint_id)[:8]
-        raw_name = f"{prefix}{endpoint_name}"
+        # Create a unique secret name with prefix and deployment info
+        deployment_id_short = str(deployment_id)[:8]
+        raw_name = f"{prefix}{deployment_name}"
 
-        return self._sanitize_secret_name(raw_name, endpoint_id_short)
+        return self._sanitize_secret_name(raw_name, deployment_id_short)
 
     def _create_or_update_secret(
         self,
         secret_name: str,
         secret_value: str,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
     ) -> str:
         """Create or update a secret in Secrets Manager.
 
         Args:
             secret_name: The name of the secret.
             secret_value: The value to store.
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The secret ARN.
@@ -679,15 +679,15 @@ class AWSDeployer(ContainerizedDeployer):
                     response = self.secrets_manager_client.create_secret(
                         Name=secret_name,
                         SecretString=secret_value,
-                        Description=f"ZenML pipeline endpoint secret for {endpoint.name}",
+                        Description=f"ZenML deployment secret for {deployment.name}",
                         Tags=[
                             {
-                                "Key": "zenml-pipeline-endpoint-uuid",
-                                "Value": str(endpoint.id),
+                                "Key": "zenml-deployment-uuid",
+                                "Value": str(deployment.id),
                             },
                             {
-                                "Key": "zenml-pipeline-endpoint-name",
-                                "Value": endpoint.name,
+                                "Key": "zenml-deployment-name",
+                                "Value": deployment.name,
                             },
                             {
                                 "Key": "zenml-deployer-name",
@@ -710,19 +710,17 @@ class AWSDeployer(ContainerizedDeployer):
                 f"Failed to create/update secret {secret_name}: {e}"
             )
 
-    def _get_secret_arn(
-        self, endpoint: PipelineEndpointResponse
-    ) -> Optional[str]:
-        """Get the existing AWS Secrets Manager secret ARN for a pipeline endpoint.
+    def _get_secret_arn(self, deployment: DeploymentResponse) -> Optional[str]:
+        """Get the existing AWS Secrets Manager secret ARN for a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
-            The existing AWS Secrets Manager secret ARN for the pipeline endpoint,
+            The existing AWS Secrets Manager secret ARN for the deployment,
             or None if no secret exists.
         """
-        metadata = AppRunnerPipelineEndpointMetadata.from_endpoint(endpoint)
+        metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
 
         if not metadata.secret_arn:
             return None
@@ -759,35 +757,35 @@ class AWSDeployer(ContainerizedDeployer):
             else:
                 logger.exception(f"Failed to delete secret {secret_arn}")
 
-    def _cleanup_endpoint_secrets(
+    def _cleanup_deployment_secrets(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
     ) -> None:
-        """Clean up the secret associated with a pipeline endpoint.
+        """Clean up the secret associated with a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
         """
-        secret_arn = self._get_secret_arn(endpoint)
+        secret_arn = self._get_secret_arn(deployment)
 
         if secret_arn:
             self._delete_secret(secret_arn)
 
     def _get_auto_scaling_config_name(
-        self, endpoint_name: str, endpoint_id: UUID
+        self, deployment_name: str, deployment_id: UUID
     ) -> str:
-        """Get the AutoScalingConfiguration name for a pipeline endpoint.
+        """Get the AutoScalingConfiguration name for a deployment.
 
         Args:
-            endpoint_name: The pipeline endpoint name.
-            endpoint_id: The pipeline endpoint ID.
+            deployment_name: The deployment name.
+            deployment_id: The deployment ID.
 
         Returns:
             The AutoScalingConfiguration name.
         """
         # Use first 8 characters of UUID to keep names manageable
-        endpoint_id_short = str(endpoint_id)[:8]
-        raw_name = f"zenml-{endpoint_name}-{endpoint_id_short}"
+        deployment_id_short = str(deployment_id)[:8]
+        raw_name = f"zenml-{deployment_name}-{deployment_id_short}"
 
         return self._sanitize_auto_scaling_config_name(raw_name)
 
@@ -797,7 +795,7 @@ class AWSDeployer(ContainerizedDeployer):
         min_size: int,
         max_size: int,
         max_concurrency: int,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
     ) -> str:
         """Create or update an AutoScalingConfiguration for App Runner.
 
@@ -806,7 +804,7 @@ class AWSDeployer(ContainerizedDeployer):
             min_size: Minimum number of instances.
             max_size: Maximum number of instances.
             max_concurrency: Maximum concurrent requests per instance.
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The ARN of the created/updated auto-scaling configuration.
@@ -819,12 +817,12 @@ class AWSDeployer(ContainerizedDeployer):
             # Prepare tags for the auto-scaling configuration
             tags = [
                 {
-                    "Key": "zenml-pipeline-endpoint-uuid",
-                    "Value": str(endpoint.id),
+                    "Key": "zenml-deployment-uuid",
+                    "Value": str(deployment.id),
                 },
                 {
-                    "Key": "zenml-pipeline-endpoint-name",
-                    "Value": endpoint.name,
+                    "Key": "zenml-deployment-name",
+                    "Value": deployment.name,
                 },
                 {"Key": "zenml-deployer-name", "Value": str(self.name)},
                 {"Key": "zenml-deployer-id", "Value": str(self.id)},
@@ -832,7 +830,7 @@ class AWSDeployer(ContainerizedDeployer):
             ]
 
             # Check if we have an existing auto-scaling configuration ARN from metadata
-            existing_arn = self._get_auto_scaling_config_arn(endpoint)
+            existing_arn = self._get_auto_scaling_config_arn(deployment)
 
             if existing_arn:
                 # Try to get existing configuration by ARN
@@ -886,33 +884,31 @@ class AWSDeployer(ContainerizedDeployer):
             )
 
     def _get_auto_scaling_config_arn(
-        self, endpoint: PipelineEndpointResponse
+        self, deployment: DeploymentResponse
     ) -> Optional[str]:
-        """Get the existing auto-scaling configuration ARN for a pipeline endpoint.
+        """Get the existing auto-scaling configuration ARN for a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The auto-scaling configuration ARN if it exists, None otherwise.
         """
         try:
-            metadata = AppRunnerPipelineEndpointMetadata.from_endpoint(
-                endpoint
-            )
+            metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
             return metadata.auto_scaling_configuration_arn
         except Exception:
             return None
 
-    def _cleanup_endpoint_auto_scaling_config(
-        self, endpoint: PipelineEndpointResponse
+    def _cleanup_deployment_auto_scaling_config(
+        self, deployment: DeploymentResponse
     ) -> None:
-        """Clean up the auto-scaling configuration associated with a pipeline endpoint.
+        """Clean up the auto-scaling configuration associated with a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
         """
-        config_arn = self._get_auto_scaling_config_arn(endpoint)
+        config_arn = self._get_auto_scaling_config_arn(deployment)
 
         if config_arn:
             try:
@@ -938,7 +934,7 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _prepare_environment_variables(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         environment: Dict[str, str],
         secrets: Dict[str, str],
         settings: AWSDeployerSettings,
@@ -946,7 +942,7 @@ class AWSDeployer(ContainerizedDeployer):
         """Prepare environment variables for App Runner, handling secrets appropriately.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
             environment: Regular environment variables.
             secrets: Sensitive environment variables.
             settings: The deployer settings.
@@ -972,14 +968,14 @@ class AWSDeployer(ContainerizedDeployer):
                 # This approach works for both single and multiple secrets
 
                 secret_name = self._get_secret_name(
-                    endpoint.name, endpoint.id, settings.secret_name_prefix
+                    deployment.name, deployment.id, settings.secret_name_prefix
                 )
 
                 try:
                     # Create or update the secret with JSON value
                     secret_value = json.dumps(secrets)
                     secret_arn = self._create_or_update_secret(
-                        secret_name, secret_value, endpoint
+                        secret_name, secret_value, deployment
                     )
                     active_secret_arn = secret_arn
 
@@ -1002,7 +998,7 @@ class AWSDeployer(ContainerizedDeployer):
                     env_vars.update(secrets)
 
                 # Clean up old secret if it's different from the current one
-                existing_secret_arn = self._get_secret_arn(endpoint)
+                existing_secret_arn = self._get_secret_arn(deployment)
                 if (
                     existing_secret_arn
                     and existing_secret_arn != active_secret_arn
@@ -1019,12 +1015,12 @@ class AWSDeployer(ContainerizedDeployer):
         return env_vars, secret_refs, active_secret_arn
 
     def _get_app_runner_service(
-        self, endpoint: PipelineEndpointResponse
+        self, deployment: DeploymentResponse
     ) -> Optional[Dict[str, Any]]:
-        """Get an existing App Runner service for a pipeline endpoint.
+        """Get an existing App Runner service for a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The App Runner service dictionary, or None if it doesn't exist.
@@ -1032,9 +1028,9 @@ class AWSDeployer(ContainerizedDeployer):
         Raises:
             ClientError: If the App Runner service cannot be described.
         """
-        # Get service ARN from the endpoint metadata
-        existing_metadata = AppRunnerPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        # Get service ARN from the deployment metadata
+        existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
+            deployment
         )
 
         if not existing_metadata.service_arn:
@@ -1055,7 +1051,7 @@ class AWSDeployer(ContainerizedDeployer):
         service: Dict[str, Any],
         region: str,
         secret_arn: Optional[str] = None,
-    ) -> PipelineEndpointOperationalState:
+    ) -> DeploymentOperationalState:
         """Get the operational state of an App Runner service.
 
         Args:
@@ -1066,12 +1062,12 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             The operational state of the App Runner service.
         """
-        metadata = AppRunnerPipelineEndpointMetadata.from_app_runner_service(
+        metadata = AppRunnerDeploymentMetadata.from_app_runner_service(
             service, region, secret_arn
         )
 
-        state = PipelineEndpointOperationalState(
-            status=PipelineEndpointStatus.UNKNOWN,
+        state = DeploymentOperationalState(
+            status=DeploymentStatus.UNKNOWN,
             metadata=metadata.model_dump(exclude_none=True),
         )
 
@@ -1088,22 +1084,22 @@ class AWSDeployer(ContainerizedDeployer):
             "CREATE_FAILED",
             "DELETE_FAILED",
         ]:
-            state.status = PipelineEndpointStatus.ERROR
+            state.status = DeploymentStatus.ERROR
         elif service_status == "OPERATION_IN_PROGRESS":
-            state.status = PipelineEndpointStatus.PENDING
+            state.status = DeploymentStatus.PENDING
         elif service_status == "RUNNING":
-            state.status = PipelineEndpointStatus.RUNNING
+            state.status = DeploymentStatus.RUNNING
             state.url = service.get("ServiceUrl")
             if state.url and not state.url.startswith("https://"):
                 state.url = f"https://{state.url}"
         elif service_status == "DELETED":
-            state.status = PipelineEndpointStatus.ABSENT
+            state.status = DeploymentStatus.ABSENT
         elif service_status == "PAUSED":
             state.status = (
-                PipelineEndpointStatus.PENDING
+                DeploymentStatus.PENDING
             )  # Treat paused as pending for now
         else:
-            state.status = PipelineEndpointStatus.UNKNOWN
+            state.status = DeploymentStatus.UNKNOWN
 
         return state
 
@@ -1294,43 +1290,43 @@ class AWSDeployer(ContainerizedDeployer):
 
         return min_size, max_size, max_concurrency
 
-    def do_provision_pipeline_endpoint(
+    def do_provision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         stack: "Stack",
         environment: Dict[str, str],
         secrets: Dict[str, str],
         timeout: int,
-    ) -> PipelineEndpointOperationalState:
+    ) -> DeploymentOperationalState:
         """Serve a pipeline as an App Runner service.
 
         Args:
-            endpoint: The pipeline endpoint to serve.
+            deployment: The deployment to serve.
             stack: The stack the pipeline will be served on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deployed.
+                deployment to be deployed.
 
         Returns:
-            The operational state of the deployed pipeline endpoint.
+            The operational state of the deployed deployment.
 
         Raises:
-            PipelineEndpointDeploymentError: If the deployment fails.
+            DeploymentProvisionError: If the deployment fails.
             DeployerError: If an unexpected error occurs.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = deployment.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
 
         settings = cast(
             AWSDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        resource_settings = deployment.pipeline_configuration.resource_settings
+        resource_settings = snapshot.pipeline_configuration.resource_settings
 
         # Convert ResourceSettings to AWS App Runner format with fallbacks
         cpu, memory = self._convert_resource_settings_to_aws_format(
@@ -1345,12 +1341,12 @@ class AWSDeployer(ContainerizedDeployer):
         client = self.app_runner_client
 
         service_name = self._get_service_name(
-            endpoint.name, endpoint.id, settings.service_name_prefix
+            deployment.name, deployment.id, settings.service_name_prefix
         )
 
         # Check if service already exists and if replacement is needed
-        existing_service = self._get_app_runner_service(endpoint)
-        image = self.get_image(deployment)
+        existing_service = self._get_app_runner_service(deployment)
+        image = self.get_image(snapshot)
         region = self.region
 
         if existing_service and self._requires_service_replacement(
@@ -1358,16 +1354,16 @@ class AWSDeployer(ContainerizedDeployer):
         ):
             # Delete existing service before creating new one
             try:
-                self.do_deprovision_pipeline_endpoint(endpoint, timeout)
-            except PipelineEndpointNotFoundError:
+                self.do_deprovision_deployment(deployment, timeout)
+            except DeploymentNotFoundError:
                 logger.warning(
-                    f"Pipeline endpoint '{endpoint.name}' not found, "
+                    f"Deployment '{deployment.name}' not found, "
                     f"skipping deprovision of existing App Runner service"
                 )
             except DeployerError as e:
                 logger.warning(
                     f"Failed to deprovision existing App Runner service for "
-                    f"pipeline endpoint '{endpoint.name}': {e}"
+                    f"deployment '{deployment.name}': {e}"
                 )
             existing_service = None
 
@@ -1375,16 +1371,16 @@ class AWSDeployer(ContainerizedDeployer):
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                DEPLOYMENT_ID_OPTION: deployment.id,
+                SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
-                AUTH_KEY_OPTION: endpoint.auth_key,
+                AUTH_KEY_OPTION: deployment.auth_key,
             }
         )
 
         # Prepare environment variables with proper secret handling
         env_vars, secret_refs, active_secret_arn = (
             self._prepare_environment_variables(
-                endpoint, environment, secrets, settings
+                deployment, environment, secrets, settings
             )
         )
 
@@ -1458,14 +1454,14 @@ class AWSDeployer(ContainerizedDeployer):
 
         # Create or get auto-scaling configuration
         auto_scaling_config_name = self._get_auto_scaling_config_name(
-            endpoint.name, endpoint.id
+            deployment.name, deployment.id
         )
         auto_scaling_config_arn = self._create_or_update_auto_scaling_config(
             auto_scaling_config_name,
             min_size,
             max_size,
             max_concurrency,
-            endpoint,
+            deployment,
         )
 
         health_check_configuration = {
@@ -1537,8 +1533,8 @@ class AWSDeployer(ContainerizedDeployer):
 
         # Prepare tags
         service_tags = [
-            {"Key": "zenml-pipeline-endpoint-uuid", "Value": str(endpoint.id)},
-            {"Key": "zenml-pipeline-endpoint-name", "Value": endpoint.name},
+            {"Key": "zenml-deployment-uuid", "Value": str(deployment.id)},
+            {"Key": "zenml-deployment-name", "Value": deployment.name},
             {"Key": "zenml-deployer-name", "Value": str(self.name)},
             {"Key": "zenml-deployer-id", "Value": str(self.id)},
             {"Key": "managed-by", "Value": "zenml"},
@@ -1553,7 +1549,7 @@ class AWSDeployer(ContainerizedDeployer):
                 # Update existing service
                 logger.debug(
                     f"Updating existing App Runner service for pipeline "
-                    f"endpoint '{endpoint.name}'"
+                    f"deployment '{deployment.name}'"
                 )
 
                 update_request = {
@@ -1598,8 +1594,8 @@ class AWSDeployer(ContainerizedDeployer):
             else:
                 # Create new service
                 logger.debug(
-                    f"Creating new App Runner service for pipeline endpoint "
-                    f"'{endpoint.name}' in region {region}"
+                    f"Creating new App Runner service for deployment "
+                    f"'{deployment.name}' in region {region}"
                 )
 
                 create_request = {
@@ -1640,51 +1636,51 @@ class AWSDeployer(ContainerizedDeployer):
             )
 
         except (ClientError, BotoCoreError) as e:
-            raise PipelineEndpointDeploymentError(
-                f"Failed to deploy App Runner service for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+            raise DeploymentProvisionError(
+                f"Failed to deploy App Runner service for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deploying pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Unexpected error while deploying deployment "
+                f"'{deployment.name}': {e}"
             )
 
-    def do_get_pipeline_endpoint(
+    def do_get_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
-    ) -> PipelineEndpointOperationalState:
-        """Get information about an App Runner pipeline endpoint.
+        deployment: DeploymentResponse,
+    ) -> DeploymentOperationalState:
+        """Get information about an App Runner deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get information about.
+            deployment: The deployment to get information about.
 
         Returns:
-            The operational state of the pipeline endpoint.
+            The operational state of the deployment.
 
         Raises:
-            PipelineEndpointNotFoundError: If the endpoint is not found.
-            RuntimeError: If the service ARN is not found in the endpoint metadata.
+            DeploymentNotFoundError: If the deployment is not found.
+            RuntimeError: If the service ARN is not found in the deployment metadata.
         """
-        service = self._get_app_runner_service(endpoint)
+        service = self._get_app_runner_service(deployment)
 
         if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"App Runner service for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentNotFoundError(
+                f"App Runner service for deployment '{deployment.name}' "
                 "not found"
             )
 
-        existing_metadata = AppRunnerPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
+            deployment
         )
 
         if not existing_metadata.region:
             raise RuntimeError(
-                f"Region not found in endpoint metadata for "
-                f"pipeline endpoint '{endpoint.name}'"
+                f"Region not found in deployment metadata for "
+                f"deployment '{deployment.name}'"
             )
 
-        existing_secret_arn = self._get_secret_arn(endpoint)
+        existing_secret_arn = self._get_secret_arn(deployment)
 
         return self._get_service_operational_state(
             service,
@@ -1692,28 +1688,28 @@ class AWSDeployer(ContainerizedDeployer):
             existing_secret_arn,
         )
 
-    def do_get_pipeline_endpoint_logs(
+    def do_get_deployment_logs(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get the logs of an App Runner pipeline endpoint.
+        """Get the logs of an App Runner deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the logs of.
+            deployment: The deployment to get the logs of.
             follow: If True, stream logs as they are written.
             tail: Only retrieve the last NUM lines of log output.
 
         Yields:
-            The logs of the pipeline endpoint.
+            The logs of the deployment.
 
         Raises:
             NotImplementedError: If log following is requested.
-            PipelineEndpointNotFoundError: If the endpoint is not found.
-            PipelineLogsNotFoundError: If the logs are not found.
+            DeploymentNotFoundError: If the deployment is not found.
+            DeploymentLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.
-            RuntimeError: If the service name is not found in the endpoint metadata.
+            RuntimeError: If the service name is not found in the deployment metadata.
         """
         # If follow is requested, we would need to implement streaming
         if follow:
@@ -1721,21 +1717,21 @@ class AWSDeployer(ContainerizedDeployer):
                 "Log following is not yet implemented for App Runner deployer"
             )
 
-        service = self._get_app_runner_service(endpoint)
+        service = self._get_app_runner_service(deployment)
         if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"App Runner service for pipeline endpoint '{endpoint.name}' not found"
+            raise DeploymentNotFoundError(
+                f"App Runner service for deployment '{deployment.name}' not found"
             )
 
         try:
-            existing_metadata = (
-                AppRunnerPipelineEndpointMetadata.from_endpoint(endpoint)
+            existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
+                deployment
             )
             service_name = existing_metadata.service_name
             if not service_name:
                 raise RuntimeError(
-                    f"Service name not found in endpoint metadata for "
-                    f"pipeline endpoint '{endpoint.name}'"
+                    f"Service name not found in deployment metadata for "
+                    f"deployment '{deployment.name}'"
                 )
 
             # App Runner automatically creates CloudWatch log groups
@@ -1788,60 +1784,60 @@ class AWSDeployer(ContainerizedDeployer):
 
             except ClientError as e:
                 if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                    raise PipelineLogsNotFoundError(
+                    raise DeploymentLogsNotFoundError(
                         f"Log group not found for App Runner service '{service_name}'"
                     )
                 raise
 
         except (ClientError, BotoCoreError) as e:
-            raise PipelineLogsNotFoundError(
-                f"Failed to retrieve logs for pipeline endpoint '{endpoint.name}': {e}"
+            raise DeploymentLogsNotFoundError(
+                f"Failed to retrieve logs for deployment '{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while retrieving logs for pipeline endpoint '{endpoint.name}': {e}"
+                f"Unexpected error while retrieving logs for deployment '{deployment.name}': {e}"
             )
 
-    def do_deprovision_pipeline_endpoint(
+    def do_deprovision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[PipelineEndpointOperationalState]:
-        """Deprovision an App Runner pipeline endpoint.
+    ) -> Optional[DeploymentOperationalState]:
+        """Deprovision an App Runner deployment.
 
         Args:
-            endpoint: The pipeline endpoint to deprovision.
+            deployment: The deployment to deprovision.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deprovisioned.
+                deployment to be deprovisioned.
 
         Returns:
-            The operational state of the deprovisioned endpoint, or None if
+            The operational state of the deprovisioned deployment, or None if
             deletion is completed immediately.
 
         Raises:
-            PipelineEndpointNotFoundError: If the endpoint is not found.
-            PipelineEndpointDeprovisionError: If the deprovision fails.
+            DeploymentNotFoundError: If the deployment is not found.
+            DeploymentDeprovisionError: If the deprovision fails.
             DeployerError: If an unexpected error occurs.
-            RuntimeError: If the service ARN is not found in the endpoint metadata.
+            RuntimeError: If the service ARN is not found in the deployment metadata.
         """
-        service = self._get_app_runner_service(endpoint)
+        service = self._get_app_runner_service(deployment)
         if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"App Runner service for pipeline endpoint '{endpoint.name}' not found"
+            raise DeploymentNotFoundError(
+                f"App Runner service for deployment '{deployment.name}' not found"
             )
 
         try:
-            existing_metadata = (
-                AppRunnerPipelineEndpointMetadata.from_endpoint(endpoint)
+            existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
+                deployment
             )
             if not existing_metadata.service_arn:
                 raise RuntimeError(
-                    f"Service ARN not found in endpoint metadata for "
-                    f"pipeline endpoint '{endpoint.name}'"
+                    f"Service ARN not found in deployment metadata for "
+                    f"deployment '{deployment.name}'"
                 )
 
             logger.debug(
-                f"Deleting App Runner service for pipeline endpoint '{endpoint.name}'"
+                f"Deleting App Runner service for deployment '{deployment.name}'"
             )
 
             # Delete the service
@@ -1851,41 +1847,41 @@ class AWSDeployer(ContainerizedDeployer):
 
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                raise PipelineEndpointNotFoundError(
-                    f"App Runner service for pipeline endpoint '{endpoint.name}' not found"
+                raise DeploymentNotFoundError(
+                    f"App Runner service for deployment '{deployment.name}' not found"
                 )
-            raise PipelineEndpointDeprovisionError(
-                f"Failed to delete App Runner service for pipeline endpoint '{endpoint.name}': {e}"
+            raise DeploymentDeprovisionError(
+                f"Failed to delete App Runner service for deployment '{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deleting pipeline endpoint '{endpoint.name}': {e}"
+                f"Unexpected error while deleting deployment '{deployment.name}': {e}"
             )
 
-        endpoint_before_deletion = endpoint
+        deployment_before_deletion = deployment
 
         # App Runner deletion is asynchronous and the auto-scaling configuration
         # and secrets need to be cleaned up after the service is deleted. So we
         # poll the service until it is deleted, runs into an error or times out.
-        endpoint, endpoint_state = self._poll_pipeline_endpoint(
-            endpoint, PipelineEndpointStatus.ABSENT, timeout
+        deployment, deployment_state = self._poll_deployment(
+            deployment, DeploymentStatus.ABSENT, timeout
         )
 
-        if endpoint_state.status != PipelineEndpointStatus.ABSENT:
-            return endpoint_state
+        if deployment_state.status != DeploymentStatus.ABSENT:
+            return deployment_state
 
         try:
             # Clean up associated secrets
-            self._cleanup_endpoint_secrets(endpoint_before_deletion)
+            self._cleanup_deployment_secrets(deployment_before_deletion)
 
             # Clean up associated auto-scaling configuration
-            self._cleanup_endpoint_auto_scaling_config(
-                endpoint_before_deletion
+            self._cleanup_deployment_auto_scaling_config(
+                deployment_before_deletion
             )
         except Exception as e:
             raise DeployerError(
                 f"Unexpected error while cleaning up resources for pipeline "
-                f"endpoint '{endpoint.name}': {e}"
+                f"deployment '{deployment.name}': {e}"
             )
 
         return None

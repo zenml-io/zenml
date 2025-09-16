@@ -34,7 +34,7 @@ from zenml.utils.pipeline_docker_image_builder import (
 if TYPE_CHECKING:
     from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineDeploymentBase
+    from zenml.models import PipelineSnapshotBase
 
 logger = get_logger(__name__)
 
@@ -109,12 +109,12 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         return f"local://{DOCKER_IMAGE_WORKDIR}/{ENTRYPOINT_NAME}"
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
@@ -123,7 +123,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
 
         builds = []
         extra_files = {ENTRYPOINT_NAME: LOCAL_ENTRYPOINT}
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=SPARK_DOCKER_IMAGE_KEY,

@@ -46,11 +46,11 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import (
         ComponentResponse,
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
-    from zenml.stack import Stack, StackValidator
+    from zenml.stack import StackValidator
 
 logger = get_logger(__name__)
 
@@ -335,6 +335,8 @@ class StackComponent:
         user: Optional[UUID],
         created: datetime,
         updated: datetime,
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
         labels: Optional[Dict[str, Any]] = None,
         connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
@@ -353,6 +355,10 @@ class StackComponent:
             user: The ID of the user who created the component.
             created: The creation time of the component.
             updated: The last update time of the component.
+            environment: Environment variables to set when running on this
+                component.
+            secrets: Secrets to set as environment variables when running on
+                this component.
             labels: The labels of the component.
             connector_requirements: The requirements for the connector.
             connector: The ID of a connector linked to the component.
@@ -379,6 +385,8 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.environment = environment or {}
+        self.secrets = secrets or []
         self.connector_requirements = connector_requirements
         self.connector = connector
         self.connector_resource_id = connector_resource_id
@@ -414,6 +422,8 @@ class StackComponent:
                 name=component_model.name,
                 id=component_model.id,
                 config=configuration,
+                environment=component_model.environment,
+                secrets=component_model.secrets,
                 labels=component_model.labels,
                 flavor=component_model.flavor_name,
                 type=component_model.type,
@@ -485,8 +495,8 @@ class StackComponent:
             "Step",
             "StepRunResponse",
             "StepRunInfo",
-            "PipelineDeploymentBase",
-            "PipelineDeploymentResponse",
+            "PipelineSnapshotBase",
+            "PipelineSnapshotResponse",
             "PipelineRunResponse",
         ],
     ) -> "BaseSettings":
@@ -497,7 +507,7 @@ class StackComponent:
         options for this component.
 
         Args:
-            container: The `Step`, `StepRunInfo` or `PipelineDeployment` from
+            container: The `Step`, `StepRunInfo` or `PipelineSnapshot` from
                 which to get the settings.
 
         Returns:
@@ -690,33 +700,17 @@ class StackComponent:
         return None
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         return []
-
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeploymentResponse",
-        stack: "Stack",
-    ) -> None:
-        """Prepares deploying the pipeline.
-
-        This method gets called immediately before a pipeline is deployed.
-        Subclasses should override it if they require runtime configuration
-        options or if they need to run code before the pipeline deployment.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-        """
 
     def get_pipeline_run_metadata(
         self, run_id: UUID

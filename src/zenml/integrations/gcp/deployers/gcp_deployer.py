@@ -39,10 +39,10 @@ from zenml.config.resource_settings import ResourceSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
-    PipelineEndpointDeploymentError,
-    PipelineEndpointDeprovisionError,
-    PipelineEndpointNotFoundError,
-    PipelineLogsNotFoundError,
+    DeploymentDeprovisionError,
+    DeploymentLogsNotFoundError,
+    DeploymentNotFoundError,
+    DeploymentProvisionError,
 )
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,
@@ -50,9 +50,9 @@ from zenml.deployers.serving.entrypoint_configuration import (
     ServingEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
-    DEPLOYMENT_ID_OPTION,
+    SNAPSHOT_ID_OPTION,
 )
-from zenml.enums import PipelineEndpointStatus, StackComponentType
+from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.integrations.gcp.flavors.gcp_deployer_flavor import (
     GCPDeployerConfig,
     GCPDeployerSettings,
@@ -62,8 +62,8 @@ from zenml.integrations.gcp.google_credentials_mixin import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineEndpointOperationalState,
-    PipelineEndpointResponse,
+    DeploymentOperationalState,
+    DeploymentResponse,
 )
 from zenml.stack import StackValidator
 
@@ -84,8 +84,8 @@ DEFAULT_CONCURRENCY = 80
 GCP_CLOUD_RUN_MAX_INSTANCES = 1000
 
 
-class CloudRunPipelineEndpointMetadata(BaseModel):
-    """Metadata for a Cloud Run pipeline endpoint."""
+class CloudRunDeploymentMetadata(BaseModel):
+    """Metadata for a Cloud Run deployment."""
 
     service_name: Optional[str] = None
     service_url: Optional[str] = None
@@ -121,7 +121,7 @@ class CloudRunPipelineEndpointMetadata(BaseModel):
         project_id: str,
         location: str,
         secrets: List[secretmanager.Secret],
-    ) -> "CloudRunPipelineEndpointMetadata":
+    ) -> "CloudRunDeploymentMetadata":
         """Create metadata from a Cloud Run service.
 
         Args:
@@ -129,7 +129,7 @@ class CloudRunPipelineEndpointMetadata(BaseModel):
             project_id: The GCP project ID.
             location: The GCP location.
             secrets: The list of existing GCP Secret Manager secrets for the
-                pipeline endpoint.
+                deployment.
 
         Returns:
             The metadata for the Cloud Run service.
@@ -253,18 +253,18 @@ class CloudRunPipelineEndpointMetadata(BaseModel):
         )
 
     @classmethod
-    def from_endpoint(
-        cls, endpoint: PipelineEndpointResponse
-    ) -> "CloudRunPipelineEndpointMetadata":
-        """Create metadata from a pipeline endpoint.
+    def from_deployment(
+        cls, deployment: DeploymentResponse
+    ) -> "CloudRunDeploymentMetadata":
+        """Create metadata from a deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the metadata for.
+            deployment: The deployment to get the metadata for.
 
         Returns:
-            The metadata for the pipeline endpoint.
+            The metadata for the deployment.
         """
-        return cls.model_validate(endpoint.endpoint_metadata)
+        return cls.model_validate(deployment.deployment_metadata)
 
 
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
@@ -458,25 +458,25 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         return f"{sanitized}-{random_suffix}"
 
     def _get_service_name(
-        self, endpoint_name: str, endpoint_id: UUID, prefix: str
+        self, deployment_name: str, deployment_id: UUID, prefix: str
     ) -> str:
-        """Get the Cloud Run service name for a pipeline endpoint.
+        """Get the Cloud Run service name for a deployment.
 
         Args:
-            endpoint_id: The pipeline endpoint ID.
-            endpoint_name: The pipeline endpoint name.
+            deployment_id: The deployment ID.
+            deployment_name: The deployment name.
             prefix: The prefix to use for the service name.
 
         Returns:
             The Cloud Run service name that complies with all naming requirements.
         """
-        # Create a base name with endpoint name and ID for uniqueness
+        # Create a base name with deployment name and ID for uniqueness
         # Use first 8 characters of UUID to keep names manageable
-        endpoint_id_short = str(endpoint_id)[:8]
-        raw_name = f"{prefix}{endpoint_name}"
+        deployment_id_short = str(deployment_id)[:8]
+        raw_name = f"{prefix}{deployment_name}"
 
         return self._sanitize_cloud_run_service_name(
-            raw_name, endpoint_id_short
+            raw_name, deployment_id_short
         )
 
     def _sanitize_secret_name(self, name: str, random_suffix: str) -> str:
@@ -554,32 +554,32 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     def _get_secret_name(
         self,
-        endpoint_id: UUID,
+        deployment_id: UUID,
         env_var_name: str,
         prefix: str,
     ) -> str:
         """Get the Secret Manager secret name for an environment variable.
 
         Args:
-            endpoint_id: The pipeline endpoint ID.
+            deployment_id: The deployment ID.
             env_var_name: The environment variable name.
             prefix: The prefix to use for the secret name.
 
         Returns:
             The Secret Manager secret name.
         """
-        # Create a unique secret name with prefix, endpoint ID, and env var name
-        endpoint_id_short = str(endpoint_id)[:8]
+        # Create a unique secret name with prefix, deployment ID, and env var name
+        deployment_id_short = str(deployment_id)[:8]
         raw_name = f"{prefix}_{env_var_name}"
 
-        return self._sanitize_secret_name(raw_name, endpoint_id_short)
+        return self._sanitize_secret_name(raw_name, deployment_id_short)
 
     def _create_or_update_secret(
         self,
         secret_name: str,
         secret_value: str,
         project_id: str,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
     ) -> secretmanager.Secret:
         """Create or update a secret in Secret Manager.
 
@@ -587,7 +587,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             secret_name: The name of the secret.
             secret_value: The value to store.
             project_id: The GCP project ID.
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The full secret.
@@ -616,8 +616,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                         automatic=secretmanager.Replication.Automatic()
                     ),
                     labels={
-                        "zenml-pipeline-endpoint-uuid": str(endpoint.id),
-                        "zenml-pipeline-endpoint-name": endpoint.name,
+                        "zenml-deployment-uuid": str(deployment.id),
+                        "zenml-deployment-name": deployment.name,
                         "zenml-deployer-name": str(self.name),
                         "zenml-deployer-id": str(self.id),
                         "managed-by": "zenml",
@@ -644,18 +644,18 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
 
     def _get_secrets(
-        self, endpoint: PipelineEndpointResponse
+        self, deployment: DeploymentResponse
     ) -> List[secretmanager.Secret]:
-        """Get the existing GCP Secret Manager secrets for a pipeline endpoint.
+        """Get the existing GCP Secret Manager secrets for a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The list of existing GCP Secret Manager secrets for the
-            pipeline endpoint.
+            deployment.
         """
-        metadata = CloudRunPipelineEndpointMetadata.from_endpoint(endpoint)
+        metadata = CloudRunDeploymentMetadata.from_deployment(deployment)
         secrets: List[secretmanager.Secret] = []
         for secret_name in metadata.secrets:
             # Try to get the existing secret
@@ -687,16 +687,16 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         except google_exceptions.GoogleAPICallError:
             logger.exception(f"Failed to delete secret {secret_path}")
 
-    def _cleanup_endpoint_secrets(
+    def _cleanup_deployment_secrets(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
     ) -> None:
-        """Clean up all secrets associated with a pipeline endpoint.
+        """Clean up all secrets associated with a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
         """
-        secrets = self._get_secrets(endpoint)
+        secrets = self._get_secrets(deployment)
 
         for secret in secrets:
             _, project_id, _, secret_name = secret.name.split("/")
@@ -704,7 +704,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     def _prepare_environment_variables(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         environment: Dict[str, str],
         secrets: Dict[str, str],
         settings: GCPDeployerSettings,
@@ -713,7 +713,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         """Prepare environment variables for Cloud Run, handling secrets appropriately.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
             environment: Regular environment variables.
             secrets: Sensitive environment variables.
             settings: The deployer settings.
@@ -738,13 +738,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 # Store secrets in Secret Manager and reference them
                 for key, value in secrets.items():
                     secret_name = self._get_secret_name(
-                        endpoint.id, key.lower(), settings.secret_name_prefix
+                        deployment.id, key.lower(), settings.secret_name_prefix
                     )
 
                     try:
                         # Create or update the secret
                         active_secret = self._create_or_update_secret(
-                            secret_name, value, project_id, endpoint
+                            secret_name, value, project_id, deployment
                         )
 
                         # Create environment variable that references the secret
@@ -767,8 +767,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                         # Fallback to direct environment variable
                         env_vars.append(run_v2.EnvVar(name=key, value=value))
 
-                metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-                    endpoint
+                metadata = CloudRunDeploymentMetadata.from_deployment(
+                    deployment
                 )
                 # Delete GCP secrets that are no longer needed
                 active_secret_names = [
@@ -810,19 +810,19 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         return f"projects/{project_id}/locations/{location}/services/{service_name}"
 
     def _get_cloud_run_service(
-        self, endpoint: PipelineEndpointResponse
+        self, deployment: DeploymentResponse
     ) -> Optional[run_v2.Service]:
-        """Get an existing Cloud Run service for a pipeline endpoint.
+        """Get an existing Cloud Run service for a deployment.
 
         Args:
-            endpoint: The pipeline endpoint.
+            deployment: The deployment.
 
         Returns:
             The Cloud Run service, or None if it doesn't exist.
         """
-        # Get location from the endpoint metadata or use default
-        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        # Get location from the deployment metadata or use default
+        existing_metadata = CloudRunDeploymentMetadata.from_deployment(
+            deployment
         )
 
         if (
@@ -849,7 +849,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         project_id: str,
         location: str,
         secrets: List[secretmanager.Secret],
-    ) -> PipelineEndpointOperationalState:
+    ) -> DeploymentOperationalState:
         """Get the operational state of a Cloud Run service.
 
         Args:
@@ -861,38 +861,38 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The operational state of the Cloud Run service.
         """
-        metadata = CloudRunPipelineEndpointMetadata.from_cloud_run_service(
+        metadata = CloudRunDeploymentMetadata.from_cloud_run_service(
             service, project_id, location, secrets
         )
 
-        state = PipelineEndpointOperationalState(
-            status=PipelineEndpointStatus.UNKNOWN,
+        state = DeploymentOperationalState(
+            status=DeploymentStatus.UNKNOWN,
             metadata=metadata.model_dump(exclude_none=True),
         )
 
         # Map Cloud Run service status to ZenML status
         if service.reconciling:
             # This flag is set while the service is being reconciled
-            state.status = PipelineEndpointStatus.PENDING
+            state.status = DeploymentStatus.PENDING
         else:
             if (
                 service.terminal_condition.state
                 == run_v2.Condition.State.CONDITION_SUCCEEDED
             ):
-                state.status = PipelineEndpointStatus.RUNNING
+                state.status = DeploymentStatus.RUNNING
                 state.url = service.uri
             elif (
                 service.terminal_condition.state
                 == run_v2.Condition.State.CONDITION_FAILED
             ):
-                state.status = PipelineEndpointStatus.ERROR
+                state.status = DeploymentStatus.ERROR
             elif service.terminal_condition.state in [
                 run_v2.Condition.State.CONDITION_PENDING,
                 run_v2.Condition.State.CONDITION_RECONCILING,
             ]:
-                state.status = PipelineEndpointStatus.PENDING
+                state.status = DeploymentStatus.PENDING
             else:
-                state.status = PipelineEndpointStatus.UNKNOWN
+                state.status = DeploymentStatus.UNKNOWN
 
         return state
 
@@ -1050,43 +1050,43 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         return concurrency
 
-    def do_provision_pipeline_endpoint(
+    def do_provision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         stack: "Stack",
         environment: Dict[str, str],
         secrets: Dict[str, str],
         timeout: int,
-    ) -> PipelineEndpointOperationalState:
+    ) -> DeploymentOperationalState:
         """Serve a pipeline as a Cloud Run service.
 
         Args:
-            endpoint: The pipeline endpoint to serve.
+            deployment: The deployment to serve.
             stack: The stack the pipeline will be served on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deployed.
+                deployment to be deployed.
 
         Returns:
-            The operational state of the deployed pipeline endpoint.
+            The operational state of the deployed deployment.
 
         Raises:
-            PipelineEndpointDeploymentError: If the deployment fails.
+            DeploymentProvisionError: If the deployment fails.
             DeployerError: If an unexpected error occurs.
         """
-        deployment = endpoint.pipeline_deployment
-        assert deployment, "Pipeline deployment not found"
+        snapshot = deployment.snapshot
+        assert snapshot, "Pipeline snapshot not found"
 
         environment = environment or {}
         secrets = secrets or {}
 
         settings = cast(
             GCPDeployerSettings,
-            self.get_settings(deployment),
+            self.get_settings(snapshot),
         )
 
-        resource_settings = deployment.pipeline_configuration.resource_settings
+        resource_settings = snapshot.pipeline_configuration.resource_settings
 
         # Convert ResourceSettings to GCP Cloud Run format with fallbacks
         cpu, memory = self._convert_resource_settings_to_gcp_format(
@@ -1104,18 +1104,18 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         project_id = self.project_id
 
         service_name = self._get_service_name(
-            endpoint.name, endpoint.id, settings.service_name_prefix
+            deployment.name, deployment.id, settings.service_name_prefix
         )
 
         service_path = self._get_service_path(
             service_name, project_id, settings.location
         )
 
-        # If a previous deployment of the same endpoint exists but with
+        # If a previous deployment of the same deployment exists but with
         # a different service name, location, or project, we need to clean up
         # the old service.
-        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        existing_metadata = CloudRunDeploymentMetadata.from_deployment(
+            deployment
         )
 
         if (
@@ -1130,34 +1130,34 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
             if existing_service_path != service_path:
                 try:
-                    self.do_deprovision_pipeline_endpoint(endpoint, timeout)
-                except PipelineEndpointNotFoundError:
+                    self.do_deprovision_deployment(deployment, timeout)
+                except DeploymentNotFoundError:
                     logger.warning(
-                        f"Pipeline endpoint '{endpoint.name}' not found, "
+                        f"Deployment '{deployment.name}' not found, "
                         f"skipping deprovision of existing Cloud Run service"
                     )
                 except DeployerError as e:
                     logger.warning(
                         f"Failed to deprovision existing Cloud Run service for "
-                        f"pipeline endpoint '{endpoint.name}': {e}"
+                        f"deployment '{deployment.name}': {e}"
                     )
 
         # Get the container image
-        image = self.get_image(deployment)
+        image = self.get_image(snapshot)
 
         # Prepare entrypoint and arguments
         entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
         arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                DEPLOYMENT_ID_OPTION: deployment.id,
+                SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
-                AUTH_KEY_OPTION: endpoint.auth_key,
+                AUTH_KEY_OPTION: deployment.auth_key,
             }
         )
 
         # Prepare environment variables with proper secret handling
         env_vars, active_secrets = self._prepare_environment_variables(
-            endpoint, environment, secrets, settings, project_id
+            deployment, environment, secrets, settings, project_id
         )
 
         # Prepare resource requirements
@@ -1238,8 +1238,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         service = run_v2.Service(
             labels={
                 **settings.labels,
-                "zenml-pipeline-endpoint-uuid": str(endpoint.id),
-                "zenml-pipeline-endpoint-name": endpoint.name,
+                "zenml-deployment-uuid": str(deployment.id),
+                "zenml-deployment-name": deployment.name,
                 "zenml-deployer-name": str(self.name),
                 "zenml-deployer-id": str(self.id),
                 "managed-by": "zenml",
@@ -1266,14 +1266,14 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 service.name = service_path
                 logger.debug(
                     f"Updating existing Cloud Run service for pipeline "
-                    f"endpoint '{endpoint.name}'"
+                    f"deployment '{deployment.name}'"
                 )
                 self.cloud_run_client.update_service(service=service)
             else:
                 # Create new service - name should NOT be set, use service_id instead
                 logger.debug(
-                    f"Creating new Cloud Run service for pipeline endpoint "
-                    f"'{endpoint.name}'"
+                    f"Creating new Cloud Run service for deployment "
+                    f"'{deployment.name}'"
                 )
                 parent = f"projects/{project_id}/locations/{settings.location}"
                 self.cloud_run_client.create_service(
@@ -1287,52 +1287,52 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
 
         except google_exceptions.GoogleAPICallError as e:
-            raise PipelineEndpointDeploymentError(
-                f"Failed to deploy Cloud Run service for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+            raise DeploymentProvisionError(
+                f"Failed to deploy Cloud Run service for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deploying pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Unexpected error while deploying deployment "
+                f"'{deployment.name}': {e}"
             )
 
-    def do_get_pipeline_endpoint(
+    def do_get_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
-    ) -> PipelineEndpointOperationalState:
-        """Get information about a Cloud Run pipeline endpoint.
+        deployment: DeploymentResponse,
+    ) -> DeploymentOperationalState:
+        """Get information about a Cloud Run deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get information about.
+            deployment: The deployment to get information about.
 
         Returns:
-            The operational state of the pipeline endpoint.
+            The operational state of the deployment.
 
         Raises:
-            PipelineEndpointNotFoundError: If the endpoint is not found.
+            DeploymentNotFoundError: If the deployment is not found.
             RuntimeError: If the project ID or location is not found in the
-                endpoint metadata.
+                deployment metadata.
         """
-        service = self._get_cloud_run_service(endpoint)
+        service = self._get_cloud_run_service(deployment)
 
         if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"Cloud Run service for pipeline endpoint '{endpoint.name}' "
+            raise DeploymentNotFoundError(
+                f"Cloud Run service for deployment '{deployment.name}' "
                 "not found"
             )
 
-        existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-            endpoint
+        existing_metadata = CloudRunDeploymentMetadata.from_deployment(
+            deployment
         )
 
         if not existing_metadata.project_id or not existing_metadata.location:
             raise RuntimeError(
-                f"Project ID or location not found in endpoint metadata for "
-                f"pipeline endpoint '{endpoint.name}'"
+                f"Project ID or location not found in deployment metadata for "
+                f"deployment '{deployment.name}'"
             )
 
-        existing_secrets = self._get_secrets(endpoint)
+        existing_secrets = self._get_secrets(deployment)
 
         return self._get_service_operational_state(
             service,
@@ -1341,25 +1341,25 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             existing_secrets,
         )
 
-    def do_get_pipeline_endpoint_logs(
+    def do_get_deployment_logs(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get the logs of a Cloud Run pipeline endpoint.
+        """Get the logs of a Cloud Run deployment.
 
         Args:
-            endpoint: The pipeline endpoint to get the logs of.
+            deployment: The deployment to get the logs of.
             follow: If True, stream logs as they are written.
             tail: Only retrieve the last NUM lines of log output.
 
         Yields:
-            The logs of the pipeline endpoint.
+            The logs of the deployment.
 
         Raises:
             NotImplementedError: If log following is requested.
-            PipelineLogsNotFoundError: If the logs are not found.
+            DeploymentLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.
         """
         # If follow is requested, we would need to implement streaming
@@ -1369,23 +1369,25 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
 
         try:
-            existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-                endpoint
+            existing_metadata = CloudRunDeploymentMetadata.from_deployment(
+                deployment
             )
             service_name = existing_metadata.service_name
             if not service_name:
-                assert endpoint.pipeline_deployment, (
-                    "Pipeline deployment not set for endpoint"
+                assert deployment.snapshot, (
+                    "Pipeline snapshot not set for deployment"
                 )
                 settings = cast(
                     GCPDeployerSettings,
-                    self.get_settings(endpoint.pipeline_deployment),
+                    self.get_settings(deployment.snapshot),
                 )
                 # We rely on the running service name, if a service is currently
                 # active. If not, we fall back to the service name generated
                 # from the current configuration.
                 service_name = self._get_service_name(
-                    endpoint.name, endpoint.id, settings.service_name_prefix
+                    deployment.name,
+                    deployment.id,
+                    settings.service_name_prefix,
                 )
 
             # Build the filter for Cloud Run logs
@@ -1415,48 +1417,48 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 yield log_line
 
         except google_exceptions.GoogleAPICallError as e:
-            raise PipelineLogsNotFoundError(
-                f"Failed to retrieve logs for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+            raise DeploymentLogsNotFoundError(
+                f"Failed to retrieve logs for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while retrieving logs for pipeline endpoint "
-                f"'{endpoint.name}': {e}"
+                f"Unexpected error while retrieving logs for deployment "
+                f"'{deployment.name}': {e}"
             )
 
-    def do_deprovision_pipeline_endpoint(
+    def do_deprovision_deployment(
         self,
-        endpoint: PipelineEndpointResponse,
+        deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[PipelineEndpointOperationalState]:
-        """Deprovision a Cloud Run pipeline endpoint.
+    ) -> Optional[DeploymentOperationalState]:
+        """Deprovision a Cloud Run deployment.
 
         Args:
-            endpoint: The pipeline endpoint to deprovision.
+            deployment: The deployment to deprovision.
             timeout: The maximum time in seconds to wait for the pipeline
-                endpoint to be deprovisioned.
+                deployment to be deprovisioned.
 
         Returns:
-            The operational state of the deprovisioned endpoint, or None if
+            The operational state of the deprovisioned deployment, or None if
             deletion is completed immediately.
 
         Raises:
-            PipelineEndpointNotFoundError: If the endpoint is not found.
-            PipelineEndpointDeprovisionError: If the deprovision fails.
+            DeploymentNotFoundError: If the deployment is not found.
+            DeploymentDeprovisionError: If the deprovision fails.
             DeployerError: If an unexpected error occurs.
             RuntimeError: If the service name, project ID or location is not
-                found in the endpoint metadata.
+                found in the deployment metadata.
         """
-        service = self._get_cloud_run_service(endpoint)
+        service = self._get_cloud_run_service(deployment)
         if service is None:
-            raise PipelineEndpointNotFoundError(
-                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
+            raise DeploymentNotFoundError(
+                f"Cloud Run service for deployment '{deployment.name}' not found"
             )
 
         try:
-            existing_metadata = CloudRunPipelineEndpointMetadata.from_endpoint(
-                endpoint
+            existing_metadata = CloudRunDeploymentMetadata.from_deployment(
+                deployment
             )
             if (
                 not existing_metadata.service_name
@@ -1465,7 +1467,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             ):
                 raise RuntimeError(
                     f"Service name, project ID or location not found in "
-                    f"endpoint metadata for pipeline endpoint '{endpoint.name}'"
+                    f"deployment metadata for deployment '{deployment.name}'"
                 )
 
             service_path = self._get_service_path(
@@ -1475,7 +1477,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
 
             logger.debug(
-                f"Deleting Cloud Run service for pipeline endpoint '{endpoint.name}'"
+                f"Deleting Cloud Run service for deployment '{deployment.name}'"
             )
 
             # Delete the service
@@ -1485,20 +1487,20 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             operation.result(timeout=300)  # 5 minutes timeout
 
             # Clean up associated secrets
-            self._cleanup_endpoint_secrets(endpoint)
+            self._cleanup_deployment_secrets(deployment)
 
             # Return None to indicate immediate deletion
             return None
 
         except google_exceptions.NotFound:
-            raise PipelineEndpointNotFoundError(
-                f"Cloud Run service for pipeline endpoint '{endpoint.name}' not found"
+            raise DeploymentNotFoundError(
+                f"Cloud Run service for deployment '{deployment.name}' not found"
             )
         except google_exceptions.GoogleAPICallError as e:
-            raise PipelineEndpointDeprovisionError(
-                f"Failed to delete Cloud Run service for pipeline endpoint '{endpoint.name}': {e}"
+            raise DeploymentDeprovisionError(
+                f"Failed to delete Cloud Run service for deployment '{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deleting pipeline endpoint '{endpoint.name}': {e}"
+                f"Unexpected error while deleting deployment '{deployment.name}': {e}"
             )
