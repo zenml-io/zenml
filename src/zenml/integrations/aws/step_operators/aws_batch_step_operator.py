@@ -415,16 +415,6 @@ class AWSBatchStepOperator(BaseStepOperator):
             RuntimeError: If the connector returns an object that is not a
                 `boto3.Session`.
         """
-        if not info.config.resource_settings.empty:
-            logger.warning(
-                "Specifying custom step resources is not supported for "
-                "the AWS Batch step operator. If you want to run this step "
-                "operator on specific resources, you can do so by configuring "
-                "a different instance type like this: "
-                "`zenml step-operator update %s "
-                "--instance_type=<INSTANCE_TYPE>`",
-                self.name,
-            )
 
         job_definition = self.generate_job_definition(info, entrypoint_command, environment)
 
