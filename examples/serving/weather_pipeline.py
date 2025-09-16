@@ -36,6 +36,7 @@ docker_settings = DockerSettings(
     environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
     prevent_build_reuse=True,
     python_package_installer=PythonPackageInstaller.UV,
+    parent_image="public.ecr.aws/f7g3v0f1/zenml:deployments"
 )
 
 
