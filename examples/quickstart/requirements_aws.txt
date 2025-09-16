@@ -1,4 +1,4 @@
-zenml[server]==0.85.0
+git+https://github.com/zenml-io/zenml.git@feature/served-pipelines-stable
 notebook
 pyarrow
 datasets<4.0.0

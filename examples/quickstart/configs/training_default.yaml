@@ -2,6 +2,7 @@
 settings:
   docker:
     requirements: requirements.txt
+    parent_image: public.ecr.aws/f7g3v0f1/zenml:deployments
     environment:
       WANDB_DISABLED: "true"
 
