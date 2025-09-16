@@ -12,7 +12,7 @@ to access serving parameters without tight coupling.
 import contextvars
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Optional
 
 from zenml.logger import get_logger
 from zenml.models import PipelineSnapshotResponse
@@ -92,7 +92,7 @@ def start(
 
     Args:
         request_id: The ID of the request.
-        deployment: The deployment to serve.
+        snapshot: The snapshot to serve.
         parameters: The parameters to serve.
         use_in_memory: Whether to use in-memory mode.
     """
@@ -121,31 +121,6 @@ def is_active() -> bool:
         True if the serving state is active in the current context, False otherwise.
     """
     return _get_context().active
-
-
-def get_step_parameters(
-    step_name: str, allowed_keys: Optional[Iterable[str]] = None
-) -> Dict[str, Any]:
-    """Get parameters for a step, optionally filtering by allowed keys.
-
-    This returns only the direct pipeline parameters for the request. When
-    ``allowed_keys`` is provided, the result is filtered to those keys.
-
-    Args:
-        step_name: The step (invocation id) to fetch parameters for.
-        allowed_keys: Optional iterable of keys to filter the parameters by.
-
-    Returns:
-        A dictionary of parameters for the step, filtered if requested.
-    """
-    state = _get_context()
-    if allowed_keys is not None:
-        allowed = set(allowed_keys)
-        return {
-            k: v for k, v in state.pipeline_parameters.items() if k in allowed
-        }
-    # No filtering requested: return a copy to avoid accidental mutation
-    return dict(state.pipeline_parameters)
 
 
 def record_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
@@ -208,18 +183,6 @@ def should_use_in_memory() -> bool:
         state = _get_context()
         return state.use_in_memory is True
     return False
-
-
-def get_use_in_memory() -> Optional[bool]:
-    """Get the in-memory mode setting for the current request.
-
-    Returns:
-        The in-memory mode setting, or None if no context is active.
-    """
-    if is_active():
-        state = _get_context()
-        return state.use_in_memory
-    return None
 
 
 def put_in_memory_data(uri: str, data: Any) -> None:

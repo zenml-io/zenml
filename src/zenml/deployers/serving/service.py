@@ -47,8 +47,12 @@ logger = get_logger(__name__)
 class PipelineServingService:
     """Clean, elegant pipeline serving service with zero memory leaks."""
 
-    def __init__(self, snapshot_id: Union[str, UUID]):
-        """Initialize service with minimal state."""
+    def __init__(self, snapshot_id: Union[str, UUID]) -> None:
+        """Initialize service with minimal state.
+
+        Args:
+            snapshot_id: The ID of the snapshot to serve.
+        """
         self.snapshot_id: Union[str, UUID] = snapshot_id
         self.snapshot: Optional[PipelineSnapshotResponse] = None
         self.pipeline_state: Optional[Any] = None
@@ -315,7 +319,7 @@ class PipelineServingService:
         use_in_memory: Optional[bool] = None,
     ) -> PipelineRunResponse:
         """Run the snapshot via the orchestrator and return the concrete run.
-        
+
         Args:
             resolved_params: Normalized pipeline parameters.
             use_in_memory: Whether runtime should capture in-memory outputs.

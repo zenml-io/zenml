@@ -266,7 +266,7 @@ class TestServingRuntimeContext:
             use_in_memory=True,
         )
 
-        assert runtime.get_use_in_memory() is True
+        assert runtime.should_use_in_memory() is True
         assert runtime.should_use_in_memory() is True
 
         runtime.stop()
@@ -279,7 +279,6 @@ class TestServingRuntimeContext:
             use_in_memory=False,
         )
 
-        assert runtime.get_use_in_memory() is False
         assert runtime.should_use_in_memory() is False
 
         runtime.stop()
@@ -291,12 +290,10 @@ class TestServingRuntimeContext:
             parameters={},
         )
 
-        assert runtime.get_use_in_memory() is None
         assert runtime.should_use_in_memory() is False
 
     def test_use_in_memory_inactive_context(self):
         """Test use_in_memory functions when context is inactive."""
-        assert runtime.get_use_in_memory() is None
         assert runtime.should_use_in_memory() is False
 
     def test_context_reset_clears_all_data(self):
@@ -320,7 +317,7 @@ class TestServingRuntimeContext:
         assert runtime.get_parameter_override("city") == "Berlin"
         assert runtime.get_outputs() != {}
         assert runtime.has_in_memory_data("memory://artifact/1")
-        assert runtime.get_use_in_memory() is True
+        assert runtime.should_use_in_memory() is True
 
         # Stop context (triggers reset)
         runtime.stop()
@@ -338,7 +335,7 @@ class TestServingRuntimeContext:
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
         assert not runtime.has_in_memory_data("memory://artifact/1")
-        assert runtime.get_use_in_memory() is None
+        assert runtime.should_use_in_memory() is None
 
 
 class TestRuntimeOutputProcessing:
