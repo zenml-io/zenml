@@ -343,7 +343,8 @@ def create_pipeline_build(
 
     for build_config in required_builds:
         combined_key = PipelineBuildBase.get_image_key(
-            component_key=build_config.key, step=build_config.step_name
+            component_key=build_config.key,
+            invocation_id=build_config.invocation_id,
         )
         checksum = build_config.compute_settings_checksum(
             stack=stack, code_repository=code_repository
@@ -375,8 +376,8 @@ def create_pipeline_build(
             requirements = images[item_key].requirements
         else:
             tag = snapshot.pipeline_configuration.name
-            if build_config.step_name:
-                tag += f"-{build_config.step_name}"
+            if build_config.invocation_id:
+                tag += f"-{build_config.invocation_id}"
             tag += f"-{build_config.key}"
             tag = docker_utils.sanitize_tag(tag)
 
@@ -464,7 +465,7 @@ def compute_build_checksum(
 
     for item in items:
         key = PipelineBuildBase.get_image_key(
-            component_key=item.key, step=item.step_name
+            component_key=item.key, invocation_id=item.invocation_id
         )
 
         settings_checksum = item.compute_settings_checksum(
@@ -627,7 +628,7 @@ def verify_custom_build(
             try:
                 image = build.get_image(
                     component_key=build_config.key,
-                    step=build_config.step_name,
+                    invocation_id=build_config.invocation_id,
                 )
             except KeyError:
                 raise RuntimeError(
@@ -638,7 +639,8 @@ def verify_custom_build(
             if build_config.compute_settings_checksum(
                 stack=stack, code_repository=code_repository
             ) != build.get_settings_checksum(
-                component_key=build_config.key, step=build_config.step_name
+                component_key=build_config.key,
+                invocation_id=build_config.invocation_id,
             ):
                 logger.warning(
                     "The Docker settings used to build the image `%s` are "

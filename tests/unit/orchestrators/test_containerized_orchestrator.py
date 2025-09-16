@@ -80,7 +80,7 @@ def test_builds_with_no_docker_settings():
     assert len(builds) == 1
     build = builds[0]
     assert build.key == "orchestrator"
-    assert build.step_name is None
+    assert build.invocation_id is None
     assert build.entrypoint is None
     assert build.extra_files == {}
     assert build.settings == DockerSettings()
@@ -110,12 +110,12 @@ def test_builds_with_custom_docker_settings_for_some_steps():
     assert len(builds) == 2
     step_1_build = builds[0]
     assert step_1_build.key == "orchestrator"
-    assert step_1_build.step_name == "step_1"
+    assert step_1_build.invocation_id == "step_1"
     assert step_1_build.settings == custom_step_1_settings
 
     pipeline_build = builds[1]
     assert pipeline_build.key == "orchestrator"
-    assert pipeline_build.step_name is None
+    assert pipeline_build.invocation_id is None
     assert pipeline_build.settings == DockerSettings()
 
 
@@ -148,12 +148,12 @@ def test_builds_with_custom_docker_settings_for_all_steps():
     assert len(builds) == 2
     step_1_build = builds[0]
     assert step_1_build.key == "orchestrator"
-    assert step_1_build.step_name == "step_1"
+    assert step_1_build.invocation_id == "step_1"
     assert step_1_build.settings == custom_step_1_settings
 
     step_2_build = builds[1]
     assert step_2_build.key == "orchestrator"
-    assert step_2_build.step_name == "step_2"
+    assert step_2_build.invocation_id == "step_2"
     assert step_2_build.settings == custom_step_2_settings
 
 

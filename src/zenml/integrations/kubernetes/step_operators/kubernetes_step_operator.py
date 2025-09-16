@@ -133,7 +133,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 build = BuildConfiguration(
                     key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
-                    step_name=step_name,
+                    invocation_id=step_name,
                 )
                 builds.append(build)
 

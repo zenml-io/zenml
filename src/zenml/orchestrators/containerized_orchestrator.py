@@ -50,7 +50,8 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
             )
 
         return snapshot.build.get_image(
-            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=invocation_id
+            component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+            invocation_id=invocation_id,
         )
 
     def should_build_pipeline_image(
@@ -89,7 +90,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 build = BuildConfiguration(
                     key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
                     settings=step_settings,
-                    step_name=name,
+                    invocation_id=name,
                 )
                 builds.append(build)
             elif not included_pipeline_build:

@@ -286,7 +286,7 @@ def seldon_custom_model_deployer_step(
         )
 
     image_name = pipeline_run.build.get_image(
-        component_key=SELDON_DOCKER_IMAGE_KEY, step=step_name
+        component_key=SELDON_DOCKER_IMAGE_KEY, invocation_id=step_name
     )
 
     # copy the model files to new specific directory for the deployment

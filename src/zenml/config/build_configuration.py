@@ -36,14 +36,15 @@ class BuildConfiguration(BaseModel):
     Attributes:
         key: The key to store the build.
         settings: Settings for the build.
-        step_name: Name of the step for which this image will be built.
+        invocation_id: Invocation ID of the step for which this image will be
+            built.
         entrypoint: Optional entrypoint for the image.
         extra_files: Extra files to include in the Docker image.
     """
 
     key: str
     settings: DockerSettings
-    step_name: Optional[str] = None
+    invocation_id: Optional[str] = None
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
 

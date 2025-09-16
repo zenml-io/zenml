@@ -347,28 +347,28 @@ class Compiler:
                 f"{valid_placeholder_names} are allowed in run names."
             )
 
-    def _verify_upstream_steps(
+    def _verify_upstream_invocations(
         self, invocation: "StepInvocation", pipeline: "Pipeline"
     ) -> None:
-        """Verifies the upstream steps for a step invocation.
+        """Verifies the upstream invocations for a step invocation.
 
         Args:
             invocation: The step invocation for which to verify the upstream
-                steps.
+                invocations.
             pipeline: The parent pipeline of the invocation.
 
         Raises:
-            RuntimeError: If an upstream step is missing.
+            RuntimeError: If an upstream invocation is missing.
         """
         available_steps = set(pipeline.invocations)
-        invalid_upstream_steps = (
+        invalid_upstream_invocations = (
             invocation.upstream_invocations - available_steps
         )
 
-        if invalid_upstream_steps:
+        if invalid_upstream_invocations:
             raise RuntimeError(
-                f"Invalid upstream steps: {invalid_upstream_steps}. Available "
-                f"steps in this pipeline: {available_steps}."
+                f"Invalid upstream steps: {invalid_upstream_invocations}. "
+                f"Available steps in this pipeline: {available_steps}."
             )
 
     def _filter_and_validate_settings(
@@ -543,7 +543,9 @@ class Compiler:
         # Sort step names using topological sort
         dag: Dict[str, List[str]] = {}
         for name, step in pipeline.invocations.items():
-            self._verify_upstream_steps(invocation=step, pipeline=pipeline)
+            self._verify_upstream_invocations(
+                invocation=step, pipeline=pipeline
+            )
             dag[name] = list(step.upstream_invocations)
 
         reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
