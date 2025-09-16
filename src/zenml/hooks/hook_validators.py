@@ -521,6 +521,10 @@ def load_and_run_hook(
 
     Returns:
         The return value of the hook function.
+
+    Raises:
+        Exception: If the hook cannot be loaded or executed and
+            `raise_on_error` is set to True.
     """
     try:
         hook = source_utils.load(hook_source)

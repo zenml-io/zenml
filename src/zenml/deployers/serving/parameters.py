@@ -54,6 +54,7 @@ def build_params_model_from_deployment(
 
     Raises:
         RuntimeError: If the model cannot be constructed and `strict` is True.
+        Exception: If loading the pipeline class fails when `strict` is True.
     """
     if not deployment.pipeline_spec or not deployment.pipeline_spec.source:
         msg = (
@@ -108,6 +109,7 @@ def validate_and_normalize_parameters(
 
     Raises:
         ValueError: If validation fails against the constructed model.
+        RuntimeError: If the parameters model cannot be constructed in strict mode.
     """
     defaults = (
         (deployment.pipeline_spec.parameters or {})

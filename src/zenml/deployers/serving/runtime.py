@@ -35,6 +35,7 @@ class _ServingState:
     _in_memory_data: Dict[str, Any] = field(default_factory=dict)
 
     def reset(self) -> None:
+        """Reset the serving state."""
         self.active = False
         self.request_id = None
         self.deployment_id = None
@@ -67,7 +68,11 @@ _serving_context: contextvars.ContextVar[_ServingState] = (
 
 
 def _get_context() -> _ServingState:
-    """Get the current serving context state."""
+    """Get the current serving context state.
+
+    Returns:
+        The current serving context state.
+    """
     return _serving_context.get()
 
 
@@ -77,7 +82,14 @@ def start(
     parameters: Dict[str, Any],
     use_in_memory: Optional[bool] = None,
 ) -> None:
-    """Initialize serving state for the current request context."""
+    """Initialize serving state for the current request context.
+
+    Args:
+        request_id: The ID of the request.
+        deployment: The deployment to serve.
+        parameters: The parameters to serve.
+        use_in_memory: Whether to use in-memory mode.
+    """
     state = _ServingState()
     state.active = True
     state.request_id = request_id
@@ -97,7 +109,11 @@ def stop() -> None:
 
 
 def is_active() -> bool:
-    """Return whether serving state is active in the current context."""
+    """Return whether serving state is active in the current context.
+
+    Returns:
+        True if the serving state is active in the current context, False otherwise.
+    """
     return _get_context().active
 
 
@@ -274,7 +290,16 @@ def _process_runtime_outputs(
     enforce_size_limits: bool,
     max_output_size_mb: int,
 ) -> Dict[str, Any]:
-    """Process in-memory outputs with optional size limits."""
+    """Process in-memory outputs with optional size limits.
+
+    Args:
+        runtime_outputs: The in-memory outputs to process.
+        enforce_size_limits: Whether to enforce size limits.
+        max_output_size_mb: The maximum output size in MB.
+
+    Returns:
+        The processed outputs.
+    """
     return {
         f"{step_name}.{output_name}": _serialize_output(
             value, enforce_size_limits, max_output_size_mb
@@ -287,7 +312,16 @@ def _process_runtime_outputs(
 def _serialize_output(
     value: Any, enforce_size_limits: bool, max_output_size_mb: int
 ) -> Any:
-    """Serialize a single output value with error handling."""
+    """Serialize a single output value with error handling.
+
+    Args:
+        value: The value to serialize.
+        enforce_size_limits: Whether to enforce size limits.
+        max_output_size_mb: The maximum output size in MB.
+
+    Returns:
+        The serialized value.
+    """
     try:
         serialized = _make_json_safe(value)
 
@@ -351,7 +385,14 @@ def _process_artifact_outputs(run: PipelineRunResponse) -> Dict[str, Any]:
 
 
 def _make_json_safe(value: Any) -> Any:
-    """Make value JSON-serializable using ZenML's encoder."""
+    """Make value JSON-serializable using ZenML's encoder.
+
+    Args:
+        value: The value to serialize.
+
+    Returns:
+        The serialized value.
+    """
     try:
         # Test serialization
         json.dumps(value, default=pydantic_encoder)

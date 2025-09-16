@@ -45,7 +45,18 @@ _service: Optional[PipelineServingService] = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage application lifespan."""
+    """Manage application lifespan.
+
+    Args:
+        app: The FastAPI application instance being served.
+
+    Yields:
+        None: Control is handed back to FastAPI once initialization completes.
+
+    Raises:
+        ValueError: If no deployment identifier is configured.
+        Exception: If initialization or cleanup fails.
+    """
     global service_start_time
 
     # Check for test mode
@@ -128,7 +139,14 @@ security = HTTPBearer(
 
 
 def _build_invoke_router(service: PipelineServingService) -> APIRouter:
-    """Create an idiomatic APIRouter that exposes /invoke."""
+    """Create an idiomatic APIRouter that exposes /invoke.
+
+    Args:
+        service: The serving service used to execute pipeline runs.
+
+    Returns:
+        A router exposing the `/invoke` endpoint wired to the service.
+    """
     assert service.params_model is not None
     router = APIRouter()
 
@@ -168,6 +186,10 @@ def _install_runtime_openapi(
     This function decorates `fastapi_app.openapi` to include custom schemas
     based on the service-provided request/response schemas. It is a best-effort
     enhancement and will not raise if schemas are unavailable.
+
+    Args:
+        fastapi_app: The FastAPI application whose OpenAPI schema is updated.
+        service: The serving service providing schema information.
     """
     original_openapi = fastapi_app.openapi
 
@@ -225,7 +247,11 @@ def _install_runtime_openapi(
 
 
 def get_pipeline_service() -> PipelineServingService:
-    """Get the pipeline serving service."""
+    """Get the pipeline serving service.
+
+    Returns:
+        The initialized pipeline serving service instance.
+    """
     assert _service is not None
     return _service
 
@@ -285,7 +311,14 @@ app.add_middleware(
 async def root(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> str:
-    """Root endpoint with service information."""
+    """Root endpoint with service information.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        An HTML page describing the serving deployment.
+    """
     info = service.get_service_info()
 
     html_content = f"""
@@ -321,7 +354,17 @@ async def root(
 async def health_check(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
-    """Service health check endpoint."""
+    """Service health check endpoint.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        A dictionary describing the health of the service.
+
+    Raises:
+        HTTPException: If the service is not healthy.
+    """
     if not service.is_healthy():
         raise HTTPException(503, "Service is unhealthy")
 
@@ -341,7 +384,14 @@ async def health_check(
 async def pipeline_info(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
-    """Get detailed pipeline information and parameter schema."""
+    """Get detailed pipeline information and parameter schema.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        A dictionary containing pipeline metadata and schema information.
+    """
     info = service.get_service_info()
 
     return {
@@ -361,7 +411,14 @@ async def pipeline_info(
 async def execution_metrics(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
-    """Get pipeline execution metrics and statistics."""
+    """Get pipeline execution metrics and statistics.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        A dictionary with execution metrics captured by the service.
+    """
     metrics = service.get_execution_metrics()
     return metrics
 
@@ -370,7 +427,14 @@ async def execution_metrics(
 async def get_schemas(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
-    """Expose current request/response schemas for verification/debugging."""
+    """Expose current request/response schemas for verification/debugging.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        A dictionary containing request and response schema definitions.
+    """
     return {
         "request_schema": service.request_schema,
         "response_schema": service.response_schema,
@@ -381,7 +445,14 @@ async def get_schemas(
 async def service_status(
     service: PipelineServingService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
-    """Get detailed service status information."""
+    """Get detailed service status information.
+
+    Args:
+        service: The pipeline serving service dependency.
+
+    Returns:
+        A dictionary containing status and configuration information.
+    """
     info = service.get_service_info()
 
     return {

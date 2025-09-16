@@ -48,7 +48,11 @@ class PipelineServingService:
     """Clean, elegant pipeline serving service with zero memory leaks."""
 
     def __init__(self, deployment_id: Union[str, UUID]):
-        """Initialize service with minimal state."""
+        """Initialize service with minimal state.
+
+        Args:
+            deployment_id: The ID of the deployment to serve.
+        """
         self.deployment_id: Union[str, UUID] = deployment_id
         self.deployment: Optional[PipelineDeploymentResponse] = None
         self.pipeline_state: Optional[Any] = None
@@ -78,7 +82,11 @@ class PipelineServingService:
         return self._params_model
 
     def _get_max_output_size_bytes(self) -> int:
-        """Get max output size in bytes with bounds checking."""
+        """Get max output size in bytes with bounds checking.
+
+        Returns:
+            The max output size in bytes.
+        """
         try:
             size_mb = int(
                 os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
@@ -93,13 +101,21 @@ class PipelineServingService:
             return 1024 * 1024
 
     def _get_client(self) -> Any:
-        """Return a cached ZenML client instance."""
+        """Return a cached ZenML client instance.
+
+        Returns:
+            The cached ZenML client instance.
+        """
         if self._client is None:
             self._client = client_mod.Client()
         return self._client
 
     async def initialize(self) -> None:
-        """Initialize service with proper error handling."""
+        """Initialize service with proper error handling.
+
+        Raises:
+            Exception: If the service cannot be initialized.
+        """
         try:
             logger.info("Loading pipeline deployment configuration...")
 
@@ -149,7 +165,11 @@ class PipelineServingService:
             raise
 
     async def cleanup(self) -> None:
-        """Execute cleanup hook if present."""
+        """Execute cleanup hook if present.
+
+        Raises:
+            Exception: If the cleanup hook cannot be executed.
+        """
         cleanup_hook_source = (
             self.deployment
             and self.deployment.pipeline_configuration.cleanup_hook_source
@@ -172,7 +192,20 @@ class PipelineServingService:
         timeout: Optional[int] = 300,
         use_in_memory: Optional[bool] = None,
     ) -> Dict[str, Any]:
-        """Execute pipeline with clean error handling and resource management."""
+        """Execute the deployment with the given parameters.
+
+        Args:
+            parameters: Runtime parameters supplied by the caller.
+            run_name: Optional name override for the run.
+            timeout: Optional timeout for the run (currently unused).
+            use_in_memory: Whether to keep outputs in memory for fast access.
+
+        Returns:
+            A dictionary containing details about the execution result.
+
+        Raises:
+            RuntimeError: If the service has not been initialized.
+        """
         # Unused parameters for future implementation
         _ = run_name, timeout
 
@@ -208,7 +241,11 @@ class PipelineServingService:
             return self._build_error_response(e=e, start_time=start_time)
 
     def get_service_info(self) -> Dict[str, Any]:
-        """Get service information."""
+        """Return service metadata for informational endpoints.
+
+        Returns:
+            A dictionary containing deployment and execution information.
+        """
         if not self.deployment:
             return {"error": "Service not initialized"}
 
@@ -225,7 +262,11 @@ class PipelineServingService:
         }
 
     def get_execution_metrics(self) -> Dict[str, Any]:
-        """Get execution metrics."""
+        """Return lightweight execution metrics for observability.
+
+        Returns:
+            A dictionary with aggregated execution metrics.
+        """
         return {
             "total_executions": self.total_executions,
             "last_execution_time": (
@@ -236,7 +277,11 @@ class PipelineServingService:
         }
 
     def is_healthy(self) -> bool:
-        """Check service health."""
+        """Check whether the service has been initialized successfully.
+
+        Returns:
+            True if the deployment has been loaded, otherwise False.
+        """
         return self.deployment is not None
 
     # Private helper methods
@@ -246,7 +291,15 @@ class PipelineServingService:
         run: PipelineRunResponse,
         runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
-        """Map pipeline outputs using centralized runtime processing."""
+        """Map pipeline outputs using centralized runtime processing.
+
+        Args:
+            run: The resolved pipeline run to inspect artifacts for.
+            runtime_outputs: Optional in-memory outputs captured from runtime.
+
+        Returns:
+            A dictionary mapping output names to serialized payloads.
+        """
         from zenml.deployers.serving import runtime
 
         if runtime_outputs is None and runtime.is_active():
@@ -265,7 +318,18 @@ class PipelineServingService:
         resolved_params: Dict[str, Any],
         use_in_memory: Optional[bool] = None,
     ) -> PipelineRunResponse:
-        """Run the deployment via the orchestrator and return the concrete run."""
+        """Run the deployment via the orchestrator and return the concrete run.
+
+        Args:
+            resolved_params: Normalized pipeline parameters.
+            use_in_memory: Whether runtime should capture in-memory outputs.
+
+        Returns:
+            The fully materialized pipeline run response.
+
+        Raises:
+            RuntimeError: If the orchestrator has not been initialized.
+        """
         client = self._get_client()
         active_stack: Stack = client.active_stack
 
@@ -317,7 +381,14 @@ class PipelineServingService:
         return run
 
     def _build_params_model(self) -> Any:
-        """Build parameter model with proper error handling."""
+        """Build the pipeline parameters model from the deployment.
+
+        Returns:
+            A parameters model derived from the deployment configuration.
+
+        Raises:
+            Exception: If the model cannot be constructed.
+        """
         try:
             from zenml.deployers.serving.parameters import (
                 build_params_model_from_deployment,
@@ -332,7 +403,11 @@ class PipelineServingService:
             raise
 
     async def _execute_init_hook(self) -> None:
-        """Execute init hook if present."""
+        """Execute init hook if present.
+
+        Raises:
+            Exception: If executing the hook fails.
+        """
         init_hook_source = (
             self.deployment
             and self.deployment.pipeline_configuration.init_hook_source
@@ -356,7 +431,11 @@ class PipelineServingService:
             raise
 
     def _log_initialization_success(self) -> None:
-        """Log successful initialization."""
+        """Log successful initialization.
+
+        Raises:
+            AssertionError: If the deployment is not set.
+        """
         assert self.deployment is not None
 
         pipeline_name = self.deployment.pipeline_configuration.name
@@ -373,7 +452,14 @@ class PipelineServingService:
     def _resolve_parameters(
         self, request_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Validate and normalize parameters, preserving complex objects."""
+        """Validate and normalize parameters, preserving complex objects.
+
+        Args:
+            request_params: The parameters to validate and normalize.
+
+        Returns:
+            The validated and normalized parameters.
+        """
         # If available, validate against the parameters model
         if self._params_model is None:
             try:
@@ -393,7 +479,14 @@ class PipelineServingService:
         return dict(request_params or {})
 
     def _serialize_json_safe(self, value: Any) -> Any:
-        """Delegate to the centralized runtime serializer."""
+        """Delegate to the centralized runtime serializer.
+
+        Args:
+            value: The value to serialize.
+
+        Returns:
+            The serialized value.
+        """
         from zenml.deployers.serving import runtime as serving_runtime
 
         return serving_runtime._make_json_safe(value)
@@ -405,7 +498,17 @@ class PipelineServingService:
         resolved_params: Dict[str, Any],
         run: PipelineRunResponse,
     ) -> Dict[str, Any]:
-        """Build success response with execution tracking."""
+        """Build success response with execution tracking.
+
+        Args:
+            mapped_outputs: The mapped outputs.
+            start_time: The start time of the execution.
+            resolved_params: The resolved parameters.
+            run: The pipeline run that was executed.
+
+        Returns:
+            A dictionary describing the successful execution.
+        """
         execution_time = time.time() - start_time
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
@@ -448,7 +551,11 @@ class PipelineServingService:
 
     @property
     def request_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for pipeline parameters if available."""
+        """Return the JSON schema for pipeline parameters if available.
+
+        Returns:
+            The JSON schema for pipeline parameters if available.
+        """
         try:
             if self.deployment and self.deployment.pipeline_spec:
                 return self.deployment.pipeline_spec.parameters_schema
@@ -458,7 +565,11 @@ class PipelineServingService:
 
     @property
     def response_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for the serving response if available."""
+        """Return the JSON schema for the serving response if available.
+
+        Returns:
+            The JSON schema for the serving response if available.
+        """
         try:
             if self.deployment and self.deployment.pipeline_spec:
                 return self.deployment.pipeline_spec.response_schema

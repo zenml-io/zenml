@@ -138,6 +138,7 @@ class StepRunner:
 
         Raises:
             BaseException: A general exception if the step fails.
+            Exception: If validating outputs fails.
         """
         # Store step_run_info for effective config access
         self._step_run_info = step_run_info

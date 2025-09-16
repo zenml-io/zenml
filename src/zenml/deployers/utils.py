@@ -41,10 +41,12 @@ def get_pipeline_endpoint_invocation_example(
 
     Args:
         endpoint: The pipeline endpoint to invoke.
-        project: The project ID of the pipeline endpoint to invoke.
 
     Returns:
         A dictionary containing the example invocation parameters.
+
+    Raises:
+        PipelineEndpointSchemaNotFoundError: If the pipeline endpoint has no deployment, pipeline spec, or parameters schema.
     """
     if not endpoint.pipeline_deployment:
         raise PipelineEndpointSchemaNotFoundError(

@@ -394,6 +394,9 @@ class Pipeline:
 
         Returns:
             The pipeline instance that this method was called on.
+
+        Raises:
+            ValueError: If init hook kwargs are provided without a valid hook.
         """
         failure_hook_source = None
         if on_failure:

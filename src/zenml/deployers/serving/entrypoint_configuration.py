@@ -66,9 +66,6 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Returns:
             List of command-line arguments
-
-        Raises:
-            ValueError: If required arguments are missing
         """
         # Get base arguments (deployment_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)
@@ -96,6 +93,9 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
 
         This method starts the FastAPI server with the configured parameters
         and the specified pipeline deployment.
+
+        Raises:
+            Exception: If the server fails to start.
         """
         import uvicorn
 
