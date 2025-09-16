@@ -262,7 +262,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 # configure the current container op to run after them
                 upstream_steps = [
                     f"{snapshot.id}_{upstream_step_name}"
-                    for upstream_step_name in step.spec.upstream_steps
+                    for upstream_step_name in step.spec.upstream_invocations
                 ]
 
                 docker_settings = step.config.docker_settings

@@ -113,7 +113,7 @@ def test_build_dag(clean_client):
 
     steps = {}
     for step_spec in snapshot.pipeline_spec.steps:
-        steps[step_spec.invocation_id] = step_spec.upstream_steps
+        steps[step_spec.invocation_id] = step_spec.upstream_invocations
 
     # Build the DAG using our function
     dag = build_dag(steps)
@@ -141,7 +141,7 @@ def test_find_all_downstream_steps(clean_client):
 
     steps = {}
     for step_spec in snapshot.pipeline_spec.steps:
-        steps[step_spec.invocation_id] = step_spec.upstream_steps
+        steps[step_spec.invocation_id] = step_spec.upstream_invocations
 
     # Build the DAG
     dag = build_dag(steps)

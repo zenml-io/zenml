@@ -538,7 +538,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     name=invocation_id,
                     depends_on=cast(
                         Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
+                        step.spec.upstream_invocations,
                     ),
                     inputs=training_inputs,
                     estimator=estimator,
@@ -559,7 +559,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     processor=processor,
                     depends_on=cast(
                         Optional[List[Union[str, Step, StepCollection]]],
-                        step.spec.upstream_steps,
+                        step.spec.upstream_invocations,
                     ),
                     inputs=processing_inputs,
                     outputs=outputs,

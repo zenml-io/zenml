@@ -588,7 +588,7 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                     step = snapshot.step_configurations[component_name]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
-                        for upstream_step_name in step.spec.upstream_steps
+                        for upstream_step_name in step.spec.upstream_invocations
                     ]
                     task = (
                         component()

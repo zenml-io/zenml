@@ -42,7 +42,7 @@ class StepInvocation:
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
         parameters: Dict[str, Any],
         default_parameters: Dict[str, Any],
-        upstream_steps: Set[str],
+        upstream_invocations: Set[str],
         pipeline: "Pipeline",
     ) -> None:
         """Initialize a step invocation.
@@ -57,7 +57,7 @@ class StepInvocation:
             client_lazy_loaders: The client lazy loaders for the invocation.
             parameters: The parameters for the invocation.
             default_parameters: The default parameters for the invocation.
-            upstream_steps: The upstream steps for the invocation.
+            upstream_invocations: The upstream invocations for the invocation.
             pipeline: The parent pipeline of the invocation.
         """
         self.id = id
@@ -68,14 +68,14 @@ class StepInvocation:
         self.client_lazy_loaders = client_lazy_loaders
         self.parameters = parameters
         self.default_parameters = default_parameters
-        self.upstream_steps = upstream_steps
+        self.upstream_invocations = upstream_invocations
         self.pipeline = pipeline
 
     def finalize(self, parameters_to_ignore: Set[str]) -> "StepConfiguration":
         """Finalizes a step invocation.
 
-        It will validate the upstream steps and run final configurations on the
-        step that is represented by the invocation.
+        It will validate the upstream invocations and run final configurations
+        on the step that is represented by the invocation.
 
         Args:
             parameters_to_ignore: Set of parameters that should not be applied

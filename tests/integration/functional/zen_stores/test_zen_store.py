@@ -5502,7 +5502,7 @@ class TestRunMetadata:
                                     module="acme.foo",
                                     type=SourceType.INTERNAL,
                                 ),
-                                upstream_steps=[],
+                                upstream_invocations=[],
                             ),
                             config=StepConfiguration(name=step_name),
                         )
@@ -5560,7 +5560,7 @@ class TestRunMetadata:
                                     module="acme.foo",
                                     type=SourceType.INTERNAL,
                                 ),
-                                upstream_steps=[],
+                                upstream_invocations=[],
                             ),
                             config=StepConfiguration(name=step_name),
                         )

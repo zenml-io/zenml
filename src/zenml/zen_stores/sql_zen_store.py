@@ -5617,7 +5617,7 @@ class SqlZenStore(BaseZenStore):
                 ]
 
             for step_name, step in steps.items():
-                upstream_steps = set(step.spec.upstream_steps)
+                upstream_steps = set(step.spec.upstream_invocations)
 
                 step_id = None
                 metadata: Dict[str, Any] = {}
@@ -9603,7 +9603,7 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-            for upstream_step in step_config.spec.upstream_steps:
+            for upstream_step in step_config.spec.upstream_invocations:
                 self._set_run_step_parent_step(
                     child_step_run=step_schema,
                     parent_step_name=upstream_step,

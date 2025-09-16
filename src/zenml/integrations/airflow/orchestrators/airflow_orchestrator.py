@@ -247,7 +247,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             task = dag_generator_values.task_configuration_class(
                 id=invocation_id,
                 zenml_step_name=invocation_id,
-                upstream_steps=step.spec.upstream_steps,
+                upstream_steps=step.spec.upstream_invocations,
                 docker_image=image,
                 command=command,
                 arguments=arguments,

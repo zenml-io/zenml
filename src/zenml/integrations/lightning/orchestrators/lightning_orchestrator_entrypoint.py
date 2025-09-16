@@ -88,7 +88,7 @@ def main() -> None:
     filename = f"{args.run_name}.tar.gz"
 
     pipeline_dag = {
-        step_name: step.spec.upstream_steps
+        step_name: step.spec.upstream_invocations
         for step_name, step in snapshot.step_configurations.items()
     }
     entrypoint_command = StepEntrypointConfiguration.get_entrypoint_command()

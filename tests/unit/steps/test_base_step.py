@@ -498,11 +498,11 @@ def test_upstream_step_computation():
 
     p.prepare()
 
-    assert p._invocations["upstream_test_step_1"].upstream_steps == {
+    assert p._invocations["upstream_test_step_1"].upstream_invocations == {
         "upstream_test_step_2"
     }
-    assert not p._invocations["upstream_test_step_2"].upstream_steps
-    assert p._invocations["upstream_test_step_3"].upstream_steps == {
+    assert not p._invocations["upstream_test_step_2"].upstream_invocations
+    assert p._invocations["upstream_test_step_3"].upstream_invocations == {
         "upstream_test_step_1",
         "upstream_test_step_2",
     }
@@ -518,8 +518,8 @@ def test_upstream_step_computation_from_step_artifact():
 
     p.prepare()
 
-    assert not p._invocations["upstream_test_step_1"].upstream_steps
-    assert p._invocations["upstream_test_step_2"].upstream_steps == {
+    assert not p._invocations["upstream_test_step_1"].upstream_invocations
+    assert p._invocations["upstream_test_step_2"].upstream_invocations == {
         "upstream_test_step_1",
     }
 

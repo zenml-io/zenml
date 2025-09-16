@@ -177,7 +177,9 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 continue
 
             if failed_upstream_steps := [
-                fs for fs in failed_steps if fs in step.spec.upstream_steps
+                fs
+                for fs in failed_steps
+                if fs in step.spec.upstream_invocations
             ]:
                 logger.warning(
                     "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
@@ -189,7 +191,9 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 continue
 
             if skipped_upstream_steps := [
-                fs for fs in skipped_steps if fs in step.spec.upstream_steps
+                fs
+                for fs in skipped_steps
+                if fs in step.spec.upstream_invocations
             ]:
                 logger.warning(
                     "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",

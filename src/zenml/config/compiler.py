@@ -361,7 +361,9 @@ class Compiler:
             RuntimeError: If an upstream step is missing.
         """
         available_steps = set(pipeline.invocations)
-        invalid_upstream_steps = invocation.upstream_steps - available_steps
+        invalid_upstream_steps = (
+            invocation.upstream_invocations - available_steps
+        )
 
         if invalid_upstream_steps:
             raise RuntimeError(
@@ -452,7 +454,7 @@ class Compiler:
         }
         return StepSpec(
             source=invocation.step.resolve(),
-            upstream_steps=sorted(invocation.upstream_steps),
+            upstream_invocations=sorted(invocation.upstream_invocations),
             inputs=inputs,
             invocation_id=invocation.id,
         )
@@ -542,7 +544,7 @@ class Compiler:
         dag: Dict[str, List[str]] = {}
         for name, step in pipeline.invocations.items():
             self._verify_upstream_steps(invocation=step, pipeline=pipeline)
-            dag[name] = list(step.upstream_steps)
+            dag[name] = list(step.upstream_invocations)
 
         reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
         layers = topsorted_layers(

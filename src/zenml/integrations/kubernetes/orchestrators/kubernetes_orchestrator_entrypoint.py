@@ -140,7 +140,9 @@ def _reconstruct_nodes(
         The reconstructed nodes.
     """
     nodes = {
-        step_name: Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+        step_name: Node(
+            id=step_name, upstream_nodes=step.spec.upstream_invocations
+        )
         for step_name, step in snapshot.step_configurations.items()
     }
 
@@ -286,7 +288,7 @@ def main() -> None:
             },
         )
         nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+            Node(id=step_name, upstream_nodes=step.spec.upstream_invocations)
             for step_name, step in snapshot.step_configurations.items()
         ]
 

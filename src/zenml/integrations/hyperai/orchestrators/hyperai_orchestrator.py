@@ -267,7 +267,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
 
             # Add dependency on upstream steps if applicable
-            upstream_steps = step.spec.upstream_steps
+            upstream_steps = step.spec.upstream_invocations
 
             if len(upstream_steps) > 0:
                 compose_definition["services"][container_name][

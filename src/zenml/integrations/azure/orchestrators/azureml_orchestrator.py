@@ -181,10 +181,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         outputs = {"completed": Output(type="uri_file")}
 
         inputs = {}
-        if step.spec.upstream_steps:
+        if step.spec.upstream_invocations:
             inputs = {
                 f"{upstream_step}": Input(type="uri_file")
-                for upstream_step in step.spec.upstream_steps
+                for upstream_step in step.spec.upstream_invocations
             }
 
         return CommandComponent(
