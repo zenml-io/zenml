@@ -410,6 +410,10 @@ class Pipeline:
 
         Returns:
             The pipeline instance that this method was called on.
+
+        Raises:
+            ValueError: If the pipeline has parameters configured differently in
+                configuration file and code.
         """
         failure_hook_source = None
         if on_failure:
@@ -687,7 +691,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def deploy(
         self,
-        endpoint_name: str,
+        deployment_name: str,
         timeout: Optional[int] = None,
         *args: Any,
         **kwargs: Any,
@@ -695,7 +699,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """Deploy the pipeline for online inference.
 
         Args:
-            endpoint_name: The name of the endpoint used to deploy the pipeline.
+            deployment_name: The name to use for the deployment.
             timeout: The maximum time in seconds to wait for the pipeline to be
                 deployed.
             *args: Pipeline entrypoint input arguments.
@@ -712,7 +716,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         stack.prepare_pipeline_submission(snapshot=snapshot)
         return stack.deploy_pipeline(
             snapshot=snapshot,
-            endpoint_name=endpoint_name,
+            deployment_name=deployment_name,
             timeout=timeout,
         )
 

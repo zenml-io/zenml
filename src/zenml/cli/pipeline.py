@@ -482,7 +482,7 @@ def deploy_pipeline(
                     cli_utils.declare("Deployment canceled.")
                     return
 
-        deployment = pipeline_instance.deploy(endpoint_name=deployment_name)
+        deployment = pipeline_instance.deploy(deployment_name=deployment_name)
 
         cli_utils.pretty_print_deployment(deployment, show_secret=False)
 

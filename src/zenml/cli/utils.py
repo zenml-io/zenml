@@ -2364,7 +2364,7 @@ def print_deployment_table(
     Args:
         deployments: List of deployments
     """
-    endpoint_dicts = []
+    deployment_dicts = []
     for deployment in deployments:
         if deployment.user:
             user_name = deployment.user.name
@@ -2392,8 +2392,8 @@ def print_deployment_table(
             "STACK": stack_name,
             "OWNER": user_name,
         }
-        endpoint_dicts.append(run_dict)
-    print_table(endpoint_dicts)
+        deployment_dicts.append(run_dict)
+    print_table(deployment_dicts)
 
 
 def pretty_print_deployment(
@@ -2492,7 +2492,7 @@ def pretty_print_deployment(
     if show_metadata:
         declare("\n📋 [bold]Deployment Metadata[/bold]")
 
-        # Get the metadata - it could be from endpoint_metadata property or metadata
+        # Get the metadata - it could be from deployment_metadata property or metadata
         metadata = deployment.deployment_metadata
 
         if metadata:

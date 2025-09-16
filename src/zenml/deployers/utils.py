@@ -40,25 +40,28 @@ def get_deployment_invocation_example(
     """Generate an example invocation command for a deployment.
 
     Args:
-        deployment: The deployment to invoke.
-        project: The project ID of the deployment to invoke.
+        deployment: The deployment for which to generate an example invocation.
 
     Returns:
         A dictionary containing the example invocation parameters.
+
+    Raises:
+        DeploymentSchemaNotFoundError: If the deployment has no associated
+            schema for its input parameters.
     """
     if not deployment.snapshot:
         raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no snapshot."
+            f"Deployment {deployment.name} has no associated snapshot."
         )
 
     if not deployment.snapshot.pipeline_spec:
         raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no pipeline spec."
+            f"Deployment {deployment.name} has no associated pipeline spec."
         )
 
     if not deployment.snapshot.pipeline_spec.parameters_schema:
         raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no parameters schema."
+            f"Deployment {deployment.name} has no associated parameters schema."
         )
 
     parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema

@@ -521,6 +521,9 @@ def load_and_run_hook(
 
     Returns:
         The return value of the hook function.
+
+    Raises:
+        RuntimeError: If the hook fails and raise_on_error is True.
     """
     try:
         hook = source_utils.load(hook_source)
@@ -533,7 +536,7 @@ def load_and_run_hook(
     except Exception as e:
         msg = f"Failed to load hook source '{hook_source}' with exception: {e}"
         if raise_on_error:
-            raise Exception(msg)
+            raise RuntimeError(msg) from e
         else:
             logger.error(msg)
             return None
@@ -547,7 +550,7 @@ def load_and_run_hook(
             f"{function_params} with exception: '{e}'"
         )
         if raise_on_error:
-            raise Exception(msg)
+            raise RuntimeError(msg) from e
         else:
             logger.error(msg)
             return None

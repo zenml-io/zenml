@@ -214,7 +214,7 @@ class DeploymentSchema(NamedSchema, table=True):
         for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
-            if field == "endpoint_metadata":
+            if field == "deployment_metadata":
                 setattr(self, field, json.dumps(value))
             elif hasattr(self, field):
                 setattr(self, field, value)

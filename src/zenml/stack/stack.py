@@ -884,14 +884,14 @@ class Stack:
     def deploy_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
-        endpoint_name: str,
+        deployment_name: str,
         timeout: Optional[int] = None,
     ) -> "DeploymentResponse":
         """Deploys a pipeline on this stack.
 
         Args:
             snapshot: The pipeline snapshot.
-            endpoint_name: The name of the endpoint to serve the pipeline on.
+            deployment_name: The name to use for the deployment.
             timeout: The maximum time in seconds to wait for the pipeline to be
                 deployed.
 
@@ -910,7 +910,7 @@ class Stack:
         return self.deployer.provision_deployment(
             snapshot=snapshot,
             stack=self,
-            deployment_name_or_id=endpoint_name,
+            deployment_name_or_id=deployment_name,
             timeout=timeout,
         )
 
