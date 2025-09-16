@@ -206,7 +206,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
@@ -1730,22 +1730,22 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_SNAPSHOTS,
         )
 
-    def trigger_snapshot(
+    def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        trigger_request: PipelineSnapshotRunRequest,
     ) -> PipelineRunResponse:
-        """Trigger a snapshot.
+        """Run a snapshot.
 
         Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
+            snapshot_id: The ID of the snapshot to run.
+            trigger_request: Configuration for the run.
 
         Raises:
             RuntimeError: If the server does not support running a snapshot.
 
         Returns:
-            Model of the pipeline run.
+            The created pipeline run.
         """
         try:
             response_body = self.post(

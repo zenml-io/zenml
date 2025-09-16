@@ -847,7 +847,7 @@ def create_pipeline_snapshot(
     )
 
 
-@snapshot.command("trigger", help="Trigger a snapshot.")
+@snapshot.command("run", help="Run a snapshot.")
 @click.argument("snapshot_id")
 @click.option(
     "--config",
@@ -857,14 +857,14 @@ def create_pipeline_snapshot(
     required=False,
     help="Path to configuration file for the run.",
 )
-def trigger_snapshot(
+def run_snapshot(
     snapshot_id: str,
     config_path: Optional[str] = None,
 ) -> None:
-    """Trigger a snapshot.
+    """Run a snapshot.
 
     Args:
-        snapshot_id: The ID of the snapshot to trigger.
+        snapshot_id: The ID of the snapshot to run.
         config_path: Path to configuration file for the run.
     """
     if not uuid_utils.is_valid_uuid(snapshot_id):
@@ -874,7 +874,7 @@ def trigger_snapshot(
         snapshot_id=UUID(snapshot_id),
         config_path=config_path,
     )
-    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
+    cli_utils.declare(f"Started snapshot run `{run.id}`.")
 
 
 @snapshot.command("list", help="List pipeline snapshots.")

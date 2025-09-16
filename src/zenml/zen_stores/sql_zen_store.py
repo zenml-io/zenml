@@ -234,7 +234,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
@@ -5168,16 +5168,16 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def trigger_snapshot(
+    def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        trigger_request: PipelineSnapshotRunRequest,
     ) -> NoReturn:
-        """Trigger a snapshot.
+        """Run a snapshot.
 
         Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
+            snapshot_id: The ID of the snapshot to run.
+            trigger_request: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.

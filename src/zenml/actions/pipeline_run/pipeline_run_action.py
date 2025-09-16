@@ -29,12 +29,12 @@ from zenml.models import (
     ActionRequest,
     ActionResponse,
     ActionUpdate,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     TriggerExecutionResponse,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
-from zenml.zen_server.pipeline_execution.utils import trigger_snapshot
+from zenml.zen_server.pipeline_execution.utils import run_snapshot
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import server_config
 
@@ -98,9 +98,9 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         snapshot = zen_store().get_snapshot(config.snapshot_id)
         logger.debug("Running snapshot:", snapshot)
-        trigger_snapshot(
+        run_snapshot(
             snapshot=snapshot,
-            trigger_request=PipelineSnapshotTriggerRequest(
+            request=PipelineSnapshotRunRequest(
                 run_configuration=config.run_config,
             ),
             auth_context=auth_context,

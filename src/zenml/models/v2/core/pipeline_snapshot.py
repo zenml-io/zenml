@@ -686,8 +686,8 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 # ------------------ Trigger Model ------------------
 
 
-class PipelineSnapshotTriggerRequest(BaseZenModel):
-    """Request model for triggering a pipeline snapshot."""
+class PipelineSnapshotRunRequest(BaseZenModel):
+    """Request model for running a pipeline snapshot."""
 
     run_configuration: Optional[PipelineRunConfiguration] = Field(
         default=None,
@@ -695,5 +695,5 @@ class PipelineSnapshotTriggerRequest(BaseZenModel):
     )
     step_run: Optional[UUID] = Field(
         default=None,
-        title="The ID of the step run that triggered the snapshot.",
+        title="The ID of the step run that ran the snapshot.",
     )

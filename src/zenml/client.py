@@ -137,7 +137,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotFilter,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -3480,7 +3480,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_snapshot(
         self,
-        id_or_prefix: str,
+        id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete a snapshot.
@@ -3564,7 +3564,6 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             RuntimeError: If triggering the snapshot failed.
-            KeyError: If no snapshot with the given name exists.
 
         Returns:
             Model of the pipeline run.
@@ -3689,9 +3688,9 @@ class Client(metaclass=ClientMetaClass):
         except RuntimeError:
             pass
 
-        run = self.zen_store.trigger_snapshot(
+        run = self.zen_store.run_snapshot(
             snapshot_id=snapshot_id,
-            trigger_request=PipelineSnapshotTriggerRequest(
+            trigger_request=PipelineSnapshotRunRequest(
                 run_configuration=run_configuration,
                 step_run=step_run_id,
             ),

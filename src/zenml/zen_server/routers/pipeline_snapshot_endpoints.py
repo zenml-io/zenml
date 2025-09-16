@@ -32,7 +32,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -225,7 +225,7 @@ if server_config().workload_manager_enabled:
     @async_fastapi_endpoint_wrapper
     def create_snapshot_run(
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        trigger_request: PipelineSnapshotRunRequest,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
         """Run a pipeline from a snapshot.
@@ -239,7 +239,7 @@ if server_config().workload_manager_enabled:
             The created pipeline run.
         """
         from zenml.zen_server.pipeline_execution.utils import (
-            trigger_snapshot,
+            run_snapshot,
         )
 
         with track_handler(
@@ -267,8 +267,8 @@ if server_config().workload_manager_enabled:
 
             check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            return trigger_snapshot(
+            return run_snapshot(
                 snapshot=snapshot,
                 auth_context=auth_context,
-                trigger_request=trigger_request,
+                request=trigger_request,
             )
