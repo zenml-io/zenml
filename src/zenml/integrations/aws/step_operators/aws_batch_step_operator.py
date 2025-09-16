@@ -370,14 +370,6 @@ class AWSBatchStepOperator(BaseStepOperator):
             jobDefinitionName=job_name,
             timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
             **kwargs
-            # parameters: Dict[str,str] = {}
-            # schedulingPriority: int = 0 # ignored in FIFO queues
-            # nodeProperties: AWSBatchJobDefinitionNodeProperties = AWSBatchJobDefinitionNodeProperties(
-            #     numNodes=1,mainNode=0,nodeRangeProperties=[]) # we'll focus on container mode for now - let's add multinode support later, as that will most likely require network configuration support as well 
-            # retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
-            # propagateTags: bool = False
-            # tags: Dict[str,str] = {}
-            # platformCapabilities: Literal['EC2','FARGATE'] = "EC2"
         )
 
 
