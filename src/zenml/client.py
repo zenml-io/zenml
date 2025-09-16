@@ -3306,7 +3306,7 @@ class Client(metaclass=ClientMetaClass):
                 include_config_schema=include_config_schema,
             )
         else:
-            list_kwargs = {
+            list_kwargs: Dict[str, Any] = {
                 "named_only": None,
                 "project": project,
                 "hydrate": hydrate,
@@ -3462,7 +3462,7 @@ class Client(metaclass=ClientMetaClass):
             The updated snapshot.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix=id_or_prefix,
+            id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3490,7 +3490,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix=id_or_prefix,
+            id_or_prefix,
             project=project,
             hydrate=False,
         )

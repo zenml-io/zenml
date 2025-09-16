@@ -1300,21 +1300,21 @@ class ZenStoreInterface(ABC):
     def get_snapshot(
         self,
         snapshot_id: UUID,
+        hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
-        hydrate: bool = True,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
         Args:
             snapshot_id: ID of the snapshot.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
             include_config_schema: Whether to include the config schema in the
                 response.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
 
         Returns:
             The snapshot.

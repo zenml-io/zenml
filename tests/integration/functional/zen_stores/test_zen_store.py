@@ -191,7 +191,7 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         assert entity.metadata is not None
 
     # Test filtering by name if applicable
-    if "name" in created_entity.model_fields:
+    if "name" in created_entity.model_fields and created_entity.name:
         entities_list = crud_test_config.list_method(
             crud_test_config.filter_model(name=created_entity.name)
         )
