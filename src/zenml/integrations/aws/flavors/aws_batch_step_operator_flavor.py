@@ -53,7 +53,7 @@ class AWSBatchStepOperatorSettings(BaseSettings):
         "for details."
     )
     timeout_seconds: PositiveInt = Field(
-        default=120,
+        default=3600,
         description="The number of seconds before AWS Batch times out the job."
     )
 

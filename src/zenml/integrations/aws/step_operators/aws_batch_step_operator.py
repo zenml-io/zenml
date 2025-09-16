@@ -46,6 +46,7 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
 from zenml.utils.string_utils import random_str
+from botocore.exceptions import ClientError
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -435,9 +436,18 @@ class AWSBatchStepOperator(BaseStepOperator):
         job_id = response['jobId']
 
         while True:
-            response = batch.describe_jobs(jobs=[job_id])
-            status = response['jobs'][0]['status']
-            if status in ['SUCCEEDED', 'FAILED']:
-                break
-            time.sleep(10)
-            logger.info(f'Job completed with status {status}')
+            try:
+                response = batch.describe_jobs(jobs=[job_id])
+                status = response['jobs'][0]['status']
+                
+                if status == ['SUCCEEDED']:
+                    logger.info(f"Job completed successfully: {job_id}")
+                    break
+                elif status == ["FAILED"]:
+                    status_reason = response['jobs'][0].get('statusReason', 'Unknown')
+                    raise RuntimeError(f'Job {job_id} failed: {status_reason}')
+                else:
+                    time.sleep(10)
+            except ClientError as e:
+                logger.error(f"Failed to describe job {job_id}: {e}")
+                raise
