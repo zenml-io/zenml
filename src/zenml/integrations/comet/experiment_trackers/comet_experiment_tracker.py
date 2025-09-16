@@ -72,7 +72,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         )
         tags = settings.tags + [info.run_name, info.pipeline.name]
         comet_exp_name = (
-            settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
+            settings.run_name or f"{info.run_name}_{info.invocation_id}"
         )
         self._initialize_comet(
             run_name=comet_exp_name, tags=tags, settings=settings.settings
@@ -104,7 +104,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         exp_url = exp_url or default_exp_url
 
         # If the experiment name cannot be retrieved, use the default name
-        default_exp_name = f"{info.run_name}_{info.pipeline_step_name}"
+        default_exp_name = f"{info.run_name}_{info.invocation_id}"
         settings = cast(
             CometExperimentTrackerSettings, self.get_settings(info)
         )

@@ -207,7 +207,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         if settings.nested:
             mlflow.start_run(
-                run_name=info.pipeline_step_name, nested=True, tags=tags
+                run_name=info.invocation_id, nested=True, tags=tags
             )
 
     def get_step_run_metadata(

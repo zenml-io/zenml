@@ -411,12 +411,11 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Prepare step run information.
         step_run_info = StepRunInfo(
             config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
-            pipeline_step_name=self._invocation_id,
+            invocation_id=self._invocation_id,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
             force_write_logs=force_write_logs,

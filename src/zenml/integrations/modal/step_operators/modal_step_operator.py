@@ -208,7 +208,7 @@ class ModalStepOperator(BaseStepOperator):
         gpu_values = get_gpu_values(settings, resource_settings)
 
         app = modal.App(
-            f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
+            f"zenml-{info.run_name}-{info.step_run_id}-{info.invocation_id}"
         )
 
         async def run_sandbox() -> asyncio.Future[None]:

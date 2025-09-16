@@ -83,7 +83,7 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             config=step.config,
             pipeline=snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
-            pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],
+            invocation_id=self.entrypoint_args[STEP_NAME_OPTION],
             run_id=pipeline_run.id,
             step_run_id=step_run_id,
             force_write_logs=lambda: None,

@@ -72,7 +72,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         )
         tags = settings.tags + [info.run_name, info.pipeline.name]
         wandb_run_name = (
-            settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
+            settings.run_name or f"{info.run_name}_{info.invocation_id}"
         )
         self._initialize_wandb(run_name=wandb_run_name, tags=tags, info=info)
 
@@ -104,7 +104,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         run_url = run_url or default_run_url
 
         # If the run name cannot be retrieved, use the default run name
-        default_run_name = f"{info.run_name}_{info.pipeline_step_name}"
+        default_run_name = f"{info.run_name}_{info.invocation_id}"
         settings = cast(
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
