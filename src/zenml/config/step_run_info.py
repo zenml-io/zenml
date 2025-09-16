@@ -55,4 +55,6 @@ class StepRunInfo(FrozenBaseModel):
                 "the build was manually deleted."
             )
 
-        return run.build.get_image(component_key=key, step=self.invocation_id)
+        return run.build.get_image(
+            component_key=key, invocation_id=self.invocation_id
+        )

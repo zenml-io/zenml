@@ -182,7 +182,7 @@ def main() -> None:
 
     logger.info("Fetching pipeline run: %s", run.id)
 
-    def run_step_on_lightning_studio(step_name: str) -> None:
+    def run_step_on_lightning_studio(invocation_id: str) -> None:
         """Run a pipeline step in a separate Lightning STUDIO.
 
         Args:
@@ -192,7 +192,7 @@ def main() -> None:
             Exception: If an error occurs while running the step on the STUDIO.
         """
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_name,
+            invocation_id=invocation_id,
             snapshot_id=args.snapshot_id,
         )
 
@@ -200,10 +200,10 @@ def main() -> None:
         entrypoint_string = " ".join(entrypoint)
         run_command = f"{entrypoint_string}"
 
-        step = snapshot.step_configurations[step_name]
-        if unique_resource_configs[step_name] != main_studio_name:
+        step = snapshot.step_configurations[invocation_id]
+        if unique_resource_configs[invocation_id] != main_studio_name:
             logger.info(
-                f"Creating separate studio for step: {unique_resource_configs[step_name]}"
+                f"Creating separate studio for step: {unique_resource_configs[invocation_id]}"
             )
             # Get step settings
             step_settings = cast(
@@ -219,9 +219,9 @@ def main() -> None:
             run_command = f"{entrypoint_string}"
 
             logger.info(
-                f"Creating separate studio for step: {unique_resource_configs[step_name]}"
+                f"Creating separate studio for step: {unique_resource_configs[invocation_id]}"
             )
-            studio = Studio(name=unique_resource_configs[step_name])
+            studio = Studio(name=unique_resource_configs[invocation_id])
             try:
                 studio.start(Machine(step_settings.machine_type))
                 output = studio.run(
@@ -259,7 +259,7 @@ def main() -> None:
                 logger.info(output)
             except Exception as e:
                 logger.error(
-                    f"Error running step {step_name} on studio {unique_resource_configs[step_name]}: {e}"
+                    f"Error running step {invocation_id} on studio {unique_resource_configs[invocation_id]}: {e}"
                 )
                 raise e
             finally:
@@ -272,7 +272,7 @@ def main() -> None:
             logger.info(output)
 
             # Pop the resource configuration for this step
-        unique_resource_configs.pop(step_name)
+        unique_resource_configs.pop(invocation_id)
 
         if main_studio_name in unique_resource_configs.values():
             # If there are more steps using this configuration, skip deprovisioning the cluster
@@ -288,7 +288,9 @@ def main() -> None:
                 "is not used by subsequent steps. deprovisioning the cluster."
             )
             main_studio.delete()
-        logger.info(f"Running step `{step_name}` on a Studio is completed.")
+        logger.info(
+            f"Running step `{invocation_id}` on a Studio is completed."
+        )
 
     ThreadedDagRunner(
         dag=pipeline_dag, run_fn=run_step_on_lightning_studio

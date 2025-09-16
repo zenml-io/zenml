@@ -444,20 +444,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             """
             step_name_to_dynamic_component: Dict[str, BaseComponent] = {}
 
-            for step_name, step in snapshot.step_configurations.items():
+            for invocation_id, step in snapshot.step_configurations.items():
                 image = self.get_image(
                     snapshot=snapshot,
-                    step_name=step_name,
+                    invocation_id=invocation_id,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        invocation_id=invocation_id,
                         snapshot_id=snapshot.id,
                     )
                 )
                 component = self._create_container_component(
-                    image, command, arguments, step_name
+                    image, command, arguments, invocation_id
                 )
                 step_settings = cast(
                     VertexOrchestratorSettings, self.get_settings(step)
@@ -486,7 +486,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                                 key,
                             )
 
-                step_name_to_dynamic_component[step_name] = component
+                step_name_to_dynamic_component[invocation_id] = component
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,

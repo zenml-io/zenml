@@ -251,7 +251,7 @@ class LightningOrchestrator(BaseOrchestrator):
                 The steps for the pipeline.
             """
             steps = {}
-            for step_name, step in snapshot.step_configurations.items():
+            for invocation_id, step in snapshot.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 entrypoint_command = (
@@ -259,7 +259,7 @@ class LightningOrchestrator(BaseOrchestrator):
                 )
                 entrypoint_arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
-                        step_name=step_name,
+                        invocation_id=invocation_id,
                         snapshot_id=snapshot_id,
                     )
                 )
@@ -280,7 +280,7 @@ class LightningOrchestrator(BaseOrchestrator):
                 # Construct the command to run the step
                 run_command = f"{entrypoint_string}"
                 commands = [run_command]
-                steps[step_name] = {
+                steps[invocation_id] = {
                     "commands": commands,
                     "requirements": step_requirements_to_string,
                     "machine": step_settings.machine_type

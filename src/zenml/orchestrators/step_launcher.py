@@ -476,7 +476,7 @@ class StepLauncher:
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
             + entrypoint_cfg_class.get_entrypoint_arguments(
-                step_name=self._invocation_id,
+                invocation_id=self._invocation_id,
                 snapshot_id=self._snapshot.id,
                 step_run_id=str(step_run_info.step_run_id),
             )

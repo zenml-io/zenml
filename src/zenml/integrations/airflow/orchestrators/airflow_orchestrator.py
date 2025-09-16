@@ -219,13 +219,15 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         command = StepEntrypointConfiguration.get_entrypoint_command()
 
         tasks = []
-        for step_name, step in snapshot.step_configurations.items():
+        for invocation_id, step in snapshot.step_configurations.items():
             settings = cast(
                 AirflowOrchestratorSettings, self.get_settings(step)
             )
-            image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = self.get_image(
+                snapshot=snapshot, invocation_id=invocation_id
+            )
             arguments = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name, snapshot_id=snapshot.id
+                invocation_id=invocation_id, snapshot_id=snapshot.id
             )
             operator_args = settings.operator_args.copy()
             if self.requires_resources_in_orchestration_environment(step=step):
@@ -239,17 +241,17 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
                         "Specifying step resources is only supported when "
                         "using KubernetesPodOperators, ignoring resource "
                         "configuration for step %s.",
-                        step_name,
+                        invocation_id,
                     )
 
             task = dag_generator_values.task_configuration_class(
-                id=step_name,
-                zenml_step_name=step_name,
+                id=invocation_id,
+                zenml_step_name=invocation_id,
                 upstream_steps=step.spec.upstream_steps,
                 docker_image=image,
                 command=command,
                 arguments=arguments,
-                environment=step_environments[step_name],
+                environment=step_environments[invocation_id],
                 operator_source=settings.operator,
                 operator_args=operator_args,
             )

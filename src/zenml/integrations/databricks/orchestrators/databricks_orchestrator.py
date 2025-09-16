@@ -248,11 +248,11 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 A list of Databricks tasks.
             """
             tasks = []
-            for step_name, step in snapshot.step_configurations.items():
+            for invocation_id, step in snapshot.step_configurations.items():
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
                 arguments = DatabricksEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name,
+                    invocation_id=invocation_id,
                     snapshot_id=snapshot.id,
                     wheel_package=self.package_name,
                     databricks_job_id=DATABRICKS_JOB_ID_PARAMETER_REFERENCE,
@@ -287,7 +287,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
                 requirements = sorted(set(filter(None, requirements)))
 
                 task = convert_step_to_task(
-                    f"{snapshot.id}_{step_name}",
+                    f"{snapshot.id}_{invocation_id}",
                     ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND,
                     arguments,
                     clean_requirements(requirements),

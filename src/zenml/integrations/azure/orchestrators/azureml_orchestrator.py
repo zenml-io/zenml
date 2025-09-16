@@ -250,16 +250,18 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         # Create components
         components = {}
-        for step_name, step in snapshot.step_configurations.items():
-            step_environment = step_environments[step_name]
+        for invocation_id, step in snapshot.step_configurations.items():
+            step_environment = step_environments[invocation_id]
             # Get the image for each step
-            image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = self.get_image(
+                snapshot=snapshot, invocation_id=invocation_id
+            )
 
             # Get the command and arguments
             command = AzureMLEntrypointConfiguration.get_entrypoint_command()
             arguments = (
                 AzureMLEntrypointConfiguration.get_entrypoint_arguments(
-                    step_name=step_name,
+                    invocation_id=invocation_id,
                     snapshot_id=snapshot.id,
                     zenml_env_variables=b64_encode(
                         json.dumps(step_environment)
@@ -268,9 +270,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             )
 
             # Generate an AzureML CommandComponent
-            components[step_name] = self._create_command_component(
+            components[invocation_id] = self._create_command_component(
                 step=step,
-                step_name=step_name,
+                step_name=invocation_id,
                 env_name=snapshot.pipeline_configuration.name,
                 image=image,
                 command=command,
