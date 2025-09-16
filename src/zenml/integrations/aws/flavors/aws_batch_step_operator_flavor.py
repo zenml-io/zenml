@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Dict, Optional, Type, List, Union
 
 from pydantic import Field, PositiveInt
-
+from zenml.utils.secret_utils import SecretField
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
     AWS_RESOURCE_TYPE,
@@ -71,17 +71,39 @@ class AWSBatchStepOperatorConfig(
     """
 
     execution_role: str = Field(
-        "",
-        description="The ECS execution role required to execute the AWS Batch" \
-        " jobs as an ECS tasks."
+        description="The IAM role arn of the ECS execution role."
     )
     job_role: str = Field(
-        "",
-        description="The ECS job role required by the container runtime inside" \
-        "the ECS task."
+        description="The IAM role arn of the ECS job role."
     )
     job_queue_name: str = Field(
         description="The AWS Batch job queue to submit AWS Batch jobs to."
+    )
+    aws_access_key_id: Optional[str] = SecretField(
+        default=None,
+        description="The AWS access key ID to use to authenticate to AWS. "
+        "If not provided, the value from the default AWS config will be used.",
+    )
+    aws_secret_access_key: Optional[str] = SecretField(
+        default=None,
+        description="The AWS secret access key to use to authenticate to AWS. "
+        "If not provided, the value from the default AWS config will be used.",
+    )
+    aws_profile: Optional[str] = Field(
+        None,
+        description="The AWS profile to use for authentication if not using "
+        "service connectors or explicit credentials. If not provided, the "
+        "default profile will be used.",
+    )
+    aws_auth_role_arn: Optional[str] = Field(
+        None,
+        description="The ARN of an intermediate IAM role to assume when "
+        "authenticating to AWS.",
+    )
+    region: Optional[str] = Field(
+        None,
+        description="The AWS region where the processing job will be run. "
+        "If not provided, the value from the default AWS config will be used.",
     )
 
     @property

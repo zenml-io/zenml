@@ -27,7 +27,7 @@ from typing import (
 )
 from pydantic import BaseModel, PositiveInt, Field
 from pydantic_settings import BaseSettings as PydanticBaseSettings
-import boto3
+from boto3 import Session
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -186,6 +186,53 @@ class AWSBatchStepOperator(BaseStepOperator):
             The settings class.
         """
         return AWSBatchStepOperatorSettings
+    
+    def _get_aws_session(self) -> Session:
+        """Method to create the AWS Batch session with proper authentication.
+
+        Returns:
+            The AWS Batch session.
+
+        Raises:
+            RuntimeError: If the connector returns the wrong type for the
+                session.
+        """
+        # Get authenticated session
+        # Option 1: Service connector
+        boto_session: Session
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        # Option 2: Explicit configuration
+        # Args that are not provided will be taken from the default AWS config.
+        else:
+            boto_session = Session(
+                aws_access_key_id=self.config.aws_access_key_id,
+                aws_secret_access_key=self.config.aws_secret_access_key,
+                region_name=self.config.region,
+                profile_name=self.config.aws_profile,
+            )
+            # If a role ARN is provided for authentication, assume the role
+            if self.config.aws_auth_role_arn:
+                sts = boto_session.client("sts")
+                response = sts.assume_role(
+                    RoleArn=self.config.aws_auth_role_arn,
+                    RoleSessionName="zenml-aws-batch-step-operator",
+                )
+                credentials = response["Credentials"]
+                boto_session = Session(
+                    aws_access_key_id=credentials["AccessKeyId"],
+                    aws_secret_access_key=credentials["SecretAccessKey"],
+                    aws_session_token=credentials["SessionToken"],
+                    region_name=self.config.region,
+                )
+        return Session(
+            boto_session=boto_session,
+        )
 
     @property
     def entrypoint_config_class(
@@ -419,15 +466,16 @@ class AWSBatchStepOperator(BaseStepOperator):
 
         job_definition = self.generate_job_definition(info, entrypoint_command, environment)
 
-        batch = boto3.client('batch')
+        boto_session = self._get_aws_session()
+        batch_client = boto_session.client('batch')
 
-        response = batch.register_job_definition(
+        response = batch_client.register_job_definition(
             **job_definition.model_dump()
         )
 
         job_definition_name = response['jobDefinitionName']
 
-        response = batch.submit_job(
+        response = batch_client.submit_job(
             jobName=job_definition.jobDefinitionName,
             jobQueue=self.config.job_queue_name,
             jobDefinition=job_definition_name,
@@ -437,7 +485,7 @@ class AWSBatchStepOperator(BaseStepOperator):
 
         while True:
             try:
-                response = batch.describe_jobs(jobs=[job_id])
+                response = batch_client.describe_jobs(jobs=[job_id])
                 status = response['jobs'][0]['status']
                 
                 if status == ['SUCCEEDED']:
