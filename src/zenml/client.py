@@ -3315,7 +3315,7 @@ class Client(metaclass=ClientMetaClass):
 
             # First, try to get the snapshot by name
             snapshots = self.list_snapshots(
-                name=name_id_or_prefix,
+                name=str(name_id_or_prefix),
                 pipeline=pipeline_name_or_id,
                 **list_kwargs,
             )
