@@ -48,6 +48,7 @@
 * [Containerization](how-to/containerization/containerization.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)
 * [Secrets](how-to/secrets/secrets.md)
+* [Environment Variables](how-to/environment-variables/environment-variables.md)
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)

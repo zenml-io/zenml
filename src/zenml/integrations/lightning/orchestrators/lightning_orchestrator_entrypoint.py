@@ -52,7 +52,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
-    parser.add_argument("--deployment_id", type=str, required=True)
+    parser.add_argument("--snapshot_id", type=str, required=True)
     return parser.parse_args()
 
 
@@ -84,12 +84,12 @@ def main() -> None:
 
     logger.info(f"Orchestrator run id: {orchestrator_run_id}")
 
-    deployment = Client().get_deployment(args.deployment_id)
+    snapshot = Client().get_snapshot(args.snapshot_id)
     filename = f"{args.run_name}.tar.gz"
 
     pipeline_dag = {
         step_name: step.spec.upstream_steps
-        for step_name, step in deployment.step_configurations.items()
+        for step_name, step in snapshot.step_configurations.items()
     }
     entrypoint_command = StepEntrypointConfiguration.get_entrypoint_command()
 
@@ -102,16 +102,14 @@ def main() -> None:
         )
 
     # Set up credentials
-    orchestrator._set_lightning_env_vars(deployment)
+    orchestrator._set_lightning_env_vars(snapshot)
 
     pipeline_settings = cast(
-        LightningOrchestratorSettings, orchestrator.get_settings(deployment)
+        LightningOrchestratorSettings, orchestrator.get_settings(snapshot)
     )
 
     # Gather the requirements
-    pipeline_docker_settings = (
-        deployment.pipeline_configuration.docker_settings
-    )
+    pipeline_docker_settings = snapshot.pipeline_configuration.docker_settings
     pipeline_requirements = gather_requirements(pipeline_docker_settings)
     pipeline_requirements_to_string = " ".join(
         f'"{req}"' for req in pipeline_requirements
@@ -121,7 +119,7 @@ def main() -> None:
     main_studio_name = sanitize_studio_name(
         f"zenml_{orchestrator_run_id}_pipeline"
     )
-    for step_name, step in deployment.step_configurations.items():
+    for step_name, step in snapshot.step_configurations.items():
         step_settings = cast(
             LightningOrchestratorSettings,
             orchestrator.get_settings(step),
@@ -178,7 +176,7 @@ def main() -> None:
     run = Client().list_pipeline_runs(
         sort_by="asc:created",
         size=1,
-        deployment_id=args.deployment_id,
+        snapshot_id=args.snapshot_id,
         status=ExecutionStatus.INITIALIZING,
     )[0]
 
@@ -195,14 +193,14 @@ def main() -> None:
         """
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
-            deployment_id=args.deployment_id,
+            snapshot_id=args.snapshot_id,
         )
 
         entrypoint = entrypoint_command + step_args
         entrypoint_string = " ".join(entrypoint)
         run_command = f"{entrypoint_string}"
 
-        step = deployment.step_configurations[step_name]
+        step = snapshot.step_configurations[step_name]
         if unique_resource_configs[step_name] != main_studio_name:
             logger.info(
                 f"Creating separate studio for step: {unique_resource_configs[step_name]}"

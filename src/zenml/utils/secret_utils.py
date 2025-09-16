@@ -14,7 +14,7 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, List, NamedTuple, Union
 
 from pydantic import Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
@@ -22,6 +22,8 @@ from typing_extensions import Annotated
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from pydantic.fields import FieldInfo
 
 _secret_reference_expression = re.compile(r"\{\{\s*\S+?\.\S+\s*\}\}")
@@ -182,3 +184,21 @@ def is_clear_text_field(field: "FieldInfo") -> bool:
             )
 
     return False
+
+
+def resolve_and_verify_secrets(
+    secrets: List[Union[str, "UUID"]],
+) -> List["UUID"]:
+    """Convert a list of secret names or IDs to a list of secret IDs.
+
+    Args:
+        secrets: A list of secret names or IDs.
+
+    Returns:
+        A list of secret IDs.
+    """
+    from zenml.client import Client
+
+    return [
+        Client().get_secret(secret, hydrate=False).id for secret in secrets
+    ]

@@ -96,8 +96,8 @@ from zenml.utils.io_utils import get_global_config_directory
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.models import (
-        PipelineDeploymentResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ScheduleResponse,
     )
     from zenml.stack import Stack
@@ -246,36 +246,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         """
         return os.path.join(self.root_directory, "pipelines")
 
-    def prepare_pipeline_deployment(
-        self,
-        deployment: "PipelineDeploymentResponse",
-        stack: "Stack",
-    ) -> None:
-        """Build a Docker image and push it to the container registry.
-
-        Args:
-            deployment: The pipeline deployment configuration.
-            stack: The stack on which the pipeline will be deployed.
-
-        Raises:
-            ValueError: If `cron_expression` is not in passed Schedule.
-        """
-        if deployment.schedule:
-            if (
-                deployment.schedule.catchup
-                or deployment.schedule.interval_second
-            ):
-                logger.warning(
-                    "Vertex orchestrator only uses schedules with the "
-                    "`cron_expression` property, with optional `start_time` "
-                    "and/or `end_time`. All other properties are ignored."
-                )
-            if deployment.schedule.cron_expression is None:
-                raise ValueError(
-                    "Property `cron_expression` must be set when passing "
-                    "schedule to a Vertex orchestrator."
-                )
-
     def _create_container_component(
         self,
         image: str,
@@ -403,9 +373,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -416,17 +387,36 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
+            placeholder_run: An optional placeholder run for the snapshot.
+
+        Raises:
+            ValueError: If a schedule without a cron expression is passed.
 
         Returns:
             Optional submission result.
         """
+        if snapshot.schedule:
+            if snapshot.schedule.catchup or snapshot.schedule.interval_second:
+                logger.warning(
+                    "Vertex orchestrator only uses schedules with the "
+                    "`cron_expression` property, with optional `start_time` "
+                    "and/or `end_time`. All other properties are ignored."
+                )
+            if snapshot.schedule.cron_expression is None:
+                raise ValueError(
+                    "Property `cron_expression` must be set when passing "
+                    "schedule to a Vertex orchestrator."
+                )
+
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         )
         # If the `pipeline_root` has not been defined in the orchestrator
         # configuration,
@@ -434,7 +424,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # `GCPArtifactStore`.
         if not self.config.pipeline_root:
             artifact_store = stack.artifact_store
-            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{deployment.pipeline_configuration.name}/{orchestrator_run_name}"
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{snapshot.pipeline_configuration.name}/{orchestrator_run_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the "
                 "orchestrator configuration. One has been generated "
@@ -454,16 +444,16 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             """
             step_name_to_dynamic_component: Dict[str, BaseComponent] = {}
 
-            for step_name, step in deployment.step_configurations.items():
+            for step_name, step in snapshot.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment,
+                    snapshot=snapshot,
                     step_name=step_name,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment.id,
+                        snapshot_id=snapshot.id,
                     )
                 )
                 component = self._create_container_component(
@@ -498,10 +488,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
                 step_name_to_dynamic_component[step_name] = component
 
-            environment[ENV_ZENML_VERTEX_RUN_ID] = (
-                dsl.PIPELINE_JOB_NAME_PLACEHOLDER
-            )
-
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
             )
@@ -515,7 +501,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 ) in step_name_to_dynamic_component.items():
                     # for each component, check to see what other steps are
                     # upstream of it
-                    step = deployment.step_configurations[component_name]
+                    step = snapshot.step_configurations[component_name]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
@@ -527,6 +513,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
                     use_custom_training_job = (
                         step_settings.custom_job_parameters is not None
+                    )
+
+                    step_environment = step_environments[component_name]
+                    step_environment[ENV_ZENML_VERTEX_RUN_ID] = (
+                        dsl.PIPELINE_JOB_NAME_PLACEHOLDER
                     )
 
                     if use_custom_training_job:
@@ -547,7 +538,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         component = self._convert_to_custom_training_job(
                             component,
                             settings=step_settings,
-                            environment=environment,
+                            environment=step_environment,
                         )
                         task = (
                             component()
@@ -564,7 +555,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             .set_caching_options(enable_caching=False)
                             .after(*upstream_step_components)
                         )
-                        for key, value in environment.items():
+                        for key, value in step_environment.items():
                             task = task.set_env_variable(name=key, value=value)
 
                         pod_settings = step_settings.pod_settings
@@ -610,7 +601,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             pipeline_func=_create_dynamic_pipeline(),
             package_path=pipeline_file_path,
             pipeline_name=_clean_pipeline_name(
-                deployment.pipeline_configuration.name
+                snapshot.pipeline_configuration.name
             ),
         )
 
@@ -619,15 +610,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         )
 
         settings = cast(
-            VertexOrchestratorSettings, self.get_settings(deployment)
+            VertexOrchestratorSettings, self.get_settings(snapshot)
         )
 
         return self._upload_and_run_pipeline(
-            pipeline_name=deployment.pipeline_configuration.name,
+            pipeline_name=snapshot.pipeline_configuration.name,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
             settings=settings,
-            schedule=deployment.schedule,
+            schedule=snapshot.schedule,
         )
 
     def _upload_and_run_pipeline(

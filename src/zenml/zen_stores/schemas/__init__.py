@@ -33,8 +33,8 @@ from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
-from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
+from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
+    PipelineSnapshotSchema,
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -45,7 +45,7 @@ from zenml.zen_stores.schemas.run_metadata_schemas import (
     RunMetadataSchema,
 )
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema, SecretResourceSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.service_connector_schemas import (
     ServiceConnectorSchema,
@@ -92,7 +92,7 @@ __all__ = [
     "NamedSchema",
     "OAuthDeviceSchema",
     "PipelineBuildSchema",
-    "PipelineDeploymentSchema",
+    "PipelineSnapshotSchema",
     "StepConfigurationSchema",
     "PipelineRunSchema",
     "PipelineSchema",
@@ -100,6 +100,7 @@ __all__ = [
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",
+    "SecretResourceSchema",
     "ServerSettingsSchema",
     "ServiceConnectorSchema",
     "ServiceSchema",

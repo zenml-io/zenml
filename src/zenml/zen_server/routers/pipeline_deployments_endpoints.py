@@ -18,10 +18,14 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, Security
 
-from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
+from zenml.constants import (
+    API,
+    PIPELINE_DEPLOYMENTS,
+    VERSION_1,
+)
 from zenml.models import (
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -74,6 +78,7 @@ router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_DEPLOYMENTS,
     tags=["deployments"],
     responses={401: error_response, 403: error_response},
+    deprecated=True,
 )
 
 
@@ -92,7 +97,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_deployment(
     request: Request,
-    deployment: PipelineDeploymentRequest,
+    deployment: PipelineSnapshotRequest,
     project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> Any:
@@ -112,7 +117,7 @@ def create_deployment(
 
     deployment_response = verify_permissions_and_create_entity(
         request_model=deployment,
-        create_method=zen_store().create_deployment,
+        create_method=zen_store().create_snapshot,
     )
 
     exclude = None
@@ -141,8 +146,8 @@ def create_deployment(
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     request: Request,
-    deployment_filter_model: PipelineDeploymentFilter = Depends(
-        make_dependable(PipelineDeploymentFilter)
+    deployment_filter_model: PipelineSnapshotFilter = Depends(
+        make_dependable(PipelineSnapshotFilter)
     ),
     project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
@@ -166,8 +171,8 @@ def list_deployments(
 
     page = verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
-        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
-        list_method=zen_store().list_deployments,
+        resource_type=ResourceType.PIPELINE_SNAPSHOT,
+        list_method=zen_store().list_snapshots,
         hydrate=hydrate,
     )
 
@@ -216,7 +221,7 @@ def get_deployment(
     """
     deployment = verify_permissions_and_get_entity(
         id=deployment_id,
-        get_method=zen_store().get_deployment,
+        get_method=zen_store().get_snapshot,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
     )
@@ -248,6 +253,6 @@ def delete_deployment(
     """
     verify_permissions_and_delete_entity(
         id=deployment_id,
-        get_method=zen_store().get_deployment,
-        delete_method=zen_store().delete_deployment,
+        get_method=zen_store().get_snapshot,
+        delete_method=zen_store().delete_snapshot,
     )

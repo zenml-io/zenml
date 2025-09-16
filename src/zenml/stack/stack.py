@@ -65,9 +65,9 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
-        PipelineDeploymentBase,
-        PipelineDeploymentResponse,
         PipelineRunResponse,
+        PipelineSnapshotBase,
+        PipelineSnapshotResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import StackComponent
@@ -95,6 +95,8 @@ class Stack:
         id: UUID,
         name: str,
         *,
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
@@ -113,6 +115,10 @@ class Stack:
         Args:
             id: Unique ID of the stack.
             name: Name of the stack.
+            environment: Environment variables to set when running on this
+                stack.
+            secrets: Secrets to set as environment variables when running on
+                this stack.
             orchestrator: Orchestrator component of the stack.
             artifact_store: Artifact store component of the stack.
             container_registry: Container registry component of the stack.
@@ -128,6 +134,8 @@ class Stack:
         """
         self._id = id
         self._name = name
+        self._environment = environment or {}
+        self._secrets = secrets or []
         self._orchestrator = orchestrator
         self._artifact_store = artifact_store
         self._container_registry = container_registry
@@ -172,6 +180,8 @@ class Stack:
         stack = Stack.from_components(
             id=stack_model.id,
             name=stack_model.name,
+            environment=stack_model.environment,
+            secrets=stack_model.secrets,
             components=stack_components,
         )
         _STACK_CACHE[key] = stack
@@ -192,6 +202,8 @@ class Stack:
         id: UUID,
         name: str,
         components: Dict[StackComponentType, "StackComponent"],
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
@@ -201,6 +213,10 @@ class Stack:
             id: Unique ID of the stack.
             name: The name of the stack.
             components: The components of the stack.
+            environment: Environment variables to set when running on this
+                stack.
+            secrets: Secrets to set as environment variables when running on
+                this stack.
 
         Returns:
             A stack instance consisting of the given components.
@@ -311,6 +327,8 @@ class Stack:
         return Stack(
             id=id,
             name=name,
+            environment=environment,
+            secrets=secrets,
             orchestrator=orchestrator,
             artifact_store=artifact_store,
             container_registry=container_registry,
@@ -529,6 +547,24 @@ class Stack:
             for component in self.components.values()
             for package in component.apt_packages
         ]
+
+    @property
+    def environment(self) -> Dict[str, str]:
+        """Environment variables to set when running on this stack.
+
+        Returns:
+            Environment variables to set when running on this stack.
+        """
+        return self._environment
+
+    @property
+    def secrets(self) -> List[UUID]:
+        """Secrets to set as environment variables when running on this stack.
+
+        Returns:
+            Secrets to set as environment variables when running on this stack.
+        """
+        return self._secrets
 
     def check_local_paths(self) -> bool:
         """Checks if the stack has local paths.
@@ -755,25 +791,27 @@ class Stack:
                 flavor=flavor.name,
                 type=flavor.type,
                 config=LocalImageBuilderConfig(),
+                environment={},
                 user=Client().active_user.id,
                 created=now,
                 updated=now,
+                secrets=[],
             )
 
             self._image_builder = image_builder
 
-    def prepare_pipeline_deployment(
-        self, deployment: "PipelineDeploymentResponse"
+    def prepare_pipeline_submission(
+        self, snapshot: "PipelineSnapshotResponse"
     ) -> None:
-        """Prepares the stack for a pipeline deployment.
+        """Prepares the stack for a pipeline submission.
 
-        This method is called before a pipeline is deployed.
+        This method is called before a pipeline is submitted.
 
         Args:
-            deployment: The pipeline deployment
+            snapshot: The pipeline snapshot
 
         Raises:
-            RuntimeError: If trying to deploy a pipeline that requires a remote
+            RuntimeError: If trying to submit a pipeline that requires a remote
                 ZenML server with a local one.
         """
         self.validate(fail_if_secrets_missing=True)
@@ -788,42 +826,37 @@ class Stack:
                 "for more information on how to deploy ZenML."
             )
 
-        for component in self.components.values():
-            component.prepare_pipeline_deployment(
-                deployment=deployment, stack=self
-            )
-
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         return list(
             itertools.chain.from_iterable(
-                component.get_docker_builds(deployment=deployment)
+                component.get_docker_builds(snapshot=snapshot)
                 for component in self.components.values()
             )
         )
 
-    def deploy_pipeline(
+    def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
-        """Deploys a pipeline on this stack.
+        """Submits a pipeline on this stack.
 
         Args:
-            deployment: The pipeline deployment.
-            placeholder_run: An optional placeholder run for the deployment.
+            snapshot: The pipeline snapshot.
+            placeholder_run: An optional placeholder run for the snapshot.
         """
         self.orchestrator.run(
-            deployment=deployment, stack=self, placeholder_run=placeholder_run
+            snapshot=snapshot, stack=self, placeholder_run=placeholder_run
         )
 
     def _get_active_components_for_step(

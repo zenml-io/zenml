@@ -20,7 +20,7 @@ import pytest
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.models import PipelineDeploymentRequest
+from zenml.models import PipelineRequest, PipelineSnapshotRequest
 
 
 class StubEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -28,25 +28,31 @@ class StubEntrypointConfiguration(BaseEntrypointConfiguration):
         pass
 
 
-def test_calling_entrypoint_configuration_with_invalid_deployment_id():
-    """Tests that a valid deployment ID is required as argument."""
+def test_calling_entrypoint_configuration_with_invalid_snapshot_id():
+    """Tests that a valid snapshot ID is required as argument."""
     with pytest.raises(ValueError):
         BaseEntrypointConfiguration.get_entrypoint_arguments()
 
     with pytest.raises(ValueError):
         BaseEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id="not_a_uuid"
+            snapshot_id="not_a_uuid"
         )
 
     with does_not_raise():
         BaseEntrypointConfiguration.get_entrypoint_arguments(
-            deployment_id=uuid4()
+            snapshot_id=uuid4()
         )
 
 
-def test_loading_the_deployment(clean_client):
-    """Tests loading the deployment by ID."""
-    request = PipelineDeploymentRequest(
+def test_loading_the_snapshot(clean_client):
+    """Tests loading the snapshot by ID."""
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name="pipeline",
+            project=clean_client.active_project.id,
+        )
+    )
+    request = PipelineSnapshotRequest(
         user=clean_client.active_user.id,
         project=clean_client.active_project.id,
         run_name_template="",
@@ -54,12 +60,13 @@ def test_loading_the_deployment(clean_client):
         stack=clean_client.active_stack.id,
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
 
-    deployment = clean_client.zen_store.create_deployment(request)
+    snapshot = clean_client.zen_store.create_snapshot(request)
 
     entrypoint_config = StubEntrypointConfiguration(
-        arguments=["--deployment_id", str(deployment.id)]
+        arguments=["--snapshot_id", str(snapshot.id)]
     )
 
-    assert entrypoint_config.load_deployment() == deployment
+    assert entrypoint_config.load_snapshot() == snapshot

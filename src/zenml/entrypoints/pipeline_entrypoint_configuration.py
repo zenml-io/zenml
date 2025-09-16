@@ -25,16 +25,16 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def run(self) -> None:
         """Prepares the environment and runs the configured pipeline."""
-        deployment = self.load_deployment()
+        snapshot = self.load_snapshot()
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self.download_code_if_necessary(deployment=deployment)
+        self.download_code_if_necessary(snapshot=snapshot)
 
         orchestrator = Client().active_stack.orchestrator
-        orchestrator._prepare_run(deployment=deployment)
+        orchestrator._prepare_run(snapshot=snapshot)
 
-        for step in deployment.step_configurations.values():
+        for step in snapshot.step_configurations.values():
             orchestrator.run_step(step)

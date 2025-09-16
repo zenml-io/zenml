@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from uuid import UUID
 
 RUN_NAME_OPTION = "run_name"
-DEPLOYMENT_ID_OPTION = "deployment_id"
+SNAPSHOT_ID_OPTION = "snapshot_id"
 
 
 class LightningOrchestratorEntrypointConfiguration:
@@ -34,7 +34,7 @@ class LightningOrchestratorEntrypointConfiguration:
         """
         options = {
             RUN_NAME_OPTION,
-            DEPLOYMENT_ID_OPTION,
+            SNAPSHOT_ID_OPTION,
         }
         return options
 
@@ -56,13 +56,13 @@ class LightningOrchestratorEntrypointConfiguration:
     def get_entrypoint_arguments(
         cls,
         run_name: str,
-        deployment_id: "UUID",
+        snapshot_id: "UUID",
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
             run_name: Name of the ZenML run.
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
 
         Returns:
             List of entrypoint arguments.
@@ -70,8 +70,8 @@ class LightningOrchestratorEntrypointConfiguration:
         args = [
             f"--{RUN_NAME_OPTION}",
             run_name,
-            f"--{DEPLOYMENT_ID_OPTION}",
-            str(deployment_id),
+            f"--{SNAPSHOT_ID_OPTION}",
+            str(snapshot_id),
         ]
 
         return args

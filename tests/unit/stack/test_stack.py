@@ -140,18 +140,7 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
         stack_with_mock_components.validate()
 
 
-def test_stack_prepare_pipeline_deployment(
-    stack_with_mock_components, sample_deployment_response_model
-):
-    """Tests that the stack prepares a pipeline run by calling the prepare methods of all its components."""
-    stack_with_mock_components.prepare_pipeline_deployment(
-        sample_deployment_response_model
-    )
-    for component in stack_with_mock_components.components.values():
-        component.prepare_pipeline_deployment.assert_called_once()
-
-
-def test_stack_deployment(
+def test_stack_submission(
     stack_with_mock_components,
     empty_pipeline,  # noqa: F811
 ):
@@ -162,17 +151,17 @@ def test_stack_deployment(
     # our mock objects
     with empty_pipeline:
         empty_pipeline.entrypoint()
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=empty_pipeline,
         stack=stack_with_mock_components,
         run_configuration=PipelineRunConfiguration(),
     )
-    stack_with_mock_components.deploy_pipeline(
-        deployment=deployment,
+    stack_with_mock_components.submit_pipeline(
+        snapshot=snapshot,
     )
 
     stack_with_mock_components.orchestrator.run.assert_called_once_with(
-        deployment=deployment,
+        snapshot=snapshot,
         stack=stack_with_mock_components,
         placeholder_run=None,
     )
@@ -203,10 +192,10 @@ def test_requires_remote_server(stack_with_mock_components, mocker):
     assert stack_with_mock_components.requires_remote_server is True
 
 
-def test_deployment_server_validation(
-    mocker, stack_with_mock_components, sample_deployment_response_model
+def test_submission_server_validation(
+    mocker, stack_with_mock_components, sample_snapshot_response_model
 ):
-    """Tests that the deployment validation fails when the stack requires a remote server but the store is local."""
+    """Tests that the submission validation fails when the stack requires a remote server but the store is local."""
 
     ######### Remote server #########
     mocker.patch(
@@ -219,8 +208,8 @@ def test_deployment_server_validation(
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(
-            sample_deployment_response_model
+        stack_with_mock_components.prepare_pipeline_submission(
+            sample_snapshot_response_model
         )
 
     mocker.patch(
@@ -229,8 +218,8 @@ def test_deployment_server_validation(
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(
-            sample_deployment_response_model
+        stack_with_mock_components.prepare_pipeline_submission(
+            sample_snapshot_response_model
         )
 
     ######### Local server #########
@@ -245,8 +234,8 @@ def test_deployment_server_validation(
         new_callable=mocker.PropertyMock,
     )
     with does_not_raise():
-        stack_with_mock_components.prepare_pipeline_deployment(
-            sample_deployment_response_model
+        stack_with_mock_components.prepare_pipeline_submission(
+            sample_snapshot_response_model
         )
 
     mocker.patch(
@@ -255,8 +244,8 @@ def test_deployment_server_validation(
         new_callable=mocker.PropertyMock,
     )
     with pytest.raises(RuntimeError):
-        stack_with_mock_components.prepare_pipeline_deployment(
-            sample_deployment_response_model
+        stack_with_mock_components.prepare_pipeline_submission(
+            sample_snapshot_response_model
         )
 
 
@@ -403,7 +392,7 @@ def test_get_step_run_metadata_never_raises_errors(
 
 
 def test_docker_builds_collection(
-    stack_with_mock_components, sample_deployment_response_model
+    stack_with_mock_components, sample_snapshot_response_model
 ):
     """Tests that the stack collects the required Docker builds from all its
     components."""
@@ -430,7 +419,7 @@ def test_docker_builds_collection(
     ]
 
     stack_builds = stack_with_mock_components.get_docker_builds(
-        deployment=sample_deployment_response_model
+        snapshot=sample_snapshot_response_model
     )
 
     assert len(stack_builds) == 3

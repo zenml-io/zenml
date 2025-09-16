@@ -676,7 +676,6 @@ def test_that_artifact_is_removed_on_deletion(
         run.steps["_this_step_produces_output"].outputs["data"][0].id
     )
     clean_client.delete_pipeline(pipeline_id)
-    clean_client.delete_pipeline_run(run.id)
     clean_client.delete_artifact_version(artifact_version_id)
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions

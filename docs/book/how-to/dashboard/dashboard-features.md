@@ -15,17 +15,43 @@ The ZenML dashboard serves as a visual control center for your ML operations, of
 
 The open-source version of ZenML includes a robust set of dashboard features that provide significant value for individual practitioners and teams.
 
-### Pipeline Visualization
+### Pipeline Visualization Options
 
-The dashboard renders your pipeline as an interactive Directed Acyclic Graph (DAG), making it easy to understand the workflow structure and dependencies between steps.
+ZenML offers two complementary ways to visualize pipeline executions: the **DAG View** and the **Timeline View**. Each is optimized for different aspects of pipeline analysis, helping you understand both the structure and performance of your workflows.
+
+#### DAG View
+
+**Purpose**: Visualizes the logical structure and dependencies of your pipeline.
+
+The DAG (Directed Acyclic Graph) view displays your pipeline as a network graph, showing how data flows between steps. It explicitly visualizes parallel branches, artifact connections, and the overall architecture of your workflow.
 
 ![Pipeline DAG visualization](../../.gitbook/assets/dashboard-v2-pipeline-dag.png)
 
-This visualization enables you to:
-- See the execution flow between pipeline steps
-- Identify bottlenecks or failures quickly
-- Understand dependencies between different components
-- Track pipeline execution status in real-time
+This view is best for understanding pipeline architecture, tracing data lineage, and debugging dependency issues. While comprehensive, it can become visually dense in pipelines with a very large number of steps.
+
+#### Timeline View
+
+**Purpose**: Visualizes the temporal execution and performance of your pipeline.
+
+The Timeline View offers a Gantt chart-style visualization where each step is represented by a horizontal bar whose length corresponds to its execution duration. This view excels at performance analysis, making it easy to spot bottlenecks and understand the runtime characteristics of your pipeline.
+
+![Pipeline Timeline View](../../.gitbook/assets/dashboard-timeline-view.png)
+
+This view is ideal for performance optimization, identifying bottlenecks, and monitoring pipeline efficiency, especially for large pipelines. For pipelines with a high number of steps (e.g., over 100), ZenML automatically defaults to the Timeline View to ensure a responsive and clear user experience.
+
+These views are complementary and work best when used together. The DAG view helps you understand **what** your pipeline does and **how** it's structured, while the Timeline view shows you **when** things happen and **where** to focus optimization efforts.
+
+**Use the DAG View when you need to:**
+- Understand how data flows through your pipeline.
+- Debug issues related to step dependencies.
+- Explain the pipeline architecture to stakeholders.
+- Verify that parallel execution paths are configured correctly.
+
+**Use the Timeline View when you need to:**
+- Identify performance bottlenecks.
+- Optimize pipeline execution time.
+- Compare execution duration across steps.
+- Get a quick overview of which steps dominate runtime.
 
 ```python
 from zenml import pipeline
@@ -289,6 +315,6 @@ Whether you're using the open-source version or ZenML Pro, the dashboard provide
 
 {% hint style="info" %}
 **OSS vs Pro Feature Summary:**
-* **ZenML OSS:** Includes pipeline DAG visualization, artifact visualization, integration-specific visualizations, run history, and step execution details
+* **ZenML OSS:** Includes pipeline DAG and timeline visualizations, artifact visualization, integration-specific visualizations, run history, and step execution details
 * **ZenML Pro:** Adds model control plane, experiment comparison tools, and comprehensive role-based access control (RBAC) with team management capabilities
 {% endhint %}

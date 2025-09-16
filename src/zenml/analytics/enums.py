@@ -52,6 +52,9 @@ class AnalyticsEvent(str, Enum):
     CREATED_RUN_TEMPLATE = "Run template created"
     EXECUTED_RUN_TEMPLATE = "Run templated executed"
 
+    # Snapshots
+    EXECUTED_SNAPSHOT = "Snapshot executed"
+
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"

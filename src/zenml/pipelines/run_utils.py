@@ -17,10 +17,11 @@ from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
     LogsRequest,
-    PipelineDeploymentBase,
-    PipelineDeploymentResponse,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineRunTriggerInfo,
+    PipelineSnapshotBase,
+    PipelineSnapshotResponse,
     StackResponse,
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
@@ -50,16 +51,18 @@ def get_default_run_name(pipeline_name: str) -> str:
 
 
 def create_placeholder_run(
-    deployment: "PipelineDeploymentResponse",
+    snapshot: "PipelineSnapshotResponse",
     orchestrator_run_id: Optional[str] = None,
     logs: Optional["LogsRequest"] = None,
+    trigger_info: Optional[PipelineRunTriggerInfo] = None,
 ) -> "PipelineRunResponse":
-    """Create a placeholder run for the deployment.
+    """Create a placeholder run for the snapshot.
 
     Args:
-        deployment: The deployment for which to create the placeholder run.
+        snapshot: The snapshot for which to create the placeholder run.
         orchestrator_run_id: The orchestrator run ID for the run.
         logs: The logs for the run.
+        trigger_info: The trigger information for the run.
 
     Returns:
         The placeholder run.
@@ -67,8 +70,8 @@ def create_placeholder_run(
     start_time = utc_now()
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
-            name_template=deployment.run_name_template,
-            substitutions=deployment.pipeline_configuration.finalize_substitutions(
+            name_template=snapshot.run_name_template,
+            substitutions=snapshot.pipeline_configuration.finalize_substitutions(
                 start_time=start_time,
             ),
         ),
@@ -80,32 +83,33 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=orchestrator_run_id,
-        project=deployment.project_id,
-        deployment=deployment.id,
-        pipeline=deployment.pipeline.id if deployment.pipeline else None,
+        project=snapshot.project_id,
+        snapshot=snapshot.id,
+        pipeline=snapshot.pipeline.id if snapshot.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
-        tags=deployment.pipeline_configuration.tags,
+        tags=snapshot.pipeline_configuration.tags,
         logs=logs,
+        trigger_info=trigger_info,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run
 
 
-def deploy_pipeline(
-    deployment: "PipelineDeploymentResponse",
+def submit_pipeline(
+    snapshot: "PipelineSnapshotResponse",
     stack: "Stack",
     placeholder_run: Optional["PipelineRunResponse"] = None,
 ) -> None:
-    """Run a deployment.
+    """Submit a snapshot for execution.
 
     Args:
-        deployment: The deployment to run.
-        stack: The stack on which to run the deployment.
-        placeholder_run: An optional placeholder run for the deployment.
+        snapshot: The snapshot to submit.
+        stack: The stack on which to submit the snapshot.
+        placeholder_run: An optional placeholder run for the snapshot.
 
     # noqa: DAR401
     Raises:
-        BaseException: Any exception that happened while deploying or running
+        BaseException: Any exception that happened while submitting or running
             (in case it happens synchronously) the pipeline.
     """
     # Prevent execution of nested pipelines which might lead to
@@ -113,9 +117,9 @@ def deploy_pipeline(
     previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
     try:
-        stack.prepare_pipeline_deployment(deployment=deployment)
-        stack.deploy_pipeline(
-            deployment=deployment,
+        stack.prepare_pipeline_submission(snapshot=snapshot)
+        stack.submit_pipeline(
+            snapshot=snapshot,
             placeholder_run=placeholder_run,
         )
     except RunMonitoringError as e:
@@ -189,13 +193,19 @@ def validate_stack_is_runnable_from_server(
         flavor_model = flavors[0]
 
         if flavor_model.is_custom:
-            raise ValueError("No custom stack component flavors allowed.")
+            raise ValueError(
+                "Unable to run pipeline from the server on a stack that "
+                "includes stack components with a custom flavor."
+            )
 
         flavor = Flavor.from_model(flavor_model)
         component_config = flavor.config_class(**component.configuration)
 
         if component_config.is_local:
-            raise ValueError("No local stack components allowed.")
+            raise ValueError(
+                "Unable to run pipeline from the server on a stack that "
+                "includes local stack components."
+            )
 
 
 def validate_run_config_is_runnable_from_server(
@@ -253,7 +263,7 @@ def validate_run_config_is_runnable_from_server(
 
 
 def upload_notebook_cell_code_if_necessary(
-    deployment: "PipelineDeploymentBase", stack: "Stack"
+    snapshot: "PipelineSnapshotBase", stack: "Stack"
 ) -> None:
     """Upload notebook cell code if necessary.
 
@@ -263,8 +273,8 @@ def upload_notebook_cell_code_if_necessary(
     an archive of all the necessary files to the artifact store.
 
     Args:
-        deployment: The deployment.
-        stack: The stack on which the deployment will happen.
+        snapshot: The snapshot.
+        stack: The stack on which the snapshot will happen.
 
     Raises:
         RuntimeError: If the code for one of the steps that will run out of
@@ -273,7 +283,7 @@ def upload_notebook_cell_code_if_necessary(
     should_upload = False
     resolved_notebook_sources = source_utils.get_resolved_notebook_sources()
 
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         source = step.spec.source
 
         if source.type == SourceType.NOTEBOOK:
@@ -316,9 +326,9 @@ def upload_notebook_cell_code_if_necessary(
                 file_name=file_name,
             )
 
-        all_deployment_sources = get_all_sources_from_value(deployment)
+        all_snapshot_sources = get_all_sources_from_value(snapshot)
 
-        for source in all_deployment_sources:
+        for source in all_snapshot_sources:
             if source.type == SourceType.NOTEBOOK:
                 setattr(source, "artifact_store_id", stack.artifact_store.id)
 

@@ -49,11 +49,11 @@ from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
-from zenml.utils import io_utils, yaml_utils
+from zenml.utils import io_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.stack import Stack
 
 
@@ -457,9 +457,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -470,11 +471,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook
@@ -497,7 +501,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         assert stack.container_registry
 
         orchestrator_run_name = get_orchestrator_run_name(
-            pipeline_name=deployment.pipeline_configuration.name
+            pipeline_name=snapshot.pipeline_configuration.name
         ).replace("_", "-")
 
         def _create_dynamic_pipeline() -> Any:
@@ -508,16 +512,16 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             """
             step_name_to_dynamic_component: Dict[str, Any] = {}
 
-            for step_name, step in deployment.step_configurations.items():
+            for step_name, step in snapshot.step_configurations.items():
                 image = self.get_image(
-                    deployment=deployment,
+                    snapshot=snapshot,
                     step_name=step_name,
                 )
                 command = StepEntrypointConfiguration.get_entrypoint_command()
                 arguments = (
                     StepEntrypointConfiguration.get_entrypoint_arguments(
                         step_name=step_name,
-                        deployment_id=deployment.id,
+                        snapshot_id=snapshot.id,
                     )
                 )
                 dynamic_component = self._create_dynamic_component(
@@ -564,9 +568,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     component_name,
                     component,
                 ) in step_name_to_dynamic_component.items():
+                    step_environment = step_environments[component_name]
                     # for each component, check to see what other steps are
                     # upstream of it
-                    step = deployment.step_configurations[component_name]
+                    step = snapshot.step_configurations[component_name]
                     upstream_step_components = [
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
@@ -583,6 +588,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         )
                         .after(*upstream_step_components)
                     )
+                    for key, value in step_environment.items():
+                        task = task.set_env_variable(name=key, value=value)
                     self._configure_container_resources(
                         task,
                         step.config.resource_settings,
@@ -590,39 +597,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     )
 
             return dynamic_pipeline
-
-        def _update_yaml_with_environment(
-            yaml_file_path: str, environment: Dict[str, str]
-        ) -> None:
-            """Updates the env section of the steps in the YAML file with the given environment variables.
-
-            Args:
-                yaml_file_path: The path to the YAML file to update.
-                environment: A dictionary of environment variables to add.
-            """
-            pipeline_definition = yaml_utils.read_yaml(pipeline_file_path)
-
-            # Iterate through each component and add the environment variables
-            for executor in pipeline_definition["deploymentSpec"]["executors"]:
-                if (
-                    "container"
-                    in pipeline_definition["deploymentSpec"]["executors"][
-                        executor
-                    ]
-                ):
-                    container = pipeline_definition["deploymentSpec"][
-                        "executors"
-                    ][executor]["container"]
-                    if "env" not in container:
-                        container["env"] = []
-                    for key, value in environment.items():
-                        container["env"].append({"name": key, "value": value})
-
-            yaml_utils.write_yaml(pipeline_file_path, pipeline_definition)
-
-            print(
-                f"Updated YAML file with environment variables at {yaml_file_path}"
-            )
 
         # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
@@ -636,9 +610,6 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             pipeline_name=orchestrator_run_name,
         )
 
-        # Let's update the YAML file with the environment variables
-        _update_yaml_with_environment(pipeline_file_path, environment)
-
         logger.info(
             "Writing Tekton workflow definition to `%s`.", pipeline_file_path
         )
@@ -646,21 +617,21 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         # using the kfp client uploads the pipeline to Tekton pipelines and
         # runs it there
         return self._upload_and_run_pipeline(
-            deployment=deployment,
+            snapshot=snapshot,
             pipeline_file_path=pipeline_file_path,
             run_name=orchestrator_run_name,
         )
 
     def _upload_and_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         pipeline_file_path: str,
         run_name: str,
     ) -> Optional[SubmissionResult]:
         """Tries to upload and run a KFP pipeline.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
             pipeline_file_path: Path to the pipeline definition file.
             run_name: The Tekton run name.
 
@@ -670,9 +641,9 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         Returns:
             Optional submission result.
         """
-        pipeline_name = deployment.pipeline_configuration.name
+        pipeline_name = snapshot.pipeline_configuration.name
         settings = cast(
-            TektonOrchestratorSettings, self.get_settings(deployment)
+            TektonOrchestratorSettings, self.get_settings(snapshot)
         )
         user_namespace = settings.user_namespace
 
@@ -697,7 +668,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             # upload the pipeline to Tekton and start it
 
             client = self._get_kfp_client(settings=settings)
-            if deployment.schedule:
+            if snapshot.schedule:
                 try:
                     experiment = client.get_experiment(
                         pipeline_name, namespace=user_namespace
@@ -720,8 +691,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 )
 
                 interval_seconds = (
-                    deployment.schedule.interval_second.seconds
-                    if deployment.schedule.interval_second
+                    snapshot.schedule.interval_second.seconds
+                    if snapshot.schedule.interval_second
                     else None
                 )
                 result = client.create_recurring_run(
@@ -729,11 +700,11 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                     job_name=run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=False,
-                    cron_expression=deployment.schedule.cron_expression,
-                    start_time=deployment.schedule.utc_start_time,
-                    end_time=deployment.schedule.utc_end_time,
+                    cron_expression=snapshot.schedule.cron_expression,
+                    start_time=snapshot.schedule.utc_start_time,
+                    end_time=snapshot.schedule.utc_end_time,
                     interval_second=interval_seconds,
-                    no_catchup=not deployment.schedule.catchup,
+                    no_catchup=not snapshot.schedule.catchup,
                 )
 
                 logger.info(

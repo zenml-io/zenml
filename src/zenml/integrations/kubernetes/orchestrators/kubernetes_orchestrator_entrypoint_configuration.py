@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List, Optional, Set
 if TYPE_CHECKING:
     from uuid import UUID
 
-DEPLOYMENT_ID_OPTION = "deployment_id"
+SNAPSHOT_ID_OPTION = "snapshot_id"
 RUN_ID_OPTION = "run_id"
 
 
@@ -33,7 +33,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             Entrypoint options.
         """
         options = {
-            DEPLOYMENT_ID_OPTION,
+            SNAPSHOT_ID_OPTION,
         }
         return options
 
@@ -54,21 +54,21 @@ class KubernetesOrchestratorEntrypointConfiguration:
     @classmethod
     def get_entrypoint_arguments(
         cls,
-        deployment_id: "UUID",
+        snapshot_id: "UUID",
         run_id: Optional["UUID"] = None,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
             run_id: Optional ID of the pipeline run. Not set for scheduled runs.
 
         Returns:
             List of entrypoint arguments.
         """
         args = [
-            f"--{DEPLOYMENT_ID_OPTION}",
-            str(deployment_id),
+            f"--{SNAPSHOT_ID_OPTION}",
+            str(snapshot_id),
         ]
 
         if run_id:
