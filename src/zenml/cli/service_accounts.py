@@ -20,8 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -31,6 +30,7 @@ from zenml.logger import get_logger
 from zenml.models import APIKeyFilter, APIKeyResponse, ServiceAccountFilter
 
 logger = get_logger(__name__)
+
 
 
 def _create_api_key(
@@ -188,39 +188,37 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@enhanced_list_options(
+@list_options(
     ServiceAccountFilter,
     default_columns=["id", "name", "description", "active", "created"],
 )
 @click.pass_context
-def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_service_accounts(
+    ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
+) -> None:
     """List all service accounts.
 
     Args:
         ctx: The click context object
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter the list of service accounts.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     client = Client()
     with console.status("Listing service accounts..."):
         service_accounts = client.list_service_accounts(**kwargs)
-        if not service_accounts:
-            cli_utils.declare("No service accounts found.")
-            return
 
-        # Use centralized data preparation
-        service_account_data = prepare_data_from_responses(
-            service_accounts.items
-        )
+        service_account_list = []
+        for service_account in service_accounts.items:
+            service_account_data = cli_utils.prepare_response_data(service_account)
+            service_account_list.append(service_account_data)
 
-        # Handle table output with enhanced system
-        cli_utils.handle_table_output(
-            data=service_account_data,
-            page=service_accounts,
-            **table_kwargs,
-        )
+    cli_utils.handle_output(
+        service_account_list,
+        pagination_info=service_accounts.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @service_account.command(
@@ -392,62 +390,48 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         )
 
 
-@enhanced_list_options(
+@list_options(
     APIKeyFilter,
     default_columns=["id", "name", "description", "active", "created"],
 )
 @api_key.command("list", help="List all API keys.")
 @click.pass_obj
-def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
+def list_api_keys(
+    service_account_name_or_id: str,
+    output_format: str,
+    columns: str,
+    /,
+    **kwargs: Any,
+) -> None:
     """List all API keys.
 
     Args:
         service_account_name_or_id: The name or ID of the service account for
             which to list the API keys.
-        **kwargs: Keyword arguments to filter API keys.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter API keys.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing API keys..."):
-        try:
-            api_keys = Client().list_api_keys(
-                service_account_name_id_or_prefix=service_account_name_or_id,
-                **kwargs,
-            )
-        except KeyError as e:
-            cli_utils.error(str(e))
-
-        if not api_keys.items:
-            cli_utils.declare("No API keys found.")
-            return
-
-        def enrichment_func(
-            item: APIKeyResponse, result: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            """Enrich the API key data with the active status.
-
-            Args:
-                item: The API key response.
-                result: The result dictionary.
-
-            Returns:
-                The enriched result dictionary.
-            """
-            result.update({"active": item.active})
-            return result
-
-        # Use centralized data preparation
-        api_key_data = prepare_data_from_responses(
-            api_keys.items, enrichment_func=enrichment_func
+        api_keys = Client().list_api_keys(
+            service_account_name_id_or_prefix=service_account_name_or_id,
+            **kwargs,
         )
 
-        # Handle table output with enhanced system
-        cli_utils.handle_table_output(
-            data=api_key_data,
-            page=api_keys,
-            **table_kwargs,
-        )
+        api_key_list = []
+        for api_key in api_keys.items:
+            api_key_data = cli_utils.prepare_response_data(api_key)
+            api_key_data.update({
+            "active": api_key.active,
+        })
+            api_key_list.append(api_key_data)
+
+    cli_utils.handle_output(
+        api_key_list,
+        pagination_info=api_keys.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @api_key.command("update", help="Update an API key.")

@@ -29,8 +29,7 @@ from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
-    enhanced_list_options,
-    prepare_data_from_responses,
+    list_options,
     print_model_url,
 )
 from zenml.client import Client
@@ -47,6 +46,34 @@ from zenml.models import (
 )
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
+
+
+def _generate_component_data(component: ComponentResponse) -> Dict[str, Any]:
+    """Generate additional data for component display.
+
+    Args:
+        component: The component response.
+
+    Returns:
+        The additional data for the component.
+    """
+    return {
+        "flavor": component.flavor_name if component.flavor_name else "",
+    }
+
+
+def _generate_flavor_data(flavor: FlavorResponse) -> Dict[str, Any]:
+    """Generate additional data for flavor display.
+
+    Args:
+        flavor: The flavor response.
+
+    Returns:
+        The additional data for the flavor.
+    """
+    return {
+        "integration": flavor.integration if flavor.integration else "",
+    }
 
 
 def generate_stack_component_get_command(
@@ -154,60 +181,38 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @enhanced_list_options(
+    @list_options(
         ComponentFilter,
         default_columns=["id", "name", "flavor", "user", "created"],
     )
     @click.pass_context
     def list_stack_components_command(
-        ctx: click.Context, /, **kwargs: Any
+        ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
     ) -> None:
         """Prints a table of stack components.
 
         Args:
             ctx: The click context object
+            output_format: Output format (table, json, yaml, tsv, csv).
+            columns: Comma-separated list of columns to display.
             kwargs: Keyword arguments to filter the components.
         """
-        # Extract table options from kwargs
-        table_kwargs = cli_utils.extract_table_options(kwargs)
-
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
 
-        if not components:
-            cli_utils.declare("No components found.")
-            return
+        component_list = []
+        for component in components.items:
+            component_data = cli_utils.prepare_response_data(component)
+            component_data.update(_generate_component_data(component))
+            component_list.append(component_data)
 
-        def enrichment_func(
-            item: ComponentResponse, result: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            """Enrich the component data with the user name.
-
-            Args:
-                item: The component response.
-                result: The result dictionary.
-
-            Returns:
-                The enriched result dictionary.
-            """
-            result.update(
-                {"flavor": item.flavor_name if item.flavor_name else ""}
-            )
-            return result
-
-        # Use centralized data preparation
-        component_data = prepare_data_from_responses(
-            components.items,
-            enrichment_func=enrichment_func,
-        )
-
-        # Handle table output with enhanced system
-        cli_utils.handle_table_output(
-            data=component_data,
-            page=components,
-            **table_kwargs,
+        cli_utils.handle_output(
+            component_list,
+            pagination_info=components.pagination_info,
+            columns=columns,
+            output_format=output_format,
         )
 
     return list_stack_components_command
@@ -813,57 +818,37 @@ def generate_stack_component_flavor_list_command(
     """
     display_name = _component_display_name(component_type)
 
-    @enhanced_list_options(
+    @list_options(
         FlavorFilter,
         default_columns=["id", "name", "integration", "connector_type"],
     )
     @click.pass_context
     def list_stack_component_flavor_command(
-        ctx: click.Context, /, **kwargs: Any
+        ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
     ) -> None:
         """Lists the flavors for a single type of stack component.
 
         Args:
             ctx: The click context.
+            output_format: Output format (table, json, yaml, tsv, csv).
+            columns: Comma-separated list of columns to display.
             kwargs: The keyword arguments.
         """
-        table_kwargs = cli_utils.extract_table_options(kwargs)
-
         client = Client()
         with console.status(f"Listing {display_name} flavors..."):
             flavors = client.get_flavors_by_type(component_type=component_type)
 
-        if not flavors.items:
-            cli_utils.declare("No flavors found.")
-            return
+        flavor_list = []
+        for flavor in flavors.items:
+            flavor_data = cli_utils.prepare_response_data(flavor)
+            flavor_data.update(_generate_flavor_data(flavor))
+            flavor_list.append(flavor_data)
 
-        def enrichment_func(
-            item: FlavorResponse, result: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            """Enrich the flavor data with the user name.
-
-            Args:
-                item: The flavor response.
-                result: The result dictionary.
-
-            Returns:
-                The enriched result dictionary.
-            """
-            result.update(
-                {"integration": item.integration if item.integration else ""}
-            )
-            return result
-
-        # Use centralized data preparation
-        flavor_data = prepare_data_from_responses(
-            flavors.items, enrichment_func=enrichment_func
-        )
-
-        # Handle table output with pagination and default columns
-        cli_utils.handle_table_output(
-            data=flavor_data,
-            page=flavors,
-            **table_kwargs,
+        cli_utils.handle_output(
+            flavor_list,
+            pagination_info=flavors.pagination_info,
+            columns=columns,
+            output_format=output_format,
         )
 
     return list_stack_component_flavor_command

@@ -14,15 +14,14 @@
 """Functionality to administer users of the ZenML CLI and server."""
 
 from typing import Any, Dict, Optional
+from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
-    format_boolean_indicator,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -34,6 +33,50 @@ from zenml.exceptions import (
     IllegalOperationError,
 )
 from zenml.models import UserFilter, UserResponse
+
+
+def _generate_user_data(
+    user: UserResponse, active_user_id: UUID, output_format: str
+) -> Dict[str, Any]:
+    """Generate additional data for user display.
+
+    Args:
+        user: The user response.
+        active_user_id: The ID of the active user.
+        output_format: The output format.
+
+    Returns:
+        The additional data for the user.
+    """
+    is_active_user = user.id == active_user_id
+
+    # For many users, the name field contains the email and email field is null
+    display_name = user.name
+    display_email = user.email or ""
+
+    # If name looks like an email and email is empty, separate them nicely
+    if "@" in user.name and not user.email:
+        display_name = user.full_name or user.name.split("@")[0]
+        display_email = user.name
+
+    result = {
+        "display_name": display_name,
+        "display_email": display_email,
+        "role": "admin" if user.is_admin else "user",
+        "active": user.active,
+    }
+
+    # If this is the active user, format the name for visual distinction in table output
+    if is_active_user and output_format == "table":
+        result["name"] = (
+            f"[green]●[/green] [bold green]{display_name}[/bold green] (you)"
+        )
+    else:
+        result["name"] = display_name
+
+    result["email"] = display_email
+
+    return result
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -81,83 +124,37 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@enhanced_list_options(
+@list_options(
     UserFilter,
     default_columns=["id", "name", "email", "role", "active", "created"],
 )
-def list_users(**kwargs: Any) -> None:
+def list_users(output_format: str, columns: str, **kwargs: Any) -> None:
     """List all users.
 
     Args:
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter the list of users.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     client = Client()
     with console.status("Listing users..."):
         users = client.list_users(**kwargs)
 
-    if not users:
-        cli_utils.declare("No users found.")
-        return
-
-    # Handle both paginated and non-paginated responses
     active_user_id = client.active_user.id
-
-    # Create enrichment function for active user indicator
-    def enrichment_func(
-        item: UserResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Add active user information for display.
-
-        Args:
-            item: The user response.
-            result: The current data dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        is_active_user = item.id == active_user_id
-
-        # For many users, the name field contains the email and email field is null
-        display_name = item.name
-        display_email = item.email or ""
-
-        # If name looks like an email and email is empty, separate them nicely
-        if "@" in item.name and not item.email:
-            display_name = item.full_name or item.name.split("@")[0]
-            display_email = item.name
-
-        result.update(
-            {
-                "display_name": display_name,
-                "display_email": display_email,
-                "role": "admin" if item.is_admin else "user",
-                "active": format_boolean_indicator(item.active),
-            }
+    user_list = []
+    for user in users.items:
+        user_data = cli_utils.prepare_response_data(user)
+        user_data.update(
+            _generate_user_data(user, active_user_id, output_format)
         )
+        user_list.append(user_data)
 
-        # If this is the active user, format the name for visual distinction
-        if is_active_user:
-            result["name"] = (
-                f"[green]●[/green] [bold green]{display_name}[/bold green] (you)"
-            )
-        else:
-            result["name"] = display_name
-
-        result["email"] = display_email
-
-        return result
-
-    # Use centralized data preparation with enrichment
-    user_data = prepare_data_from_responses(
-        users.items,
-        enrichment_func=enrichment_func,
+    cli_utils.handle_output(
+        user_list,
+        pagination_info=users.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(user_data, page=users, **table_kwargs)
 
 
 @user.command(

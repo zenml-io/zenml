@@ -20,8 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -43,12 +42,117 @@ from zenml.utils.dict_utils import remove_none_values
 logger = get_logger(__name__)
 
 
+def _generate_model_data(model: ModelResponse) -> Dict[str, Any]:
+    """Generate additional data for model display.
+
+    Args:
+        model: The model response.
+
+    Returns:
+        The additional data for the model.
+    """
+    return {
+        "latest_version_name": model.latest_version_name,
+        "latest_version_id": model.latest_version_id,
+    }
+
+
+def _generate_model_version_data(
+    model_version: ModelVersionResponse, output_format: str
+) -> Dict[str, Any]:
+    """Generate additional data for model version display.
+
+    Args:
+        model_version: The model version response.
+        output_format: The output format.
+
+    Returns:
+        The additional data for the model version.
+    """
+    # Get stage value for formatting
+    stage_value = (
+        str(model_version.stage).lower() if model_version.stage else ""
+    )
+    model_name = model_version.model.name
+    version_name = model_version.name
+    stage_display = str(model_version.stage) if model_version.stage else ""
+
+    # Apply stage-based formatting only for table output
+    if output_format == "table":
+        if stage_value == "production":
+            # Format with green dot at beginning, green model name and version
+            formatted_model = (
+                f"[green]●[/green] [bold green]{model_name}[/bold green]"
+            )
+            formatted_version = f"[bold green]{version_name}[/bold green]"
+            formatted_stage = f"[bold green]{stage_display}[/bold green]"
+        elif stage_value == "staging":
+            # Format with orange dot at beginning, orange name and version
+            formatted_model = f"[bright_yellow]●[/bright_yellow] [bright_yellow]{model_name}[/bright_yellow]"
+            formatted_version = (
+                f"[bright_yellow]{version_name}[/bright_yellow]"
+            )
+            formatted_stage = f"[bright_yellow]{stage_display}[/bright_yellow]"
+        else:
+            # For other stages (development, archived, etc.), keep default format
+            formatted_model = model_name
+            formatted_version = version_name
+            formatted_stage = stage_display
+    else:
+        # For non-table formats, use plain text
+        formatted_model = model_name
+        formatted_version = version_name
+        formatted_stage = stage_display
+
+    return {
+        "model": formatted_model,
+        "version": formatted_version,
+        "stage": formatted_stage,
+        "tags": ", ".join(tag.name for tag in model_version.tags)
+        if model_version.tags
+        else "",
+        "updated": model_version.updated,
+    }
+
+
+def _generate_model_version_artifact_data(
+    model_version_artifact: ModelVersionArtifactResponse,
+) -> Dict[str, Any]:
+    """Generate additional data for model version artifact display.
+
+    Args:
+        model_version_artifact: The model version artifact response.
+
+    Returns:
+        The additional data for the model version artifact.
+    """
+    return {
+        "artifact_version": model_version_artifact.artifact_version.id,
+    }
+
+
+def _generate_model_version_pipeline_run_data(
+    model_version_pipeline_run: ModelVersionPipelineRunResponse,
+) -> Dict[str, Any]:
+    """Generate additional data for model version pipeline run display.
+
+    Args:
+        model_version_pipeline_run: The model version pipeline run response.
+
+    Returns:
+        The additional data for the model version pipeline run.
+    """
+    return {
+        "pipeline_run": model_version_pipeline_run.pipeline_run.id,
+    }
+
+
 @cli.group(cls=TagGroup, tag=CliCategories.MODEL_CONTROL_PLANE)
 def model() -> None:
     """Interact with models and model versions in the Model Control Plane."""
 
 
-@enhanced_list_options(
+@list_options(
     ModelFilter,
     default_columns=[
         "name",
@@ -58,48 +162,29 @@ def model() -> None:
     ],
 )
 @model.command("list", help="List models with filter.")
-def list_models(**kwargs: Any) -> None:
+def list_models(output_format: str, columns: str, **kwargs: Any) -> None:
     """List models with filter in the Model Control Plane.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter models.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing models..."):
         models = Client().list_models(**kwargs)
 
-    if not models:
-        cli_utils.declare("No models found.")
-        return
+        model_list = []
+        for model in models.items:
+            model_data = cli_utils.prepare_response_data(model)
+            model_data.update(_generate_model_data(model))
+            model_list.append(model_data)
 
-    def enrichment_func(
-        item: ModelResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the model data with the latest version name.
-
-        Args:
-            item: The model response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result.update(
-            {
-                "latest_version_name": item.latest_version_name,
-                "latest_version_id": item.latest_version_id,
-            }
-        )
-        return result
-
-    model_data = cli_utils.prepare_data_from_responses(
-        models.items, enrichment_func=enrichment_func
+    cli_utils.handle_output(
+        model_list,
+        pagination_info=models.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(model_data, page=models, **table_kwargs)
 
 
 @model.command("register", help="Register a new model.")
@@ -392,88 +477,37 @@ def version() -> None:
     """Interact with model versions in the Model Control Plane."""
 
 
-@enhanced_list_options(
+@list_options(
     ModelVersionFilter,
     default_columns=["model", "version", "stage", "tags", "updated"],
 )
 @version.command("list", help="List model versions with filter.")
-def list_model_versions(**kwargs: Any) -> None:
+def list_model_versions(
+    output_format: str, columns: str, **kwargs: Any
+) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter model versions.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing model versions..."):
         model_versions = Client().list_model_versions(**kwargs)
 
-    if not model_versions:
-        cli_utils.declare("No model versions found.")
-        return
-
-    def enrichment_func(
-        item: ModelVersionResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the model version data with the model name and stage formatting.
-
-        Args:
-            item: The model version response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result["version"] = result.pop("name")
-
-        # Get stage value for formatting
-        stage_value = str(item.stage).lower() if item.stage else ""
-        model_name = item.model.name
-        version_name = result["version"]
-        stage_display = str(item.stage) if item.stage else ""
-
-        # Apply stage-based formatting
-        if stage_value == "production":
-            # Format with green dot at beginning, green model name and version
-            formatted_model = (
-                f"[green]●[/green] [bold green]{model_name}[/bold green]"
+        model_version_list = []
+        for model_version in model_versions.items:
+            model_version_data = cli_utils.prepare_response_data(model_version)
+            model_version_data.update(
+                _generate_model_version_data(model_version, output_format)
             )
-            formatted_version = f"[bold green]{version_name}[/bold green]"
-            formatted_stage = f"[bold green]{stage_display}[/bold green]"
-        elif stage_value == "staging":
-            # Format with orange dot at beginning, orange name and version
-            formatted_model = f"[bright_yellow]●[/bright_yellow] [bright_yellow]{model_name}[/bright_yellow]"
-            formatted_version = (
-                f"[bright_yellow]{version_name}[/bright_yellow]"
-            )
-            formatted_stage = f"[bright_yellow]{stage_display}[/bright_yellow]"
-        else:
-            # For other stages (development, archived, etc.), keep default format
-            formatted_model = model_name
-            formatted_version = version_name
-            formatted_stage = stage_display
+            model_version_list.append(model_version_data)
 
-        result.update(
-            {
-                "model": formatted_model,
-                "version": formatted_version,
-                "stage": formatted_stage,
-                "tags": ", ".join(tag.name for tag in item.tags)
-                if item.tags
-                else "",
-                "updated": item.updated,
-            }
-        )
-        return result
-
-    model_version_data = cli_utils.prepare_data_from_responses(
-        model_versions.items, enrichment_func=enrichment_func
-    )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(
-        model_version_data, page=model_versions, **table_kwargs
+    cli_utils.handle_output(
+        model_version_list,
+        pagination_info=model_versions.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 
@@ -628,90 +662,17 @@ def delete_model_version(
         )
 
 
-def _print_artifacts_links_generic(
-    model_name_or_id: str,
-    model_version_name_or_number_or_id: Optional[str] = None,
-    only_data_artifacts: bool = False,
-    only_deployment_artifacts: bool = False,
-    only_model_artifacts: bool = False,
-    **kwargs: Any,
-) -> None:
-    """Generic method to print artifacts links.
-
-    Args:
-        model_name_or_id: The ID or name of the model containing version.
-        model_version_name_or_number_or_id: The name, number or ID of the model version.
-        only_data_artifacts: If set, only print data artifacts.
-        only_deployment_artifacts: If set, only print deployment artifacts.
-        only_model_artifacts: If set, only print model artifacts.
-        **kwargs: Keyword arguments to filter models.
-    """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
-    model_version = Client().get_model_version(
-        model_name_or_id=model_name_or_id,
-        model_version_name_or_number_or_id=model_version_name_or_number_or_id,
-    )
-    type_ = (
-        "data artifacts"
-        if only_data_artifacts
-        else "deployment artifacts"
-        if only_deployment_artifacts
-        else "model artifacts"
-    )
-
-    with console.status(f"Listing {type_}..."):
-        links = Client().list_model_version_artifact_links(
-            model_version_id=model_version.id,
-            only_data_artifacts=only_data_artifacts,
-            only_deployment_artifacts=only_deployment_artifacts,
-            only_model_artifacts=only_model_artifacts,
-            **kwargs,
-        )
-
-    if not links:
-        cli_utils.declare(f"No {type_} linked to the model version found.")
-        return
-
-    def enrichment_func(
-        item: ModelVersionArtifactResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the model version artifact link data with the model version name.
-
-        Args:
-            item: The model version artifact link response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result["artifact_version"] = item.artifact_version.id
-        return result
-
-    # Use centralized data preparation
-    link_data = cli_utils.prepare_data_from_responses(
-        links.items,
-        enrichment_func=enrichment_func,
-    )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(
-        data=link_data,
-        page=links if hasattr(links, "items") else None,
-        **table_kwargs,
-    )
-
-
 @model.command(
     "data_artifacts",
     help="List data artifacts linked to a model version.",
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@enhanced_list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_data_artifacts(
     model_name: str,
+    output_format: str,
+    columns: str,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -719,15 +680,35 @@ def list_model_version_data_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
-        **kwargs: Keyword arguments to filter models.
+        kwargs: Keyword arguments to filter models.
     """
-    _print_artifacts_links_generic(
+    model_version_obj = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
-        only_data_artifacts=True,
-        **kwargs,
+    )
+
+    with console.status("Listing data artifacts..."):
+        links = Client().list_model_version_artifact_links(
+            model_version_id=model_version_obj.id,
+            only_data_artifacts=True,
+            **kwargs,
+        )
+
+    artifact_list = []
+    for link in links.items:
+        artifact_data = cli_utils.prepare_response_data(link)
+        artifact_data.update(_generate_model_version_artifact_data(link))
+        artifact_list.append(artifact_data)
+
+    cli_utils.handle_output(
+        artifact_list,
+        pagination_info=links.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 
@@ -737,9 +718,11 @@ def list_model_version_data_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@enhanced_list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_model_artifacts(
     model_name: str,
+    output_format: str,
+    columns: str,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -747,15 +730,35 @@ def list_model_version_model_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
-        **kwargs: Keyword arguments to filter models.
+        kwargs: Keyword arguments to filter models.
     """
-    _print_artifacts_links_generic(
+    model_version_obj = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
-        only_model_artifacts=True,
-        **kwargs,
+    )
+
+    with console.status("Listing model artifacts..."):
+        links = Client().list_model_version_artifact_links(
+            model_version_id=model_version_obj.id,
+            only_model_artifacts=True,
+            **kwargs,
+        )
+
+    artifact_list = []
+    for link in links.items:
+        artifact_data = cli_utils.prepare_response_data(link)
+        artifact_data.update(_generate_model_version_artifact_data(link))
+        artifact_list.append(artifact_data)
+
+    cli_utils.handle_output(
+        artifact_list,
+        pagination_info=links.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 
@@ -765,9 +768,11 @@ def list_model_version_model_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@enhanced_list_options(ModelVersionArtifactFilter)
+@list_options(ModelVersionArtifactFilter)
 def list_model_version_deployment_artifacts(
     model_name: str,
+    output_format: str,
+    columns: str,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -775,15 +780,35 @@ def list_model_version_deployment_artifacts(
 
     Args:
         model_name: The ID or name of the model containing version.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
-        **kwargs: Keyword arguments to filter models.
+        kwargs: Keyword arguments to filter models.
     """
-    _print_artifacts_links_generic(
+    model_version_obj = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
-        only_deployment_artifacts=True,
-        **kwargs,
+    )
+
+    with console.status("Listing deployment artifacts..."):
+        links = Client().list_model_version_artifact_links(
+            model_version_id=model_version_obj.id,
+            only_deployment_artifacts=True,
+            **kwargs,
+        )
+
+    artifact_list = []
+    for link in links.items:
+        artifact_data = cli_utils.prepare_response_data(link)
+        artifact_data.update(_generate_model_version_artifact_data(link))
+        artifact_list.append(artifact_data)
+
+    cli_utils.handle_output(
+        artifact_list,
+        pagination_info=links.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 
@@ -793,9 +818,11 @@ def list_model_version_deployment_artifacts(
 )
 @click.argument("model_name")
 @click.option("--model_version", "-v", default=None)
-@enhanced_list_options(ModelVersionPipelineRunFilter)
+@list_options(ModelVersionPipelineRunFilter)
 def list_model_version_pipeline_runs(
     model_name: str,
+    output_format: str,
+    columns: str,
     model_version: Optional[str] = None,
     **kwargs: Any,
 ) -> None:
@@ -803,45 +830,32 @@ def list_model_version_pipeline_runs(
 
     Args:
         model_name: The ID or name of the model containing version.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         model_version: The name, number or ID of the model version. If not
             provided, the latest version is used.
-        **kwargs: Keyword arguments to filter runs.
+        kwargs: Keyword arguments to filter runs.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     model_version_response_model = Client().get_model_version(
         model_name_or_id=model_name,
         model_version_name_or_number_or_id=model_version,
     )
 
-    runs = Client().list_model_version_pipeline_run_links(
-        model_version_id=model_version_response_model.id,
-        **kwargs,
+    with console.status("Listing pipeline runs..."):
+        runs = Client().list_model_version_pipeline_run_links(
+            model_version_id=model_version_response_model.id,
+            **kwargs,
+        )
+
+    run_list = []
+    for run in runs.items:
+        run_data = cli_utils.prepare_response_data(run)
+        run_data.update(_generate_model_version_pipeline_run_data(run))
+        run_list.append(run_data)
+
+    cli_utils.handle_output(
+        run_list,
+        pagination_info=runs.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
-
-    if not runs:
-        cli_utils.declare("No pipeline runs attached to model version found.")
-        return
-
-    def enrichment_func(
-        item: ModelVersionPipelineRunResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the model version pipeline run link data with the model version name.
-
-        Args:
-            item: The model version pipeline run link response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result["pipeline_run"] = item.pipeline_run.id
-        return result
-
-    run_data = prepare_data_from_responses(
-        runs.items, enrichment_func=enrichment_func
-    )
-
-    # Use centralized table output with pagination
-    cli_utils.handle_table_output(run_data, page=runs, **table_kwargs)

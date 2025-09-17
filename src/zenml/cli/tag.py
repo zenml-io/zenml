@@ -20,7 +20,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import enhanced_list_options, prepare_data_from_responses
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, ColorVariants
@@ -39,31 +39,30 @@ def tag() -> None:
     """Interact with tags."""
 
 
-@enhanced_list_options(
-    TagFilter, default_columns=["id", "name", "color", "created"]
-)
+@list_options(TagFilter, default_columns=["id", "name", "color", "created"])
 @tag.command("list", help="List tags with filter.")
-def list_tags(**kwargs: Any) -> None:
+def list_tags(output_format: str, columns: str, **kwargs: Any) -> None:
     """List tags with filter.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter tags.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing tags..."):
         tags = Client().list_tags(**kwargs)
 
-    if not tags:
-        cli_utils.declare("No tags found.")
-        return
+    tag_list = []
+    for tag in tags.items:
+        tag_data = cli_utils.prepare_response_data(tag)
+        tag_list.append(tag_data)
 
-    # Use centralized data preparation
-    tag_data = prepare_data_from_responses(tags.items)
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(data=tag_data, page=tags, **table_kwargs)
+    cli_utils.handle_output(
+        tag_list,
+        pagination_info=tags.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @tag.command("register", help="Register a new tag.")

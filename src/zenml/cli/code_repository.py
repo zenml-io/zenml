@@ -20,8 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
@@ -191,35 +190,34 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
         )
 
 
-@enhanced_list_options(
+@list_options(
     CodeRepositoryFilter, default_columns=["name", "type", "url", "created"]
 )
 @code_repository.command("list", help="List all connected code repositories.")
-def list_code_repositories(**kwargs: Any) -> None:
+def list_code_repositories(
+    output_format: str, columns: str, **kwargs: Any
+) -> None:
     """List all connected code repositories.
 
     Args:
-        **kwargs: Keyword arguments to filter code repositories.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter code repositories.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing code repositories..."):
         repos = Client().list_code_repositories(**kwargs)
 
-        if not repos.items:
-            cli_utils.declare("No code repositories found.")
-            return
+        repo_list = []
+        for repo in repos.items:
+            repo_data = cli_utils.prepare_response_data(repo)
+            repo_list.append(repo_data)
 
-        # Use centralized data preparation
-        repo_data = prepare_data_from_responses(repos.items)
-
-        # Handle table output with enhanced system
-        cli_utils.handle_table_output(
-            data=repo_data,
-            page=repos,
-            **table_kwargs,
-        )
+    cli_utils.handle_output(
+        repo_list,
+        pagination_info=repos.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @code_repository.command(

@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
+    list_options,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -28,9 +28,7 @@ from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactFilter,
-    ArtifactResponse,
     ArtifactVersionFilter,
-    ArtifactVersionResponse,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -42,54 +40,38 @@ def artifact() -> None:
     """Commands for interacting with artifacts."""
 
 
-@enhanced_list_options(
+@list_options(
     ArtifactFilter,
     default_columns=["id", "name", "latest_version_name", "user", "created"],
 )
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts(**kwargs: Any) -> None:
+def list_artifacts(output_format: str, columns: str, **kwargs: Any) -> None:
     """List all artifacts.
 
     Args:
-        **kwargs: Keyword arguments to filter artifacts by.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter artifacts by.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing artifacts..."):
         artifacts = Client().list_artifacts(**kwargs)
 
-    if not artifacts:
-        cli_utils.declare("No artifacts found.")
-        return
+        artifact_list = []
+        for artifact in artifacts.items:
+            artifact_data = cli_utils.prepare_response_data(artifact)
+            artifact_data.update(
+                {
+                    "latest_version_name": artifact.latest_version_name,
+                    "latest_version_id": artifact.latest_version_id,
+                }
+            )
+            artifact_list.append(artifact_data)
 
-    def enrichment_func(
-        item: ArtifactResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the artifact data with the latest version name and id.
-
-        Args:
-            item: The artifact response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result.update(
-            {
-                "latest_version_name": item.latest_version_name,
-                "latest_version_id": item.latest_version_id,
-            }
-        )
-        return result
-
-    artifact_data = cli_utils.prepare_data_from_responses(
-        artifacts.items, enrichment_func=enrichment_func
-    )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(
-        artifact_data, page=artifacts, **table_kwargs
+    cli_utils.handle_output(
+        artifact_list,
+        pagination_info=artifacts.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 
@@ -152,49 +134,41 @@ def version() -> None:
     """Commands for interacting with artifact versions."""
 
 
-@enhanced_list_options(
+@list_options(
     ArtifactVersionFilter,
     default_columns=["id", "name", "version", "type", "user", "created"],
 )
 @version.command("list", help="List all artifact versions.")
-def list_artifact_versions(**kwargs: Any) -> None:
+def list_artifact_versions(
+    output_format: str, columns: str, **kwargs: Any
+) -> None:
     """List all artifact versions.
 
     Args:
-        **kwargs: Keyword arguments to filter artifact versions by.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter artifact versions by.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing artifact versions..."):
         artifact_versions = Client().list_artifact_versions(**kwargs)
 
-    if not artifact_versions:
-        cli_utils.declare("No artifact versions found.")
-        return
+        artifact_version_list = []
+        for artifact_version in artifact_versions.items:
+            artifact_version_data = cli_utils.prepare_response_data(
+                artifact_version
+            )
+            artifact_version_data.update(
+                {
+                    "name": artifact_version.artifact.name,
+                }
+            )
+            artifact_version_list.append(artifact_version_data)
 
-    def enrichment_func(
-        item: ArtifactVersionResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Enrich the artifact version data with the artifact name.
-
-        Args:
-            item: The artifact version response.
-            result: The result dictionary.
-
-        Returns:
-            The enriched result dictionary.
-        """
-        result.update({"name": item.artifact.name})
-        return result
-
-    artifact_version_data = cli_utils.prepare_data_from_responses(
-        artifact_versions.items, enrichment_func=enrichment_func
-    )
-
-    # Handle table output with enhanced system and pagination
-    cli_utils.handle_table_output(
-        artifact_version_data, page=artifact_versions, **table_kwargs
+    cli_utils.handle_output(
+        artifact_version_list,
+        pagination_info=artifact_versions.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import click
 
@@ -21,14 +21,12 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     check_zenml_pro_project_availability,
-    enhanced_list_options,
-    is_sorted_or_filtered,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.models import ProjectFilter, ProjectResponse
+from zenml.models import ProjectFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,63 +34,44 @@ def project() -> None:
     """Commands for project management."""
 
 
-@enhanced_list_options(
+@list_options(
     ProjectFilter, default_columns=["name", "description", "created"]
 )
 @project.command("list")
 @click.pass_context
-def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_projects(
+    ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
+) -> None:
     """List all projects.
 
     Args:
         ctx: The click context object
-        **kwargs: Keyword arguments to filter the list of projects.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter the list of projects.
     """
     check_zenml_pro_project_availability()
-
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
 
     client = Client()
     with console.status("Listing projects..."):
         projects = client.list_projects(**kwargs)
-        if projects:
-            try:
-                active_project = [client.active_project]
-            except Exception:
-                active_project = []
 
-            # Use centralized data preparation
-            def enrichment_func(
-                item: ProjectResponse, result: Dict[str, Any]
-            ) -> Dict[str, Any]:
-                """Enrich the project data with the display name.
+    project_list = []
+    for project in projects.items:
+        project_data = cli_utils.prepare_response_data(project)
+        project_data.update(
+            {
+                "description": project.description,
+            }
+        )
+        project_list.append(project_data)
 
-                Args:
-                    item: The project response.
-                    result: The result dictionary.
-
-                Returns:
-                    The enriched result dictionary.
-                """
-                result.update({"description": item.description})
-                return result
-
-            project_data = prepare_data_from_responses(
-                projects.items,
-                enrichment_func=enrichment_func,
-            )
-
-            # Handle table output with enhanced system
-            cli_utils.handle_table_output(
-                data=project_data,
-                page=projects,
-                active_models=active_project,
-                show_active=not is_sorted_or_filtered(ctx),
-                **table_kwargs,
-            )
-        else:
-            cli_utils.declare("No projects found.")
+    cli_utils.handle_output(
+        project_list,
+        pagination_info=projects.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @project.command("register")

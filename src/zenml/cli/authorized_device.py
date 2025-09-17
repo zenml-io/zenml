@@ -19,10 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import (
-    enhanced_list_options,
-    prepare_data_from_responses,
-)
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
@@ -59,38 +56,37 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     )
 
 
-@enhanced_list_options(
+@list_options(
     OAuthDeviceFilter,
     default_columns=["status", "ip_address", "hostname", "os", "created"],
 )
 @authorized_device.command(
     "list", help="List all authorized devices for the current user."
 )
-def list_authorized_devices(**kwargs: Any) -> None:
+def list_authorized_devices(
+    output_format: str, columns: str, **kwargs: Any
+) -> None:
     """List all authorized devices.
 
     Args:
-        **kwargs: Keyword arguments to filter authorized devices.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter authorized devices.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     with console.status("Listing authorized devices..."):
         devices = Client().list_authorized_devices(**kwargs)
 
-        if not devices.items:
-            cli_utils.declare("No authorized devices found.")
-            return
+        device_list = []
+        for device in devices.items:
+            device_data = cli_utils.prepare_response_data(device)
+            device_list.append(device_data)
 
-        # Use centralized data preparation
-        device_data = prepare_data_from_responses(devices.items)
-
-        # Handle table output with enhanced system and pagination
-        cli_utils.handle_table_output(
-            data=device_data,
-            page=devices,
-            **table_kwargs,
-        )
+    cli_utils.handle_output(
+        device_list,
+        pagination_info=devices.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @authorized_device.command("lock")

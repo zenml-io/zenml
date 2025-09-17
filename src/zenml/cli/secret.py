@@ -24,9 +24,9 @@ from zenml.cli.utils import (
     confirmation,
     convert_structured_str_to_dict,
     declare,
-    enhanced_list_options,
     error,
     expand_argument_value_from_file,
+    list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
     validate_keys,
@@ -43,6 +43,7 @@ from zenml.logger import get_logger
 from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
+
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -161,55 +162,41 @@ def create_secret(
         error(f"Centralized secrets management is disabled: {str(e)}")
 
 
-@enhanced_list_options(
+@list_options(
     SecretFilter, default_columns=["name", "scope", "user", "created"]
 )
 @secret.command(
     "list", help="List all registered secrets that match the filter criteria."
 )
-def list_secrets(**kwargs: Any) -> None:
+def list_secrets(output_format: str, columns: str, **kwargs: Any) -> None:
     """List all secrets that fulfill the filter criteria.
 
     Args:
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter the secrets.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     client = Client()
     with console.status("Listing secrets..."):
         try:
             secrets = client.list_secrets(**kwargs)
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
-        if not secrets.items:
-            cli_utils.declare("No secrets found.")
-            return
 
-        def enrichment_func(
-            item: SecretResponse, result: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            """Enrich the secret data with the scope.
+        secret_list = []
+        for secret in secrets.items:
+            secret_data = cli_utils.prepare_response_data(secret)
+            secret_data.update({
+            "scope": "private" if secret.private else "public",
+        })
+            secret_list.append(secret_data)
 
-            Args:
-                item: The secret response.
-                result: The result dictionary.
-
-            Returns:
-                The enriched result dictionary.
-            """
-            result.update({"scope": "private" if item.private else "public"})
-            return result
-
-        # Use centralized data preparation
-        secret_data = cli_utils.prepare_data_from_responses(
-            secrets.items, enrichment_func=enrichment_func
-        )
-
-        # Handle table output with enhanced system and pagination
-        cli_utils.handle_table_output(
-            data=secret_data, page=secrets, **table_kwargs
-        )
+    cli_utils.handle_output(
+        secret_list,
+        pagination_info=secrets.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

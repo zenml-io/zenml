@@ -22,9 +22,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    enhanced_list_options,
-    is_sorted_or_filtered,
-    prepare_data_from_responses,
+    list_options,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -136,6 +134,51 @@ def _format_resource_types_with_emojis(
     result = "\n".join(formatted)
     if len(resource_types) > 5:
         result += f"\n+{len(resource_types) - 5} more"
+
+    return result
+
+
+def _generate_service_connector_data(
+    service_connector: ServiceConnectorResponse,
+    output_format: str,
+) -> Dict[str, Any]:
+    """Generate additional data for service connector display.
+
+    Args:
+        service_connector: The service connector response.
+        output_format: The output format.
+
+    Returns:
+        The additional data for the service connector.
+    """
+        # Get active connector IDs from current stack for enrichment
+    active_stack = Client().active_stack_model
+    
+    active_connector_ids = []
+    for components in active_stack.components.values():
+        active_connector_ids.extend(
+            [
+                component.connector.id
+                for component in components
+                if component.connector
+            ]
+        )
+    is_active = service_connector.id in active_connector_ids
+
+    result = {"is_active": is_active}
+
+    # Add formatted resource types with emojis
+    if output_format == "table" and hasattr(service_connector, "resource_types"):
+        result["resource_types"] = _format_resource_types_with_emojis(
+            service_connector.resource_types, service_connector.type
+        )
+
+    # Add type with emoji and short name
+    if output_format == "table" and hasattr(service_connector, "type"):
+        emoji, short_name = _get_connector_type_emoji_and_short_name(
+            service_connector.type
+        )
+        result["type_display"] = f"{emoji} {short_name}"
 
     return result
 
@@ -1060,7 +1103,7 @@ def register_service_connector(
         )
 
 
-@enhanced_list_options(
+@list_options(
     ServiceConnectorFilter,
     default_columns=["id", "name", "type_display", "resource_types", "user"],
 )
@@ -1076,20 +1119,21 @@ def register_service_connector(
     "can be used multiple times.",
     multiple=True,
 )
-@click.pass_context
 def list_service_connectors(
-    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
+    output_format: str,
+    columns: str,
+    labels: Optional[List[str]] = None,
+    **kwargs: Any,
 ) -> None:
     """List all service connectors.
 
     Args:
         ctx: The click context object
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
-    # Extract table options from kwargs
-    table_kwargs = cli_utils.extract_table_options(kwargs)
-
     client = Client()
 
     if labels:
@@ -1097,70 +1141,24 @@ def list_service_connectors(
             labels, allow_label_only=True
         )
 
-    connectors = client.list_service_connectors(**kwargs)
-    if not connectors:
-        cli_utils.declare("No service connectors found for the given filters.")
-        return
+    with console.status("Listing service connectors..."):
+        connectors = client.list_service_connectors(**kwargs)
 
-    # Get active connector IDs from current stack for enrichment
-    active_stack = client.active_stack_model
-    active_connector_ids: List[UUID] = []
-    for components in active_stack.components.values():
-        active_connector_ids.extend(
-            [
-                component.connector.id
-                for component in components
-                if component.connector
-            ]
-        )
-
-    def enrichment_func(
-        item: ServiceConnectorResponse, result: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Add active status and connector-specific formatting.
-
-        Args:
-            item: The service connector response.
-            result: The result dictionary.
-
-        Returns:
-            The result dictionary.
-        """
-        is_active = item.id in active_connector_ids
-
-        result.update(
-            {
-                "is_active": is_active,
-                "active_indicator": "✓" if is_active else "",
-            }
-        )
-
-        # Add formatted resource types with emojis
-        if hasattr(item, "resource_types"):
-            result["resource_types"] = _format_resource_types_with_emojis(
-                item.resource_types, item.type
+        connector_list = []
+        for connector in connectors.items:
+            connector_data = cli_utils.prepare_response_data(connector)
+            connector_data.update(
+                _generate_service_connector_data(
+                    connector, output_format
+                )
             )
+            connector_list.append(connector_data)
 
-        # Add type with emoji and short name
-        if hasattr(item, "type"):
-            emoji, short_name = _get_connector_type_emoji_and_short_name(
-                item.type
-            )
-            result["type_display"] = f"{emoji} {short_name}"
-
-        return result
-
-    # Use centralized data preparation with enrichment
-    connector_data = prepare_data_from_responses(
-        connectors.items, enrichment_func=enrichment_func
-    )
-
-    # Handle table output with enhanced system
-    cli_utils.handle_table_output(
-        data=connector_data,
-        page=connectors,
-        show_active=not is_sorted_or_filtered(ctx),
-        **table_kwargs,
+    cli_utils.handle_output(
+        connector_list,
+        pagination_info=connectors.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 

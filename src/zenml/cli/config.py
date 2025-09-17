@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for ZenML analytics and logging configuration."""
+"""CLI for manipulating ZenML local and global config file."""
 
 import click
 
