@@ -29,26 +29,29 @@ from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.logger import get_logger
 
 add_tags_warning = """
-# Automatic tagging to a pipeline run (within a step)
+# Automatic tagging of a pipeline run (within a step)
 add_tags(tags=[...])
 
-# Manual tagging to a pipeline run
+# Manual tagging of a pipeline run
 add_tags(tags=[...], run=...)
 
-# Manual tagging to a pipeline
+# Manual tagging of a pipeline
 add_tags(tags=[...], pipeline=...)
 
-# Manual tagging to a run template
+# Manual tagging of a run template
 add_tags(tags=[...], run_template=...)
 
-# Manual tagging to an artifact
+# Manual tagging of a snapshot
+add_tags(tags=[...], snapshot=...)
+
+# Manual tagging of an artifact
 add_tags(tags=[...], artifact=...)
 
-# Automatic tagging to an artifact version (within a step)
+# Automatic tagging of an artifact version (within a step)
 add_tags(tags=[...], infer_artifact=True)  # step with single output
 add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
-# Manual tagging to an artifact version
+# Manual tagging of an artifact version
 add_tags(tags=[...], artifact_name=..., artifact_version=...)
 add_tags(tags=[...], artifact_version_id=...)
 """
@@ -65,6 +68,9 @@ remove_tags(tags=[...], pipeline=...)
 
 # Manual tag removal from a run template
 remove_tags(tags=[...], run_template=...)
+
+# Manual tag removal from a snapshot
+remove_tags(tags=[...], snapshot=...)
 
 # Manual tag removal from an artifact
 remove_tags(tags=[...], artifact=...)
@@ -177,6 +183,14 @@ def add_tags(
 ) -> None: ...
 
 
+@overload
+def add_tags(
+    *,
+    tags: List[Union[str, Tag]],
+    snapshot: Union[UUID, str],
+) -> None: ...
+
+
 def add_tags(
     tags: List[Union[str, Tag]],
     # Pipelines
@@ -185,6 +199,8 @@ def add_tags(
     run: Optional[Union[UUID, str]] = None,
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
+    # Snapshots
+    snapshot: Optional[Union[UUID, str]] = None,
     # Artifacts
     artifact: Optional[Union[UUID, str]] = None,
     # Artifact Versions
@@ -200,6 +216,7 @@ def add_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
+        snapshot: The ID of the snapshot.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -225,6 +242,7 @@ def add_tags(
         for v in [
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -242,6 +260,7 @@ def add_tags(
         for v in [
             pipeline,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -259,6 +278,7 @@ def add_tags(
         for v in [
             pipeline,
             run,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -272,6 +292,24 @@ def add_tags(
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
+    # Tag a snapshot
+    elif snapshot is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+            infer_artifact,
+        ]
+    ):
+        snapshot_model = client.get_snapshot(id_or_prefix=snapshot)
+        resource_id = snapshot_model.id
+        resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
+
     # Tag an artifact
     elif artifact is not None and all(
         v is None
@@ -279,6 +317,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact_version_id,
             artifact_name,
             artifact_version,
@@ -296,6 +335,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_name,
             artifact_version,
@@ -312,6 +352,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             infer_artifact,
@@ -330,6 +371,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_version,
@@ -386,6 +428,7 @@ def add_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -497,6 +540,14 @@ def remove_tags(
 def remove_tags(
     *,
     tags: List[str],
+    snapshot: Union[UUID, str],
+) -> None: ...
+
+
+@overload
+def remove_tags(
+    *,
+    tags: List[str],
     artifact: Union[UUID, str],
 ) -> None: ...
 
@@ -535,6 +586,8 @@ def remove_tags(
     run: Optional[Union[UUID, str]] = None,
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
+    # Snapshots
+    snapshot: Optional[Union[UUID, str]] = None,
     # Artifacts
     artifact: Optional[Union[UUID, str]] = None,
     # Artifact Versions
@@ -550,6 +603,7 @@ def remove_tags(
         pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
         run_template: The ID or the name of the run template.
+        snapshot: The ID of the snapshot.
         artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -573,6 +627,7 @@ def remove_tags(
         v is None
         for v in [
             run_template,
+            snapshot,
             run,
             artifact,
             artifact_version_id,
@@ -590,6 +645,7 @@ def remove_tags(
         v is None
         for v in [
             pipeline,
+            snapshot,
             run,
             artifact,
             artifact_version_id,
@@ -604,12 +660,31 @@ def remove_tags(
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
+    # Remove tags from a snapshot
+    elif snapshot is not None and all(
+        v is None
+        for v in [
+            pipeline,
+            run_template,
+            run,
+            artifact,
+            artifact_version_id,
+            artifact_version,
+            artifact_name,
+            infer_artifact,
+        ]
+    ):
+        snapshot_model = client.get_snapshot(id_or_prefix=snapshot)
+        resource_id = snapshot_model.id
+        resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
+
     # Remove tags from a run
     elif run is not None and all(
         v is None
         for v in [
             pipeline,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,
@@ -627,6 +702,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            snapshot,
             run,
             artifact_version_id,
             artifact_name,
@@ -644,6 +720,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            snapshot,
             run,
             artifact,
             artifact_name,
@@ -660,6 +737,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            snapshot,
             run,
             artifact,
             artifact_version_id,
@@ -678,6 +756,7 @@ def remove_tags(
         for v in [
             pipeline,
             run_template,
+            snapshot,
             run,
             artifact,
             artifact_version_id,
@@ -734,6 +813,7 @@ def remove_tags(
             pipeline,
             run,
             run_template,
+            snapshot,
             artifact,
             artifact_version_id,
             artifact_name,

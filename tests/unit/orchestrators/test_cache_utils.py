@@ -25,7 +25,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
-from zenml.models import Page
+from zenml.models import Page, PipelineRequest
 from zenml.orchestrators import cache_utils
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
@@ -233,22 +233,27 @@ def test_fetching_cached_step_run_queries_cache_candidates(
 
 def test_fetching_cached_step_run_uses_latest_candidate(
     clean_client,
-    sample_pipeline_deployment_request_model,
+    sample_pipeline_snapshot_request_model,
     sample_pipeline_run_request_model,
     sample_step_request_model,
 ):
     """Tests that the latest step run with the same cache key is used for
     caching."""
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name="sample_pipeline",
+            project=clean_client.active_project.id,
+        )
+    )
     sample_step_request_model.cache_key = "cache_key"
     sample_step_request_model.project = clean_client.active_project.id
-    sample_pipeline_deployment_request_model.project = (
+    sample_pipeline_snapshot_request_model.project = (
         clean_client.active_project.id
     )
-    sample_pipeline_deployment_request_model.stack = (
-        clean_client.active_stack.id
-    )
+    sample_pipeline_snapshot_request_model.stack = clean_client.active_stack.id
+    sample_pipeline_snapshot_request_model.pipeline = pipeline.id
     sample_pipeline_run_request_model.project = clean_client.active_project.id
-    sample_pipeline_run_request_model.pipeline = None
+    sample_pipeline_run_request_model.pipeline = pipeline.id
 
     sample_step = Step.model_validate(
         {
@@ -260,15 +265,15 @@ def test_fetching_cached_step_run_uses_latest_candidate(
             "config": {"name": "sample_step"},
         }
     )
-    sample_pipeline_deployment_request_model.step_configurations = {
+    sample_pipeline_snapshot_request_model.step_configurations = {
         "sample_step": sample_step
     }
 
-    # Create a pipeline deployment, pipeline run and step run
-    deployment_response = clean_client.zen_store.create_deployment(
-        sample_pipeline_deployment_request_model
+    # Create a pipeline snapshot, pipeline run and step run
+    snapshot_response = clean_client.zen_store.create_snapshot(
+        sample_pipeline_snapshot_request_model
     )
-    sample_pipeline_run_request_model.deployment = deployment_response.id
+    sample_pipeline_run_request_model.snapshot = snapshot_response.id
 
     run, created = clean_client.zen_store.get_or_create_run(
         sample_pipeline_run_request_model
@@ -282,11 +287,11 @@ def test_fetching_cached_step_run_uses_latest_candidate(
         sample_step_request_model
     )
 
-    # Create another deployment, pipeline run and step run, with the same cache key
-    deployment_response = clean_client.zen_store.create_deployment(
-        sample_pipeline_deployment_request_model
+    # Create another snapshot, pipeline run and step run, with the same cache key
+    snapshot_response = clean_client.zen_store.create_snapshot(
+        sample_pipeline_snapshot_request_model
     )
-    sample_pipeline_run_request_model.deployment = deployment_response.id
+    sample_pipeline_run_request_model.snapshot = snapshot_response.id
 
     sample_pipeline_run_request_model.name = "new_run_name"
     new_run, created = clean_client.zen_store.get_or_create_run(

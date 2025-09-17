@@ -395,6 +395,7 @@ class TaggableResourceTypes(StrEnum):
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
     RUN_TEMPLATE = "run_template"
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -413,6 +414,13 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+
+
+class SecretResourceTypes(StrEnum):
+    """All possible resource types for adding secrets."""
+
+    STACK = "stack"
+    STACK_COMPONENT = "stack_component"
 
 
 class DatabaseBackupStrategy(StrEnum):
@@ -483,3 +491,9 @@ class ServiceState(StrEnum):
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
     SCALED_TO_ZERO = "scaled_to_zero"
+
+
+class PipelineRunTriggeredByType(StrEnum):
+    """All possible types that can trigger a pipeline run."""
+
+    STEP_RUN = "step_run"

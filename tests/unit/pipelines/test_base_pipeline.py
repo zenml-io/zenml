@@ -559,7 +559,7 @@ def test_rerunning_deloyment_does_not_fail(
     clean_client,
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that a deployment can be re-run without issues."""
+    """Tests that a snapshot can be re-run without issues."""
     mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
         "get_or_create_run",
@@ -569,14 +569,14 @@ def test_rerunning_deloyment_does_not_fail(
     pipeline_instance = empty_pipeline
     pipeline_instance()
 
-    deployments = clean_client.list_deployments()
-    assert deployments.total == 1
-    deployment = deployments[0]
+    snapshots = clean_client.list_snapshots(named_only=False)
+    assert snapshots.total == 1
+    snapshot = snapshots[0]
 
     stack = clean_client.active_stack
 
-    # Simulate re-running the deployment
-    stack.deploy_pipeline(deployment)
+    # Simulate re-running the snapshot
+    stack.submit_pipeline(snapshot)
 
     assert mock_get_or_create_run.call_count == 3
 
@@ -586,7 +586,7 @@ def test_rerunning_deloyment_does_not_fail(
     run_request = mock_get_or_create_run.call_args_list[1][0][0]
     assert not is_placeholder_request(run_request)
 
-    runs = clean_client.list_pipeline_runs(deployment_id=deployment.id)
+    runs = clean_client.list_pipeline_runs(snapshot_id=snapshot.id)
     assert runs.total == 2
 
 
@@ -607,7 +607,7 @@ def test_failure_during_initialization_marks_placeholder_run_as_failed(
     assert clean_client.list_pipeline_runs().total == 0
 
     mocker.patch(
-        "zenml.stack.stack.Stack.deploy_pipeline", side_effect=RuntimeError
+        "zenml.stack.stack.Stack.submit_pipeline", side_effect=RuntimeError
     )
 
     with pytest.raises(RuntimeError):

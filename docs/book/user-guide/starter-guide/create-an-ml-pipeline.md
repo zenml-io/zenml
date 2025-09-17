@@ -94,7 +94,7 @@ Once the pipeline has finished its execution, use the `zenml login --local` comm
 
 <figure><img src="../../.gitbook/assets/landingpage.png" alt=""><figcaption><p>Landing Page of the Dashboard</p></figcaption></figure>
 
-Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG visualization to understand the flow of data and to ensure all steps are completed successfully.
+Usually, the dashboard is accessible at [http://127.0.0.1:8237/](http://127.0.0.1:8237/). Log in with the default username **"default"** (password not required) and see your recently run pipeline. Browse through the pipeline components, such as the execution history and artifacts produced by your steps. Use the DAG or Timeline visualization to understand the flow of data and to ensure all steps are completed successfully. ZenML offers two visualization modes: the **DAG view** for understanding pipeline structure and dependencies, and the **Timeline view** for analyzing execution performance. For pipelines with many steps, the Timeline view provides a cleaner interface for performance optimization. [Learn more](../../how-to/dashboard/dashboard-features.md#timeline-view).
 
 <figure><img src="../../.gitbook/assets/DAGofRun.png" alt=""><figcaption><p>Diagram view of the run, with the runtime attributes of step 2.</p></figcaption></figure>
 
@@ -104,7 +104,7 @@ If you have closed the browser tab with the ZenML dashboard, you can always reop
 
 ## Understanding steps and artifacts
 
-When you ran the pipeline, each individual function that ran is shown in the DAG visualization as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic lets us break down our entire machine learning code into a sequence of tasks that pass data between each other.
+When you ran the pipeline, each individual function that ran is shown in the run view (DAG or Timeline) as a `step` and is marked with the function name. Steps are connected with `artifacts`, which are simply the objects that are returned by these functions and input into downstream functions. This simple logic lets us break down our entire machine learning code into a sequence of tasks that pass data between each other.
 
 The artifacts produced by your steps are automatically stored and versioned by ZenML. The code that produced these artifacts is also automatically tracked. The parameters and all other configuration is also automatically captured.
 
