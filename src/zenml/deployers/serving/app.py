@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""FastAPI application for serving ZenML pipelines."""
+"""FastAPI application for running ZenML pipeline deployments."""
 
 import inspect
 import os
@@ -33,14 +33,14 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, create_model
 from starlette.concurrency import run_in_threadpool
 
-from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.service import PipelineDeploymentService
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Track service start time
 service_start_time: Optional[float] = None
-_service: Optional[PipelineServingService] = None
+_service: Optional[PipelineDeploymentService] = None
 
 
 @asynccontextmanager
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global service_start_time
 
     # Check for test mode
-    if os.getenv("ZENML_SERVING_TEST_MODE", "false").lower() == "true":
+    if os.getenv("ZENML_DEPLOYMENT_TEST_MODE", "false").lower() == "true":
         logger.info("🧪 Running in test mode - skipping initialization")
         service_start_time = time.time()
         yield
@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         global _service
         # Defer UUID parsing to the service itself to simplify testing
-        _service = PipelineServingService(snapshot_id)
+        _service = PipelineDeploymentService(snapshot_id)
         # Support both sync and async initialize for easier testing
         _init_result = _service.initialize()
         if inspect.isawaitable(_init_result):
@@ -79,12 +79,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 params_model, BaseModel
             ):
                 app.include_router(_build_invoke_router(_service))
-                # Install OpenAPI schemas for request/response
-                _install_runtime_openapi(app, _service)
         except Exception:
             # Skip router installation if parameter model is not ready
             pass
-        logger.info("✅ Pipeline serving service initialized successfully")
+        logger.info("✅ Pipeline deployment service initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize: {e}")
         raise
@@ -92,13 +90,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     # Shutdown
-    logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
+    logger.info("🛑 Shutting down ZenML Pipeline Deployment service...")
     try:
         if _service:
             _cleanup_result = _service.cleanup()
             if inspect.isawaitable(_cleanup_result):
                 await _cleanup_result
-            logger.info("✅ Pipeline serving service cleaned up successfully")
+            logger.info(
+                "✅ Pipeline deployment service cleaned up successfully"
+            )
     except Exception as e:
         logger.error(f"❌ Error during service cleanup: {e}")
     finally:
@@ -109,8 +109,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 # Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
-    title="ZenML Pipeline Serving",
-    description="Serve ZenML pipelines as FastAPI endpoints",
+    title="ZenML Pipeline Deployment",
+    description="Deploy ZenML pipelines as FastAPI endpoints",
     version="0.2.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -125,7 +125,7 @@ security = HTTPBearer(
 )
 
 
-def _build_invoke_router(service: PipelineServingService) -> APIRouter:
+def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
     """Create an idiomatic APIRouter that exposes /invoke."""
     assert service.params_model is not None
     router = APIRouter()
@@ -158,71 +158,7 @@ def _build_invoke_router(service: PipelineServingService) -> APIRouter:
     return router
 
 
-def _install_runtime_openapi(
-    fastapi_app: FastAPI, service: PipelineServingService
-) -> None:
-    """Inject request/response schemas for the invoke route into OpenAPI.
-
-    This function decorates `fastapi_app.openapi` to include custom schemas
-    based on the service-provided request/response schemas. It is a best-effort
-    enhancement and will not raise if schemas are unavailable.
-    """
-    original_openapi = fastapi_app.openapi
-
-    def custom_openapi() -> Dict[str, Any]:
-        schema = original_openapi()
-        try:
-            if (
-                "paths" in schema
-                and "/invoke" in schema["paths"]
-                and "post" in schema["paths"]["/invoke"]
-            ):
-                post_op = schema["paths"]["/invoke"]["post"]
-
-                # Request body schema
-                req_schema: Optional[Dict[str, Any]] = getattr(
-                    service, "request_schema", None
-                )
-                if req_schema:
-                    rb_content = (
-                        post_op.setdefault("requestBody", {})
-                        .setdefault("content", {})
-                        .setdefault("application/json", {})
-                    )
-                    # Use the precise parameters schema for the 'parameters' field
-                    rb_content["schema"] = {
-                        "type": "object",
-                        "properties": {
-                            "parameters": req_schema,
-                            "run_name": {"type": "string"},
-                            "timeout": {"type": "integer"},
-                            "use_in_memory": {"type": "boolean"},
-                        },
-                        "required": ["parameters"],
-                    }
-
-                # Response schema for 200
-                resp_schema: Optional[Dict[str, Any]] = getattr(
-                    service, "response_schema", None
-                )
-                if resp_schema:
-                    responses = post_op.setdefault("responses", {})
-                    ok = (
-                        responses.setdefault("200", {})
-                        .setdefault("content", {})
-                        .setdefault("application/json", {})
-                    )
-                    # Use the full response schema as compiled
-                    ok["schema"] = resp_schema
-        except Exception:
-            # Never break OpenAPI generation
-            pass
-        return schema
-
-    fastapi_app.openapi = custom_openapi  # type: ignore[method-assign]
-
-
-def get_pipeline_service() -> PipelineServingService:
+def get_pipeline_service() -> PipelineDeploymentService:
     """Get the pipeline serving service."""
     assert _service is not None
     return _service
@@ -242,7 +178,7 @@ def verify_token(
     Raises:
         HTTPException: If authentication is required but token is invalid
     """
-    auth_key = os.getenv("ZENML_SERVING_AUTH_KEY", "").strip()
+    auth_key = os.getenv("ZENML_DEPLOYMENT_AUTH_KEY", "").strip()
     auth_enabled = auth_key and auth_key != ""
 
     # If authentication is not enabled, allow all requests
@@ -281,7 +217,7 @@ app.add_middleware(
 
 @app.get("/", response_class=HTMLResponse)
 async def root(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> str:
     """Root endpoint with service information."""
     info = service.get_service_info()
@@ -290,7 +226,7 @@ async def root(
     <!DOCTYPE html>
     <html>
     <head>
-        <title>ZenML Pipeline Serving</title>
+        <title>ZenML Pipeline Deployment</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             .header {{ color: #2563eb; }}
@@ -299,7 +235,7 @@ async def root(
         </style>
     </head>
     <body>
-        <h1 class="header">🚀 ZenML Pipeline Serving</h1>
+        <h1 class="header">🚀 ZenML Pipeline Deployment</h1>
         <div class="section">
             <h2>Service Status</h2>
             <p>Status: <span class="status">Running</span></p>
@@ -317,7 +253,7 @@ async def root(
 
 @app.get("/health")
 async def health_check(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
     """Service health check endpoint."""
     if not service.is_healthy():
@@ -337,7 +273,7 @@ async def health_check(
 
 @app.get("/info")
 async def pipeline_info(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
     """Get detailed pipeline information and parameter schema."""
     info = service.get_service_info()
@@ -357,7 +293,7 @@ async def pipeline_info(
 
 @app.get("/metrics")
 async def execution_metrics(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
     """Get pipeline execution metrics and statistics."""
     metrics = service.get_execution_metrics()
@@ -366,7 +302,7 @@ async def execution_metrics(
 
 @app.get("/schema")
 async def get_schemas(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
     """Expose current request/response schemas for verification/debugging."""
     return {
@@ -377,7 +313,7 @@ async def get_schemas(
 
 @app.get("/status")
 async def service_status(
-    service: PipelineServingService = Depends(get_pipeline_service),
+    service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> Dict[str, Any]:
     """Get detailed service status information."""
     info = service.get_service_info()
@@ -459,14 +395,14 @@ if __name__ == "__main__":
         "--log_level", default=os.getenv("ZENML_LOG_LEVEL", "info").lower()
     )
     parser.add_argument(
-        "--auth_key", default=os.getenv("ZENML_SERVING_AUTH_KEY", "")
+        "--auth_key", default=os.getenv("ZENML_DEPLOYMENT_AUTH_KEY", "")
     )
     args = parser.parse_args()
 
     if args.snapshot_id:
         os.environ["ZENML_SNAPSHOT_ID"] = args.snapshot_id
     if args.auth_key:
-        os.environ["ZENML_SERVING_AUTH_KEY"] = args.auth_key
+        os.environ["ZENML_DEPLOYMENT_AUTH_KEY"] = args.auth_key
 
     logger.info(f"Starting FastAPI server on {args.host}:{args.port}")
 

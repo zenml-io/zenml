@@ -9,7 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.deployers.serving import runtime
-from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.service import PipelineDeploymentService
 
 
 class _DummyParams(BaseModel):
@@ -61,7 +61,7 @@ def clean_runtime():
 def test_service_captures_in_memory_outputs(monkeypatch: pytest.MonkeyPatch):
     """Service should capture in-memory outputs before stopping runtime."""
 
-    service = PipelineServingService(uuid4())
+    service = PipelineDeploymentService(uuid4())
     service.snapshot = _DummySnapshot()
     service._params_model = _DummyParams
 

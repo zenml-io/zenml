@@ -44,8 +44,8 @@ from zenml.stack import Stack
 logger = get_logger(__name__)
 
 
-class PipelineServingService:
-    """Clean, elegant pipeline serving service with zero memory leaks."""
+class PipelineDeploymentService:
+    """Pipeline deployment service."""
 
     def __init__(self, snapshot_id: Union[str, UUID]):
         """Initialize service with minimal state."""
@@ -81,14 +81,14 @@ class PipelineServingService:
         """Get max output size in bytes with bounds checking."""
         try:
             size_mb = int(
-                os.environ.get("ZENML_SERVING_MAX_OUTPUT_SIZE_MB", "1")
+                os.environ.get("ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB", "1")
             )
             # Enforce reasonable bounds: 1MB to 100MB
             size_mb = max(1, min(size_mb, 100))
             return size_mb * 1024 * 1024
         except (ValueError, TypeError):
             logger.warning(
-                "Invalid ZENML_SERVING_MAX_OUTPUT_SIZE_MB. Using 1MB."
+                "Invalid ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB. Using 1MB."
             )
             return 1024 * 1024
 
@@ -125,7 +125,7 @@ class PipelineServingService:
 
             # Initialize orchestrator
             self._orchestrator = LocalOrchestrator(
-                name="serving-local",
+                name="deployment-local",
                 id=uuid4(),
                 config=LocalOrchestratorConfig(),
                 flavor="local",
@@ -278,7 +278,7 @@ class PipelineServingService:
             snapshot=self.snapshot, logs=None
         )
 
-        # Start serving runtime context with parameters
+        # Start deployment runtime context with parameters
         from zenml.deployers.serving import runtime
 
         runtime.start(
@@ -303,7 +303,7 @@ class PipelineServingService:
             except ImportError:
                 pass
         finally:
-            # Always stop serving runtime context
+            # Always stop deployment runtime context
             runtime.stop()
 
         # Fetch the concrete run via its id
@@ -392,9 +392,9 @@ class PipelineServingService:
 
     def _serialize_json_safe(self, value: Any) -> Any:
         """Delegate to the centralized runtime serializer."""
-        from zenml.deployers.serving import runtime as serving_runtime
+        from zenml.deployers.serving import runtime
 
-        return serving_runtime._make_json_safe(value)
+        return runtime._make_json_safe(value)
 
     def _build_success_response(
         self,
@@ -456,7 +456,7 @@ class PipelineServingService:
 
     @property
     def response_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for the serving response if available."""
+        """Return the JSON schema for the deployment response if available."""
         try:
             if self.snapshot and self.snapshot.pipeline_spec:
                 return self.snapshot.pipeline_spec.response_schema

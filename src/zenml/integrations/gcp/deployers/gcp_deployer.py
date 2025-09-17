@@ -47,7 +47,7 @@ from zenml.deployers.exceptions import (
 from zenml.deployers.serving.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,
-    ServingEntrypointConfiguration,
+    DeploymentEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
     SNAPSHOT_ID_OPTION,
@@ -1062,14 +1062,14 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         Args:
             deployment: The deployment to serve.
-            stack: The stack the pipeline will be served on.
+            stack: The stack the pipeline will be deployed on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
             timeout: The maximum time in seconds to wait for the pipeline
-                deployment to be deployed.
+                deployment to be provisioned.
 
         Returns:
-            The operational state of the deployed deployment.
+            The operational state of the provisioned deployment.
 
         Raises:
             DeploymentProvisionError: If the deployment fails.
@@ -1077,9 +1077,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         """
         snapshot = deployment.snapshot
         assert snapshot, "Pipeline snapshot not found"
-
-        environment = environment or {}
-        secrets = secrets or {}
 
         settings = cast(
             GCPDeployerSettings,
@@ -1146,8 +1143,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         image = self.get_image(snapshot)
 
         # Prepare entrypoint and arguments
-        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
-        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
@@ -1293,11 +1290,11 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deploying deployment "
+                f"Unexpected error while provisioning deployment "
                 f"'{deployment.name}': {e}"
             )
 
-    def do_get_deployment(
+    def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
     ) -> DeploymentOperationalState:
@@ -1341,7 +1338,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             existing_secrets,
         )
 
-    def do_get_deployment_logs(
+    def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
         follow: bool = False,

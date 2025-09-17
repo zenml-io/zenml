@@ -150,6 +150,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
+        on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
@@ -186,6 +187,7 @@ class Pipeline:
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
                 value, it will be stored as the pipeline state.
+            on_init_kwargs: Arguments for the init hook.
             on_cleanup: Callback function to run on cleanup of the pipeline. Can
                 be a function with no arguments, or a source path to such a
                 function with no arguments (e.g. `module.my_function`).
@@ -217,6 +219,7 @@ class Pipeline:
                 on_failure=on_failure,
                 on_success=on_success,
                 on_init=on_init,
+                on_init_kwargs=on_init_kwargs,
                 on_cleanup=on_cleanup,
                 model=model,
                 retry=retry,
@@ -412,8 +415,9 @@ class Pipeline:
             The pipeline instance that this method was called on.
 
         Raises:
-            ValueError: If the pipeline has parameters configured differently in
-                configuration file and code.
+            ValueError: If on_init_kwargs is provided but on_init is not and
+                the init hook source is found in the current pipeline
+                configuration.
         """
         failure_hook_source = None
         if on_failure:

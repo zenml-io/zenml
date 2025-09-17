@@ -59,7 +59,7 @@ class PipelineState:
             if not api_key:
                 raise ImportError("OpenAI API key not found")
 
-            self.client = openai.OpenAI(api_key=api_key)
+            self.openai_client = openai.OpenAI(api_key=api_key)
         except Exception as e:
             print(f"Error initializing OpenAI client: {e}")
 
@@ -107,7 +107,7 @@ def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
         assert isinstance(pipeline_state, PipelineState), (
             "Pipeline state is not a PipelineState"
         )
-        client = pipeline_state.client
+        client = pipeline_state.openai_client
 
     if client:
         # Create a prompt for the LLM

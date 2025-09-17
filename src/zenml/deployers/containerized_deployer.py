@@ -38,17 +38,6 @@ class ContainerizedDeployer(BaseDeployer, ABC):
 
     CONTAINER_REQUIREMENTS: List[str] = []
 
-    @classmethod
-    def get_requirements(
-        cls,
-    ) -> List[str]:
-        """Method to get the container requirements for the deployer.
-
-        Returns:
-            A list of requirements.
-        """
-        return cls.CONTAINER_REQUIREMENTS
-
     @staticmethod
     def get_image(snapshot: PipelineSnapshotResponse) -> str:
         """Get the docker image used to deploy a pipeline snapshot.
@@ -79,7 +68,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             A set of PyPI requirements for the deployer.
         """
         requirements = super().requirements
-        requirements.update(self.get_requirements())
+        requirements.update(self.CONTAINER_REQUIREMENTS)
         return requirements
 
     def get_docker_builds(

@@ -20,7 +20,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.service import PipelineDeploymentService
 
 
 class MockWeatherRequest(BaseModel):
@@ -33,7 +33,7 @@ class MockWeatherRequest(BaseModel):
 @pytest.fixture
 def mock_service():
     """Mock pipeline serving service."""
-    service = MagicMock(spec=PipelineServingService)
+    service = MagicMock(spec=PipelineDeploymentService)
     service.snapshot_id = uuid4()
     service._params_model = MockWeatherRequest
     service.last_execution_time = None

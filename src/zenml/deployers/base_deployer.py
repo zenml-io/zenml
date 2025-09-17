@@ -61,6 +61,7 @@ from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -88,7 +89,7 @@ class BaseDeployer(StackComponent, ABC):
     The deployer serves three major purposes:
 
     1. It contains all the stack related configuration attributes required to
-    interact with the remote pipeline serving tool, service or platform (e.g.
+    interact with the remote pipeline deployment tool, service or platform (e.g.
     hostnames, URLs, references to credentials, other client related
     configuration parameters).
 
@@ -179,11 +180,14 @@ class BaseDeployer(StackComponent, ABC):
             deployer = deployment.deployer
             assert deployer, "Deployer not found"
             raise DeploymentDeployerMismatchError(
-                f"The existing deployment with name '{deployment.name}' "
-                f"in project {deployment.project_id} is not managed by the "
-                f"active deployer stack component '{deployer.name}'. "
-                "Please switch to the correct deployer in your stack "
-                f"'{self.name}' and try again or use a different deployment name."
+                f"The deployment with name '{deployment.name}' was provisioned "
+                f"with a deployer stack component ({deployer.name}) that is "
+                f"different from the active one: {self.name}. "
+                f"You can try one of the following:\n"
+                f"1. Use a different name for the deployment\n"
+                f"2. Delete the existing '{deployment.name}' deployment\n"
+                f"3. Use a stack that contains the '{self.name}' deployer stack "
+                "component\n"
             )
 
     def _check_deployment_snapshot(
@@ -261,7 +265,7 @@ class BaseDeployer(StackComponent, ABC):
                 status=DeploymentStatus.ERROR,
             )
             try:
-                deployment_state = self.do_get_deployment(deployment)
+                deployment_state = self.do_get_deployment_state(deployment)
             except DeploymentNotFoundError:
                 deployment_state = DeploymentOperationalState(
                     status=DeploymentStatus.ABSENT
@@ -340,15 +344,15 @@ class BaseDeployer(StackComponent, ABC):
         """Provision a deployment.
 
         The provision_deployment method is the main entry point for
-        provisioning deployments using the deployer. It is used to serve
+        provisioning deployments using the deployer. It is used to deploy
         a pipeline snapshot as an HTTP deployment, or update an existing
         deployment instance with the same name. The method returns a
         DeploymentResponse object that is a representation of the
         external deployment instance.
 
         Args:
-            snapshot: The pipeline snapshot to serve as an HTTP deployment.
-            stack: The stack the pipeline will be served on.
+            snapshot: The pipeline snapshot to deploy as an HTTP deployment.
+            stack: The stack the pipeline will be deployed on.
             deployment_name_or_id: Unique name or ID for the deployment.
                 This name must be unique at the project level.
             replace: If True, it will update in-place any existing pipeline
@@ -370,9 +374,15 @@ class BaseDeployer(StackComponent, ABC):
             DeployerError: if an unexpected error occurs.
 
         Returns:
-            The DeploymentResponse object representing the deployed
+            The DeploymentResponse object representing the provisioned
             deployment.
         """
+        if not replace and is_valid_uuid(deployment_name_or_id):
+            raise DeploymentAlreadyExistsError(
+                f"A deployment with ID '{deployment_name_or_id}' "
+                "already exists"
+            )
+
         client = Client()
 
         settings = cast(
@@ -467,7 +477,7 @@ class BaseDeployer(StackComponent, ABC):
             )
 
         logger.info(
-            f"Deploying deployment {deployment.name} with "
+            f"Provisioning deployment {deployment.name} with "
             f"snapshot ID: {snapshot.id}"
         )
 
@@ -496,20 +506,17 @@ class BaseDeployer(StackComponent, ABC):
                     secrets=secrets,
                     timeout=timeout,
                 )
-                deployment = self._update_deployment(
-                    deployment, deployment_state
-                )
             except DeploymentProvisionError as e:
                 raise DeploymentProvisionError(
-                    f"Failed to deploy deployment {deployment.name}: {e}"
+                    f"Failed to provision deployment {deployment.name}: {e}"
                 ) from e
             except DeployerError as e:
                 raise DeployerError(
-                    f"Failed to deploy deployment {deployment.name}: {e}"
+                    f"Failed to provision deployment {deployment.name}: {e}"
                 ) from e
             except Exception as e:
                 raise DeployerError(
-                    f"Unexpected error while deploying deployment for "
+                    f"Unexpected error while provisioning deployment for "
                     f"{deployment.name}: {e}"
                 ) from e
             finally:
@@ -518,40 +525,37 @@ class BaseDeployer(StackComponent, ABC):
                 )
 
             logger.info(
-                f"Deployed deployment {deployment.name} with "
+                f"Provisioned deployment {deployment.name} with "
                 f"snapshot ID: {snapshot.id}. Operational state is: "
                 f"{deployment_state.status}"
             )
 
-            if deployment_state.status == DeploymentStatus.RUNNING:
+            try:
+                if deployment_state.status == DeploymentStatus.RUNNING:
+                    return deployment
+
+                # Subtract the time spent deploying the deployment from the
+                # timeout
+                timeout = timeout - int(time.time() - start_time)
+                deployment, _ = self._poll_deployment(
+                    deployment, DeploymentStatus.RUNNING, timeout
+                )
+
+                if deployment.status != DeploymentStatus.RUNNING:
+                    raise DeploymentProvisionError(
+                        f"Failed to provision deployment {deployment.name}: "
+                        f"The deployment's operational state is "
+                        f"{deployment.status}. Please check the status or logs "
+                        "of the deployment for more information."
+                    )
+
+            finally:
                 analytics_handler.metadata = (
                     self._get_deployment_analytics_metadata(
                         deployment=deployment,
                         stack=stack,
                     )
                 )
-                return deployment
-
-            # Subtract the time spent deploying the deployment from the timeout
-            timeout = timeout - int(time.time() - start_time)
-            deployment, _ = self._poll_deployment(
-                deployment, DeploymentStatus.RUNNING, timeout
-            )
-
-            if deployment.status != DeploymentStatus.RUNNING:
-                raise DeploymentProvisionError(
-                    f"Failed to deploy deployment {deployment.name}: "
-                    f"The deployment's operational state is {deployment.status}. "
-                    "Please check the status or logs of the deployment for more "
-                    "information."
-                )
-
-            analytics_handler.metadata = (
-                self._get_deployment_analytics_metadata(
-                    deployment=deployment,
-                    stack=stack,
-                )
-            )
 
             return deployment
 
@@ -593,21 +597,20 @@ class BaseDeployer(StackComponent, ABC):
             status=DeploymentStatus.ERROR,
         )
         try:
-            deployment_state = self.do_get_deployment(deployment)
+            deployment_state = self.do_get_deployment_state(deployment)
         except DeploymentNotFoundError:
             deployment_state.status = DeploymentStatus.ABSENT
-            deployment = self._update_deployment(deployment, deployment_state)
         except DeployerError as e:
-            self._update_deployment(deployment, deployment_state)
             raise DeployerError(
                 f"Failed to refresh deployment {deployment_name_or_id}: {e}"
             ) from e
         except Exception as e:
-            self._update_deployment(deployment, deployment_state)
             raise DeployerError(
                 f"Unexpected error while refreshing deployment for "
                 f"{deployment_name_or_id}: {e}"
             ) from e
+        finally:
+            deployment = self._update_deployment(deployment, deployment_state)
 
         return deployment
 
@@ -692,33 +695,29 @@ class BaseDeployer(StackComponent, ABC):
                     deployment, deployment_state
                 )
 
-            if deployment_state.status == DeploymentStatus.ABSENT:
+            try:
+                if deployment_state.status == DeploymentStatus.ABSENT:
+                    return deployment
+
+                # Subtract the time spent deprovisioning the deployment from the timeout
+                timeout = timeout - int(time.time() - start_time)
+                deployment, _ = self._poll_deployment(
+                    deployment, DeploymentStatus.ABSENT, timeout
+                )
+
+                if deployment.status != DeploymentStatus.ABSENT:
+                    raise DeploymentDeprovisionError(
+                        f"Failed to deprovision deployment {deployment_name_or_id}: "
+                        f"Operational state: {deployment.status}"
+                    )
+
+            finally:
                 analytics_handler.metadata = (
                     self._get_deployment_analytics_metadata(
                         deployment=deployment,
                         stack=None,
                     )
                 )
-                return deployment
-
-            # Subtract the time spent deprovisioning the deployment from the timeout
-            timeout = timeout - int(time.time() - start_time)
-            deployment, _ = self._poll_deployment(
-                deployment, DeploymentStatus.ABSENT, timeout
-            )
-
-            if deployment.status != DeploymentStatus.ABSENT:
-                raise DeploymentDeprovisionError(
-                    f"Failed to deprovision deployment {deployment_name_or_id}: "
-                    f"Operational state: {deployment.status}"
-                )
-
-            analytics_handler.metadata = (
-                self._get_deployment_analytics_metadata(
-                    deployment=deployment,
-                    stack=None,
-                )
-            )
 
             return deployment
 
@@ -806,7 +805,7 @@ class BaseDeployer(StackComponent, ABC):
         self._check_deployment_deployer(deployment)
 
         try:
-            return self.do_get_deployment_logs(deployment, follow, tail)
+            return self.do_get_deployment_state_logs(deployment, follow, tail)
         except DeployerError as e:
             raise DeployerError(
                 f"Failed to get logs for deployment {deployment_name_or_id}: {e}"
@@ -828,7 +827,7 @@ class BaseDeployer(StackComponent, ABC):
         secrets: Dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
-        """Abstract method to serve a pipeline as an HTTP deployment.
+        """Abstract method to deploy a pipeline as an HTTP deployment.
 
         Concrete deployer subclasses must implement the following
         functionality in this method:
@@ -840,22 +839,22 @@ class BaseDeployer(StackComponent, ABC):
         resources, do not rely on the deployment name as being immutable
         or unique.
 
-        - If the deployment infrastructure is already deployed, update
+        - If the deployment infrastructure is already provisioned, update
         it to match the information in the deployment response.
 
         - Return a DeploymentOperationalState representing the operational
-        state of the deployed deployment.
+        state of the provisioned deployment.
 
         Note that the deployment infrastructure is not required to be
         deployed immediately. The deployer can return a
         DeploymentOperationalState with a status of
         DeploymentStatus.PENDING, and the base deployer will poll
         the deployment infrastructure by calling the
-        `do_get_deployment` method until it is ready or it times out.
+        `do_get_deployment_state` method until it is ready or it times out.
 
         Args:
-            deployment: The deployment to serve as an HTTP deployment.
-            stack: The stack the pipeline will be served on.
+            deployment: The deployment to deploy as an HTTP deployment.
+            stack: The stack the pipeline will be deployed on.
             environment: A dictionary of environment variables to set on the
                 deployment.
             secrets: A dictionary of secret environment variables to set
@@ -863,20 +862,20 @@ class BaseDeployer(StackComponent, ABC):
                 should not be exposed as regular environment variables on the
                 deployer.
             timeout: The maximum time in seconds to wait for the pipeline
-                deployment to be deployed.
+                deployment to be provisioned.
 
         Returns:
             The DeploymentOperationalState object representing the
-            operational state of the deployed deployment.
+            operational state of the provisioned deployment.
 
         Raises:
-            DeploymentProvisionError: if the deployment deployment
+            DeploymentProvisionError: if provisioning the deployment
                 fails.
             DeployerError: if an unexpected error occurs.
         """
 
     @abstractmethod
-    def do_get_deployment(
+    def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
     ) -> DeploymentOperationalState:
@@ -898,7 +897,7 @@ class BaseDeployer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def do_get_deployment_logs(
+    def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
@@ -948,7 +947,7 @@ class BaseDeployer(StackComponent, ABC):
         DeploymentOperationalState with a status of
         DeploymentStatus.PENDING, and the base deployer will poll
         the deployment infrastructure by calling the
-        `do_get_deployment` method until it is deleted or it times out.
+        `do_get_deployment_state` method until it is deleted or it times out.
 
         Args:
             deployment: The deployment to delete.

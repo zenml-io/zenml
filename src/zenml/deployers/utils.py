@@ -82,7 +82,7 @@ def call_deployment(
     timeout: int = 300,  # 5 minute timeout
     **kwargs: Any,
 ) -> Any:
-    """Call a deployed deployment and return the result.
+    """Call a deployment and return the result.
 
     Args:
         deployment_name_or_id: The name or ID of the deployment to call.

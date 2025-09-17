@@ -17,7 +17,7 @@ This module centralizes the logic to:
 - Build a Pydantic model for pipeline parameters from a snapshot
 - Validate and normalize request parameters using that model
 
-It is intentionally independent of FastAPI or serving internals so that
+It is intentionally independent of FastAPI or deployment internals so that
 other entry points (e.g., CLI) can reuse the same behavior.
 """
 

@@ -20,7 +20,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.deployers.serving import runtime
-from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.serving.service import PipelineDeploymentService
 
 
 class WeatherRequest(BaseModel):
@@ -189,7 +189,7 @@ class TestCompleteParameterFlow:
         mock_build_params.return_value = _Params
 
         # Create service
-        service = PipelineServingService("test-snapshot-id")
+        service = PipelineDeploymentService("test-snapshot-id")
         service.snapshot = mock_snapshot
 
         # Test 1: Parameter resolution in serving service
@@ -246,7 +246,7 @@ class TestCompleteParameterFlow:
 
         mock_build_params.return_value = _Params
 
-        service = PipelineServingService("test-snapshot-id")
+        service = PipelineDeploymentService("test-snapshot-id")
         service.snapshot = mock_snapshot
 
         # Test update with required fields provided
@@ -272,7 +272,7 @@ class TestCompleteParameterFlow:
         # Note: mock_pipeline_class not used in this test but required by fixture
         del mock_pipeline_class
 
-        service = PipelineServingService("test-snapshot-id")
+        service = PipelineDeploymentService("test-snapshot-id")
         service.snapshot = mock_snapshot
 
         request_params = {"request": {"city": "berlin"}}

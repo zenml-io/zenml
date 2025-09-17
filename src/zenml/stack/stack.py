@@ -904,7 +904,7 @@ class Stack:
         if not self.deployer:
             raise RuntimeError(
                 "The stack does not have a deployer. Please add a "
-                "deployer to the stack in order to serve a pipeline."
+                "deployer to the stack in order to deploy a pipeline."
             )
 
         return self.deployer.provision_deployment(

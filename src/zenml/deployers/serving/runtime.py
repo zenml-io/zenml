@@ -1,12 +1,12 @@
-"""Thread-safe runtime context for serving.
+"""Thread-safe runtime context for deployments.
 
-This module provides request-scoped state for serving invocations using
+This module provides request-scoped state for deployment invocations using
 contextvars to ensure thread safety and proper request isolation. Each
-serving request gets its own isolated context that doesn't interfere
+deployment request gets its own isolated context that doesn't interfere
 with concurrent requests.
 
 It also provides parameter override functionality for the orchestrator
-to access serving parameters without tight coupling.
+to access deployment parameters without tight coupling.
 """
 
 import contextvars
@@ -95,7 +95,7 @@ def start(
 
 
 def stop() -> None:
-    """Clear the serving state for the current request context."""
+    """Clear the deployment state for the current request context."""
     state = _get_context()
 
     # Reset clears all in-memory data and URIs automatically
@@ -103,7 +103,7 @@ def stop() -> None:
 
 
 def is_active() -> bool:
-    """Return whether serving state is active in the current context."""
+    """Return whether deployment state is active in the current context."""
     return _get_context().active
 
 
@@ -157,10 +157,10 @@ def get_outputs() -> Dict[str, Dict[str, Any]]:
 
 
 def get_parameter_override(name: str) -> Optional[Any]:
-    """Get a parameter override from the current serving context.
+    """Get a parameter override from the current deployment context.
 
     This function allows the orchestrator to check for parameter overrides
-    without importing serving-specific modules directly. Only direct
+    without importing deployment-specific modules directly. Only direct
     parameters are supported; nested extraction from complex objects is not
     performed.
 
