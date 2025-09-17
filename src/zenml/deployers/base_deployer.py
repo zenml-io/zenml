@@ -125,8 +125,8 @@ class BaseDeployer(StackComponent, ABC):
         deployer = client.active_stack.deployer
         if not deployer or not isinstance(deployer, cls):
             raise TypeError(
-                "The active stack needs to have a pipeline "
-                "server component registered to be able to deploy pipelines. "
+                "The active stack needs to have a deployer "
+                "component registered to be able to deploy pipelines. "
                 "You can create a new stack with a deployer component "
                 "or update your active stack to add this component, e.g.:\n\n"
                 "  `zenml deployer register ...`\n"
