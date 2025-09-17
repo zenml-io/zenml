@@ -1,0 +1,22 @@
+{
+  "data/raw_images/img_0002.png": {
+    "etag": "f3c2e67b8fcf5df60ceecb7b243db097",
+    "output": "data/outputs/preproc/f3/f3c2e67b8fcf5df60ceecb7b243db097.png",
+    "processed_at": 1758118183
+  },
+  "data/raw_images/img_0007.png": {
+    "etag": "7731c7d99fe765eb6dfe2a39ec76dd9b",
+    "output": "data/outputs/preproc/77/7731c7d99fe765eb6dfe2a39ec76dd9b.png",
+    "processed_at": 1758118183
+  },
+  "data/raw_images/img_0008.png": {
+    "etag": "dc573ca8e9a33e433d1c824b97788276",
+    "output": "data/outputs/preproc/dc/dc573ca8e9a33e433d1c824b97788276.png",
+    "processed_at": 1758118183
+  },
+  "data/raw_images/img_0010.png": {
+    "etag": "de9204e0b944726458a0d91919b7aaa0",
+    "output": "data/outputs/preproc/de/de9204e0b944726458a0d91919b7aaa0.png",
+    "processed_at": 1758118183
+  }
+}

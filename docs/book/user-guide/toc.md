@@ -53,6 +53,7 @@
 * [Hyper-parameter tuning](tutorial/hyper-parameter-tuning.md)
 * [Inspecting past pipeline runs](tutorial/fetching-pipelines.md)
 * [Train with GPUs](tutorial/distributed-training.md)
+* [Incremental preprocessing for image datasets](tutorial/incremental-image-processing.md)
 * [Running notebooks remotely](tutorial/run-remote-notebooks.md)
 * [Managing machine learning datasets](tutorial/datasets.md)
 * [Handling big data](tutorial/manage-big-data.md)
