@@ -270,7 +270,7 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
             pass
 
     old_format = re.search(
-        r"\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+UTC\]", line
+        r"^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+UTC\]", line
     )
 
     timestamp = None
