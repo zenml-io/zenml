@@ -3549,8 +3549,7 @@ class Client(metaclass=ClientMetaClass):
         ```
 
         Args:
-            snapshot_id: ID of the snapshot to run. Either this or a
-                pipeline can be specified.
+            snapshot_name_or_id: Name or ID of the snapshot to run.
             pipeline_name_or_id: Name or ID of the pipeline. If this is
                 specified, the latest runnable snapshot for this pipeline will
                 be used for the run (Runnable here means that the build
@@ -3627,7 +3626,7 @@ class Client(metaclass=ClientMetaClass):
             else:
                 if not pipeline_name_or_id:
                     raise RuntimeError(
-                        "You need to speficy at least one of snapshot or "
+                        "You need to specify at least one of snapshot or "
                         "pipeline to run."
                     )
 
