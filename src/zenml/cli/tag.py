@@ -20,7 +20,9 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import list_options
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories, ColorVariants
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
@@ -37,23 +39,29 @@ def tag() -> None:
     """Interact with tags."""
 
 
-@cli_utils.list_options(TagFilter)
+@list_options(TagFilter, default_columns=["id", "name", "color", "created"])
 @tag.command("list", help="List tags with filter.")
-def list_tags(**kwargs: Any) -> None:
+def list_tags(output_format: str, columns: str, **kwargs: Any) -> None:
     """List tags with filter.
 
     Args:
-        **kwargs: Keyword arguments to filter models.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter tags.
     """
-    tags = Client().list_tags(**kwargs)
+    with console.status("Listing tags..."):
+        tags = Client().list_tags(**kwargs)
 
-    if not tags:
-        cli_utils.declare("No tags found.")
-        return
+    tag_list = []
+    for tag in tags.items:
+        tag_data = cli_utils.prepare_response_data(tag)
+        tag_list.append(tag_data)
 
-    cli_utils.print_pydantic_models(
-        tags,
-        exclude_columns=["created"],
+    cli_utils.handle_output(
+        tag_list,
+        pagination_info=tags.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
 
 

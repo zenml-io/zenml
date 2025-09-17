@@ -43,11 +43,9 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
-    is_sorted_or_filtered,
     list_options,
+    prepare_response_data,
     print_model_url,
-    print_page_info,
-    print_stacks_table,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -66,6 +64,7 @@ from zenml.models import (
     ServiceConnectorResourcesInfo,
     StackFilter,
     StackRequest,
+    StackResponse,
 )
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
@@ -569,7 +568,7 @@ def register_stack(
                     connectors.add(conn_.name)
         for connector in connectors:
             delete_commands.append(
-                "zenml service-connector delete " + connector
+                f"zenml service-connector delete {connector}"
             )
     for each in created_objects:
         if comps_ := created_stack.components[StackComponentType(each)]:
@@ -1006,28 +1005,92 @@ def rename_stack(
     print_model_url(get_stack_url(stack_))
 
 
+def _generate_stack_data(
+    stack: StackResponse, output_format: str
+) -> List[Dict[str, Any]]:
+    """Generate additional data for the stack to display in the output.
+
+    Args:
+        stack: The stack response.
+        table_args: The table arguments.
+
+    Returns:
+        The additional data for the stack.
+    """
+    from zenml.enums import StackComponentType
+
+    client = Client()
+
+    active_stack_id = client.active_stack_model.id
+    is_active = stack.id == active_stack_id
+
+    result = {
+        "orchestrator": "-",
+        "artifact_store": "-",
+        "is_active": is_active,
+        "components": len(stack.components)
+        if hasattr(stack, "components")
+        else 0,
+    }
+
+    if hasattr(stack, "components") and stack.components:
+        if StackComponentType.ORCHESTRATOR in stack.components:
+            result["orchestrator"] = stack.components[
+                StackComponentType.ORCHESTRATOR
+            ][0].name
+        if StackComponentType.ARTIFACT_STORE in stack.components:
+            result["artifact_store"] = stack.components[
+                StackComponentType.ARTIFACT_STORE
+            ][0].name
+
+    result["name"] = stack.name
+
+    if is_active and output_format == "table":
+        result["name"] = (
+            f"[green]●[/green] [bold green]{stack.name}[/bold green] (active)"
+        )
+    return result
+
+
 @stack.command("list")
-@list_options(StackFilter)
-@click.pass_context
-def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
+@list_options(
+    StackFilter,
+    default_columns=[
+        "id",
+        "name",
+        "owner",
+        "components",
+        "orchestrator",
+        "artifact_store",
+    ],
+)
+def list_stacks(output_format: str, columns: str, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
-        ctx: the Click context
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
-    with console.status("Listing stacks...\n"):
+
+    with console.status("Listing stacks..."):
         stacks = client.list_stacks(**kwargs)
-        if not stacks:
-            cli_utils.declare("No stacks found for the given filters.")
-            return
-        print_stacks_table(
-            client=client,
-            stacks=stacks.items,
-            show_active=not is_sorted_or_filtered(ctx),
-        )
-        print_page_info(stacks)
+
+        stack_list = []
+        for stack in stacks.items:
+            stack_data = prepare_response_data(stack)
+            stack_data.update(
+                _generate_stack_data(stack, output_format=output_format)
+            )
+            stack_list.append(stack_data)
+
+    cli_utils.handle_output(
+        stack_list,
+        pagination_info=stacks.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @stack.command(

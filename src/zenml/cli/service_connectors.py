@@ -22,9 +22,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    is_sorted_or_filtered,
     list_options,
-    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -37,6 +35,152 @@ from zenml.models import (
     ServiceConnectorResponse,
 )
 from zenml.utils.time_utils import seconds_to_human_readable, utc_now
+
+
+def _get_connector_type_emoji_and_short_name(
+    connector_type_id: str,
+) -> tuple[str, str]:
+    """Get emoji and short name for connector type.
+
+    Args:
+        connector_type_id: The connector type identifier (e.g., 'aws', 'gcp')
+
+    Returns:
+        Tuple of (emoji, short_name)
+    """
+    connector_mappings = {
+        "aws": ("🔶", "aws"),  # Orange diamond/rhomboid
+        "aws-generic": (
+            "🔶",
+            "aws",
+        ),  # Orange diamond/rhomboid - same as main AWS
+        "gcp": ("🔵", "gcp"),  # Blue dot
+        "gcp-generic": ("🔵", "gcp"),  # Blue dot - same as main GCP
+        "google-cloud": ("🔵", "gcp"),  # Blue dot
+        "azure": ("🔷", "azure"),
+        "azure-generic": ("🔷", "azure"),  # Blue diamond - same as main Azure
+        "kubernetes": ("🌀", "k8s"),  # Blue spiral
+        "kubernetes-generic": (
+            "🌀",
+            "k8s",
+        ),  # Blue spiral - same as main Kubernetes
+        "docker": ("🐳", "docker"),
+        "docker-generic": ("🐳", "docker"),  # Whale - same as main Docker
+        "github": ("🐙", "github"),
+        "gitlab": ("🦊", "gitlab"),
+        "hyperai": ("🚀", "hyperai"),
+        "slack": ("💬", "slack"),
+        "discord": ("🎮", "discord"),
+        "teams": ("👥", "teams"),
+    }
+
+    return connector_mappings.get(
+        connector_type_id.lower(), ("🔗", connector_type_id)
+    )
+
+
+def _format_resource_types_with_emojis(
+    resource_types: List[str], connector_type: str = ""
+) -> str:
+    """Format resource types with emojis, each on a separate line.
+
+    Args:
+        resource_types: List of resource type identifiers
+        connector_type: The connector type to determine generic resource emoji
+
+    Returns:
+        Formatted string with emojis and resource types, one per line
+    """
+    resource_emojis = {
+        "s3-bucket": "📦",  # Box
+        "gcs-bucket": "📦",  # Box
+        "kubernetes-cluster": "🌀",  # Blue spiral
+        "docker-registry": "🐳",
+        "azure-blob": "💾",
+        "ecr-registry": "📦",
+        "gcr-registry": "📦",
+        "acr-registry": "📦",
+    }
+
+    # Service-specific emojis for generic resources
+    generic_service_emojis = {
+        "aws": "🔶",
+        "gcp": "🔵",
+        "azure": "🔷",
+        "kubernetes": "🌀",
+        "docker": "🐳",
+        "github": "🐙",
+        "gitlab": "🦊",
+        "hyperai": "🚀",
+        "slack": "💬",
+        "discord": "🎮",
+    }
+
+    if not resource_types:
+        return ""
+
+    # Determine default emoji for generic resources based on connector type
+    default_emoji = generic_service_emojis.get(connector_type.lower(), "📋")
+
+    # Limit to first 5 resource types to avoid overly tall cells
+    display_types = resource_types[:5]
+    formatted = []
+
+    for rt in display_types:
+        emoji = resource_emojis.get(rt, default_emoji)
+        formatted.append(f"{emoji} {rt}")
+
+    # Join with newlines for multi-line display
+    result = "\n".join(formatted)
+    if len(resource_types) > 5:
+        result += f"\n+{len(resource_types) - 5} more"
+
+    return result
+
+
+def _generate_service_connector_data(
+    service_connector: ServiceConnectorResponse,
+    output_format: str,
+) -> Dict[str, Any]:
+    """Generate additional data for service connector display.
+
+    Args:
+        service_connector: The service connector response.
+        output_format: The output format.
+
+    Returns:
+        The additional data for the service connector.
+    """
+        # Get active connector IDs from current stack for enrichment
+    active_stack = Client().active_stack_model
+    
+    active_connector_ids = []
+    for components in active_stack.components.values():
+        active_connector_ids.extend(
+            [
+                component.connector.id
+                for component in components
+                if component.connector
+            ]
+        )
+    is_active = service_connector.id in active_connector_ids
+
+    result = {"is_active": is_active}
+
+    # Add formatted resource types with emojis
+    if output_format == "table" and hasattr(service_connector, "resource_types"):
+        result["resource_types"] = _format_resource_types_with_emojis(
+            service_connector.resource_types, service_connector.type
+        )
+
+    # Add type with emoji and short name
+    if output_format == "table" and hasattr(service_connector, "type"):
+        emoji, short_name = _get_connector_type_emoji_and_short_name(
+            service_connector.type
+        )
+        result["type_display"] = f"{emoji} {short_name}"
+
+    return result
 
 
 # Service connectors
@@ -959,12 +1103,14 @@ def register_service_connector(
         )
 
 
+@list_options(
+    ServiceConnectorFilter,
+    default_columns=["id", "name", "type_display", "resource_types", "user"],
+)
 @service_connector.command(
     "list",
-    help="""List available service connectors.
-""",
+    help="""List available service connectors.""",
 )
-@list_options(ServiceConnectorFilter)
 @click.option(
     "--label",
     "-l",
@@ -973,14 +1119,18 @@ def register_service_connector(
     "can be used multiple times.",
     multiple=True,
 )
-@click.pass_context
 def list_service_connectors(
-    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
+    output_format: str,
+    columns: str,
+    labels: Optional[List[str]] = None,
+    **kwargs: Any,
 ) -> None:
     """List all service connectors.
 
     Args:
         ctx: The click context object
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
@@ -991,17 +1141,25 @@ def list_service_connectors(
             labels, allow_label_only=True
         )
 
-    connectors = client.list_service_connectors(**kwargs)
-    if not connectors:
-        cli_utils.declare("No service connectors found for the given filters.")
-        return
+    with console.status("Listing service connectors..."):
+        connectors = client.list_service_connectors(**kwargs)
 
-    cli_utils.print_service_connectors_table(
-        client=client,
-        connectors=connectors.items,
-        show_active=not is_sorted_or_filtered(ctx),
+        connector_list = []
+        for connector in connectors.items:
+            connector_data = cli_utils.prepare_response_data(connector)
+            connector_data.update(
+                _generate_service_connector_data(
+                    connector, output_format
+                )
+            )
+            connector_list.append(connector_data)
+
+    cli_utils.handle_output(
+        connector_list,
+        pagination_info=connectors.pagination_info,
+        columns=columns,
+        output_format=output_format,
     )
-    print_page_info(connectors)
 
 
 @service_connector.command(

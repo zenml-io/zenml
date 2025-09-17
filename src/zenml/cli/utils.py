@@ -14,7 +14,6 @@
 """Utility functions for the CLI."""
 
 import contextlib
-import functools
 import json
 import os
 import platform
@@ -39,7 +38,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 
 import click
@@ -57,8 +55,10 @@ from rich.table import Table
 from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
+    ENV_ZENML_CLI_COLUMN_WIDTH,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
+    handle_int_env_var,
 )
 from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
 from zenml.logger import get_logger
@@ -74,6 +74,7 @@ from zenml.models import (
     Page,
     ServiceConnectorRequirements,
     StrFilter,
+    UserResponse,
     UUIDFilter,
 )
 from zenml.models.v2.base.filter import FilterGenerator
@@ -81,7 +82,7 @@ from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import dict_utils, secret_utils
+from zenml.utils import secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -109,6 +110,8 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
@@ -297,8 +300,9 @@ def print_table(
                         value = escape(value)
                 values.append(value)
         rich_table.add_row(*values)
-    if len(rich_table.columns) > 1:
-        rich_table.columns[0].justify = "center"
+    # Consistent left alignment for all columns
+    for column in rich_table.columns:
+        column.justify = "left"
     console.print(rich_table)
 
 
@@ -440,7 +444,7 @@ def print_pydantic_models(
             ]
 
         print_table([__dictify(model) for model in table_items])
-        print_page_info(models)
+        print_page_info(models.pagination_info)
     else:
         table_items = list(models)
 
@@ -1498,55 +1502,6 @@ def replace_emojis(text: str) -> str:
     return text
 
 
-def print_stacks_table(
-    client: "Client",
-    stacks: Sequence["StackResponse"],
-    show_active: bool = False,
-) -> None:
-    """Print a prettified list of all stacks supplied to this method.
-
-    Args:
-        client: Repository instance
-        stacks: List of stacks
-        show_active: Flag to decide whether to append the active stack on the
-            top of the list.
-    """
-    stack_dicts = []
-
-    stacks = list(stacks)
-    active_stack = client.active_stack_model
-    if show_active:
-        if active_stack.id not in [s.id for s in stacks]:
-            stacks.append(active_stack)
-
-        stacks = [s for s in stacks if s.id == active_stack.id] + [
-            s for s in stacks if s.id != active_stack.id
-        ]
-
-    active_stack_model_id = client.active_stack_model.id
-    for stack in stacks:
-        is_active = stack.id == active_stack_model_id
-
-        if stack.user:
-            user_name = stack.user.name
-        else:
-            user_name = "-"
-
-        stack_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
-            "STACK NAME": stack.name,
-            "STACK ID": stack.id,
-            "OWNER": user_name,
-            **{
-                component_type.upper(): components[0].name
-                for component_type, components in stack.components.items()
-            },
-        }
-        stack_dicts.append(stack_config)
-
-    print_table(stack_dicts)
-
-
 def print_components_table(
     client: "Client",
     component_type: StackComponentType,
@@ -2315,15 +2270,15 @@ def check_zenml_pro_project_availability() -> None:
         )
 
 
-def print_page_info(page: Page[T]) -> None:
+def print_page_info(pagination_info: Dict[str, Any]) -> None:
     """Print all page information showing the number of items and pages.
 
     Args:
-        page: The page to print the information for.
+        pagination_info: The pagination information to print.
     """
     declare(
-        f"Page `({page.index}/{page.total_pages})`, `{page.total}` items "
-        f"found for the applied filters."
+        f"Page `({pagination_info['index']}/{pagination_info['total_pages']})`, "
+        f"`{pagination_info['total']}` items found for the applied filters."
     )
 
 
@@ -2440,7 +2395,9 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
-def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
+def list_options(
+    filter_model: Type[BaseFilter], default_columns: Optional[List[str]] = None
+) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
     The Outer decorator (`list_options`) is responsible for creating the inner
@@ -2452,6 +2409,8 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
 
     Args:
         filter_model: The filter model based on which to decorate the function.
+        default_columns: Optional list of column names to use as defaults when
+            --columns is not specified and output format is table.
 
     Returns:
         The inner decorator.
@@ -2477,6 +2436,33 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                     create_data_type_help_text(filter_model, k)
                 )
 
+        # Add columns and output options
+        options.extend(
+            [
+                click.option(
+                    "--columns",
+                    type=str,
+                    default=",".join(default_columns)
+                    if default_columns
+                    else "",
+                    help="Comma-separated list of columns to display.",
+                ),
+                click.option(
+                    "--output",
+                    "-o",
+                    "output_format",
+                    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+                    default=get_default_output_format(),
+                    help="Output format for the list.",
+                ),
+            ]
+        )
+
+        def wrapper(function: F) -> F:
+            for option in reversed(options):
+                function = option(function)
+            return function
+
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
             f"interpreted as a check for equality. However advanced "
@@ -2497,17 +2483,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 f"{joined_data_type_descriptors}"
             )
 
-        for option in reversed(options):
-            func = option(func)
-
-        @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            nonlocal func
-
-            kwargs = dict_utils.remove_none_values(kwargs)
-            return func(*args, **kwargs)
-
-        return cast(F, wrapper)
+        return wrapper(func)
 
     return inner_decorator
 
@@ -2715,3 +2691,396 @@ def requires_mac_env_var_warning() -> bool:
             "OBJC_DISABLE_INITIALIZE_FORK_SAFETY"
         ) and mac_version_tuple >= (10, 13)
     return False
+
+
+def get_default_output_format() -> str:
+    """Get the default output format from environment variable.
+
+    Returns:
+        The default output format, falling back to "table" if not configured.
+    """
+    from zenml.constants import ENV_ZENML_DEFAULT_OUTPUT
+
+    return os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
+
+
+def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
+    """Prepare data from BaseResponse instances.
+
+    Args:
+        item: BaseResponse instance to format
+
+    Returns:
+        Dictionary with the data
+    """
+    item_data = {"id": item.id}
+
+    if hasattr(item, "name"):
+        item_data["name"] = getattr(item, "name")
+
+    if item.body is not None:
+        body_data = item.body.model_dump(mode="json")
+        item_data.update(body_data)
+
+    if item.resources is not None:
+        if user := getattr(item.resources, "user", None):
+            if isinstance(user, UserResponse):
+                item_data["user"] = user.name
+
+    return item_data
+
+
+def handle_output(
+    data: List[Dict[str, Any]],
+    pagination_info: Dict[str, Any],
+    columns: List[str],
+    output_format: str,
+) -> None:
+    """Handle output formatting for CLI commands.
+
+    This function processes the output formatting parameters from CLI options
+    and calls the appropriate rendering function.
+
+    Args:
+        data: List of dictionaries to render
+        pagination_info: Info about the pagination
+        output_format: Optional output format (table, json, yaml, tsv, csv).
+        columns: Optional comma-separated column names. If None and
+            default_columns provided, uses default_columns for table output.
+    """
+    cli_output = prepare_output(
+        data=data,
+        output_format=output_format,
+        columns=columns,
+        pagination=pagination_info,
+    )
+    if cli_output:
+        from zenml_cli import clean_output
+
+        clean_output(cli_output)
+
+    if pagination_info:
+        print_page_info(pagination_info)
+
+
+def prepare_output(
+    data: List[Dict[str, Any]],
+    output_format: str = "table",
+    columns: Optional[List[str]] = None,
+    pagination: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
+    """Render data in specified format following ZenML CLI table guidelines.
+
+    This function provides a centralized way to render tabular data across
+    all ZenML CLI commands with consistent formatting and multiple output
+    formats.
+
+    Args:
+        data: List of dictionaries to render
+        output_format: Output format (table, json, yaml, tsv, none)
+        columns: Optional list of column names to include
+        sort_by: Column to sort by
+        reverse: Whether to reverse sort order
+        no_truncate: Whether to disable truncation
+        no_color: Whether to disable colored output
+        max_width: Maximum table width (default: use terminal width)
+        pagination: Optional pagination metadata for JSON/YAML output
+        **kwargs: Additional formatting options
+
+    Returns:
+        The rendered table in the specified format or None if no data is provided
+
+    Raises:
+        ValueError: If an unsupported output format is provided
+    """
+    selected_columns = columns.split(",")
+    filtered_data = []
+    for entry in data:
+        filtered_data.append(
+            {k: entry[k] for k in selected_columns if k in entry}
+        )
+
+    if output_format == "json":
+        return _render_json(filtered_data, pagination=pagination)
+    elif output_format == "yaml":
+        return _render_yaml(filtered_data, pagination=pagination)
+    elif output_format == "tsv":
+        return _render_tsv(filtered_data)
+    elif output_format == "csv":
+        return _render_csv(filtered_data)
+    elif output_format == "table":
+        return _render_table(filtered_data)
+    else:
+        raise ValueError(f"Unsupported output format: {output_format}")
+
+
+def _render_json(
+    data: List[Dict[str, Any]],
+    pagination: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Render data as JSON.
+
+    Args:
+        data: List of data dictionaries to render
+        pagination: Optional pagination metadata
+
+    Returns:
+        JSON string representation of the data
+    """
+    output = {"items": data}
+
+    if pagination:
+        output["pagination"] = pagination
+
+    return json.dumps(output, indent=2, default=str)
+
+
+def _render_yaml(
+    data: List[Dict[str, Any]],
+    pagination: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Render data as YAML.
+
+    Args:
+        data: List of data dictionaries to render
+        pagination: Optional pagination metadata
+
+    Returns:
+        YAML string representation of the data
+    """
+    output = {"items": data}
+
+    if pagination:
+        output["pagination"] = pagination
+
+    return yaml.dump(output, default_flow_style=False)
+
+
+def _render_tsv(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as TSV (Tab-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        TSV string representation of the data
+    """
+    if not data:
+        return ""
+
+    headers = list(data[0].keys())
+
+    lines = []
+    lines.append("\t".join(headers))
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = str(row.get(header, ""))
+            value = (
+                value.replace("\t", " ").replace("\n", " ").replace("\r", " ")
+            )
+            values.append(value)
+        lines.append("\t".join(values))
+
+    return "\n".join(lines)
+
+
+def _render_csv(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as CSV (Comma-Separated Values).
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        CSV string representation of the data
+    """
+    headers = list(data[0].keys())
+
+    lines = []
+
+    lines.append(",".join(headers))
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = (
+                str(row.get(header, "")) if row.get(header) is not None else ""
+            )
+            if "," in value or '"' in value:
+                escaped_value = value.replace('"', '""')
+                value = f'"{escaped_value}"'
+            values.append(value)
+        lines.append(",".join(values))
+
+    return "\n".join(lines)
+
+
+def _get_terminal_width() -> Optional[int]:
+    """Get terminal width from ZENML_CLI_COLUMN_WIDTH environment variable or shutil.
+
+    Checks the ZENML_CLI_COLUMN_WIDTH environment variable first, then falls back
+    to shutil.get_terminal_size() for automatic detection.
+
+    Returns:
+        Terminal width in characters, or None if cannot be determined
+    """
+    # Check ZenML-specific CLI column width environment variable first
+    # Use handle_int_env_var with default=0 to indicate "not set"
+    columns_env = handle_int_env_var(ENV_ZENML_CLI_COLUMN_WIDTH, default=0)
+    if columns_env > 0:
+        return columns_env
+
+    # Fall back to shutil.get_terminal_size
+    try:
+        size = shutil.get_terminal_size()
+        # Use a reasonable minimum width even if terminal reports smaller
+        return max(size.columns, 100)
+    except (AttributeError, OSError):
+        # Default to a reasonable width if we can't detect terminal size
+        return 120
+
+
+def _render_table(
+    data: List[Dict[str, Any]],
+) -> str:
+    """Render data as a formatted table following ZenML guidelines.
+
+    Args:
+        data: List of data dictionaries to render
+
+    Returns:
+        Formatted table string representation of the data
+    """
+    headers = list(data[0].keys())
+
+    # Get terminal width using robust detection
+    terminal_width = _get_terminal_width()
+    console_width = (
+        max(80, min(terminal_width, 200)) if terminal_width else 150
+    )
+
+    column_widths = {}
+    for header in headers:
+        content_lengths = [len(str(row.get(header, ""))) for row in data]
+        header_length = len(header)
+        optimal_width = max(
+            header_length, max(content_lengths) if content_lengths else 0
+        )
+        column_widths[header] = min(50, max(8, optimal_width + 2))
+
+    available_width = console_width - (len(headers) * 3)
+    total_content_width = sum(column_widths.values())
+
+    if total_content_width > available_width:
+        scale_factor = available_width / total_content_width
+        for header in headers:
+            column_widths[header] = max(
+                6, int(column_widths[header] * scale_factor)
+            )
+
+    rich_table = Table(
+        box=box.SIMPLE_HEAD,
+        show_header=True,
+        show_lines=False,
+        pad_edge=False,
+        collapse_padding=False,
+        expand=True,
+        width=console_width,
+    )
+
+    for header in headers:
+        # Clean header name: replace underscores with spaces and uppercase
+        header_display = header.replace("_", " ").upper()
+
+        # Smart overflow strategy based on column type
+        if "id" in header.lower():
+            overflow = "fold"
+            no_wrap = True
+        elif "description" in header.lower():
+            overflow = "fold"
+            no_wrap = False
+        else:
+            overflow = "ellipsis"
+            no_wrap = True  # Keep single line, truncate with ... if needed
+
+        rich_table.add_column(
+            header_display,
+            justify="left",
+            overflow=overflow,
+            no_wrap=no_wrap,
+            min_width=6,
+            max_width=column_widths[header],
+        )
+
+    for row in data:
+        values = []
+        for header in headers:
+            value = str(row.get(header, ""))
+
+            if not os.getenv("NO_COLOR"):
+                value = _colorize_value(header, value)
+
+            values.append(value)
+
+        rich_table.add_row(*values)
+
+    from io import StringIO
+
+    output_buffer = StringIO()
+
+    table_console = Console(
+        width=console_width,
+        force_terminal=not os.getenv("NO_COLOR"),
+        no_color=os.getenv("NO_COLOR") is not None,
+        file=output_buffer,
+    )
+    table_console.print(rich_table)
+
+    return output_buffer.getvalue()
+
+
+def _colorize_value(column: str, value: str) -> str:
+    """Apply colorization to values based on column type and content.
+
+    Args:
+        column: Column name to determine colorization rules
+        value: Value to potentially colorize
+
+    Returns:
+        Potentially colorized value with Rich markup
+    """
+    # Status-like columns get color coding
+    if any(
+        keyword in column.lower() for keyword in ["status", "state", "health"]
+    ):
+        value_lower = value.lower()
+        if value_lower in [
+            "active",
+            "healthy",
+            "succeeded",
+            "completed",
+        ]:
+            return f"[green]{value}[/green]"
+        elif value_lower in [
+            "running",
+            "pending",
+            "initializing",
+            "starting",
+            "warning",
+        ]:
+            return f"[yellow]{value}[/yellow]"
+        elif value_lower in [
+            "failed",
+            "error",
+            "unhealthy",
+            "stopped",
+            "crashed",
+        ]:
+            return f"[red]{value}[/red]"
+
+    return value

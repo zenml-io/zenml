@@ -13,18 +13,23 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.utils import (
+    list_options,
+)
 from zenml.client import Client
+from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
-from zenml.models import ArtifactFilter, ArtifactVersionFilter
-from zenml.models.v2.core.artifact import ArtifactResponse
-from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+from zenml.models import (
+    ArtifactFilter,
+    ArtifactVersionFilter,
+)
 from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
@@ -35,25 +40,39 @@ def artifact() -> None:
     """Commands for interacting with artifacts."""
 
 
-@cli_utils.list_options(ArtifactFilter)
+@list_options(
+    ArtifactFilter,
+    default_columns=["id", "name", "latest_version_name", "user", "created"],
+)
 @artifact.command("list", help="List all artifacts.")
-def list_artifacts(**kwargs: Any) -> None:
+def list_artifacts(output_format: str, columns: str, **kwargs: Any) -> None:
     """List all artifacts.
 
     Args:
-        **kwargs: Keyword arguments to filter artifacts by.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter artifacts by.
     """
-    artifacts = Client().list_artifacts(**kwargs)
+    with console.status("Listing artifacts..."):
+        artifacts = Client().list_artifacts(**kwargs)
 
-    if not artifacts:
-        cli_utils.declare("No artifacts found.")
-        return
+        artifact_list = []
+        for artifact in artifacts.items:
+            artifact_data = cli_utils.prepare_response_data(artifact)
+            artifact_data.update(
+                {
+                    "latest_version_name": artifact.latest_version_name,
+                    "latest_version_id": artifact.latest_version_id,
+                }
+            )
+            artifact_list.append(artifact_data)
 
-    to_print = []
-    for artifact in artifacts:
-        to_print.append(_artifact_to_print(artifact))
-
-    cli_utils.print_table(to_print)
+    cli_utils.handle_output(
+        artifact_list,
+        pagination_info=artifacts.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @artifact.command("update", help="Update an artifact.")
@@ -115,25 +134,42 @@ def version() -> None:
     """Commands for interacting with artifact versions."""
 
 
-@cli_utils.list_options(ArtifactVersionFilter)
+@list_options(
+    ArtifactVersionFilter,
+    default_columns=["id", "name", "version", "type", "user", "created"],
+)
 @version.command("list", help="List all artifact versions.")
-def list_artifact_versions(**kwargs: Any) -> None:
+def list_artifact_versions(
+    output_format: str, columns: str, **kwargs: Any
+) -> None:
     """List all artifact versions.
 
     Args:
-        **kwargs: Keyword arguments to filter artifact versions by.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter artifact versions by.
     """
-    artifact_versions = Client().list_artifact_versions(**kwargs)
+    with console.status("Listing artifact versions..."):
+        artifact_versions = Client().list_artifact_versions(**kwargs)
 
-    if not artifact_versions:
-        cli_utils.declare("No artifact versions found.")
-        return
+        artifact_version_list = []
+        for artifact_version in artifact_versions.items:
+            artifact_version_data = cli_utils.prepare_response_data(
+                artifact_version
+            )
+            artifact_version_data.update(
+                {
+                    "name": artifact_version.artifact.name,
+                }
+            )
+            artifact_version_list.append(artifact_version_data)
 
-    to_print = []
-    for artifact_version in artifact_versions:
-        to_print.append(_artifact_version_to_print(artifact_version))
-
-    cli_utils.print_table(to_print)
+    cli_utils.handle_output(
+        artifact_version_list,
+        pagination_info=artifact_versions.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @version.command("update", help="Update an artifact version.")
@@ -294,28 +330,3 @@ def prune_artifacts(
                     f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
                 )
     cli_utils.declare("All unused artifacts and artifact versions deleted.")
-
-
-def _artifact_version_to_print(
-    artifact_version: ArtifactVersionResponse,
-) -> Dict[str, Any]:
-    return {
-        "id": artifact_version.id,
-        "name": artifact_version.artifact.name,
-        "version": artifact_version.version,
-        "uri": artifact_version.uri,
-        "type": artifact_version.type,
-        "materializer": artifact_version.materializer,
-        "data_type": artifact_version.data_type,
-        "tags": [t.name for t in artifact_version.tags],
-    }
-
-
-def _artifact_to_print(
-    artifact_version: ArtifactResponse,
-) -> Dict[str, Any]:
-    return {
-        "id": artifact_version.id,
-        "name": artifact_version.name,
-        "tags": [t.name for t in artifact_version.tags],
-    }

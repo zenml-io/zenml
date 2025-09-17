@@ -21,7 +21,6 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     check_zenml_pro_project_availability,
-    is_sorted_or_filtered,
     list_options,
 )
 from zenml.client import Client
@@ -35,33 +34,44 @@ def project() -> None:
     """Commands for project management."""
 
 
+@list_options(
+    ProjectFilter, default_columns=["name", "description", "created"]
+)
 @project.command("list")
-@list_options(ProjectFilter)
 @click.pass_context
-def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
+def list_projects(
+    ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
+) -> None:
     """List all projects.
 
     Args:
         ctx: The click context object
-        **kwargs: Keyword arguments to filter the list of projects.
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
+        kwargs: Keyword arguments to filter the list of projects.
     """
     check_zenml_pro_project_availability()
+
     client = Client()
-    with console.status("Listing projects...\n"):
+    with console.status("Listing projects..."):
         projects = client.list_projects(**kwargs)
-        if projects:
-            try:
-                active_project = [client.active_project]
-            except Exception:
-                active_project = []
-            cli_utils.print_pydantic_models(
-                projects,
-                exclude_columns=["id", "created", "updated"],
-                active_models=active_project,
-                show_active=not is_sorted_or_filtered(ctx),
-            )
-        else:
-            cli_utils.declare("No projects found for the given filter.")
+
+    project_list = []
+    for project in projects.items:
+        project_data = cli_utils.prepare_response_data(project)
+        project_data.update(
+            {
+                "description": project.description,
+            }
+        )
+        project_list.append(project_data)
+
+    cli_utils.handle_output(
+        project_list,
+        pagination_info=projects.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
 
 
 @project.command("register")
