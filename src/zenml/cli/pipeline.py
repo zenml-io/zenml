@@ -920,7 +920,7 @@ def run_snapshot(
 
     try:
         run = Client().trigger_pipeline(
-            snapshot_id=snapshot_id,
+            snapshot_name_or_id=snapshot_id,
             config_path=config_path,
         )
         cli_utils.declare(f"Started snapshot run `{run.id}`.")

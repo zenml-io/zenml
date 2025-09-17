@@ -17,7 +17,6 @@ import functools
 import json
 import os
 from abc import ABCMeta
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -3267,6 +3266,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_name_or_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
         include_config_schema: Optional[bool] = None,
+        allow_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot by name, id or prefix.
@@ -3281,6 +3281,7 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID.
             include_config_schema: Whether to include the config schema in the
                 response.
+            allow_prefix_match: If True, allow matching by ID prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3325,7 +3326,7 @@ class Client(metaclass=ClientMetaClass):
                 # No name matches. If the user provided a pipeline, we assume
                 # they want to fetch the snapshot by name and fail. Otherwise,
                 # we try to fetch by ID prefix.
-                if pipeline_name_or_id:
+                if pipeline_name_or_id or not allow_prefix_match:
                     raise KeyError(
                         f"No snapshot with name `{name_id_or_prefix}` has been "
                         f"found for pipeline `{pipeline_name_or_id}`."
@@ -3510,9 +3511,8 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
-        snapshot_id: Optional[UUID] = None,
+        snapshot_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        name: Optional[str] = None,
         run_configuration: Union[
             PipelineRunConfiguration, Dict[str, Any], None
         ] = None,
@@ -3527,12 +3527,12 @@ class Client(metaclass=ClientMetaClass):
         Usage examples:
         * Run a specific snapshot by ID:
         ```python
-        Client().trigger_pipeline(snapshot_id=<ID>)
+        Client().trigger_pipeline(snapshot_name_or_id=<ID>)
         ```
         * Run a specific snapshot by name:
         ```python
         Client().trigger_pipeline(
-            name=<NAME>,
+            snapshot_name_or_id=<NAME>,
             pipeline_name_or_id=<PIPELINE_NAME_OR_ID>
         )
         ```
@@ -3555,10 +3555,8 @@ class Client(metaclass=ClientMetaClass):
                 specified, the latest runnable snapshot for this pipeline will
                 be used for the run (Runnable here means that the build
                 associated with the snapshot is for a remote stack without any
-                custom flavor stack components). If not given, a snapshot ID
+                custom flavor stack components). If not given, a snapshot
                 that should be run needs to be specified.
-            name: Name of the snapshot to run. If not given, the
-                latest runnable snapshot for the pipeline will be used.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
@@ -3584,72 +3582,61 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 2:
-            raise RuntimeError(
-                "You need to specify exactly one of snapshot, template or "
-                "pipeline to run."
-            )
-
-        if run_configuration and config_path:
-            raise RuntimeError(
-                "Only config path or runtime configuration can be specified."
-            )
-
         if template_id:
             logger.warning(
                 "Triggering a run template is deprecated. Use "
                 "`Client().trigger_pipeline(snapshot_id=...)` instead."
             )
-            run_template = self.get_run_template(
-                name_id_or_prefix=template_id,
-                project=project,
+            run = self.zen_store.run_template(
+                template_id=template_id,
+                run_configuration=run_configuration,
             )
-            if not run_template.source_snapshot:
-                raise RuntimeError(
-                    "Run template does not have a source snapshot."
-                )
-            snapshot_id = run_template.source_snapshot.id
-
-        if config_path:
-            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
-
-        if isinstance(run_configuration, Dict):
-            run_configuration = PipelineRunConfiguration.model_validate(
-                run_configuration
-            )
-
-        if run_configuration:
-            validate_run_config_is_runnable_from_server(run_configuration)
-
-        if snapshot_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Snapshot ID and stack specified, ignoring the stack and "
-                    "using stack associated with the snapshot instead."
-                )
-
-            if name:
-                logger.warning(
-                    "Snapshot ID and name specified, ignoring the name."
-                )
         else:
-            assert pipeline_name_or_id
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=pipeline_name_or_id,
-                project=project,
-            )
-
-            if name:
-                snapshot = self.get_snapshot(
-                    name_id_or_prefix=name,
-                    pipeline_name_or_id=pipeline.id,
-                    project=pipeline.project_id,
-                    hydrate=False,
+            if run_configuration and config_path:
+                raise RuntimeError(
+                    "Only config path or runtime configuration can be specified."
                 )
-                snapshot_id = snapshot.id
+
+            if config_path:
+                run_configuration = PipelineRunConfiguration.from_yaml(
+                    config_path
+                )
+
+            if isinstance(run_configuration, Dict):
+                run_configuration = PipelineRunConfiguration.model_validate(
+                    run_configuration
+                )
+
+            if run_configuration:
+                validate_run_config_is_runnable_from_server(run_configuration)
+
+            if snapshot_name_or_id:
+                if stack_name_or_id:
+                    logger.warning(
+                        "Snapshot and stack specified, ignoring the stack and "
+                        "using stack associated with the snapshot instead."
+                    )
+
+                snapshot_id = self.get_snapshot(
+                    name_id_or_prefix=snapshot_name_or_id,
+                    pipeline_name_or_id=pipeline_name_or_id,
+                    project=project,
+                    allow_prefix_match=False,
+                    hydrate=False,
+                ).id
             else:
-                # No version or ID specified, find the latest runnable
-                # snapshot for the pipeline (and stack if specified)
+                if not pipeline_name_or_id:
+                    raise RuntimeError(
+                        "You need to speficy at least one of snapshot or "
+                        "pipeline to run."
+                    )
+
+                # Find the latest runnable snapshot for the pipeline (and
+                # stack if specified)
+                pipeline = self.get_pipeline(
+                    name_id_or_prefix=pipeline_name_or_id,
+                    project=project,
+                )
                 stack = None
                 if stack_name_or_id:
                     stack = self.get_stack(
@@ -3690,21 +3677,21 @@ class Client(metaclass=ClientMetaClass):
                         "stack and pipeline."
                     )
 
-        step_run_id = None
-        try:
-            from zenml.steps.step_context import get_step_context
+            step_run_id = None
+            try:
+                from zenml.steps.step_context import get_step_context
 
-            step_run_id = get_step_context().step_run.id
-        except RuntimeError:
-            pass
+                step_run_id = get_step_context().step_run.id
+            except RuntimeError:
+                pass
 
-        run = self.zen_store.run_snapshot(
-            snapshot_id=snapshot_id,
-            trigger_request=PipelineSnapshotRunRequest(
-                run_configuration=run_configuration,
-                step_run=step_run_id,
-            ),
-        )
+            run = self.zen_store.run_snapshot(
+                snapshot_id=snapshot_id,
+                trigger_request=PipelineSnapshotRunRequest(
+                    run_configuration=run_configuration,
+                    step_run=step_run_id,
+                ),
+            )
 
         if synchronous:
             run = wait_for_pipeline_run_to_finish(run_id=run.id)
