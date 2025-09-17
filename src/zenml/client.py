@@ -3581,6 +3581,22 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
+        if run_configuration and config_path:
+            raise RuntimeError(
+                "Only config path or runtime configuration can be specified."
+            )
+
+        if config_path:
+            run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
+
+        if run_configuration:
+            validate_run_config_is_runnable_from_server(run_configuration)
+
         if template_id:
             logger.warning(
                 "Triggering a run template is deprecated. Use "
@@ -3591,24 +3607,6 @@ class Client(metaclass=ClientMetaClass):
                 run_configuration=run_configuration,
             )
         else:
-            if run_configuration and config_path:
-                raise RuntimeError(
-                    "Only config path or runtime configuration can be specified."
-                )
-
-            if config_path:
-                run_configuration = PipelineRunConfiguration.from_yaml(
-                    config_path
-                )
-
-            if isinstance(run_configuration, Dict):
-                run_configuration = PipelineRunConfiguration.model_validate(
-                    run_configuration
-                )
-
-            if run_configuration:
-                validate_run_config_is_runnable_from_server(run_configuration)
-
             if snapshot_name_or_id:
                 if stack_name_or_id:
                     logger.warning(
