@@ -25,7 +25,8 @@ pip install "zenml[server]" scikit-learn
 zenml init
 
 # Set up deployer stack (required for serving)
-zenml stack set docker-deployer
+zenml deployer register docker -f docker
+zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
 ### Phase 1: Deploy Agent-Only
@@ -49,7 +50,22 @@ curl -X POST http://localhost:8000/invoke \
   }'
 ```
 
-**Result**: Generic banking response with `"intent_source": "llm"`
+Or use the ZenML CLI:
+```bash
+zenml deployment invoke support-agent \
+  --confidence_threshold=0.65 \
+  --text="my card is lost and i need a replacement"
+```
+
+**Response**: Generic banking response with `"intent_source": "llm"`
+```json
+{
+  "answer": "I'm here to help with your banking needs. I can assist with card issues, payments, account balances, disputes, and credit limit requests. What specific question can I help you with today?",
+  "intent": "general",
+  "confidence": 0.0,
+  "intent_source": "llm"
+}
+```
 
 ### Phase 2: Train Classifier
 
@@ -57,6 +73,23 @@ Train an intent classifier and automatically tag it as "production":
 
 ```bash
 python run.py --train
+```
+
+**Example output**:
+```
+>> Running intent_training_pipeline (auto-tags artifact VERSION as 'production').
+Loaded 20 training examples across 6 intents:
+  - account_balance: 3 examples
+  - card_lost: 4 examples
+  - credit_limit: 2 examples
+  - dispute: 3 examples
+  - general: 4 examples
+  - payments: 4 examples
+Training classifier on 20 examples...
+Training completed!
+Accuracy on test set: 0.333
+Tagged artifact version as 'production'
+>> Done. Check dashboard: artifact 'intent-classifier' latest version has tag 'production'.
 ```
 
 **What happens**:
@@ -74,7 +107,7 @@ zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
   -n support-agent -c configs/agent.yaml -u
 ```
 
-Test with the same request:
+Test with the same request (using lower threshold to see classifier in action):
 ```bash
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
@@ -86,7 +119,26 @@ curl -X POST http://localhost:8000/invoke \
   }'
 ```
 
-**Result**: Specific card replacement instructions with `"intent_source": "classifier"`
+Or with ZenML CLI:
+```bash
+zenml deployment invoke support-agent \
+  --confidence_threshold=0.3 \
+  --text="my card is lost and i need a replacement"
+```
+
+**Response**: Specific card replacement instructions with `"intent_source": "classifier"`
+```json
+{
+  "answer": "I understand you've lost your card. Here are the immediate steps: 1) Log into your account to freeze the card, 2) Call our 24/7 hotline at 1-800-SUPPORT, 3) Order a replacement card through the app. Your new card will arrive in 3-5 business days.",
+  "intent": "card_lost",
+  "confidence": 0.41,
+  "intent_source": "classifier"
+}
+```
+
+**Notice the difference**:
+- **Phase 1**: Generic response, `"intent_source": "llm"`
+- **Phase 3**: Specific response, `"intent_source": "classifier"`, actual intent detected
 
 ## 🔍 What's Happening Under the Hood
 

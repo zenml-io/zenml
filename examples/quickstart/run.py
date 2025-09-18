@@ -29,13 +29,17 @@ def main() -> None:
     else:
         print("Usage: python run.py --train")
         print("\nQuickstart flow:")
-        print("0. Setup deployer stack: zenml stack set docker-deployer")
+        print("0. Setup deployer stack:")
+        print("   zenml deployer register docker -f docker")
         print(
-            "1. Deploy agent: zenml pipeline deploy -n support-agent -c configs/agent.yaml pipelines.agent_serving_pipeline:agent_serving_pipeline"
+            "   zenml stack register docker-deployer -o default -a default -D docker --set"
+        )
+        print(
+            "1. Deploy agent: zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline -n support-agent -c configs/agent.yaml"
         )
         print("2. Train classifier: python run.py --train")
         print(
-            "3. Update agent: zenml pipeline deploy -n support-agent -c configs/agent.yaml -u pipelines.agent_serving_pipeline:agent_serving_pipeline"
+            "3. Update agent: zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline -n support-agent -c configs/agent.yaml -u"
         )
 
 
