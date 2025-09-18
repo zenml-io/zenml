@@ -14,7 +14,7 @@ _router: Optional[Any] = None
 
 @step
 def classify_intent(
-    text: str
+    text: str,
 ) -> Annotated[Dict[str, Any], "classification_result"]:
     """Classify intent using loaded classifier or fall back to LLM."""
     global _router
