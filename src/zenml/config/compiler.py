@@ -24,9 +24,10 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
+    Type,
 )
 
-from pydantic import ConfigDict, create_model
+from pydantic import ConfigDict, create_model, BaseModel
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -677,7 +678,7 @@ def compute_pipeline_output_schema(
     if not pipeline._output_artifacts:
         return None
 
-    output_model = create_model(
+    output_model_class: Type[BaseModel] = create_model(
         f"{pipeline.name}_output",
         __config__=ConfigDict(arbitrary_types_allowed=True),
         **{
@@ -688,7 +689,7 @@ def compute_pipeline_output_schema(
             for output_artifact in pipeline._output_artifacts
         },
     )
-    return output_model.model_json_schema()
+    return output_model_class.model_json_schema(mode="serialization")
 
 
 def convert_component_shortcut_settings_keys(
