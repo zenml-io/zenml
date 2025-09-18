@@ -186,6 +186,7 @@ types-psutil = { version = "^5.8.13", optional = true }
 types-passlib = { version = "^1.7.7", optional = true }
 
 [tool.poetry.extras]
+# If modifying this, make sure to also modify the server extra
 local = [
     "alembic",
     "bcrypt",
@@ -196,7 +197,15 @@ local = [
     "sqlmodel",
 ]
 server = [
-    "zenml[local]",
+    # DB dependencies from local extra
+    "alembic",
+    "bcrypt",
+    "passlib",
+    "pymysql",
+    "sqlalchemy",
+    "sqlalchemy_utils",
+    "sqlmodel",
+    # Server dependencies
     "fastapi",
     "uvicorn",
     "python-multipart",
