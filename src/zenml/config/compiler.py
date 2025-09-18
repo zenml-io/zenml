@@ -50,6 +50,7 @@ from zenml.utils import pydantic_utils, secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
+    from zenml.steps.entrypoint_function_utils import StepArtifact
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
@@ -679,11 +680,19 @@ def compute_pipeline_output_schema(
     Returns:
         The pipeline output schema.
     """
+
+    def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
+        return (
+            output_artifact.invocation_id.replace("-", "_")
+            + "-"
+            + output_artifact.output_name.replace("-", "_")
+        )
+
     output_model_class: Type[BaseModel] = create_model(
         f"{pipeline.name}_output",
         __config__=ConfigDict(arbitrary_types_allowed=True),
         **{
-            output_artifact.output_name: (
+            _get_schema_output_name(output_artifact): (
                 output_artifact.annotation.resolved_annotation,
                 ...,
             )
