@@ -210,8 +210,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
         Returns:
             The flavor logo.
         """
-        # TODO: use proper logo here
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/gcp.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/google-cloud-run.svg"
 
     @property
     def config_class(self) -> Type[GCPDeployerConfig]:

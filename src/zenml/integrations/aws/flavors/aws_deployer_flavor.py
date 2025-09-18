@@ -254,7 +254,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/aws.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/aws-app-runner.png"
 
     @property
     def config_class(self) -> Type[AWSDeployerConfig]:

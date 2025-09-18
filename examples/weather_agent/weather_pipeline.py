@@ -1,16 +1,4 @@
-"""Weather Agent Pipeline for ZenML Serving with Run-Only Architecture.
-
-This pipeline demonstrates ZenML's new run-only serving architecture that achieves
-millisecond-class latency by automatically optimizing execution:
-
-✅ Zero database writes
-✅ Zero filesystem operations
-✅ In-memory step output handoff
-✅ Per-request parameter injection
-✅ Multi-worker safe execution
-
-Perfect for real-time inference and AI applications.
-"""
+"""Weather Agent Pipeline."""
 
 import os
 import random
@@ -25,15 +13,8 @@ from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
 from zenml.steps.step_context import get_step_context
 
-# Note: You can use either approach:
-# 1. String literals: "full", "metadata", "sampled", "errors_only", "none"
-# 2. Type-safe enums: CaptureMode.FULL, CaptureMode.METADATA, etc.
-# 3. Capture constants: Capture.FULL, Capture.METADATA, etc.
-# This example demonstrates the type-safe enum approach
-
 docker_settings = DockerSettings(
     requirements=["openai"],
-    environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
     prevent_build_reuse=True,
     python_package_installer=PythonPackageInstaller.UV,
 )
@@ -72,7 +53,7 @@ def init_hook() -> PipelineState:
 
 
 @step
-def get_weather(city: str) -> Dict[str, float]:
+def get_weather(city: str) -> Annotated[Dict[str, float], "weather_data"]:
     """Simulate getting weather data for a city.
 
     In run-only mode, this executes with millisecond latency and
@@ -89,7 +70,9 @@ def get_weather(city: str) -> Dict[str, float]:
 
 
 @step
-def analyze_weather_with_llm(weather_data: Dict[str, float], city: str) -> str:
+def analyze_weather_with_llm(
+    weather_data: Dict[str, float], city: str
+) -> Annotated[str, "weather_analysis"]:
     """Use LLM to analyze weather and provide intelligent recommendations.
 
     In run-only mode, this step receives weather data via in-memory handoff
@@ -234,10 +217,11 @@ Analysis: Rule-based AI (LLM unavailable)"""
             max_concurrency=10,
         ),
     },
+    environment={"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")},
 )
 def weather_agent_pipeline(
     city: str = "London",
-) -> Annotated[str, "analyze_weather_with_llm.output"]:
+) -> str:
     """Weather agent pipeline optimized for run-only serving.
 
     Automatically uses run-only architecture for millisecond-class latency:

@@ -40,6 +40,7 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestratorConfig,
 )
 from zenml.stack import Stack
+from zenml.utils import env_utils
 
 logger = get_logger(__name__)
 
@@ -160,7 +161,11 @@ class PipelineDeploymentService:
 
         logger.info("Executing pipeline's cleanup hook...")
         try:
-            load_and_run_hook(cleanup_hook_source)
+            environment = {}
+            if self.snapshot:
+                environment = self.snapshot.pipeline_configuration.environment
+            with env_utils.temporary_environment(environment):
+                load_and_run_hook(cleanup_hook_source)
         except Exception as e:
             logger.exception(f"Failed to execute cleanup hook: {e}")
             raise
@@ -346,9 +351,13 @@ class PipelineDeploymentService:
 
         logger.info("Executing pipeline's init hook...")
         try:
-            self.pipeline_state = load_and_run_hook(
-                init_hook_source, init_hook_kwargs
-            )
+            environment = {}
+            if self.snapshot:
+                environment = self.snapshot.pipeline_configuration.environment
+            with env_utils.temporary_environment(environment):
+                self.pipeline_state = load_and_run_hook(
+                    init_hook_source, init_hook_kwargs
+                )
         except Exception as e:
             logger.exception(f"Failed to execute init hook: {e}")
             raise
