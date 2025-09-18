@@ -1499,7 +1499,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             # TODO: This currently ignores the configuration of the pipeline
             #   and instead applies the configuration of the previously active
             #   pipeline. Is this what we want?
-            return self.entrypoint(*args, **kwargs)
+            return self.entrypoint(*args, **kwargs)  # type: ignore[no-any-return]
 
         self.prepare(*args, **kwargs)
         return self._run()
@@ -1535,7 +1535,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         output_artifacts = []
         if isinstance(return_value, StepArtifact):
             output_artifacts = [return_value]
-        elif isinstance(return_value, Tuple):
+        elif isinstance(return_value, tuple):
             for v in return_value:
                 if isinstance(v, StepArtifact):
                     output_artifacts.append(v)
@@ -1670,15 +1670,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 + output_artifact.output_name.replace("-", "_")
             )
 
+        fields: Dict[str, Any] = {
+            _get_schema_output_name(output_artifact): (
+                output_artifact.annotation.resolved_annotation,
+                ...,
+            )
+            for output_artifact in self._output_artifacts
+        }
         output_model_class: Type[BaseModel] = create_model(
             "PipelineOutput",
             __config__=ConfigDict(arbitrary_types_allowed=True),
-            **{
-                _get_schema_output_name(output_artifact): (
-                    output_artifact.annotation.resolved_annotation,
-                    ...,
-                )
-                for output_artifact in self._output_artifacts
-            },
+            **fields,
         )
         return output_model_class.model_json_schema(mode="serialization")
