@@ -53,7 +53,6 @@ passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
 pydantic = ">=2.0,<=2.11.9"
 pydantic-settings = "*"
-jsf = "*"
 jsonschema = "*"
 pymysql = { version = "~1.1.0,>=1.1.1" }
 python = ">=3.9,<3.13"

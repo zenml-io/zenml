@@ -14,7 +14,7 @@ Perfect for real-time inference and AI applications.
 
 import os
 import random
-from typing import Dict
+from typing import Annotated, Dict
 
 from zenml import pipeline, step
 from zenml.client import Client
@@ -235,7 +235,9 @@ Analysis: Rule-based AI (LLM unavailable)"""
         ),
     },
 )
-def weather_agent_pipeline(city: str = "London") -> str:
+def weather_agent_pipeline(
+    city: str = "London",
+) -> Annotated[str, "analyze_weather_with_llm.output"]:
     """Weather agent pipeline optimized for run-only serving.
 
     Automatically uses run-only architecture for millisecond-class latency:

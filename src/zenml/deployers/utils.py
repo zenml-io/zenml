@@ -18,7 +18,6 @@ from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
 import requests
-from jsf import JSF
 from jsonschema import Draft202012Validator, FormatChecker
 
 from zenml.client import Client
@@ -66,14 +65,28 @@ def get_deployment_invocation_example(
 
     parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
 
-    example_generator = JSF(parameters_schema, allow_none_optionals=0)
-    example = example_generator.generate(
-        1,
-        use_defaults=True,
-        use_examples=True,
-    )
+    properties = parameters_schema.get("properties", {})
 
-    return example  # type: ignore[no-any-return]
+    if not properties:
+        return {}
+
+    parameters = {}
+
+    for attr_name, attr_schema in properties.items():
+        parameters[attr_name] = "<value>"
+        if not isinstance(attr_schema, dict):
+            continue
+
+        default_value = None
+
+        if "default" in attr_schema:
+            default_value = attr_schema["default"]
+        elif "const" in attr_schema:
+            default_value = attr_schema["const"]
+
+        parameters[attr_name] = default_value or "<value>"
+
+    return parameters
 
 
 def call_deployment(
