@@ -18,10 +18,10 @@ try:
 except ImportError:
     raise ImportError(
         "It seems like you've installed the `zenml` package without the "
-        "`local` extra, but are trying to use ZenML with a local database. "
+        "`local` extra, but are trying to use ZenML with a local database.\n"
         "* If you want to use ZenML in a local setup, please install "
         "`zenml[local]` instead, e.g. using `pip install zenml[local]`\n"
-        "* If you want to connect to a server, run `zenml login <URL>`"
+        "* If you want to connect to a server, run `zenml login`"
     ) from None
 
 from typing import (

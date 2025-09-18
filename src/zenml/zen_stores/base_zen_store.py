@@ -209,8 +209,8 @@ class BaseZenStore(
             return StoreType.REST
 
         # Only import this once we've made sure it's not a REST URL, as the
-        # zenml-slim package will fail this import due to missing database
-        # dependencies.
+        # zenml package without the local extra will fail this import due to
+        # missing database dependencies.
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         if SqlZenStoreConfiguration.supports_url_scheme(url):
