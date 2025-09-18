@@ -120,7 +120,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., None])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class Pipeline:
@@ -1530,7 +1530,41 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ) from e
 
         self._parameters = validated_args
-        self.entrypoint(**validated_args)
+        return_value = self.entrypoint(**validated_args)
+        from typing import Tuple
+
+        from zenml.steps.base_step import StepArtifact
+
+        output_artifacts = []
+        if isinstance(return_value, StepArtifact):
+            output_artifacts = [return_value]
+        elif isinstance(return_value, Tuple):
+            for v in return_value:
+                if isinstance(v, StepArtifact):
+                    output_artifacts.append(v)
+                else:
+                    logger.warning(
+                        "Ignore pipeline output that is not a step artifact"
+                    )
+
+        self.output_artifacts = output_artifacts
+
+        from pydantic import create_model
+
+        breakpoint()
+        output_model = create_model(
+            "OutputModel",
+            __config__=ConfigDict(arbitrary_types_allowed=True),
+            # TODO: output names may overlap, how to handle this?
+            **{
+                output_artifact.output_name: (
+                    output_artifact.annotation.resolved_annotation,
+                    ...,
+                )
+                for output_artifact in output_artifacts
+            },
+        )
+        self.output_model = output_model
 
     def _prepare_if_possible(self) -> None:
         """Prepares the pipeline if possible.

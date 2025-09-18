@@ -30,7 +30,7 @@ from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     InputSpec,
@@ -150,6 +150,7 @@ class Compiler:
         pipeline_spec = self._compute_pipeline_spec(
             pipeline=pipeline, step_specs=step_specs
         )
+        breakpoint()
 
         snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
@@ -643,12 +644,23 @@ class Compiler:
                 "https://docs.zenml.io/user-guides/starter-guide"
             )
 
+        output_specs = [
+            OutputSpec(
+                step_name=output_artifact.invocation_id,
+                output_name=output_artifact.output_name,
+            )
+            for output_artifact in pipeline.output_artifacts
+        ]
+
         additional_spec_args: Dict[str, Any] = {
             "source": pipeline.resolve(),
             "parameters": pipeline._parameters,
+            "output_schema": pipeline.output_model.model_json_schema(),
         }
 
-        return PipelineSpec(steps=step_specs, **additional_spec_args)
+        return PipelineSpec(
+            steps=step_specs, outputs=output_specs, **additional_spec_args
+        )
 
 
 def convert_component_shortcut_settings_keys(

@@ -22,6 +22,11 @@ from zenml.config.step_configurations import StepSpec
 from zenml.utils.json_utils import pydantic_encoder
 
 
+class OutputSpec(FrozenBaseModel):
+    step_name: str
+    output_name: str
+
+
 class PipelineSpec(FrozenBaseModel):
     """Specification of a pipeline."""
 
@@ -37,6 +42,8 @@ class PipelineSpec(FrozenBaseModel):
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
     steps: List[StepSpec]
+    outputs: List[OutputSpec] = []
+    output_schema: Dict[str, Any] = {}
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same pipeline.
