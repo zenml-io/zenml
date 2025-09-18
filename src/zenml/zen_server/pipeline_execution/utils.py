@@ -52,7 +52,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     StackResponse,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
@@ -138,10 +138,10 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
-def trigger_snapshot(
+def run_snapshot(
     snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    trigger_request: PipelineSnapshotTriggerRequest,
+    request: PipelineSnapshotRunRequest,
     sync: bool = False,
     template_id: Optional[UUID] = None,
 ) -> PipelineRunResponse:
@@ -150,7 +150,7 @@ def trigger_snapshot(
     Args:
         snapshot: The snapshot to run.
         auth_context: Authentication context.
-        trigger_request: The trigger request.
+        request: The run request.
         sync: Whether to run the snapshot synchronously.
         template_id: The ID of the template from which to create the snapshot
             request.
@@ -195,14 +195,12 @@ def trigger_snapshot(
         )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
-    if trigger_request.run_configuration:
-        validate_run_config_is_runnable_from_server(
-            trigger_request.run_configuration
-        )
+    if request.run_configuration:
+        validate_run_config_is_runnable_from_server(request.run_configuration)
 
     snapshot_request = snapshot_request_from_source_snapshot(
         source_snapshot=snapshot,
-        config=trigger_request.run_configuration or PipelineRunConfiguration(),
+        config=request.run_configuration or PipelineRunConfiguration(),
         template_id=template_id,
     )
 
@@ -219,9 +217,9 @@ def trigger_snapshot(
     zenml_version = build.zenml_version
 
     trigger_info = None
-    if trigger_request.step_run:
+    if request.step_run:
         trigger_info = PipelineRunTriggerInfo(
-            step_run_id=trigger_request.step_run,
+            step_run_id=request.step_run,
         )
 
     placeholder_run = create_placeholder_run(

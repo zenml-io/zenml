@@ -847,8 +847,16 @@ def create_pipeline_snapshot(
     )
 
 
-@snapshot.command("trigger", help="Trigger a snapshot.")
-@click.argument("snapshot_id")
+@snapshot.command("run", help="Run a snapshot.")
+@click.argument("snapshot_name_or_id")
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline.",
+)
 @click.option(
     "--config",
     "-c",
@@ -857,24 +865,67 @@ def create_pipeline_snapshot(
     required=False,
     help="Path to configuration file for the run.",
 )
-def trigger_snapshot(
-    snapshot_id: str,
+def run_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
     config_path: Optional[str] = None,
 ) -> None:
-    """Trigger a snapshot.
+    """Run a snapshot.
 
     Args:
-        snapshot_id: The ID of the snapshot to trigger.
+        snapshot_name_or_id: The name or ID of the snapshot to run.
+        pipeline_name_or_id: The name or ID of the pipeline.
         config_path: Path to configuration file for the run.
     """
-    if not uuid_utils.is_valid_uuid(snapshot_id):
-        cli_utils.error(f"Invalid snapshot ID: {snapshot_id}")
+    if uuid_utils.is_valid_uuid(snapshot_name_or_id):
+        snapshot_id = UUID(snapshot_name_or_id)
+    elif pipeline_name_or_id:
+        try:
+            snapshot_id = (
+                Client()
+                .get_snapshot(
+                    snapshot_name_or_id,
+                    pipeline_name_or_id=pipeline_name_or_id,
+                )
+                .id
+            )
+        except KeyError:
+            cli_utils.error(
+                f"There are no snapshots with name `{snapshot_name_or_id}` for "
+                f"pipeline `{pipeline_name_or_id}`."
+            )
+    else:
+        snapshots = Client().list_snapshots(
+            name=snapshot_name_or_id,
+        )
+        if snapshots.total == 0:
+            cli_utils.error(
+                f"There are no snapshots with name `{snapshot_name_or_id}`."
+            )
+        elif snapshots.total == 1:
+            snapshot_id = snapshots.items[0].id
+        else:
+            snapshot_index = cli_utils.multi_choice_prompt(
+                object_type="snapshots",
+                choices=[
+                    [snapshot.pipeline.name, snapshot.name]
+                    for snapshot in snapshots.items
+                ],
+                headers=["Pipeline", "Snapshot"],
+                prompt_text=f"There are multiple snapshots with name "
+                f"`{snapshot_name_or_id}`. Please select the snapshot to run",
+            )
+            assert snapshot_index is not None
+            snapshot_id = snapshots.items[snapshot_index].id
 
-    run = Client().trigger_pipeline(
-        snapshot_id=UUID(snapshot_id),
-        config_path=config_path,
-    )
-    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
+    try:
+        run = Client().trigger_pipeline(
+            snapshot_name_or_id=snapshot_id,
+            config_path=config_path,
+        )
+        cli_utils.declare(f"Started snapshot run `{run.id}`.")
+    except Exception as e:
+        cli_utils.error(f"Failed to run snapshot: {e}")
 
 
 @snapshot.command("list", help="List pipeline snapshots.")
@@ -911,7 +962,6 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "run_name_template",
                 "pipeline_version_hash",
                 "pipeline_spec",
-                "pipeline",
                 "stack",
                 "build",
                 "schedule",
@@ -920,5 +970,6 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "config_template",
                 "source_snapshot_id",
                 "template_id",
+                "code_path",
             ],
         )

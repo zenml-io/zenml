@@ -742,7 +742,7 @@ def test_listing_snapshots(clean_client):
     assert len(snapshots) == 1
     assert snapshots[0] == response
 
-    snapshots = clean_client.list_snapshots(named_only=False, stack_id=uuid4())
+    snapshots = clean_client.list_snapshots(named_only=False, stack=uuid4())
     assert len(snapshots) == 0
 
 
