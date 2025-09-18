@@ -83,10 +83,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.base_step import StepArtifact
-from zenml.steps.entrypoint_function_utils import (
-    StepArtifact,
-)
+from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
