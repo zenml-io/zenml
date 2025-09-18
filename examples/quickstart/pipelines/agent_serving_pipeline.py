@@ -56,11 +56,10 @@ def on_init_hook(**_: Any) -> None:
 @pipeline(enable_cache=False, on_init=on_init_hook)
 def agent_serving_pipeline(
     text: str = "my card is lost and i need a replacement",
-    confidence_threshold: float = 0.65,
 ) -> Any:
     """Agent serving pipeline that uses classifier if available."""
     # Classify the intent
-    classification_result = classify_intent(text, confidence_threshold)
+    classification_result = classify_intent(text)
 
     # Generate response based on classification
     response = generate_response(classification_result)

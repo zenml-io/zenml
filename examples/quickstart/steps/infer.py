@@ -14,7 +14,7 @@ _router: Optional[Any] = None
 
 @step
 def classify_intent(
-    text: str, confidence_threshold: float = 0.65
+    text: str
 ) -> Annotated[Dict[str, Any], "classification_result"]:
     """Classify intent using loaded classifier or fall back to LLM."""
     global _router
@@ -33,28 +33,16 @@ def classify_intent(
             predicted_probabilities = _router.predict_proba([text])[0]
             max_confidence = max(predicted_probabilities)
 
-            if max_confidence >= confidence_threshold:
-                result.update(
-                    {
-                        "intent": predicted_intent,
-                        "confidence": float(max_confidence),
-                        "intent_source": "classifier",
-                    }
-                )
-                logger.info(
-                    f"Classifier: '{text}' → {predicted_intent} (confidence: {max_confidence:.3f})"
-                )
-            else:
-                result.update(
-                    {
-                        "intent": "general",
-                        "confidence": float(max_confidence),
-                        "intent_source": "classifier_fallback",
-                    }
-                )
-                logger.info(
-                    f"Classifier confidence too low ({max_confidence:.3f} < {confidence_threshold}), falling back to general"
-                )
+            result.update(
+                {
+                    "intent": predicted_intent,
+                    "confidence": float(max_confidence),
+                    "intent_source": "classifier",
+                }
+            )
+            logger.info(
+                f"Classifier: '{text}' → {predicted_intent} (confidence: {max_confidence:.3f})"
+            )
         except Exception as e:
             logger.error(f"Classifier error: {e}")
             result.update(

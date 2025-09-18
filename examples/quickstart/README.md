@@ -44,18 +44,19 @@ curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "parameters": {
-      "confidence_threshold": 0.65,
       "text": "my card is lost and i need a replacement"
     }
   }'
 ```
 
+*[Screenshot: curl command and generic response]*
+
 Or use the ZenML CLI:
 ```bash
 zenml deployment invoke support-agent \
-  --confidence_threshold=0.65 \
   --text="my card is lost and i need a replacement"
 ```
+
 
 **Response**: Generic banking response with `"intent_source": "llm"`
 ```json
@@ -92,6 +93,8 @@ Tagged artifact version as 'production'
 >> Done. Check dashboard: artifact 'intent-classifier' latest version has tag 'production'.
 ```
 
+*[Screenshot: Training pipeline execution in terminal]*
+
 **What happens**:
 - Loads toy banking support dataset (20 examples, 6 intents)
 - Trains TF-IDF + LogisticRegression classifier
@@ -107,22 +110,22 @@ zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
   -n support-agent -c configs/agent.yaml -u
 ```
 
-Test with the same request (using lower threshold to see classifier in action):
+Test with the same request:
 ```bash
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "parameters": {
-      "confidence_threshold": 0.3,
       "text": "my card is lost and i need a replacement"
     }
   }'
 ```
 
+*[Screenshot: curl command and specialized response]*
+
 Or with ZenML CLI:
 ```bash
 zenml deployment invoke support-agent \
-  --confidence_threshold=0.3 \
   --text="my card is lost and i need a replacement"
 ```
 
@@ -131,7 +134,7 @@ zenml deployment invoke support-agent \
 {
   "answer": "I understand you've lost your card. Here are the immediate steps: 1) Log into your account to freeze the card, 2) Call our 24/7 hotline at 1-800-SUPPORT, 3) Order a replacement card through the app. Your new card will arrive in 3-5 business days.",
   "intent": "card_lost",
-  "confidence": 0.41,
+  "confidence": 0.85,
   "intent_source": "classifier"
 }
 ```
@@ -139,6 +142,36 @@ zenml deployment invoke support-agent \
 **Notice the difference**:
 - **Phase 1**: Generic response, `"intent_source": "llm"`
 - **Phase 3**: Specific response, `"intent_source": "classifier"`, actual intent detected
+
+## 🤖 The Automatic Upgrade Magic
+
+The agent automatically detects when a production model is available and upgrades itself:
+
+```python
+# At deployment startup (on_init_hook)
+def _load_production_classifier_if_any():
+    versions = client.list_artifact_versions(name="intent-classifier")
+
+    for version in versions:
+        if "production" in [tag.name for tag in version.tags]:
+            global _router
+            _router = version.load()  # 🎯 Agent upgraded!
+            break
+```
+
+**The Decision Logic**:
+- ✅ **Production classifier found** → Use specific intent responses
+- ❌ **No production classifier** → Use generic LLM responses
+
+*[Screenshot: ZenML Dashboard showing artifact with "production" tag]*
+
+**This means**:
+1. **Deploy once** → Agent works immediately with generic responses
+2. **Train model** → Automatically tagged as "production"
+3. **Update deployment** → Agent finds and loads the production model
+4. **Same endpoint, better responses** → No code changes needed
+
+*[Screenshot: Side-by-side comparison of Phase 1 vs Phase 3 responses]*
 
 ## 🔍 What's Happening Under the Hood
 
@@ -154,8 +187,8 @@ def intent_training_pipeline():
 ### Agent Serving Pipeline (`agent_serving_pipeline`)
 ```python
 @pipeline(on_init=on_init_hook)  # 🔥 Key feature: warm start
-def agent_serving_pipeline(text: str, confidence_threshold: float = 0.65):
-    classification = classify_intent(text, confidence_threshold)
+def agent_serving_pipeline(text: str):
+    classification = classify_intent(text)
     response = generate_response(classification)
     return response
 ```
@@ -188,20 +221,24 @@ The demo includes 6 banking support intents:
 
 Each intent triggers a specific, helpful response with clear next steps.
 
-## 🎭 Confidence-Based Routing
+## 🎯 Simple Intent Classification
 
-The agent uses confidence thresholds to decide when to trust the classifier:
+The agent automatically uses the classifier when available - no complex thresholds or fallback logic. This keeps the story clean:
 
 ```python
-if classifier_confidence >= threshold:
-    # Use specific intent (e.g., "card_lost")
+if classifier_loaded:
+    # Always use the classifier
     intent_source = "classifier"
 else:
-    # Fall back to general response
-    intent_source = "classifier_fallback"
+    # No classifier available yet
+    intent_source = "llm"
 ```
 
-**Demo tip**: Use `confidence_threshold: 0.3` to see classifier predictions, `0.65` for fallback behavior.
+**The demo shows this progression**:
+- **Phase 1**: No classifier → generic LLM responses
+- **Phase 3**: Classifier available → specific intent-based responses
+
+**In production**, you might add confidence thresholds or fallback logic, but the core value is the seamless upgrade from generic to specialized responses.
 
 ## 🏗️ ZenML Features Demonstrated
 
