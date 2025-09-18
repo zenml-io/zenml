@@ -31,13 +31,14 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
 from uuid import UUID
 
 import yaml
-from pydantic import ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import Self
 
 from zenml import constants
@@ -1654,3 +1655,30 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
+
+    def _compute_output_schema(self) -> Dict[str, Any]:
+        """Computes the output schema for the pipeline.
+
+        Returns:
+            The output schema for the pipeline.
+        """
+
+        def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
+            return (
+                output_artifact.invocation_id.replace("-", "_")
+                + "-"
+                + output_artifact.output_name.replace("-", "_")
+            )
+
+        output_model_class: Type[BaseModel] = create_model(
+            "PipelineOutput",
+            __config__=ConfigDict(arbitrary_types_allowed=True),
+            **{
+                _get_schema_output_name(output_artifact): (
+                    output_artifact.annotation.resolved_annotation,
+                    ...,
+                )
+                for output_artifact in self._output_artifacts
+            },
+        )
+        return output_model_class.model_json_schema(mode="serialization")

@@ -24,10 +24,7 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
-    Type,
 )
-
-from pydantic import BaseModel, ConfigDict, create_model
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -50,7 +47,6 @@ from zenml.utils import pydantic_utils, secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
-    from zenml.steps.entrypoint_function_utils import StepArtifact
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
@@ -655,7 +651,7 @@ class Compiler:
             for output_artifact in pipeline._output_artifacts
         ]
         try:
-            output_schema = compute_pipeline_output_schema(pipeline=pipeline)
+            output_schema = pipeline._compute_output_schema()
         except Exception as e:
             logger.warning("Failed to compute pipeline output schema: %s", e)
             output_schema = None
@@ -667,39 +663,6 @@ class Compiler:
             source=pipeline.resolve(),
             parameters=pipeline._parameters,
         )
-
-
-def compute_pipeline_output_schema(
-    pipeline: "Pipeline",
-) -> Dict[str, Any]:
-    """Computes the pipeline output schema.
-
-    Args:
-        pipeline: The pipeline for which to compute the output schema.
-
-    Returns:
-        The pipeline output schema.
-    """
-
-    def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
-        return (
-            output_artifact.invocation_id.replace("-", "_")
-            + "-"
-            + output_artifact.output_name.replace("-", "_")
-        )
-
-    output_model_class: Type[BaseModel] = create_model(
-        "PipelineOutput",
-        __config__=ConfigDict(arbitrary_types_allowed=True),
-        **{
-            _get_schema_output_name(output_artifact): (
-                output_artifact.annotation.resolved_annotation,
-                ...,
-            )
-            for output_artifact in pipeline._output_artifacts
-        },
-    )
-    return output_model_class.model_json_schema(mode="serialization")
 
 
 def convert_component_shortcut_settings_keys(
