@@ -23,6 +23,8 @@ from zenml.utils.json_utils import pydantic_encoder
 
 
 class OutputSpec(FrozenBaseModel):
+    """Pipeline output specification."""
+
     step_name: str
     output_name: str
 
@@ -38,7 +40,8 @@ class PipelineSpec(FrozenBaseModel):
     #   inputs in the step specs refer to the pipeline parameter names
     # - 0.4: New Pipeline class, the upstream steps and
     #   inputs in the step specs refer to the pipeline parameter names
-    version: str = "0.4"
+    # - 0.5: Adds outputs and output schema
+    version: str = "0.5"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
     steps: List[StepSpec]
