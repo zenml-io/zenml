@@ -3306,69 +3306,69 @@ class Client(metaclass=ClientMetaClass):
                 hydrate=hydrate,
                 include_config_schema=include_config_schema,
             )
-        else:
-            list_kwargs: Dict[str, Any] = {
-                "named_only": None,
-                "project": project,
-                "hydrate": hydrate,
-                "size": 1,
-            }
 
-            # First, try to get the snapshot by name
-            snapshots = self.list_snapshots(
-                name=str(name_id_or_prefix),
-                pipeline=pipeline_name_or_id,
-                **list_kwargs,
-            )
-            if snapshots.total == 1:
-                snapshot = snapshots.items[0]
-            elif snapshots.total == 0:
-                # No name matches. If the user provided a pipeline, we assume
-                # they want to fetch the snapshot by name and fail. Otherwise,
-                # we try to fetch by ID prefix.
-                if pipeline_name_or_id or not allow_prefix_match:
+        list_kwargs: Dict[str, Any] = {
+            "named_only": None,
+            "project": project,
+            "hydrate": hydrate,
+            "size": 1,
+        }
+
+        # First, try to get the snapshot by name
+        snapshots = self.list_snapshots(
+            name=str(name_id_or_prefix),
+            pipeline=pipeline_name_or_id,
+            **list_kwargs,
+        )
+        if snapshots.total == 1:
+            snapshot = snapshots.items[0]
+        elif snapshots.total == 0:
+            # No name matches. If the user provided a pipeline, we assume
+            # they want to fetch the snapshot by name and fail. Otherwise,
+            # we try to fetch by ID prefix.
+            if pipeline_name_or_id or not allow_prefix_match:
+                raise KeyError(
+                    f"No snapshot with name `{name_id_or_prefix}` has been "
+                    f"found for pipeline `{pipeline_name_or_id}`."
+                )
+            else:
+                snapshots = self.list_snapshots(
+                    id=f"startswith:{name_id_or_prefix}", **list_kwargs
+                )
+
+                if snapshots.total == 1:
+                    snapshot = snapshots.items[0]
+                elif snapshots.total == 0:
                     raise KeyError(
-                        f"No snapshot with name `{name_id_or_prefix}` has been "
-                        f"found for pipeline `{pipeline_name_or_id}`."
+                        f"No snapshot with ID prefix `{name_id_or_prefix}` "
+                        "has been found."
                     )
                 else:
-                    snapshots = self.list_snapshots(
-                        id=f"startswith:{name_id_or_prefix}", **list_kwargs
+                    raise ZenKeyError(
+                        f"{snapshots.total} snapshots have been found that "
+                        "have an ID that matches the provided prefix "
+                        f"`{name_id_or_prefix}`. Please use the full ID to "
+                        "uniquely identify one of the snapshots."
                     )
+        else:
+            # Multiple name matches, this is only possible if the user
+            # provided no pipeline.
+            raise ZenKeyError(
+                f"{snapshots.total} snapshots have been found for name "
+                f"`{name_id_or_prefix}`. Please either specify which "
+                "pipeline the snapshot belongs to or fetch the snapshot "
+                "by ID to uniquely identify one of the snapshots."
+            )
 
-                    if snapshots.total == 1:
-                        snapshot = snapshots.items[0]
-                    elif snapshots.total == 0:
-                        raise KeyError(
-                            f"No snapshot with ID prefix `{name_id_or_prefix}` "
-                            "has been found."
-                        )
-                    else:
-                        raise ZenKeyError(
-                            f"{snapshots.total} snapshots have been found that "
-                            "have an ID that matches the provided prefix "
-                            f"`{name_id_or_prefix}`. Please use the full ID to "
-                            "uniquely identify one of the snapshots."
-                        )
-            else:
-                # Multiple name matches, this is only possible if the user
-                # provided no pipeline.
-                raise ZenKeyError(
-                    f"{snapshots.total} snapshots have been found for name "
-                    f"`{name_id_or_prefix}`. Please either specify which "
-                    "pipeline the snapshot belongs to or fetch the snapshot "
-                    "by ID to uniquely identify one of the snapshots."
-                )
-
-            if hydrate and include_config_schema:
-                # The config schema cannot be fetched using the list
-                # call, so we make a second call to fetch it.
-                return self.zen_store.get_snapshot(
-                    snapshot.id,
-                    include_config_schema=include_config_schema,
-                    hydrate=hydrate,
-                )
-            return snapshot
+        if hydrate and include_config_schema:
+            # The config schema cannot be fetched using the list
+            # call, so we make a second call to fetch it.
+            return self.zen_store.get_snapshot(
+                snapshot.id,
+                include_config_schema=include_config_schema,
+                hydrate=hydrate,
+            )
+        return snapshot
 
     def list_snapshots(
         self,
@@ -3450,7 +3450,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_snapshot(
         self,
-        id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -3461,7 +3461,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the snapshot.
+            name_id_or_prefix: Name, ID or ID prefix of the snapshot.
             project: The project name/ID to filter by.
             name: The new name of the snapshot.
             description: The new description of the snapshot.
@@ -3474,7 +3474,7 @@ class Client(metaclass=ClientMetaClass):
             The updated snapshot.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix,
+            name_id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3492,17 +3492,17 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_snapshot(
         self,
-        id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the snapshot.
+            name_id_or_prefix: Name, ID or ID prefix of the snapshot.
             project: The project name/ID to filter by.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix,
+            name_id_or_prefix,
             project=project,
             hydrate=False,
         )
