@@ -457,7 +457,7 @@ class StackFilter(UserScopedFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlalchemy import and_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
