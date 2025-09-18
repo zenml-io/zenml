@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import functools
 import json
 import os
 import platform
@@ -38,6 +39,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
@@ -79,7 +81,7 @@ from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import dict_utils, secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -2251,7 +2253,7 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
     """
     from zenml.enums import ExecutionStatus
 
-    if status == ExecutionStatus.INITIALIZING:
+    if status in {ExecutionStatus.INITIALIZING, ExecutionStatus.PROVISIONING}:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
@@ -2475,11 +2477,6 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                     create_data_type_help_text(filter_model, k)
                 )
 
-        def wrapper(function: F) -> F:
-            for option in reversed(options):
-                function = option(function)
-            return function
-
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
             f"interpreted as a check for equality. However advanced "
@@ -2500,7 +2497,17 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 f"{joined_data_type_descriptors}"
             )
 
-        return wrapper(func)
+        for option in reversed(options):
+            func = option(func)
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            nonlocal func
+
+            kwargs = dict_utils.remove_none_values(kwargs)
+            return func(*args, **kwargs)
+
+        return cast(F, wrapper)
 
     return inner_decorator
 

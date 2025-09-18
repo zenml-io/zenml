@@ -395,29 +395,19 @@ Control how packages are installed:
 # Use custom installer arguments
 docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
 
-# Use uv instead of pip
+# Use pip instead of uv
 from zenml.config import DockerSettings, PythonPackageInstaller
-docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
-# Or as a string
-docker_settings = DockerSettings(python_package_installer="uv")
-
-# Use pip (default)
 docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.PIP)
+# Or as a string
+docker_settings = DockerSettings(python_package_installer="pip")
+
+# Use uv (default)
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
 ```
 
 The available package installers are:
-- `pip`: The default Python package installer
-- `uv`: A faster alternative to pip
-
-{% hint style="warning" %}
-In an upcoming release, ZenML will switch from `pip` to `uv` as the default package installer due to its significantly better performance. We encourage you to try it out in advance to prepare for this change:
-
-```python
-docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
-```
-
-This will help ensure a smooth transition for the entire community. If you encounter any issues, please report them on our [GitHub repository](https://github.com/zenml-io/zenml/issues).
-{% endhint %}
+- `uv`: The default python package installer
+- `pip`: An alternative python package installer
 
 Full documentation for how `uv` works with PyTorch can be found on the Astral Docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
 
@@ -480,19 +470,19 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Environment Variables
 
-You can set environment variables that will be available in the Docker container:
+You can configure environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
 
 ```python
 docker_settings = DockerSettings(
     environment={
         "PYTHONUNBUFFERED": "1",
         "MODEL_DIR": "/models",
-        "API_KEY": "${GLOBAL_API_KEY}"  # Reference environment variables
+        "API_KEY": "${GLOBAL_API_KEY}"  # Reference a local environment variable
     }
 )
 ```
 
-Environment variables can reference other environment variables by using the `${VAR_NAME}` syntax. ZenML will substitute these at runtime.
+Environment variables can reference other environment variables set in your client environment by using the `${VAR_NAME}` syntax. ZenML will substitute these before building the images.
 
 ## Build Reuse and Optimization
 

@@ -59,8 +59,8 @@ from zenml.models import (
     ModelResponse,
     ModelVersionResponse,
     PipelineBuildRequest,
-    PipelineDeploymentRequest,
     PipelineRequest,
+    PipelineSnapshotRequest,
     RunMetadataResource,
     StackResponse,
     TagResource,
@@ -711,74 +711,96 @@ def test_deleting_builds(clean_client):
 
 
 # --------------------
-# Pipeline Deployments
+# Pipeline Snasphots
 # --------------------
 
 
-def test_listing_deployments(clean_client):
-    """Tests listing deployments."""
-    deployments = clean_client.list_deployments()
-    assert len(deployments) == 0
+def test_listing_snapshots(clean_client):
+    """Tests listing snapshots."""
+    snapshots = clean_client.list_snapshots(named_only=False)
+    assert len(snapshots) == 0
 
-    request = PipelineDeploymentRequest(
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
+
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
-    deployments = clean_client.list_deployments()
-    assert len(deployments) == 1
-    assert deployments[0] == response
+    snapshots = clean_client.list_snapshots(named_only=False)
+    assert len(snapshots) == 1
+    assert snapshots[0] == response
 
-    deployments = clean_client.list_deployments(stack_id=uuid4())
-    assert len(deployments) == 0
+    snapshots = clean_client.list_snapshots(named_only=False, stack_id=uuid4())
+    assert len(snapshots) == 0
 
 
-def test_getting_deployments(clean_client):
-    """Tests getting deployments."""
+def test_getting_snapshots(clean_client):
+    """Tests getting snapshots."""
     with pytest.raises(KeyError):
-        clean_client.get_deployment(str(uuid4()))
+        clean_client.get_snapshot(str(uuid4()))
 
-    request = PipelineDeploymentRequest(
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
     with does_not_raise():
-        deployment = clean_client.get_deployment(str(response.id))
+        snapshot = clean_client.get_snapshot(str(response.id))
 
-    assert deployment == response
+    assert snapshot == response
 
 
-def test_deleting_deployments(clean_client):
-    """Tests deleting deployments."""
+def test_deleting_snapshots(clean_client):
+    """Tests deleting snapshots."""
     with pytest.raises(KeyError):
-        clean_client.delete_deployment(str(uuid4()))
+        clean_client.delete_snapshot(str(uuid4()))
 
-    request = PipelineDeploymentRequest(
+    pipeline = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            project=clean_client.active_project.id,
+            name="pipeline_name",
+        )
+    )
+    request = PipelineSnapshotRequest(
         project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
         client_version="0.12.3",
         server_version="0.12.3",
+        pipeline=pipeline.id,
     )
-    response = clean_client.zen_store.create_deployment(request)
+    response = clean_client.zen_store.create_snapshot(request)
 
     with does_not_raise():
-        clean_client.delete_deployment(str(response.id))
+        clean_client.delete_snapshot(str(response.id))
 
     with pytest.raises(KeyError):
-        clean_client.get_deployment(str(response.id))
+        clean_client.get_snapshot(str(response.id))
 
 
 def test_get_run(clean_client: Client, connected_two_step_pipeline):
@@ -796,19 +818,6 @@ def test_get_run_fails_for_non_existent_run(clean_client: Client):
     """Test that `get_run()` raises a `KeyError` for non-existent runs."""
     with pytest.raises(KeyError):
         clean_client.get_pipeline_run("non_existent_run")
-
-
-def test_get_unlisted_runs(clean_client: Client, connected_two_step_pipeline):
-    """Test that listing unlisted runs works."""
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
-    pipeline_instance = connected_two_step_pipeline(
-        step_1=constant_int_output_test_step,
-        step_2=int_plus_one_test_step,
-    )
-    pipeline_instance()
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 0
-    pipeline_instance.with_options(unlisted=True)()
-    assert len(clean_client.list_pipeline_runs(unlisted=True)) == 1
 
 
 class ClientCrudTestConfig(BaseModel):

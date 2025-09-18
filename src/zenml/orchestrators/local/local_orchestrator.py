@@ -14,9 +14,10 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -26,9 +27,10 @@ from zenml.orchestrators import (
 )
 from zenml.stack import Stack
 from zenml.utils import string_utils
+from zenml.utils.env_utils import temporary_environment
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
+    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 
@@ -44,9 +46,10 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -57,16 +60,23 @@ class LocalOrchestrator(BaseOrchestrator):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
+
+        Raises:
+            Exception: If the pipeline run fails.
+            RuntimeError: If the pipeline run fails.
         """
-        if deployment.schedule:
+        if snapshot.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the "
                 "use of schedules. The `schedule` will be ignored "
@@ -76,8 +86,50 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
+        execution_mode = snapshot.pipeline_configuration.execution_mode
+
+        failed_steps: List[str] = []
+        skipped_steps: List[str] = []
+
         # Run each step
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
+            if (
+                execution_mode == ExecutionMode.STOP_ON_FAILURE
+                and failed_steps
+            ):
+                logger.warning(
+                    "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
+                    step_name,
+                    ", ".join(failed_steps),
+                    execution_mode,
+                )
+                skipped_steps.append(step_name)
+                continue
+
+            if failed_upstream_steps := [
+                fs for fs in failed_steps if fs in step.spec.upstream_steps
+            ]:
+                logger.warning(
+                    "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
+                    step_name,
+                    ", ".join(failed_upstream_steps),
+                    execution_mode,
+                )
+                skipped_steps.append(step_name)
+                continue
+
+            if skipped_upstream_steps := [
+                fs for fs in skipped_steps if fs in step.spec.upstream_steps
+            ]:
+                logger.warning(
+                    "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
+                    step_name,
+                    ", ".join(skipped_upstream_steps),
+                    execution_mode,
+                )
+                skipped_steps.append(step_name)
+                continue
+
             if self.requires_resources_in_orchestration_environment(step):
                 logger.warning(
                     "Specifying step resources is not supported for the local "
@@ -86,8 +138,20 @@ class LocalOrchestrator(BaseOrchestrator):
                     step_name,
                 )
 
-            self.run_step(
-                step=step,
+            step_environment = step_environments[step_name]
+            try:
+                with temporary_environment(step_environment):
+                    self.run_step(step=step)
+            except Exception:
+                failed_steps.append(step_name)
+
+                if execution_mode == ExecutionMode.FAIL_FAST:
+                    raise
+
+        if failed_steps:
+            raise RuntimeError(
+                "Pipeline run has failed due to failure in step(s): "
+                f"{', '.join(failed_steps)}"
             )
 
         run_duration = time.time() - start_time
@@ -112,6 +176,19 @@ class LocalOrchestrator(BaseOrchestrator):
             raise RuntimeError("No run id set.")
 
         return self._orchestrator_run_id
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Returns the supported execution modes for this flavor.
+
+        Returns:
+            A tuple of supported execution modes.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
 
 
 class LocalOrchestratorConfig(BaseOrchestratorConfig):

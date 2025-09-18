@@ -61,18 +61,18 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
-from zenml.zen_server.rbac.rbac_interface import RBACInterface
-from zenml.zen_server.request_management import RequestContext, RequestManager
-from zenml.zen_server.template_execution.workload_manager_interface import (
+from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
+from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.request_management import RequestContext, RequestManager
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
     from fastapi import Request
 
     from zenml.zen_server.auth import AuthContext
-    from zenml.zen_server.template_execution.utils import (
+    from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
@@ -87,7 +87,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_run_template_executor: Optional["BoundedThreadPoolExecutor"] = None
+_snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 _request_manager: Optional[RequestManager] = None
@@ -218,32 +218,32 @@ def initialize_workload_manager() -> None:
             _workload_manager = workload_manager_class()
 
 
-def run_template_executor() -> "BoundedThreadPoolExecutor":
-    """Return the initialized run template executor.
+def snapshot_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized snapshot executor.
 
     Raises:
-        RuntimeError: If the run template executor is not initialized.
+        RuntimeError: If the snapshot executor is not initialized.
 
     Returns:
-        The run template executor.
+        The snapshot executor.
     """
-    global _run_template_executor
-    if _run_template_executor is None:
-        raise RuntimeError("Run template executor not initialized")
+    global _snapshot_executor
+    if _snapshot_executor is None:
+        raise RuntimeError("Snapshot executor not initialized")
 
-    return _run_template_executor
+    return _snapshot_executor
 
 
-def initialize_run_template_executor() -> None:
-    """Initialize the run template executor."""
-    global _run_template_executor
-    from zenml.zen_server.template_execution.utils import (
+def initialize_snapshot_executor() -> None:
+    """Initialize the snapshot executor."""
+    global _snapshot_executor
+    from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
 
-    _run_template_executor = BoundedThreadPoolExecutor(
-        max_workers=server_config().max_concurrent_template_runs,
-        thread_name_prefix="zenml-run-template-executor",
+    _snapshot_executor = BoundedThreadPoolExecutor(
+        max_workers=server_config().max_concurrent_snapshot_runs,
+        thread_name_prefix="zenml-snapshot-executor",
     )
 
 

@@ -81,7 +81,7 @@ from zenml.constants import (
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
-    PIPELINE_DEPLOYMENTS,
+    PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
     RUN_METADATA,
@@ -196,9 +196,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -206,6 +203,11 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -1621,88 +1623,141 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-    # -------------------------- Pipeline Deployments --------------------------
+    # -------------------------- Pipeline Snapshots --------------------------
 
-    def create_deployment(
+    def create_snapshot(
         self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
-        """Creates a new deployment.
+        snapshot: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
+        """Creates a new snapshot.
 
         Args:
-            deployment: The deployment to create.
+            snapshot: The snapshot to create.
 
         Returns:
-            The newly created deployment.
+            The newly created snapshot.
         """
         return self._create_resource(
-            resource=deployment,
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            resource=snapshot,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
         )
 
-    def get_deployment(
+    def get_snapshot(
         self,
-        deployment_id: UUID,
+        snapshot_id: UUID,
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
-    ) -> PipelineDeploymentResponse:
-        """Get a deployment with a given ID.
+        include_config_schema: Optional[bool] = None,
+    ) -> PipelineSnapshotResponse:
+        """Get a snapshot with a given ID.
 
         Args:
-            deployment_id: ID of the deployment.
+            snapshot_id: ID of the snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            include_config_schema: Whether the config schema will be filled.
 
         Returns:
-            The deployment.
+            The snapshot.
         """
         return self._get_resource(
-            resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
             params={
                 "hydrate": hydrate,
                 "step_configuration_filter": step_configuration_filter,
+                "include_config_schema": include_config_schema,
             },
         )
 
-    def list_deployments(
+    def list_snapshots(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        snapshot_filter_model: PipelineSnapshotFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
-        """List all deployments matching the given filter criteria.
+    ) -> Page[PipelineSnapshotResponse]:
+        """List all snapshots matching the given filter criteria.
 
         Args:
-            deployment_filter_model: All filter parameters including pagination
+            snapshot_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A page of all deployments matching the filter criteria.
+            A page of all snapshots matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
-            filter_model=deployment_filter_model,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+            filter_model=snapshot_filter_model,
             params={"hydrate": hydrate},
         )
 
-    def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+    def update_snapshot(
+        self,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
+        """Update a snapshot.
 
         Args:
-            deployment_id: The ID of the deployment to delete.
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_update: The update to apply.
+
+        Returns:
+            The updated snapshot.
+        """
+        return self._update_resource(
+            resource_id=snapshot_id,
+            resource_update=snapshot_update,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+        )
+
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to delete.
         """
         self._delete_resource(
-            resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
         )
+
+    def trigger_snapshot(
+        self,
+        snapshot_id: UUID,
+        trigger_request: PipelineSnapshotTriggerRequest,
+    ) -> PipelineRunResponse:
+        """Trigger a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to trigger.
+            trigger_request: Configuration for the trigger.
+
+        Raises:
+            RuntimeError: If the server does not support running a snapshot.
+
+        Returns:
+            Model of the pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
+                body=trigger_request,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a snapshot is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
 
     # -------------------- Run templates --------------------
 

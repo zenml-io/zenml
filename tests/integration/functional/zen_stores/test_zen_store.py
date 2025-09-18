@@ -77,11 +77,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     AuthorizationException,
-    DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
+from zenml.logging.step_logging import fetch_log_records, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,
@@ -103,6 +102,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    PipelineSnapshotRequest,
     ProjectFilter,
     ProjectUpdate,
     RunMetadataResource,
@@ -126,7 +126,6 @@ from zenml.models import (
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
 from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
-from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
@@ -262,7 +261,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
         )
 
     entity_name = crud_test_config.entity_name
-    if entity_name in {"build", "deployment"}:
+    if entity_name in {"build", "snapshot"}:
         pytest.skip(f"Duplicates of {entity_name} are allowed.")
 
     # First creation is successful
@@ -3154,18 +3153,21 @@ def test_logs_are_recorded_properly(clean_client):
         steps = run_context.steps
         step1_logs = steps[0].logs
         step2_logs = steps[1].logs
-        step1_logs_content = fetch_logs(
+        step1_logs_content = fetch_log_records(
             store, step1_logs.artifact_store_id, step1_logs.uri
         )
-        step2_logs_content = fetch_logs(
+        step2_logs_content = fetch_log_records(
             store, step1_logs.artifact_store_id, step2_logs.uri
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
-        assert "log" in step1_logs_content
+        assert any("log" in record.message for record in step1_logs_content)
 
         # Step 2 does not have logs!
-        assert "Step int_plus_one_test_step has started." in step2_logs_content
+        assert any(
+            "Step `int_plus_one_test_step` has started." in record.message
+            for record in step2_logs_content
+        )
 
 
 def test_logs_are_recorded_properly_when_disabled(clean_client):
@@ -3200,11 +3202,11 @@ def test_logs_are_recorded_properly_when_disabled(clean_client):
             step_name=steps[1].name,
         )
 
-        with pytest.raises(DoesNotExistException):
-            fetch_logs(store, artifact_store_id, logs_uri_1)
+        with pytest.raises(FileNotFoundError):
+            fetch_log_records(store, artifact_store_id, logs_uri_1)
 
-        with pytest.raises(DoesNotExistException):
-            fetch_logs(store, artifact_store_id, logs_uri_2)
+        with pytest.raises(FileNotFoundError):
+            fetch_log_records(store, artifact_store_id, logs_uri_2)
 
 
 # .--------------------.
@@ -5440,6 +5442,13 @@ class TestRunMetadata:
             )
         )
 
+        pipeline_model = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=client.active_project.id,
+            )
+        )
+
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
@@ -5475,14 +5484,15 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             step_name = sample_name("foo")
-            deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
                     ),
                     stack=client.active_stack.id,
+                    pipeline=pipeline_model.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
                     step_configurations={
@@ -5504,7 +5514,7 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
-                    deployment=deployment.id,
+                    snapshot=snapshot.id,
                     status=ExecutionStatus.RUNNING,
                 )
             )
@@ -5514,7 +5524,6 @@ class TestRunMetadata:
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
-                    deployment=deployment.id,
                 )
             )
             resource = (
@@ -5523,12 +5532,6 @@ class TestRunMetadata:
 
         elif type_ == MetadataResourceTypes.SCHEDULE:
             step_name = sample_name("foo")
-            new_pipeline = client.zen_store.create_pipeline(
-                pipeline=PipelineRequest(
-                    name="foo",
-                    project=client.active_project.id,
-                )
-            )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
@@ -5536,16 +5539,17 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
-                    pipeline_id=new_pipeline.id,
+                    pipeline_id=pipeline_model.id,
                 )
             )
-            deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
                     ),
+                    pipeline=pipeline_model.id,
                     stack=client.active_stack.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
@@ -5601,12 +5605,12 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             client.zen_store.delete_run(pr.id)
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
         elif type_ == MetadataResourceTypes.SCHEDULE:
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
             client.zen_store.delete_schedule(resource.id)
-            client.zen_store.delete_pipeline(new_pipeline.id)
 
+        client.zen_store.delete_pipeline(pipeline_model.id)
         client.zen_store.delete_stack_component(sc.id)
 
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.84.3"
+version = "0.85.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -42,13 +42,13 @@ zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 click = "^8.0.1,<=8.2.1"
-cloudpickle = ">=2.0.0,<3"
+cloudpickle = ">=2.0.0"
 distro = "^1.6.0"
 docker = "~7.1.0"
 gitpython = "^3.1.18"
 packaging = ">=24.1"
 psutil = ">=5.0.0"
-pydantic = ">=2.0,<2.11.2"
+pydantic = ">=2.0,<=2.11.9"
 pydantic-settings = "*"
 python = ">=3.9,<3.13"
 python-dateutil = "^2.8.1"
@@ -303,7 +303,7 @@ source = "init"
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
-log_cli = true
+log_cli = false
 log_cli_level = "INFO"
 testpaths = "tests"
 xfail_strict = true

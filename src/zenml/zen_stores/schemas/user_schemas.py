@@ -50,9 +50,9 @@ if TYPE_CHECKING:
         ModelVersionSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
-        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
+        PipelineSnapshotSchema,
         RunMetadataSchema,
         RunTemplateSchema,
         ScheduleSchema,
@@ -145,7 +145,7 @@ class UserSchema(NamedSchema, table=True):
             "primaryjoin": "UserSchema.id==ActionSchema.service_account_id",
         },
     )
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="user",
     )
     code_repositories: List["CodeRepositorySchema"] = Relationship(

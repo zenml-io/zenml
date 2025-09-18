@@ -22,7 +22,7 @@ from zenml import (
 )
 from zenml.artifacts.utils import register_artifact
 from zenml.client import Client
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, ExecutionMode
 from zenml.models.v2.core.artifact import ArtifactResponse
 
 
@@ -262,7 +262,7 @@ def test_log_metadata_raises_error_if_output_name_unclear(
 ):
     """Test that `log_metadata` raises an error if the output name is unclear."""
 
-    @pipeline
+    @pipeline(execution_mode=ExecutionMode.FAIL_FAST)
     def artifact_metadata_logging_pipeline():
         wrong_artifact_multi_output_metadata_logging_step()
 

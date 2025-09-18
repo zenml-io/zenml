@@ -24,11 +24,14 @@ from typing import (
     Union,
     overload,
 )
+from uuid import UUID
 
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -51,6 +54,8 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -60,6 +65,8 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -70,6 +77,8 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -79,6 +88,8 @@ def pipeline(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -89,6 +100,9 @@ def pipeline(
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         enable_step_logs: If step logs should be enabled for this pipeline.
+        environment: Environment variables to set when running this pipeline.
+        secrets: Secrets to set as environment variables when running this
+            pipeline.
         enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
         settings: Settings for this pipeline.
         tags: Tags to apply to runs of the pipeline.
@@ -102,6 +116,8 @@ def pipeline(
         model: configuration of the model in the Model Control Plane.
         retry: Retry configuration for the pipeline steps.
         substitutions: Extra placeholders to use in the name templates.
+        execution_mode: The execution mode to use for the pipeline.
+        cache_policy: Cache policy for this pipeline.
 
     Returns:
         A pipeline instance.
@@ -116,6 +132,8 @@ def pipeline(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_step_logs=enable_step_logs,
+            environment=environment,
+            secrets=secrets,
             enable_pipeline_logs=enable_pipeline_logs,
             settings=settings,
             tags=tags,
@@ -125,6 +143,8 @@ def pipeline(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            execution_mode=execution_mode,
+            cache_policy=cache_policy,
         )
 
         p.__doc__ = func.__doc__

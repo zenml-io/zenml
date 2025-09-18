@@ -14,21 +14,22 @@
 """Utilities for caching."""
 
 import hashlib
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Mapping, Optional
+from uuid import UUID
 
 from zenml.client import Client
+from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import (
-        PipelineDeploymentResponse,
+        ArtifactVersionResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    input_artifact_ids: Dict[str, "UUID"],
+    input_artifacts: Mapping[str, "ArtifactVersionResponse"],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -57,16 +58,19 @@ def generate_cache_key(
     - the names and source codes of the output artifacts of the step,
     - the source codes of the output materializers of the step.
     - additional custom caching parameters of the step.
+    - the environment variables defined for the step.
+    - the secrets defined for the step.
 
     Args:
         step: The step to generate the cache key for.
-        input_artifact_ids: The input artifact IDs for the step.
+        input_artifacts: The input artifacts for the step.
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 
     Returns:
         A cache key.
     """
+    cache_policy = step.config.cache_policy
     hash_ = hashlib.md5()  # nosec
 
     # Project ID
@@ -85,15 +89,25 @@ def generate_cache_key(
     # when committing some unrelated files
     hash_.update(step.spec.source.import_path.encode())
 
-    # Step parameters
-    for key, value in sorted(step.config.parameters.items()):
-        hash_.update(key.encode())
-        hash_.update(str(value).encode())
+    if cache_policy.include_step_parameters:
+        for key, value in sorted(step.config.parameters.items()):
+            hash_.update(key.encode())
+            hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_version_id in input_artifact_ids.items():
+    for name, artifact_version in input_artifacts.items():
+        if name in (cache_policy.ignored_inputs or []):
+            continue
+
         hash_.update(name.encode())
-        hash_.update(artifact_version_id.bytes)
+
+        if (
+            artifact_version.content_hash
+            and cache_policy.include_artifact_values
+        ):
+            hash_.update(artifact_version.content_hash.encode())
+        elif cache_policy.include_artifact_ids:
+            hash_.update(artifact_version.id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
@@ -103,8 +117,23 @@ def generate_cache_key(
 
     # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):
+        if (
+            key == CODE_HASH_PARAMETER_NAME
+            and not cache_policy.include_step_code
+        ):
+            continue
+
         hash_.update(key.encode())
         hash_.update(str(value).encode())
+
+    # User-defined environment variables
+    for key, value in sorted(step.config.environment.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
+    # User-defined secrets
+    for secret_name_or_id in sorted([str(s) for s in step.config.secrets]):
+        hash_.update(secret_name_or_id.encode())
 
     return hash_.hexdigest()
 
@@ -136,15 +165,15 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     return None
 
 
-def create_cached_step_runs_and_prune_deployment(
-    deployment: "PipelineDeploymentResponse",
+def create_cached_step_runs_and_prune_snapshot(
+    snapshot: "PipelineSnapshotResponse",
     pipeline_run: "PipelineRunResponse",
     stack: "Stack",
 ) -> bool:
-    """Create cached step runs and prune the cached steps from the deployment.
+    """Create cached step runs and prune the cached steps from the snapshot.
 
     Args:
-        deployment: The deployment of the pipeline run.
+        snapshot: The pipeline snapshot.
         pipeline_run: The pipeline run for which to create the step runs.
         stack: The stack on which the pipeline run is happening.
 
@@ -152,22 +181,22 @@ def create_cached_step_runs_and_prune_deployment(
         Whether an actual pipeline run is still required.
     """
     cached_invocations = step_run_utils.create_cached_step_runs(
-        deployment=deployment,
+        snapshot=snapshot,
         pipeline_run=pipeline_run,
         stack=stack,
     )
 
     for invocation_id in cached_invocations:
-        # Remove the cached step invocations from the deployment so
+        # Remove the cached step invocations from the snapshot so
         # the orchestrator does not try to run them
-        deployment.step_configurations.pop(invocation_id)
+        snapshot.step_configurations.pop(invocation_id)
 
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         for invocation_id in cached_invocations:
             if invocation_id in step.spec.upstream_steps:
                 step.spec.upstream_steps.remove(invocation_id)
 
-    if len(deployment.step_configurations) == 0:
+    if len(snapshot.step_configurations) == 0:
         # All steps were cached, we update the pipeline run status and
         # don't actually use the orchestrator to run the pipeline
         logger.info("All steps of the pipeline run were cached.")
