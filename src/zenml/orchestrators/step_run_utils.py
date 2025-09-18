@@ -25,8 +25,8 @@ from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
     ModelVersionResponse,
-    PipelineDeploymentResponse,
     PipelineRunResponse,
+    PipelineSnapshotResponse,
     StepRunRequest,
     StepRunResponse,
 )
@@ -43,19 +43,19 @@ class StepRunRequestFactory:
 
     def __init__(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         pipeline_run: "PipelineRunResponse",
         stack: "Stack",
     ) -> None:
         """Initialize the object.
 
         Args:
-            deployment: The deployment for which to create step run requests.
+            snapshot: The snapshot for which to create step run requests.
             pipeline_run: The pipeline run for which to create step run
                 requests.
             stack: The stack on which the pipeline run is happening.
         """
-        self.deployment = deployment
+        self.snapshot = snapshot
         self.pipeline_run = pipeline_run
         self.stack = stack
 
@@ -79,10 +79,10 @@ class StepRunRequestFactory:
             # Serving module not available, continue normally
             pass
 
-        step = self.deployment.step_configurations[invocation_id]
+        step = self.snapshot.step_configurations[invocation_id]
         return utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
-            is_enabled_on_pipeline=self.deployment.pipeline_configuration.enable_cache,
+            is_enabled_on_pipeline=self.snapshot.pipeline_configuration.enable_cache,
         )
 
     def create_request(self, invocation_id: str) -> StepRunRequest:
@@ -120,7 +120,7 @@ class StepRunRequestFactory:
                 input resolution. This will be updated in-place with newly
                 fetched step runs.
         """
-        step = self.deployment.step_configurations[request.name]
+        step = self.snapshot.step_configurations[request.name]
 
         input_artifacts = input_utils.resolve_step_inputs(
             step=step,
@@ -153,7 +153,7 @@ class StepRunRequestFactory:
 
         cache_enabled = utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
-            is_enabled_on_pipeline=self.deployment.pipeline_configuration.enable_cache,
+            is_enabled_on_pipeline=self.snapshot.pipeline_configuration.enable_cache,
         )
 
         # Disable caching if serving optimizations are active
@@ -205,7 +205,7 @@ class StepRunRequestFactory:
         Returns:
             The docstring and source code of the step.
         """
-        step = self.deployment.step_configurations[invocation_id]
+        step = self.snapshot.step_configurations[invocation_id]
 
         try:
             return self._get_docstring_and_source_code_from_step_instance(
@@ -217,7 +217,7 @@ class StepRunRequestFactory:
         # Failed to import the step instance, this is most likely because this
         # code is running on the server as part of a template execution.
         # We now try to fetch the docstring/source code from a step run of the
-        # deployment that was used to create the template
+        # snapshot that was used to create the template
         return self._try_to_get_docstring_and_source_code_from_template(
             invocation_id=invocation_id
         )
@@ -263,12 +263,12 @@ class StepRunRequestFactory:
         if template_id := self.pipeline_run.template_id:
             template = Client().get_run_template(template_id)
             if (
-                deployment_id := template.source_deployment.id
-                if template.source_deployment
+                snapshot_id := template.source_snapshot.id
+                if template.source_snapshot
                 else None
             ):
                 steps = Client().list_run_steps(
-                    deployment_id=deployment_id,
+                    snapshot_id=snapshot_id,
                     name=invocation_id,
                     size=1,
                     hydrate=True,
@@ -282,26 +282,26 @@ class StepRunRequestFactory:
 
 
 def find_cacheable_invocation_candidates(
-    deployment: "PipelineDeploymentResponse",
+    snapshot: "PipelineSnapshotResponse",
     finished_invocations: Set[str],
 ) -> Set[str]:
     """Find invocations that can potentially be cached.
 
     Args:
-        deployment: The pipeline deployment containing the invocations.
+        snapshot: The pipeline snapshot containing the invocations.
         finished_invocations: A set of invocations that are already finished.
 
     Returns:
         The set of invocations that can potentially be cached.
     """
     invocations = set()
-    for invocation_id, step in deployment.step_configurations.items():
+    for invocation_id, step in snapshot.step_configurations.items():
         if invocation_id in finished_invocations:
             continue
 
         cache_enabled = utils.is_setting_enabled(
             is_enabled_on_step=step.config.enable_cache,
-            is_enabled_on_pipeline=deployment.pipeline_configuration.enable_cache,
+            is_enabled_on_pipeline=snapshot.pipeline_configuration.enable_cache,
         )
 
         if not cache_enabled:
@@ -316,14 +316,14 @@ def find_cacheable_invocation_candidates(
 
 
 def create_cached_step_runs(
-    deployment: "PipelineDeploymentResponse",
+    snapshot: "PipelineSnapshotResponse",
     pipeline_run: PipelineRunResponse,
     stack: "Stack",
 ) -> Set[str]:
     """Create all cached step runs for a pipeline run.
 
     Args:
-        deployment: The deployment of the pipeline run.
+        snapshot: The snapshot of the pipeline run.
         pipeline_run: The pipeline run for which to create the step runs.
         stack: The stack on which the pipeline run is happening.
 
@@ -333,7 +333,7 @@ def create_cached_step_runs(
     cached_invocations: Set[str] = set()
     visited_invocations: Set[str] = set()
     request_factory = StepRunRequestFactory(
-        deployment=deployment, pipeline_run=pipeline_run, stack=stack
+        snapshot=snapshot, pipeline_run=pipeline_run, stack=stack
     )
     # This is used to cache the step runs that we created to avoid unnecessary
     # server requests.
@@ -341,7 +341,7 @@ def create_cached_step_runs(
 
     while (
         cache_candidates := find_cacheable_invocation_candidates(
-            deployment=deployment,
+            snapshot=snapshot,
             finished_invocations=cached_invocations,
         )
         # We've already checked these invocations and were not able to cache

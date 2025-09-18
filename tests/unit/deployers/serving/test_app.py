@@ -34,13 +34,13 @@ class MockWeatherRequest(BaseModel):
 def mock_service():
     """Mock pipeline serving service."""
     service = MagicMock(spec=PipelineServingService)
-    service.deployment_id = uuid4()
+    service.snapshot_id = uuid4()
     service._params_model = MockWeatherRequest
     service.last_execution_time = None
     service.total_executions = 0
     service.is_healthy.return_value = True
     service.get_service_info.return_value = {
-        "deployment_id": str(service.deployment_id),
+        "snapshot_id": str(service.snapshot_id),
         "pipeline_name": "test_pipeline",
         "total_executions": 0,
         "status": "healthy",
@@ -59,7 +59,7 @@ def mock_service():
             "run_id": "run-123",
             "run_name": "test_run",
             "parameters_used": {"city": "London", "temperature": 20},
-            "deployment_id": str(service.deployment_id),
+            "snapshot_id": str(service.snapshot_id),
         },
     }
     return service
@@ -94,7 +94,7 @@ class TestServingAppRoutes:
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "healthy"
-            assert data["deployment_id"] == str(mock_service.deployment_id)
+            assert data["snapshot_id"] == str(mock_service.snapshot_id)
             assert data["pipeline_name"] == "test_pipeline"
             assert "uptime" in data
 
@@ -113,10 +113,10 @@ class TestServingAppRoutes:
 
     def test_info_endpoint(self, mock_service):
         """Test info endpoint."""
-        # Mock deployment with pipeline spec
-        mock_service.deployment = MagicMock()
-        mock_service.deployment.pipeline_spec = MagicMock()
-        mock_service.deployment.pipeline_spec.parameters = {
+        # Mock snapshot with pipeline spec
+        mock_service.snapshot = MagicMock()
+        mock_service.snapshot.pipeline_spec = MagicMock()
+        mock_service.snapshot.pipeline_spec.parameters = {
             "city": "London",
             "temperature": 20,
         }
@@ -130,9 +130,9 @@ class TestServingAppRoutes:
             assert response.status_code == 200
             data = response.json()
             assert "pipeline" in data
-            assert "deployment" in data
+            assert "snapshot" in data
             assert data["pipeline"]["name"] == "test_pipeline"
-            assert data["deployment"]["id"] == str(mock_service.deployment_id)
+            assert data["snapshot"]["id"] == str(mock_service.snapshot_id)
 
     def test_metrics_endpoint(self, mock_service):
         """Test metrics endpoint."""
@@ -165,7 +165,7 @@ class TestServingAppRoutes:
             data = response.json()
             assert data["service_name"] == "ZenML Pipeline Serving"
             assert data["version"] == "0.2.0"
-            assert data["deployment_id"] == str(mock_service.deployment_id)
+            assert data["snapshot_id"] == str(mock_service.snapshot_id)
             assert data["status"] == "running"
 
 
@@ -245,9 +245,7 @@ class TestServingAppLifecycle:
         asyncio.run(test_lifespan())
 
     @patch("zenml.deployers.serving.app.PipelineServingService")
-    @patch.dict(
-        "os.environ", {"ZENML_PIPELINE_DEPLOYMENT_ID": "test-deployment-id"}
-    )
+    @patch.dict("os.environ", {"ZENML_SNAPSHOT_ID": "test-snapshot-id"})
     def test_lifespan_normal_mode(self, mock_service_class):
         """Test lifespan in normal mode."""
         import asyncio
@@ -267,22 +265,20 @@ class TestServingAppLifecycle:
 
         asyncio.run(test_lifespan())
 
-        # Verify service was created with the correct deployment ID
-        mock_service_class.assert_called_once_with("test-deployment-id")
+        # Verify service was created with the correct snapshot ID
+        mock_service_class.assert_called_once_with("test-snapshot-id")
         mock_service.initialize.assert_called_once()
         mock_service.cleanup.assert_called_once()
 
     @patch.dict("os.environ", {}, clear=True)
-    def test_lifespan_missing_deployment_id(self):
-        """Test lifespan with missing deployment ID."""
+    def test_lifespan_missing_snapshot_id(self):
+        """Test lifespan with missing snapshot ID."""
         import asyncio
 
         from zenml.deployers.serving.app import app, lifespan
 
         async def test_lifespan():
-            with pytest.raises(
-                ValueError, match="ZENML_PIPELINE_DEPLOYMENT_ID"
-            ):
+            with pytest.raises(ValueError, match="ZENML_SNAPSHOT_ID"):
                 async with lifespan(app):
                     pass
 

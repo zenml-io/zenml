@@ -23,11 +23,11 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
-from zenml.deployers.exceptions import PipelineEndpointInvalidParametersError
+from zenml.deployers.exceptions import DeploymentInvalidParametersError
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineEndpointFilter,
+    DeploymentFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils
@@ -70,7 +70,7 @@ def deployment() -> None:
 
 
 @deployment.command("list", help="List all registered deployments.")
-@list_options(PipelineEndpointFilter)
+@list_options(DeploymentFilter)
 def list_deployments(**kwargs: Any) -> None:
     """List all registered deployments for the filter.
 
@@ -80,7 +80,7 @@ def list_deployments(**kwargs: Any) -> None:
     client = Client()
     try:
         with console.status("Listing deployments...\n"):
-            deployments = client.list_pipeline_endpoints(**kwargs)
+            deployments = client.list_deployments(**kwargs)
     except KeyError as err:
         cli_utils.error(str(err))
     else:
@@ -127,7 +127,7 @@ def describe_deployment(
         no_truncate: If True, don't truncate the metadata.
     """
     try:
-        deployment = Client().get_pipeline_endpoint(
+        deployment = Client().get_deployment(
             name_id_or_prefix=deployment_name_or_id,
         )
     except KeyError as e:
@@ -144,12 +144,12 @@ def describe_deployment(
 @deployment.command("provision")
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
-    "--deployment",
-    "-d",
-    "deployment_id",
+    "--snapshot",
+    "-s",
+    "snapshot_id",
     type=str,
     required=False,
-    help="ID of the deployment to use.",
+    help="ID of the snapshot to use.",
 )
 @click.option(
     "--overtake",
@@ -158,7 +158,7 @@ def describe_deployment(
     is_flag=True,
     default=False,
     required=False,
-    help="Provision the pipeline deployment with the given name even if it is "
+    help="Provision the deployment with the given name even if it is "
     "owned by a different user.",
 )
 @click.option(
@@ -173,7 +173,7 @@ def describe_deployment(
 )
 def provision_deployment(
     deployment_name_or_id: str,
-    deployment_id: Optional[str] = None,
+    snapshot_id: Optional[str] = None,
     overtake: bool = False,
     timeout: Optional[int] = None,
 ) -> None:
@@ -181,15 +181,15 @@ def provision_deployment(
 
     Args:
         deployment_name_or_id: The name or ID of the deployment to deploy.
-        deployment_id: The ID of the pipeline deployment to use.
-        overtake: If True, provision the pipeline deployment with the given name
+        snapshot_id: The ID of the pipeline snapshot to use.
+        overtake: If True, provision the deployment with the given name
             even if it is owned by a different user.
         timeout: The maximum time in seconds to wait for the deployment
             to be provisioned.
     """
     client = Client()
     try:
-        deployment = client.get_pipeline_endpoint(deployment_name_or_id)
+        deployment = client.get_deployment(deployment_name_or_id)
     except KeyError:
         pass
     else:
@@ -212,9 +212,9 @@ def provision_deployment(
         f"Provisioning deployment '{deployment_name_or_id}'...\n"
     ):
         try:
-            deployment = Client().provision_pipeline_endpoint(
+            deployment = Client().provision_deployment(
                 name_id_or_prefix=deployment_name_or_id,
-                deployment_id=deployment_id,
+                snapshot_id=snapshot_id,
                 timeout=timeout,
             )
         except KeyError as e:
@@ -300,17 +300,15 @@ def deprovision_deployment(
     client = Client()
 
     if all:
-        deployments = client.list_pipeline_endpoints(size=max_count).items
+        deployments = client.list_deployments(size=max_count).items
     elif mine:
-        deployments = client.list_pipeline_endpoints(
+        deployments = client.list_deployments(
             user=client.active_user.id,
             size=max_count,
         ).items
     elif deployment_name_or_id:
         deployments = [
-            client.get_pipeline_endpoint(
-                name_id_or_prefix=deployment_name_or_id
-            )
+            client.get_deployment(name_id_or_prefix=deployment_name_or_id)
         ]
     else:
         cli_utils.error(
@@ -361,7 +359,7 @@ def deprovision_deployment(
             f"Deprovisioning deployment '{deployment.name}'...\n"
         ):
             try:
-                client.deprovision_pipeline_endpoint(
+                client.deprovision_deployment(
                     name_id_or_prefix=deployment.id,
                     timeout=timeout,
                 )
@@ -466,17 +464,15 @@ def delete_deployment(
     client = Client()
 
     if all:
-        deployments = client.list_pipeline_endpoints(size=max_count).items
+        deployments = client.list_deployments(size=max_count).items
     elif mine:
-        deployments = client.list_pipeline_endpoints(
+        deployments = client.list_deployments(
             user=client.active_user.id,
             size=max_count,
         ).items
     elif deployment_name_or_id:
         deployments = [
-            client.get_pipeline_endpoint(
-                name_id_or_prefix=deployment_name_or_id
-            )
+            client.get_deployment(name_id_or_prefix=deployment_name_or_id)
         ]
     else:
         cli_utils.error(
@@ -524,7 +520,7 @@ def delete_deployment(
     for deployment in deployments:
         with console.status(f"Deleting deployment '{deployment.name}'...\n"):
             try:
-                Client().delete_pipeline_endpoint(
+                Client().delete_deployment(
                     name_id_or_prefix=deployment.id,
                     force=force,
                     timeout=timeout,
@@ -552,7 +548,7 @@ def refresh_deployment(
         deployment_name_or_id: The name or ID of the deployment to refresh.
     """
     try:
-        deployment = Client().refresh_pipeline_endpoint(
+        deployment = Client().refresh_deployment(
             name_id_or_prefix=deployment_name_or_id
         )
 
@@ -589,7 +585,7 @@ def invoke_deployment(
         timeout: The maximum time in seconds to wait for the deployment
             to be invoked.
     """
-    from zenml.deployers.utils import call_pipeline_endpoint
+    from zenml.deployers.utils import call_deployment
 
     # Parse the given args
     args = list(args)
@@ -603,13 +599,13 @@ def invoke_deployment(
     assert name_or_id is not None
 
     try:
-        response = call_pipeline_endpoint(
-            endpoint_name_or_id=name_or_id,
+        response = call_deployment(
+            deployment_name_or_id=name_or_id,
             timeout=timeout or 300,  # 5 minute timeout
             project=None,
             **parsed_args,
         )
-    except PipelineEndpointInvalidParametersError as e:
+    except DeploymentInvalidParametersError as e:
         cli_utils.error(
             f"Invalid parameters for deployment '{name_or_id}': \n"
             f"{str(e)}\n\n"
@@ -663,7 +659,7 @@ def log_deployment(
             show all logs.
     """
     try:
-        logs = Client().get_pipeline_endpoint_logs(
+        logs = Client().get_deployment_logs(
             name_id_or_prefix=deployment_name_or_id,
             follow=follow,
             tail=tail,

@@ -37,7 +37,7 @@ def test_ephemeral_tag_added_in_memory(monkeypatch: pytest.MonkeyPatch):
         def put_in_memory_data(uri: str, data: Any) -> None:  # noqa: D401
             pass
 
-    monkeypatch.setattr("zenml.artifacts.utils.runtime", _R)
+    monkeypatch.setattr("zenml.deployers.serving.runtime", _R)
 
     # Stub client/stack/artifact_store
     fake_store = MagicMock(id="store-id")

@@ -303,28 +303,118 @@ When fetching metadata using a specific key, the returned value will always refl
 
 ### Accessing Context Within Steps
 
-Within a step, you can access information about the current execution context using the `StepContext`:
+The `StepContext` object is your handle to the *current* pipeline/step run while a step executes. Use it to read run/step information, inspect upstream input metadata, and work with step outputs: URIs, materializers, run metadata, and tags.
+
+It is available:
+- Inside functions decorated with `@step` (during execution, not composition time).
+- Inside step hooks like `on_failure` / `on_success`.
+- Inside materializers triggered by a step’s `save` / `load`.
+- Calling `get_step_context()` elsewhere raises `RuntimeError`.
+
+Getting the context is done via `get_step_context()`:
 
 ```python
 from zenml import step, get_step_context
 
 @step
-def my_step():
-    # Get the step context
-    context = get_step_context()
-    
-    # Access context information
-    pipeline_name = context.pipeline.name
-    run_name = context.pipeline_run.name
-    step_name = context.step_run.name
-    
-    # Get information about output artifacts
-    output_uri = context.get_output_artifact_uri()
-    materializer = context.get_output_materializer()
-    
-    # Use the context information
-    print(f"Executing step {step_name} in pipeline {pipeline_name}, run {run_name}")
+def trainer(param: int = 1):
+    ctx = get_step_context()
+    print("run:",  ctx.pipeline_run.name, ctx.pipeline_run.id)
+    print("step:", ctx.step_run.name,   ctx.step_run.id)
+    print("params:", ctx.step_run.config.parameters)
 ```
+
+This exposes the following properties:
+
+* `ctx.pipeline` → the `PipelineResponse` for this run (convenience; may raise if the run has no pipeline object).
+* `ctx.pipeline_run` → `PipelineRunResponse` (id, name, status, timestamps, etc.).
+* `ctx.step_run` → `StepRunResponse` (name, parameters via `ctx.step_run.config.parameters`, status).
+* `ctx.model` → the configured `Model` (resolved from step or pipeline); raises if none configured.
+* `ctx.inputs` → `{input_name: StepRunInputResponse}`; use `...["x"].run_metadata` to read upstream metadata.
+* `ctx.step_name` → convenience name string.
+
+### Working with outputs
+
+For a single-output step you can omit `output_name`. For multi-output steps you **must** pass it (unnamed outputs are called `output_1`, `output_2`, …).
+
+* `get_output_artifact_uri(output_name=None) -> str` – where the output artifact lives (write side files, etc.).
+* `get_output_materializer(output_name=None, *, custom_materializer_class=None, data_type=None) -> BaseMaterializer` – get an initialized materializer; pass `data_type` to select from `Union[...]` materializers or `custom_materializer_class` to override.
+* `add_output_metadata(metadata, output_name=None)` / `get_output_metadata(output_name=None)` – set/read run metadata for the output. Values provided via `ArtifactConfig(..., run_metadata=...)` on the return annotation are merged with runtime values.
+* `add_output_tags(tags, output_name=None)` / `get_output_tags(output_name=None)` / `remove_output_tags(tags, output_name=None)` – manage tags for the produced artifact version. Configured tags via `ArtifactConfig(..., tags=...)` are unioned with runtime tags; duplicates are de‑duplicated in the final artifact.
+
+Minimal example:
+
+```python
+from typing import Annotated, Tuple
+from zenml import step, get_step_context, log_metadata
+from zenml.artifacts.artifact_config import ArtifactConfig
+
+@step
+def produce(name: str) -> Tuple[
+    Annotated[
+        str,
+        ArtifactConfig(
+            name="custom_name",
+            run_metadata={"config_metadata": "bar"},
+            tags=["config_tags"],
+        ),
+    ],
+    str,
+]:
+    ctx = get_step_context()
+    # Attach metadata and tags to the named (or default) output
+    ctx.add_output_metadata({"m": 1}, output_name=name)
+    ctx.add_output_tags(["t1", "t1"], output_name=name)  # duplicates ok
+    return "a", "b"
+```
+
+#### Reading upstream metadata via `inputs`
+
+```python
+from zenml import step, get_step_context, log_metadata
+
+@step
+def upstream() -> int:
+    log_metadata({"quality": "ok"}, infer_artifact=True)
+    return 42
+
+@step
+def downstream(x: int) -> None:
+    md = get_step_context().inputs["x"].run_metadata
+    assert md["quality"] == "ok"
+```
+
+#### Hooks and materializers (advanced)
+
+```python
+from zenml import step, get_step_context
+from zenml.materializers.base_materializer import BaseMaterializer
+
+def on_failure(exc: BaseException):
+    c = get_step_context()
+    print("Failed step:", c.step_run.name, "-", type(exc).__name__)
+
+class ExampleMaterializer(BaseMaterializer):
+    def save(self, data):
+        # Context is available while the step triggers materialization
+        data.meta = get_step_context().pipeline.name
+        super().save(data)
+
+@step(on_failure=on_failure)
+def my_step():
+    raise ValueError("boom")
+```
+
+**Common errors to expect.**
+
+* `RuntimeError` if `get_step_context()` is called outside a running step.
+* `StepContextError` for output helpers when:
+
+  * The step has no outputs,
+  * You omit `output_name` on a multi‑output step,
+  * You reference an unknown `output_name`.
+
+See the [full SDK docs for `StepContext`](https://sdkdocs.zenml.io/latest/core_code_docs/core-steps.html#zenml.steps.StepContext) for a concise reference to this object.
 
 ### Accessing Context During Pipeline Composition
 

@@ -25,56 +25,52 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-DEFAULT_PIPELINE_ENDPOINT_LCM_TIMEOUT = 300
+DEFAULT_DEPLOYMENT_LCM_TIMEOUT = 300
 
 
 class DeployerError(Exception):
     """Base class for deployer errors."""
 
 
-class PipelineEndpointAlreadyExistsError(EntityExistsError, DeployerError):
-    """Error raised when a pipeline endpoint already exists."""
+class DeploymentAlreadyExistsError(EntityExistsError, DeployerError):
+    """Error raised when a deployment already exists."""
 
 
-class PipelineEndpointNotFoundError(KeyError, DeployerError):
-    """Error raised when a pipeline endpoint is not found."""
+class DeploymentNotFoundError(KeyError, DeployerError):
+    """Error raised when a deployment is not found."""
 
 
-class PipelineEndpointDeploymentError(DeployerError):
-    """Error raised when a pipeline endpoint deployment fails."""
+class DeploymentProvisionError(DeployerError):
+    """Error raised when a deployment provisioning fails."""
 
 
-class PipelineEndpointDeploymentTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deployment times out."""
+class DeploymentTimeoutError(DeployerError):
+    """Error raised when a deployment provisioning or deprovisioning times out."""
 
 
-class PipelineEndpointDeprovisionError(DeployerError):
-    """Error raised when a pipeline endpoint deletion fails."""
+class DeploymentDeprovisionError(DeployerError):
+    """Error raised when a deployment deprovisioning fails."""
 
 
-class PipelineEndpointDeletionTimeoutError(DeployerError):
-    """Error raised when a pipeline endpoint deletion times out."""
-
-
-class PipelineLogsNotFoundError(KeyError, DeployerError):
+class DeploymentLogsNotFoundError(KeyError, DeployerError):
     """Error raised when pipeline logs are not found."""
 
 
-class PipelineEndpointDeployerMismatchError(DeployerError):
-    """Error raised when a pipeline endpoint is not managed by this deployer."""
+class DeploymentDeployerMismatchError(DeployerError):
+    """Error raised when a deployment is not managed by this deployer."""
 
 
-class PipelineEndpointDeploymentMismatchError(DeployerError):
-    """Error raised when a pipeline endpoint deployment does not match the current deployer."""
+class DeploymentSnapshotMismatchError(DeployerError):
+    """Error raised when a deployment snapshot does not match the current deployer."""
 
 
-class PipelineEndpointHTTPError(DeployerError):
-    """Error raised when an HTTP request to a pipeline endpoint fails."""
+class DeploymentHTTPError(DeployerError):
+    """Error raised when an HTTP request to a deployment fails."""
 
 
-class PipelineEndpointSchemaNotFoundError(KeyError, DeployerError):
-    """Error raised when a pipeline endpoint schema is not found."""
+class DeploymentSchemaNotFoundError(KeyError, DeployerError):
+    """Error raised when a deployment schema is not found."""
 
 
-class PipelineEndpointInvalidParametersError(DeployerError):
-    """Error raised when the parameters for a pipeline endpoint are invalid."""
+class DeploymentInvalidParametersError(DeployerError):
+    """Error raised when the parameters for a deployment are invalid."""

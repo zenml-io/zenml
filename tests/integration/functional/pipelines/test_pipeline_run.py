@@ -52,7 +52,7 @@ def test_pipeline_run_computes_clientside_cache(clean_client, mocker):
     assert mock_submit_pipeline.call_count == 1
 
     _, call_kwargs = mock_submit_pipeline.call_args
-    assert set(call_kwargs["deployment"].step_configurations.keys()) == {
+    assert set(call_kwargs["snapshot"].step_configurations.keys()) == {
         "step_3",
         "step_4",
     }

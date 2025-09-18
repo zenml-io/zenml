@@ -26,8 +26,8 @@ from zenml.constants import (
 from zenml.deployers.base_deployer import BaseDeployer
 from zenml.logger import get_logger
 from zenml.models import (
-    PipelineDeploymentBase,
-    PipelineDeploymentResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotResponse,
 )
 
 logger = get_logger(__name__)
@@ -50,26 +50,26 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         return cls.CONTAINER_REQUIREMENTS
 
     @staticmethod
-    def get_image(deployment: PipelineDeploymentResponse) -> str:
-        """Get the docker image used to serve a pipeline deployment.
+    def get_image(snapshot: PipelineSnapshotResponse) -> str:
+        """Get the docker image used to deploy a pipeline snapshot.
 
         Args:
-            deployment: The pipeline deployment to get the image for.
+            snapshot: The pipeline snapshot to get the image for.
 
         Returns:
-            The docker image used to serve the pipeline deployment.
+            The docker image used to deploy the pipeline snapshot.
 
         Raises:
-            RuntimeError: if the pipeline deployment does not have a build or
+            RuntimeError: if the pipeline snapshot does not have a build or
                 if the deployer image is not in the build.
         """
-        if deployment.build is None:
-            raise RuntimeError("Pipeline deployment does not have a build. ")
-        if DEPLOYER_DOCKER_IMAGE_KEY not in deployment.build.images:
+        if snapshot.build is None:
+            raise RuntimeError("Pipeline snapshot does not have a build. ")
+        if DEPLOYER_DOCKER_IMAGE_KEY not in snapshot.build.images:
             raise RuntimeError(
-                "Pipeline deployment build does not have a deployer image. "
+                "Pipeline snapshot build does not have a deployer image. "
             )
-        return deployment.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
+        return snapshot.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
 
     @property
     def requirements(self) -> Set[str]:
@@ -83,12 +83,12 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         return requirements
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
@@ -96,6 +96,6 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         return [
             BuildConfiguration(
                 key=DEPLOYER_DOCKER_IMAGE_KEY,
-                settings=deployment.pipeline_configuration.docker_settings,
+                settings=snapshot.pipeline_configuration.docker_settings,
             )
         ]

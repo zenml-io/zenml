@@ -109,11 +109,10 @@ def test_build_dag(clean_client):
 
     assert run.in_progress is False
 
-    # Get the deployment and extract steps
-    deployment = clean_client.get_deployment(run.deployment_id)
+    snapshot = run.snapshot
 
     steps = {}
-    for step_spec in deployment.pipeline_spec.steps:
+    for step_spec in snapshot.pipeline_spec.steps:
         steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG using our function
@@ -136,14 +135,12 @@ def test_build_dag(clean_client):
 
 def test_find_all_downstream_steps(clean_client):
     """Test find_all_downstream_steps with real pipeline structure."""
-    # Run the pipeline
     run = execution_mode_pipeline()
 
-    # Get the deployment and extract steps
-    deployment = clean_client.get_deployment(run.deployment_id)
+    snapshot = run.snapshot
 
     steps = {}
-    for step_spec in deployment.pipeline_spec.steps:
+    for step_spec in snapshot.pipeline_spec.steps:
         steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG
@@ -183,12 +180,10 @@ def test_dag_with_failed_step(clean_client):
         _ = execution_mode_pipeline(fail_step_2=True)
 
     run = clean_client.list_pipeline_runs(size=1).items[0]
-
-    # Get the deployment and extract steps
-    deployment = clean_client.get_deployment(run.deployment_id)
+    snapshot = run.snapshot
 
     steps = {}
-    for step_spec in deployment.pipeline_spec.steps:
+    for step_spec in snapshot.pipeline_spec.steps:
         steps[step_spec.pipeline_parameter_name] = step_spec.upstream_steps
 
     # Build the DAG

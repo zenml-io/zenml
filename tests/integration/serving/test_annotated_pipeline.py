@@ -73,20 +73,20 @@ class TestAnnotatedPipelineIntegration:
         step_class.entrypoint = func
         return step_class
 
-    def create_mock_deployment(self, step_funcs):
-        """Create a mock deployment with the given step functions."""
-        deployment = Mock()
-        deployment.pipeline_configuration.name = "test_pipeline"
-        deployment.step_configurations = {}
+    def create_mock_snapshot(self, step_funcs):
+        """Create a mock snapshot with the given step functions."""
+        snapshot = Mock()
+        snapshot.pipeline_configuration.name = "test_pipeline"
+        snapshot.step_configurations = {}
 
         for i, func in enumerate(step_funcs):
             step_name = f"step_{i}"
             step_config = Mock()
             step_config.spec.source = f"test.{func.__name__}"
             step_config.spec.inputs = {}
-            deployment.step_configurations[step_name] = step_config
+            snapshot.step_configurations[step_name] = step_config
 
-        return deployment
+        return snapshot
 
     @patch("zenml.deployers.serving.direct_execution.source_utils.load")
     def test_sensitive_input_annotation_parsing(self, mock_load):
@@ -94,10 +94,10 @@ class TestAnnotatedPipelineIntegration:
         # Setup mocks
         step_class = self.create_mock_step_class(sensitive_input_step)
         mock_load.return_value = step_class
-        deployment = self.create_mock_deployment([sensitive_input_step])
+        snapshot = self.create_mock_snapshot([sensitive_input_step])
 
         # Create engine - this should parse the annotations
-        engine = DirectExecutionEngine(deployment)
+        engine = DirectExecutionEngine(snapshot)
 
         # Get the parsed annotations
         overrides = engine.get_step_capture_overrides()
@@ -116,9 +116,9 @@ class TestAnnotatedPipelineIntegration:
         """Test that error-only output annotations are parsed correctly."""
         step_class = self.create_mock_step_class(error_capture_step)
         mock_load.return_value = step_class
-        deployment = self.create_mock_deployment([error_capture_step])
+        snapshot = self.create_mock_snapshot([error_capture_step])
 
-        engine = DirectExecutionEngine(deployment)
+        engine = DirectExecutionEngine(snapshot)
         overrides = engine.get_step_capture_overrides()
 
         step_0_overrides = overrides["step_0"]
@@ -134,9 +134,9 @@ class TestAnnotatedPipelineIntegration:
         """Test that sampled annotations are parsed correctly."""
         step_class = self.create_mock_step_class(sampled_output_step)
         mock_load.return_value = step_class
-        deployment = self.create_mock_deployment([sampled_output_step])
+        snapshot = self.create_mock_snapshot([sampled_output_step])
 
-        engine = DirectExecutionEngine(deployment)
+        engine = DirectExecutionEngine(snapshot)
         overrides = engine.get_step_capture_overrides()
 
         step_0_overrides = overrides["step_0"]
@@ -156,9 +156,9 @@ class TestAnnotatedPipelineIntegration:
         )
 
         # Create tracking manager
-        mock_deployment = Mock()
+        mock_snapshot = Mock()
         tracking_manager = TrackingManager(
-            deployment=mock_deployment,
+            snapshot=mock_snapshot,
             policy=base_policy,
             create_runs=True,
             invocation_id="test_invocation",
@@ -206,9 +206,9 @@ class TestAnnotatedPipelineIntegration:
             mode=CapturePolicyMode.NONE, artifacts=ArtifactCaptureMode.NONE
         )
 
-        mock_deployment = Mock()
+        mock_snapshot = Mock()
         tracking_manager = TrackingManager(
-            deployment=mock_deployment,
+            snapshot=mock_snapshot,
             policy=base_policy,
             create_runs=True,
             invocation_id="test_invocation",
@@ -240,9 +240,9 @@ class TestAnnotatedPipelineIntegration:
             sample_rate=0.3,
         )
 
-        mock_deployment = Mock()
+        mock_snapshot = Mock()
         tracking_manager = TrackingManager(
-            deployment=mock_deployment,
+            snapshot=mock_snapshot,
             policy=base_policy,
             create_runs=True,
             invocation_id="test_invocation",
@@ -266,9 +266,9 @@ class TestAnnotatedPipelineIntegration:
         """Test handling multiple steps with different annotations."""
         base_policy = CapturePolicy(mode=CapturePolicyMode.METADATA)
 
-        mock_deployment = Mock()
+        mock_snapshot = Mock()
         tracking_manager = TrackingManager(
-            deployment=mock_deployment,
+            snapshot=mock_snapshot,
             policy=base_policy,
             create_runs=True,
             invocation_id="test_invocation",

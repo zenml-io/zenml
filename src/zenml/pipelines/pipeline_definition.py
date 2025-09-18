@@ -28,6 +28,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -63,23 +64,23 @@ from zenml.logging.step_logging import (
 )
 from zenml.models import (
     CodeReferenceRequest,
+    DeploymentResponse,
     LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
-    PipelineDeploymentBase,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineEndpointResponse,
     PipelineRequest,
     PipelineResponse,
     PipelineRunResponse,
+    PipelineSnapshotBase,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
     RunTemplateResponse,
     ScheduleRequest,
 )
 from zenml.pipelines import build_utils
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
-    deploy_pipeline,
+    submit_pipeline,
     upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
@@ -140,6 +141,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -165,6 +168,10 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
@@ -201,6 +208,8 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                environment=environment,
+                secrets=secrets,
                 enable_pipeline_logs=enable_pipeline_logs,
                 settings=settings,
                 tags=tags,
@@ -326,6 +335,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[UUID, str]]] = None,
         enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
@@ -338,10 +349,10 @@ class Pipeline:
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
         execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
+        merge: bool = True,
     ) -> Self:
         """Configures the pipeline.
 
@@ -362,6 +373,11 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
+            settings: Settings for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
@@ -380,25 +396,31 @@ class Pipeline:
             on_cleanup: Callback function to run on cleanup of the pipeline. Can
                 be a function with no arguments, or a source path to such a
                 function with no arguments (e.g. `module.my_function`).
-            merge: If `True`, will merge the given dictionary configurations
-                like `extra` and `settings` with existing
-                configurations. If `False` the given configurations will
-                overwrite all existing ones. See the general description of this
-                method for an example.
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
+            merge: If `True`, will merge the given dictionary configurations
+                like `extra` and `settings` with existing
+                configurations. If `False` the given configurations will
+                overwrite all existing ones. See the general description of this
+                method for an example.
 
         Returns:
             The pipeline instance that this method was called on.
+
+        Raises:
+            ValueError: If the pipeline has parameters configured differently in
+                configuration file and code.
         """
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this pipeline
-            failure_hook_source, _ = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(
+                on_failure, allow_exception_arg=True
+            )
 
         success_hook_source = None
         if on_success:
@@ -436,12 +458,17 @@ class Pipeline:
             # merges dicts
             tags = self._configuration.tags + tags
 
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + list(secrets)
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "environment": environment,
+                "secrets": secrets,
                 "enable_pipeline_logs": enable_pipeline_logs,
                 "settings": settings,
                 "tags": tags,
@@ -642,7 +669,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             self._prepare_if_possible()
 
             compile_args = self._run_args.copy()
-            compile_args.pop("unlisted", None)
             compile_args.pop("prevent_build_reuse", None)
             if config_path:
                 compile_args["config_path"] = config_path
@@ -651,52 +677,52 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if settings:
                 compile_args["settings"] = settings
 
-            deployment, _, _ = self._compile(**compile_args)
+            snapshot, _, _ = self._compile(**compile_args)
             pipeline_id = self._register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
-                deployment=deployment, local_repo_context=local_repo
+                snapshot=snapshot, local_repo_context=local_repo
             )
 
             return build_utils.create_pipeline_build(
-                deployment=deployment,
+                snapshot=snapshot,
                 pipeline_id=pipeline_id,
                 code_repository=code_repository,
             )
 
-    def serve(
+    def deploy(
         self,
-        endpoint_name: str,
+        deployment_name: str,
         timeout: Optional[int] = None,
         *args: Any,
         **kwargs: Any,
-    ) -> PipelineEndpointResponse:
+    ) -> DeploymentResponse:
         """Deploy the pipeline for online inference.
 
         Args:
-            endpoint_name: The name of the endpoint used to deploy the pipeline.
+            deployment_name: The name to use for the deployment.
             timeout: The maximum time in seconds to wait for the pipeline to be
                 deployed.
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
 
         Returns:
-            The pipeline endpoint response.
+            The deployment response.
         """
         self.prepare(*args, **kwargs)
-        deployment = self._create_deployment(**self._run_args)
+        snapshot = self._create_snapshot(**self._run_args)
 
         stack = Client().active_stack
 
-        stack.prepare_pipeline_deployment(deployment=deployment)
-        return stack.serve_pipeline(
-            deployment=deployment,
-            endpoint_name=endpoint_name,
+        stack.prepare_pipeline_submission(snapshot=snapshot)
+        return stack.deploy_pipeline(
+            snapshot=snapshot,
+            deployment_name=deployment_name,
             timeout=timeout,
         )
 
-    def _create_deployment(
+    def _create_snapshot(
         self,
         *,
         run_name: Optional[str] = None,
@@ -713,11 +739,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         ] = None,
         extra: Optional[Dict[str, Any]] = None,
         config_path: Optional[str] = None,
-        unlisted: bool = False,
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
-    ) -> PipelineDeploymentResponse:
-        """Create a pipeline deployment.
+        **snapshot_request_kwargs: Any,
+    ) -> PipelineSnapshotResponse:
+        """Create a pipeline snapshot.
 
         Args:
             run_name: Name of the pipeline run.
@@ -740,20 +766,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             skip_schedule_registration: Whether to skip schedule registration.
+            **snapshot_request_kwargs: Additional keyword arguments to pass to
+                the snapshot request.
 
         Returns:
-            The pipeline deployment.
+            The pipeline snapshot.
 
         Raises:
             ValueError: If the orchestrator doesn't support scheduling, but a
                 schedule was given
         """
-        deployment, schedule, build = self._compile(
+        snapshot, schedule, build = self._compile(
             config_path=config_path,
             run_name=run_name,
             enable_cache=enable_cache,
@@ -768,19 +794,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             extra=extra,
         )
 
-        skip_pipeline_registration = constants.handle_bool_env_var(
-            constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
-            default=False,
-        )
-
-        register_pipeline = not (skip_pipeline_registration or unlisted)
-
-        pipeline_id = None
-        if register_pipeline:
-            pipeline_id = self._register().id
-        else:
-            logger.debug(f"Pipeline {self.name} is unlisted.")
-
+        pipeline_id = self._register().id
         stack = Client().active_stack
         stack.validate()
 
@@ -798,8 +812,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 schedule_name = schedule.name
             else:
                 schedule_name = format_name_template(
-                    deployment.run_name_template,
-                    substitutions=deployment.pipeline_configuration.substitutions,
+                    snapshot.run_name_template,
+                    substitutions=snapshot.pipeline_configuration.substitutions,
                 )
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
@@ -819,25 +833,23 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule_id = Client().zen_store.create_schedule(schedule_model).id
             logger.info(
                 f"Created schedule `{schedule_name}` for pipeline "
-                f"`{deployment.pipeline_configuration.name}`."
+                f"`{snapshot.pipeline_configuration.name}`."
             )
 
         stack = Client().active_stack
         stack.validate()
-        upload_notebook_cell_code_if_necessary(
-            deployment=deployment, stack=stack
-        )
+        upload_notebook_cell_code_if_necessary(snapshot=snapshot, stack=stack)
 
         local_repo_context = (
             code_repository_utils.find_active_code_repository()
         )
         code_repository = build_utils.verify_local_repository_context(
-            deployment=deployment, local_repo_context=local_repo_context
+            snapshot=snapshot, local_repo_context=local_repo_context
         )
         can_download_from_code_repository = code_repository is not None
         if local_repo_context:
             build_utils.log_code_repository_usage(
-                deployment=deployment, local_repo_context=local_repo_context
+                snapshot=snapshot, local_repo_context=local_repo_context
             )
 
         if prevent_build_reuse:
@@ -848,7 +860,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         build_model = build_utils.reuse_or_create_pipeline_build(
-            deployment=deployment,
+            snapshot=snapshot,
             pipeline_id=pipeline_id,
             allow_build_reuse=not prevent_build_reuse,
             build=build,
@@ -873,7 +885,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         code_path = None
         if build_utils.should_upload_code(
-            deployment=deployment,
+            snapshot=snapshot,
             build=build_model,
             can_download_from_code_repository=can_download_from_code_repository,
         ):
@@ -889,7 +901,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
-        request = PipelineDeploymentRequest(
+        request = PipelineSnapshotRequest(
             project=Client().active_project.id,
             stack=stack.id,
             pipeline=pipeline_id,
@@ -897,9 +909,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             schedule=schedule_id,
             code_reference=code_reference,
             code_path=code_path,
-            **deployment.model_dump(),
+            **snapshot.model_dump(),
+            **snapshot_request_kwargs,
         )
-        return Client().zen_store.create_deployment(deployment=request)
+        return Client().zen_store.create_snapshot(snapshot=request)
 
     def _run(
         self,
@@ -966,20 +979,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
 
             with logs_context:
-                deployment = self._create_deployment(**self._run_args)
+                snapshot = self._create_snapshot(**self._run_args)
 
-                self.log_pipeline_deployment_metadata(deployment)
+                self.log_pipeline_snapshot_metadata(snapshot)
                 run = (
-                    create_placeholder_run(
-                        deployment=deployment, logs=logs_model
-                    )
-                    if not deployment.schedule
+                    create_placeholder_run(snapshot=snapshot, logs=logs_model)
+                    if not snapshot.schedule
                     else None
                 )
 
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
-                        deployment=deployment,
+                        snapshot=snapshot,
                         stack=stack,
                         run_id=run.id if run else None,
                     )
@@ -998,8 +1009,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                             "`zenml login --local`."
                         )
 
-                deploy_pipeline(
-                    deployment=deployment, stack=stack, placeholder_run=run
+                submit_pipeline(
+                    snapshot=snapshot, stack=stack, placeholder_run=run
                 )
 
             if run:
@@ -1007,66 +1018,63 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return None
 
     @staticmethod
-    def log_pipeline_deployment_metadata(
-        deployment_model: PipelineDeploymentResponse,
+    def log_pipeline_snapshot_metadata(
+        snapshot: PipelineSnapshotResponse,
     ) -> None:
-        """Displays logs based on the deployment model upon running a pipeline.
+        """Displays logs based on the snapshot model upon running a pipeline.
 
         Args:
-            deployment_model: The model for the pipeline deployment
+            snapshot: The model for the pipeline snapshot
         """
         try:
             # Log about the caching status
-            if deployment_model.pipeline_configuration.enable_cache is False:
+            if snapshot.pipeline_configuration.enable_cache is False:
                 logger.info(
                     f"Caching is disabled by default for "
-                    f"`{deployment_model.pipeline_configuration.name}`."
+                    f"`{snapshot.pipeline_configuration.name}`."
                 )
 
             # Log about the used builds
-            if deployment_model.build:
+            if snapshot.build:
                 logger.info("Using a build:")
                 logger.info(
                     " Image(s): "
-                    f"{', '.join([i.image for i in deployment_model.build.images.values()])}"
+                    f"{', '.join([i.image for i in snapshot.build.images.values()])}"
                 )
 
                 # Log about version mismatches between local and build
                 from zenml import __version__
 
-                if deployment_model.build.zenml_version != __version__:
+                if snapshot.build.zenml_version != __version__:
                     logger.info(
                         f"ZenML version (different than the local version): "
-                        f"{deployment_model.build.zenml_version}"
+                        f"{snapshot.build.zenml_version}"
                     )
 
                 import platform
 
-                if (
-                    deployment_model.build.python_version
-                    != platform.python_version()
-                ):
+                if snapshot.build.python_version != platform.python_version():
                     logger.info(
                         f"Python version (different than the local version): "
-                        f"{deployment_model.build.python_version}"
+                        f"{snapshot.build.python_version}"
                     )
 
             # Log about the user, stack and components
-            if deployment_model.user is not None:
-                logger.info(f"Using user: `{deployment_model.user.name}`")
+            if snapshot.user is not None:
+                logger.info(f"Using user: `{snapshot.user.name}`")
 
-            if deployment_model.stack is not None:
-                logger.info(f"Using stack: `{deployment_model.stack.name}`")
+            if snapshot.stack is not None:
+                logger.info(f"Using stack: `{snapshot.stack.name}`")
 
                 for (
                     component_type,
                     component_models,
-                ) in deployment_model.stack.components.items():
+                ) in snapshot.stack.components.items():
                     logger.info(
                         f"  {component_type.value}: `{component_models[0].name}`"
                     )
         except Exception as e:
-            logger.debug(f"Logging pipeline deployment metadata failed: {e}")
+            logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
     def write_run_configuration_template(
         self, path: str, stack: Optional["Stack"] = None
@@ -1154,22 +1162,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _get_pipeline_analytics_metadata(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         run_id: Optional[UUID] = None,
     ) -> Dict[str, Any]:
-        """Returns the pipeline deployment metadata.
+        """Compute analytics metadata for the pipeline snapshot.
 
         Args:
-            deployment: The pipeline deployment to track.
-            stack: The stack on which the pipeline will be deployed.
+            snapshot: The pipeline snapshot to track.
+            stack: The stack on which the pipeline will be run.
             run_id: The ID of the pipeline run.
 
         Returns:
-            the metadata about the pipeline deployment
+            The analytics metadata.
         """
         custom_materializer = False
-        for step in deployment.step_configurations.values():
+        for step in snapshot.step_configurations.values():
             for output in step.config.outputs.values():
                 for source in output.materializer_source:
                     if not source.is_internal:
@@ -1184,11 +1192,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
-            "project_id": deployment.project_id,
+            "project_id": snapshot.project_id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),
-            "schedule": bool(deployment.schedule),
+            "schedule": bool(snapshot.schedule),
             "custom_materializer": custom_materializer,
             "own_stack": own_stack,
             "pipeline_run_id": str(run_id) if run_id else None,
@@ -1231,7 +1239,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
-        "PipelineDeploymentBase",
+        "PipelineSnapshotBase",
         Optional["Schedule"],
         Union["PipelineBuildBase", UUID, None],
     ]:
@@ -1242,7 +1250,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             **run_configuration_args: Configurations for the pipeline run.
 
         Returns:
-            A tuple containing the deployment, schedule and build of
+            A tuple containing the snapshot, schedule and build of
             the compiled pipeline.
         """
         # Activating the built-in integrations to load all materializers
@@ -1266,14 +1274,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         run_config = pydantic_utils.update_model(run_config, update=update)
         run_config = env_utils.substitute_env_variable_placeholders(run_config)
 
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=self,
             stack=Client().active_stack,
             run_configuration=run_config,
         )
-        deployment = env_utils.substitute_env_variable_placeholders(deployment)
+        snapshot = env_utils.substitute_env_variable_placeholders(snapshot)
 
-        return deployment, run_config.schedule, run_config.build
+        return snapshot, run_config.schedule, run_config.build
 
     def _register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
@@ -1537,8 +1545,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 object. Options provided in this file will be overwritten by
                 options provided in code using the other arguments of this
                 method.
-            unlisted: Whether the pipeline run should be unlisted (not assigned
-                to any pipeline).
+            unlisted: DEPRECATED. This option is no longer supported.
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             **kwargs: Pipeline configuration options. These will be passed
@@ -1554,6 +1561,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "values passed using the `steps` keyword."
             )
 
+        if unlisted:
+            logger.warning(
+                "The `unlisted` option is deprecated and will be removed in a "
+                "future version. Every run will always be associated with a "
+                "pipeline."
+            )
+
         pipeline_copy = self.copy()
 
         pipeline_copy._reconfigure_from_file_with_overrides(
@@ -1567,7 +1581,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "build": build,
                 "step_configurations": step_configurations or steps,
                 "config_path": config_path,
-                "unlisted": unlisted,
                 "prevent_build_reuse": prevent_build_reuse,
             }
         )
@@ -1666,7 +1679,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def create_run_template(
         self, name: str, **kwargs: Any
     ) -> RunTemplateResponse:
-        """Create a run template for the pipeline.
+        """DEPRECATED: Create a run template for the pipeline.
 
         Args:
             name: The name of the run template.
@@ -1676,13 +1689,47 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The created run template.
         """
+        logger.warning(
+            "The `pipeline.create_run_template(...)` method is deprecated and "
+            "will be removed in a future version. Please use "
+            "`pipeline.create_snapshot(..)` instead."
+        )
         self._prepare_if_possible()
-        deployment = self._create_deployment(
+        snapshot = self._create_snapshot(
             **self._run_args, skip_schedule_registration=True
         )
 
         return Client().create_run_template(
-            name=name, deployment_id=deployment.id, **kwargs
+            name=name, snapshot_id=snapshot.id, **kwargs
+        )
+
+    def create_snapshot(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        replace: Optional[bool] = None,
+        tags: Optional[List[str]] = None,
+    ) -> PipelineSnapshotResponse:
+        """Create a snapshot of the pipeline.
+
+        Args:
+            name: The name of the snapshot.
+            description: The description of the snapshot.
+            replace: Whether to replace the existing snapshot with the same
+                name.
+            tags: The tags to add to the snapshot.
+
+        Returns:
+            The created snapshot.
+        """
+        self._prepare_if_possible()
+        return self._create_snapshot(
+            skip_schedule_registration=True,
+            name=name,
+            description=description,
+            replace=replace,
+            tags=tags,
+            **self._run_args,
         )
 
     def _reconfigure_from_file_with_overrides(

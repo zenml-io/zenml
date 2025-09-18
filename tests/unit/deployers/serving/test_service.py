@@ -30,29 +30,29 @@ class MockWeatherRequest(BaseModel):
 
 
 @pytest.fixture
-def deployment_id():
-    """Mock deployment ID."""
+def snapshot_id():
+    """Mock snapshot ID."""
     return uuid4()
 
 
 @pytest.fixture
-def mock_deployment():
-    """Mock deployment response."""
-    deployment = MagicMock()
-    deployment.id = uuid4()
-    deployment.pipeline_configuration = MagicMock()
-    deployment.pipeline_configuration.name = "test_pipeline"
-    deployment.pipeline_configuration.init_hook_source = None
-    deployment.pipeline_configuration.cleanup_hook_source = None
-    deployment.pipeline_spec = MagicMock()
-    deployment.pipeline_spec.response_schema = None
-    deployment.step_configurations = {
+def mock_snapshot():
+    """Mock snapshot response."""
+    snapshot = MagicMock()
+    snapshot.id = uuid4()
+    snapshot.pipeline_configuration = MagicMock()
+    snapshot.pipeline_configuration.name = "test_pipeline"
+    snapshot.pipeline_configuration.init_hook_source = None
+    snapshot.pipeline_configuration.cleanup_hook_source = None
+    snapshot.pipeline_spec = MagicMock()
+    snapshot.pipeline_spec.response_schema = None
+    snapshot.step_configurations = {
         "step1": MagicMock(),
         "step2": MagicMock(),
     }
-    deployment.stack = MagicMock()
-    deployment.stack.name = "test_stack"
-    return deployment
+    snapshot.stack = MagicMock()
+    snapshot.stack.name = "test_stack"
+    return snapshot
 
 
 @pytest.fixture
@@ -64,37 +64,37 @@ def mock_params_model():
 class TestPipelineServingService:
     """Test cases for PipelineServingService."""
 
-    def test_initialization(self, deployment_id):
+    def test_initialization(self, snapshot_id):
         """Test service initialization."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
-        assert service.deployment_id == deployment_id
-        assert service.deployment is None
+        assert service.snapshot_id == snapshot_id
+        assert service.snapshot is None
         assert service.total_executions == 0
         assert service.last_execution_time is None
         assert service._orchestrator is None
         assert service._params_model is None
         assert service.pipeline_state is None
 
-    def test_max_output_size_bytes_default(self, deployment_id):
+    def test_max_output_size_bytes_default(self, snapshot_id):
         """Test default max output size."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Should default to 1MB
         assert service._get_max_output_size_bytes() == 1024 * 1024
 
-    def test_max_output_size_bytes_env_var(self, deployment_id):
+    def test_max_output_size_bytes_env_var(self, snapshot_id):
         """Test max output size from environment variable."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         with patch.dict(
             "os.environ", {"ZENML_SERVING_MAX_OUTPUT_SIZE_MB": "5"}
         ):
             assert service._get_max_output_size_bytes() == 5 * 1024 * 1024
 
-    def test_max_output_size_bytes_bounds(self, deployment_id):
+    def test_max_output_size_bytes_bounds(self, snapshot_id):
         """Test max output size bounds checking."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Test zero value (should fall back to 1MB)
         with patch.dict(
@@ -108,9 +108,9 @@ class TestPipelineServingService:
         ):
             assert service._get_max_output_size_bytes() == 100 * 1024 * 1024
 
-    def test_json_serialization_basic_types(self, deployment_id):
+    def test_json_serialization_basic_types(self, snapshot_id):
         """Test JSON serialization of basic types."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Test basic types pass through
         assert service._serialize_json_safe("string") == "string"
@@ -122,9 +122,9 @@ class TestPipelineServingService:
             "key": "value"
         }
 
-    def test_json_serialization_pydantic_models(self, deployment_id):
+    def test_json_serialization_pydantic_models(self, snapshot_id):
         """Test JSON serialization of Pydantic models."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Test Pydantic model
         model = MockWeatherRequest(city="Paris", temperature=15)
@@ -135,9 +135,9 @@ class TestPipelineServingService:
         assert serialized.city == "Paris"
         assert serialized.temperature == 15
 
-    def test_json_serialization_fallback(self, deployment_id):
+    def test_json_serialization_fallback(self, snapshot_id):
         """Test JSON serialization fallback for non-serializable types."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Test with a non-serializable object
         class NonSerializable:
@@ -151,9 +151,9 @@ class TestPipelineServingService:
         assert isinstance(result, str)
         assert "NonSerializable object" in result
 
-    def test_json_serialization_truncation(self, deployment_id):
+    def test_json_serialization_truncation(self, snapshot_id):
         """Test JSON serialization truncates long strings."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Create a very long non-serializable string
         class LongObject:
@@ -169,20 +169,20 @@ class TestPipelineServingService:
         assert result.endswith("... [truncated]")
 
     @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
     )
     @patch("zenml.client.Client")
     def test_parameter_resolution(
         self,
         mock_client,
         mock_build_params,
-        deployment_id,
-        mock_deployment,
+        snapshot_id,
+        mock_snapshot,
         mock_params_model,
     ):
         """Test parameter resolution with Pydantic model."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
         service._params_model = mock_params_model
 
         # Test parameter validation and resolution - this uses the actual MockWeatherRequest
@@ -194,22 +194,22 @@ class TestPipelineServingService:
         assert result["city"] == "Berlin"
         assert result["temperature"] == 25
 
-    def test_map_outputs_with_runtime_data(self, deployment_id):
+    def test_map_outputs_with_runtime_data(self, snapshot_id):
         """Test output mapping using runtime in-memory data (fast path)."""
         from zenml.deployers.serving import runtime
 
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Mock run object (won't be used for fast path)
         mock_run = MagicMock()
 
         # Set up runtime context with in-memory outputs
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -229,11 +229,11 @@ class TestPipelineServingService:
             runtime.stop()
 
     @patch("zenml.artifacts.utils.load_artifact_from_response")
-    def test_map_outputs_fallback_to_artifacts(self, mock_load, deployment_id):
+    def test_map_outputs_fallback_to_artifacts(self, mock_load, snapshot_id):
         """Test output mapping falls back to artifact loading when no runtime data."""
         from zenml.deployers.serving import runtime
 
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Ensure no serving context (should use fallback)
         runtime.stop()
@@ -257,22 +257,22 @@ class TestPipelineServingService:
         assert outputs["step1.result"] == "artifact_value"
         assert outputs["step2.prediction"] == "artifact_value"
 
-    def test_map_outputs_size_limiting(self, deployment_id):
+    def test_map_outputs_size_limiting(self, snapshot_id):
         """Test output mapping with size limiting for large data."""
         from zenml.deployers.serving import runtime
 
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Mock pipeline run
         mock_run = MagicMock()
 
         # Set up serving context
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -301,22 +301,22 @@ class TestPipelineServingService:
         finally:
             runtime.stop()
 
-    def test_map_outputs_serialization_failure(self, deployment_id):
+    def test_map_outputs_serialization_failure(self, snapshot_id):
         """Test output mapping handles serialization failures."""
         from zenml.deployers.serving import runtime
 
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Mock pipeline run
         mock_run = MagicMock()
 
         # Set up serving context
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -354,12 +354,12 @@ class TestPipelineServingService:
         self,
         mock_orchestrator_class,
         mock_client,
-        deployment_id,
-        mock_deployment,
+        snapshot_id,
+        mock_snapshot,
     ):
         """Test pipeline execution with orchestrator."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
         service._orchestrator = MagicMock()
 
         # Mock client and stack
@@ -383,7 +383,7 @@ class TestPipelineServingService:
 
             # Verify orchestrator was called
             service._orchestrator.run.assert_called_once_with(
-                deployment=mock_deployment,
+                snapshot=mock_snapshot,
                 stack=mock_stack,
                 placeholder_run=mock_placeholder_run,
             )
@@ -397,10 +397,10 @@ class TestPipelineServingService:
 
             assert result == mock_final_run
 
-    def test_build_success_response(self, deployment_id, mock_deployment):
+    def test_build_success_response(self, snapshot_id, mock_snapshot):
         """Test building success response."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
 
         mapped_outputs = {"step1.result": "success"}
         resolved_params = {"city": "Berlin"}
@@ -425,15 +425,15 @@ class TestPipelineServingService:
         assert response["metadata"]["pipeline_name"] == "test_pipeline"
         assert response["metadata"]["run_id"] == "run-123"
         assert response["metadata"]["run_name"] == "test_run"
-        assert response["metadata"]["deployment_id"] == str(mock_deployment.id)
+        assert response["metadata"]["snapshot_id"] == str(mock_snapshot.id)
 
         # Verify counters are updated
         assert service.total_executions == 1
         assert service.last_execution_time is not None
 
-    def test_build_error_response(self, deployment_id):
+    def test_build_error_response(self, snapshot_id):
         """Test building error response."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         error = Exception("Something went wrong")
         start_time = 1234567890.0
@@ -449,31 +449,31 @@ class TestPipelineServingService:
         assert response["execution_time"] == 2.0
         assert response["metadata"] == {}
 
-    def test_service_info(self, deployment_id, mock_deployment):
+    def test_service_info(self, snapshot_id, mock_snapshot):
         """Test service info generation."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
         service.total_executions = 5
 
         info = service.get_service_info()
 
-        assert info["deployment_id"] == str(deployment_id)
+        assert info["snapshot_id"] == str(snapshot_id)
         assert info["pipeline_name"] == "test_pipeline"
         assert info["total_executions"] == 5
         assert info["status"] == "healthy"
         assert "last_execution_time" in info
 
-    def test_service_info_uninitialized(self, deployment_id):
+    def test_service_info_uninitialized(self, snapshot_id):
         """Test service info when not initialized."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         info = service.get_service_info()
         assert "error" in info
         assert info["error"] == "Service not initialized"
 
-    def test_execution_metrics(self, deployment_id):
+    def test_execution_metrics(self, snapshot_id):
         """Test execution metrics."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
         service.total_executions = 10
 
         metrics = service.get_execution_metrics()
@@ -481,19 +481,19 @@ class TestPipelineServingService:
         assert metrics["total_executions"] == 10
         assert "last_execution_time" in metrics
 
-    def test_is_healthy(self, deployment_id, mock_deployment):
+    def test_is_healthy(self, snapshot_id, mock_snapshot):
         """Test health check."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
-        # Not healthy when no deployment
+        # Not healthy when no snapshot
         assert not service.is_healthy()
 
-        # Healthy when deployment is set
-        service.deployment = mock_deployment
+        # Healthy when snapshot is set
+        service.snapshot = mock_snapshot
         assert service.is_healthy()
 
     @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
     )
     @patch("zenml.client.Client")
     @patch(
@@ -504,17 +504,17 @@ class TestPipelineServingService:
         mock_activate,
         mock_client,
         mock_build_params,
-        deployment_id,
-        mock_deployment,
+        snapshot_id,
+        mock_snapshot,
         mock_params_model,
     ):
         """Test successful service initialization."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
-        # Mock client and deployment loading
+        # Mock client and snapshot loading
         mock_client_instance = mock_client.return_value
-        mock_client_instance.zen_store.get_deployment.return_value = (
-            mock_deployment
+        mock_client_instance.zen_store.get_snapshot.return_value = (
+            mock_snapshot
         )
 
         # Mock parameter model building
@@ -525,49 +525,49 @@ class TestPipelineServingService:
 
         asyncio.run(service.initialize())
 
-        # Verify deployment was loaded
-        mock_client_instance.zen_store.get_deployment.assert_called_once_with(
-            deployment_id=deployment_id
+        # Verify snapshot was loaded
+        mock_client_instance.zen_store.get_snapshot.assert_called_once_with(
+            snapshot_id=snapshot_id
         )
 
         # Verify integrations were activated
         mock_activate.assert_called_once()
 
         # Verify parameter model was built
-        mock_build_params.assert_called_once_with(mock_deployment, strict=True)
+        mock_build_params.assert_called_once_with(mock_snapshot, strict=True)
 
         # Verify service state
-        assert service.deployment == mock_deployment
+        assert service.snapshot == mock_snapshot
         assert service._params_model == mock_params_model
         assert service._orchestrator is not None
 
     @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
     )
     @patch("zenml.client.Client")
     def test_initialize_failure(
-        self, mock_client, mock_build_params, deployment_id
+        self, mock_client, mock_build_params, snapshot_id
     ):
         """Test service initialization failure."""
-        service = PipelineServingService(deployment_id)
+        service = PipelineServingService(snapshot_id)
 
         # Mock client to raise exception
         mock_client_instance = mock_client.return_value
-        mock_client_instance.zen_store.get_deployment.side_effect = Exception(
-            "Deployment not found"
+        mock_client_instance.zen_store.get_snapshot.side_effect = Exception(
+            "Snapshot not found"
         )
 
         # Test initialization fails
         import asyncio
 
-        with pytest.raises(Exception, match="Deployment not found"):
+        with pytest.raises(Exception, match="Snapshot not found"):
             asyncio.run(service.initialize())
 
-    def test_cleanup_no_hook(self, deployment_id, mock_deployment):
+    def test_cleanup_no_hook(self, snapshot_id, mock_snapshot):
         """Test cleanup when no cleanup hook is configured."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
-        mock_deployment.pipeline_configuration.cleanup_hook_source = None
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
+        mock_snapshot.pipeline_configuration.cleanup_hook_source = None
 
         # Should complete without error
         import asyncio
@@ -576,12 +576,12 @@ class TestPipelineServingService:
 
     @patch("zenml.utils.source_utils.load")
     def test_cleanup_with_sync_hook(
-        self, mock_load, deployment_id, mock_deployment
+        self, mock_load, snapshot_id, mock_snapshot
     ):
         """Test cleanup with synchronous cleanup hook."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
-        mock_deployment.pipeline_configuration.cleanup_hook_source = (
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
+        mock_snapshot.pipeline_configuration.cleanup_hook_source = (
             "mock.cleanup.hook"
         )
 
@@ -599,12 +599,12 @@ class TestPipelineServingService:
 
     @patch("zenml.utils.source_utils.load")
     def test_cleanup_with_async_hook(
-        self, mock_load, deployment_id, mock_deployment
+        self, mock_load, snapshot_id, mock_snapshot
     ):
         """Test cleanup with asynchronous cleanup hook."""
-        service = PipelineServingService(deployment_id)
-        service.deployment = mock_deployment
-        mock_deployment.pipeline_configuration.cleanup_hook_source = (
+        service = PipelineServingService(snapshot_id)
+        service.snapshot = mock_snapshot
+        mock_snapshot.pipeline_configuration.cleanup_hook_source = (
             "mock.cleanup.hook"
         )
 

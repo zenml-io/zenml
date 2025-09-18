@@ -18,7 +18,7 @@ from typing import List, Optional
 
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
-from zenml.models import PipelineDeploymentBase, PipelineDeploymentResponse
+from zenml.models import PipelineSnapshotBase, PipelineSnapshotResponse
 from zenml.orchestrators import BaseOrchestrator
 
 
@@ -27,39 +27,39 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
 
     @staticmethod
     def get_image(
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         step_name: Optional[str] = None,
     ) -> str:
         """Gets the Docker image for the pipeline/a step.
 
         Args:
-            deployment: The deployment from which to get the image.
+            snapshot: The snapshot from which to get the image.
             step_name: Pipeline step name for which to get the image. If not
                 given the generic pipeline image will be returned.
 
         Raises:
-            RuntimeError: If the deployment does not have an associated build.
+            RuntimeError: If the snapshot does not have an associated build.
 
         Returns:
             The image name or digest.
         """
-        if not deployment.build:
+        if not snapshot.build:
             raise RuntimeError(
-                f"Missing build for deployment {deployment.id}. This is "
+                f"Missing build for snapshot {snapshot.id}. This is "
                 "probably because the build was manually deleted."
             )
 
-        return deployment.build.get_image(
+        return snapshot.build.get_image(
             component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
         )
 
     def should_build_pipeline_image(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> bool:
         """Whether to build the pipeline image.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
 
         Returns:
             Whether to build the pipeline image.
@@ -67,22 +67,22 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         return False
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
-        pipeline_settings = deployment.pipeline_configuration.docker_settings
+        pipeline_settings = snapshot.pipeline_configuration.docker_settings
 
         included_pipeline_build = False
         builds = []
 
-        for name, step in deployment.step_configurations.items():
+        for name, step in snapshot.step_configurations.items():
             step_settings = step.config.docker_settings
 
             if step_settings != pipeline_settings:
@@ -101,7 +101,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 included_pipeline_build = True
 
         if not included_pipeline_build and self.should_build_pipeline_image(
-            deployment
+            snapshot
         ):
             pipeline_build = BuildConfiguration(
                 key=ORCHESTRATOR_DOCKER_IMAGE_KEY,

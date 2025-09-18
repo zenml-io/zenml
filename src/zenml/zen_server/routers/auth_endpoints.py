@@ -490,7 +490,7 @@ def api_token(
     generic automation tasks. The expiration can be set by the user, but the
     server will impose a maximum expiration time.
     * Workload API token: This token is scoped to a specific pipeline run,
-    schedule or pipeline deployment and is used by pipeline workloads to
+    schedule or deployment and is used by pipeline workloads to
     authenticate with the server. A pipeline run ID, schedule ID or deployment
     ID must be provided and the generated token will only be valid for the
     indicated pipeline run, schedule or deployment.
@@ -507,7 +507,7 @@ def api_token(
         schedule_id: The ID of the schedule to scope the workload API token to.
         pipeline_run_id: The ID of the pipeline run to scope the workload API
             token to.
-        deployment_id: The ID of the pipeline deployment to scope the workload
+        deployment_id: The ID of the deployment to scope the workload
             API token to.
         auth_context: The authentication context.
 
@@ -633,7 +633,7 @@ def api_token(
     if deployment_id:
         # The deployment must exist
         try:
-            deployment = zen_store().get_pipeline_endpoint(
+            deployment = zen_store().get_deployment(
                 deployment_id, hydrate=False
             )
         except KeyError:

@@ -59,8 +59,8 @@ from zenml.logger import (
 from zenml.models import (
     LogsRequest,
     LogsResponse,
-    PipelineDeploymentResponse,
     PipelineRunUpdate,
+    PipelineSnapshotResponse,
 )
 from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
@@ -853,7 +853,7 @@ class PipelineLogsStorageContext:
 
 def setup_orchestrator_logging(
     run_id: UUID,
-    deployment: "PipelineDeploymentResponse",
+    snapshot: "PipelineSnapshotResponse",
     logs_response: Optional[LogsResponse] = None,
 ) -> Any:
     """Set up logging for an orchestrator environment.
@@ -863,7 +863,7 @@ def setup_orchestrator_logging(
 
     Args:
         run_id: The pipeline run ID.
-        deployment: The deployment of the pipeline run.
+        snapshot: The snapshot of the pipeline run.
         logs_response: The logs response to continue from.
 
     Returns:
@@ -876,11 +876,11 @@ def setup_orchestrator_logging(
             logging_enabled = False
         else:
             if (
-                deployment.pipeline_configuration.enable_pipeline_logs
+                snapshot.pipeline_configuration.enable_pipeline_logs
                 is not None
             ):
                 logging_enabled = (
-                    deployment.pipeline_configuration.enable_pipeline_logs
+                    snapshot.pipeline_configuration.enable_pipeline_logs
                 )
 
         if not logging_enabled:

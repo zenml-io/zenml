@@ -59,16 +59,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🚀 Starting ZenML Pipeline Serving service...")
     service_start_time = time.time()
 
-    deployment_id = os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID")
-    if not deployment_id:
-        raise ValueError(
-            "ZENML_PIPELINE_DEPLOYMENT_ID environment variable is required"
-        )
+    snapshot_id = os.getenv("ZENML_SNAPSHOT_ID")
+    if not snapshot_id:
+        raise ValueError("ZENML_SNAPSHOT_ID environment variable is required")
 
     try:
         global _service
         # Defer UUID parsing to the service itself to simplify testing
-        _service = PipelineServingService(deployment_id)
+        _service = PipelineServingService(snapshot_id)
         # Support both sync and async initialize for easier testing
         _init_result = _service.initialize()
         if inspect.isawaitable(_init_result):
@@ -330,7 +328,7 @@ async def health_check(
 
     return {
         "status": "healthy",
-        "deployment_id": info["deployment_id"],
+        "snapshot_id": info["snapshot_id"],
         "pipeline_name": info["pipeline_name"],
         "uptime": uptime,
         "last_execution": service.last_execution_time,
@@ -347,12 +345,12 @@ async def pipeline_info(
     return {
         "pipeline": {
             "name": info["pipeline_name"],
-            "parameters": service.deployment.pipeline_spec.parameters
-            if service.deployment and service.deployment.pipeline_spec
+            "parameters": service.snapshot.pipeline_spec.parameters
+            if service.snapshot and service.snapshot.pipeline_spec
             else {},
         },
-        "deployment": {
-            "id": info["deployment_id"],
+        "snapshot": {
+            "id": info["snapshot_id"],
         },
     }
 
@@ -387,7 +385,7 @@ async def service_status(
     return {
         "service_name": "ZenML Pipeline Serving",
         "version": "0.2.0",
-        "deployment_id": info["deployment_id"],
+        "snapshot_id": info["snapshot_id"],
         "status": "running" if service.is_healthy() else "unhealthy",
         "started_at": datetime.fromtimestamp(
             service_start_time, tz=timezone.utc
@@ -395,7 +393,7 @@ async def service_status(
         if service_start_time
         else datetime.now(timezone.utc),
         "configuration": {
-            "deployment_id": os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID"),
+            "snapshot_id": os.getenv("ZENML_SNAPSHOT_ID"),
             "host": os.getenv("ZENML_SERVICE_HOST", "0.0.0.0"),
             "port": int(os.getenv("ZENML_SERVICE_PORT", "8001")),
         },
@@ -440,9 +438,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--deployment_id",
-        default=os.getenv("ZENML_PIPELINE_DEPLOYMENT_ID"),
-        help="Pipeline deployment ID",
+        "--snapshot_id",
+        default=os.getenv("ZENML_SNAPSHOT_ID"),
+        help="Pipeline snapshot ID",
     )
     parser.add_argument(
         "--host", default=os.getenv("ZENML_SERVICE_HOST", "0.0.0.0")
@@ -465,8 +463,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.deployment_id:
-        os.environ["ZENML_PIPELINE_DEPLOYMENT_ID"] = args.deployment_id
+    if args.snapshot_id:
+        os.environ["ZENML_SNAPSHOT_ID"] = args.snapshot_id
     if args.auth_key:
         os.environ["ZENML_SERVING_AUTH_KEY"] = args.auth_key
 

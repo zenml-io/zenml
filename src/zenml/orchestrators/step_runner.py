@@ -67,6 +67,7 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import (
+    env_utils,
     exception_utils,
     materializer_utils,
     source_utils,
@@ -138,6 +139,7 @@ class StepRunner:
 
         Raises:
             BaseException: A general exception if the step fails.
+            Exception: If the step outputs are not valid.
         """
         # Store step_run_info for effective config access
         self._step_run_info = step_run_info
@@ -211,25 +213,41 @@ class StepRunner:
                 input_artifacts=input_artifacts,
             )
 
+            # Get all step environment variables. For most orchestrators, the
+            # non-secret environment variables have been set before by the
+            # orchestrator. But for some orchestrators, this is not possible and
+            # we therefore make sure to set them here so they're at least
+            # available for the user code.
+            step_environment = env_utils.get_step_environment(
+                step_config=step_run.config, stack=self._stack
+            )
+            secret_environment = env_utils.get_step_secret_environment(
+                step_config=step_run.config, stack=self._stack
+            )
+            step_environment.update(secret_environment)
+
             step_failed = False
             try:
-                # We run the init hook at step level if we're not in an
-                # environment that supports a shared run context
-                if not self._run_context:
-                    if (
-                        init_hook_source
-                        := pipeline_run.config.init_hook_source
-                    ):
-                        logger.info("Executing the pipeline's init hook...")
-                        step_context.pipeline_state = load_and_run_hook(
-                            init_hook_source,
-                            hook_parameters=pipeline_run.config.init_hook_kwargs,
-                            raise_on_error=True,
-                        )
+                with env_utils.temporary_environment(step_environment):
+                    # We run the init hook at step level if we're not in an
+                    # environment that supports a shared run context
+                    if not self._run_context:
+                        if (
+                            init_hook_source
+                            := pipeline_run.config.init_hook_source
+                        ):
+                            logger.info(
+                                "Executing the pipeline's init hook..."
+                            )
+                            step_context.pipeline_state = load_and_run_hook(
+                                init_hook_source,
+                                hook_parameters=pipeline_run.config.init_hook_kwargs,
+                                raise_on_error=True,
+                            )
 
-                return_values = step_instance.call_entrypoint(
-                    **function_params
-                )
+                    return_values = step_instance.call_entrypoint(
+                        **function_params
+                    )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
 
@@ -256,10 +274,11 @@ class StepRunner:
                         := self.configuration.failure_hook_source
                     ):
                         logger.info("Detected failure hook. Running...")
-                        load_and_run_hook(
-                            failure_hook_source,
-                            step_exception=step_exception,
-                        )
+                        with env_utils.temporary_environment(step_environment):
+                            load_and_run_hook(
+                                failure_hook_source,
+                                step_exception=step_exception,
+                            )
                 raise
             finally:
                 try:
@@ -279,15 +298,20 @@ class StepRunner:
                             := self.configuration.success_hook_source
                         ):
                             logger.info("Detected success hook. Running...")
-                            load_and_run_hook(
-                                success_hook_source,
-                                step_exception=None,
-                            )
+                            with env_utils.temporary_environment(
+                                step_environment
+                            ):
+                                load_and_run_hook(
+                                    success_hook_source,
+                                    step_exception=None,
+                                )
 
                         # Validate outputs
                         try:
                             logger.debug(
-                                f"Validating outputs for step: return_values={return_values}, annotations={list(output_annotations.keys()) if output_annotations else 'None'}"
+                                f"Validating outputs for step: "
+                                f"return_values={return_values}, "
+                                f"annotations={list(output_annotations.keys()) if output_annotations else 'None'}"
                             )
                             output_data = self._validate_outputs(
                                 return_values, output_annotations
@@ -356,9 +380,12 @@ class StepRunner:
                             logger.info(
                                 "Executing the pipeline's cleanup hook..."
                             )
-                            step_context.pipeline_state = load_and_run_hook(
-                                cleanup_hook_source,
-                            )
+                            with env_utils.temporary_environment(
+                                step_environment
+                            ):
+                                load_and_run_hook(
+                                    cleanup_hook_source,
+                                )
 
                 finally:
                     step_context._cleanup_registry.execute_callbacks(

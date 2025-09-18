@@ -44,12 +44,12 @@ class TestParameterResolution:
     def test_get_step_parameters_basic(self):
         """Test basic step parameter resolution."""
         # Start serving context
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={
                 "country": "Germany",
                 "temperature": 20,
@@ -79,12 +79,12 @@ class TestParameterResolution:
             extra={"budget": 500},
         )
 
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={
                 "request": request_obj,
                 "country": "Germany",
@@ -107,11 +107,11 @@ class TestParameterResolution:
 
     def test_empty_pipeline_parameters(self):
         """Test parameter resolution with empty pipeline parameters."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
-            request_id="test-request", deployment=deployment, parameters={}
+            request_id="test-request", snapshot=snapshot, parameters={}
         )
 
         # Should return None when no parameters are available
@@ -149,13 +149,13 @@ class TestCompleteParameterFlow:
         return MockWeatherPipeline
 
     @pytest.fixture
-    def mock_deployment(self, mock_pipeline_class):
-        """Mock deployment with WeatherRequest defaults."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment-id"
-        deployment.pipeline_spec = MagicMock()
-        deployment.pipeline_spec.source = "mock.pipeline.source"
-        deployment.pipeline_spec.parameters = {
+    def mock_snapshot(self, mock_pipeline_class):
+        """Mock snapshot with WeatherRequest defaults."""
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot-id"
+        snapshot.pipeline_spec = MagicMock()
+        snapshot.pipeline_spec.source = "mock.pipeline.source"
+        snapshot.pipeline_spec.parameters = {
             "request": {
                 "city": "London",
                 "activities": ["walking", "reading"],
@@ -163,17 +163,17 @@ class TestCompleteParameterFlow:
             },
             "country": "UK",
         }
-        return deployment
+        return snapshot
 
     @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
     )
     @patch("zenml.utils.source_utils.load")
     def test_complete_parameter_resolution_flow(
         self,
         mock_load,
         mock_build_params,
-        mock_deployment,
+        mock_snapshot,
         mock_pipeline_class,
     ):
         """Test the complete parameter resolution flow from request to step execution."""
@@ -189,8 +189,8 @@ class TestCompleteParameterFlow:
         mock_build_params.return_value = _Params
 
         # Create service
-        service = PipelineServingService("test-deployment-id")
-        service.deployment = mock_deployment
+        service = PipelineServingService("test-snapshot-id")
+        service.snapshot = mock_snapshot
 
         # Test 1: Parameter resolution in serving service
         request_params = {
@@ -210,7 +210,7 @@ class TestCompleteParameterFlow:
         # Test 2: Runtime state setup
         runtime.start(
             request_id="test-request",
-            deployment=mock_deployment,
+            snapshot=mock_snapshot,
             parameters=resolved_params,
         )
 
@@ -225,14 +225,14 @@ class TestCompleteParameterFlow:
         assert country_param == "Germany"
 
     @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_deployment"
+        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
     )
     @patch("zenml.utils.source_utils.load")
     def test_partial_update_with_complex_nesting(
         self,
         mock_load,
         mock_build_params,
-        mock_deployment,
+        mock_snapshot,
         mock_pipeline_class,
     ):
         """Test partial updates with complex nested structures."""
@@ -246,8 +246,8 @@ class TestCompleteParameterFlow:
 
         mock_build_params.return_value = _Params
 
-        service = PipelineServingService("test-deployment-id")
-        service.deployment = mock_deployment
+        service = PipelineServingService("test-snapshot-id")
+        service.snapshot = mock_snapshot
 
         # Test update with required fields provided
         request_params = {"request": {"city": "paris", "activities": []}}
@@ -264,7 +264,7 @@ class TestCompleteParameterFlow:
 
     @patch("zenml.utils.source_utils.load")
     def test_error_handling_in_parameter_flow(
-        self, mock_load, mock_deployment, mock_pipeline_class
+        self, mock_load, mock_snapshot, mock_pipeline_class
     ):
         """Test error handling throughout the parameter flow."""
         # Test with invalid pipeline source
@@ -272,8 +272,8 @@ class TestCompleteParameterFlow:
         # Note: mock_pipeline_class not used in this test but required by fixture
         del mock_pipeline_class
 
-        service = PipelineServingService("test-deployment-id")
-        service.deployment = mock_deployment
+        service = PipelineServingService("test-snapshot-id")
+        service.snapshot = mock_snapshot
 
         request_params = {"request": {"city": "berlin"}}
 
@@ -295,12 +295,12 @@ class TestCompleteParameterFlow:
             city="munich", activities=["whatever"], extra=None
         )
 
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={
                 "request": request_obj,
                 "country": "Germany",
@@ -332,12 +332,12 @@ class TestOutputRecording:
 
     def test_record_and_get_outputs(self):
         """Test recording and retrieving step outputs."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={"param": "value"},
         )
 
@@ -362,11 +362,11 @@ class TestOutputRecording:
         runtime.record_step_outputs("step1", {"result": "output1"})
 
         # Should not record anything
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
-            request_id="test-request", deployment=deployment, parameters={}
+            request_id="test-request", snapshot=snapshot, parameters={}
         )
 
         outputs = runtime.get_outputs()
@@ -374,11 +374,11 @@ class TestOutputRecording:
 
     def test_record_empty_outputs(self):
         """Test recording empty outputs."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
-            request_id="test-request", deployment=deployment, parameters={}
+            request_id="test-request", snapshot=snapshot, parameters={}
         )
 
         # Record empty outputs
@@ -390,11 +390,11 @@ class TestOutputRecording:
 
     def test_multiple_output_updates(self):
         """Test multiple updates to same step outputs."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
-            request_id="test-request", deployment=deployment, parameters={}
+            request_id="test-request", snapshot=snapshot, parameters={}
         )
 
         # Record outputs in multiple calls

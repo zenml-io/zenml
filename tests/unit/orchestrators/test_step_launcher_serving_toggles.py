@@ -12,12 +12,12 @@ from zenml.orchestrators.step_launcher import StepLauncher
 
 def test_step_operator_disabled_in_serving(monkeypatch: pytest.MonkeyPatch):
     """Even if step config has operator, serving mode must bypass it."""
-    deployment = MagicMock()
+    snapshot = MagicMock()
     step = MagicMock()
     step.config.step_operator = "dummy-operator"
 
     launcher = StepLauncher(
-        deployment=deployment,
+        snapshot=snapshot,
         step=step,
         orchestrator_run_id="run-id",
     )

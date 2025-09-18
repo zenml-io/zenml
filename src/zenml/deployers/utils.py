@@ -23,47 +23,48 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 from zenml.client import Client
 from zenml.deployers.exceptions import (
-    PipelineEndpointDeploymentError,
-    PipelineEndpointHTTPError,
-    PipelineEndpointInvalidParametersError,
-    PipelineEndpointNotFoundError,
-    PipelineEndpointSchemaNotFoundError,
+    DeploymentHTTPError,
+    DeploymentInvalidParametersError,
+    DeploymentNotFoundError,
+    DeploymentProvisionError,
+    DeploymentSchemaNotFoundError,
 )
-from zenml.enums import PipelineEndpointStatus
-from zenml.models import PipelineEndpointResponse
+from zenml.enums import DeploymentStatus
+from zenml.models import DeploymentResponse
 from zenml.steps.step_context import get_step_context
 
 
-def get_pipeline_endpoint_invocation_example(
-    endpoint: PipelineEndpointResponse,
+def get_deployment_invocation_example(
+    deployment: DeploymentResponse,
 ) -> Dict[str, Any]:
-    """Generate an example invocation command for a pipeline endpoint.
+    """Generate an example invocation command for a deployment.
 
     Args:
-        endpoint: The pipeline endpoint to invoke.
-        project: The project ID of the pipeline endpoint to invoke.
+        deployment: The deployment for which to generate an example invocation.
 
     Returns:
         A dictionary containing the example invocation parameters.
+
+    Raises:
+        DeploymentSchemaNotFoundError: If the deployment has no associated
+            schema for its input parameters.
     """
-    if not endpoint.pipeline_deployment:
-        raise PipelineEndpointSchemaNotFoundError(
-            f"Pipeline endpoint {endpoint.name} has no deployment."
+    if not deployment.snapshot:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated snapshot."
         )
 
-    if not endpoint.pipeline_deployment.pipeline_spec:
-        raise PipelineEndpointSchemaNotFoundError(
-            f"Pipeline endpoint {endpoint.name} has no pipeline spec."
+    if not deployment.snapshot.pipeline_spec:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated pipeline spec."
         )
 
-    if not endpoint.pipeline_deployment.pipeline_spec.parameters_schema:
-        raise PipelineEndpointSchemaNotFoundError(
-            f"Pipeline endpoint {endpoint.name} has no parameters schema."
+    if not deployment.snapshot.pipeline_spec.parameters_schema:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated parameters schema."
         )
 
-    parameters_schema = (
-        endpoint.pipeline_deployment.pipeline_spec.parameters_schema
-    )
+    parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
 
     example_generator = JSF(parameters_schema, allow_none_optionals=0)
     example = example_generator.generate(
@@ -75,65 +76,59 @@ def get_pipeline_endpoint_invocation_example(
     return example  # type: ignore[no-any-return]
 
 
-def call_pipeline_endpoint(
-    endpoint_name_or_id: Union[str, UUID],
+def call_deployment(
+    deployment_name_or_id: Union[str, UUID],
     project: Optional[UUID] = None,
     timeout: int = 300,  # 5 minute timeout
     **kwargs: Any,
 ) -> Any:
-    """Call a deployed pipeline endpoint and return the result.
+    """Call a deployed deployment and return the result.
 
     Args:
-        endpoint_name_or_id: The name or ID of the pipeline endpoint to call.
-        project: The project ID of the pipeline endpoint to call.
-        timeout: The timeout for the HTTP request to the pipeline endpoint.
-        **kwargs: Keyword arguments to pass to the pipeline endpoint.
+        deployment_name_or_id: The name or ID of the deployment to call.
+        project: The project ID of the deployment to call.
+        timeout: The timeout for the HTTP request to the deployment.
+        **kwargs: Keyword arguments to pass to the deployment.
 
     Returns:
-        The response from the pipeline endpoint, parsed as JSON if possible,
+        The response from the deployment, parsed as JSON if possible,
         otherwise returned as text.
 
     Raises:
-        PipelineEndpointNotFoundError: If the pipeline endpoint is not found.
-        PipelineEndpointDeploymentError: If the pipeline endpoint is not running
+        DeploymentNotFoundError: If the deployment is not found.
+        DeploymentProvisionError: If the deployment is not running
             or has no URL.
-        PipelineEndpointHTTPError: If the HTTP request to the endpoint fails.
-        PipelineEndpointInvalidParametersError: If the parameters for the
-            pipeline endpoint are invalid.
+        DeploymentHTTPError: If the HTTP request to the endpoint fails.
+        DeploymentInvalidParametersError: If the parameters for the
+            deployment are invalid.
     """
     client = Client()
     try:
-        endpoint = client.get_pipeline_endpoint(
-            endpoint_name_or_id, project=project
+        deployment = client.get_deployment(
+            deployment_name_or_id, project=project
         )
     except KeyError:
-        raise PipelineEndpointNotFoundError(
-            f"Pipeline endpoint with name or ID '{endpoint_name_or_id}' "
-            f"not found"
+        raise DeploymentNotFoundError(
+            f"Deployment with name or ID '{deployment_name_or_id}' not found"
         )
 
-    if endpoint.status != PipelineEndpointStatus.RUNNING:
-        raise PipelineEndpointDeploymentError(
-            f"Pipeline endpoint {endpoint_name_or_id} is not running. Please "
-            "refresh or re-deploy the pipeline endpoint or check its logs for "
+    if deployment.status != DeploymentStatus.RUNNING:
+        raise DeploymentProvisionError(
+            f"Deployment {deployment_name_or_id} is not running. Please "
+            "refresh or re-deploy the deployment or check its logs for "
             "more details."
         )
 
-    if not endpoint.url:
-        raise PipelineEndpointDeploymentError(
-            f"Pipeline endpoint {endpoint_name_or_id} has no URL. Please "
-            "refresh the pipeline endpoint or check its logs for more "
+    if not deployment.url:
+        raise DeploymentProvisionError(
+            f"Deployment {deployment_name_or_id} has no URL. Please "
+            "refresh the deployment or check its logs for more "
             "details."
         )
 
     parameters_schema = None
-    if (
-        endpoint.pipeline_deployment
-        and endpoint.pipeline_deployment.pipeline_spec
-    ):
-        parameters_schema = (
-            endpoint.pipeline_deployment.pipeline_spec.parameters_schema
-        )
+    if deployment.snapshot and deployment.snapshot.pipeline_spec:
+        parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
 
     if parameters_schema:
         v = Draft202012Validator(
@@ -150,13 +145,13 @@ def call_pipeline_endpoint(
                 else:
                     error_messages.append(f"{err.message}")
 
-            raise PipelineEndpointInvalidParametersError(
-                f"Invalid parameters for pipeline endpoint "
-                f"{endpoint_name_or_id}: \n" + "\n".join(error_messages)
+            raise DeploymentInvalidParametersError(
+                f"Invalid parameters for deployment "
+                f"{deployment_name_or_id}: \n" + "\n".join(error_messages)
             )
 
     # Construct the invoke endpoint URL
-    invoke_url = endpoint.url.rstrip("/") + "/invoke"
+    invoke_url = deployment.url.rstrip("/") + "/invoke"
 
     # Prepare headers
     headers = {
@@ -165,11 +160,11 @@ def call_pipeline_endpoint(
     }
 
     # Add authorization header if auth_key is present
-    if endpoint.auth_key:
-        headers["Authorization"] = f"Bearer {endpoint.auth_key}"
+    if deployment.auth_key:
+        headers["Authorization"] = f"Bearer {deployment.auth_key}"
 
     # TODO: use the current ZenML API token, if any, to authenticate the request
-    # if the pipeline endpoint requires authentication and allows it.
+    # if the deployment requires authentication and allows it.
 
     try:
         step_context = get_step_context()
@@ -177,7 +172,7 @@ def call_pipeline_endpoint(
         step_context = None
 
     if step_context:
-        # Include these so that the pipeline endpoint can identify the step
+        # Include these so that the deployment can identify the step
         # and pipeline run that called it, if called from a step.
         headers["ZenML-Step-Name"] = step_context.step_name
         headers["ZenML-Pipeline-Name"] = step_context.pipeline.name
@@ -189,7 +184,7 @@ def call_pipeline_endpoint(
     try:
         payload = json.dumps(params)
     except (TypeError, ValueError) as e:
-        raise PipelineEndpointHTTPError(
+        raise DeploymentHTTPError(
             f"Failed to serialize request data to JSON: {e}"
         )
 
@@ -210,19 +205,19 @@ def call_pipeline_endpoint(
             return response.text
 
     except requests.exceptions.HTTPError as e:
-        raise PipelineEndpointHTTPError(
-            f"HTTP {e.response.status_code} error calling pipeline endpoint "
-            f"{endpoint_name_or_id}: {e.response.text}"
+        raise DeploymentHTTPError(
+            f"HTTP {e.response.status_code} error calling deployment "
+            f"{deployment_name_or_id}: {e.response.text}"
         )
     except requests.exceptions.ConnectionError as e:
-        raise PipelineEndpointHTTPError(
-            f"Failed to connect to pipeline endpoint {endpoint_name_or_id}: {e}"
+        raise DeploymentHTTPError(
+            f"Failed to connect to deployment {deployment_name_or_id}: {e}"
         )
     except requests.exceptions.Timeout as e:
-        raise PipelineEndpointHTTPError(
-            f"Timeout calling pipeline endpoint {endpoint_name_or_id}: {e}"
+        raise DeploymentHTTPError(
+            f"Timeout calling deployment {deployment_name_or_id}: {e}"
         )
     except requests.exceptions.RequestException as e:
-        raise PipelineEndpointHTTPError(
-            f"Request failed for pipeline endpoint {endpoint_name_or_id}: {e}"
+        raise DeploymentHTTPError(
+            f"Request failed for deployment {deployment_name_or_id}: {e}"
         )

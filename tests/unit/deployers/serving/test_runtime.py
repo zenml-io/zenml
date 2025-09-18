@@ -34,13 +34,13 @@ class TestServingRuntimeContext:
         """Test basic context start/stop lifecycle."""
         assert not runtime.is_active()
 
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         # Start context
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={"city": "Berlin", "temperature": 25},
             use_in_memory=True,
         )
@@ -54,12 +54,12 @@ class TestServingRuntimeContext:
 
     def test_parameter_override_basic(self):
         """Test basic parameter override functionality."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={
                 "city": "Munich",
                 "country": "Germany",
@@ -80,12 +80,12 @@ class TestServingRuntimeContext:
 
     def test_parameter_override_empty_parameters(self):
         """Test parameter override with empty parameters."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -93,12 +93,12 @@ class TestServingRuntimeContext:
 
     def test_step_outputs_recording(self):
         """Test step outputs recording and retrieval."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -123,12 +123,12 @@ class TestServingRuntimeContext:
         runtime.record_step_outputs("step1", {"result": "output1"})
 
         # Start context and check - should be empty
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -137,12 +137,12 @@ class TestServingRuntimeContext:
 
     def test_step_outputs_empty_data(self):
         """Test recording empty outputs."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -155,12 +155,12 @@ class TestServingRuntimeContext:
 
     def test_step_outputs_multiple_updates(self):
         """Test multiple updates to same step outputs."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -177,12 +177,12 @@ class TestServingRuntimeContext:
 
     def test_in_memory_data_storage(self):
         """Test in-memory data storage and retrieval."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -215,16 +215,16 @@ class TestServingRuntimeContext:
 
     def test_context_isolation(self):
         """Test that multiple contexts don't interfere with each other."""
-        deployment1 = MagicMock()
-        deployment1.id = "deployment-1"
+        snapshot1 = MagicMock()
+        snapshot1.id = "snapshot-1"
 
-        deployment2 = MagicMock()
-        deployment2.id = "deployment-2"
+        snapshot2 = MagicMock()
+        snapshot2.id = "snapshot-2"
 
         # Start first context
         runtime.start(
             request_id="request-1",
-            deployment=deployment1,
+            snapshot=snapshot1,
             parameters={"city": "Berlin"},
         )
 
@@ -244,7 +244,7 @@ class TestServingRuntimeContext:
         # Start second context
         runtime.start(
             request_id="request-2",
-            deployment=deployment2,
+            snapshot=snapshot2,
             parameters={"city": "Munich"},
         )
 
@@ -255,13 +255,13 @@ class TestServingRuntimeContext:
 
     def test_use_in_memory_setting(self):
         """Test use_in_memory setting functionality."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         # Test with use_in_memory=True
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
             use_in_memory=True,
         )
@@ -274,7 +274,7 @@ class TestServingRuntimeContext:
         # Test with use_in_memory=False
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
             use_in_memory=False,
         )
@@ -287,7 +287,7 @@ class TestServingRuntimeContext:
         # Test with use_in_memory=None (default)
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 
@@ -301,12 +301,12 @@ class TestServingRuntimeContext:
 
     def test_context_reset_clears_all_data(self):
         """Test that context reset clears all stored data."""
-        deployment = MagicMock()
-        deployment.id = "test-deployment"
+        snapshot = MagicMock()
+        snapshot.id = "test-snapshot"
 
         runtime.start(
             request_id="test-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={"city": "Berlin"},
             use_in_memory=True,
         )
@@ -331,7 +331,7 @@ class TestServingRuntimeContext:
         # Start new context to verify clean state
         runtime.start(
             request_id="new-request",
-            deployment=deployment,
+            snapshot=snapshot,
             parameters={},
         )
 

@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import functools
 import json
 import os
 import platform
@@ -38,6 +39,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
@@ -58,10 +60,10 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.deployers.utils import get_pipeline_endpoint_invocation_example
+from zenml.deployers.utils import get_deployment_invocation_example
 from zenml.enums import (
+    DeploymentStatus,
     GenericFilterOps,
-    PipelineEndpointStatus,
     ServiceState,
     StackComponentType,
 )
@@ -85,7 +87,7 @@ from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import dict_utils, secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -101,8 +103,8 @@ if TYPE_CHECKING:
     from zenml.models import (
         AuthenticationMethodModel,
         ComponentResponse,
+        DeploymentResponse,
         FlavorResponse,
-        PipelineEndpointResponse,
         PipelineRunResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
@@ -2310,24 +2312,24 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def get_pipeline_endpoint_status_emoji(
+def get_deployment_status_emoji(
     status: Optional[str],
 ) -> str:
-    """Returns an emoji representing the given pipeline endpoint status.
+    """Returns an emoji representing the given deployment status.
 
     Args:
-        status: The pipeline endpoint status to get the emoji for.
+        status: The deployment status to get the emoji for.
 
     Returns:
-        An emoji representing the given pipeline endpoint status.
+        An emoji representing the given deployment status.
     """
-    if status == PipelineEndpointStatus.PENDING:
+    if status == DeploymentStatus.PENDING:
         return ":hourglass_flowing_sand:"
-    if status == PipelineEndpointStatus.ERROR:
+    if status == DeploymentStatus.ERROR:
         return ":x:"
-    if status == PipelineEndpointStatus.RUNNING:
+    if status == DeploymentStatus.RUNNING:
         return ":gear:"
-    if status == PipelineEndpointStatus.ABSENT:
+    if status == DeploymentStatus.ABSENT:
         return ":stop_sign:"
 
     return ":question:"
@@ -2342,63 +2344,60 @@ def format_deployment_status(status: Optional[str]) -> str:
     Returns:
         Formatted status string.
     """
-    if status == PipelineEndpointStatus.RUNNING:
+    if status == DeploymentStatus.RUNNING:
         return "[green]RUNNING[/green]"
-    elif status == PipelineEndpointStatus.PENDING:
+    elif status == DeploymentStatus.PENDING:
         return "[yellow]PENDING[/yellow]"
-    elif status == PipelineEndpointStatus.ERROR:
+    elif status == DeploymentStatus.ERROR:
         return "[red]ERROR[/red]"
-    elif status == PipelineEndpointStatus.ABSENT:
+    elif status == DeploymentStatus.ABSENT:
         return "[dim]ABSENT[/dim]"
 
     return "[dim]UNKNOWN[/dim]"
 
 
 def print_deployment_table(
-    deployments: Sequence["PipelineEndpointResponse"],
+    deployments: Sequence["DeploymentResponse"],
 ) -> None:
     """Print a prettified list of all deployments supplied to this method.
 
     Args:
         deployments: List of deployments
     """
-    endpoint_dicts = []
+    deployment_dicts = []
     for deployment in deployments:
         if deployment.user:
             user_name = deployment.user.name
         else:
             user_name = "-"
 
-        if (
-            deployment.pipeline_deployment is None
-            or deployment.pipeline_deployment.pipeline is None
-        ):
+        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
             pipeline_name = "unlisted"
         else:
-            pipeline_name = deployment.pipeline_deployment.pipeline.name
-        if (
-            deployment.pipeline_deployment is None
-            or deployment.pipeline_deployment.stack is None
-        ):
+            pipeline_name = deployment.snapshot.pipeline.name
+        if deployment.snapshot is None or deployment.snapshot.stack is None:
             stack_name = "[DELETED]"
         else:
-            stack_name = deployment.pipeline_deployment.stack.name
-        status = deployment.status or PipelineEndpointStatus.UNKNOWN.value
-        status_emoji = get_pipeline_endpoint_status_emoji(status)
+            stack_name = deployment.snapshot.stack.name
+        status = deployment.status or DeploymentStatus.UNKNOWN.value
+        status_emoji = get_deployment_status_emoji(status)
         run_dict = {
             "NAME": deployment.name,
             "PIPELINE": pipeline_name,
+            "SNAPSHOT": deployment.snapshot.name or ""
+            if deployment.snapshot
+            else "N/A",
             "URL": deployment.url or "N/A",
             "STATUS": f"{status_emoji} {status.upper()}",
             "STACK": stack_name,
             "OWNER": user_name,
         }
-        endpoint_dicts.append(run_dict)
-    print_table(endpoint_dicts)
+        deployment_dicts.append(run_dict)
+    print_table(deployment_dicts)
 
 
 def pretty_print_deployment(
-    deployment: "PipelineEndpointResponse",
+    deployment: "DeploymentResponse",
     show_secret: bool = False,
     show_metadata: bool = False,
     no_truncate: bool = False,
@@ -2413,25 +2412,22 @@ def pretty_print_deployment(
     """
     # Header section
     status = format_deployment_status(deployment.status)
-    status_emoji = get_pipeline_endpoint_status_emoji(deployment.status)
+    status_emoji = get_deployment_status_emoji(deployment.status)
     declare(
         f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
     )
-    if (
-        deployment.pipeline_deployment is None
-        or deployment.pipeline_deployment.pipeline is None
-    ):
-        pipeline_name = "unlisted"
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
+        snapshot_name = "N/A"
     else:
-        pipeline_name = deployment.pipeline_deployment.pipeline.name
-    if (
-        deployment.pipeline_deployment is None
-        or deployment.pipeline_deployment.stack is None
-    ):
+        pipeline_name = deployment.snapshot.pipeline.name
+        snapshot_name = deployment.snapshot.name or str(deployment.snapshot.id)
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
         stack_name = "[DELETED]"
     else:
-        stack_name = deployment.pipeline_deployment.stack.name
+        stack_name = deployment.snapshot.stack.name
     declare(f"\n[bold]Pipeline:[/bold] [bold cyan]{pipeline_name}[/bold cyan]")
+    declare(f"[bold]Snapshot:[/bold] [bold cyan]{snapshot_name}[/bold cyan]")
     declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
 
     # Connection section
@@ -2458,7 +2454,7 @@ def pretty_print_deployment(
                     "--show-secret`[/green] to reveal)[/dim]"
                 )
 
-        example = get_pipeline_endpoint_invocation_example(deployment)
+        example = get_deployment_invocation_example(deployment)
 
         # CLI invoke command
         cli_args = " ".join(
@@ -2496,8 +2492,8 @@ def pretty_print_deployment(
     if show_metadata:
         declare("\n📋 [bold]Deployment Metadata[/bold]")
 
-        # Get the metadata - it could be from endpoint_metadata property or metadata
-        metadata = deployment.endpoint_metadata
+        # Get the metadata - it could be from deployment_metadata property or metadata
+        metadata = deployment.deployment_metadata
 
         if metadata:
             # Recursively format nested dictionaries and lists
@@ -2744,11 +2740,6 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                     create_data_type_help_text(filter_model, k)
                 )
 
-        def wrapper(function: F) -> F:
-            for option in reversed(options):
-                function = option(function)
-            return function
-
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
             f"interpreted as a check for equality. However advanced "
@@ -2769,7 +2760,17 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 f"{joined_data_type_descriptors}"
             )
 
-        return wrapper(func)
+        for option in reversed(options):
+            func = option(func)
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            nonlocal func
+
+            kwargs = dict_utils.remove_none_values(kwargs)
+            return func(*args, **kwargs)
+
+        return cast(F, wrapper)
 
     return inner_decorator
 

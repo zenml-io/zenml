@@ -57,8 +57,8 @@ from zenml.utils.pydantic_utils import before_validator_handler
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
     from zenml.models import (
-        PipelineDeploymentResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ScheduleResponse,
         ScheduleUpdate,
     )
@@ -153,7 +153,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all orchestrators."""
 
-    _active_deployment: Optional["PipelineDeploymentResponse"] = None
+    _active_snapshot: Optional["PipelineSnapshotResponse"] = None
 
     @property
     def config(self) -> BaseOrchestratorConfig:
@@ -177,9 +177,10 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def submit_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        base_environment: Dict[str, str],
+        step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a pipeline to the orchestrator.
@@ -190,11 +191,14 @@ class BaseOrchestrator(StackComponent, ABC):
         be passed as part of the submission result.
 
         Args:
-            deployment: The pipeline deployment to submit.
+            snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            environment: Environment variables to set in the orchestration
-                environment. These don't need to be set if running locally.
-            placeholder_run: An optional placeholder run for the deployment.
+            base_environment: Base environment shared by all steps. This should
+                be set if your orchestrator for example runs one container that
+                is responsible for starting all the steps.
+            step_environments: Environment variables to set when executing
+                specific steps.
+            placeholder_run: An optional placeholder run for the snapshot.
 
         Returns:
             Optional submission result.
@@ -203,7 +207,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def prepare_or_run_pipeline(
         self,
-        deployment: "PipelineDeploymentResponse",
+        deployment: "PipelineSnapshotResponse",
         stack: "Stack",
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
@@ -211,7 +215,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The deployment to prepare or run.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
@@ -220,17 +224,17 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def run(
         self,
-        deployment: "PipelineDeploymentResponse",
+        snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         """Runs a pipeline on a stack.
 
         Args:
-            deployment: The pipeline deployment.
+            snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
+            placeholder_run: An optional placeholder run for the snapshot.
+                This will be deleted in case the pipeline run failed.
 
         Raises:
             KeyboardInterrupt: If the orchestrator is synchronous and the
@@ -238,23 +242,23 @@ class BaseOrchestrator(StackComponent, ABC):
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
-        self._prepare_run(deployment=deployment)
+        self._prepare_run(snapshot=snapshot)
 
         pipeline_run_id: Optional[UUID] = None
         schedule_id: Optional[UUID] = None
-        if deployment.schedule:
-            schedule_id = deployment.schedule.id
+        if snapshot.schedule:
+            schedule_id = snapshot.schedule.id
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        environment, secrets = get_config_environment_vars(
+        base_environment, secrets = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
 
         # TODO: for now, we don't support separate secrets from environment
         # in the orchestrator environment
-        environment.update(secrets)
+        base_environment.update(secrets)
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -263,14 +267,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if (
             placeholder_run
             and self.config.supports_client_side_caching
-            and not deployment.schedule
+            and not snapshot.schedule
             and not prevent_client_side_caching
         ):
             from zenml.orchestrators import cache_utils
 
             run_required = (
-                cache_utils.create_cached_step_runs_and_prune_deployment(
-                    deployment=deployment,
+                cache_utils.create_cached_step_runs_and_prune_snapshot(
+                    snapshot=snapshot,
                     pipeline_run=placeholder_run,
                     stack=stack,
                 )
@@ -281,6 +285,19 @@ class BaseOrchestrator(StackComponent, ABC):
                 return
         else:
             logger.debug("Skipping client-side caching.")
+
+        step_environments = {}
+        for invocation_id, step in snapshot.step_configurations.items():
+            from zenml.utils.env_utils import get_step_environment
+
+            step_environment = get_step_environment(
+                step_config=step.config,
+                stack=stack,
+            )
+
+            combined_environment = base_environment.copy()
+            combined_environment.update(step_environment)
+            step_environments[invocation_id] = combined_environment
 
         try:
             if (
@@ -296,9 +313,9 @@ class BaseOrchestrator(StackComponent, ABC):
                     self.name,
                 )
                 if metadata_iterator := self.prepare_or_run_pipeline(
-                    deployment=deployment,
+                    deployment=snapshot,
                     stack=stack,
-                    environment=environment,
+                    environment=base_environment,
                     placeholder_run=placeholder_run,
                 ):
                     for metadata_dict in metadata_iterator:
@@ -317,9 +334,10 @@ class BaseOrchestrator(StackComponent, ABC):
                             )
             else:
                 submission_result = self.submit_pipeline(
-                    deployment=deployment,
+                    snapshot=snapshot,
                     stack=stack,
-                    environment=environment,
+                    base_environment=base_environment,
+                    step_environments=step_environments,
                     placeholder_run=placeholder_run,
                 )
                 if placeholder_run:
@@ -342,10 +360,10 @@ class BaseOrchestrator(StackComponent, ABC):
                                 logger.debug(
                                     "Error publishing run metadata: %s", e
                                 )
-                        elif deployment.schedule:
+                        elif snapshot.schedule:
                             try:
                                 publish_schedule_metadata(
-                                    schedule_id=deployment.schedule.id,
+                                    schedule_id=snapshot.schedule.id,
                                     schedule_metadata={
                                         self.id: submission_result.metadata
                                     },
@@ -389,10 +407,10 @@ class BaseOrchestrator(StackComponent, ABC):
         """
 
         def _launch_step() -> None:
-            assert self._active_deployment
+            assert self._active_snapshot
 
             launcher = StepLauncher(
-                deployment=self._active_deployment,
+                snapshot=self._active_snapshot,
                 step=step,
                 orchestrator_run_id=self.get_orchestrator_run_id(),
                 run_context=run_context,
@@ -458,18 +476,18 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return not step.config.resource_settings.empty
 
-    def _prepare_run(self, deployment: "PipelineDeploymentResponse") -> None:
+    def _prepare_run(self, snapshot: "PipelineSnapshotResponse") -> None:
         """Prepares a run.
 
         Args:
-            deployment: The deployment to prepare.
+            snapshot: The snapshot to prepare.
         """
-        self._active_deployment = deployment
-        self._validate_execution_mode()
+        self._validate_execution_mode(snapshot)
+        self._active_snapshot = snapshot
 
     def _cleanup_run(self) -> None:
         """Cleans up the active run."""
-        self._active_deployment = None
+        self._active_snapshot = None
 
     @property
     def supported_execution_modes(self) -> List[ExecutionMode]:
@@ -480,21 +498,18 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return [ExecutionMode.CONTINUE_ON_FAILURE]
 
-    def _validate_execution_mode(self) -> None:
+    def _validate_execution_mode(
+        self, snapshot: "PipelineSnapshotResponse"
+    ) -> None:
         """Validate that the requested execution mode is supported.
 
-        This base implementation logs the execution mode being used.
-        Individual orchestrator implementations can override this method
-        to add specific validation.
+        Args:
+            snapshot: The snapshot to validate.
 
         Raises:
             ValueError: If the execution mode is not supported.
         """
-        assert self._active_deployment
-
-        execution_mode = (
-            self._active_deployment.pipeline_configuration.execution_mode
-        )
+        execution_mode = snapshot.pipeline_configuration.execution_mode
 
         if execution_mode not in self.supported_execution_modes:
             raise ValueError(
