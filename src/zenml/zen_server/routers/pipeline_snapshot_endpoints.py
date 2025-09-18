@@ -225,14 +225,14 @@ if server_config().workload_manager_enabled:
     @async_fastapi_endpoint_wrapper
     def create_snapshot_run(
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotRunRequest,
+        run_request: PipelineSnapshotRunRequest,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
         """Run a pipeline from a snapshot.
 
         Args:
             snapshot_id: The ID of the snapshot.
-            trigger_request: Trigger request.
+            run_request: Run request.
             auth_context: Authentication context.
 
         Returns:
@@ -270,5 +270,5 @@ if server_config().workload_manager_enabled:
             return run_snapshot(
                 snapshot=snapshot,
                 auth_context=auth_context,
-                request=trigger_request,
+                request=run_request,
             )

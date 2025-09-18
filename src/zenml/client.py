@@ -3684,7 +3684,7 @@ class Client(metaclass=ClientMetaClass):
 
             run = self.zen_store.run_snapshot(
                 snapshot_id=snapshot_id,
-                trigger_request=PipelineSnapshotRunRequest(
+                run_request=PipelineSnapshotRunRequest(
                     run_configuration=run_configuration,
                     step_run=step_run_id,
                 ),

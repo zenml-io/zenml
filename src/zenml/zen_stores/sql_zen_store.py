@@ -5171,13 +5171,13 @@ class SqlZenStore(BaseZenStore):
     def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotRunRequest,
+        run_request: PipelineSnapshotRunRequest,
     ) -> NoReturn:
         """Run a snapshot.
 
         Args:
             snapshot_id: The ID of the snapshot to run.
-            trigger_request: Configuration for the run.
+            run_request: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.

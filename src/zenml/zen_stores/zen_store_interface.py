@@ -1372,13 +1372,13 @@ class ZenStoreInterface(ABC):
     def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotRunRequest,
+        run_request: PipelineSnapshotRunRequest,
     ) -> PipelineRunResponse:
         """Run a snapshot.
 
         Args:
             snapshot_id: The ID of the snapshot to run.
-            trigger_request: Configuration for the run.
+            run_request: Configuration for the run.
 
         Returns:
             The created pipeline run.
