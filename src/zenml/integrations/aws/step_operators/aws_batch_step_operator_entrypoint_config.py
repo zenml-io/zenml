@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Sagemaker Step Operator."""
+"""Entrypoint configuration for ZenML Batch step operator."""
 
-from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa: F401
-    SagemakerStepOperator,
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
 )
-from zenml.integrations.aws.step_operators.aws_batch_step_operator import (  # noqa: F401
-    AWSBatchStepOperator,
-    get_context
-)
-__all__ = ["SagemakerStepOperator","AWSBatchStepOperator","get_context"]
+
+
+class AWSBatchEntrypointConfiguration(StepOperatorEntrypointConfiguration):
+    """Entrypoint configuration for ZenML Batch step operator."""
