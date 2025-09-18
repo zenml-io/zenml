@@ -689,7 +689,7 @@ def compute_pipeline_output_schema(
         )
 
     output_model_class: Type[BaseModel] = create_model(
-        f"{pipeline.name}_output",
+        "PipelineOutput",
         __config__=ConfigDict(arbitrary_types_allowed=True),
         **{
             _get_schema_output_name(output_artifact): (
