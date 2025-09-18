@@ -26,6 +26,8 @@ from typing import (
     Tuple,
 )
 
+from pydantic import ConfigDict, create_model
+
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -150,7 +152,6 @@ class Compiler:
         pipeline_spec = self._compute_pipeline_spec(
             pipeline=pipeline, step_specs=step_specs
         )
-        breakpoint()
 
         snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
@@ -649,18 +650,45 @@ class Compiler:
                 step_name=output_artifact.invocation_id,
                 output_name=output_artifact.output_name,
             )
-            for output_artifact in pipeline.output_artifacts
+            for output_artifact in pipeline._output_artifacts
         ]
-
-        additional_spec_args: Dict[str, Any] = {
-            "source": pipeline.resolve(),
-            "parameters": pipeline._parameters,
-            "output_schema": pipeline.output_model.model_json_schema(),
-        }
+        output_schema = compute_pipeline_output_schema(pipeline=pipeline)
 
         return PipelineSpec(
-            steps=step_specs, outputs=output_specs, **additional_spec_args
+            steps=step_specs,
+            outputs=output_specs,
+            output_schema=output_schema,
+            source=pipeline.resolve(),
+            parameters=pipeline._parameters,
         )
+
+
+def compute_pipeline_output_schema(
+    pipeline: "Pipeline",
+) -> Optional[Dict[str, Any]]:
+    """Computes the pipeline output schema.
+
+    Args:
+        pipeline: The pipeline for which to compute the output schema.
+
+    Returns:
+        The pipeline output schema.
+    """
+    if not pipeline._output_artifacts:
+        return None
+
+    output_model = create_model(
+        f"{pipeline.name}_output",
+        __config__=ConfigDict(arbitrary_types_allowed=True),
+        **{
+            output_artifact.output_name: (
+                output_artifact.annotation.resolved_annotation,
+                ...,
+            )
+            for output_artifact in pipeline._output_artifacts
+        },
+    )
+    return output_model.model_json_schema()
 
 
 def convert_component_shortcut_settings_keys(

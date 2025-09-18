@@ -83,6 +83,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
+from zenml.steps.base_step import StepArtifact
 from zenml.steps.entrypoint_function_utils import (
     StepArtifact,
 )
@@ -213,6 +214,7 @@ class Pipeline:
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
+        self._output_artifacts: List[StepArtifact] = []
 
         self.__suppress_warnings_flag__ = False
 
@@ -510,9 +512,9 @@ class Pipeline:
             RuntimeError: If the pipeline has parameters configured differently in
                 configuration file and code.
         """
-        # Clear existing parameters and invocations
         self._parameters = {}
         self._invocations = {}
+        self._output_artifacts = []
 
         conflicting_parameters = {}
         parameters_ = (self.configuration.parameters or {}).copy()
@@ -1531,9 +1533,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._parameters = validated_args
         return_value = self.entrypoint(**validated_args)
-        from typing import Tuple
-
-        from zenml.steps.base_step import StepArtifact
 
         output_artifacts = []
         if isinstance(return_value, StepArtifact):
@@ -1543,28 +1542,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 if isinstance(v, StepArtifact):
                     output_artifacts.append(v)
                 else:
-                    logger.warning(
-                        "Ignore pipeline output that is not a step artifact"
+                    logger.debug(
+                        "Ignore pipeline output that is not a step artifact: %s",
+                        v,
                     )
 
-        self.output_artifacts = output_artifacts
-
-        from pydantic import create_model
-
-        breakpoint()
-        output_model = create_model(
-            "OutputModel",
-            __config__=ConfigDict(arbitrary_types_allowed=True),
-            # TODO: output names may overlap, how to handle this?
-            **{
-                output_artifact.output_name: (
-                    output_artifact.annotation.resolved_annotation,
-                    ...,
-                )
-                for output_artifact in output_artifacts
-            },
-        )
-        self.output_model = output_model
+        self._output_artifacts = output_artifacts
 
     def _prepare_if_possible(self) -> None:
         """Prepares the pipeline if possible.

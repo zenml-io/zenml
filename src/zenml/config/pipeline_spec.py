@@ -43,7 +43,7 @@ class PipelineSpec(FrozenBaseModel):
     parameters: Dict[str, Any] = {}
     steps: List[StepSpec]
     outputs: List[OutputSpec] = []
-    output_schema: Dict[str, Any] = {}
+    output_schema: Optional[Dict[str, Any]] = None
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same pipeline.
