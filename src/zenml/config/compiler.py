@@ -27,7 +27,7 @@ from typing import (
     Type,
 )
 
-from pydantic import ConfigDict, create_model, BaseModel
+from pydantic import BaseModel, ConfigDict, create_model
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -653,7 +653,11 @@ class Compiler:
             )
             for output_artifact in pipeline._output_artifacts
         ]
-        output_schema = compute_pipeline_output_schema(pipeline=pipeline)
+        try:
+            output_schema = compute_pipeline_output_schema(pipeline=pipeline)
+        except Exception as e:
+            logger.warning("Failed to compute pipeline output schema: %s", e)
+            output_schema = None
 
         return PipelineSpec(
             steps=step_specs,
@@ -666,7 +670,7 @@ class Compiler:
 
 def compute_pipeline_output_schema(
     pipeline: "Pipeline",
-) -> Optional[Dict[str, Any]]:
+) -> Dict[str, Any]:
     """Computes the pipeline output schema.
 
     Args:
@@ -675,9 +679,6 @@ def compute_pipeline_output_schema(
     Returns:
         The pipeline output schema.
     """
-    if not pipeline._output_artifacts:
-        return None
-
     output_model_class: Type[BaseModel] = create_model(
         f"{pipeline.name}_output",
         __config__=ConfigDict(arbitrary_types_allowed=True),
