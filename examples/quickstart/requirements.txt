@@ -1,11 +1,2 @@
-zenml[server]==0.85.0
-notebook
-pyarrow
-datasets<4.0.0
-transformers
-transformers[torch]
-torch
-sentencepiece
-protobuf
-requests>=2.25.0
-click>=7.0
+zenml[server]
+scikit-learn
