@@ -22,10 +22,14 @@ def post_invoke(
     headers = {"Content-Type": "application/json"}
     if auth_key:
         headers["Authorization"] = f"Bearer {auth_key}"
-    print(payload)
+
+    # Wrap payload in parameters as expected by ZenML deployment API
+    deployment_payload = {"parameters": payload}
+    print(deployment_payload)
+
     response = requests.post(
         f"{endpoint_url.rstrip('/')}/invoke",
-        data=json.dumps(payload),
+        data=json.dumps(deployment_payload),
         headers=headers,
         timeout=120,
     )
@@ -85,11 +89,11 @@ with tab_content:
         else:
             request_payload = {
                 "content": content,
+                "url": None,
+                "path": None,
                 "filename": filename or "document.txt",
                 "document_type": document_type,
                 "analysis_type": analysis_type,
-                "path": "path.txt",
-                "url": "https://www.google.com",
             }
 
 with tab_url:
@@ -99,13 +103,12 @@ with tab_url:
             st.warning("Please provide a URL.")
         else:
             request_payload = {
+                "content": None,
                 "url": url_value,
+                "path": None,
+                "filename": filename or "document.txt",
                 "document_type": document_type,
                 "analysis_type": analysis_type,
-                "content": None,
-                "filename": "document.txt",
-                "path": "path.txt",
-                "url": "https://www.google.com",
             }
 
 with tab_path:
@@ -115,13 +118,12 @@ with tab_path:
             st.warning("Please provide a path.")
         else:
             request_payload = {
+                "content": None,
+                "url": None,
                 "path": path_value,
+                "filename": filename or "document.txt",
                 "document_type": document_type,
                 "analysis_type": analysis_type,
-                "content": None,
-                "filename": "document.txt",
-                "path": path_value,
-                "url": "https://www.google.com",
             }
 
 if request_payload:

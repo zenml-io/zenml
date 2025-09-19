@@ -31,7 +31,6 @@ docker_settings = DockerSettings(
 
 @pipeline(
     settings={"docker": docker_settings},
-    model=Model(name="document_analysis_agent", version="production"),
     enable_cache=False,  # Disable caching for serving
 )
 def doc_analyzer(
