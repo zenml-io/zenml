@@ -3840,7 +3840,7 @@ class Client(metaclass=ClientMetaClass):
 
         if snapshot_id:
             snapshot = self.get_snapshot(
-                id_or_prefix=snapshot_id,
+                name_id_or_prefix=snapshot_id,
                 project=project,
                 hydrate=True,
             )

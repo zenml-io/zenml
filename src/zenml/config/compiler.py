@@ -657,10 +657,9 @@ class Compiler:
             output_schema = None
 
         try:
-            if pipeline.get_parameters_model():
-                input_schema = (
-                    pipeline.get_parameters_model().model_json_schema()
-                )
+            parameters_model = pipeline.get_parameters_model()
+            if parameters_model:
+                input_schema = parameters_model.model_json_schema()
             else:
                 input_schema = None
         except Exception as e:
