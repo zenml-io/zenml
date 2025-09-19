@@ -13,11 +13,12 @@
 #  permissions and limitations under the License.
 """Pipeline deployment service."""
 
+import contextvars
 import os
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -25,6 +26,15 @@ from pydantic import BaseModel
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
 from zenml.deployers.server import runtime
+from zenml.deployers.server.models import (
+    BasePipelineInvokeRequest,
+    BasePipelineInvokeResponse,
+    ExecutionMetrics,
+    PipelineInfo,
+    PipelineInvokeResponseMetadata,
+    ServiceInfo,
+    SnapshotInfo,
+)
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
@@ -42,6 +52,31 @@ from zenml.utils import env_utils
 logger = get_logger(__name__)
 
 
+class SharedLocalOrchestrator(LocalOrchestrator):
+    """Local orchestrator that uses a separate run id for each request.
+
+    This is a slight modification of the LocalOrchestrator to allow for
+    request-scoped orchestrator run ids by storing them in contextvars.
+    """
+
+    # Use contextvars for thread-safe, request-scoped state
+    _shared_orchestrator_run_id: contextvars.ContextVar[Optional[str]] = (
+        contextvars.ContextVar("orchestrator_run_id", default=None)
+    )
+
+    def get_orchestrator_run_id(self) -> str:
+        """Get the orchestrator run id.
+
+        Returns:
+            The orchestrator run id.
+        """
+        run_id = self._shared_orchestrator_run_id.get()
+        if run_id is None:
+            run_id = str(uuid4())
+            self._shared_orchestrator_run_id.set(run_id)
+        return run_id
+
+
 class PipelineDeploymentService:
     """Pipeline deployment service."""
 
@@ -54,7 +89,10 @@ class PipelineDeploymentService:
         Raises:
             RuntimeError: If the snapshot cannot be loaded.
         """
-        self.snapshot_id: Union[str, UUID] = snapshot_id
+        # Accept both str and UUID for flexibility
+        if isinstance(snapshot_id, str):
+            snapshot_id = UUID(snapshot_id)
+
         self._client = Client()
         self.pipeline_state: Optional[Any] = None
 
@@ -71,12 +109,6 @@ class PipelineDeploymentService:
         logger.info("Loading pipeline snapshot configuration...")
 
         try:
-            # Accept both str and UUID for flexibility
-            if isinstance(self.snapshot_id, str):
-                snapshot_id = UUID(self.snapshot_id)
-            else:
-                snapshot_id = self.snapshot_id
-
             self.snapshot: PipelineSnapshotResponse = (
                 self._client.zen_store.get_snapshot(snapshot_id=snapshot_id)
             )
@@ -133,7 +165,7 @@ class PipelineDeploymentService:
             self._params_model = self._build_params_model()
 
             # Initialize orchestrator
-            self._orchestrator = LocalOrchestrator(
+            self._orchestrator = SharedLocalOrchestrator(
                 name="deployment-local",
                 id=uuid4(),
                 config=LocalOrchestratorConfig(),
@@ -184,79 +216,87 @@ class PipelineDeploymentService:
 
     def execute_pipeline(
         self,
-        parameters: Dict[str, Any],
-        run_name: Optional[str] = None,
-        timeout: Optional[int] = 300,
-        use_in_memory: bool = False,
-    ) -> Dict[str, Any]:
+        request: BasePipelineInvokeRequest,
+    ) -> BasePipelineInvokeResponse:
         """Execute the deployment with the given parameters.
 
         Args:
-            parameters: Runtime parameters supplied by the caller.
-            run_name: Optional name override for the run.
-            timeout: Optional timeout for the run (currently unused).
-            use_in_memory: Whether to keep outputs in memory for fast access.
+            request: Runtime parameters supplied by the caller.
 
         Returns:
-            A dictionary containing details about the execution result.
+            A BasePipelineInvokeResponse describing the execution result.
         """
         # Unused parameters for future implementation
-        _ = run_name, timeout
+        _ = request.run_name, request.timeout
+        parameters = request.parameters.model_dump()
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
+        placeholder_run: Optional[PipelineRunResponse] = None
         try:
-            # Execute pipeline and get run; runtime outputs captured internally
-            run, captured_outputs = self._execute_with_orchestrator(
-                parameters, use_in_memory
+            placeholder_run = self._prepare_execute_with_orchestrator()
+
+            # Execute pipeline and get runtime outputs captured internally
+            captured_outputs = self._execute_with_orchestrator(
+                placeholder_run, parameters, request.use_in_memory
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
             mapped_outputs = self._map_outputs(captured_outputs)
 
-            return self._build_success_response(
+            return self._build_response(
+                placeholder_run=placeholder_run,
                 mapped_outputs=mapped_outputs,
                 start_time=start_time,
                 resolved_params=parameters,
-                run=run,
             )
 
         except Exception as e:
             logger.error(f"❌ Pipeline execution failed: {e}")
-            return self._build_error_response(e=e, start_time=start_time)
+            return self._build_response(
+                placeholder_run=placeholder_run,
+                mapped_outputs=None,
+                start_time=start_time,
+                resolved_params=parameters,
+                error=e,
+            )
 
-    def get_service_info(self) -> Dict[str, Any]:
+    def get_service_info(self) -> ServiceInfo:
         """Get service information.
 
         Returns:
             A dictionary containing service information.
         """
-        return {
-            "snapshot_id": str(self.snapshot_id),
-            "pipeline_name": self.snapshot.pipeline_configuration.name,
-            "total_executions": self.total_executions,
-            "last_execution_time": (
-                self.last_execution_time.isoformat()
-                if self.last_execution_time
-                else None
+        uptime = time.time() - self.service_start_time
+        return ServiceInfo(
+            snapshot=SnapshotInfo(
+                id=self.snapshot.id,
+                name=self.snapshot.name,
             ),
-            "status": "healthy",
-        }
+            pipeline=PipelineInfo(
+                name=self.snapshot.pipeline_configuration.name,
+                parameters=self.snapshot.pipeline_spec.parameters
+                if self.snapshot.pipeline_spec
+                else None,
+                input_schema=self.input_schema,
+                output_schema=self.output_schema,
+            ),
+            total_executions=self.total_executions,
+            last_execution_time=self.last_execution_time,
+            status="healthy",
+            uptime=uptime,
+        )
 
-    def get_execution_metrics(self) -> Dict[str, Any]:
+    def get_execution_metrics(self) -> ExecutionMetrics:
         """Return lightweight execution metrics for observability.
 
         Returns:
-            A dictionary with aggregated execution metrics.
+            Aggregated execution metrics.
         """
-        return {
-            "total_executions": self.total_executions,
-            "last_execution_time": (
-                self.last_execution_time.isoformat()
-                if self.last_execution_time
-                else None
-            ),
-        }
+        return ExecutionMetrics(
+            total_executions=self.total_executions,
+            last_execution_time=self.last_execution_time,
+        )
 
     def is_healthy(self) -> bool:
         """Check service health.
@@ -301,19 +341,29 @@ class PipelineDeploymentService:
 
         return filtered_outputs
 
+    def _prepare_execute_with_orchestrator(
+        self,
+    ) -> PipelineRunResponse:
+        # Create a placeholder run and execute with a known run id
+        return run_utils.create_placeholder_run(
+            snapshot=self.snapshot, logs=None
+        )
+
     def _execute_with_orchestrator(
         self,
+        placeholder_run: PipelineRunResponse,
         resolved_params: Dict[str, Any],
         use_in_memory: bool,
-    ) -> Tuple[PipelineRunResponse, Optional[Dict[str, Dict[str, Any]]]]:
+    ) -> Optional[Dict[str, Dict[str, Any]]]:
         """Run the snapshot via the orchestrator and return the concrete run.
 
         Args:
+            placeholder_run: The placeholder run to execute the pipeline on.
             resolved_params: Normalized pipeline parameters.
             use_in_memory: Whether runtime should capture in-memory outputs.
 
         Returns:
-            The fully materialized pipeline run response.
+            The in-memory outputs of the pipeline execution.
 
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
@@ -325,11 +375,6 @@ class PipelineDeploymentService:
 
         if self._orchestrator is None:
             raise RuntimeError("Orchestrator not initialized")
-
-        # Create a placeholder run and execute with a known run id
-        placeholder_run = run_utils.create_placeholder_run(
-            snapshot=self.snapshot, logs=None
-        )
 
         # Start deployment runtime context with parameters
         runtime.start(
@@ -351,20 +396,14 @@ class PipelineDeploymentService:
             if runtime.is_active():
                 captured_outputs = runtime.get_outputs()
         except Exception as e:
-            logger.error(f"Failed to execute pipeline: {e}")
+            logger.exception(f"Failed to execute pipeline: {e}")
             raise RuntimeError(f"Failed to execute pipeline: {e}")
         finally:
             # Always stop deployment runtime context
             runtime.stop()
 
-        # Fetch the concrete run via its id
-        run: PipelineRunResponse = self._client.get_pipeline_run(
-            name_id_or_prefix=placeholder_run.id,
-            hydrate=True,
-            include_full_metadata=True,
-        )
         # Store captured outputs for the caller to use
-        return run, captured_outputs
+        return captured_outputs
 
     def _build_params_model(self) -> Any:
         """Build the pipeline parameters model from the deployment.
@@ -427,50 +466,66 @@ class PipelineDeploymentService:
         logger.info(f"   Steps: {step_count}")
         logger.info(f"   Stack: {stack_name}")
 
-    def _build_success_response(
+    def _build_response(
         self,
-        mapped_outputs: Dict[str, Any],
-        start_time: float,
         resolved_params: Dict[str, Any],
-        run: PipelineRunResponse,
-    ) -> Dict[str, Any]:
+        start_time: float,
+        mapped_outputs: Optional[Dict[str, Any]] = None,
+        placeholder_run: Optional[PipelineRunResponse] = None,
+        error: Optional[Exception] = None,
+    ) -> BasePipelineInvokeResponse:
         """Build success response with execution tracking.
 
         Args:
-            mapped_outputs: The mapped outputs.
-            start_time: The start time of the execution.
             resolved_params: The resolved parameters.
-            run: The pipeline run that was executed.
+            start_time: The start time of the execution.
+            mapped_outputs: The mapped outputs.
+            placeholder_run: The placeholder run that was executed.
+            error: The error that occurred.
 
         Returns:
-            A dictionary describing the successful execution.
+            A BasePipelineInvokeResponse describing the execution.
         """
         execution_time = time.time() - start_time
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
 
-        response = {
-            "success": True,
-            "outputs": mapped_outputs,
-            "execution_time": execution_time,
-            "metadata": {
-                "pipeline_name": self.snapshot.pipeline_configuration.name,
-                "run_id": run.id,
-                "run_name": run.name,
-                "parameters_used": resolved_params,
-                "snapshot_id": str(self.snapshot.id),
-            },
-        }
+        run: Optional[PipelineRunResponse] = placeholder_run
+        if placeholder_run:
+            try:
+                # Fetch the concrete run via its id
+                run = self._client.get_pipeline_run(
+                    name_id_or_prefix=placeholder_run.id,
+                    hydrate=True,
+                    include_full_metadata=True,
+                )
+            except Exception:
+                logger.exception(
+                    f"Failed to fetch concrete run: {placeholder_run.id}"
+                )
+                run = placeholder_run
 
-        return response
+        return BasePipelineInvokeResponse(
+            success=(error is None),
+            outputs=mapped_outputs,
+            error=str(error) if error else None,
+            execution_time=execution_time,
+            metadata=PipelineInvokeResponseMetadata(
+                pipeline_name=self.snapshot.pipeline_configuration.name,
+                run_id=run.id if run else None,
+                run_name=run.name if run else None,
+                parameters_used=resolved_params,
+                snapshot_id=self.snapshot.id,
+            ),
+        )
 
     # ----------
     # Schemas for OpenAPI enrichment
     # ----------
 
     @property
-    def request_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for pipeline parameters if available.
+    def input_schema(self) -> Optional[Dict[str, Any]]:
+        """Return the JSON schema for pipeline input parameters if available.
 
         Returns:
             The JSON schema for pipeline parameters if available.
@@ -495,24 +550,3 @@ class PipelineDeploymentService:
         except Exception:
             return None
         return None
-
-    def _build_error_response(
-        self, e: Exception, start_time: float
-    ) -> Dict[str, Any]:
-        """Build error response.
-
-        Args:
-            e: The exception to build the error response from.
-            start_time: The start time of the execution.
-
-        Returns:
-            A dictionary containing the error response.
-        """
-        execution_time = time.time() - start_time
-        return {
-            "success": False,
-            "job_id": None,
-            "error": str(e),
-            "execution_time": execution_time,
-            "metadata": {},
-        }

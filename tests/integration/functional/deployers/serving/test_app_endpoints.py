@@ -129,7 +129,7 @@ def client_service_pair(monkeypatch: pytest.MonkeyPatch):
     service = StubPipelineServingService(str(uuid4()))
 
     monkeypatch.setenv("ZENML_SNAPSHOT_ID", service.snapshot_id)
-    monkeypatch.delenv("ZENML_SERVING_TEST_MODE", raising=False)
+    monkeypatch.delenv("ZENML_DEPLOYMENT_TEST_MODE", raising=False)
 
     with patch.object(
         reloaded_app, "PipelineDeploymentService", return_value=service
@@ -277,7 +277,7 @@ class TestFastAPIAppEndpoints:
         """Test that authentication is enforced when enabled."""
 
         client, _, _ = client_service_pair
-        monkeypatch.setenv("ZENML_SERVING_AUTH_KEY", "secret")
+        monkeypatch.setenv("ZENML_DEPLOYMENT_AUTH_KEY", "secret")
 
         response = client.post(
             "/invoke", json={"parameters": {"city": "Paris"}}
@@ -290,7 +290,7 @@ class TestFastAPIAppEndpoints:
             headers={"Authorization": "Bearer secret"},
         )
         assert response.status_code == 200
-        monkeypatch.delenv("ZENML_SERVING_AUTH_KEY")
+        monkeypatch.delenv("ZENML_DEPLOYMENT_AUTH_KEY")
 
 
 class TestOpenAPIIntegration:

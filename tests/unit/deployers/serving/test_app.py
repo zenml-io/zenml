@@ -101,7 +101,7 @@ class TestServingAppRoutes:
 
     def test_root_endpoint(self, mock_service: MagicMock) -> None:
         """Test root endpoint returns HTML."""
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/")
@@ -113,7 +113,7 @@ class TestServingAppRoutes:
 
     def test_health_endpoint(self, mock_service: MagicMock) -> None:
         """Test health check endpoint."""
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/health")
@@ -129,7 +129,7 @@ class TestServingAppRoutes:
         """Test health check endpoint when service is unhealthy."""
         mock_service.is_healthy.return_value = False
 
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/health")
@@ -144,7 +144,7 @@ class TestServingAppRoutes:
             "temperature": 20,
         }
 
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/info")
@@ -160,7 +160,7 @@ class TestServingAppRoutes:
 
     def test_metrics_endpoint(self, mock_service: MagicMock) -> None:
         """Test metrics endpoint."""
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/metrics")
@@ -172,7 +172,7 @@ class TestServingAppRoutes:
 
     def test_schema_endpoint(self, mock_service: MagicMock) -> None:
         """Test schema endpoint exposes request/response schemas."""
-        with patch.dict(os.environ, {"ZENML_SERVING_TEST_MODE": "true"}):
+        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
             with patch("zenml.deployers.server.app._service", mock_service):
                 with TestClient(app) as client:
                     response = client.get("/schema")
@@ -188,7 +188,7 @@ class TestServingAppRoutes:
             patch.dict(
                 os.environ,
                 {
-                    "ZENML_SERVING_TEST_MODE": "true",
+                    "ZENML_DEPLOYMENT_TEST_MODE": "true",
                     "ZENML_SNAPSHOT_ID": mock_service.snapshot_id,
                     "ZENML_SERVICE_HOST": "127.0.0.1",
                     "ZENML_SERVICE_PORT": "9000",
@@ -258,7 +258,7 @@ class TestServingAppInvoke:
         assert response.status_code == 422
         mock_service.execute_pipeline.assert_not_called()
 
-    @patch.dict("os.environ", {"ZENML_SERVING_AUTH_KEY": "test-auth-key"})
+    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_AUTH_KEY": "test-auth-key"})
     def test_verify_token_with_auth_enabled(self) -> None:
         """Test token verification when authentication is enabled."""
         from fastapi.security import HTTPAuthorizationCredentials
@@ -289,7 +289,7 @@ class TestServingAppInvoke:
         result = verify_token(None)
         assert result is None
 
-    @patch.dict("os.environ", {"ZENML_SERVING_AUTH_KEY": ""})
+    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_AUTH_KEY": ""})
     def test_verify_token_with_empty_auth_key(self) -> None:
         """Test token verification with empty auth key."""
 
@@ -301,7 +301,7 @@ class TestServingAppInvoke:
 class TestServingAppLifecycle:
     """Test app lifecycle management."""
 
-    @patch.dict("os.environ", {"ZENML_SERVING_TEST_MODE": "true"})
+    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_TEST_MODE": "true"})
     def test_lifespan_test_mode(self) -> None:
         """Test lifespan in test mode."""
 

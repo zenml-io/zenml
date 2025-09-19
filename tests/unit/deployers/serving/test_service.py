@@ -89,7 +89,7 @@ class TestPipelineServingService:
         service = PipelineDeploymentService(snapshot_id)
 
         with patch.dict(
-            "os.environ", {"ZENML_SERVING_MAX_OUTPUT_SIZE_MB": "5"}
+            "os.environ", {"ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB": "5"}
         ):
             assert service._get_max_output_size_bytes() == 5 * 1024 * 1024
 
@@ -99,13 +99,13 @@ class TestPipelineServingService:
 
         # Test zero value (should fall back to 1MB)
         with patch.dict(
-            "os.environ", {"ZENML_SERVING_MAX_OUTPUT_SIZE_MB": "0"}
+            "os.environ", {"ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB": "0"}
         ):
             assert service._get_max_output_size_bytes() == 1024 * 1024
 
         # Test over limit (should cap at 100MB)
         with patch.dict(
-            "os.environ", {"ZENML_SERVING_MAX_OUTPUT_SIZE_MB": "200"}
+            "os.environ", {"ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB": "200"}
         ):
             assert service._get_max_output_size_bytes() == 100 * 1024 * 1024
 

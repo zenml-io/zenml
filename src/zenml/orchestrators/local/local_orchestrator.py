@@ -172,6 +172,7 @@ class LocalOrchestrator(BaseOrchestrator):
                 with temporary_environment(step_environment):
                     self.run_step(step=step, run_context=run_context)
             except Exception:
+                logger.exception("Failed to execute step %s.", step_name)
                 failed_steps.append(step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:

@@ -27,7 +27,7 @@ from typing import (
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.callback_registry import CallbackRegistry
-from zenml.utils.singleton import SingletonMetaClass
+from zenml.utils.singleton import ThreadLocalSingleton
 
 if TYPE_CHECKING:
     from zenml.artifacts.artifact_config import ArtifactConfig
@@ -85,7 +85,7 @@ class StepSharedContext:
         return self._state
 
 
-class StepContext(metaclass=SingletonMetaClass):
+class StepContext(metaclass=ThreadLocalSingleton):
     """Provides additional context inside a step function.
 
     This singleton class is used to access information about the current run,
