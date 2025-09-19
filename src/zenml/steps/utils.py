@@ -608,7 +608,7 @@ def get_unique_step_output_names(
     Returns:
         The unique step output names.
     """
-    output_name_count = {}
+    output_name_count: Dict[str, int] = {}
     for _, output_name in step_outputs.keys():
         if output_name in output_name_count:
             output_name_count[output_name] += 1
