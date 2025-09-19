@@ -61,8 +61,9 @@ from zenml.constants import (
     IS_DEBUG_ENV,
 )
 from zenml.deployers.utils import (
+    get_deployment_input_schema,
     get_deployment_invocation_example,
-    get_deployment_schema,
+    get_deployment_output_schema,
 )
 from zenml.enums import (
     DeploymentStatus,
@@ -2503,10 +2504,15 @@ def pretty_print_deployment(
         console.print(f"  [green]{curl_command}[/green]")
 
     if show_schema:
-        schema = get_deployment_schema(deployment)
-        declare("\n📋 [bold]Deployment JSON Schema[/bold]")
-        schema_json = json.dumps(schema, indent=2)
-        console.print(f"  [green]{schema_json}[/green]")
+        input_schema = get_deployment_input_schema(deployment)
+        output_schema = get_deployment_output_schema(deployment)
+        declare("\n📋 [bold]Deployment JSON Schemas:[/bold]")
+        declare("\n[bold]Input Schema:[/bold]")
+        schema_json = json.dumps(input_schema, indent=2)
+        console.print(f"[green]{schema_json}[/green]")
+        declare("\n[bold]Output Schema:[/bold]")
+        schema_json = json.dumps(output_schema, indent=2)
+        console.print(f"[green]{schema_json}[/green]")
 
     if show_metadata:
         declare("\n📋 [bold]Deployment Metadata[/bold]")

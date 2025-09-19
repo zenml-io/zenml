@@ -31,6 +31,9 @@ class PipelineInvokeResponseMetadata(BaseModel):
     """Pipeline invoke response metadata model."""
 
     snapshot_id: UUID = Field(title="The ID of the snapshot.")
+    snapshot_name: Optional[str] = Field(
+        default=None, title="The name of the snapshot."
+    )
     pipeline_name: str = Field(title="The name of the pipeline.")
     run_id: Optional[UUID] = Field(
         default=None, title="The ID of the pipeline run."
@@ -165,7 +168,7 @@ def get_pipeline_invoke_models(
 
         class PipelineInvokeResponse(BasePipelineInvokeResponse):
             outputs: Annotated[
-                Dict[str, Any],
+                Optional[Dict[str, Any]],
                 WithJsonSchema(service.output_schema, mode="serialization"),
             ]
 

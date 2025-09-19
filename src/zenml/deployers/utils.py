@@ -33,16 +33,16 @@ from zenml.steps.step_context import get_step_context
 from zenml.utils.json_utils import pydantic_encoder
 
 
-def get_deployment_schema(
+def get_deployment_input_schema(
     deployment: DeploymentResponse,
 ) -> Dict[str, Any]:
-    """Get the schema for a deployment.
+    """Get the schema for a deployment's input parameters.
 
     Args:
         deployment: The deployment for which to get the schema.
 
     Returns:
-        The schema for the deployment.
+        The schema for the deployment's input parameters.
 
     Raises:
         DeploymentSchemaNotFoundError: If the deployment has no associated
@@ -66,6 +66,39 @@ def get_deployment_schema(
     return deployment.snapshot.pipeline_spec.input_schema
 
 
+def get_deployment_output_schema(
+    deployment: DeploymentResponse,
+) -> Dict[str, Any]:
+    """Get the schema for a deployment's output parameters.
+
+    Args:
+        deployment: The deployment for which to get the schema.
+
+    Returns:
+        The schema for the deployment's output parameters.
+
+    Raises:
+        DeploymentSchemaNotFoundError: If the deployment has no associated
+            snapshot, pipeline spec, or output schema.
+    """
+    if not deployment.snapshot:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated snapshot."
+        )
+
+    if not deployment.snapshot.pipeline_spec:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated pipeline spec."
+        )
+
+    if not deployment.snapshot.pipeline_spec.output_schema:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated output schema."
+        )
+
+    return deployment.snapshot.pipeline_spec.output_schema
+
+
 def get_deployment_invocation_example(
     deployment: DeploymentResponse,
 ) -> Dict[str, Any]:
@@ -77,7 +110,7 @@ def get_deployment_invocation_example(
     Returns:
         A dictionary containing the example invocation parameters.
     """
-    parameters_schema = get_deployment_schema(deployment)
+    parameters_schema = get_deployment_input_schema(deployment)
 
     properties = parameters_schema.get("properties", {})
 

@@ -87,6 +87,7 @@ from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
+from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import (
     code_repository_utils,
     code_utils,
@@ -1789,20 +1790,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The output schema for the pipeline.
         """
-
-        def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
-            return (
-                output_artifact.invocation_id.replace("-", "_")
-                + "-"
-                + output_artifact.output_name.replace("-", "_")
-            )
+        # Generate unique step output names
+        unique_step_output_mapping = get_unique_step_output_names(
+            {
+                (o.invocation_id, o.output_name): o
+                for o in self._output_artifacts
+            }
+        )
 
         fields: Dict[str, Any] = {
-            _get_schema_output_name(output_artifact): (
-                output_artifact.annotation.resolved_annotation,
+            entry[1]: (
+                entry[0].annotation.resolved_annotation,
                 ...,
             )
-            for output_artifact in self._output_artifacts
+            for _, entry in unique_step_output_mapping.items()
         }
         output_model_class: Type[BaseModel] = create_model(
             "PipelineOutput",

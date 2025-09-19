@@ -47,6 +47,7 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestratorConfig,
 )
 from zenml.stack import Stack
+from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils
 
 logger = get_logger(__name__)
@@ -314,20 +315,30 @@ class PipelineDeploymentService:
         if runtime_outputs and self.snapshot.pipeline_spec:
             # Filter outputs based on pipeline schema (raises RuntimeError if missing)
             output_mappings = self.snapshot.pipeline_spec.outputs
+
+            unique_step_output_mapping = get_unique_step_output_names(
+                {(o.step_name, o.output_name): o for o in output_mappings}
+            )
+
             for output_mapping in output_mappings:
+                unique_step_output_name = unique_step_output_mapping[
+                    (
+                        output_mapping.step_name,
+                        output_mapping.output_name,
+                    )
+                ][1]
                 if output_mapping.step_name in runtime_outputs.keys():
-                    filtered_outputs[
-                        f"{output_mapping.step_name}-{output_mapping.output_name}"
-                    ] = runtime_outputs[output_mapping.step_name].get(
-                        output_mapping.output_name, None
+                    filtered_outputs[unique_step_output_name] = (
+                        runtime_outputs[output_mapping.step_name].get(
+                            output_mapping.output_name, None
+                        )
                     )
                 else:
                     logger.warning(
-                        f"Output {output_mapping.output_name} not found in runtime outputs for step {output_mapping.step_name}"
+                        f"Output {output_mapping.output_name} not found in "
+                        f"runtime outputs for step {output_mapping.step_name}"
                     )
-                    filtered_outputs[
-                        f"{output_mapping.step_name}-{output_mapping.output_name}"
-                    ] = None
+                    filtered_outputs[unique_step_output_name] = None
         else:
             logger.debug("No output mappings found, returning empty outputs")
 
@@ -531,6 +542,7 @@ class PipelineDeploymentService:
                 run_name=run.name if run else None,
                 parameters_used=resolved_params,
                 snapshot_id=self.snapshot.id,
+                snapshot_name=self.snapshot.name,
             ),
         )
 

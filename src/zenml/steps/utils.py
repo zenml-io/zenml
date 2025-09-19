@@ -25,6 +25,7 @@ from typing import (
     Dict,
     Optional,
     Tuple,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -584,3 +585,44 @@ def run_as_single_step_pipeline(
         return outputs[0]
     else:
         return tuple(outputs)
+
+
+T = TypeVar("T")
+
+
+def get_unique_step_output_names(
+    step_outputs: Dict[Tuple[str, str], T],
+) -> Dict[Tuple[str, str], Tuple[T, str]]:
+    """Get unique step output names.
+
+    Given a dictionary of step outputs indexed by (invocation_id, output_name),
+    where the value is an arbitrary context object, return the same dictionary
+    complemented with unique step output names.
+
+    If an output name is repeated, the context object is prepended to the
+    output_name to make it unique.
+
+    Args:
+        step_outputs: The step outputs.
+
+    Returns:
+        The unique step output names.
+    """
+    output_name_count = {}
+    for _, output_name in step_outputs.keys():
+        if output_name in output_name_count:
+            output_name_count[output_name] += 1
+        else:
+            output_name_count[output_name] = 1
+
+    unique_step_output_mapping = {}
+    for invocation_id, output_name in step_outputs.keys():
+        if output_name_count[output_name] > 1:
+            unique_step_output_name = f"{invocation_id}.{output_name}"
+        else:
+            unique_step_output_name = output_name
+        unique_step_output_mapping[invocation_id, output_name] = (
+            step_outputs[invocation_id, output_name],
+            unique_step_output_name,
+        )
+    return unique_step_output_mapping
