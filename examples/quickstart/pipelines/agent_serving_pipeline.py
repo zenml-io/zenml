@@ -1,6 +1,6 @@
 """Agent serving pipeline that loads production classifier if available."""
 
-from typing import Any, Optional
+from typing import Any
 
 from steps.infer import classify_intent, generate_response
 
@@ -54,7 +54,7 @@ def on_init_hook(**_: Any) -> None:
 @pipeline(enable_cache=False, on_init=on_init_hook)
 def agent_serving_pipeline(
     text: str = "my card is lost and i need a replacement",
-    use_classifier: Optional[bool] = True,
+    use_classifier: bool = True,
 ) -> Any:
     """Agent serving pipeline that optionally uses classifier.
 

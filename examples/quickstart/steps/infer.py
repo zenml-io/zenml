@@ -1,7 +1,7 @@
 """Inference step for agent serving pipeline."""
 
 import json
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any, Dict
 
 from utils import (
     call_llm_for_intent,
@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 @step
 def classify_intent(
     text: str,
-    use_classifier: Optional[bool] = True,
+    use_classifier: bool = True,
 ) -> Annotated[Dict[str, Any], "classification_result"]:
     """Classify intent using loaded classifier or fall back to LLM.
 
