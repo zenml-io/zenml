@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
-from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.enums import GenericFilterOps
 from zenml.models.v2.base.base import (
@@ -31,6 +30,8 @@ from zenml.models.v2.base.filter import BaseFilter, StrFilter
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)

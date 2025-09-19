@@ -199,7 +199,7 @@ def status() -> None:
 
     # Write about the current ZenML client
     cli_utils.declare("-----ZenML Client Status-----")
-    if gc.uses_default_store():
+    if gc.uses_local_store:
         cli_utils.declare(
             f"Connected to the local ZenML database: '{store_cfg.url}'"
         )

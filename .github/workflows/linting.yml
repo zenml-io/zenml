@@ -1,5 +1,5 @@
 ---
-name: Setup Python Environment, Lint and Unit Test
+name: Linting
 on:
   workflow_call:
     inputs:
@@ -52,8 +52,8 @@ on:
         required: false
         default: ''
 jobs:
-  unit-test:
-    name: unit-test
+  linting:
+    name: linting
     runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: 1

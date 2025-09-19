@@ -92,7 +92,7 @@ ZENML_PROJECT_TEMPLATES = dict(
     ),
     llm_finetuning=ZenMLProjectTemplateLocation(
         github_url="zenml-io/template-llm-finetuning",
-        github_tag="2025.07.14",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
+        github_tag="2025.09.19",  # Make sure it is aligned with .github/workflows/update-templates-to-examples.yml
     ),
 )
 
@@ -167,7 +167,7 @@ def init(
         except ImportError:
             error(
                 "You need to install the ZenML project template requirements "
-                "to use templates. Please run `pip install zenml[templates]` "
+                "to use templates. Please run `pip install 'zenml[templates]'` "
                 "and try again."
             )
             return

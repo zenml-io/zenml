@@ -28,7 +28,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
-from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -458,13 +457,15 @@ class StackFilter(UserScopedFilter):
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters(table)
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
         )
+
+        custom_filters = super().get_custom_filters(table)
 
         if self.component_id:
             component_id_filter = and_(

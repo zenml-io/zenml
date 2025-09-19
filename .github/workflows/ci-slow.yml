@@ -316,3 +316,16 @@ jobs:
     needs: run-slow-ci-label-is-set
     uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
     secrets: inherit
+  ubuntu-base-package-functionality:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.11']
+      fail-fast: false
+    uses: ./.github/workflows/base-package-functionality.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
