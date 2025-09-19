@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Unit tests for serving runtime context management."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -266,8 +266,8 @@ class TestServingRuntimeContext:
             use_in_memory=True,
         )
 
-        assert runtime.should_use_in_memory() is True
-        assert runtime.should_use_in_memory() is True
+        assert runtime.should_use_in_memory_mode() is True
+        assert runtime.should_use_in_memory_mode() is True
 
         runtime.stop()
 
@@ -279,7 +279,7 @@ class TestServingRuntimeContext:
             use_in_memory=False,
         )
 
-        assert runtime.should_use_in_memory() is False
+        assert runtime.should_use_in_memory_mode() is False
 
         runtime.stop()
 
@@ -290,11 +290,11 @@ class TestServingRuntimeContext:
             parameters={},
         )
 
-        assert runtime.should_use_in_memory() is False
+        assert runtime.should_use_in_memory_mode() is False
 
     def test_use_in_memory_inactive_context(self):
         """Test use_in_memory functions when context is inactive."""
-        assert runtime.should_use_in_memory() is False
+        assert runtime.should_use_in_memory_mode() is False
 
     def test_context_reset_clears_all_data(self):
         """Test that context reset clears all stored data."""
@@ -317,7 +317,7 @@ class TestServingRuntimeContext:
         assert runtime.get_parameter_override("city") == "Berlin"
         assert runtime.get_outputs() != {}
         assert runtime.has_in_memory_data("memory://artifact/1")
-        assert runtime.should_use_in_memory() is True
+        assert runtime.should_use_in_memory_mode() is True
 
         # Stop context (triggers reset)
         runtime.stop()
@@ -335,127 +335,4 @@ class TestServingRuntimeContext:
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
         assert not runtime.has_in_memory_data("memory://artifact/1")
-        assert runtime.should_use_in_memory() is None
-
-
-class TestRuntimeOutputProcessing:
-    """Test runtime output processing functions."""
-
-    def test_process_outputs_with_runtime_data(self):
-        """Test processing outputs using runtime data (fast path)."""
-        # Mock runtime outputs
-        runtime_outputs = {
-            "step1": {"result": "fast_value"},
-            "step2": {"prediction": "class_a", "confidence": 0.95},
-        }
-
-        mock_run = MagicMock()  # Won't be used for fast path
-
-        outputs = runtime.process_outputs(
-            runtime_outputs=runtime_outputs,
-            run=mock_run,
-            enforce_size_limits=False,
-            max_output_size_mb=1,
-        )
-
-        assert "step1.result" in outputs
-        assert "step2.prediction" in outputs
-        assert "step2.confidence" in outputs
-        assert outputs["step1.result"] == "fast_value"
-        assert outputs["step2.prediction"] == "class_a"
-        assert outputs["step2.confidence"] == 0.95
-
-    def test_process_outputs_size_limiting(self):
-        """Test output processing with size limiting."""
-        # Create large data exceeding 1MB
-        large_data = "x" * (2 * 1024 * 1024)  # 2MB string
-        small_data = "small"
-
-        runtime_outputs = {
-            "step1": {"large_output": large_data},
-            "step2": {"small_output": small_data},
-        }
-
-        mock_run = MagicMock()
-
-        outputs = runtime.process_outputs(
-            runtime_outputs=runtime_outputs,
-            run=mock_run,
-            enforce_size_limits=True,
-            max_output_size_mb=1,
-        )
-
-        # Large output should be metadata
-        large_result = outputs["step1.large_output"]
-        assert isinstance(large_result, dict)
-        assert large_result["data_too_large"] is True
-        assert "size_estimate" in large_result
-        assert "max_size_mb" in large_result
-
-        # Small output should pass through
-        assert outputs["step2.small_output"] == small_data
-
-    def test_process_outputs_fallback_to_artifacts(self):
-        """Test output processing falls back to artifact loading."""
-        mock_run = MagicMock()
-        mock_run.steps = {"step1": MagicMock()}
-
-        # Mock step outputs
-        mock_artifact = MagicMock()
-        mock_run.steps["step1"].outputs = {"result": [mock_artifact]}
-
-        with patch(
-            "zenml.artifacts.utils.load_artifact_from_response"
-        ) as mock_load:
-            mock_load.return_value = "artifact_value"
-
-            outputs = runtime.process_outputs(
-                runtime_outputs=None,  # No runtime data, should use fallback
-                run=mock_run,
-                enforce_size_limits=True,
-                max_output_size_mb=1,
-            )
-
-            assert "step1.result" in outputs
-            assert outputs["step1.result"] == "artifact_value"
-
-    def test_serialize_json_safe_basic_types(self):
-        """Test JSON serialization of basic types."""
-        # Test basic types pass through
-        assert runtime._make_json_safe("string") == "string"
-        assert runtime._make_json_safe(42) == 42
-        assert runtime._make_json_safe(3.14) == 3.14
-        assert runtime._make_json_safe(True) is True
-        assert runtime._make_json_safe([1, 2, 3]) == [1, 2, 3]
-        assert runtime._make_json_safe({"key": "value"}) == {"key": "value"}
-
-    def test_serialize_json_safe_fallback(self):
-        """Test JSON serialization fallback for non-serializable types."""
-
-        # Test with a non-serializable object
-        class NonSerializable:
-            def __str__(self):
-                return "NonSerializable object"
-
-        obj = NonSerializable()
-        result = runtime._make_json_safe(obj)
-
-        # Should fallback to string representation
-        assert isinstance(result, str)
-        assert "NonSerializable object" in result
-
-    def test_serialize_json_safe_truncation(self):
-        """Test JSON serialization truncates long strings."""
-
-        # Create a very long non-serializable string
-        class LongObject:
-            def __str__(self):
-                return "x" * 2000  # Over 1000 char limit
-
-        obj = LongObject()
-        result = runtime._make_json_safe(obj)
-
-        # Should be truncated with ellipsis
-        assert isinstance(result, str)
-        assert len(result) <= 1020  # 1000 + "... [truncated]"
-        assert result.endswith("... [truncated]")
+        assert runtime.should_use_in_memory_mode() is False

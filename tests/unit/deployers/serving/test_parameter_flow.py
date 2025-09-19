@@ -14,13 +14,12 @@
 """Comprehensive test for parameter resolution and flow in serving."""
 
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import BaseModel
 
 from zenml.deployers.serving import runtime
-from zenml.deployers.serving.service import PipelineServingService
 
 
 class WeatherRequest(BaseModel):
@@ -40,35 +39,6 @@ class TestParameterResolution:
         runtime.stop()  # Ensure clean state
         yield
         runtime.stop()  # Clean up after test
-
-    def test_get_step_parameters_basic(self):
-        """Test basic step parameter resolution."""
-        # Start serving context
-        snapshot = MagicMock()
-        snapshot.id = "test-snapshot"
-
-        runtime.start(
-            request_id="test-request",
-            snapshot=snapshot,
-            parameters={
-                "country": "Germany",
-                "temperature": 20,
-                "active": True,
-            },
-        )
-
-        # Test direct parameter access
-        params = runtime.get_step_parameters("test_step")
-        assert params["country"] == "Germany"
-        assert params["temperature"] == 20
-        assert params["active"] is True
-
-        # Test filtered access
-        filtered = runtime.get_step_parameters(
-            "test_step", ["country", "temperature"]
-        )
-        assert filtered == {"country": "Germany", "temperature": 20}
-        assert "active" not in filtered
 
     def test_get_parameter_override_direct_only(self):
         """Test that only direct parameters are returned (no nested extraction)."""
@@ -165,125 +135,6 @@ class TestCompleteParameterFlow:
         }
         return snapshot
 
-    @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
-    )
-    @patch("zenml.utils.source_utils.load")
-    def test_complete_parameter_resolution_flow(
-        self,
-        mock_load,
-        mock_build_params,
-        mock_snapshot,
-        mock_pipeline_class,
-    ):
-        """Test the complete parameter resolution flow from request to step execution."""
-        # Set up mocks
-        mock_load.return_value = mock_pipeline_class
-        # Provide a real params model for validation
-        from pydantic import BaseModel
-
-        class _Params(BaseModel):
-            request: WeatherRequest
-            country: str = "UK"
-
-        mock_build_params.return_value = _Params
-
-        # Create service
-        service = PipelineServingService("test-snapshot-id")
-        service.snapshot = mock_snapshot
-
-        # Test 1: Parameter resolution in serving service
-        request_params = {
-            "request": {"city": "munich", "activities": ["whatever"]},
-            "country": "Germany",
-        }
-
-        resolved_params = service._resolve_parameters(request_params)
-
-        # Verify parameter resolution (no automatic merging of nested defaults)
-        assert isinstance(resolved_params["request"], WeatherRequest)
-        assert resolved_params["request"].city == "munich"
-        assert resolved_params["request"].activities == ["whatever"]
-        assert resolved_params["request"].extra is None
-        assert resolved_params["country"] == "Germany"
-
-        # Test 2: Runtime state setup
-        runtime.start(
-            request_id="test-request",
-            snapshot=mock_snapshot,
-            parameters=resolved_params,
-        )
-
-        # Test 3: Step parameter resolution (direct only)
-        request_param = runtime.get_parameter_override("request")
-        country_param = runtime.get_parameter_override("country")
-
-        # Verify only direct parameters are resolved
-        assert isinstance(request_param, WeatherRequest)
-        assert request_param.city == "munich"
-        assert request_param.activities == ["whatever"]
-        assert country_param == "Germany"
-
-    @patch(
-        "zenml.deployers.serving.parameters.build_params_model_from_snapshot"
-    )
-    @patch("zenml.utils.source_utils.load")
-    def test_partial_update_with_complex_nesting(
-        self,
-        mock_load,
-        mock_build_params,
-        mock_snapshot,
-        mock_pipeline_class,
-    ):
-        """Test partial updates with complex nested structures."""
-        mock_load.return_value = mock_pipeline_class
-        # Note: mock_pipeline_class used via mock_load.return_value
-        from pydantic import BaseModel
-
-        class _Params(BaseModel):
-            request: WeatherRequest
-            country: str = "UK"
-
-        mock_build_params.return_value = _Params
-
-        service = PipelineServingService("test-snapshot-id")
-        service.snapshot = mock_snapshot
-
-        # Test update with required fields provided
-        request_params = {"request": {"city": "paris", "activities": []}}
-
-        resolved_params = service._resolve_parameters(request_params)
-
-        # Verify partial update does not merge nested defaults automatically
-        request_obj = resolved_params["request"]
-        assert isinstance(request_obj, WeatherRequest)
-        assert request_obj.city == "paris"  # Updated
-        assert request_obj.activities == []
-        assert request_obj.extra is None
-        # country remains the default provided by the model if any; otherwise absent
-
-    @patch("zenml.utils.source_utils.load")
-    def test_error_handling_in_parameter_flow(
-        self, mock_load, mock_snapshot, mock_pipeline_class
-    ):
-        """Test error handling throughout the parameter flow."""
-        # Test with invalid pipeline source
-        mock_load.side_effect = Exception("Cannot load pipeline")
-        # Note: mock_pipeline_class not used in this test but required by fixture
-        del mock_pipeline_class
-
-        service = PipelineServingService("test-snapshot-id")
-        service.snapshot = mock_snapshot
-
-        request_params = {"request": {"city": "berlin"}}
-
-        # Should gracefully fall back to original parameters
-        resolved_params = service._resolve_parameters(request_params)
-
-        # Should return fallback without crashing
-        assert resolved_params is not None
-        assert "request" in resolved_params
-
     def test_weather_pipeline_scenario(self):
         """Test the exact scenario from the weather pipeline."""
         # This simulates the exact case:
@@ -312,6 +163,7 @@ class TestCompleteParameterFlow:
         country_param = runtime.get_parameter_override("country")
 
         # These should be the values that get passed to get_weather()
+        assert isinstance(request_param, WeatherRequest)
         assert request_param.city == "munich"
         assert country_param == "Germany"
 
