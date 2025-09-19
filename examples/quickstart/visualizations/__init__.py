@@ -1,7 +1,7 @@
 """Visualization utilities for the ZenML quickstart."""
 
 import os
-from typing import Dict, Any, Tuple
+from typing import Tuple
 
 
 def load_template(template_name: str) -> str:
