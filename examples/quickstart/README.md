@@ -1,14 +1,15 @@
 # ZenML Quickstart: From Agent-Only to Agent+Classifier
 
-**The modern AI development story in 5 minutes.**
+Build a customer support agent that evolves from generic to specialized responses - all without changing code.
 
 ## 🎯 What You'll Learn
 
-This quickstart demonstrates how ZenML unifies ML and Agent workflows, showing the natural progression from a generic agent to a specialized one powered by your own trained models. We will:
+This quickstart demonstrates the evolution from generic LLM responses to structured, intent-driven customer support. You'll see how adding a simple intent classifier dramatically improves response quality and user experience. We will:
 
-- Deploy an agent as a REST API using ZenML pipelines
-- Train a classifier and tag it as "production"
-- Watch the agent automatically upgrade itself with the new model
+- Deploy a generic LLM agent that gives general banking advice
+- Train an intent classifier and tag it as "production"
+- Compare generic responses vs. structured, targeted responses
+- Evaluate performance with metrics and visualizations
 
 ### Understanding ZenML Pipelines
 
@@ -20,8 +21,9 @@ In ZenML, a **pipeline** is a series of connected steps that process data:
   - **Deployed mode**: Serve continuously for real-time predictions (e.g., `zenml pipeline deploy`)
 
 This quickstart shows both modes in action:
-1. A **serving pipeline** deployed as an API endpoint for the agent
-2. A **training pipeline** run in batch to create a classifier
+1. A **serving pipeline** deployed as an API endpoint for customer support
+2. A **training pipeline** to create an intent classifier
+3. An **evaluation pipeline** to compare response quality
 
 Example of a simple pipeline:
 
@@ -46,18 +48,23 @@ export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ### Setup
 ```bash
 zenml init
-zenml login  # Choose between running this locally, or with a deployed ZenML server
+zenml login  # Choose between running locally or with a deployed ZenML server
 zenml deployer register docker -f docker
 zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
-### Phase 1: Deploy Agent
+### Phase 1: Deploy Generic LLM Agent
 
-Deploy the agent serving pipeline as a REST API. This creates a running service that can handle customer queries. Without a trained classifier, it will use generic responses:
+Deploy the agent serving pipeline as a REST API. This creates a running service that gives generic banking advice without intent classification:
 
 ```bash
 zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
   -n support-agent -c configs/agent.yaml
+```
+
+Monitor logs:
+```bash
+zenml deployment logs support-agent -f
 ```
 
 Test it:
@@ -66,17 +73,17 @@ zenml deployment invoke support-agent \
   --text="my card is lost and i need a replacement"
 ```
 
-**Result**: Generic response - `"intent": "general", "intent_source": "llm"`
+**Result**: Generic response - `"intent": "general", "response": "I understand you need banking assistance. Please contact our support team for personalized help."`
 
-### Phase 2: Train Classifier
+### Phase 2: Train Intent Classifier
 
 ```bash
 python run.py --train
 ```
 
-This trains a classifier on banking intents and tags it as "production".
+This trains a TF-IDF + LogisticRegression classifier on banking intents and tags it as "production".
 
-### Phase 3: Agent Auto-Upgrades
+### Phase 3: Upgrade to Structured Responses
 
 Update the existing deployment. The agent service will restart and automatically load the newly trained "production" classifier:
 
@@ -91,7 +98,21 @@ zenml deployment invoke support-agent \
   --text="my card is lost and i need a replacement"
 ```
 
-**Result**: Specific response - `"intent": "card_lost", "intent_source": "classifier"`
+**Result**: Targeted response - `"intent": "card_lost", "response": "I'll help you with your lost card immediately. Let me freeze your current card and start the replacement process. You should receive your new card within 3-5 business days."`
+
+### Phase 4: Evaluate Performance
+
+See the dramatic difference! Run evaluation to compare generic vs. structured responses:
+
+```bash
+python run.py --evaluate
+```
+
+This generates:
+- Accuracy & F1 scores comparing generic vs. classified responses
+- Response time analysis
+- Confusion matrices with ZenML styling
+- Performance comparison visualizations
 
 ## 🤖 How It Works
 
@@ -115,28 +136,44 @@ def on_init_hook():
 
 ## 🏗️ Key ZenML Features
 
-- **Unified Workflows**: Same pipeline concept for training (batch) and serving (deployed)
+- **Unified Workflows**: Same pipeline concept for training (batch), serving (deployed), and evaluation
 - **Production Tagging**: `add_tags(tags=["production"])` in training
 - **Warm Serving**: Models load once at startup, not per request
 - **Auto-upgrade**: Deployments find and use production artifacts
+- **Built-in Evaluation**: Compare model performance with rich visualizations
 
 ## 📁 Project Structure
 
 ```
 quickstart/
-├── run.py                          # Training CLI
+├── run.py                          # Training & Evaluation CLI
+├── utils.py                        # Shared utilities
 ├── configs/agent.yaml              # Deployment config
 ├── pipelines/
 │   ├── intent_training_pipeline.py # Batch training
-│   └── agent_serving_pipeline.py   # Real-time serving
+│   ├── agent_serving_pipeline.py   # Real-time serving
+│   └── evaluation_pipeline.py      # Performance comparison
 └── steps/                          # Pipeline steps
 ```
 
+## 🔄 What's Next?
+
+This quickstart shows the foundation. In production, you might:
+
+- **Collect real conversation data** from agent interactions
+- **Fine-tune larger models** (DistilBERT, small LLMs) for better accuracy
+- **A/B test model versions** by deploying different tagged artifacts
+- **Scale to multiple intents** with hierarchical classification
+- **Add confidence monitoring** and automated retraining
+
 ## 🎯 The Big Picture
 
-This demonstrates ZenML's core value: **one framework for ML and Agents**. Train offline, tag as production, serve online - all with the same developer experience.
+This demonstrates ZenML's core value: **one framework for ML and Agents**. Train offline, tag as production, serve online, evaluate performance - all with the same developer experience.
 
 ---
 
-**Next Steps:**
-- 📖 [Docs](https://docs.zenml.io/) | 💬 [Community](https://zenml.io/slack) | 🏢 [ZenML Pro](https://zenml.io/pro)
+**Ready to build your own AI workflows?**
+
+- 📖 [Full ZenML Documentation](https://docs.zenml.io/)
+- 💬 [Join our Community](https://zenml.io/slack)
+- 🏢 [ZenML Pro](https://zenml.io/pro) for teams

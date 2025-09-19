@@ -112,6 +112,59 @@ Respond with just the intent name (e.g., "card_lost") and a confidence score 0-1
         }
 
 
+def call_llm_generic_response(text: str) -> Dict[str, Any]:
+    """Use LLM to provide generic banking response without intent classification."""
+    if not OPENAI_AVAILABLE:
+        logger.warning("OpenAI not available, using fallback")
+        return {
+            "intent": "general",
+            "confidence": 0.0,
+            "intent_source": "fallback",
+        }
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.warning("OPENAI_API_KEY not set, using fallback")
+        return {
+            "intent": "general",
+            "confidence": 0.0,
+            "intent_source": "fallback",
+        }
+
+    try:
+        client = OpenAI(api_key=api_key)
+
+        prompt = f"""You are a generic banking support assistant. A customer says: "{text}"
+
+Provide a generic, helpful banking response without trying to classify their specific intent. Keep it general and redirect them to contact support for specific help."""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=100,
+        )
+
+        result = response.choices[0].message.content.strip()
+
+        # Log the result - everything goes to "general" for LLM-only mode
+        logger.info(f"LLM Generic: '{text}' → general (generic response)")
+
+        return {
+            "intent": "general",
+            "confidence": 0.5,
+            "intent_source": "llm_generic",
+        }
+
+    except Exception as e:
+        logger.error(f"LLM call failed: {e}")
+        return {
+            "intent": "general",
+            "confidence": 0.0,
+            "intent_source": "llm_error",
+        }
+
+
 def generate_llm_response(original_text: str, intent: str) -> str:
     """Generate personalized response using LLM."""
     if not OPENAI_AVAILABLE:

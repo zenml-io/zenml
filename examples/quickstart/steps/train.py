@@ -2,6 +2,7 @@
 
 from typing import Annotated, List
 
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
@@ -11,38 +12,6 @@ from zenml import ArtifactConfig, add_tags, log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-# Try to import sentence transformers, fall back to TF-IDF if not available
-try:
-    from sentence_transformers import SentenceTransformer
-
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    from sklearn.feature_extraction.text import TfidfVectorizer
-
-
-class SentenceTransformerVectorizer:
-    """Custom vectorizer using sentence transformers."""
-
-    def __init__(self, model_name="all-MiniLM-L6-v2"):
-        self.model_name = model_name
-        self.model = None
-
-    def fit(self, X, y=None):
-        """Initialize the sentence transformer model."""
-        self.model = SentenceTransformer(self.model_name)
-        return self
-
-    def transform(self, X):
-        """Transform texts to embeddings."""
-        if self.model is None:
-            raise ValueError("Vectorizer not fitted")
-        return self.model.encode(X)
-
-    def fit_transform(self, X, y=None):
-        """Fit and transform in one step."""
-        return self.fit(X, y).transform(X)
 
 
 @step
@@ -59,19 +28,10 @@ def train_classifier_step(
         texts, labels, test_size=0.3, random_state=42, stratify=labels
     )
 
-    # Choose vectorizer based on availability
-    if SENTENCE_TRANSFORMERS_AVAILABLE:
-        logger.info(
-            "Using SentenceTransformers for embeddings (modern approach)"
-        )
-        vectorizer = SentenceTransformerVectorizer()
-        pipeline_name = "sentence-transformer"
-    else:
-        logger.info(
-            "SentenceTransformers not available, falling back to TF-IDF"
-        )
-        vectorizer = TfidfVectorizer(max_features=1000, stop_words="english")
-        pipeline_name = "tfidf"
+    # Use TF-IDF vectorizer for simple, reliable intent classification
+    logger.info("Using TF-IDF vectorization for intent classification")
+    vectorizer = TfidfVectorizer(max_features=1000, stop_words="english")
+    pipeline_name = "tfidf"
 
     # Create and train pipeline
     pipeline = Pipeline(
