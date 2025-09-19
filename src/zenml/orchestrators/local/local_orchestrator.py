@@ -144,6 +144,7 @@ class LocalOrchestrator(BaseOrchestrator):
                     self.run_step(step=step)
             except Exception:
                 failed_steps.append(step_name)
+                logger.exception("Step %s failed.", step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
                     raise
