@@ -72,7 +72,7 @@ jobs:
           uv pip install --system .
       - name: Start local server
         run: |
-          docker run -p 8080:8080 -e ZENML_SERVER_AUTH_SCHEME=NO_AUTH -e ZENML_SERVER_AUTO_ACTIVATE=True zenml-server-dev
+          docker run -d -p 8080:8080 -e ZENML_SERVER_AUTH_SCHEME=NO_AUTH -e ZENML_SERVER_AUTO_ACTIVATE=True zenml-server-dev
       - name: Test server connection works
         env:
           ZENML_STORE_URL: http://localhost:8080
