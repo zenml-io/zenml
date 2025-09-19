@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """FastAPI application for serving ZenML pipelines."""
 
-import inspect
 import os
 import time
 from contextlib import asynccontextmanager
@@ -48,7 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifespan.
 
     Args:
-        app: The FastAPI application instance being served.
+        app: The FastAPI application instance being deployed.
 
     Yields:
         None: Control is handed back to FastAPI once initialization completes.
@@ -78,11 +77,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         global _service
         # Defer UUID parsing to the service itself to simplify testing
         _service = PipelineServingService(snapshot_id)
-        # Support both sync and async initialize for easier testing
-        _init_result = _service.initialize()
-        if inspect.isawaitable(_init_result):
-            await _init_result
-        # Register a clean, focused router for the /invoke endpoint if the
+        _service.initialize()
         # params model is available.
         try:
             params_model = _service.params_model
@@ -106,9 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("🛑 Shutting down ZenML Pipeline Serving service...")
     try:
         if _service:
-            _cleanup_result = _service.cleanup()
-            if inspect.isawaitable(_cleanup_result):
-                await _cleanup_result
+            _service.cleanup()
             logger.info("✅ Pipeline serving service cleaned up successfully")
     except Exception as e:
         logger.error(f"❌ Error during service cleanup: {e}")
@@ -121,7 +114,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
     title="ZenML Pipeline Serving",
-    description="Serve ZenML pipelines as FastAPI endpoints",
+    description="deploy ZenML pipelines as FastAPI endpoints",
     version="0.2.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -224,9 +217,7 @@ def _install_runtime_openapi(
                     }
 
                 # Response schema for 200
-                resp_schema: Optional[Dict[str, Any]] = getattr(
-                    service, "response_schema", None
-                )
+                resp_schema: Optional[Dict[str, Any]] = service.output_schema
                 if resp_schema:
                     responses = post_op.setdefault("responses", {})
                     ok = (
@@ -435,7 +426,7 @@ async def get_schemas(
     """
     return {
         "request_schema": service.request_schema,
-        "response_schema": service.response_schema,
+        "output_schema": service.output_schema,
     }
 
 

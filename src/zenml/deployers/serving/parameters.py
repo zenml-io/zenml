@@ -21,7 +21,7 @@ It is intentionally independent of FastAPI or serving internals so that
 other entry points (e.g., CLI) can reuse the same behavior.
 """
 
-from typing import Any, Dict, Optional, Type
+from typing import Optional, Type
 
 from pydantic import BaseModel
 
@@ -87,49 +87,3 @@ def build_params_model_from_snapshot(
             logger.debug(message)
 
     return model
-
-
-def validate_and_normalize_parameters(
-    parameters: Dict[str, Any],
-    snapshot: PipelineSnapshotResponse,
-    *,
-    strict: bool = True,
-) -> Dict[str, Any]:
-    """Validate and normalize parameters using a Pydantic params model.
-
-    If model construction fails, falls back to merging with snapshot defaults.
-
-    Args:
-        parameters: Request parameters.
-        snapshot: Snapshot used to derive defaults and the model.
-        strict: Whether to raise an error if the model cannot be constructed.
-
-    Returns:
-        Validated and normalized parameter dictionary.
-
-    Raises:
-        ValueError: If validation fails against the constructed model.
-        RuntimeError: If the parameters model cannot be constructed in strict mode.
-    """
-    defaults = (
-        (snapshot.pipeline_spec.parameters or {})
-        if snapshot.pipeline_spec
-        else {}
-    )
-    merged = {**defaults, **(parameters or {})}
-
-    model = build_params_model_from_snapshot(snapshot, strict=strict)
-    if not model:
-        if strict:
-            raise RuntimeError(
-                "Failed to construct parameters model from snapshot."
-            )
-        return merged
-
-    try:
-        inst = model.model_validate(merged)
-        return inst.model_dump()
-    except Exception as e:  # noqa: BLE001
-        # Surface a concise error while keeping details in logs
-        logger.debug("Parameter validation error: %s", e)
-        raise ValueError(str(e)) from e

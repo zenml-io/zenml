@@ -289,7 +289,6 @@ class StepLauncher:
                 artifact_store_id=self._stack.artifact_store.id,
             )
 
-        # In no-capture, caching will be disabled via effective config
         with logs_context:
             if run_was_created:
                 pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
@@ -387,7 +386,6 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        # Always create actual pipeline run in DB for proper input/output flow
         start_time = utc_now()
         run_name = string_utils.format_name_template(
             name_template=self._snapshot.run_name_template,
@@ -427,28 +425,19 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Create effective step config with provider-based optimizations
-
         effective_step_config = self._step.config.model_copy(deep=True)
+        from zenml.deployers.serving import runtime
 
-        # Apply serving optimizations if serving context is active
-        try:
-            from zenml.deployers.serving import runtime
-
-            if runtime.is_active():
-                updates = {
-                    "enable_cache": False,
-                    "step_operator": None,
-                    "retry": None,
-                }
-                effective_step_config = effective_step_config.model_copy(
-                    update=updates
-                )
-        except ImportError:
-            # Serving module not available, continue with normal config
-            pass
-
-        # Prepare step run information with effective config
+        serving_active = runtime.is_active()
+        if serving_active:
+            updates = {
+                "enable_cache": False,
+                "step_operator": None,
+                "retry": None,
+            }
+            effective_step_config = effective_step_config.model_copy(
+                update=updates
+            )
         step_run_info = StepRunInfo(
             config=effective_step_config,
             pipeline=self._snapshot.pipeline_configuration,
@@ -459,23 +448,22 @@ class StepLauncher:
             force_write_logs=force_write_logs,
         )
 
-        # Always prepare output URIs for proper artifact flow
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
             step_run=step_run, stack=self._stack, step=self._step
         )
 
-        # Run the step.
         start_time = time.time()
         try:
-            # In serving mode, never use a step operator, even if set
-            try:
-                from zenml.deployers.serving import runtime
+            if self._step.config.step_operator and not serving_active:
+                step_operator_name = None
+                if isinstance(self._step.config.step_operator, str):
+                    step_operator_name = self._step.config.step_operator
 
-                serving_active = runtime.is_active()
-            except ImportError:
-                serving_active = False
-
-            if serving_active:
+                self._run_step_with_step_operator(
+                    step_operator_name=step_operator_name,
+                    step_run_info=step_run_info,
+                )
+            else:
                 self._run_step_without_step_operator(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
@@ -483,24 +471,6 @@ class StepLauncher:
                     input_artifacts=step_run.regular_inputs,
                     output_artifact_uris=output_artifact_uris,
                 )
-            else:
-                if self._step.config.step_operator:
-                    step_operator_name = None
-                    if isinstance(self._step.config.step_operator, str):
-                        step_operator_name = self._step.config.step_operator
-
-                    self._run_step_with_step_operator(
-                        step_operator_name=step_operator_name,
-                        step_run_info=step_run_info,
-                    )
-                else:
-                    self._run_step_without_step_operator(
-                        pipeline_run=pipeline_run,
-                        step_run=step_run,
-                        step_run_info=step_run_info,
-                        input_artifacts=step_run.regular_inputs,
-                        output_artifact_uris=output_artifact_uris,
-                    )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())

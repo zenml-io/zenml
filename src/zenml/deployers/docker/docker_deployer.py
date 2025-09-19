@@ -300,11 +300,11 @@ class DockerDeployer(ContainerizedDeployer):
         secrets: Dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
-        """Serve a pipeline as a Docker container.
+        """deploy a pipeline as a Docker container.
 
         Args:
-            deployment: The deployment to serve as a Docker container.
-            stack: The stack the pipeline will be served on.
+            deployment: The deployment to deploy as a Docker container.
+            stack: The stack the pipeline will be deployed on.
             environment: A dictionary of environment variables to set on the
                 deployment.
             secrets: A dictionary of secret environment variables to set
@@ -653,7 +653,7 @@ class DockerDeployerSettings(BaseDeployerSettings):
     """Docker deployer settings.
 
     Attributes:
-        port: The port to serve the deployment on.
+        port: The port to deploy the deployment on.
         allocate_port_if_busy: If True, allocate a free port if the configured
             port is busy.
         port_range: The range of ports to search for a free port.

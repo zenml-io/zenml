@@ -59,14 +59,14 @@ def get_deployment_invocation_example(
             f"Deployment {deployment.name} has no associated pipeline spec."
         )
 
-    if not deployment.snapshot.pipeline_spec.parameters_schema:
+    if not deployment.snapshot.pipeline_spec.input_schema:
         raise DeploymentSchemaNotFoundError(
             f"Deployment {deployment.name} has no associated parameters schema."
         )
 
-    parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
+    input_schema = deployment.snapshot.pipeline_spec.input_schema
 
-    example_generator = JSF(parameters_schema, allow_none_optionals=0)
+    example_generator = JSF(input_schema, allow_none_optionals=0)
     example = example_generator.generate(
         1,
         use_defaults=True,
@@ -126,14 +126,12 @@ def call_deployment(
             "details."
         )
 
-    parameters_schema = None
+    input_schema = None
     if deployment.snapshot and deployment.snapshot.pipeline_spec:
-        parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
+        input_schema = deployment.snapshot.pipeline_spec.input_schema
 
-    if parameters_schema:
-        v = Draft202012Validator(
-            parameters_schema, format_checker=FormatChecker()
-        )
+    if input_schema:
+        v = Draft202012Validator(input_schema, format_checker=FormatChecker())
         errors = sorted(v.iter_errors(kwargs), key=lambda e: e.path)
         if errors:
             error_messages = []

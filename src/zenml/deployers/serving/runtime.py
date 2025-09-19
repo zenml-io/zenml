@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Thread-safe runtime context for serving.
 
 This module provides request-scoped state for serving invocations using
@@ -10,29 +23,29 @@ to access serving parameters without tight coupling.
 """
 
 import contextvars
-import json
-from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
 from zenml.models import PipelineSnapshotResponse
-from zenml.models.v2.core.pipeline_run import PipelineRunResponse
-from zenml.utils.json_utils import pydantic_encoder
 
 logger = get_logger(__name__)
 
 
-@dataclass
-class _ServingState:
+class _ServingState(BaseModel):
+    model_config = {"extra": "forbid"}
+
     active: bool = False
+    use_in_memory: bool = False
     request_id: Optional[str] = None
     snapshot_id: Optional[str] = None
-    pipeline_parameters: Dict[str, Any] = field(default_factory=dict)
-    outputs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    pipeline_parameters: Dict[str, Any] = Field(default_factory=dict)
+    outputs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     # Per-request in-memory mode override
-    use_in_memory: Optional[bool] = None
+
     # In-memory data storage for artifacts
-    _in_memory_data: Dict[str, Any] = field(default_factory=dict)
+    in_memory_data: Dict[str, Any] = Field(default_factory=dict)
 
     def reset(self) -> None:
         """Reset the serving state."""
@@ -41,30 +54,8 @@ class _ServingState:
         self.snapshot_id = None
         self.pipeline_parameters.clear()
         self.outputs.clear()
-        self.use_in_memory = None
-        self._in_memory_data.clear()
-
-    def __str__(self) -> str:
-        """String representation of the serving state.
-
-        Returns:
-            A string representation of the serving state.
-        """
-        return (
-            f"ServingState(active={self.active}, "
-            f"request_id={self.request_id}, snapshot_id={self.snapshot_id}, "
-            f"pipeline_parameters={self.pipeline_parameters}, "
-            f"outputs={self.outputs}, use_in_memory={self.use_in_memory}, "
-            f"_in_memory_data={self._in_memory_data})"
-        )
-
-    def __repr__(self) -> str:
-        """Representation of the serving state.
-
-        Returns:
-            A string representation of the serving state.
-        """
-        return self.__str__()
+        self.use_in_memory = False
+        self.in_memory_data.clear()
 
 
 # Use contextvars for thread-safe, request-scoped state
@@ -86,14 +77,14 @@ def start(
     request_id: str,
     snapshot: PipelineSnapshotResponse,
     parameters: Dict[str, Any],
-    use_in_memory: Optional[bool] = None,
+    use_in_memory: bool = False,
 ) -> None:
     """Initialize serving state for the current request context.
 
     Args:
         request_id: The ID of the request.
-        snapshot: The snapshot to serve.
-        parameters: The parameters to serve.
+        snapshot: The snapshot to deploy.
+        parameters: The parameters to deploy.
         use_in_memory: Whether to use in-memory mode.
     """
     state = _ServingState()
@@ -109,8 +100,6 @@ def start(
 def stop() -> None:
     """Clear the serving state for the current request context."""
     state = _get_context()
-
-    # Reset clears all in-memory data and URIs automatically
     state.reset()
 
 
@@ -173,7 +162,7 @@ def get_parameter_override(name: str) -> Optional[Any]:
     return pipeline_params.get(name)
 
 
-def should_use_in_memory() -> bool:
+def should_use_in_memory_mode() -> bool:
     """Check if the current request should use in-memory mode.
 
     Returns:
@@ -181,7 +170,7 @@ def should_use_in_memory() -> bool:
     """
     if is_active():
         state = _get_context()
-        return state.use_in_memory is True
+        return state.use_in_memory
     return False
 
 
@@ -194,7 +183,7 @@ def put_in_memory_data(uri: str, data: Any) -> None:
     """
     if is_active():
         state = _get_context()
-        state._in_memory_data[uri] = data
+        state.in_memory_data[uri] = data
 
 
 def get_in_memory_data(uri: str) -> Any:
@@ -208,7 +197,7 @@ def get_in_memory_data(uri: str) -> Any:
     """
     if is_active():
         state = _get_context()
-        return state._in_memory_data.get(uri)
+        return state.in_memory_data.get(uri)
     return None
 
 
@@ -223,156 +212,5 @@ def has_in_memory_data(uri: str) -> bool:
     """
     if is_active():
         state = _get_context()
-        return uri in state._in_memory_data
+        return uri in state.in_memory_data
     return False
-
-
-def process_outputs(
-    runtime_outputs: Optional[Dict[str, Dict[str, Any]]],
-    run: PipelineRunResponse,
-    enforce_size_limits: bool = True,
-    max_output_size_mb: int = 1,
-) -> Dict[str, Any]:
-    """Process outputs using fast path when available, slow path as fallback.
-
-    Args:
-        runtime_outputs: In-memory outputs from runtime context (fast path)
-        run: Pipeline run response for artifact loading (slow path)
-        enforce_size_limits: Whether to enforce size limits (disable for in-memory mode)
-        max_output_size_mb: Maximum output size in MB
-
-    Returns:
-        Processed outputs ready for JSON response
-    """
-    if runtime_outputs:
-        return _process_runtime_outputs(
-            runtime_outputs, enforce_size_limits, max_output_size_mb
-        )
-
-    logger.debug("Using slow artifact loading fallback")
-
-    return _process_artifact_outputs(run)
-
-
-def _process_runtime_outputs(
-    runtime_outputs: Dict[str, Dict[str, Any]],
-    enforce_size_limits: bool,
-    max_output_size_mb: int,
-) -> Dict[str, Any]:
-    """Process in-memory outputs with optional size limits.
-
-    Args:
-        runtime_outputs: The in-memory outputs to process.
-        enforce_size_limits: Whether to enforce size limits.
-        max_output_size_mb: The maximum output size in MB.
-
-    Returns:
-        The processed outputs.
-    """
-    return {
-        f"{step_name}.{output_name}": _serialize_output(
-            value, enforce_size_limits, max_output_size_mb
-        )
-        for step_name, step_outputs in runtime_outputs.items()
-        for output_name, value in step_outputs.items()
-    }
-
-
-def _serialize_output(
-    value: Any, enforce_size_limits: bool, max_output_size_mb: int
-) -> Any:
-    """Serialize a single output value with error handling.
-
-    Args:
-        value: The value to serialize.
-        enforce_size_limits: Whether to enforce size limits.
-        max_output_size_mb: The maximum output size in MB.
-
-    Returns:
-        The serialized value.
-    """
-    try:
-        serialized = _make_json_safe(value)
-
-        if not enforce_size_limits:
-            return serialized
-
-        # Check size limits only if enforced
-        max_size_bytes = max(1, min(max_output_size_mb, 100)) * 1024 * 1024
-        if isinstance(serialized, str) and len(serialized) > max_size_bytes:
-            return {
-                "data_too_large": True,
-                "size_estimate": f"{len(serialized) // 1024}KB",
-                "max_size_mb": max_size_bytes // (1024 * 1024),
-                "type": type(value).__name__,
-                "note": "Use artifact loading endpoint for large outputs",
-            }
-
-        return serialized
-
-    except Exception:
-        return {
-            "serialization_failed": True,
-            "type": type(value).__name__,
-            "note": "Use artifact loading endpoint for this output",
-        }
-
-
-def _process_artifact_outputs(run: PipelineRunResponse) -> Dict[str, Any]:
-    """Load outputs from artifacts and serialize them safely.
-
-    Args:
-        run: Pipeline run response to iterate step outputs.
-
-    Returns:
-        Mapping from "step.output" to serialized values.
-    """
-    from zenml.artifacts.utils import load_artifact_from_response
-
-    outputs: Dict[str, Any] = {}
-    for step_name, step_run in (run.steps or {}).items():
-        if not step_run or not step_run.outputs:
-            continue
-
-        for output_name, artifacts in step_run.outputs.items():
-            if not artifacts:
-                continue
-            try:
-                value = load_artifact_from_response(artifacts[0])
-                if value is not None:
-                    outputs[f"{step_name}.{output_name}"] = _make_json_safe(
-                        value
-                    )
-            except Exception as e:
-                logger.debug(
-                    "Failed to load artifact for %s.%s: %s",
-                    step_name,
-                    output_name,
-                    e,
-                )
-    return outputs
-
-
-def _make_json_safe(value: Any) -> Any:
-    """Make value JSON-serializable using ZenML's encoder.
-
-    Args:
-        value: The value to serialize.
-
-    Returns:
-        The serialized value.
-    """
-    try:
-        # Test serialization
-        json.dumps(value, default=pydantic_encoder)
-        return value
-    except (TypeError, ValueError, OverflowError):
-        # Fallback to truncated string representation
-        if isinstance(value, str):
-            s = value
-        else:
-            s = str(value)
-        if len(s) <= 1000:
-            return s
-        # Avoid f-string interpolation cost on huge strings by simple concat
-        return s[:1000] + "... [truncated]"

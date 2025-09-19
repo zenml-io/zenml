@@ -11,23 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Clean, elegant pipeline serving service implementation.
-
-This service provides high-performance pipeline serving with proper memory management,
-clean architecture, and zero memory leaks.
-"""
+"""Pipeline serving service."""
 
 import os
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
-import zenml.client as client_mod
 import zenml.pipelines.run_utils as run_utils
+from zenml.client import Client
+from zenml.deployers.serving import runtime
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
@@ -45,13 +42,13 @@ logger = get_logger(__name__)
 
 
 class PipelineServingService:
-    """Clean, elegant pipeline serving service with zero memory leaks."""
+    """Pipeline serving service."""
 
     def __init__(self, snapshot_id: Union[str, UUID]) -> None:
         """Initialize service with minimal state.
 
         Args:
-            snapshot_id: The ID of the snapshot to serve.
+            snapshot_id: The ID of the snapshot to deploy.
         """
         self.snapshot_id: Union[str, UUID] = snapshot_id
         self.snapshot: Optional[PipelineSnapshotResponse] = None
@@ -65,10 +62,8 @@ class PipelineServingService:
         # Cache a local orchestrator instance to avoid per-request construction
         self._orchestrator: Optional[BaseOrchestrator] = None
         self._params_model: Optional[Type[BaseModel]] = None
-        # Captured in-memory outputs from the last run (internal)
-        self._last_runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         # Lazily initialized cached client
-        self._client: Optional[Any] = None
+        self._client: Optional[Client] = None
 
         logger.info(f"Initializing service for snapshot: {snapshot_id}")
 
@@ -100,17 +95,17 @@ class PipelineServingService:
             )
             return 1024 * 1024
 
-    def _get_client(self) -> Any:
+    def _get_client(self) -> Client:
         """Return a cached ZenML client instance.
 
         Returns:
             The cached ZenML client instance.
         """
         if self._client is None:
-            self._client = client_mod.Client()
+            self._client = Client()
         return self._client
 
-    async def initialize(self) -> None:
+    def initialize(self) -> None:
         """Initialize service with proper error handling.
 
         Raises:
@@ -122,12 +117,10 @@ class PipelineServingService:
             # Load snapshot from ZenML store
             client = self._get_client()
             # Accept both str and UUID for flexibility
-            snapshot_id = self.snapshot_id
-            try:
-                if isinstance(snapshot_id, str):
-                    snapshot_id = UUID(snapshot_id)
-            except Exception:
-                pass
+            if isinstance(self.snapshot_id, str):
+                snapshot_id = UUID(self.snapshot_id)
+            else:
+                snapshot_id = self.snapshot_id
 
             self.snapshot = client.zen_store.get_snapshot(
                 snapshot_id=snapshot_id
@@ -152,7 +145,7 @@ class PipelineServingService:
             )
 
             # Execute init hook
-            await self._execute_init_hook()
+            self._execute_init_hook()
 
             self._orchestrator.set_shared_run_state(self.pipeline_state)
 
@@ -164,7 +157,7 @@ class PipelineServingService:
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
 
-    async def cleanup(self) -> None:
+    def cleanup(self) -> None:
         """Execute cleanup hook if present.
 
         Raises:
@@ -190,7 +183,7 @@ class PipelineServingService:
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
-        use_in_memory: Optional[bool] = None,
+        use_in_memory: bool = False,
     ) -> Dict[str, Any]:
         """Execute the deployment with the given parameters.
 
@@ -216,23 +209,18 @@ class PipelineServingService:
         logger.info("Starting pipeline execution")
 
         try:
-            # Validate parameters
-            resolved_params = self._resolve_parameters(parameters)
-
             # Execute pipeline and get run; runtime outputs captured internally
-            run = self._execute_with_orchestrator(
-                resolved_params, use_in_memory
+            run, captured_outputs = self._execute_with_orchestrator(
+                parameters, use_in_memory
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
-            mapped_outputs = self._map_outputs(run, self._last_runtime_outputs)
-            # Clear captured outputs after use
-            self._last_runtime_outputs = None
+            mapped_outputs = self._map_outputs(captured_outputs)
 
             return self._build_success_response(
                 mapped_outputs=mapped_outputs,
                 start_time=start_time,
-                resolved_params=resolved_params,
+                resolved_params=parameters,
                 run=run,
             )
 
@@ -284,40 +272,37 @@ class PipelineServingService:
         """
         return self.snapshot is not None
 
-    # Private helper methods
-
     def _map_outputs(
         self,
-        run: PipelineRunResponse,
         runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Map pipeline outputs using centralized runtime processing.
 
         Args:
-            run: The resolved pipeline run to inspect artifacts for.
             runtime_outputs: Optional in-memory outputs captured from runtime.
 
         Returns:
-            A dictionary mapping output names to serialized payloads.
+            A dictionary containing outputs and any warnings from filtering.
         """
-        from zenml.deployers.serving import runtime
+        filtered_outputs = {}
+        output_mappings = self.snapshot.pipeline_spec.outputs
+        if runtime_outputs:
+            # Filter outputs based on pipeline schema (raises RuntimeError if missing)
+            for step_name, output_name in output_mappings.items():
+                if step_name in runtime_outputs:
+                    filtered_outputs[output_name] = runtime_outputs[step_name][
+                        output_name
+                    ]
+        else:
+            logger.debug("No output mappings found, returning all outputs")
 
-        if runtime_outputs is None and runtime.is_active():
-            runtime_outputs = runtime.get_outputs()
-
-        max_size_mb = self._get_max_output_size_bytes() // (1024 * 1024)
-        return runtime.process_outputs(
-            runtime_outputs=runtime_outputs,
-            run=run,
-            enforce_size_limits=True,
-            max_output_size_mb=max_size_mb,
-        )
+        return filtered_outputs
 
     def _execute_with_orchestrator(
         self,
         resolved_params: Dict[str, Any],
-        use_in_memory: Optional[bool] = None,
-    ) -> PipelineRunResponse:
+        use_in_memory: bool,
+    ) -> Tuple[PipelineRunResponse, Optional[Dict[str, Dict[str, Any]]]]:
         """Run the snapshot via the orchestrator and return the concrete run.
 
         Args:
@@ -329,6 +314,8 @@ class PipelineServingService:
 
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
+            RuntimeError: If the pipeline cannot be executed.
+
         """
         client = self._get_client()
         active_stack: Stack = client.active_stack
@@ -343,8 +330,6 @@ class PipelineServingService:
         )
 
         # Start serving runtime context with parameters
-        from zenml.deployers.serving import runtime
-
         runtime.start(
             request_id=str(uuid4()),
             snapshot=self.snapshot,
@@ -361,11 +346,11 @@ class PipelineServingService:
             )
 
             # Capture in-memory outputs before stopping the runtime context
-            try:
-                if runtime.is_active():
-                    captured_outputs = runtime.get_outputs()
-            except ImportError:
-                pass
+            if runtime.is_active():
+                captured_outputs = runtime.get_outputs()
+        except Exception as e:
+            logger.error(f"Failed to execute pipeline: {e}")
+            raise RuntimeError(f"Failed to execute pipeline: {e}")
         finally:
             # Always stop serving runtime context
             runtime.stop()
@@ -377,8 +362,7 @@ class PipelineServingService:
             include_full_metadata=True,
         )
         # Store captured outputs for the caller to use
-        self._last_runtime_outputs = captured_outputs
-        return run
+        return run, captured_outputs
 
     def _build_params_model(self) -> Any:
         """Build the pipeline parameters model from the deployment.
@@ -400,7 +384,7 @@ class PipelineServingService:
             logger.error(f"Failed to construct parameter model: {e}")
             raise
 
-    async def _execute_init_hook(self) -> None:
+    def _execute_init_hook(self) -> None:
         """Execute init hook if present.
 
         Raises:
@@ -443,48 +427,6 @@ class PipelineServingService:
         logger.info(f"   Steps: {step_count}")
         logger.info(f"   Stack: {stack_name}")
 
-    def _resolve_parameters(
-        self, request_params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Validate and normalize parameters, preserving complex objects.
-
-        Args:
-            request_params: The parameters to validate and normalize.
-
-        Returns:
-            The validated and normalized parameters.
-        """
-        # If available, validate against the parameters model
-        if self._params_model is None:
-            try:
-                self._params_model = self._build_params_model()
-            except Exception:
-                self._params_model = None
-
-        if self._params_model is not None:
-            params_obj = self._params_model.model_validate(
-                request_params or {}
-            )
-            # Use the model class fields to avoid mypy issues with instance props
-            fields = getattr(self._params_model, "model_fields")
-            return {name: getattr(params_obj, name) for name in fields}
-
-        # Otherwise, just return request parameters as-is (no nesting support)
-        return dict(request_params or {})
-
-    def _serialize_json_safe(self, value: Any) -> Any:
-        """Delegate to the centralized runtime serializer.
-
-        Args:
-            value: The value to serialize.
-
-        Returns:
-            The serialized value.
-        """
-        from zenml.deployers.serving import runtime as serving_runtime
-
-        return serving_runtime._make_json_safe(value)
-
     def _build_success_response(
         self,
         mapped_outputs: Dict[str, Any],
@@ -517,25 +459,10 @@ class PipelineServingService:
                 "pipeline_name": self.snapshot.pipeline_configuration.name,
                 "run_id": run.id,
                 "run_name": run.name,
-                "parameters_used": self._serialize_json_safe(resolved_params),
+                "parameters_used": resolved_params,
                 "snapshot_id": str(self.snapshot.id),
             },
         }
-
-        # Add response schema if available
-        # Add response schema only if the attribute exists and is set
-        try:
-            if (
-                self.snapshot.pipeline_spec
-                and self.snapshot.pipeline_spec.response_schema
-            ):
-                response["response_schema"] = (
-                    self.snapshot.pipeline_spec.response_schema
-                )
-        except AttributeError:
-            # Some tests may provide a lightweight snapshot stub without
-            # a pipeline_spec attribute; ignore in that case.
-            pass
 
         return response
 
@@ -552,13 +479,13 @@ class PipelineServingService:
         """
         try:
             if self.snapshot and self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.parameters_schema
+                return self.snapshot.pipeline_spec.input_schema
         except Exception:
             return None
         return None
 
     @property
-    def response_schema(self) -> Optional[Dict[str, Any]]:
+    def output_schema(self) -> Optional[Dict[str, Any]]:
         """Return the JSON schema for the serving response if available.
 
         Returns:
@@ -566,7 +493,7 @@ class PipelineServingService:
         """
         try:
             if self.snapshot and self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.response_schema
+                return self.snapshot.pipeline_spec.output_schema
         except Exception:
             return None
         return None

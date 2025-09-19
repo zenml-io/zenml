@@ -23,11 +23,8 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Set,
     Tuple,
 )
-
-from pydantic import TypeAdapter
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -45,8 +42,6 @@ from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
-from zenml.steps.base_step import BaseStep
-from zenml.steps.utils import parse_return_type_annotations
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -656,99 +651,13 @@ class Compiler:
         # Store a JSON schema of the pipeline input parameters for CLI/UI
         # tooling.
         if pipeline_parameters_model := pipeline.get_parameters_model():
-            additional_spec_args["parameters_schema"] = (
+            additional_spec_args["input_schema"] = (
                 pipeline_parameters_model.model_json_schema()
             )
-
-        # Best-effort: build a response schema snapshot for step outputs (tooling).
-        try:
-            # Map invocation id -> StepSpec for quick lookup
-            name_to_spec: Dict[str, StepSpec] = {
-                s.pipeline_parameter_name: s for s in step_specs
-            }
-            all_names: set[str] = set(name_to_spec.keys())
-            # Build downstream map from upstream relationships
-            downstream: Dict[str, Set[str]] = {n: set() for n in all_names}
-            for s in step_specs:
-                for up in s.upstream_steps:
-                    if up in downstream:
-                        downstream[up].add(s.pipeline_parameter_name)
-            # NOTE: The serving response uses flat keys in the form
-            # "{step}.{output}". We therefore build a flat outputs schema
-            # instead of a nested per-step structure.
-            outputs_properties: Dict[str, Any] = {}
-            all_defs: Dict[str, Any] = {}
-
-            # Include all steps to reflect actual serving outputs
-            for name in all_names:
-                spec = name_to_spec[name]
-                step_instance = BaseStep.load_from_source(spec.source)
-                out_sigs = parse_return_type_annotations(
-                    func=step_instance.entrypoint
-                )
-                if not out_sigs:
-                    continue
-                for out_name, sig in out_sigs.items():
-                    try:
-                        ta = TypeAdapter(sig.resolved_annotation)
-                        schema = ta.json_schema()
-                        if "$defs" in schema:
-                            all_defs.update(schema["$defs"])
-                            schema = {
-                                k: v for k, v in schema.items() if k != "$defs"
-                            }
-                        # Improve UI example for generic object schemas to avoid
-                        # the 'additionalProp1' placeholder in Swagger UI.
-                        if (
-                            isinstance(schema, dict)
-                            and schema.get("type") == "object"
-                            and "properties" not in schema
-                        ):
-                            schema.setdefault("example", {})
-                        # Flat key matches serving response shape
-                        outputs_properties[f"{name}.{out_name}"] = schema
-                    except Exception:
-                        outputs_properties[f"{name}.{out_name}"] = {
-                            "type": "object"
-                        }
-
-            if outputs_properties:
-                response_schema: Dict[str, Any] = {
-                    "type": "object",
-                    "properties": {
-                        "success": {"type": "boolean"},
-                        "outputs": {
-                            "type": "object",
-                            "properties": outputs_properties,
-                        },
-                        "execution_time": {"type": "number"},
-                        "metadata": {
-                            "type": "object",
-                            "properties": {
-                                "pipeline_name": {"type": "string"},
-                                "run_id": {"type": "string"},
-                                "run_name": {"type": "string"},
-                                "parameters_used": {"type": "object"},
-                                "snapshot_id": {"type": "string"},
-                            },
-                        },
-                    },
-                    "required": [
-                        "success",
-                        "outputs",
-                        "execution_time",
-                        "metadata",
-                    ],
-                }
-                if all_defs:
-                    response_schema["$defs"] = all_defs
-                additional_spec_args["response_schema"] = response_schema
-        except Exception as e:
-            # Ignore response schema issues to avoid blocking compilation
-            logger.warning(
-                f"Failed to generate response schema for pipeline "
-                f"`{pipeline.name}`: {e}",
-            )
+        # Store a JSON schema of the pipeline output parameters for CLI/UI
+        # tooling.
+        if output_schema := pipeline.get_output_schema():
+            additional_spec_args["output_schema"] = output_schema
 
         return PipelineSpec(steps=step_specs, **additional_spec_args)
 

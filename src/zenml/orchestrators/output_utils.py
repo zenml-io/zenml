@@ -46,31 +46,15 @@ def generate_artifact_uri(
     Returns:
         The URI of the output artifact.
     """
-    # Check if serving runtime is active and using in-memory mode
-    use_memory_uri = False
-    try:
-        from zenml.deployers.serving import runtime
-
-        if runtime.is_active() and runtime.should_use_in_memory():
-            use_memory_uri = True
-    except ImportError:
-        pass
-
     for banned_character in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
         output_name = output_name.replace(banned_character, "_")
-
-    if use_memory_uri:
-        # Use memory:// prefix for in-memory serving to avoid conflicts
-        return f"memory://{step_run.name}/{output_name}/{str(step_run.id)}/{str(uuid4())[:8]}"
-    else:
-        # Normal artifact store path
-        return os.path.join(
-            artifact_store.path,
-            step_run.name,
-            output_name,
-            str(step_run.id),
-            str(uuid4())[:8],  # add random subfolder to avoid collisions
-        )
+    return os.path.join(
+        artifact_store.path,
+        step_run.name,
+        output_name,
+        str(step_run.id),
+        str(uuid4())[:8],  # add random subfolder to avoid collisions
+    )
 
 
 def prepare_output_artifact_uris(
@@ -90,7 +74,6 @@ def prepare_output_artifact_uris(
         A dictionary mapping output names to artifact URIs.
     """
     artifact_store = stack.artifact_store
-
     output_artifact_uris: Dict[str, str] = {}
     for output_name in step.config.outputs.keys():
         substituted_output_name = string_utils.format_name_template(
@@ -101,11 +84,9 @@ def prepare_output_artifact_uris(
             step_run=step_run,
             output_name=substituted_output_name,
         )
-        # Skip directory creation for memory:// URIs as they don't need filesystem directories
-        if not artifact_uri.startswith("memory://"):
-            if artifact_store.exists(artifact_uri):
-                raise RuntimeError("Artifact already exists")
-            artifact_store.makedirs(artifact_uri)
+        if artifact_store.exists(artifact_uri):
+            raise RuntimeError("Artifact already exists")
+        artifact_store.makedirs(artifact_uri)
         output_artifact_uris[output_name] = artifact_uri
     return output_artifact_uris
 

@@ -36,10 +36,8 @@ class PipelineSpec(FrozenBaseModel):
     version: str = "0.4"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
-    parameters_schema: Optional[Dict[str, Any]] = None
-    # Optional: Precomputed response/output schema for tooling (CLI/UI).
-    # Serves documentation; serving aggregates outputs at runtime.
-    response_schema: Optional[Dict[str, Any]] = None
+    input_schema: Dict[str, Any] = {}
+    output_schema: Dict[str, Any] = {}
     steps: List[StepSpec]
 
     def __eq__(self, other: Any) -> bool:

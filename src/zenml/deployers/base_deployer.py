@@ -340,15 +340,15 @@ class BaseDeployer(StackComponent, ABC):
         """Provision a deployment.
 
         The provision_deployment method is the main entry point for
-        provisioning deployments using the deployer. It is used to serve
+        provisioning deployments using the deployer. It is used to deploy
         a pipeline snapshot as an HTTP deployment, or update an existing
         deployment instance with the same name. The method returns a
         DeploymentResponse object that is a representation of the
         external deployment instance.
 
         Args:
-            snapshot: The pipeline snapshot to serve as an HTTP deployment.
-            stack: The stack the pipeline will be served on.
+            snapshot: The pipeline snapshot to deploy as an HTTP deployment.
+            stack: The stack the pipeline will be deployed on.
             deployment_name_or_id: Unique name or ID for the deployment.
                 This name must be unique at the project level.
             replace: If True, it will update in-place any existing pipeline
@@ -828,7 +828,7 @@ class BaseDeployer(StackComponent, ABC):
         secrets: Dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
-        """Abstract method to serve a pipeline as an HTTP deployment.
+        """Abstract method to deploy a pipeline as an HTTP deployment.
 
         Concrete deployer subclasses must implement the following
         functionality in this method:
@@ -854,8 +854,8 @@ class BaseDeployer(StackComponent, ABC):
         `do_get_deployment` method until it is ready or it times out.
 
         Args:
-            deployment: The deployment to serve as an HTTP deployment.
-            stack: The stack the pipeline will be served on.
+            deployment: The deployment to deploy as an HTTP deployment.
+            stack: The stack the pipeline will be deployed on.
             environment: A dictionary of environment variables to set on the
                 deployment.
             secrets: A dictionary of secret environment variables to set
