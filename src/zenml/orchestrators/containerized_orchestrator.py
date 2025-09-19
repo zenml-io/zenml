@@ -14,9 +14,11 @@
 """Containerized orchestrator class."""
 
 from abc import ABC
-from typing import List, Optional
+from typing import List, Optional, Set
 
+import zenml
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
 from zenml.models import PipelineSnapshotBase, PipelineSnapshotResponse
 from zenml.orchestrators import BaseOrchestrator
@@ -24,6 +26,22 @@ from zenml.orchestrators import BaseOrchestrator
 
 class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     """Base class for containerized orchestrators."""
+
+    @property
+    def requirements(self) -> Set[str]:
+        """Set of PyPI requirements for the component.
+
+        Returns:
+            A set of PyPI requirements for the component.
+        """
+        requirements = super().requirements
+
+        if self.config.is_local and GlobalConfiguration().uses_sql_store:
+            # If we're directly connected to a DB, we need to install the
+            # `local` extra in the Docker image to include the DB dependencies.
+            requirements.add(f"'zenml[local]=={zenml.__version__}'")
+
+        return requirements
 
     @staticmethod
     def get_image(

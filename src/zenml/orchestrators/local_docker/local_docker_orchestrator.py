@@ -17,12 +17,11 @@ import copy
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 from uuid import uuid4
 
 from docker.errors import ContainerError
 
-import zenml
 from zenml.config.base_settings import BaseSettings
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -83,20 +82,6 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return StackValidator(
             required_components={StackComponentType.IMAGE_BUILDER}
         )
-
-    @property
-    def requirements(self) -> Set[str]:
-        """Set of PyPI requirements for the component.
-
-        Returns:
-            A set of PyPI requirements for the component.
-        """
-        if GlobalConfiguration().uses_sql_store:
-            # If we're directly connected to a DB, we need to install the
-            # `local` extra in the Docker image to include the DB dependencies.
-            return {f'"zenml[local]=={zenml.__version__}"'}
-
-        return set()
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
