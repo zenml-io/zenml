@@ -34,7 +34,7 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     PipelineRunResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -260,7 +260,7 @@ if server_config().workload_manager_enabled:
             The created pipeline run.
         """
         from zenml.zen_server.pipeline_execution.utils import (
-            trigger_snapshot,
+            run_snapshot,
         )
 
         rbac_read_checks = []
@@ -314,10 +314,10 @@ if server_config().workload_manager_enabled:
                     "snapshot."
                 )
 
-            return trigger_snapshot(
+            return run_snapshot(
                 snapshot=template.source_snapshot,
                 auth_context=auth_context,
-                trigger_request=PipelineSnapshotTriggerRequest(
+                request=PipelineSnapshotRunRequest(
                     run_configuration=config,
                 ),
                 template_id=template_id,

@@ -257,11 +257,18 @@ def setup_global_print_wrapping() -> None:
     original_print = builtins.print
 
     def wrapped_print(*args: Any, **kwargs: Any) -> None:
+        file_arg = kwargs.get("file", sys.stdout)
+
+        # IMPORTANT: Don't intercept internal calls to any objects
+        # other than sys.stdout and sys.stderr. This is especially
+        # critical for handling tracebacks. The default logging
+        # formatter uses StringIO to format tracebacks, we don't
+        # want to intercept it and create a LogRecord about it.
+        if file_arg not in (sys.stdout, sys.stderr):
+            return original_print(*args, **kwargs)
+
         # Convert print arguments to message
         message = " ".join(str(arg) for arg in args)
-
-        # Determine if this should go to stderr or stdout based on file argument
-        file_arg = kwargs.get("file", sys.stdout)
 
         # Call active handlers first (for storage)
         if message.strip():
