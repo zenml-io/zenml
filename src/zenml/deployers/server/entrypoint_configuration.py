@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Pipeline Serving Entrypoint Configuration."""
+"""ZenML Pipeline Deployment Entrypoint Configuration."""
 
 import os
 from typing import Any, List, Set
@@ -24,7 +24,7 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Serving-specific entrypoint options
+# Deployment-specific entrypoint options
 HOST_OPTION = "host"
 PORT_OPTION = "port"
 WORKERS_OPTION = "workers"
@@ -33,16 +33,16 @@ CREATE_RUNS_OPTION = "create_runs"
 AUTH_KEY_OPTION = "auth_key"
 
 
-class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
-    """Entrypoint configuration for ZenML Pipeline Serving.
+class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
+    """Entrypoint configuration for ZenML Pipeline Deployment.
 
     This entrypoint configuration handles the startup and configuration
-    of the ZenML pipeline serving FastAPI application.
+    of the ZenML pipeline deployment FastAPI application.
     """
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Gets all options required for serving entrypoint.
+        """Gets all options required for the deployment entrypoint.
 
         Returns:
             Set of required option names
@@ -59,22 +59,19 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Gets arguments for the serving entrypoint command.
+        """Gets arguments for the deployment entrypoint command.
 
         Args:
-            **kwargs: Keyword arguments containing serving configuration
+            **kwargs: Keyword arguments containing deployment configuration
 
         Returns:
             List of command-line arguments
-
-        Raises:
-            ValueError: If required arguments are missing
         """
         # Get base arguments (snapshot_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)
 
-        # Add serving-specific arguments with defaults
-        serving_args = [
+        # Add deployment-specific arguments with defaults
+        deployment_args = [
             f"--{HOST_OPTION}",
             str(kwargs.get(HOST_OPTION, "0.0.0.0")),
             f"--{PORT_OPTION}",
@@ -89,13 +86,16 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
             str(kwargs.get(AUTH_KEY_OPTION, "")),
         ]
 
-        return base_args + serving_args
+        return base_args + deployment_args
 
     def run(self) -> None:
-        """Run the ZenML pipeline serving application.
+        """Run the ZenML pipeline deployment application.
 
         This method starts the FastAPI server with the configured parameters
-        and the specified pipeline snapshot.
+        and the specified pipeline deployment.
+
+        Raises:
+            Exception: If the server fails to start.
         """
         import uvicorn
 
@@ -116,14 +116,14 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         # Download code if necessary (for remote execution environments)
         self.download_code_if_necessary(snapshot=snapshot)
 
-        # Set environment variables for the serving application
+        # Set environment variables for the deployment application
         os.environ["ZENML_SNAPSHOT_ID"] = snapshot_id
         if create_runs:
-            os.environ["ZENML_SERVING_CREATE_RUNS"] = "true"
+            os.environ["ZENML_DEPLOYMENT_CREATE_RUNS"] = "true"
         if auth_key:
-            os.environ["ZENML_SERVING_AUTH_KEY"] = auth_key
+            os.environ["ZENML_DEPLOYMENT_AUTH_KEY"] = auth_key
 
-        logger.info("🚀 Starting ZenML Pipeline Serving...")
+        logger.info("🚀 Starting ZenML Pipeline Deployment...")
         logger.info(f"   Snapshot ID: {snapshot_id}")
         logger.info(f"   Host: {host}")
         logger.info(f"   Port: {port}")
@@ -138,7 +138,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
         try:
             # Start the FastAPI server
             uvicorn.run(
-                "zenml.deployers.serving.app:app",
+                "zenml.deployers.server.app:app",
                 host=host,
                 port=port,
                 workers=workers,
@@ -146,7 +146,7 @@ class ServingEntrypointConfiguration(BaseEntrypointConfiguration):
                 access_log=True,
             )
         except KeyboardInterrupt:
-            logger.info("\n🛑 Serving stopped by user")
+            logger.info("\n🛑 Deployment stopped by user")
         except Exception as e:
-            logger.error(f"❌ Failed to start serving: {str(e)}")
+            logger.error(f"❌ Failed to start deployment: {str(e)}")
             raise

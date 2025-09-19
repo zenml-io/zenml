@@ -52,10 +52,10 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
-from zenml.deployers.serving.entrypoint_configuration import (
+from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,
-    ServingEntrypointConfiguration,
+    DeploymentEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
     SNAPSHOT_ID_OPTION,
@@ -69,8 +69,7 @@ from zenml.models import (
 from zenml.stack import Stack, StackValidator
 from zenml.utils import docker_utils
 from zenml.utils.networking_utils import (
-    port_available,
-    scan_for_available_port,
+    lookup_preferred_or_free_port,
 )
 
 logger = get_logger(__name__)
@@ -138,7 +137,7 @@ class DockerDeploymentMetadata(BaseModel):
 
 
 class DockerDeployer(ContainerizedDeployer):
-    """Deployer responsible for serving pipelines locally using Docker."""
+    """Deployer responsible for deploying pipelines locally using Docker."""
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
     _docker_client: Optional[DockerClient] = None
@@ -185,44 +184,6 @@ class DockerDeployer(ContainerizedDeployer):
             )
         return self._docker_client
 
-    def _lookup_free_port(
-        self,
-        preferred_ports: List[int] = [],
-        allocate_port_if_busy: bool = True,
-        range: Tuple[int, int] = (8000, 65535),
-    ) -> int:
-        """Search for a free TCP port for the Docker deployer.
-
-        If a list of preferred TCP port values is explicitly requested, they
-        will be checked in order.
-
-        Args:
-            preferred_ports: A list of preferred TCP port values.
-            allocate_port_if_busy: If True, allocate a free port if the
-                preferred ports are busy, otherwise an exception will be raised.
-            range: The range of ports to search for a free port.
-
-        Returns:
-            An available TCP port number
-
-        Raises:
-            IOError: if the preferred TCP port is busy and
-                `allocate_port_if_busy` is disabled, or if no free TCP port
-                could be otherwise allocated.
-        """
-        # If a port value is explicitly configured, attempt to use it first
-        if preferred_ports:
-            for port in preferred_ports:
-                if port_available(port):
-                    return port
-            if not allocate_port_if_busy:
-                raise IOError(f"TCP port {preferred_ports} is not available.")
-
-        available_port = scan_for_available_port(start=range[0], stop=range[1])
-        if available_port:
-            return available_port
-        raise IOError(f"No free TCP ports found in range {range}")
-
     def _get_container_id(self, deployment: DeploymentResponse) -> str:
         """Get the docker container id associated with a deployment.
 
@@ -257,13 +218,13 @@ class DockerDeployer(ContainerizedDeployer):
     def _get_container_operational_state(
         self, container: Container
     ) -> DeploymentOperationalState:
-        """Get the operational state of a docker container serving a deployment.
+        """Get the operational state of a docker container running a deployment.
 
         Args:
             container: The docker container to get the operational state of.
 
         Returns:
-            The operational state of the docker container serving the pipeline
+            The operational state of the docker container running the pipeline
             deployment.
         """
         metadata = DockerDeploymentMetadata.from_container(container)
@@ -287,7 +248,9 @@ class DockerDeployer(ContainerizedDeployer):
             state.status = DeploymentStatus.ERROR
 
         if state.status == DeploymentStatus.RUNNING:
-            state.url = f"http://localhost:{metadata.port}"
+            state.url = "http://localhost"
+            if metadata.port:
+                state.url += f":{metadata.port}"
             # TODO: check if the deployment is healthy.
 
         return state
@@ -300,11 +263,11 @@ class DockerDeployer(ContainerizedDeployer):
         secrets: Dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
-        """Serve a pipeline as a Docker container.
+        """Deploy a pipeline as a Docker container.
 
         Args:
-            deployment: The deployment to serve as a Docker container.
-            stack: The stack the pipeline will be served on.
+            deployment: The deployment to run as a Docker container.
+            stack: The stack the pipeline will be deployed on.
             environment: A dictionary of environment variables to set on the
                 deployment.
             secrets: A dictionary of secret environment variables to set
@@ -312,21 +275,19 @@ class DockerDeployer(ContainerizedDeployer):
                 should not be exposed as regular environment variables on the
                 deployer.
             timeout: The maximum time in seconds to wait for the pipeline
-                deployment to be deployed.
+                deployment to be provisioned.
 
         Returns:
             The DeploymentOperationalState object representing the
-            operational state of the deployed deployment.
+            operational state of the provisioned deployment.
 
         Raises:
-            DeploymentProvisionError: if the deployment deployment
+            DeploymentProvisionError: if provisioning the deployment
                 fails.
         """
+        assert deployment.snapshot, "Pipeline snapshot not found"
         snapshot = deployment.snapshot
-        assert snapshot, "Pipeline snapshot not found"
 
-        environment = environment or {}
-        secrets = secrets or {}
         # Currently, there is no safe way to pass secrets to a docker
         # container, so we simply merge them into the environment variables.
         environment.update(secrets)
@@ -340,7 +301,7 @@ class DockerDeployer(ContainerizedDeployer):
             deployment
         )
 
-        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
 
         entrypoint_kwargs = {
             SNAPSHOT_ID_OPTION: snapshot.id,
@@ -349,7 +310,7 @@ class DockerDeployer(ContainerizedDeployer):
         if deployment.auth_key:
             entrypoint_kwargs[AUTH_KEY_OPTION] = deployment.auth_key
 
-        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **entrypoint_kwargs
         )
 
@@ -387,7 +348,6 @@ class DockerDeployer(ContainerizedDeployer):
             f"Starting container for deployment '{deployment.name}'..."
         )
 
-        assert deployment.snapshot, "Pipeline snapshot not found"
         image = self.get_image(deployment.snapshot)
 
         try:
@@ -399,18 +359,17 @@ class DockerDeployer(ContainerizedDeployer):
             )
             self.docker_client.images.pull(image)
 
-        ports: Dict[str, Optional[int]] = {}
         preferred_ports: List[int] = []
         if settings.port:
             preferred_ports.append(settings.port)
         if existing_metadata.port:
             preferred_ports.append(existing_metadata.port)
-        port = self._lookup_free_port(
+        port = lookup_preferred_or_free_port(
             preferred_ports=preferred_ports,
             allocate_port_if_busy=settings.allocate_port_if_busy,
             range=settings.port_range,
         )
-        ports["8000/tcp"] = port
+        ports: Dict[str, Optional[int]] = {"8000/tcp": port}
 
         uid_args: Dict[str, Any] = {}
         if sys.platform == "win32":
@@ -475,7 +434,7 @@ class DockerDeployer(ContainerizedDeployer):
 
         return self._get_container_operational_state(container)
 
-    def do_get_deployment(
+    def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
     ) -> DeploymentOperationalState:
@@ -501,18 +460,13 @@ class DockerDeployer(ContainerizedDeployer):
 
         return self._get_container_operational_state(container)
 
-    def do_get_deployment_logs(
+    def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a Docker deployment.
-
-        This method implements proper log streaming with support for both
-        historical and real-time log retrieval. It follows the SOLID principles
-        by handling errors early and delegating to the Docker client for the
-        actual log streaming.
 
         Args:
             deployment: The deployment to get the logs of.
@@ -531,7 +485,6 @@ class DockerDeployer(ContainerizedDeployer):
                 be retrieved for any other reason or if an unexpected error
                 occurs.
         """
-        # Early return pattern - handle preconditions first
         container = self._get_container(deployment)
         if container is None:
             raise DeploymentNotFoundError(
@@ -540,7 +493,6 @@ class DockerDeployer(ContainerizedDeployer):
             )
 
         try:
-            # Configure log streaming parameters
             log_kwargs: Dict[str, Any] = {
                 "stdout": True,
                 "stderr": True,
@@ -549,16 +501,12 @@ class DockerDeployer(ContainerizedDeployer):
                 "timestamps": True,
             }
 
-            # Add tail parameter if specified
             if tail is not None and tail > 0:
                 log_kwargs["tail"] = tail
 
-            # Stream logs from the Docker container
             log_stream = container.logs(**log_kwargs)
 
-            # Handle the generator pattern properly
             if follow:
-                # For streaming logs, iterate over the generator
                 for log_line in log_stream:
                     if isinstance(log_line, bytes):
                         yield log_line.decode(
@@ -567,14 +515,11 @@ class DockerDeployer(ContainerizedDeployer):
                     else:
                         yield str(log_line).rstrip()
             else:
-                # For static logs, handle as a single response
                 if isinstance(log_stream, bytes):
-                    # Split into individual lines and yield each
                     log_text = log_stream.decode("utf-8", errors="replace")
                     for line in log_text.splitlines():
                         yield line
                 else:
-                    # Already an iterator, yield each line
                     for log_line in log_stream:
                         if isinstance(log_line, bytes):
                             yield log_line.decode(
@@ -642,18 +587,14 @@ class DockerDeployer(ContainerizedDeployer):
                 f"failed to delete: {e}"
             )
 
-        state = self._get_container_operational_state(container)
-        # Report a PENDING state to indicate that the deletion is in progress
-        # and force the base class
-        state.status = DeploymentStatus.PENDING
-        return state
+        return None
 
 
 class DockerDeployerSettings(BaseDeployerSettings):
     """Docker deployer settings.
 
     Attributes:
-        port: The port to serve the deployment on.
+        port: The port to expose the deployment on.
         allocate_port_if_busy: If True, allocate a free port if the configured
             port is busy.
         port_range: The range of ports to search for a free port.
@@ -686,10 +627,10 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
 
     @property
     def name(self) -> str:
-        """Name of the orchestrator flavor.
+        """Name of the deployer flavor.
 
         Returns:
-            Name of the orchestrator flavor.
+            Name of the deployer flavor.
         """
         return "docker"
 
@@ -718,11 +659,11 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/docker.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/docker.png"
 
     @property
     def config_class(self) -> Type[BaseDeployerConfig]:
-        """Config class for the base orchestrator flavor.
+        """Config class for the base deployer flavor.
 
         Returns:
             The config class.

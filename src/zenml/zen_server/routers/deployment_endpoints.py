@@ -94,7 +94,6 @@ def list_deployments(
     """Gets a list of deployments.
 
     Args:
-        request: The request object.
         deployment_filter_model: Filter model used for pagination, sorting,
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)

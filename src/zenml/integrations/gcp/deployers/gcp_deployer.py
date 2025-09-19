@@ -44,10 +44,10 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
-from zenml.deployers.serving.entrypoint_configuration import (
+from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,
-    ServingEntrypointConfiguration,
+    DeploymentEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
     SNAPSHOT_ID_OPTION,
@@ -73,14 +73,13 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Default resource and scaling configuration constants
-# These are used when ResourceSettings are not provided in the pipeline configuration
 DEFAULT_CPU = "1"
 DEFAULT_MEMORY = "2Gi"
 DEFAULT_MIN_INSTANCES = 1
 DEFAULT_MAX_INSTANCES = 100
 DEFAULT_CONCURRENCY = 80
 
-# GCP Cloud Run limits
+# GCP Cloud Run built-in limits
 GCP_CLOUD_RUN_MAX_INSTANCES = 1000
 
 
@@ -108,7 +107,6 @@ class CloudRunDeploymentMetadata(BaseModel):
     allow_unauthenticated: Optional[bool] = None
     labels: Optional[Dict[str, str]] = None
     annotations: Optional[Dict[str, str]] = None
-    environment_variables: Optional[Dict[str, str]] = None
     traffic_allocation: Optional[Dict[str, int]] = None
     created_time: Optional[str] = None
     updated_time: Optional[str] = None
@@ -134,24 +132,16 @@ class CloudRunDeploymentMetadata(BaseModel):
         Returns:
             The metadata for the Cloud Run service.
         """
-        # Extract container configuration from the service
         container = None
         if service.template and service.template.containers:
             container = service.template.containers[0]
 
-        # Extract environment variables
-        env_vars = {}
-        if container and container.env:
-            env_vars = {env.name: env.value for env in container.env}
-
-        # Extract resource limits
         cpu = None
         memory = None
         if container and container.resources and container.resources.limits:
             cpu = container.resources.limits.get("cpu")
             memory = container.resources.limits.get("memory")
 
-        # Extract scaling configuration
         min_instances = None
         max_instances = None
         if service.template and service.template.scaling:
@@ -159,42 +149,34 @@ class CloudRunDeploymentMetadata(BaseModel):
             min_instances = scaling.min_instance_count
             max_instances = scaling.max_instance_count
 
-        # Extract concurrency
         concurrency = None
         if service.template:
             concurrency = service.template.max_instance_request_concurrency
 
-        # Extract timeout
         timeout_seconds = None
         if service.template and service.template.timeout:
             timeout_seconds = service.template.timeout.seconds
 
-        # Extract ingress
         ingress = None
         if service.ingress:
             ingress = str(service.ingress)
 
-        # Extract VPC connector
         vpc_connector = None
         if service.template and service.template.vpc_access:
             vpc_connector = service.template.vpc_access.connector
 
-        # Extract service account
         service_account = None
         if service.template:
             service_account = service.template.service_account
 
-        # Extract execution environment
         execution_environment = None
         if service.template and service.template.execution_environment:
             execution_environment = str(service.template.execution_environment)
 
-        # Extract port
         port = None
         if container and container.ports:
             port = container.ports[0].container_port
 
-        # Extract traffic allocation
         traffic_allocation = {}
         if service.traffic:
             for traffic in service.traffic:
@@ -232,12 +214,11 @@ class CloudRunDeploymentMetadata(BaseModel):
             service_account=service_account,
             execution_environment=execution_environment,
             port=port,
-            allow_unauthenticated=True,  # Default assumption
+            allow_unauthenticated=True,
             labels=dict(service.labels) if service.labels else {},
             annotations=dict(service.annotations)
             if service.annotations
             else {},
-            environment_variables=env_vars,
             traffic_allocation=traffic_allocation,
             created_time=(
                 service.create_time.isoformat()
@@ -318,7 +299,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             A tuple containing the credentials and project ID.
         """
-        # Check if we need to refresh the credentials (e.g., connector expired)
         if (
             self._credentials is not None
             and self._project_id is not None
@@ -326,7 +306,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         ):
             return self._credentials, self._project_id
 
-        # Use the existing _get_authentication method from GoogleCredentialsMixin
         credentials, project_id = self._get_authentication()
 
         self._credentials = credentials
@@ -389,70 +368,89 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
         return self._secret_manager_client
 
-    def _sanitize_cloud_run_service_name(
-        self, name: str, random_suffix: str
-    ) -> str:
-        """Sanitize a name to comply with Cloud Run service naming requirements.
+    def get_labels(
+        self, deployment: DeploymentResponse, settings: GCPDeployerSettings
+    ) -> Dict[str, str]:
+        """Get the labels for a deployment.
 
-        Cloud Run service name requirements (RFC 2181 DNS naming):
-        - Length: 1-63 characters
+        Args:
+            deployment: The deployment.
+            settings: The deployer settings.
+
+        Returns:
+            The labels for the deployment.
+        """
+        return {
+            **settings.labels,
+            "zenml-deployment-uuid": str(deployment.id),
+            "zenml-deployment-name": deployment.name,
+            "zenml-deployer-name": str(self.name),
+            "zenml-deployer-id": str(self.id),
+            "managed-by": "zenml",
+        }
+
+    def _sanitize_name(
+        self,
+        name: str,
+        random_suffix: str,
+        max_length: int = 63,
+    ) -> str:
+        """Sanitize a name to comply with GCP naming requirements.
+
+        Common GCP naming requirements:
+        - Length: 1-max_length characters
         - Characters: lowercase letters (a-z), numbers (0-9), hyphens (-)
-        - Must start with a lowercase letter
-        - Cannot end with a hyphen
-        - Must be unique per region and project
+        - Must start and end with a letter or number
 
         Args:
             name: The raw name to sanitize.
             random_suffix: A random suffix to add to the name to ensure
-                uniqueness. Assumed to be valid.
+                uniqueness.
+            max_length: The maximum length of the name.
 
         Returns:
-            A sanitized name that complies with Cloud Run requirements.
+            A sanitized name that complies with GCP requirements.
 
         Raises:
             RuntimeError: If the random suffix is invalid.
             ValueError: If the service name is invalid.
         """
-        sanitized_suffix = re.sub(r"[^a-z0-9-]", "-", random_suffix.lower())
-        # The random suffix must be validInvalid random suffix
-        if sanitized_suffix != random_suffix:
+        if (
+            not re.match(r"^[a-z0-9]+$", random_suffix)
+            or len(random_suffix) < 1
+        ):
             raise RuntimeError(
                 f"Invalid random suffix: {random_suffix}. Must contain only "
-                "lowercase letters, numbers, and hyphens."
+                "lowercase letters and numbers and be at least 1 character "
+                "long."
             )
 
-        # Convert to lowercase and replace all disallowed characters with hyphens
+        # Convert to lowercase and replace all disallowed characters with
+        # hyphens
         sanitized = re.sub(r"[^a-z0-9-]", "-", name.lower())
 
         # Remove consecutive hyphens
         sanitized = re.sub(r"-+", "-", sanitized)
 
-        # Ensure it starts with a lowercase letter
-        if not sanitized or not sanitized[0].isalpha():
-            raise ValueError(
-                f"Invalid service name: {name}. Must start with a letter."
-            )
+        # Truncate to fit within max_length character limit including suffix
+        max_base_length = (
+            max_length - len(random_suffix) - 1  # -1 for the hyphen
+        )
+        if len(sanitized) > max_base_length:
+            sanitized = sanitized[:max_base_length]
 
-        # Remove trailing hyphens
-        sanitized = sanitized.rstrip("-")
+        # Ensure it starts and ends with alphanumeric characters
+        sanitized = re.sub(
+            r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$",
+            "",
+            sanitized,
+        )
 
         # Ensure we have at least one character after cleanup
         if not sanitized:
             raise ValueError(
-                f"Invalid service name: {name}. Must start with a letter."
-            )
-
-        # Truncate to 63 characters after adding the random suffix (Cloud Run
-        # limit)
-        if len(sanitized) > 63 - len(random_suffix) - 1:
-            sanitized = sanitized[: 63 - len(random_suffix) - 1]
-            # Make sure we don't end with a hyphen after truncation
-            sanitized = sanitized.rstrip("-")
-
-        # Final safety check - ensure we still have a valid name
-        if not sanitized or not sanitized[0].isalpha():
-            raise ValueError(
-                f"Invalid service name: {name}. Must start with a letter."
+                f"Invalid name: {name}. Must contain at least one "
+                "alphanumeric character."
             )
 
         return f"{sanitized}-{random_suffix}"
@@ -470,87 +468,12 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Cloud Run service name that complies with all naming requirements.
         """
-        # Create a base name with deployment name and ID for uniqueness
-        # Use first 8 characters of UUID to keep names manageable
         deployment_id_short = str(deployment_id)[:8]
         raw_name = f"{prefix}{deployment_name}"
 
-        return self._sanitize_cloud_run_service_name(
-            raw_name, deployment_id_short
+        return self._sanitize_name(
+            raw_name, deployment_id_short, max_length=63
         )
-
-    def _sanitize_secret_name(self, name: str, random_suffix: str) -> str:
-        """Sanitize a name to comply with Secret Manager naming requirements.
-
-        Secret Manager secret name requirements:
-        - Length: 1-255 characters
-        - Characters: letters, numbers, hyphens, underscores
-        - Must start with a letter or underscore
-        - Cannot end with a hyphen
-
-        Args:
-            name: The raw name to sanitize.
-            random_suffix: A random suffix to add to the name to ensure
-                uniqueness.
-
-        Returns:
-            A sanitized name that complies with Secret Manager requirements.
-
-        Raises:
-            RuntimeError: If the random suffix is invalid.
-            ValueError: If the secret name is invalid.
-        """
-        sanitized_suffix = re.sub(
-            r"[^a-zA-Z0-9_-]", "_", random_suffix.lower()
-        )
-        # The random suffix must be valid
-        if sanitized_suffix != random_suffix:
-            raise RuntimeError(
-                f"Invalid random suffix: {random_suffix}. Must contain only "
-                "letters, numbers, hyphens, and underscores."
-            )
-
-        # Convert to lowercase and replace disallowed characters with underscores
-        sanitized = re.sub(r"[^a-zA-Z0-9_-]", "_", name)
-
-        # Remove consecutive underscores and hyphens
-        sanitized = re.sub(r"[_-]+", "_", sanitized)
-
-        # Ensure it starts with a letter or underscore
-        if not sanitized or not (
-            sanitized[0].isalpha() or sanitized[0] == "_"
-        ):
-            raise ValueError(
-                f"Invalid secret name: {name}. Must start with a letter or "
-                "underscore."
-            )
-
-        # Remove trailing hyphens (underscores are allowed at the end)
-        sanitized = sanitized.rstrip("-")
-
-        # Ensure we have at least one character after cleanup
-        if not sanitized:
-            raise ValueError(
-                f"Invalid secret name: {name}. Must start with a letter or "
-                "underscore."
-            )
-
-        # Truncate to 255 characters (Secret Manager limit)
-        if len(sanitized) > 255 - len(random_suffix) - 1:
-            sanitized = sanitized[: 255 - len(random_suffix) - 1]
-            # Make sure we don't end with a hyphen after truncation
-            sanitized = sanitized.rstrip("-")
-
-        # Final safety check
-        if not sanitized or not (
-            sanitized[0].isalpha() or sanitized[0] == "_"
-        ):
-            raise ValueError(
-                f"Invalid secret name: {name}. Must start with a letter or "
-                "underscore."
-            )
-
-        return f"{sanitized}_{random_suffix}"
 
     def _get_secret_name(
         self,
@@ -568,11 +491,12 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Secret Manager secret name.
         """
-        # Create a unique secret name with prefix, deployment ID, and env var name
         deployment_id_short = str(deployment_id)[:8]
         raw_name = f"{prefix}_{env_var_name}"
 
-        return self._sanitize_secret_name(raw_name, deployment_id_short)
+        return self._sanitize_name(
+            raw_name, deployment_id_short, max_length=255
+        )
 
     def _create_or_update_secret(
         self,
@@ -580,6 +504,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         secret_value: str,
         project_id: str,
         deployment: DeploymentResponse,
+        settings: GCPDeployerSettings,
     ) -> secretmanager.Secret:
         """Create or update a secret in Secret Manager.
 
@@ -588,6 +513,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             secret_value: The value to store.
             project_id: The GCP project ID.
             deployment: The deployment.
+            settings: The deployer settings.
 
         Returns:
             The full secret.
@@ -600,7 +526,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         secret_path = f"{parent}/secrets/{secret_id}"
 
         try:
-            # Try to get the existing secret
             try:
                 secret = self.secret_manager_client.get_secret(
                     name=secret_path
@@ -609,25 +534,17 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     f"Secret {secret_name} already exists, adding new version"
                 )
             except google_exceptions.NotFound:
-                # Create the secret if it doesn't exist
                 logger.debug(f"Creating new secret {secret_name}")
                 secret = secretmanager.Secret(
                     replication=secretmanager.Replication(
                         automatic=secretmanager.Replication.Automatic()
                     ),
-                    labels={
-                        "zenml-deployment-uuid": str(deployment.id),
-                        "zenml-deployment-name": deployment.name,
-                        "zenml-deployer-name": str(self.name),
-                        "zenml-deployer-id": str(self.id),
-                        "managed-by": "zenml",
-                    },
+                    labels=self.get_labels(deployment, settings),
                 )
                 secret = self.secret_manager_client.create_secret(
                     parent=parent, secret_id=secret_id, secret=secret
                 )
 
-            # Add the secret version
             payload = secretmanager.SecretPayload(
                 data=secret_value.encode("utf-8")
             )
@@ -658,7 +575,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         metadata = CloudRunDeploymentMetadata.from_deployment(deployment)
         secrets: List[secretmanager.Secret] = []
         for secret_name in metadata.secrets:
-            # Try to get the existing secret
             try:
                 secret = self.secret_manager_client.get_secret(
                     name=secret_name
@@ -726,25 +642,25 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         """
         env_vars = []
 
-        # Handle regular environment variables
         merged_env = {**settings.environment_variables, **environment}
         for key, value in merged_env.items():
             env_vars.append(run_v2.EnvVar(name=key, value=value))
 
-        # Handle secrets
         active_secrets: List[secretmanager.Secret] = []
         if secrets:
             if settings.use_secret_manager:
-                # Store secrets in Secret Manager and reference them
                 for key, value in secrets.items():
                     secret_name = self._get_secret_name(
                         deployment.id, key.lower(), settings.secret_name_prefix
                     )
 
                     try:
-                        # Create or update the secret
                         active_secret = self._create_or_update_secret(
-                            secret_name, value, project_id, deployment
+                            secret_name,
+                            value,
+                            project_id,
+                            deployment,
+                            settings,
                         )
 
                         # Create environment variable that references the secret
@@ -764,7 +680,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                             f"Failed to create secret for {key}, falling back "
                             f"to direct env var: {e}"
                         )
-                        # Fallback to direct environment variable
                         env_vars.append(run_v2.EnvVar(name=key, value=value))
 
                 metadata = CloudRunDeploymentMetadata.from_deployment(
@@ -781,7 +696,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                         )
                         self._delete_secret(secret_name, project_id)
             else:
-                # Store secrets directly as environment variables (less secure)
                 logger.warning(
                     "Storing secrets directly in environment variables. "
                     "Consider enabling use_secret_manager for better security."
@@ -820,7 +734,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         Returns:
             The Cloud Run service, or None if it doesn't exist.
         """
-        # Get location from the deployment metadata or use default
         existing_metadata = CloudRunDeploymentMetadata.from_deployment(
             deployment
         )
@@ -870,9 +783,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             metadata=metadata.model_dump(exclude_none=True),
         )
 
-        # Map Cloud Run service status to ZenML status
+        # This flag is set while the service is being reconciled
         if service.reconciling:
-            # This flag is set while the service is being reconciled
             state.status = DeploymentStatus.PENDING
         else:
             if (
@@ -902,20 +814,20 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     ) -> Tuple[str, str]:
         """Convert ResourceSettings to GCP Cloud Run resource format.
 
+        GCP Cloud Run CPU constraints:
+        - Fractional CPUs: 0.08 to < 1.0 (in increments of 0.01)
+        - Integer CPUs: 1, 2, 4, 6, or 8 (no fractional values allowed >= 1.0)
+
         Args:
             resource_settings: The resource settings from pipeline configuration.
 
         Returns:
             Tuple of (cpu, memory) in GCP Cloud Run format.
         """
-        # Convert CPU count to GCP format
         cpu = DEFAULT_CPU
         if resource_settings.cpu_count is not None:
             cpu_count = resource_settings.cpu_count
 
-            # GCP Cloud Run CPU constraints:
-            # - Fractional CPUs: 0.08 to < 1.0 (in increments of 0.01)
-            # - Integer CPUs: 1, 2, 4, 6, or 8 (no fractional values allowed >= 1.0)
             if cpu_count < 1.0:
                 # For values < 1.0, allow fractional CPUs
                 # Ensure minimum is 0.08 and round to 2 decimal places
@@ -923,7 +835,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 cpu = str(cpu_count)
             else:
                 # For values >= 1.0, round up to the nearest valid integer
-                # Valid values: 1, 2, 4, 6, 8
                 valid_cpu_values = [1, 2, 4, 6, 8]
                 rounded_cpu = math.ceil(cpu_count)
 
@@ -936,25 +847,21 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     # If requested CPU exceeds maximum, use maximum
                     cpu = str(valid_cpu_values[-1])
 
-        # Convert memory to GCP format with CPU validation
         memory = DEFAULT_MEMORY
         memory_value_gib = None
 
         if resource_settings.memory is not None:
-            # Get memory value in GiB for processing
             memory_value_gib = resource_settings.get_memory(unit="GiB")
 
-        # Validate and adjust memory based on CPU requirements before string conversion
         final_memory_gib = self._validate_memory_for_cpu(cpu, memory_value_gib)
 
-        # Convert final memory value to GCP format
         if final_memory_gib is not None:
             if final_memory_gib == int(final_memory_gib):
                 memory = f"{int(final_memory_gib)}Gi"
             else:
                 memory = f"{final_memory_gib:.1f}Gi"
 
-        return cpu, memory
+        return str(cpu), memory
 
     def _validate_memory_for_cpu(
         self, cpu: str, memory_gib: Optional[float]
@@ -976,10 +883,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             Adjusted memory allocation in GiB that meets minimum requirements, or None if no memory specified
         """
         if memory_gib is None:
-            # No memory specified, return None to use default
             return None
 
-        # Define minimum memory requirements per CPU (in GiB)
         min_memory_per_cpu_gib = {
             1: 0.125,  # 128 MiB = 0.125 GiB
             2: 0.125,  # 128 MiB = 0.125 GiB
@@ -989,20 +894,14 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         }
 
         # Handle fractional CPUs (< 1.0) - use minimum for 1 CPU
-        try:
-            cpu_float = float(cpu)
-            if cpu_float < 1.0:
-                cpu_int = 1
-            else:
-                cpu_int = int(cpu_float)
-        except (ValueError, TypeError):
-            # Fallback to 1 CPU if parsing fails
+        cpu_float = float(cpu)
+        if cpu_float < 1.0:
             cpu_int = 1
+        else:
+            cpu_int = int(cpu_float)
 
-        # Get minimum required memory for this CPU configuration
         required_memory_gib = min_memory_per_cpu_gib.get(cpu_int, 0.125)
 
-        # Return the maximum of current memory and required minimum
         return max(memory_gib, required_memory_gib)
 
     def _convert_scaling_settings_to_gcp_format(
@@ -1062,14 +961,14 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         Args:
             deployment: The deployment to serve.
-            stack: The stack the pipeline will be served on.
+            stack: The stack the pipeline will be deployed on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
             timeout: The maximum time in seconds to wait for the pipeline
-                deployment to be deployed.
+                deployment to be provisioned.
 
         Returns:
-            The operational state of the deployed deployment.
+            The operational state of the provisioned deployment.
 
         Raises:
             DeploymentProvisionError: If the deployment fails.
@@ -1078,9 +977,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         snapshot = deployment.snapshot
         assert snapshot, "Pipeline snapshot not found"
 
-        environment = environment or {}
-        secrets = secrets or {}
-
         settings = cast(
             GCPDeployerSettings,
             self.get_settings(snapshot),
@@ -1088,7 +984,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         resource_settings = snapshot.pipeline_configuration.resource_settings
 
-        # Convert ResourceSettings to GCP Cloud Run format with fallbacks
         cpu, memory = self._convert_resource_settings_to_gcp_format(
             resource_settings,
         )
@@ -1142,12 +1037,10 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                         f"deployment '{deployment.name}': {e}"
                     )
 
-        # Get the container image
         image = self.get_image(snapshot)
 
-        # Prepare entrypoint and arguments
-        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
-        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
@@ -1155,12 +1048,10 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             }
         )
 
-        # Prepare environment variables with proper secret handling
         env_vars, active_secrets = self._prepare_environment_variables(
             deployment, environment, secrets, settings, project_id
         )
 
-        # Prepare resource requirements
         resources = run_v2.ResourceRequirements(
             limits={
                 "cpu": cpu,
@@ -1168,18 +1059,15 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             }
         )
 
-        # Prepare scaling configuration
         scaling = run_v2.RevisionScaling(
             min_instance_count=min_instances,
             max_instance_count=max_instances,
         )
 
-        # Prepare VPC access if specified
         vpc_access = None
         if settings.vpc_connector:
             vpc_access = run_v2.VpcAccess(connector=settings.vpc_connector)
 
-        # Prepare container specification
         container = run_v2.Container(
             image=image,
             command=entrypoint,
@@ -1189,7 +1077,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             ports=[run_v2.ContainerPort(container_port=settings.port)],
         )
 
-        # Prepare revision template
         template = run_v2.RevisionTemplate(
             labels=settings.labels,
             annotations=settings.annotations,
@@ -1206,7 +1093,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             ),
         )
 
-        # Prepare traffic allocation
         traffic = []
         for revision, percent in settings.traffic_allocation.items():
             if revision == "LATEST":
@@ -1224,7 +1110,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     )
                 )
 
-        # Prepare ingress setting
         ingress_mapping = {
             "all": run_v2.IngressTraffic.INGRESS_TRAFFIC_ALL,
             "internal": run_v2.IngressTraffic.INGRESS_TRAFFIC_INTERNAL_ONLY,
@@ -1236,14 +1121,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         # Create the service (name should NOT be set for CreateServiceRequest)
         service = run_v2.Service(
-            labels={
-                **settings.labels,
-                "zenml-deployment-uuid": str(deployment.id),
-                "zenml-deployment-name": deployment.name,
-                "zenml-deployer-name": str(self.name),
-                "zenml-deployer-id": str(self.id),
-                "managed-by": "zenml",
-            },
+            labels=self.get_labels(deployment, settings),
             annotations=settings.annotations,
             template=template,
             traffic=traffic,
@@ -1252,7 +1130,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         )
 
         try:
-            # Check if service already exists
             existing_service = None
             try:
                 existing_service = self.cloud_run_client.get_service(
@@ -1262,7 +1139,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 pass
 
             if existing_service:
-                # Update existing service - need to set the name for updates
+                # Update existing service - need to set the name in the
+                # CreateServiceRequest for updates
                 service.name = service_path
                 logger.debug(
                     f"Updating existing Cloud Run service for pipeline "
@@ -1270,16 +1148,17 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 )
                 self.cloud_run_client.update_service(service=service)
             else:
-                # Create new service - name should NOT be set, use service_id instead
                 logger.debug(
                     f"Creating new Cloud Run service for deployment "
                     f"'{deployment.name}'"
                 )
                 parent = f"projects/{project_id}/locations/{settings.location}"
+                # Create new service - name must not be set in the
+                # CreateServiceRequest, using service_id instead
                 self.cloud_run_client.create_service(
                     parent=parent, service=service, service_id=service_name
                 )
-                # Add the name for the operational state
+                # Adding the name here for the operational state retrieval
                 service.name = service_path
 
             return self._get_service_operational_state(
@@ -1293,11 +1172,11 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deploying deployment "
+                f"Unexpected error while provisioning deployment "
                 f"'{deployment.name}': {e}"
             )
 
-    def do_get_deployment(
+    def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
     ) -> DeploymentOperationalState:
@@ -1341,7 +1220,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             existing_secrets,
         )
 
-    def do_get_deployment_logs(
+    def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
@@ -1362,7 +1241,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             DeploymentLogsNotFoundError: If the logs are not found.
             DeployerError: If an unexpected error occurs.
         """
-        # If follow is requested, we would need to implement streaming
         if follow:
             raise NotImplementedError(
                 "Log following is not yet implemented for Cloud Run deployer"
@@ -1390,13 +1268,11 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     settings.service_name_prefix,
                 )
 
-            # Build the filter for Cloud Run logs
             filter_str = (
                 'resource.type="cloud_run_revision" AND '
                 f'resource.labels.service_name="{service_name}"'
             )
 
-            # Get logs from Cloud Logging
             entries = self.logging_client.list_entries(filter_=filter_str)
 
             log_lines = []
@@ -1408,11 +1284,9 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                     log_line = f"[{timestamp}] {entry.payload}"
                     log_lines.append(log_line)
 
-            # Apply tail limit if specified
             if tail is not None and tail > 0:
                 log_lines = log_lines[-tail:]
 
-            # Yield logs
             for log_line in log_lines:
                 yield log_line
 
@@ -1480,17 +1354,9 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 f"Deleting Cloud Run service for deployment '{deployment.name}'"
             )
 
-            # Delete the service
-            operation = self.cloud_run_client.delete_service(name=service_path)
+            self.cloud_run_client.delete_service(name=service_path)
 
-            # Wait for the operation to complete
-            operation.result(timeout=300)  # 5 minutes timeout
-
-            # Clean up associated secrets
             self._cleanup_deployment_secrets(deployment)
-
-            # Return None to indicate immediate deletion
-            return None
 
         except google_exceptions.NotFound:
             raise DeploymentNotFoundError(
@@ -1498,9 +1364,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
         except google_exceptions.GoogleAPICallError as e:
             raise DeploymentDeprovisionError(
-                f"Failed to delete Cloud Run service for deployment '{deployment.name}': {e}"
+                f"Failed to delete Cloud Run service for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deleting deployment '{deployment.name}': {e}"
+                f"Unexpected error while deleting deployment "
+                f"'{deployment.name}': {e}"
             )
+
+        return self.do_get_deployment_state(deployment)

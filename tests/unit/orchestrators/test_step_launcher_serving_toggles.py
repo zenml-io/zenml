@@ -29,7 +29,7 @@ def test_step_operator_disabled_in_serving(monkeypatch: pytest.MonkeyPatch):
 
     # Stub utilities used inside _run_step and force serving mode active
     monkeypatch.setattr(
-        "zenml.deployers.serving.runtime.is_active",
+        "zenml.deployers.server.runtime.is_active",
         lambda: True,
     )
     monkeypatch.setattr(

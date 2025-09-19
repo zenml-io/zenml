@@ -85,9 +85,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.entrypoint_function_utils import (
-    StepArtifact,
-)
+from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import (
     code_repository_utils,
@@ -122,7 +120,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., None])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class Pipeline:
@@ -150,6 +148,7 @@ class Pipeline:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
+        on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
@@ -186,6 +185,7 @@ class Pipeline:
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
                 value, it will be stored as the pipeline state.
+            on_init_kwargs: Arguments for the init hook.
             on_cleanup: Callback function to run on cleanup of the pipeline. Can
                 be a function with no arguments, or a source path to such a
                 function with no arguments (e.g. `module.my_function`).
@@ -217,6 +217,7 @@ class Pipeline:
                 on_failure=on_failure,
                 on_success=on_success,
                 on_init=on_init,
+                on_init_kwargs=on_init_kwargs,
                 on_cleanup=on_cleanup,
                 model=model,
                 retry=retry,
@@ -226,6 +227,7 @@ class Pipeline:
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
+        self._output_artifacts: List[StepArtifact] = []
 
         self.__suppress_warnings_flag__ = False
 
@@ -412,8 +414,9 @@ class Pipeline:
             The pipeline instance that this method was called on.
 
         Raises:
-            ValueError: If the pipeline has parameters configured differently in
-                configuration file and code.
+            ValueError: If on_init_kwargs is provided but on_init is not and
+                the init hook source is found in the current pipeline
+                configuration.
         """
         failure_hook_source = None
         if on_failure:
@@ -569,9 +572,9 @@ class Pipeline:
             RuntimeError: If the pipeline has parameters configured differently in
                 configuration file and code.
         """
-        # Clear existing parameters and invocations
         self._parameters = {}
         self._invocations = {}
+        self._output_artifacts = []
 
         conflicting_parameters = {}
         parameters_ = (self.configuration.parameters or {}).copy()
@@ -1623,7 +1626,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             # TODO: This currently ignores the configuration of the pipeline
             #   and instead applies the configuration of the previously active
             #   pipeline. Is this what we want?
-            return self.entrypoint(*args, **kwargs)
+            return self.entrypoint(*args, **kwargs)  # type: ignore[no-any-return]
 
         self.prepare(*args, **kwargs)
         return self._run()
@@ -1654,7 +1657,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ) from e
 
         self._parameters = validated_args
-        self.entrypoint(**validated_args)
+        return_value = self.entrypoint(**validated_args)
+
+        output_artifacts = []
+        if isinstance(return_value, StepArtifact):
+            output_artifacts = [return_value]
+        elif isinstance(return_value, tuple):
+            for v in return_value:
+                if isinstance(v, StepArtifact):
+                    output_artifacts.append(v)
+                else:
+                    logger.debug(
+                        "Ignore pipeline output that is not a step artifact: %s",
+                        v,
+                    )
+
+        self._output_artifacts = output_artifacts
 
     def _prepare_if_possible(self) -> None:
         """Prepares the pipeline if possible.
@@ -1764,3 +1782,31 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
+
+    def _compute_output_schema(self) -> Dict[str, Any]:
+        """Computes the output schema for the pipeline.
+
+        Returns:
+            The output schema for the pipeline.
+        """
+
+        def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
+            return (
+                output_artifact.invocation_id.replace("-", "_")
+                + "-"
+                + output_artifact.output_name.replace("-", "_")
+            )
+
+        fields: Dict[str, Any] = {
+            _get_schema_output_name(output_artifact): (
+                output_artifact.annotation.resolved_annotation,
+                ...,
+            )
+            for output_artifact in self._output_artifacts
+        }
+        output_model_class: Type[BaseModel] = create_model(
+            "PipelineOutput",
+            __config__=ConfigDict(arbitrary_types_allowed=True),
+            **fields,
+        )
+        return output_model_class.model_json_schema(mode="serialization")

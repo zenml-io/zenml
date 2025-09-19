@@ -247,7 +247,7 @@ from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotResponseBody,
     PipelineSnapshotResponseMetadata,
     PipelineSnapshotResponseResources,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -721,7 +721,7 @@ __all__ = [
     "PipelineSnapshotResponseBody",
     "PipelineSnapshotResponseMetadata",
     "PipelineSnapshotResponseResources",
-    "PipelineSnapshotTriggerRequest",
+    "PipelineSnapshotRunRequest",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",

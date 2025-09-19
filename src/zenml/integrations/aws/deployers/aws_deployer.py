@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the AWS App Runner deployer."""
 
+import datetime
 import json
 import re
 from typing import (
@@ -42,10 +43,10 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
-from zenml.deployers.serving.entrypoint_configuration import (
+from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,
-    ServingEntrypointConfiguration,
+    DeploymentEntrypointConfiguration,
 )
 from zenml.entrypoints.base_entrypoint_configuration import (
     SNAPSHOT_ID_OPTION,
@@ -68,14 +69,13 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Default resource and scaling configuration constants
-# These are used when ResourceSettings are not provided in the pipeline configuration
 DEFAULT_CPU = "0.25 vCPU"
 DEFAULT_MEMORY = "0.5 GB"
 DEFAULT_MIN_SIZE = 1
 DEFAULT_MAX_SIZE = 25
 DEFAULT_MAX_CONCURRENCY = 100
 
-# AWS App Runner limits
+# AWS App Runner built-in limits
 AWS_APP_RUNNER_MAX_SIZE = 1000
 AWS_APP_RUNNER_MAX_CONCURRENCY = 1000
 
@@ -112,7 +112,6 @@ class AppRunnerDeploymentMetadata(BaseModel):
     health_check_healthy_threshold: Optional[int] = None
     health_check_unhealthy_threshold: Optional[int] = None
     tags: Optional[Dict[str, str]] = None
-    environment_variables: Optional[Dict[str, str]] = None
     traffic_allocation: Optional[Dict[str, int]] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
@@ -136,12 +135,10 @@ class AppRunnerDeploymentMetadata(BaseModel):
         Returns:
             The metadata for the App Runner service.
         """
-        # Extract instance configuration
         instance_config = service.get("InstanceConfiguration", {})
         cpu = instance_config.get("Cpu")
         memory = instance_config.get("Memory")
 
-        # Extract auto scaling configuration
         auto_scaling_config = service.get(
             "AutoScalingConfigurationSummary", {}
         )
@@ -154,7 +151,6 @@ class AppRunnerDeploymentMetadata(BaseModel):
         auto_scaling_max_size = auto_scaling_config.get("MaxSize")
         auto_scaling_min_size = auto_scaling_config.get("MinSize")
 
-        # Extract health check configuration
         health_check_config = service.get("HealthCheckConfiguration", {})
         health_check_grace_period = health_check_config.get(
             "HealthCheckGracePeriodSeconds"
@@ -170,28 +166,19 @@ class AppRunnerDeploymentMetadata(BaseModel):
             "UnhealthyThreshold"
         )
 
-        # Extract network configuration
         network_config = service.get("NetworkConfiguration", {})
         is_publicly_accessible = network_config.get(
             "IngressConfiguration", {}
         ).get("IsPubliclyAccessible")
 
-        # Extract source configuration and environment variables
         source_config = service.get("SourceConfiguration", {})
         image_repo = source_config.get("ImageRepository", {})
         image_config = image_repo.get("ImageConfiguration", {})
 
         port = None
-        env_vars = {}
         if image_config:
             port = image_config.get("Port")
-            runtime_env_vars = image_config.pop(
-                "RuntimeEnvironmentVariables", {}
-            )
-            env_vars = dict(runtime_env_vars) if runtime_env_vars else {}
-            # Note: We don't extract RuntimeEnvironmentSecrets for security reasons
 
-        # Extract traffic allocation
         traffic_allocation = {}
         traffic_config = service.get("TrafficConfiguration", [])
         for traffic in traffic_config:
@@ -243,7 +230,6 @@ class AppRunnerDeploymentMetadata(BaseModel):
             health_check_healthy_threshold=health_check_healthy_threshold,
             health_check_unhealthy_threshold=health_check_unhealthy_threshold,
             tags=dict(service.get("Tags", {})),
-            environment_variables=env_vars,
             traffic_allocation=traffic_allocation
             if traffic_allocation
             else None,
@@ -320,7 +306,6 @@ class AWSDeployer(ContainerizedDeployer):
         Raises:
             RuntimeError: If the service connector returns an unexpected type.
         """
-        # Check if we need to refresh the session (e.g., connector expired)
         if (
             self._boto_session is not None
             and self._region is not None
@@ -337,7 +322,6 @@ class AWSDeployer(ContainerizedDeployer):
                     f"linked connector, but got type `{type(boto_session)}`."
                 )
 
-            # Get region from the session
             region = boto_session.region_name
             if not region:
                 # Fallback to config region or default
@@ -345,6 +329,7 @@ class AWSDeployer(ContainerizedDeployer):
                 logger.warning(
                     f"No region found in boto3 session, using {region}"
                 )
+
         # Option 2: Implicit configuration
         else:
             boto_session = boto3.Session(region_name=self.config.region)
@@ -406,87 +391,110 @@ class AWSDeployer(ContainerizedDeployer):
         _, region = self._get_boto_session_and_region()
         return region
 
-    def _sanitize_app_runner_service_name(
-        self, name: str, random_suffix: str
-    ) -> str:
-        """Sanitize a name to comply with App Runner service naming requirements.
+    def get_tags(
+        self,
+        deployment: DeploymentResponse,
+        settings: AWSDeployerSettings,
+    ) -> List[Dict[str, str]]:
+        """Get the tags for a deployment to be used for AWS resources.
 
-        App Runner service name requirements:
-        - Length: 4-40 characters
-        - Characters: letters (a-z, A-Z), numbers (0-9), hyphens (-)
+        Args:
+            deployment: The deployment.
+            settings: The deployer settings.
+
+        Returns:
+            The tags for the deployment.
+        """
+        tags = {
+            **settings.tags,
+            "zenml-deployment-uuid": str(deployment.id),
+            "zenml-deployment-name": deployment.name,
+            "zenml-deployer-name": str(self.name),
+            "zenml-deployer-id": str(self.id),
+            "managed-by": "zenml",
+        }
+
+        return [{"Key": k, "Value": v} for k, v in tags.items()]
+
+    def _sanitize_name(
+        self,
+        name: str,
+        random_suffix: str,
+        max_length: int = 32,
+        extra_allowed_characters: str = "-_",
+    ) -> str:
+        """Sanitize a name to comply with AWS naming requirements.
+
+        Common AWS naming requirements:
+        - Length: 4-max_length characters
+        - Characters: letters (a-z, A-Z), numbers (0-9), configured extra
+        allowed characters (e.g. dashes and underscores)
         - Must start and end with a letter or number
-        - Cannot contain consecutive hyphens
+        - Cannot contain consecutive extra_allowed_characters
 
         Args:
             name: The raw name to sanitize.
             random_suffix: A random suffix to add to the name to ensure
-                uniqueness. Assumed to be valid.
+                uniqueness.
+            max_length: The maximum length of the name.
+            extra_allowed_characters: Extra allowed characters in the name.
 
         Returns:
-            A sanitized name that complies with App Runner requirements.
+            A sanitized name that complies with AWS requirements.
 
         Raises:
             RuntimeError: If the random suffix is invalid.
             ValueError: If the service name is invalid.
         """
-        # Validate the random suffix
-        if not re.match(r"^[a-zA-Z0-9-]+$", random_suffix):
+        if (
+            not re.match(r"^[a-zA-Z0-9]+$", random_suffix)
+            or len(random_suffix) < 4
+        ):
             raise RuntimeError(
                 f"Invalid random suffix: {random_suffix}. Must contain only "
-                "letters, numbers, and hyphens."
+                "letters and numbers and be at least 4 characters long."
             )
 
-        # Replace all disallowed characters with hyphens
-        sanitized = re.sub(r"[^a-zA-Z0-9-]", "-", name)
+        # Use the first extra allowed character as the separator
+        separator = extra_allowed_characters[0]
 
-        # Remove consecutive hyphens
-        sanitized = re.sub(r"-+", "-", sanitized)
+        # Replace all disallowed characters with the separator
+        sanitized = re.sub(
+            rf"[^a-zA-Z0-9{extra_allowed_characters}]",
+            separator,
+            name,
+        )
 
-        # Ensure it starts and ends with alphanumeric
-        sanitized = sanitized.strip("-")
-
-        # Ensure it starts with a letter or number
-        if not sanitized or not sanitized[0].isalnum():
-            raise ValueError(
-                f"Invalid service name: {name}. Must start with a letter or number."
+        # Remove consecutive extra allowed characters
+        for char in extra_allowed_characters:
+            sanitized = re.sub(
+                rf"[{char}]+",
+                char,
+                sanitized,
             )
 
-        # Ensure it ends with a letter or number
-        if not sanitized[-1].isalnum():
-            sanitized = sanitized.rstrip("-")
+        # Truncate to fit within max_length character limit including suffix
+        max_base_length = (
+            max_length - len(random_suffix) - 1
+        )  # -1 for the separator
+        if len(sanitized) > max_base_length:
+            sanitized = sanitized[:max_base_length]
+
+        # Ensure it starts and ends with alphanumeric characters
+        sanitized = re.sub(
+            r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$",
+            "",
+            sanitized,
+        )
 
         # Ensure we have at least one character after cleanup
         if not sanitized:
             raise ValueError(
-                f"Invalid service name: {name}. Must contain valid characters."
+                f"Invalid name: {name}. Must contain at least one "
+                "alphanumeric character."
             )
 
-        # Truncate to fit within 40 character limit including suffix
-        max_base_length = 40 - len(random_suffix) - 1  # -1 for the hyphen
-        if len(sanitized) > max_base_length:
-            sanitized = sanitized[:max_base_length]
-            # Make sure we don't end with a hyphen after truncation
-            sanitized = sanitized.rstrip("-")
-
-        # Final safety check
-        if (
-            not sanitized
-            or not sanitized[0].isalnum()
-            or not sanitized[-1].isalnum()
-        ):
-            raise ValueError(
-                f"Invalid service name: {name}. Must start and end with alphanumeric characters."
-            )
-
-        final_name = f"{sanitized}-{random_suffix}"
-
-        # Ensure final name meets length requirements (4-40 characters)
-        if len(final_name) < 4 or len(final_name) > 40:
-            raise ValueError(
-                f"Service name '{final_name}' must be between 4-40 characters."
-            )
-
-        return final_name
+        return f"{sanitized}{separator}{random_suffix}"
 
     def _get_service_name(
         self, deployment_name: str, deployment_id: UUID, prefix: str
@@ -499,127 +507,20 @@ class AWSDeployer(ContainerizedDeployer):
             prefix: The prefix to use for the service name.
 
         Returns:
-            The App Runner service name that complies with all naming requirements.
+            The App Runner service name that complies with all naming
+            requirements.
         """
-        # Create a base name with deployment name and ID for uniqueness
-        # Use first 8 characters of UUID to keep names manageable
+        # We use the first 8 characters of the deployment UUID as a random
+        # suffix to ensure uniqueness.
         deployment_id_short = str(deployment_id)[:8]
         raw_name = f"{prefix}{deployment_name}"
 
-        return self._sanitize_app_runner_service_name(
-            raw_name, deployment_id_short
+        return self._sanitize_name(
+            raw_name,
+            random_suffix=deployment_id_short,
+            max_length=40,
+            extra_allowed_characters="-_",
         )
-
-    def _sanitize_auto_scaling_config_name(self, name: str) -> str:
-        """Sanitize a name to comply with App Runner AutoScalingConfiguration naming requirements.
-
-        AutoScalingConfiguration name requirements:
-        - Length: 4-32 characters
-        - Characters: letters (a-z, A-Z), numbers (0-9), hyphens (-)
-        - Must start with a letter or number
-        - Cannot end with a hyphen
-        - Must be unique per region and account
-
-        Args:
-            name: The raw name to sanitize.
-
-        Returns:
-            A sanitized name that complies with AutoScalingConfiguration requirements.
-
-        Raises:
-            ValueError: If the name cannot be sanitized to meet requirements.
-        """
-        # Remove invalid characters, keep letters, numbers, hyphens
-        sanitized = re.sub(r"[^a-zA-Z0-9-]", "-", name)
-
-        # Remove consecutive hyphens
-        sanitized = re.sub(r"-+", "-", sanitized)
-
-        # Ensure it starts with a letter or number
-        if not sanitized or not (sanitized[0].isalnum()):
-            raise ValueError(
-                f"Invalid auto-scaling config name: {name}. Must start with a letter or number."
-            )
-
-        # Remove trailing hyphens
-        sanitized = sanitized.rstrip("-")
-
-        # Ensure we have at least one character after cleanup
-        if not sanitized:
-            raise ValueError(
-                f"Invalid auto-scaling config name: {name}. Must start with a letter or number."
-            )
-
-        # Truncate to 32 characters (AutoScalingConfiguration limit)
-        if len(sanitized) > 32:
-            sanitized = sanitized[:32]
-            # Make sure we don't end with a hyphen after truncation
-            sanitized = sanitized.rstrip("-")
-
-        # Final safety check - ensure minimum length of 4
-        if len(sanitized) < 4:
-            # Pad with deployment ID prefix if too short
-            sanitized = f"zenml-{sanitized}"[:32].rstrip("-")
-
-        return sanitized
-
-    def _sanitize_secret_name(self, name: str, random_suffix: str) -> str:
-        """Sanitize a name to comply with Secrets Manager naming requirements.
-
-        Secrets Manager secret name requirements:
-        - Length: 1-512 characters
-        - Characters: letters, numbers, hyphens, underscores, periods, forward slashes
-        - Cannot start or end with forward slash
-        - Cannot contain consecutive forward slashes
-
-        Args:
-            name: The raw name to sanitize.
-            random_suffix: A random suffix to add to the name to ensure
-                uniqueness.
-
-        Returns:
-            A sanitized name that complies with Secrets Manager requirements.
-
-        Raises:
-            RuntimeError: If the random suffix is invalid.
-            ValueError: If the secret name is invalid.
-        """
-        # Validate the random suffix
-        if not re.match(r"^[a-zA-Z0-9_-]+$", random_suffix):
-            raise RuntimeError(
-                f"Invalid random suffix: {random_suffix}. Must contain only "
-                "letters, numbers, hyphens, and underscores."
-            )
-
-        # Replace disallowed characters with underscores
-        sanitized = re.sub(r"[^a-zA-Z0-9_.-/]", "_", name)
-
-        # Remove consecutive forward slashes
-        sanitized = re.sub(r"/+", "/", sanitized)
-
-        # Remove leading and trailing forward slashes
-        sanitized = sanitized.strip("/")
-
-        # Ensure we have at least one character after cleanup
-        if not sanitized:
-            raise ValueError(
-                f"Invalid secret name: {name}. Must contain valid characters."
-            )
-
-        # Truncate to fit within 512 character limit including suffix
-        max_base_length = 512 - len(random_suffix) - 1  # -1 for the underscore
-        if len(sanitized) > max_base_length:
-            sanitized = sanitized[:max_base_length]
-            # Remove trailing forward slashes after truncation
-            sanitized = sanitized.rstrip("/")
-
-        # Final safety check
-        if not sanitized:
-            raise ValueError(
-                f"Invalid secret name: {name}. Must contain valid characters."
-            )
-
-        return f"{sanitized}_{random_suffix}"
 
     def _get_secret_name(
         self,
@@ -637,17 +538,24 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             The Secrets Manager secret name.
         """
-        # Create a unique secret name with prefix and deployment info
+        # We use the first 8 characters of the deployment UUID as a random
+        # suffix to ensure uniqueness.
         deployment_id_short = str(deployment_id)[:8]
         raw_name = f"{prefix}{deployment_name}"
 
-        return self._sanitize_secret_name(raw_name, deployment_id_short)
+        return self._sanitize_name(
+            raw_name,
+            random_suffix=deployment_id_short,
+            max_length=512,
+            extra_allowed_characters="-_./",
+        )
 
     def _create_or_update_secret(
         self,
         secret_name: str,
         secret_value: str,
         deployment: DeploymentResponse,
+        settings: AWSDeployerSettings,
     ) -> str:
         """Create or update a secret in Secrets Manager.
 
@@ -655,6 +563,7 @@ class AWSDeployer(ContainerizedDeployer):
             secret_name: The name of the secret.
             secret_value: The value to store.
             deployment: The deployment.
+            settings: The deployer settings.
 
         Returns:
             The secret ARN.
@@ -664,41 +573,22 @@ class AWSDeployer(ContainerizedDeployer):
             DeployerError: If secret creation/update fails.
         """
         try:
-            # Try to update existing secret
             try:
                 response = self.secrets_manager_client.update_secret(
                     SecretId=secret_name,
                     SecretString=secret_value,
+                    Tags=self.get_tags(deployment, settings),
                 )
                 logger.debug(f"Updated existing secret {secret_name}")
                 return response["ARN"]  # type: ignore[no-any-return]
             except ClientError as e:
                 if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                    # Create new secret
                     logger.debug(f"Creating new secret {secret_name}")
                     response = self.secrets_manager_client.create_secret(
                         Name=secret_name,
                         SecretString=secret_value,
                         Description=f"ZenML deployment secret for {deployment.name}",
-                        Tags=[
-                            {
-                                "Key": "zenml-deployment-uuid",
-                                "Value": str(deployment.id),
-                            },
-                            {
-                                "Key": "zenml-deployment-name",
-                                "Value": deployment.name,
-                            },
-                            {
-                                "Key": "zenml-deployer-name",
-                                "Value": str(self.name),
-                            },
-                            {
-                                "Key": "zenml-deployer-id",
-                                "Value": str(self.id),
-                            },
-                            {"Key": "managed-by", "Value": "zenml"},
-                        ],
+                        Tags=self.get_tags(deployment, settings),
                     )
                     logger.debug(f"Created new secret {secret_name}")
                     return response["ARN"]  # type: ignore[no-any-return]
@@ -726,7 +616,6 @@ class AWSDeployer(ContainerizedDeployer):
             return None
 
         try:
-            # Verify the secret still exists
             self.secrets_manager_client.describe_secret(
                 SecretId=metadata.secret_arn
             )
@@ -774,20 +663,26 @@ class AWSDeployer(ContainerizedDeployer):
     def _get_auto_scaling_config_name(
         self, deployment_name: str, deployment_id: UUID
     ) -> str:
-        """Get the AutoScalingConfiguration name for a deployment.
+        """Get the auto-scaling configuration name for a deployment.
 
         Args:
             deployment_name: The deployment name.
             deployment_id: The deployment ID.
 
         Returns:
-            The AutoScalingConfiguration name.
+            The auto-scaling configuration name.
         """
-        # Use first 8 characters of UUID to keep names manageable
+        # We use the first 8 characters of the deployment UUID as a random
+        # suffix to ensure uniqueness.
         deployment_id_short = str(deployment_id)[:8]
         raw_name = f"zenml-{deployment_name}-{deployment_id_short}"
 
-        return self._sanitize_auto_scaling_config_name(raw_name)
+        return self._sanitize_name(
+            raw_name,
+            random_suffix=deployment_id_short,
+            max_length=32,
+            extra_allowed_characters="-_",
+        )
 
     def _create_or_update_auto_scaling_config(
         self,
@@ -796,8 +691,9 @@ class AWSDeployer(ContainerizedDeployer):
         max_size: int,
         max_concurrency: int,
         deployment: DeploymentResponse,
+        settings: AWSDeployerSettings,
     ) -> str:
-        """Create or update an AutoScalingConfiguration for App Runner.
+        """Create or update an auto-scaling configuration for App Runner.
 
         Args:
             config_name: The name for the auto-scaling configuration.
@@ -805,6 +701,7 @@ class AWSDeployer(ContainerizedDeployer):
             max_size: Maximum number of instances.
             max_concurrency: Maximum concurrent requests per instance.
             deployment: The deployment.
+            settings: The deployer settings.
 
         Returns:
             The ARN of the created/updated auto-scaling configuration.
@@ -814,42 +711,31 @@ class AWSDeployer(ContainerizedDeployer):
             DeployerError: If auto-scaling configuration creation/update fails.
         """
         try:
-            # Prepare tags for the auto-scaling configuration
-            tags = [
-                {
-                    "Key": "zenml-deployment-uuid",
-                    "Value": str(deployment.id),
-                },
-                {
-                    "Key": "zenml-deployment-name",
-                    "Value": deployment.name,
-                },
-                {"Key": "zenml-deployer-name", "Value": str(self.name)},
-                {"Key": "zenml-deployer-id", "Value": str(self.id)},
-                {"Key": "managed-by", "Value": "zenml"},
-            ]
-
-            # Check if we have an existing auto-scaling configuration ARN from metadata
-            existing_arn = self._get_auto_scaling_config_arn(deployment)
+            metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
+            existing_arn = metadata.auto_scaling_configuration_arn
 
             if existing_arn:
-                # Try to get existing configuration by ARN
                 try:
                     response = self.app_runner_client.describe_auto_scaling_configuration(
                         AutoScalingConfigurationArn=existing_arn
                     )
                     existing_config = response["AutoScalingConfiguration"]
 
-                    # Check if update is needed
                     if (
                         existing_config["MaxConcurrency"] == max_concurrency
                         and existing_config["MaxSize"] == max_size
                         and existing_config["MinSize"] == min_size
                     ):
                         logger.debug(
-                            f"Auto-scaling configuration {existing_arn} is up to date"
+                            f"Auto-scaling configuration {existing_arn} is up "
+                            "to date"
                         )
                         return existing_arn
+
+                    logger.debug(
+                        f"Auto-scaling configuration {existing_arn} is out of "
+                        "date, updating it"
+                    )
 
                 except ClientError as e:
                     if (
@@ -857,20 +743,27 @@ class AWSDeployer(ContainerizedDeployer):
                         != "InvalidRequestException"
                     ):
                         raise
-                    # ARN is invalid or configuration was deleted, we'll create a new one
                     logger.debug(
-                        f"Existing auto-scaling configuration {existing_arn} not found, creating new one"
+                        f"Existing auto-scaling configuration {existing_arn} "
+                        "not found, creating new one"
                     )
+            else:
+                logger.debug(
+                    f"Creating auto-scaling configuration {config_name}"
+                )
 
-            # Create new auto-scaling configuration
-            logger.debug(f"Creating auto-scaling configuration {config_name}")
+            # The create_auto_scaling_configuration call is used to both create
+            # a new auto-scaling configuration and update an existing one.
+            # It is possible to create multiple revisions of the same
+            # configuration by calling create_auto_scaling_configuration
+            # multiple times using the same AutoScalingConfigurationName.
             response = (
                 self.app_runner_client.create_auto_scaling_configuration(
                     AutoScalingConfigurationName=config_name,
                     MaxConcurrency=max_concurrency,
                     MaxSize=max_size,
                     MinSize=min_size,
-                    Tags=tags,
+                    Tags=self.get_tags(deployment, settings),
                 )
             )
 
@@ -880,25 +773,9 @@ class AWSDeployer(ContainerizedDeployer):
 
         except (ClientError, BotoCoreError) as e:
             raise DeployerError(
-                f"Failed to create/update auto-scaling configuration {config_name}: {e}"
+                f"Failed to create/update auto-scaling configuration "
+                f"{config_name}: {e}"
             )
-
-    def _get_auto_scaling_config_arn(
-        self, deployment: DeploymentResponse
-    ) -> Optional[str]:
-        """Get the existing auto-scaling configuration ARN for a deployment.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            The auto-scaling configuration ARN if it exists, None otherwise.
-        """
-        try:
-            metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
-            return metadata.auto_scaling_configuration_arn
-        except Exception:
-            return None
 
     def _cleanup_deployment_auto_scaling_config(
         self, deployment: DeploymentResponse
@@ -908,29 +785,32 @@ class AWSDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment.
         """
-        config_arn = self._get_auto_scaling_config_arn(deployment)
+        metadata = AppRunnerDeploymentMetadata.from_deployment(deployment)
+        config_arn = metadata.auto_scaling_configuration_arn
+        if not config_arn:
+            return
 
-        if config_arn:
-            try:
+        try:
+            logger.debug(f"Deleting auto-scaling configuration {config_arn}")
+            self.app_runner_client.delete_auto_scaling_configuration(
+                AutoScalingConfigurationArn=config_arn
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 logger.debug(
-                    f"Deleting auto-scaling configuration {config_arn}"
+                    f"Auto-scaling configuration {config_arn} not found, "
+                    "skipping deletion"
                 )
-                self.app_runner_client.delete_auto_scaling_configuration(
-                    AutoScalingConfigurationArn=config_arn
-                )
-            except ClientError as e:
-                if e.response["Error"]["Code"] == "ResourceNotFoundException":
-                    logger.debug(
-                        f"Auto-scaling configuration {config_arn} not found, skipping deletion"
-                    )
-                else:
-                    logger.warning(
-                        f"Failed to delete auto-scaling configuration {config_arn}: {e}"
-                    )
-            except Exception as e:
+            else:
                 logger.warning(
-                    f"Failed to delete auto-scaling configuration {config_arn}: {e}"
+                    f"Failed to delete auto-scaling configuration {config_arn}: "
+                    f"{e}"
                 )
+        except Exception as e:
+            logger.warning(
+                f"Failed to delete auto-scaling configuration {config_arn}: "
+                f"{e}"
+            )
 
     def _prepare_environment_variables(
         self,
@@ -953,35 +833,29 @@ class AWSDeployer(ContainerizedDeployer):
             - Dictionary of secret environment variables (key -> secret ARN).
             - Optional secret ARN (None if no secrets or fallback to env vars).
         """
-        env_vars = {}
         secret_refs = {}
         active_secret_arn: Optional[str] = None
 
-        # Handle regular environment variables
-        merged_env = {**settings.environment_variables, **environment}
-        env_vars.update(merged_env)
+        env_vars = {**settings.environment_variables, **environment}
 
-        # Handle secrets
         if secrets:
             if settings.use_secrets_manager:
-                # Always store secrets as single JSON secret and reference keys
-                # This approach works for both single and multiple secrets
+                # Always store secrets as single JSON secret and reference their
+                # keys in the App Runner service configuration environment
+                # variables.
 
                 secret_name = self._get_secret_name(
                     deployment.name, deployment.id, settings.secret_name_prefix
                 )
 
                 try:
-                    # Create or update the secret with JSON value
                     secret_value = json.dumps(secrets)
                     secret_arn = self._create_or_update_secret(
-                        secret_name, secret_value, deployment
+                        secret_name, secret_value, deployment, settings
                     )
                     active_secret_arn = secret_arn
 
-                    # Reference individual keys from the combined secret
                     for key in secrets.keys():
-                        # App Runner format: secret-arn:key::
                         secret_refs[key] = f"{secret_arn}:{key}::"
 
                     logger.debug(
@@ -994,18 +868,18 @@ class AWSDeployer(ContainerizedDeployer):
                         f"Failed to create secret, falling back "
                         f"to direct env vars: {e}"
                     )
-                    # Fallback to direct environment variables
                     env_vars.update(secrets)
 
-                # Clean up old secret if it's different from the current one
                 existing_secret_arn = self._get_secret_arn(deployment)
                 if (
                     existing_secret_arn
                     and existing_secret_arn != active_secret_arn
                 ):
+                    # Sometimes the previous secret resource is different from
+                    # the new secret resource, e.g. if the secret name changed.
+                    # In this case, we need to delete the old secret resource.
                     self._delete_secret(existing_secret_arn)
             else:
-                # Store secrets directly as environment variables (less secure)
                 logger.warning(
                     "Storing secrets directly in environment variables. "
                     "Consider enabling use_secrets_manager for better security."
@@ -1028,7 +902,6 @@ class AWSDeployer(ContainerizedDeployer):
         Raises:
             ClientError: If the App Runner service cannot be described.
         """
-        # Get service ARN from the deployment metadata
         existing_metadata = AppRunnerDeploymentMetadata.from_deployment(
             deployment
         )
@@ -1111,8 +984,15 @@ class AWSDeployer(ContainerizedDeployer):
         """Check if the service configuration requires replacement.
 
         App Runner only requires service replacement for fundamental service-level
-        changes that cannot be handled through revisions. Most configuration changes
-        (image, resources, environment, scaling) can be handled as updates.
+        changes that cannot be handled through revisions:
+
+        - Network access configuration
+        - VPC configuration
+        - Encryption configuration
+        - Observability configuration
+
+        All other configuration changes (image, resources, environment, scaling)
+        can be handled as updates.
 
         Args:
             existing_service: The existing App Runner service.
@@ -1121,21 +1001,18 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             True if the service needs to be replaced, False if it can be updated.
         """
-        # Check if network access configuration changed (requires replacement)
         network_config = existing_service.get("NetworkConfiguration", {})
         ingress_config = network_config.get("IngressConfiguration", {})
         current_public_access = ingress_config.get("IsPubliclyAccessible")
         if current_public_access != settings.is_publicly_accessible:
             return True
 
-        # Check if VPC configuration changed (requires replacement)
         current_vpc_config = network_config.get("EgressConfiguration", {})
         has_current_vpc = bool(current_vpc_config.get("VpcConnectorArn"))
         will_have_vpc = bool(settings.ingress_vpc_configuration)
         if has_current_vpc != will_have_vpc:
             return True
 
-        # Check if encryption configuration changed (requires replacement)
         current_encryption = existing_service.get(
             "EncryptionConfiguration", {}
         )
@@ -1143,8 +1020,6 @@ class AWSDeployer(ContainerizedDeployer):
         if current_kms_key != settings.encryption_kms_key:
             return True
 
-        # Everything else (image, CPU, memory, scaling, env vars, etc.)
-        # can be handled as service updates with new revisions
         return False
 
     def _convert_resource_settings_to_aws_format(
@@ -1162,13 +1037,11 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             Tuple of (cpu, memory) in AWS App Runner format.
         """
-        # Get requested resources
         requested_cpu = resource_settings.cpu_count
         requested_memory_gb = None
         if resource_settings.memory is not None:
             requested_memory_gb = resource_settings.get_memory(unit="GB")
 
-        # Select the best CPU-memory combination
         cpu, memory = self._select_aws_cpu_memory_combination(
             requested_cpu, requested_memory_gb
         )
@@ -1189,6 +1062,8 @@ class AWSDeployer(ContainerizedDeployer):
         - 2 vCPU: 4 GB, 6 GB
         - 4 vCPU: 8 GB, 10 GB, 12 GB
 
+        This method selects the best combination that meets the requirements.
+
         Args:
             requested_cpu: Requested CPU count (can be None)
             requested_memory_gb: Requested memory in GB (can be None)
@@ -1196,7 +1071,6 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             Tuple of (cpu, memory) that best matches requirements
         """
-        # Define valid AWS App Runner combinations (CPU -> [valid memory options])
         valid_combinations = [
             # (cpu_value, cpu_string, memory_value, memory_string)
             (0.25, "0.25 vCPU", 0.5, "0.5 GB"),
@@ -1212,16 +1086,13 @@ class AWSDeployer(ContainerizedDeployer):
             (4.0, "4 vCPU", 12.0, "12 GB"),
         ]
 
-        # If no specific requirements, use default
         if requested_cpu is None and requested_memory_gb is None:
             return DEFAULT_CPU, DEFAULT_MEMORY
 
-        # Find the best combination that satisfies both CPU and memory requirements
         best_combination = None
         best_score = float("inf")  # Lower is better
 
         for cpu_val, cpu_str, mem_val, mem_str in valid_combinations:
-            # Check if this combination meets the requirements
             cpu_ok = requested_cpu is None or cpu_val >= requested_cpu
             mem_ok = (
                 requested_memory_gb is None or mem_val >= requested_memory_gb
@@ -1247,7 +1118,6 @@ class AWSDeployer(ContainerizedDeployer):
 
         # If no combination satisfies requirements, use the highest available
         if best_combination is None:
-            # Use the maximum available combination
             return "4 vCPU", "12 GB"
 
         return best_combination
@@ -1302,24 +1172,23 @@ class AWSDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment to serve.
-            stack: The stack the pipeline will be served on.
+            stack: The stack the pipeline will be deployed on.
             environment: Environment variables to set.
             secrets: Secret environment variables to set.
             timeout: The maximum time in seconds to wait for the pipeline
-                deployment to be deployed.
+                deployment to be provisioned.
 
         Returns:
-            The operational state of the deployed deployment.
+            The operational state of the provisioned deployment.
 
         Raises:
             DeploymentProvisionError: If the deployment fails.
+            DeploymentDeprovisionError: If the previous deployment fails to
+                deprovision.
             DeployerError: If an unexpected error occurs.
         """
         snapshot = deployment.snapshot
         assert snapshot, "Pipeline snapshot not found"
-
-        environment = environment or {}
-        secrets = secrets or {}
 
         settings = cast(
             AWSDeployerSettings,
@@ -1328,7 +1197,6 @@ class AWSDeployer(ContainerizedDeployer):
 
         resource_settings = snapshot.pipeline_configuration.resource_settings
 
-        # Convert ResourceSettings to AWS App Runner format with fallbacks
         cpu, memory = self._convert_resource_settings_to_aws_format(
             resource_settings,
         )
@@ -1344,7 +1212,6 @@ class AWSDeployer(ContainerizedDeployer):
             deployment.name, deployment.id, settings.service_name_prefix
         )
 
-        # Check if service already exists and if replacement is needed
         existing_service = self._get_app_runner_service(deployment)
         image = self.get_image(snapshot)
         region = self.region
@@ -1352,7 +1219,6 @@ class AWSDeployer(ContainerizedDeployer):
         if existing_service and self._requires_service_replacement(
             existing_service, settings
         ):
-            # Delete existing service before creating new one
             try:
                 self.do_deprovision_deployment(deployment, timeout)
             except DeploymentNotFoundError:
@@ -1361,15 +1227,18 @@ class AWSDeployer(ContainerizedDeployer):
                     f"skipping deprovision of existing App Runner service"
                 )
             except DeployerError as e:
-                logger.warning(
+                raise DeploymentDeprovisionError(
                     f"Failed to deprovision existing App Runner service for "
-                    f"deployment '{deployment.name}': {e}"
+                    f"deployment '{deployment.name}': {e}\n"
+                    "Bailing out to avoid leaving orphaned resources."
+                    "You might need to manually delete the existing App Runner "
+                    "service instance to continue or forcefully delete the "
+                    "deployment."
                 )
             existing_service = None
 
-        # Prepare entrypoint and arguments
-        entrypoint = ServingEntrypointConfiguration.get_entrypoint_command()
-        arguments = ServingEntrypointConfiguration.get_entrypoint_arguments(
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 SNAPSHOT_ID_OPTION: snapshot.id,
                 PORT_OPTION: settings.port,
@@ -1377,37 +1246,37 @@ class AWSDeployer(ContainerizedDeployer):
             }
         )
 
-        # Prepare environment variables with proper secret handling
         env_vars, secret_refs, active_secret_arn = (
             self._prepare_environment_variables(
                 deployment, environment, secrets, settings
             )
         )
 
-        # Determine the image repository type based on the image URI
+        # AWS App Runner only supports ECR repositories.
         if "public.ecr.aws" in image:
             image_repo_type = "ECR_PUBLIC"
         elif "amazonaws.com" in image:
             image_repo_type = "ECR"
         else:
-            # For other registries, we might need to handle differently
             image_repo_type = "ECR_PUBLIC"  # Default fallback
+            logger.warning(
+                "App Runner only supports ECR and ECR public repositories and "
+                f"the container image '{image}' does not appear to be hosted on "
+                "either of them. Proceeding with the deployment, but be warned "
+                "that the App Runner service will probably fail."
+            )
 
-        # Build the image configuration
         image_config: Dict[str, Any] = {
             "Port": str(settings.port),
             "StartCommand": " ".join(entrypoint + arguments),
         }
 
-        # Add regular environment variables if any
         if env_vars:
             image_config["RuntimeEnvironmentVariables"] = env_vars
 
-        # Add secret references if any
         if secret_refs:
             image_config["RuntimeEnvironmentSecrets"] = secret_refs
 
-        # Build the source configuration
         image_repository_config = {
             "ImageIdentifier": image,
             "ImageConfiguration": image_config,
@@ -1421,38 +1290,35 @@ class AWSDeployer(ContainerizedDeployer):
             "AutoDeploymentsEnabled": False,
         }
 
-        # Add authentication configuration if access role is specified (required for private ECR)
         if settings.access_role_arn:
             source_configuration["AuthenticationConfiguration"] = {
                 "AccessRoleArn": settings.access_role_arn
             }
         elif image_repo_type == "ECR":
-            # Private ECR without explicit access role - warn user
             logger.warning(
                 "Using private ECR repository without explicit access_role_arn. "
-                "Ensure the default App Runner service role has ECR access permissions, "
-                "or specify access_role_arn in deployer settings."
+                "Ensure the default App Runner service role has permissions to "
+                f"pull the '{image}' image from the repository, or specify "
+                "access_role_arn in deployer settings."
             )
 
         instance_configuration = {
             "Cpu": cpu,
             "Memory": memory,
         }
-        # Only add InstanceRoleArn if it's actually provided
         if settings.instance_role_arn:
             instance_configuration["InstanceRoleArn"] = (
                 settings.instance_role_arn
             )
         elif secret_refs:
-            # If we're using secrets but no explicit role is provided,
-            # App Runner will use the default service role which needs
-            # secretsmanager:GetSecretValue permissions for the secret
             logger.warning(
-                "Using secrets without explicit instance role. Ensure the default "
-                "App Runner service role has secretsmanager:GetSecretValue permissions."
+                "Storing secrets in AWS Secrets Manager is enabled but no "
+                "explicit instance role is provided. Ensure the default "
+                "App Runner service role has secretsmanager:GetSecretValue "
+                "permissions, provide an explicit instance role or disable "
+                "'use_secrets_manager' in deployer settings."
             )
 
-        # Create or get auto-scaling configuration
         auto_scaling_config_name = self._get_auto_scaling_config_name(
             deployment.name, deployment.id
         )
@@ -1462,6 +1328,7 @@ class AWSDeployer(ContainerizedDeployer):
             max_size,
             max_concurrency,
             deployment,
+            settings,
         )
 
         health_check_configuration = {
@@ -1472,7 +1339,6 @@ class AWSDeployer(ContainerizedDeployer):
             "UnhealthyThreshold": settings.health_check_unhealthy_threshold,
         }
 
-        # Only add Path for HTTP health checks
         if settings.health_check_protocol.upper() == "HTTP":
             health_check_configuration["Path"] = settings.health_check_path
 
@@ -1482,7 +1348,6 @@ class AWSDeployer(ContainerizedDeployer):
             }
         }
 
-        # Prepare traffic allocation for App Runner
         traffic_configurations = []
         for revision, percent in settings.traffic_allocation.items():
             if revision == "LATEST":
@@ -1493,7 +1358,6 @@ class AWSDeployer(ContainerizedDeployer):
                     }
                 )
             else:
-                # Check if it's a tag or revision name
                 if revision.startswith("tag:"):
                     traffic_configurations.append(
                         {
@@ -1509,21 +1373,18 @@ class AWSDeployer(ContainerizedDeployer):
                         }
                     )
 
-        # Add VPC configuration if specified
         if settings.ingress_vpc_configuration:
             vpc_config = json.loads(settings.ingress_vpc_configuration)
             network_configuration["IngressConfiguration"][
                 "VpcIngressConnectionConfiguration"
             ] = vpc_config
 
-        # Add encryption configuration if specified
         encryption_configuration = None
         if settings.encryption_kms_key:
             encryption_configuration = {
                 "KmsKey": settings.encryption_kms_key,
             }
 
-        # Add observability configuration if specified
         observability_configuration = None
         if settings.observability_configuration_arn:
             observability_configuration = {
@@ -1531,22 +1392,10 @@ class AWSDeployer(ContainerizedDeployer):
                 "ObservabilityConfigurationArn": settings.observability_configuration_arn,
             }
 
-        # Prepare tags
-        service_tags = [
-            {"Key": "zenml-deployment-uuid", "Value": str(deployment.id)},
-            {"Key": "zenml-deployment-name", "Value": deployment.name},
-            {"Key": "zenml-deployer-name", "Value": str(self.name)},
-            {"Key": "zenml-deployer-id", "Value": str(self.id)},
-            {"Key": "managed-by", "Value": "zenml"},
-        ]
-
-        # Add user-defined tags
-        for key, value in settings.tags.items():
-            service_tags.append({"Key": key, "Value": value})
+        service_tags = self.get_tags(deployment, settings)
 
         try:
             if existing_service:
-                # Update existing service
                 logger.debug(
                     f"Updating existing App Runner service for pipeline "
                     f"deployment '{deployment.name}'"
@@ -1561,7 +1410,6 @@ class AWSDeployer(ContainerizedDeployer):
                     "NetworkConfiguration": network_configuration,
                 }
 
-                # Add traffic configuration for updates (reuse the same logic)
                 if not (
                     len(traffic_configurations) == 1
                     and traffic_configurations[0].get("Type") == "LATEST"
@@ -1592,7 +1440,6 @@ class AWSDeployer(ContainerizedDeployer):
 
                 updated_service = response["Service"]
             else:
-                # Create new service
                 logger.debug(
                     f"Creating new App Runner service for deployment "
                     f"'{deployment.name}' in region {region}"
@@ -1618,7 +1465,8 @@ class AWSDeployer(ContainerizedDeployer):
                         observability_configuration
                     )
 
-                # Only add traffic configuration if it's not the default (100% LATEST)
+                # Only add traffic configuration if it's not the default
+                # (100% LATEST)
                 if not (
                     len(traffic_configurations) == 1
                     and traffic_configurations[0].get("Type") == "LATEST"
@@ -1642,11 +1490,11 @@ class AWSDeployer(ContainerizedDeployer):
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deploying deployment "
+                f"Unexpected error while provisioning deployment "
                 f"'{deployment.name}': {e}"
             )
 
-    def do_get_deployment(
+    def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
     ) -> DeploymentOperationalState:
@@ -1688,7 +1536,7 @@ class AWSDeployer(ContainerizedDeployer):
             existing_secret_arn,
         )
 
-    def do_get_deployment_logs(
+    def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
@@ -1711,7 +1559,6 @@ class AWSDeployer(ContainerizedDeployer):
             DeployerError: If an unexpected error occurs.
             RuntimeError: If the service name is not found in the deployment metadata.
         """
-        # If follow is requested, we would need to implement streaming
         if follow:
             raise NotImplementedError(
                 "Log following is not yet implemented for App Runner deployer"
@@ -1720,7 +1567,8 @@ class AWSDeployer(ContainerizedDeployer):
         service = self._get_app_runner_service(deployment)
         if service is None:
             raise DeploymentNotFoundError(
-                f"App Runner service for deployment '{deployment.name}' not found"
+                f"App Runner service for deployment '{deployment.name}' not "
+                "found"
             )
 
         try:
@@ -1737,7 +1585,6 @@ class AWSDeployer(ContainerizedDeployer):
             # App Runner automatically creates CloudWatch log groups
             log_group_name = f"/aws/apprunner/{service_name}/service"
 
-            # Get log streams
             try:
                 streams_response = self.logs_client.describe_log_streams(
                     logGroupName=log_group_name,
@@ -1749,7 +1596,6 @@ class AWSDeployer(ContainerizedDeployer):
                 for stream in streams_response.get("logStreams", []):
                     stream_name = stream["logStreamName"]
 
-                    # Get events from this stream
                     events_response = self.logs_client.get_log_events(
                         logGroupName=log_group_name,
                         logStreamName=stream_name,
@@ -1759,9 +1605,6 @@ class AWSDeployer(ContainerizedDeployer):
                     for event in events_response.get("events", []):
                         timestamp = event.get("timestamp", 0)
                         message = event.get("message", "")
-
-                        # Convert timestamp to readable format
-                        import datetime
 
                         dt = datetime.datetime.fromtimestamp(
                             timestamp / 1000.0
@@ -1774,28 +1617,29 @@ class AWSDeployer(ContainerizedDeployer):
                 # Sort by timestamp (most recent last for tail to work correctly)
                 log_lines.sort()
 
-                # Apply tail limit if specified
                 if tail is not None and tail > 0:
                     log_lines = log_lines[-tail:]
 
-                # Yield logs
                 for log_line in log_lines:
                     yield log_line
 
             except ClientError as e:
                 if e.response["Error"]["Code"] == "ResourceNotFoundException":
                     raise DeploymentLogsNotFoundError(
-                        f"Log group not found for App Runner service '{service_name}'"
+                        f"Log group not found for App Runner service "
+                        f"'{service_name}'"
                     )
                 raise
 
         except (ClientError, BotoCoreError) as e:
             raise DeploymentLogsNotFoundError(
-                f"Failed to retrieve logs for deployment '{deployment.name}': {e}"
+                f"Failed to retrieve logs for deployment '{deployment.name}': "
+                f"{e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while retrieving logs for deployment '{deployment.name}': {e}"
+                f"Unexpected error while retrieving logs for deployment "
+                f"'{deployment.name}': {e}"
             )
 
     def do_deprovision_deployment(
@@ -1823,7 +1667,8 @@ class AWSDeployer(ContainerizedDeployer):
         service = self._get_app_runner_service(deployment)
         if service is None:
             raise DeploymentNotFoundError(
-                f"App Runner service for deployment '{deployment.name}' not found"
+                f"App Runner service for deployment '{deployment.name}' not "
+                "found"
             )
 
         try:
@@ -1837,7 +1682,8 @@ class AWSDeployer(ContainerizedDeployer):
                 )
 
             logger.debug(
-                f"Deleting App Runner service for deployment '{deployment.name}'"
+                f"Deleting App Runner service for deployment "
+                f"'{deployment.name}'"
             )
 
             # Delete the service
@@ -1848,21 +1694,24 @@ class AWSDeployer(ContainerizedDeployer):
         except ClientError as e:
             if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 raise DeploymentNotFoundError(
-                    f"App Runner service for deployment '{deployment.name}' not found"
+                    f"App Runner service for deployment '{deployment.name}' "
+                    "not found"
                 )
             raise DeploymentDeprovisionError(
-                f"Failed to delete App Runner service for deployment '{deployment.name}': {e}"
+                f"Failed to delete App Runner service for deployment "
+                f"'{deployment.name}': {e}"
             )
         except Exception as e:
             raise DeployerError(
-                f"Unexpected error while deleting deployment '{deployment.name}': {e}"
+                f"Unexpected error while deleting deployment "
+                f"'{deployment.name}': {e}"
             )
 
         deployment_before_deletion = deployment
 
         # App Runner deletion is asynchronous and the auto-scaling configuration
         # and secrets need to be cleaned up after the service is deleted. So we
-        # poll the service until it is deleted, runs into an error or times out.
+        # poll the service here instead of doing it in the base deployer class.
         deployment, deployment_state = self._poll_deployment(
             deployment, DeploymentStatus.ABSENT, timeout
         )
@@ -1871,10 +1720,8 @@ class AWSDeployer(ContainerizedDeployer):
             return deployment_state
 
         try:
-            # Clean up associated secrets
             self._cleanup_deployment_secrets(deployment_before_deletion)
 
-            # Clean up associated auto-scaling configuration
             self._cleanup_deployment_auto_scaling_config(
                 deployment_before_deletion
             )

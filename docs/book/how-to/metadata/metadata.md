@@ -73,11 +73,13 @@ log_metadata(
 You can log metadata for an entire pipeline run, either from within a step during execution or manually after the run:
 
 ```python
-from zenml import pipeline, step, log_metadata
+from zenml import get_step_context, pipeline, step, log_metadata
 
 # Method 1: Within a step (logs to the current run)
 @step
 def log_run_info_step():
+    context = get_step_context()
+
     # Get some runtime information
     git_commit = get_git_hash()
     environment = get_env_info()
@@ -87,7 +89,8 @@ def log_run_info_step():
         metadata={
             "git_info": {"commit": git_commit},
             "environment": environment
-        }
+        },
+        run_id_name_or_prefix=context.pipeline_run.id,
     )
 
 # Method 2: Manually targeting a specific run

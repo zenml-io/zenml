@@ -107,6 +107,12 @@ def list_deployments(**kwargs: Any) -> None:
     help="Show the metadata.",
 )
 @click.option(
+    "--show-schema",
+    "-sc",
+    is_flag=True,
+    help="Show the schema.",
+)
+@click.option(
     "--no-truncate",
     "-nt",
     is_flag=True,
@@ -117,6 +123,7 @@ def describe_deployment(
     show_secret: bool = False,
     show_metadata: bool = False,
     no_truncate: bool = False,
+    show_schema: bool = False,
 ) -> None:
     """Describe a deployment.
 
@@ -124,6 +131,7 @@ def describe_deployment(
         deployment_name_or_id: The name or ID of the deployment to describe.
         show_secret: If True, show the secret key.
         show_metadata: If True, show the metadata.
+        show_schema: If True, show the schema.
         no_truncate: If True, don't truncate the metadata.
     """
     try:
@@ -137,6 +145,7 @@ def describe_deployment(
             deployment,
             show_secret=show_secret,
             show_metadata=show_metadata,
+            show_schema=show_schema,
             no_truncate=no_truncate,
         )
 
@@ -585,7 +594,7 @@ def invoke_deployment(
         timeout: The maximum time in seconds to wait for the deployment
             to be invoked.
     """
-    from zenml.deployers.utils import call_deployment
+    from zenml.deployers.utils import invoke_deployment
 
     # Parse the given args
     args = list(args)
@@ -599,7 +608,7 @@ def invoke_deployment(
     assert name_or_id is not None
 
     try:
-        response = call_deployment(
+        response = invoke_deployment(
             deployment_name_or_id=name_or_id,
             timeout=timeout or 300,  # 5 minute timeout
             project=None,
@@ -609,7 +618,7 @@ def invoke_deployment(
         cli_utils.error(
             f"Invalid parameters for deployment '{name_or_id}': \n"
             f"{str(e)}\n\n"
-            f"Hint: run 'zenml deployment describe {name_or_id}' "
+            f"Hint: run 'zenml deployment describe --schema {name_or_id}' "
             "to inspect the deployment schema."
         )
     except KeyError as e:

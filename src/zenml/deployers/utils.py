@@ -17,14 +17,12 @@ import json
 from typing import Any, Dict, Optional, Union
 from uuid import UUID
 
+import jsonref
 import requests
-from jsf import JSF
-from jsonschema import Draft202012Validator, FormatChecker
 
 from zenml.client import Client
 from zenml.deployers.exceptions import (
     DeploymentHTTPError,
-    DeploymentInvalidParametersError,
     DeploymentNotFoundError,
     DeploymentProvisionError,
     DeploymentSchemaNotFoundError,
@@ -32,6 +30,40 @@ from zenml.deployers.exceptions import (
 from zenml.enums import DeploymentStatus
 from zenml.models import DeploymentResponse
 from zenml.steps.step_context import get_step_context
+from zenml.utils.json_utils import pydantic_encoder
+
+
+def get_deployment_schema(
+    deployment: DeploymentResponse,
+) -> Dict[str, Any]:
+    """Get the schema for a deployment.
+
+    Args:
+        deployment: The deployment for which to get the schema.
+
+    Returns:
+        The schema for the deployment.
+
+    Raises:
+        DeploymentSchemaNotFoundError: If the deployment has no associated
+            snapshot, pipeline spec, or parameters schema.
+    """
+    if not deployment.snapshot:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated snapshot."
+        )
+
+    if not deployment.snapshot.pipeline_spec:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated pipeline spec."
+        )
+
+    if not deployment.snapshot.pipeline_spec.input_schema:
+        raise DeploymentSchemaNotFoundError(
+            f"Deployment {deployment.name} has no associated parameters schema."
+        )
+
+    return deployment.snapshot.pipeline_spec.input_schema
 
 
 def get_deployment_invocation_example(
@@ -44,45 +76,40 @@ def get_deployment_invocation_example(
 
     Returns:
         A dictionary containing the example invocation parameters.
-
-    Raises:
-        DeploymentSchemaNotFoundError: If the deployment has no associated
-            schema for its input parameters.
     """
-    if not deployment.snapshot:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated snapshot."
-        )
+    parameters_schema = get_deployment_schema(deployment)
 
-    if not deployment.snapshot.pipeline_spec:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated pipeline spec."
-        )
+    properties = parameters_schema.get("properties", {})
 
-    if not deployment.snapshot.pipeline_spec.parameters_schema:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated parameters schema."
-        )
+    if not properties:
+        return {}
 
-    parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
+    parameters = {}
 
-    example_generator = JSF(parameters_schema, allow_none_optionals=0)
-    example = example_generator.generate(
-        1,
-        use_defaults=True,
-        use_examples=True,
-    )
+    for attr_name, attr_schema in properties.items():
+        parameters[attr_name] = "<value>"
+        if not isinstance(attr_schema, dict):
+            continue
 
-    return example  # type: ignore[no-any-return]
+        default_value = None
+
+        if "default" in attr_schema:
+            default_value = attr_schema["default"]
+        elif "const" in attr_schema:
+            default_value = attr_schema["const"]
+
+        parameters[attr_name] = default_value or "<value>"
+
+    return parameters
 
 
-def call_deployment(
+def invoke_deployment(
     deployment_name_or_id: Union[str, UUID],
     project: Optional[UUID] = None,
     timeout: int = 300,  # 5 minute timeout
     **kwargs: Any,
 ) -> Any:
-    """Call a deployed deployment and return the result.
+    """Call a deployment and return the result.
 
     Args:
         deployment_name_or_id: The name or ID of the deployment to call.
@@ -99,8 +126,6 @@ def call_deployment(
         DeploymentProvisionError: If the deployment is not running
             or has no URL.
         DeploymentHTTPError: If the HTTP request to the endpoint fails.
-        DeploymentInvalidParametersError: If the parameters for the
-            deployment are invalid.
     """
     client = Client()
     try:
@@ -126,29 +151,51 @@ def call_deployment(
             "details."
         )
 
-    parameters_schema = None
+    input_schema = None
     if deployment.snapshot and deployment.snapshot.pipeline_spec:
-        parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
+        input_schema = deployment.snapshot.pipeline_spec.input_schema
 
-    if parameters_schema:
-        v = Draft202012Validator(
-            parameters_schema, format_checker=FormatChecker()
+    if input_schema:
+        # Resolve the references in the schema first, otherwise we won't be able
+        # to access the data types for object-typed parameters.
+        input_schema = jsonref.replace_refs(input_schema)
+        assert isinstance(input_schema, dict)
+
+        properties = input_schema.get("properties", {})
+
+        # Some kwargs having one of the collection data types (list, dict) in
+        # the schema may be supplied as a JSON string. We need to unpack
+        # them before we construct the final JSON payload.
+        #
+        # We ignore all errors here because they will be better handled by the
+        # deployment itself server side.
+        for key in kwargs.keys():
+            if key not in properties:
+                continue
+            value = kwargs[key]
+            if not isinstance(value, str):
+                continue
+            attr_schema = properties[key]
+            try:
+                if attr_schema.get("type") == "object":
+                    value = json.loads(value)
+                    if isinstance(value, dict):
+                        kwargs[key] = value
+                elif attr_schema.get("type") == "array":
+                    value = json.loads(value)
+                    if isinstance(value, list):
+                        kwargs[key] = value
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+    # Serialize kwargs to JSON
+    params = dict(parameters=kwargs)
+    try:
+        payload = json.dumps(params, default=pydantic_encoder)
+    except (TypeError, ValueError) as e:
+        raise DeploymentHTTPError(
+            f"Failed to serialize request data to JSON: {e}"
         )
-        errors = sorted(v.iter_errors(kwargs), key=lambda e: e.path)
-        if errors:
-            error_messages = []
-            for err in errors:
-                path = ""
-                if err.path:
-                    path = "/".join(list(err.path))
-                    error_messages.append(f"{path}: {err.message}")
-                else:
-                    error_messages.append(f"{err.message}")
-
-            raise DeploymentInvalidParametersError(
-                f"Invalid parameters for deployment "
-                f"{deployment_name_or_id}: \n" + "\n".join(error_messages)
-            )
 
     # Construct the invoke endpoint URL
     invoke_url = deployment.url.rstrip("/") + "/invoke"
@@ -178,15 +225,6 @@ def call_deployment(
         headers["ZenML-Pipeline-Name"] = step_context.pipeline.name
         headers["ZenML-Pipeline-Run-ID"] = str(step_context.pipeline_run.id)
         headers["ZenML-Pipeline-Run-Name"] = step_context.pipeline_run.name
-
-    # Serialize kwargs to JSON
-    params = dict(parameters=kwargs)
-    try:
-        payload = json.dumps(params)
-    except (TypeError, ValueError) as e:
-        raise DeploymentHTTPError(
-            f"Failed to serialize request data to JSON: {e}"
-        )
 
     # Make the HTTP request
     try:

@@ -17,7 +17,6 @@ import functools
 import json
 import os
 from abc import ABCMeta
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -141,7 +140,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotFilter,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -3266,68 +3265,114 @@ class Client(metaclass=ClientMetaClass):
 
     def get_snapshot(
         self,
-        id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
+        *,
+        pipeline_name_or_id: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
+        include_config_schema: Optional[bool] = None,
+        allow_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot by name, id or prefix.
 
         Args:
-            id_or_prefix: The id or prefix of the snapshot.
-            project: The project name/ID to filter by.
+            name_id_or_prefix: The name, id or prefix of the snapshot. If a
+                pipeline name or id is provided, this will be treated as the
+                snapshot name. Otherwise, it will be treated as the snapshot ID
+                prefix.
+            pipeline_name_or_id: The name or id of the pipeline for which to
+                get the snapshot.
+            project: The project name/ID.
+            include_config_schema: Whether to include the config schema in the
+                response.
+            allow_prefix_match: If True, allow matching by ID prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Raises:
-            KeyError: If no snapshot was found for the given id or prefix.
+            KeyError: If no snapshot was found for the given parameters.
             ZenKeyError: If multiple snapshots were found that match the given
-                id or prefix.
+                parameters.
 
         Returns:
             The snapshot.
         """
         from zenml.utils.uuid_utils import is_valid_uuid
 
-        # First interpret as full UUID
-        if is_valid_uuid(id_or_prefix):
+        if is_valid_uuid(name_id_or_prefix):
             id_ = (
-                UUID(id_or_prefix)
-                if isinstance(id_or_prefix, str)
-                else id_or_prefix
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
             )
-            return self.zen_store.get_snapshot(id_, hydrate=hydrate)
-
-        list_kwargs: Dict[str, Any] = dict(
-            named_only=None,
-            id=f"startswith:{id_or_prefix}",
-            hydrate=hydrate,
-        )
-        scope = ""
-        if project:
-            list_kwargs["project"] = project
-            scope = f" in project {project}"
-
-        entity = self.list_snapshots(**list_kwargs)
-
-        # If only a single entity is found, return it.
-        if entity.total == 1:
-            return entity.items[0]
-
-        # If no entity is found, raise an error.
-        if entity.total == 0:
-            raise KeyError(
-                f"No snapshot have been found that have either an id or "
-                f"prefix that matches the provided string '{id_or_prefix}'{scope}."
+            return self.zen_store.get_snapshot(
+                id_,
+                hydrate=hydrate,
+                include_config_schema=include_config_schema,
             )
 
-        raise ZenKeyError(
-            f"{entity.total} snapshots have been found{scope} that have "
-            f"an ID that matches the provided "
-            f"string '{id_or_prefix}':\n"
-            f"{[entity.items]}.\n"
-            f"Please use the id to uniquely identify "
-            f"only one of the snapshots."
+        list_kwargs: Dict[str, Any] = {
+            "named_only": None,
+            "project": project,
+            "hydrate": hydrate,
+            "size": 1,
+        }
+
+        # First, try to get the snapshot by name
+        snapshots = self.list_snapshots(
+            name=str(name_id_or_prefix),
+            pipeline=pipeline_name_or_id,
+            **list_kwargs,
         )
+        if snapshots.total == 1:
+            snapshot = snapshots.items[0]
+        elif snapshots.total == 0:
+            # No name matches. If the user provided a pipeline, we assume
+            # they want to fetch the snapshot by name and fail. Otherwise,
+            # we try to fetch by ID prefix.
+            if pipeline_name_or_id or not allow_prefix_match:
+                raise KeyError(
+                    f"No snapshot with name `{name_id_or_prefix}` has been "
+                    f"found for pipeline `{pipeline_name_or_id}`."
+                )
+            else:
+                snapshots = self.list_snapshots(
+                    id=f"startswith:{name_id_or_prefix}", **list_kwargs
+                )
+
+                if snapshots.total == 1:
+                    snapshot = snapshots.items[0]
+                elif snapshots.total == 0:
+                    raise KeyError(
+                        f"No snapshot with ID prefix `{name_id_or_prefix}` "
+                        "has been found."
+                    )
+                else:
+                    raise ZenKeyError(
+                        f"{snapshots.total} snapshots have been found that "
+                        "have an ID that matches the provided prefix "
+                        f"`{name_id_or_prefix}`. Please use the full ID to "
+                        "uniquely identify one of the snapshots."
+                    )
+        else:
+            # Multiple name matches, this is only possible if the user
+            # provided no pipeline.
+            raise ZenKeyError(
+                f"{snapshots.total} snapshots have been found for name "
+                f"`{name_id_or_prefix}`. Please either specify which "
+                "pipeline the snapshot belongs to or fetch the snapshot "
+                "by ID to uniquely identify one of the snapshots."
+            )
+
+        if hydrate and include_config_schema:
+            # The config schema cannot be fetched using the list
+            # call, so we make a second call to fetch it.
+            return self.zen_store.get_snapshot(
+                snapshot.id,
+                include_config_schema=include_config_schema,
+                hydrate=hydrate,
+            )
+        return snapshot
 
     def list_snapshots(
         self,
@@ -3342,12 +3387,12 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
         named_only: Optional[bool] = True,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
+        pipeline: Optional[Union[str, UUID]] = None,
+        stack: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
-        template_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
+        runnable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
@@ -3367,12 +3412,12 @@ class Client(metaclass=ClientMetaClass):
             name: Filter by name.
             named_only: If `True`, only snapshots with an assigned name
                 will be returned.
-            pipeline_id: The id of the pipeline to filter by.
-            stack_id: The id of the stack to filter by.
+            pipeline: Name or ID of the pipeline to filter by.
+            stack: Name or ID of the stack to filter by.
             build_id: The id of the build to filter by.
-            template_id: The ID of the template to filter by.
             schedule_id: The ID of the schedule to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
+            runnable: Whether the snapshot is runnable.
             tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3393,12 +3438,12 @@ class Client(metaclass=ClientMetaClass):
             user=user,
             name=name,
             named_only=named_only,
-            pipeline_id=pipeline_id,
-            stack_id=stack_id,
+            pipeline=pipeline,
+            stack=stack,
             build_id=build_id,
-            template_id=template_id,
             schedule_id=schedule_id,
             source_snapshot_id=source_snapshot_id,
+            runnable=runnable,
             tag=tag,
             tags=tags,
         )
@@ -3409,7 +3454,7 @@ class Client(metaclass=ClientMetaClass):
 
     def update_snapshot(
         self,
-        id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -3420,7 +3465,7 @@ class Client(metaclass=ClientMetaClass):
         """Update a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the snapshot.
+            name_id_or_prefix: Name, ID or ID prefix of the snapshot.
             project: The project name/ID to filter by.
             name: The new name of the snapshot.
             description: The new description of the snapshot.
@@ -3433,7 +3478,7 @@ class Client(metaclass=ClientMetaClass):
             The updated snapshot.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix=id_or_prefix,
+            name_id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3451,17 +3496,17 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_snapshot(
         self,
-        id_or_prefix: str,
+        name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete a snapshot.
 
         Args:
-            id_or_prefix: The id or id prefix of the snapshot.
+            name_id_or_prefix: Name, ID or ID prefix of the snapshot.
             project: The project name/ID to filter by.
         """
         snapshot = self.get_snapshot(
-            id_or_prefix=id_or_prefix,
+            name_id_or_prefix,
             project=project,
             hydrate=False,
         )
@@ -3470,10 +3515,8 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
-        snapshot_id: Optional[UUID] = None,
-        template_id: Optional[UUID] = None,
+        snapshot_name_or_id: Optional[Union[str, UUID]] = None,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        name: Optional[str] = None,
         run_configuration: Union[
             PipelineRunConfiguration, Dict[str, Any], None
         ] = None,
@@ -3481,39 +3524,42 @@ class Client(metaclass=ClientMetaClass):
         stack_name_or_id: Union[str, UUID, None] = None,
         synchronous: bool = False,
         project: Optional[Union[str, UUID]] = None,
+        template_id: Optional[UUID] = None,
     ) -> PipelineRunResponse:
-        """Trigger a snapshot.
+        """Run a pipeline snapshot.
 
         Usage examples:
-        * Trigger a specific snapshot by ID:
+        * Run a specific snapshot by ID:
         ```python
-        Client().trigger_snapshot(snapshot_id=<ID>)
+        Client().trigger_pipeline(snapshot_name_or_id=<ID>)
         ```
-        * Trigger the latest runnable snapshot for a pipeline:
+        * Run a specific snapshot by name:
         ```python
-        Client().trigger_snapshot(pipeline_name_or_id=<NAME>)
+        Client().trigger_pipeline(
+            snapshot_name_or_id=<NAME>,
+            pipeline_name_or_id=<PIPELINE_NAME_OR_ID>
+        )
         ```
-        * Trigger the latest runnable snapshot for a pipeline on a specific
-        stack:
+        * Run the latest runnable snapshot for a pipeline:
         ```python
-        Client().trigger_snapshot(
+        Client().trigger_pipeline(pipeline_name_or_id=<NAME>)
+        ```
+        * Run the latest runnable snapshot for a pipeline on a specific stack:
+        ```python
+        Client().trigger_pipeline(
             pipeline_name_or_id=<NAME>,
             stack_name_or_id=<STACK_NAME_OR_ID>
         )
         ```
 
         Args:
-            snapshot_id: ID of the snapshot to trigger. Either this or a
-                pipeline can be specified.
-            template_id: DEPRECATED. Use snapshot_id instead.
+            snapshot_name_or_id: Name or ID of the snapshot to run.
             pipeline_name_or_id: Name or ID of the pipeline. If this is
                 specified, the latest runnable snapshot for this pipeline will
                 be used for the run (Runnable here means that the build
                 associated with the snapshot is for a remote stack without any
-                custom flavor stack components). If not given, a snapshot ID
+                custom flavor stack components). If not given, a snapshot
                 that should be run needs to be specified.
-            name: Name of the snapshot to trigger. If not given, the
-                latest runnable snapshot for the pipeline will be used.
             run_configuration: Configuration for the run. Either this or a
                 path to a config file can be specified.
             config_path: Path to a YAML configuration file. This file will be
@@ -3522,13 +3568,13 @@ class Client(metaclass=ClientMetaClass):
             stack_name_or_id: Name or ID of the stack on which to run the
                 pipeline. If not specified, this method will try to find a
                 runnable snapshot on any stack.
-            synchronous: If `True`, this method will wait until the triggered
+            synchronous: If `True`, this method will wait until the started
                 run is finished.
             project: The project name/ID to filter by.
+            template_id: DEPRECATED. Use snapshot_id instead.
 
         Raises:
-            RuntimeError: If triggering the snapshot failed.
-            KeyError: If no snapshot with the given name exists.
+            RuntimeError: If running the snapshot failed.
 
         Returns:
             Model of the pipeline run.
@@ -3539,31 +3585,10 @@ class Client(metaclass=ClientMetaClass):
             wait_for_pipeline_run_to_finish,
         )
 
-        if Counter([snapshot_id, template_id, pipeline_name_or_id])[None] != 2:
-            raise RuntimeError(
-                "You need to specify exactly one of snapshot, template or "
-                "pipeline to trigger."
-            )
-
         if run_configuration and config_path:
             raise RuntimeError(
                 "Only config path or runtime configuration can be specified."
             )
-
-        if template_id:
-            logger.warning(
-                "Triggering a run template is deprecated. Use "
-                "`Client().trigger_pipeline(snapshot_id=...)` instead."
-            )
-            run_template = self.get_run_template(
-                name_id_or_prefix=template_id,
-                project=project,
-            )
-            if not run_template.source_snapshot:
-                raise RuntimeError(
-                    "Run template does not have a source snapshot."
-                )
-            snapshot_id = run_template.source_snapshot.id
 
         if config_path:
             run_configuration = PipelineRunConfiguration.from_yaml(config_path)
@@ -3576,41 +3601,43 @@ class Client(metaclass=ClientMetaClass):
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
 
-        if snapshot_id:
-            if stack_name_or_id:
-                logger.warning(
-                    "Snapshot ID and stack specified, ignoring the stack and "
-                    "using stack associated with the snapshot instead."
-                )
-
-            if name:
-                logger.warning(
-                    "Snapshot ID and name specified, ignoring the name."
-                )
-        else:
-            assert pipeline_name_or_id
-            pipeline = self.get_pipeline(
-                name_id_or_prefix=pipeline_name_or_id,
-                project=project,
+        if template_id:
+            logger.warning(
+                "Triggering a run template is deprecated. Use "
+                "`Client().trigger_pipeline(snapshot_id=...)` instead."
             )
-
-            if name:
-                snapshots = self.list_snapshots(
-                    name=f"equals:{name}",
-                    pipeline_id=pipeline.id,
-                    project=pipeline.project_id,
-                )
-
-                if snapshots.total == 0:
-                    raise KeyError(
-                        f"No snapshot found for pipeline {pipeline.id} "
-                        f"with name {name}."
+            run = self.zen_store.run_template(
+                template_id=template_id,
+                run_configuration=run_configuration,
+            )
+        else:
+            if snapshot_name_or_id:
+                if stack_name_or_id:
+                    logger.warning(
+                        "Snapshot and stack specified, ignoring the stack and "
+                        "using stack associated with the snapshot instead."
                     )
-                else:
-                    snapshot_id = snapshots.items[0].id
+
+                snapshot_id = self.get_snapshot(
+                    name_id_or_prefix=snapshot_name_or_id,
+                    pipeline_name_or_id=pipeline_name_or_id,
+                    project=project,
+                    allow_prefix_match=False,
+                    hydrate=False,
+                ).id
             else:
-                # No version or ID specified, find the latest runnable
-                # snapshot for the pipeline (and stack if specified)
+                if not pipeline_name_or_id:
+                    raise RuntimeError(
+                        "You need to specify at least one of snapshot or "
+                        "pipeline to run."
+                    )
+
+                # Find the latest runnable snapshot for the pipeline (and
+                # stack if specified)
+                pipeline = self.get_pipeline(
+                    name_id_or_prefix=pipeline_name_or_id,
+                    project=project,
+                )
                 stack = None
                 if stack_name_or_id:
                     stack = self.get_stack(
@@ -3622,9 +3649,10 @@ class Client(metaclass=ClientMetaClass):
 
                 all_snapshots = depaginate(
                     self.list_snapshots,
-                    pipeline_id=pipeline.id,
-                    stack_id=stack.id if stack else None,
+                    pipeline=pipeline.id,
+                    stack=stack.id if stack else None,
                     project=pipeline.project_id,
+                    runnable=True,
                 )
 
                 for snapshot in all_snapshots:
@@ -3650,21 +3678,21 @@ class Client(metaclass=ClientMetaClass):
                         "stack and pipeline."
                     )
 
-        step_run_id = None
-        try:
-            from zenml.steps.step_context import get_step_context
+            step_run_id = None
+            try:
+                from zenml.steps.step_context import get_step_context
 
-            step_run_id = get_step_context().step_run.id
-        except RuntimeError:
-            pass
+                step_run_id = get_step_context().step_run.id
+            except RuntimeError:
+                pass
 
-        run = self.zen_store.trigger_snapshot(
-            snapshot_id=snapshot_id,
-            trigger_request=PipelineSnapshotTriggerRequest(
-                run_configuration=run_configuration,
-                step_run=step_run_id,
-            ),
-        )
+            run = self.zen_store.run_snapshot(
+                snapshot_id=snapshot_id,
+                run_request=PipelineSnapshotRunRequest(
+                    run_configuration=run_configuration,
+                    step_run=step_run_id,
+                ),
+            )
 
         if synchronous:
             run = wait_for_pipeline_run_to_finish(run_id=run.id)
@@ -3812,7 +3840,7 @@ class Client(metaclass=ClientMetaClass):
 
         if snapshot_id:
             snapshot = self.get_snapshot(
-                id_or_prefix=snapshot_id,
+                name_id_or_prefix=snapshot_id,
                 project=project,
                 hydrate=True,
             )
