@@ -1,6 +1,6 @@
 """Agent serving pipeline that loads production classifier if available."""
 
-from typing import Any, Optional
+from typing import Any
 
 from steps.infer import classify_intent, generate_response
 
@@ -10,14 +10,12 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Global variable to store the loaded classifier
-_router: Optional[Any] = None
+# Import classifier manager
+from utils import classifier_manager
 
 
 def _load_production_classifier_if_any() -> None:
     """Find artifact version tagged 'production' and load it."""
-    global _router
-
     try:
         client = Client()
         versions = client.list_artifact_versions(name="intent-classifier")
@@ -32,15 +30,11 @@ def _load_production_classifier_if_any() -> None:
                     break
 
         if prod_version:
-            _router = prod_version.load()
+            classifier = prod_version.load()
+            classifier_manager.set_classifier(classifier)
             logger.info(
                 f"[agent:init] Loaded production classifier (version: {prod_version.version})"
             )
-
-            # Update the global variable in the infer module
-            import steps.infer
-
-            steps.infer._router = _router
         else:
             logger.info("[agent:init] No production-tagged classifier found.")
 

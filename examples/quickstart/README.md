@@ -4,6 +4,32 @@
 
 This quickstart demonstrates how ZenML unifies ML and Agent workflows, showing the natural progression from a generic agent to a specialized one powered by your own trained models.
 
+## 🤔 What We're Building
+
+We'll build a **customer support agent** that answers banking questions. This agent will evolve from giving generic responses to providing specific, intent-based answers - all without changing any code.
+
+### Understanding ZenML Pipelines
+
+In ZenML, a **pipeline** is a series of connected steps that process data:
+- Each **step** is a Python function that performs a specific task
+- Steps can pass data (artifacts) between each other
+- The same pipeline concept works for both:
+  - **Batch mode**: Run once to train models (e.g., `python run.py`)
+  - **Deployed mode**: Serve continuously for real-time predictions (e.g., `zenml pipeline deploy`)
+
+This quickstart shows both modes in action:
+1. A **serving pipeline** deployed as an API endpoint for the agent
+2. A **training pipeline** run in batch to create a classifier
+
+Example of a simple pipeline:
+```python
+@pipeline
+def my_pipeline():
+    data = load_data()        # Step 1: Load data
+    model = train_model(data) # Step 2: Train model using data from step 1
+    evaluate_model(model)     # Step 3: Evaluate the model
+```
+
 ## 🎯 The Story
 
 **Phase 1**: Deploy a support agent → Generic responses
@@ -16,7 +42,13 @@ This quickstart demonstrates how ZenML unifies ML and Agent workflows, showing t
 
 ### Prerequisites
 ```bash
-pip install "zenml[server]" scikit-learn
+pip install "zenml[server]" scikit-learn openai
+```
+
+**Optional**: Set `OPENAI_API_KEY` environment variable for LLM responses. The quickstart works without it (falls back to template responses).
+
+```bash
+export OPENAI_API_KEY=sk-svcacct-aaaaaaaaaaaaaa
 ```
 
 ### Setup
@@ -31,11 +63,16 @@ zenml stack register docker-deployer -o default -a default -D docker --set
 
 ### Phase 1: Deploy Agent-Only
 
-Deploy the agent without any classifier - it will use generic responses:
+Deploy the agent serving pipeline as a REST API. This creates a running service that can handle customer queries. Without a trained classifier, it will use generic responses:
 
 ```bash
 zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
   -n support-agent -c configs/agent.yaml
+```
+
+Monitor the deployment logs:
+```bash
+zenml deployment logs support-agent -f
 ```
 
 Test it:
@@ -70,7 +107,7 @@ zenml deployment invoke support-agent \
 
 ### Phase 2: Train Classifier
 
-Train an intent classifier and automatically tag it as "production":
+Run the training pipeline in batch mode. This trains an intent classifier on banking support data and automatically tags it as "production":
 
 ```bash
 python run.py --train
@@ -87,8 +124,12 @@ Loaded 20 training examples across 6 intents:
   - general: 4 examples
   - payments: 4 examples
 Training classifier on 20 examples...
+SentenceTransformers not available, falling back to TF-IDF
+Fitting pipeline...
+Evaluating model...
 Training completed!
-Accuracy on test set: 0.333
+Vectorizer: tfidf
+Accuracy on test set: 0.714
 Tagged artifact version as 'production'
 >> Done. Check dashboard: artifact 'intent-classifier' latest version has tag 'production'.
 ```
@@ -103,7 +144,7 @@ Tagged artifact version as 'production'
 
 ### Phase 3: Agent Automatically Upgrades
 
-Update the same deployment (the agent will now load the production classifier):
+Update the existing deployment. The agent service will restart and automatically load the newly trained "production" classifier:
 
 ```bash
 zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
@@ -154,8 +195,8 @@ def _load_production_classifier_if_any():
 
     for version in versions:
         if "production" in [tag.name for tag in version.tags]:
-            global _router
-            _router = version.load()  # 🎯 Agent upgraded!
+            classifier = version.load()
+            classifier_manager.set_classifier(classifier)  # 🎯 Agent upgraded!
             break
 ```
 
