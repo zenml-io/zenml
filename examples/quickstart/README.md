@@ -20,11 +20,6 @@ In ZenML, a **pipeline** is a series of connected steps that process data:
   - **Batch mode**: Run once to train models (e.g., `python run.py`)
   - **Deployed mode**: Serve continuously for real-time predictions (e.g., `zenml pipeline deploy`)
 
-This quickstart shows both modes in action:
-1. A **serving pipeline** deployed as an API endpoint for customer support
-2. A **training pipeline** to create an intent classifier
-3. An **evaluation pipeline** to compare response quality
-
 Example of a simple pipeline:
 
 ```python
@@ -36,6 +31,13 @@ def my_pipeline():
 ```
 
 **Key insight**: ZenML unifies batch training and real-time serving with the same primitives.
+
+This quickstart shows both modes in action:
+1. A **serving pipeline** deployed as an API endpoint for customer support
+2. A **training pipeline** to create an intent classifier
+3. An **evaluation pipeline** to compare response quality
+
+Note, this is purely a toy example meant to illustrate some of the key concepts of ZenML. It is not meant as a production-grade template for this use-case.
 
 ## 🚀 Quick Start
 
@@ -169,11 +171,10 @@ quickstart/
 
 This quickstart shows the foundation. In production, you might:
 
-- **Collect real conversation data** from agent interactions
+- **Collect real conversation data** from agent interactions via tracing tools like Langfuse, Datadog, etc.
 - **Fine-tune larger models** (DistilBERT, small LLMs) for better accuracy
 - **A/B test model versions** by deploying different tagged artifacts
-- **Scale to multiple intents** with hierarchical classification
-- **Add confidence monitoring** and automated retraining
+- **Deploy to any cloud infrastructure** with [stacks](https://docs.zenml.io/stacks)
 
 ## 🎯 The Big Picture
 
