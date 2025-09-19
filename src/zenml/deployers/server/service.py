@@ -111,14 +111,6 @@ class PipelineDeploymentService:
             )
             return 1024 * 1024
 
-    def _get_client(self) -> Client:
-        """Return a cached ZenML client instance.
-
-        Returns:
-            The cached ZenML client instance.
-        """
-        return self._client
-
     def initialize(self) -> None:
         """Initialize service with proper error handling.
 
@@ -320,29 +312,46 @@ class PipelineDeploymentService:
             RuntimeError: If the pipeline cannot be executed.
 
         """
-        client = self._client
-        active_stack: Stack = client.active_stack
+        active_stack: Stack = self._client.active_stack
 
         if self._orchestrator is None:
             raise RuntimeError("Orchestrator not initialized")
 
-        # Create a placeholder run and execute with a known run id
-        placeholder_run = run_utils.create_placeholder_run(
-            snapshot=self.snapshot, logs=None
+        # Create a new snapshot with deployment-specific parameters and settings
+        from zenml.orchestrators.utils import (
+            deployment_snapshot_request_from_source_snapshot,
         )
 
-        # Start deployment runtime context with parameters
+        deployment_snapshot_request = (
+            deployment_snapshot_request_from_source_snapshot(
+                source_snapshot=self.snapshot,
+                deployment_parameters=resolved_params,
+            )
+        )
+
+        # Create the new snapshot in the store
+        deployment_snapshot = self._client.zen_store.create_snapshot(
+            deployment_snapshot_request
+        )
+
+        # Create a placeholder run using the new deployment snapshot
+        placeholder_run = run_utils.create_placeholder_run(
+            snapshot=deployment_snapshot, logs=None
+        )
+
+        # Start deployment runtime context with parameters (still needed for in-memory materializer)
         runtime.start(
             request_id=str(uuid4()),
-            snapshot=self.snapshot,
+            snapshot=deployment_snapshot,
             parameters=resolved_params,
             use_in_memory=use_in_memory,
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         try:
+            # Use the new deployment snapshot with pre-configured settings
             self._orchestrator.run(
-                snapshot=self.snapshot,
+                snapshot=deployment_snapshot,
                 stack=active_stack,
                 placeholder_run=placeholder_run,
             )

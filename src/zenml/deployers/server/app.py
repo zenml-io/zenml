@@ -84,6 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 params_model, BaseModel
             ):
                 app.include_router(_build_invoke_router(_service))
+                _install_runtime_openapi(app, _service)
         except Exception:
             # Skip router installation if parameter model is not ready
             pass
@@ -423,6 +424,72 @@ def runtime_error_handler(request: Request, exc: RuntimeError) -> JSONResponse:
     """
     logger.error("RuntimeError in request: %s", exc)
     return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+def _install_runtime_openapi(
+    fastapi_app: FastAPI, service: PipelineDeploymentService
+) -> None:
+    """Inject request/response schemas for the invoke route into OpenAPI.
+
+    This function decorates `fastapi_app.openapi` to include custom schemas
+    based on the service-provided request/response schemas. It is a best-effort
+    enhancement and will not raise if schemas are unavailable.
+
+    Args:
+        fastapi_app: The FastAPI application whose OpenAPI schema is updated.
+        service: The serving service providing schema information.
+    """
+    original_openapi = fastapi_app.openapi
+
+    def custom_openapi() -> Dict[str, Any]:
+        schema = original_openapi()
+        try:
+            if (
+                "paths" in schema
+                and "/invoke" in schema["paths"]
+                and "post" in schema["paths"]["/invoke"]
+            ):
+                post_op = schema["paths"]["/invoke"]["post"]
+
+                # Request body schema
+                req_schema: Optional[Dict[str, Any]] = getattr(
+                    service, "request_schema", None
+                )
+                if req_schema:
+                    rb_content = (
+                        post_op.setdefault("requestBody", {})
+                        .setdefault("content", {})
+                        .setdefault("application/json", {})
+                    )
+                    # Use the precise parameters schema for the 'parameters' field
+                    rb_content["schema"] = {
+                        "type": "object",
+                        "properties": {
+                            "parameters": req_schema,
+                            "run_name": {"type": "string"},
+                            "timeout": {"type": "integer"},
+                            "use_in_memory": {"type": "boolean"},
+                        },
+                        "required": ["parameters"],
+                    }
+
+                # Response schema for 200
+                resp_schema: Optional[Dict[str, Any]] = service.output_schema
+                if resp_schema:
+                    responses = post_op.setdefault("responses", {})
+                    ok = (
+                        responses.setdefault("200", {})
+                        .setdefault("content", {})
+                        .setdefault("application/json", {})
+                    )
+                    # Use the full response schema as compiled
+                    ok["schema"] = resp_schema
+        except Exception:
+            # Never break OpenAPI generation
+            pass
+        return schema
+
+    fastapi_app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 if __name__ == "__main__":

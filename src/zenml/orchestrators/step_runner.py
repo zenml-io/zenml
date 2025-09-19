@@ -475,12 +475,7 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                # Check for parameter overrides from serving context
-                override = runtime.get_parameter_override(arg)
-                if override is not None:
-                    function_params[arg] = override
-                else:
-                    function_params[arg] = self.configuration.parameters[arg]
+                function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."

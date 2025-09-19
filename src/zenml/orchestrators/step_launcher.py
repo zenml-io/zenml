@@ -425,21 +425,8 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        effective_step_config = self._step.config.model_copy(deep=True)
-        from zenml.deployers.server import runtime
-
-        serving_active = runtime.is_active()
-        if serving_active:
-            updates = {
-                "enable_cache": False,
-                "step_operator": None,
-                "retry": None,
-            }
-            effective_step_config = effective_step_config.model_copy(
-                update=updates
-            )
         step_run_info = StepRunInfo(
-            config=effective_step_config,
+            config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self._step_name,
@@ -454,7 +441,7 @@ class StepLauncher:
 
         start_time = time.time()
         try:
-            if self._step.config.step_operator and not serving_active:
+            if self._step.config.step_operator:
                 step_operator_name = None
                 if isinstance(self._step.config.step_operator, str):
                     step_operator_name = self._step.config.step_operator
