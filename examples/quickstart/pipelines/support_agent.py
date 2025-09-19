@@ -42,17 +42,19 @@ def _load_production_classifier_if_any() -> None:
         logger.error(f"[agent:init] Error loading classifier: {e}")
 
 
-def on_init_hook(**_: Any) -> None:
+def on_init_hook(*args: Any, **kwargs: Any) -> None:
     """Initialize the agent by loading production classifier if available.
 
-    Args:
-        **_: Unused keyword arguments from ZenML.
+    Parameters:
+        args: Unused keyword arguments from ZenML.
+        kwargs: Unused keyword arguments from ZenML.
     """
+    logger.debug(f"[agent:init] Args: {args}, Kwargs: {kwargs}")
     _load_production_classifier_if_any()
 
 
 @pipeline(enable_cache=False, on_init=on_init_hook)
-def agent_serving_pipeline(
+def support_agent(
     text: str = "my card is lost and i need a replacement",
     use_classifier: bool = True,
 ) -> Any:

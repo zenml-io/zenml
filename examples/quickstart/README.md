@@ -61,18 +61,17 @@ zenml stack register docker-deployer -o default -a default -D docker --set
 Deploy the agent serving pipeline as a REST API. This creates a running service that gives generic banking advice without intent classification:
 
 ```bash
-zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
-  -n support-agent -c configs/agent.yaml
+zenml pipeline deploy pipelines.support_agent.support_agent -c configs/agent.yaml
 ```
 
 Monitor logs:
 ```bash
-zenml deployment logs support-agent -f
+zenml deployment logs support_agent -f
 ```
 
 Test it:
 ```bash
-zenml deployment invoke support-agent \
+zenml deployment invoke support_agent \
   --text="my card is lost and i need a replacement"
 ```
 
@@ -91,13 +90,12 @@ This trains a TF-IDF + LogisticRegression classifier on banking intents and tags
 Update the existing deployment. The agent service will restart and automatically load the newly trained "production" classifier:
 
 ```bash
-zenml pipeline deploy pipelines.agent_serving_pipeline.agent_serving_pipeline \
-  -n support-agent -c configs/agent.yaml -u
+zenml pipeline deploy pipelines.support_agent.support_agent -c configs/agent.yaml -u
 ```
 
 Test again - **same command, better response**:
 ```bash
-zenml deployment invoke support-agent \
+zenml deployment invoke support_agent \
   --text="my card is lost and i need a replacement"
 ```
 
@@ -123,8 +121,8 @@ The agent checks for production models at startup:
 
 ```python
 @pipeline(on_init=on_init_hook)  # Runs once at deployment
-def agent_serving_pipeline(text: str):
-    classification = classify_intent(text)
+def support_agent(text: str, use_classifier: bool):
+    classification = classify_intent(text, use_classifier)
     response = generate_response(classification)
     return response
 ```
@@ -154,7 +152,7 @@ quickstart/
 ├── configs/agent.yaml              # Deployment config
 ├── pipelines/
 │   ├── intent_training_pipeline.py # Batch training (TF-IDF + LogisticRegression)
-│   ├── agent_serving_pipeline.py   # Real-time serving with auto-upgrade
+│   ├── support_agent.py            # Real-time serving with auto-upgrade
 │   └── evaluation_pipeline.py      # Performance comparison with visualizations
 ├── steps/                          # Pipeline steps
 │   ├── data.py                     # Banking intent dataset (50+ examples)
