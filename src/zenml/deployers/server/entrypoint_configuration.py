@@ -66,9 +66,6 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Returns:
             List of command-line arguments
-
-        Raises:
-            ValueError: If required arguments are missing
         """
         # Get base arguments (snapshot_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)
@@ -95,7 +92,10 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         """Run the ZenML pipeline deployment application.
 
         This method starts the FastAPI server with the configured parameters
-        and the specified pipeline snapshot.
+        and the specified pipeline deployment.
+
+        Raises:
+            Exception: If the server fails to start.
         """
         import uvicorn
 
@@ -138,7 +138,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         try:
             # Start the FastAPI server
             uvicorn.run(
-                "zenml.deployers.serving.app:app",
+                "zenml.deployers.server.app:app",
                 host=host,
                 port=port,
                 workers=workers,

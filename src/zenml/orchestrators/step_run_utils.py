@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
+from zenml.deployers.server import runtime
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
@@ -70,14 +71,8 @@ class StepRunRequestFactory:
             Whether the step has caching enabled.
         """
         # Disable caching if serving optimizations are active
-        try:
-            from zenml.deployers.serving import runtime
-
-            if runtime.is_active():
-                return False
-        except ImportError:
-            # Serving module not available, continue normally
-            pass
+        if runtime.is_active():
+            return False
 
         step = self.snapshot.step_configurations[invocation_id]
         return utils.is_setting_enabled(
@@ -157,14 +152,8 @@ class StepRunRequestFactory:
         )
 
         # Disable caching if serving optimizations are active
-        try:
-            from zenml.deployers.serving import runtime
-
-            if runtime.is_active():
-                cache_enabled = False
-        except ImportError:
-            # Serving module not available, continue normally
-            pass
+        if runtime.is_active():
+            cache_enabled = False
 
         if cache_enabled:
             if cached_step_run := cache_utils.get_cached_step_run(

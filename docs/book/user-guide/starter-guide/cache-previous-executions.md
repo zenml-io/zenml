@@ -149,9 +149,11 @@ my_pipeline = my_pipeline.with_options(cache_policy=custom_cache_policy)
 
 Each cache policy option controls a different aspect of caching:
 * `include_step_code` (default: `True`): Controls whether changes to your step implementation invalidate the cache. 
+
 {% hint style="warning" %}
 Setting `include_step_code=False` can lead to unexpected behavior if you modify your step logic but expect the changes to take effect.
 {% endhint %}
+
 * `include_step_parameters` (default: `True`): Controls whether step parameter changes invalidate the cache.
 * `include_artifact_values` (default: `True`): Whether to include the artifact values in the cache key. If the materializer for an
 artifact doesn't support generating a content hash, the artifact ID will be used as a fallback if enabled.

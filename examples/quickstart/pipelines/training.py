@@ -34,7 +34,7 @@ assert materializers  # Ensure materializers are loaded
 
 
 @pipeline
-def english_translation_training(
+def english_translation_pipeline(
     data_url: str,
     model_type: T5_Model,
     per_device_train_batch_size: int,

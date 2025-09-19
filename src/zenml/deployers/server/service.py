@@ -11,23 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Clean, elegant pipeline serving service implementation.
-
-This service provides high-performance pipeline serving with proper memory management,
-clean architecture, and zero memory leaks.
-"""
+"""Pipeline deployment service."""
 
 import os
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 
-import zenml.client as client_mod
 import zenml.pipelines.run_utils as run_utils
+from zenml.client import Client
+from zenml.deployers.server import runtime
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
@@ -48,10 +45,14 @@ logger = get_logger(__name__)
 class PipelineDeploymentService:
     """Pipeline deployment service."""
 
-    def __init__(self, snapshot_id: Union[str, UUID]):
-        """Initialize service with minimal state."""
+    def __init__(self, snapshot_id: Union[str, UUID]) -> None:
+        """Initialize service with minimal state.
+
+        Args:
+            snapshot_id: The ID of the snapshot to deploy.
+        """
         self.snapshot_id: Union[str, UUID] = snapshot_id
-        self.snapshot: Optional[PipelineSnapshotResponse] = None
+        self._client = Client()
         self.pipeline_state: Optional[Any] = None
 
         # Execution tracking
@@ -62,12 +63,22 @@ class PipelineDeploymentService:
         # Cache a local orchestrator instance to avoid per-request construction
         self._orchestrator: Optional[BaseOrchestrator] = None
         self._params_model: Optional[Type[BaseModel]] = None
-        # Captured in-memory outputs from the last run (internal)
-        self._last_runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         # Lazily initialized cached client
-        self._client: Optional[Any] = None
 
-        logger.info(f"Initializing service for snapshot: {snapshot_id}")
+        logger.info("Loading pipeline snapshot configuration...")
+
+        try:
+            # Accept both str and UUID for flexibility
+            if isinstance(self.snapshot_id, str):
+                snapshot_id = UUID(self.snapshot_id)
+            else:
+                snapshot_id = self.snapshot_id
+
+            self.snapshot: PipelineSnapshotResponse = (
+                self._client.zen_store.get_snapshot(snapshot_id=snapshot_id)
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to load snapshot: {e}")
 
     @property
     def params_model(self) -> Optional[Type[BaseModel]]:
@@ -79,7 +90,11 @@ class PipelineDeploymentService:
         return self._params_model
 
     def _get_max_output_size_bytes(self) -> int:
-        """Get max output size in bytes with bounds checking."""
+        """Get max output size in bytes with bounds checking.
+
+        Returns:
+            The max output size in bytes.
+        """
         try:
             size_mb = int(
                 os.environ.get("ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB", "1")
@@ -93,31 +108,21 @@ class PipelineDeploymentService:
             )
             return 1024 * 1024
 
-    def _get_client(self) -> Any:
-        """Return a cached ZenML client instance."""
-        if self._client is None:
-            self._client = client_mod.Client()
+    def _get_client(self) -> Client:
+        """Return a cached ZenML client instance.
+
+        Returns:
+            The cached ZenML client instance.
+        """
         return self._client
 
-    async def initialize(self) -> None:
-        """Initialize service with proper error handling."""
+    def initialize(self) -> None:
+        """Initialize service with proper error handling.
+
+        Raises:
+            Exception: If the service cannot be initialized.
+        """
         try:
-            logger.info("Loading pipeline snapshot configuration...")
-
-            # Load snapshot from ZenML store
-            client = self._get_client()
-            # Accept both str and UUID for flexibility
-            snapshot_id = self.snapshot_id
-            try:
-                if isinstance(snapshot_id, str):
-                    snapshot_id = UUID(snapshot_id)
-            except Exception:
-                pass
-
-            self.snapshot = client.zen_store.get_snapshot(
-                snapshot_id=snapshot_id
-            )
-
             # Activate integrations to ensure all components are available
             integration_registry.activate_integrations()
 
@@ -137,7 +142,7 @@ class PipelineDeploymentService:
             )
 
             # Execute init hook
-            await self._execute_init_hook()
+            self._execute_init_hook()
 
             self._orchestrator.set_shared_run_state(self.pipeline_state)
 
@@ -149,8 +154,12 @@ class PipelineDeploymentService:
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
 
-    async def cleanup(self) -> None:
-        """Execute cleanup hook if present."""
+    def cleanup(self) -> None:
+        """Execute cleanup hook if present.
+
+        Raises:
+            Exception: If the cleanup hook cannot be executed.
+        """
         cleanup_hook_source = (
             self.snapshot
             and self.snapshot.pipeline_configuration.cleanup_hook_source
@@ -175,36 +184,40 @@ class PipelineDeploymentService:
         parameters: Dict[str, Any],
         run_name: Optional[str] = None,
         timeout: Optional[int] = 300,
-        use_in_memory: Optional[bool] = None,
+        use_in_memory: bool = False,
     ) -> Dict[str, Any]:
-        """Execute pipeline with clean error handling and resource management."""
+        """Execute the deployment with the given parameters.
+
+        Args:
+            parameters: Runtime parameters supplied by the caller.
+            run_name: Optional name override for the run.
+            timeout: Optional timeout for the run (currently unused).
+            use_in_memory: Whether to keep outputs in memory for fast access.
+
+        Returns:
+            A dictionary containing details about the execution result.
+
+        Raises:
+            RuntimeError: If the service has not been initialized.
+        """
         # Unused parameters for future implementation
         _ = run_name, timeout
-
-        if not self.snapshot:
-            raise RuntimeError("Service not properly initialized")
-
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
         try:
-            # Validate parameters
-            resolved_params = self._resolve_parameters(parameters)
-
             # Execute pipeline and get run; runtime outputs captured internally
-            run = self._execute_with_orchestrator(
-                resolved_params, use_in_memory
+            run, captured_outputs = self._execute_with_orchestrator(
+                parameters, use_in_memory
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
-            mapped_outputs = self._map_outputs(run, self._last_runtime_outputs)
-            # Clear captured outputs after use
-            self._last_runtime_outputs = None
+            mapped_outputs = self._map_outputs(captured_outputs)
 
             return self._build_success_response(
                 mapped_outputs=mapped_outputs,
                 start_time=start_time,
-                resolved_params=resolved_params,
+                resolved_params=parameters,
                 run=run,
             )
 
@@ -213,10 +226,11 @@ class PipelineDeploymentService:
             return self._build_error_response(e=e, start_time=start_time)
 
     def get_service_info(self) -> Dict[str, Any]:
-        """Get service information."""
-        if not self.snapshot:
-            return {"error": "Service not initialized"}
+        """Get service information.
 
+        Returns:
+            A dictionary containing service information.
+        """
         return {
             "snapshot_id": str(self.snapshot_id),
             "pipeline_name": self.snapshot.pipeline_configuration.name,
@@ -230,7 +244,11 @@ class PipelineDeploymentService:
         }
 
     def get_execution_metrics(self) -> Dict[str, Any]:
-        """Get execution metrics."""
+        """Return lightweight execution metrics for observability.
+
+        Returns:
+            A dictionary with aggregated execution metrics.
+        """
         return {
             "total_executions": self.total_executions,
             "last_execution_time": (
@@ -241,51 +259,79 @@ class PipelineDeploymentService:
         }
 
     def is_healthy(self) -> bool:
-        """Check service health."""
-        return self.snapshot is not None
+        """Check service health.
 
-    # Private helper methods
+        Returns:
+            True if the service is healthy, otherwise False.
+        """
+        return True
 
     def _map_outputs(
         self,
-        run: PipelineRunResponse,
         runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
-        """Map pipeline outputs using centralized runtime processing."""
-        from zenml.deployers.serving import runtime
+        """Map pipeline outputs using centralized runtime processing.
 
-        if runtime_outputs is None and runtime.is_active():
-            runtime_outputs = runtime.get_outputs()
+        Args:
+            runtime_outputs: Optional in-memory outputs captured from runtime.
 
-        max_size_mb = self._get_max_output_size_bytes() // (1024 * 1024)
-        return runtime.process_outputs(
-            runtime_outputs=runtime_outputs,
-            run=run,
-            enforce_size_limits=True,
-            max_output_size_mb=max_size_mb,
-        )
+        Returns:
+            A dictionary containing outputs and any warnings from filtering.
+        """
+        filtered_outputs = {}
+        if runtime_outputs and self.snapshot.pipeline_spec:
+            # Filter outputs based on pipeline schema (raises RuntimeError if missing)
+            output_mappings = self.snapshot.pipeline_spec.outputs
+            for output_mapping in output_mappings:
+                if output_mapping.step_name in runtime_outputs.keys():
+                    filtered_outputs[
+                        f"{output_mapping.step_name}-{output_mapping.output_name}"
+                    ] = runtime_outputs[output_mapping.step_name].get(
+                        output_mapping.output_name, None
+                    )
+                else:
+                    logger.warning(
+                        f"Output {output_mapping.output_name} not found in runtime outputs for step {output_mapping.step_name}"
+                    )
+                    filtered_outputs[
+                        f"{output_mapping.step_name}-{output_mapping.output_name}"
+                    ] = None
+        else:
+            logger.debug("No output mappings found, returning empty outputs")
+
+        return filtered_outputs
 
     def _execute_with_orchestrator(
         self,
         resolved_params: Dict[str, Any],
-        use_in_memory: Optional[bool] = None,
-    ) -> PipelineRunResponse:
-        """Run the snapshot via the orchestrator and return the concrete run."""
-        client = self._get_client()
+        use_in_memory: bool,
+    ) -> Tuple[PipelineRunResponse, Optional[Dict[str, Dict[str, Any]]]]:
+        """Run the snapshot via the orchestrator and return the concrete run.
+
+        Args:
+            resolved_params: Normalized pipeline parameters.
+            use_in_memory: Whether runtime should capture in-memory outputs.
+
+        Returns:
+            The fully materialized pipeline run response.
+
+        Raises:
+            RuntimeError: If the orchestrator has not been initialized.
+            RuntimeError: If the pipeline cannot be executed.
+
+        """
+        client = self._client
         active_stack: Stack = client.active_stack
 
         if self._orchestrator is None:
             raise RuntimeError("Orchestrator not initialized")
 
         # Create a placeholder run and execute with a known run id
-        assert self.snapshot is not None
         placeholder_run = run_utils.create_placeholder_run(
             snapshot=self.snapshot, logs=None
         )
 
         # Start deployment runtime context with parameters
-        from zenml.deployers.serving import runtime
-
         runtime.start(
             request_id=str(uuid4()),
             snapshot=self.snapshot,
@@ -302,48 +348,54 @@ class PipelineDeploymentService:
             )
 
             # Capture in-memory outputs before stopping the runtime context
-            try:
-                if runtime.is_active():
-                    captured_outputs = runtime.get_outputs()
-            except ImportError:
-                pass
+            if runtime.is_active():
+                captured_outputs = runtime.get_outputs()
+        except Exception as e:
+            logger.error(f"Failed to execute pipeline: {e}")
+            raise RuntimeError(f"Failed to execute pipeline: {e}")
         finally:
             # Always stop deployment runtime context
             runtime.stop()
 
         # Fetch the concrete run via its id
-        run: PipelineRunResponse = self._get_client().get_pipeline_run(
+        run: PipelineRunResponse = self._client.get_pipeline_run(
             name_id_or_prefix=placeholder_run.id,
             hydrate=True,
             include_full_metadata=True,
         )
         # Store captured outputs for the caller to use
-        self._last_runtime_outputs = captured_outputs
-        return run
+        return run, captured_outputs
 
     def _build_params_model(self) -> Any:
-        """Build parameter model with proper error handling."""
+        """Build the pipeline parameters model from the deployment.
+
+        Returns:
+            A parameters model derived from the deployment configuration.
+
+        Raises:
+            Exception: If the model cannot be constructed.
+        """
         try:
-            from zenml.deployers.serving.parameters import (
+            from zenml.deployers.server.parameters import (
                 build_params_model_from_snapshot,
             )
 
-            assert self.snapshot is not None
             return build_params_model_from_snapshot(self.snapshot, strict=True)
         except Exception as e:
             logger.error(f"Failed to construct parameter model: {e}")
             raise
 
-    async def _execute_init_hook(self) -> None:
-        """Execute init hook if present."""
+    def _execute_init_hook(self) -> None:
+        """Execute init hook if present.
+
+        Raises:
+            Exception: If executing the hook fails.
+        """
         init_hook_source = (
-            self.snapshot
-            and self.snapshot.pipeline_configuration.init_hook_source
+            self.snapshot.pipeline_configuration.init_hook_source
         )
         init_hook_kwargs = (
             self.snapshot.pipeline_configuration.init_hook_kwargs
-            if self.snapshot
-            else None
         )
 
         if not init_hook_source:
@@ -364,8 +416,6 @@ class PipelineDeploymentService:
 
     def _log_initialization_success(self) -> None:
         """Log successful initialization."""
-        assert self.snapshot is not None
-
         pipeline_name = self.snapshot.pipeline_configuration.name
         step_count = len(self.snapshot.step_configurations)
         stack_name = (
@@ -377,34 +427,6 @@ class PipelineDeploymentService:
         logger.info(f"   Steps: {step_count}")
         logger.info(f"   Stack: {stack_name}")
 
-    def _resolve_parameters(
-        self, request_params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Validate and normalize parameters, preserving complex objects."""
-        # If available, validate against the parameters model
-        if self._params_model is None:
-            try:
-                self._params_model = self._build_params_model()
-            except Exception:
-                self._params_model = None
-
-        if self._params_model is not None:
-            params_obj = self._params_model.model_validate(
-                request_params or {}
-            )
-            # Use the model class fields to avoid mypy issues with instance props
-            fields = getattr(self._params_model, "model_fields")
-            return {name: getattr(params_obj, name) for name in fields}
-
-        # Otherwise, just return request parameters as-is (no nesting support)
-        return dict(request_params or {})
-
-    def _serialize_json_safe(self, value: Any) -> Any:
-        """Delegate to the centralized runtime serializer."""
-        from zenml.deployers.serving import runtime
-
-        return runtime._make_json_safe(value)
-
     def _build_success_response(
         self,
         mapped_outputs: Dict[str, Any],
@@ -412,12 +434,20 @@ class PipelineDeploymentService:
         resolved_params: Dict[str, Any],
         run: PipelineRunResponse,
     ) -> Dict[str, Any]:
-        """Build success response with execution tracking."""
+        """Build success response with execution tracking.
+
+        Args:
+            mapped_outputs: The mapped outputs.
+            start_time: The start time of the execution.
+            resolved_params: The resolved parameters.
+            run: The pipeline run that was executed.
+
+        Returns:
+            A dictionary describing the successful execution.
+        """
         execution_time = time.time() - start_time
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
-
-        assert self.snapshot is not None
 
         response = {
             "success": True,
@@ -427,25 +457,10 @@ class PipelineDeploymentService:
                 "pipeline_name": self.snapshot.pipeline_configuration.name,
                 "run_id": run.id,
                 "run_name": run.name,
-                "parameters_used": self._serialize_json_safe(resolved_params),
+                "parameters_used": resolved_params,
                 "snapshot_id": str(self.snapshot.id),
             },
         }
-
-        # Add response schema if available
-        # Add response schema only if the attribute exists and is set
-        try:
-            if (
-                self.snapshot.pipeline_spec
-                and self.snapshot.pipeline_spec.response_schema
-            ):
-                response["response_schema"] = (
-                    self.snapshot.pipeline_spec.response_schema
-                )
-        except AttributeError:
-            # Some tests may provide a lightweight snapshot stub without
-            # a pipeline_spec attribute; ignore in that case.
-            pass
 
         return response
 
@@ -455,20 +470,28 @@ class PipelineDeploymentService:
 
     @property
     def request_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for pipeline parameters if available."""
+        """Return the JSON schema for pipeline parameters if available.
+
+        Returns:
+            The JSON schema for pipeline parameters if available.
+        """
         try:
-            if self.snapshot and self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.parameters_schema
+            if self.snapshot.pipeline_spec:
+                return self.snapshot.pipeline_spec.input_schema
         except Exception:
             return None
         return None
 
     @property
-    def response_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for the deployment response if available."""
+    def output_schema(self) -> Optional[Dict[str, Any]]:
+        """Return the JSON schema for the deployment response if available.
+
+        Returns:
+            The JSON schema for the deployment response if available.
+        """
         try:
-            if self.snapshot and self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.response_schema
+            if self.snapshot.pipeline_spec:
+                return self.snapshot.pipeline_spec.output_schema
         except Exception:
             return None
         return None

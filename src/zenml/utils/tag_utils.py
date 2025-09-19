@@ -306,7 +306,9 @@ def add_tags(
             infer_artifact,
         ]
     ):
-        snapshot_model = client.get_snapshot(id_or_prefix=snapshot)
+        snapshot_model = client.get_snapshot(
+            name_id_or_prefix=snapshot, allow_prefix_match=False
+        )
         resource_id = snapshot_model.id
         resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
 
@@ -674,7 +676,9 @@ def remove_tags(
             infer_artifact,
         ]
     ):
-        snapshot_model = client.get_snapshot(id_or_prefix=snapshot)
+        snapshot_model = client.get_snapshot(
+            name_id_or_prefix=snapshot, allow_prefix_match=False
+        )
         resource_id = snapshot_model.id
         resource_type = TaggableResourceTypes.PIPELINE_SNAPSHOT
 

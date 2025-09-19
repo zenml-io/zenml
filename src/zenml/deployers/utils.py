@@ -58,12 +58,12 @@ def get_deployment_schema(
             f"Deployment {deployment.name} has no associated pipeline spec."
         )
 
-    if not deployment.snapshot.pipeline_spec.parameters_schema:
+    if not deployment.snapshot.pipeline_spec.input_schema:
         raise DeploymentSchemaNotFoundError(
             f"Deployment {deployment.name} has no associated parameters schema."
         )
 
-    return deployment.snapshot.pipeline_spec.parameters_schema
+    return deployment.snapshot.pipeline_spec.input_schema
 
 
 def get_deployment_invocation_example(
@@ -153,17 +153,17 @@ def invoke_deployment(
             "details."
         )
 
-    parameters_schema = None
+    input_schema = None
     if deployment.snapshot and deployment.snapshot.pipeline_spec:
-        parameters_schema = deployment.snapshot.pipeline_spec.parameters_schema
+        input_schema = deployment.snapshot.pipeline_spec.input_schema
 
-    if parameters_schema:
+    if input_schema:
         # Resolve the references in the schema first, otherwise we won't be able
         # to access the data types for object-typed parameters.
-        parameters_schema = jsonref.replace_refs(parameters_schema)
-        assert isinstance(parameters_schema, dict)
+        input_schema = jsonref.replace_refs(input_schema)
+        assert isinstance(input_schema, dict)
 
-        properties = parameters_schema.get("properties", {})
+        properties = input_schema.get("properties", {})
 
         # Some kwargs having one of the collection data types (list, dict) in
         # the schema may be supplied as a JSON string. We need to unpack

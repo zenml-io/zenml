@@ -44,7 +44,7 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
-from zenml.deployers.serving.entrypoint_configuration import (
+from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
     PORT_OPTION,
     DeploymentEntrypointConfiguration,
