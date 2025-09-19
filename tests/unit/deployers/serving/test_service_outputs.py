@@ -1,4 +1,4 @@
-"""Unit tests for PipelineServingService output mapping with in-memory mode."""
+"""Unit tests for PipelineDeploymentService output mapping with in-memory mode."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel
 
-from zenml.deployers.serving import runtime
-from zenml.deployers.serving.service import PipelineServingService
+from zenml.deployers.server import runtime
+from zenml.deployers.server.service import PipelineDeploymentService
 
 
 class _DummyParams(BaseModel):
@@ -61,14 +61,14 @@ def clean_runtime():
 def test_service_captures_in_memory_outputs(monkeypatch: pytest.MonkeyPatch):
     """Service should capture in-memory outputs before stopping runtime."""
 
-    service = PipelineServingService(uuid4())
+    service = PipelineDeploymentService(uuid4())
     service.snapshot = _DummySnapshot()
     service._params_model = _DummyParams
 
     dummy_run = _DummyRun()
 
     # Patch Client used inside the service
-    import zenml.deployers.serving.service as svc_mod
+    import zenml.deployers.server.service as svc_mod
 
     monkeypatch.setattr(
         svc_mod.client_mod, "Client", lambda: _DummyClient(dummy_run)

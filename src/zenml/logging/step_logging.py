@@ -259,24 +259,30 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
         For plain text logs, only message is populated with INFO level default.
         Returns None only for empty lines.
     """
-    stripped_line = log_line.strip()
-    if not stripped_line:
+    line = log_line.strip()
+    if not line:
         return None
 
-    # Try to parse JSON format first
-    if stripped_line.startswith("{") and stripped_line.endswith("}"):
+    if line.startswith("{") and line.endswith("}"):
         try:
-            return LogEntry.model_validate_json(stripped_line)
+            return LogEntry.model_validate_json(line)
         except Exception:
-            # If JSON parsing or validation fails, treat as plain text
             pass
 
-    # For any other format (plain text), create LogEntry with defaults
+    old_format = re.search(
+        r"^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+UTC\]", line
+    )
+
+    timestamp = None
+    if old_format:
+        timestamp = old_format.group(1)
+        line = line.replace(old_format.group(0), "").strip()
+
     return LogEntry(
-        message=stripped_line,
-        name=None,  # No logger name available for plain text logs
-        level=LoggingLevels.INFO,  # Default level for plain text logs
-        timestamp=None,  # No timestamp available for plain text logs
+        message=line,
+        name=None,
+        level=LoggingLevels.INFO,
+        timestamp=timestamp,
     )
 
 

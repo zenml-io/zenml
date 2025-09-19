@@ -44,7 +44,7 @@ Start the service
 export ZENML_PIPELINE_DEPLOYMENT_ID="<deployment-uuid>"
 export ZENML_SERVICE_HOST=0.0.0.0
 export ZENML_SERVICE_PORT=8001
-python -m zenml.deployers.serving.app
+python -m zenml.deployers.server.app
 ```
 
 Synchronous invocation

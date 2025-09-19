@@ -63,6 +63,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
@@ -88,6 +89,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
@@ -121,6 +123,7 @@ def pipeline(
             be a function with no arguments, or a source path to such a function
             (e.g. `module.my_function`) if the function returns a value, it will
             be stored as the pipeline state.
+        on_init_kwargs: Arguments for the init hook.
         on_cleanup: Callback function to run on cleanup of the pipeline. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
@@ -152,6 +155,7 @@ def pipeline(
             on_failure=on_failure,
             on_success=on_success,
             on_init=on_init,
+            on_init_kwargs=on_init_kwargs,
             on_cleanup=on_cleanup,
             model=model,
             retry=retry,

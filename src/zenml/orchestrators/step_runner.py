@@ -38,12 +38,14 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
+from zenml.deployers.server import runtime
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
     StepRunUpdate,
@@ -139,7 +141,6 @@ class StepRunner:
 
         Raises:
             BaseException: A general exception if the step fails.
-            Exception: If the step outputs are not valid.
         """
         # Store step_run_info for effective config access
         self._step_run_info = step_run_info
@@ -155,8 +156,6 @@ class StepRunner:
             )
 
         logs_context = nullcontext()
-        # Resolve tracking toggle once for the step context
-
         if step_logging_enabled and not redirected.get():
             if step_run.logs:
                 logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
@@ -306,40 +305,15 @@ class StepRunner:
                                     step_exception=None,
                                 )
 
-                        # Validate outputs
-                        try:
-                            logger.debug(
-                                f"Validating outputs for step: "
-                                f"return_values={return_values}, "
-                                f"annotations={list(output_annotations.keys()) if output_annotations else 'None'}"
+                        # Store and publish the output artifacts of the step function.
+                        output_data = self._validate_outputs(
+                            return_values, output_annotations
+                        )
+                        # Record outputs in serving context for fast access
+                        if runtime.is_active():
+                            runtime.record_step_outputs(
+                                step_run.name, output_data
                             )
-                            output_data = self._validate_outputs(
-                                return_values, output_annotations
-                            )
-                            logger.debug(
-                                f"Validated outputs: {list(output_data.keys()) if output_data else 'No outputs'}"
-                            )
-
-                            # Record outputs in serving context for fast access
-                            try:
-                                from zenml.deployers.serving import runtime
-
-                                if runtime.is_active():
-                                    runtime.record_step_outputs(
-                                        step_run.name, output_data
-                                    )
-                            except ImportError:
-                                # Serving module not available, skip recording
-                                pass
-
-                        except Exception as e:
-                            logger.error(f"Error validating outputs: {e}")
-                            raise
-
-                        # Persist outputs minimally to enable downstream input resolution
-                        output_artifacts = {}
-                        artifact_metadata_enabled = False
-                        artifact_visualization_enabled = False
                         artifact_metadata_enabled = is_setting_enabled(
                             is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
                             is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
@@ -393,7 +367,7 @@ class StepRunner:
                     )
                     StepContext._clear()  # Remove the step context singleton
 
-            # Update the status and output artifacts of the step run
+            # Update the status and output artifacts of the step run.
             output_artifact_ids = {
                 output_name: [
                     artifact.id,
@@ -441,15 +415,7 @@ class StepRunner:
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance = copy.deepcopy(step_instance)
-
-        # Use effective config from step_run_info (includes serving overrides)
-        effective_config = getattr(self, "_step_run_info", None)
-        if effective_config:
-            step_instance._configuration = effective_config.config
-        else:
-            # Fallback to original config if no step_run_info available
-            step_instance._configuration = self._step.config
-
+        step_instance._configuration = self._step_run_info.config
         return step_instance
 
     def _load_output_materializers(
@@ -510,21 +476,10 @@ class StepRunner:
                 )
             elif arg in self.configuration.parameters:
                 # Check for parameter overrides from serving context
-                try:
-                    from zenml.deployers.serving import runtime
-
-                    override = runtime.get_parameter_override(arg)
-                    if override is not None:
-                        logger.debug(
-                            f"Using serving override for {arg}: {override}"
-                        )
-                        function_params[arg] = override
-                    else:
-                        function_params[arg] = self.configuration.parameters[
-                            arg
-                        ]
-                except ImportError:
-                    # Serving module not available, use regular parameters
+                override = runtime.get_parameter_override(arg)
+                if override is not None:
+                    function_params[arg] = override
+                else:
                     function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
@@ -567,17 +522,6 @@ class StepRunner:
         )
 
         def _load_artifact(artifact_store: "BaseArtifactStore") -> Any:
-            # Check if serving runtime has in-memory data for this URI
-            try:
-                from zenml.deployers.serving import runtime
-
-                if runtime.has_in_memory_data(artifact.uri):
-                    # Return data directly from memory without any I/O
-                    return runtime.get_in_memory_data(artifact.uri)
-            except ImportError:
-                pass
-
-            # Normal path - load from artifact store
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
@@ -701,7 +645,6 @@ class StepRunner:
         """
         step_context = get_step_context()
         artifact_requests = []
-        output_order: List[str] = []
 
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
@@ -736,6 +679,9 @@ class StepRunner:
 
                 materializer_class = materializer_registry[data_type]
 
+            # Choose materializer class upfront based on serving mode
+            if runtime.should_use_in_memory_mode():
+                materializer_class = InMemoryMaterializer
             uri = output_artifact_uris[output_name]
             artifact_config = output_annotations[output_name].artifact_config
 
@@ -783,10 +729,8 @@ class StepRunner:
                 metadata=user_metadata,
             )
             artifact_requests.append(artifact_request)
-            output_order.append(output_name)
 
-        # Always save to database to maintain correct lineage and input resolution
         responses = Client().zen_store.batch_create_artifact_versions(
             artifact_requests
         )
-        return dict(zip(output_order, responses))
+        return dict(zip(output_data.keys(), responses))

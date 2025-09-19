@@ -16,14 +16,14 @@
 from typing import Annotated, Any, Dict
 from unittest.mock import Mock, patch
 
-from zenml.deployers.serving.capture import Capture
-from zenml.deployers.serving.direct_execution import DirectExecutionEngine
-from zenml.deployers.serving.policy import (
+from zenml.deployers.server.capture import Capture
+from zenml.deployers.server.direct_execution import DirectExecutionEngine
+from zenml.deployers.server.policy import (
     ArtifactCaptureMode,
     CapturePolicy,
     CapturePolicyMode,
 )
-from zenml.deployers.serving.tracking import TrackingManager
+from zenml.deployers.server.tracking import TrackingManager
 
 
 # Sample annotated step functions for testing
@@ -88,7 +88,7 @@ class TestAnnotatedPipelineIntegration:
 
         return snapshot
 
-    @patch("zenml.deployers.serving.direct_execution.source_utils.load")
+    @patch("zenml.deployers.server.direct_execution.source_utils.load")
     def test_sensitive_input_annotation_parsing(self, mock_load):
         """Test that sensitive input annotations are parsed correctly."""
         # Setup mocks
@@ -111,7 +111,7 @@ class TestAnnotatedPipelineIntegration:
         # public_data should have "full" capture
         assert step_0_overrides["inputs"]["public_data"].mode.value == "full"
 
-    @patch("zenml.deployers.serving.direct_execution.source_utils.load")
+    @patch("zenml.deployers.server.direct_execution.source_utils.load")
     def test_error_capture_annotation_parsing(self, mock_load):
         """Test that error-only output annotations are parsed correctly."""
         step_class = self.create_mock_step_class(error_capture_step)
@@ -129,7 +129,7 @@ class TestAnnotatedPipelineIntegration:
         )
         assert step_0_overrides["outputs"]["output"].artifacts == "errors_only"
 
-    @patch("zenml.deployers.serving.direct_execution.source_utils.load")
+    @patch("zenml.deployers.server.direct_execution.source_utils.load")
     def test_sampled_annotation_parsing(self, mock_load):
         """Test that sampled annotations are parsed correctly."""
         step_class = self.create_mock_step_class(sampled_output_step)
@@ -317,7 +317,7 @@ class TestPerValueCaptureBehavior:
 
     def test_parameter_capture_with_annotations(self):
         """Test that pipeline parameters respect input annotations."""
-        from zenml.deployers.serving.capture import (
+        from zenml.deployers.server.capture import (
             overlay_capture,
             should_capture_value_payload,
         )
@@ -342,7 +342,7 @@ class TestPerValueCaptureBehavior:
 
     def test_output_capture_with_dict_outputs(self):
         """Test capture behavior with dictionary outputs."""
-        from zenml.deployers.serving.capture import (
+        from zenml.deployers.server.capture import (
             overlay_capture,
             should_capture_value_artifacts,
         )
@@ -370,7 +370,7 @@ class TestPerValueCaptureBehavior:
 
     def test_sampled_annotation_deterministic_behavior(self):
         """Test that sampled annotations use deterministic sampling."""
-        from zenml.deployers.serving.capture import overlay_capture
+        from zenml.deployers.server.capture import overlay_capture
 
         base_policy = CapturePolicy(mode=CapturePolicyMode.METADATA)
 

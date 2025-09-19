@@ -123,6 +123,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    DeploymentStatus,
     ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
@@ -238,7 +239,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
@@ -3943,6 +3944,22 @@ class SqlZenStore(BaseZenStore):
                     f"The default {stack_component.type} cannot be deleted."
                 )
 
+            if stack_component.type == StackComponentType.DEPLOYER:
+                deployments = self.list_deployments(
+                    DeploymentFilter(
+                        deployer_id=stack_component.id,
+                        status=f"notequals:{DeploymentStatus.ABSENT.value}",
+                    ),
+                ).items
+                if len(deployments) > 0:
+                    raise IllegalOperationError(
+                        f"The {stack_component.name} deployer stack component "
+                        f"cannot be deleted because there are still "
+                        f"{len(deployments)} deployments being managed by it "
+                        f"and this would result in orphaned resources."
+                        f"Please deprovision or delete the deployments first."
+                    )
+
             if len(stack_component.stacks) > 0:
                 raise IllegalOperationError(
                     f"Stack Component `{stack_component.name}` of type "
@@ -5021,7 +5038,8 @@ class SqlZenStore(BaseZenStore):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
-            include_config_schema: Whether the config schema will be filled.
+            include_config_schema: Whether to include the config schema in the
+                response.
 
         Returns:
             The snapshot.
@@ -5172,16 +5190,16 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
-    def trigger_snapshot(
+    def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        run_request: PipelineSnapshotRunRequest,
     ) -> NoReturn:
-        """Trigger a snapshot.
+        """Run a snapshot.
 
         Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
+            snapshot_id: The ID of the snapshot to run.
+            run_request: Configuration for the run.
 
         Raises:
             NotImplementedError: Always.

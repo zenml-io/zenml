@@ -60,7 +60,10 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.deployers.utils import get_deployment_invocation_example
+from zenml.deployers.utils import (
+    get_deployment_invocation_example,
+    get_deployment_schema,
+)
 from zenml.enums import (
     DeploymentStatus,
     GenericFilterOps,
@@ -2400,6 +2403,7 @@ def pretty_print_deployment(
     deployment: "DeploymentResponse",
     show_secret: bool = False,
     show_metadata: bool = False,
+    show_schema: bool = False,
     no_truncate: bool = False,
 ) -> None:
     """Print a prettified deployment with organized sections.
@@ -2408,6 +2412,7 @@ def pretty_print_deployment(
         deployment: The deployment to print.
         show_secret: Whether to show the auth key or mask it.
         show_metadata: Whether to show the metadata.
+        show_schema: Whether to show the schema.
         no_truncate: Whether to truncate the metadata.
     """
     # Header section
@@ -2458,7 +2463,15 @@ def pretty_print_deployment(
 
         # CLI invoke command
         cli_args = " ".join(
-            [f"--{k}={json.dumps(v)}" for k, v in example.items()]
+            [
+                f"--{k}="
+                + (
+                    f"'{json.dumps(v)}'"
+                    if isinstance(v, (dict, list))
+                    else json.dumps(v)
+                )
+                for k, v in example.items()
+            ]
         )
         cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
 
@@ -2488,6 +2501,12 @@ def pretty_print_deployment(
     }}'"""
 
         console.print(f"  [green]{curl_command}[/green]")
+
+    if show_schema:
+        schema = get_deployment_schema(deployment)
+        declare("\n📋 [bold]Deployment JSON Schema[/bold]")
+        schema_json = json.dumps(schema, indent=2)
+        console.print(f"  [green]{schema_json}[/green]")
 
     if show_metadata:
         declare("\n📋 [bold]Deployment Metadata[/bold]")

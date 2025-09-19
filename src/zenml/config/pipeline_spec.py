@@ -16,10 +16,19 @@
 import json
 from typing import Any, Dict, List, Optional
 
+from pydantic import Field
+
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.source import Source, SourceWithValidator
 from zenml.config.step_configurations import StepSpec
 from zenml.utils.json_utils import pydantic_encoder
+
+
+class OutputSpec(FrozenBaseModel):
+    """Pipeline output specification."""
+
+    step_name: str
+    output_name: str
 
 
 class PipelineSpec(FrozenBaseModel):
@@ -33,14 +42,20 @@ class PipelineSpec(FrozenBaseModel):
     #   inputs in the step specs refer to the pipeline parameter names
     # - 0.4: New Pipeline class, the upstream steps and
     #   inputs in the step specs refer to the pipeline parameter names
-    version: str = "0.4"
+    # - 0.5: Adds outputs and output schema
+    version: str = "0.5"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
-    parameters_schema: Optional[Dict[str, Any]] = None
-    # Optional: Precomputed response/output schema for tooling (CLI/UI).
-    # Serves documentation; serving aggregates outputs at runtime.
-    response_schema: Optional[Dict[str, Any]] = None
+    input_schema: Dict[str, Any] = {}
     steps: List[StepSpec]
+    outputs: List[OutputSpec] = []
+    output_schema: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="JSON schema of the pipeline outputs. This is only set "
+        "for pipeline specs with version >= 0.5. If the value is None, the "
+        "schema generation failed, which is most likely because some of the "
+        "pipeline outputs are not JSON serializable.",
+    )
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same pipeline.
