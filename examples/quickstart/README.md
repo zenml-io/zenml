@@ -1,183 +1,189 @@
-# Quickstart: Run Anywhere with ZenML (Local → Cloud)
+# ZenML Quickstart: From Agent-Only to Agent+Classifier
 
-This example shows how to run the same pipeline locally and then on your cloud of choice by switching stacks — no code changes.
+Build a customer support agent that evolves from generic to specialized responses - all without changing code.
 
-What you'll learn:
+## 🎯 What You'll Learn
 
-- Run a pipeline locally with a built-in local stack
-- Switch to a remote stack (AWS/GCP/Azure) and run the same pipeline
-- Inspect runs and artifacts in the ZenML dashboard
+This quickstart demonstrates the evolution from generic LLM responses to structured, intent-driven customer support. You'll see how adding a simple intent classifier dramatically improves response quality and user experience. We will:
 
-Unlike traditional MLOps tools, ZenML offers unparalleled flexibility and control. It integrates seamlessly with your infrastructure, allowing both ML and Ops teams to collaborate effectively without compromising on their specific requirements.
+- Deploy a generic LLM agent that gives general banking advice
+- Train an intent classifier and tag it as "production"
+- Compare generic responses vs. structured, targeted responses
+- Evaluate performance with metrics and visualizations
 
-The notebook guides you through adapting local code for cloud deployment, showcasing how ZenML preserves reproducibility and observability in production.
+### Understanding ZenML Pipelines
 
-Ready to unify your ML development and operations? Let's begin. The diagram below 
-describes what we'll show you in this example.
+In ZenML, a **pipeline** is a series of connected steps that process data:
+- Each **step** is a Python function that performs a specific task
+- Steps can pass data (artifacts) between each other
+- The same pipeline concept works for both:
+  - **Batch mode**: Run once to train models (e.g., `python run.py`)
+  - **Deployed mode**: Serve continuously for real-time predictions (e.g., `zenml pipeline deploy`)
 
-<img src=".assets/Overview.png" width="80%" alt="Pipelines Overview">
+Example of a simple pipeline:
 
-1) We have done some of the experimenting for you already and created a simple finetuning pipeline for a text-to-text
-   task.
-2) We will run this pipeline on your machine and a verify that everything works as expected.
-3) Now we'll connect ZenML to your infrastructure and configure everything.
-4) Finally, we are ready to run our code remotely.
+```python
+@pipeline
+def my_pipeline():
+    data = load_data()        # Step 1: Load data
+    model = train_model(data) # Step 2: Train model using data from step 1
+    do_agentic_loop(model)    # Step 3: Evaluate the model with an agent (toy example)
+```
 
-## 🏃 Run on Colab
+**Key insight**: ZenML unifies batch training and real-time serving with the same primitives.
 
-You can use Google Colab to see ZenML in action, no signup / installation required!
+This quickstart shows both modes in action:
+1. A **serving pipeline** deployed as an API endpoint for customer support
+2. A **training pipeline** to create an intent classifier
+3. An **evaluation pipeline** to compare response quality
 
-<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+Note, this is purely a toy example meant to illustrate some of the key concepts of ZenML. It is not meant as a production-grade template for this use-case.
 
-## :computer: Run Locally
+## 🚀 Quick Start
 
-To run locally, install ZenML and pull this quickstart:
+### Prerequisites
+```bash
+pip install "zenml[server]" scikit-learn openai
+export OPENAI_API_KEY=sk-xxx  # Optional - works without it
+```
 
-```shell
-# Install ZenML with local server
-pip install "zenml[server]"
+**Requirements:**
+- Docker must be installed and running (used for pipeline deployment)
 
-# Clone the ZenML repository (shallow)
-git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/quickstart
-
-# Install example requirements
-pip install -r requirements.txt
-
-# Initialize and start the local dashboard
+### Setup
+```bash
 zenml init
-zenml login
-
-# Avoid W&B import issues
-export WANDB_DISABLED="true"
+zenml login  # Choose between running locally or with a deployed ZenML server
+zenml deployer register docker -f docker
+zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
-Now we're ready to start. You have two options for running the quickstart locally:
+### Phase 1: Deploy Generic LLM Agent
 
-#### Option 1 - Interactively explore the quickstart using Jupyter Notebook:
+Deploy the agent serving pipeline as a REST API. This creates a running service that gives generic banking advice without intent classification:
 
 ```bash
-pip install notebook
-jupyter notebook
-# open notebooks/quickstart.ipynb
+zenml pipeline deploy pipelines.support_agent.support_agent -c configs/agent.yaml
 ```
 
-#### Option 2 - Execute the whole training pipeline from a Python script:
+Monitor logs:
+```bash
+zenml deployment logs support_agent -f
+```
 
-To run this quickstart you need to connect to a ZenML Server. You can deploy it
-[yourself on your own infrastructure](https://docs.zenml.io/getting-started/deploying-zenml) or try it
-out for free, no credit-card required in our [ZenML Pro managed service](https://zenml.io/pro). In the following
-commands we install our requirements, initialize our zenml environment and connect to the deployed ZenML Server.
+Test it:
+```bash
+zenml deployment invoke support_agent \
+  --text="my card is lost and i need a replacement"
+```
+
+**Result**: Generic response - `"intent": "general", "response": "I understand you need banking assistance. Please contact our support team for personalized help."`
+
+### Phase 2: Train Intent Classifier
 
 ```bash
-# Install required zenml integrations
-pip install -r requirements.txt
-
-# Initialize ZenML
-zenml init
-
-# add your ZenML Server URL here or leave empty to use ZenML Pro
-ZENML_SERVER_URL=
-
-# Connect to your ZenML Server
-zenml login $ZENML_SERVER_URL
-
-# We'll start on the default stack
-zenml stack set default
-
-# In order to avoid the ModuleNotFoundError with `wandb`
-export WANDB_DISABLED="true"
+python run.py --train
 ```
 
-As described above we have done the first step already and created an experimental pipeline. Feel free to check out
-the individual steps in the [`steps`](steps) directory. The pipeline that connects these steps can be found in
-the [`pipeline`](pipelines) directory.
+This trains a TF-IDF + LogisticRegression classifier on banking intents and tags it as "production".
 
-And here is how to run it. When you run the pipeline with the following command you will be using the configuration
-[here](configs/training_default.yaml)
+### Phase 3: Upgrade to Structured Responses
+
+Update the existing deployment. The agent service will restart and automatically load the newly trained "production" classifier:
 
 ```bash
-# Run the pipeline locally
-python run.py --model_type=t5-small
+zenml pipeline deploy pipelines.support_agent.support_agent -c configs/agent.yaml -u
 ```
 
-<img src=".assets/DAG.png" width="50%" alt="Dashboard view">
+Test again - **same command, better response**:
+```bash
+zenml deployment invoke support_agent \
+  --text="my card is lost and i need a replacement"
+```
 
-Above you can see the dashboard view of the pipeline we just ran in the ZenML Dashboard.
-You can find the URL for this within the logs produced by the command above.
+**Result**: Targeted response - `"intent": "card_lost", "response": "I'll help you with your lost card immediately. Let me freeze your current card and start the replacement process. You should receive your new card within 3-5 business days."`
 
-As you can see the pipeline has run successfully. It also printed out some examples - however it seems the model is not
-yet able to solve the task well. What we did so far was validate that the pipeline and its individual steps work
-well together.
+### Phase 4: Evaluate Performance
 
-### 🌵 Running Remotely
-
-Our last section confirmed to us, that the pipeline works. Let's now run the pipeline in the environment of your choice.
-
-For you to be able to try this next section, you will need to have access to a cloud environment (GCP, Azure, AWS).
-ZenML wraps around all the major cloud providers and orchestration tools and lets you easily deploy your code onto them.
-
-To do this lets head over to the `Stack` section of your ZenML Dashboard. Here you'll be able to either connect to an
-existing or deploy a new environment. Choose on of the options presented to you there and come back when you have a
-stack ready to go. Then proceed to the appropriate section below. **Do not** run all three. Also be sure that you
-are running with a remote ZenML server (see Step 1 above).
-
-<img src=".assets/StackCreate.png" width="50%" alt="Stack creation in the ZenML Dashboard">
-
-#### AWS
-
-For AWS you will need to install some aws requirements in your local environment. You will also
-need an AWS stack registered in ZenML.
+See the dramatic difference! Run evaluation to compare generic vs. structured responses:
 
 ```bash
-zenml integration install aws s3 -y
-
-zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small
+python run.py --evaluate
 ```
 
-You can edit `configs/training_aws.yaml` to adjust the settings for running your pipeline in aws.
+This generates:
+- Accuracy & F1 scores comparing generic vs. classified responses
+- Response time analysis
+- Confusion matrices with ZenML styling
+- Performance comparison visualizations
 
-#### GCP
+## 🤖 How It Works
 
-For GCP you will need to install the GCP integration in your local environment. You will also
-need a GCP-based stack registered in ZenML.
+The agent checks for production models at startup:
 
-```bash
-zenml integration install gcp
-
-zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small
+```python
+@pipeline(on_init=on_init_hook)  # Runs once at deployment
+def support_agent(text: str, use_classifier: bool):
+    classification = classify_intent(text, use_classifier)
+    response = generate_response(classification)
+    return response
 ```
 
-You can edit `configs/training_gcp.yaml` to adjust the settings.
-
-#### Azure
-
-```bash
-zenml integration install azure
-
-zenml stack set <INSERT_YOUR_STACK_NAME_HERE>
-python run.py --model_type=t5-small
+The magic happens in the init hook:
+```python
+def on_init_hook():
+    # Find artifact tagged "production"
+    if production_classifier_exists:
+        load_and_use_it()  # Agent upgraded!
 ```
 
-You can edit `configs/training_azure.yaml` to adjust the settings.
+## 🏗️ Key ZenML Features
 
-No matter which of these you choose, you should end up with a running pipeline on the backend of your choice. 
+- **Unified Workflows**: Same pipeline concept for training (batch), serving (deployed), and evaluation
+- **Production Tagging**: `add_tags(tags=["production"])` in training
+- **Warm Serving**: Models load once at startup, not per request
+- **Auto-upgrade**: Deployments find and use production artifacts
+- **Built-in Evaluation**: Compare model performance with rich visualizations
 
-<img src=".assets/CloudDAGs.png" width="100%" alt="Pipeline running on Cloud orchestrator.">
+## 📁 Project Structure
 
-## Further exploration
+```
+quickstart/
+├── run.py                          # Training & Evaluation CLI
+├── utils.py                        # Shared utilities (LLM calls, classifier manager)
+├── configs/agent.yaml              # Deployment config
+├── pipelines/
+│   ├── intent_training_pipeline.py # Batch training (TF-IDF + LogisticRegression)
+│   ├── support_agent.py            # Real-time serving with auto-upgrade
+│   └── evaluation_pipeline.py      # Performance comparison with visualizations
+├── steps/                          # Pipeline steps
+│   ├── data.py                     # Banking intent dataset (50+ examples)
+│   ├── train.py                    # Training step with production tagging
+│   ├── infer.py                    # Inference with generic/structured responses
+│   └── evaluate.py                 # Comparison with confusion matrices
+└── visualizations/                 # HTML templates and CSS
+    ├── __init__.py                 # Template rendering utilities
+    ├── evaluation_template.html    # HTML template for performance comparison
+    └── styles.css                  # ZenML-styled CSS for dashboard
+```
 
-This was just the tip of the iceberg of what ZenML can do; check out the [**docs**](https://docs.zenml.io/) to learn
-more
-about the capabilities of ZenML. For example, you might want to:
+## 🔄 What's Next?
 
-* Learn more about ZenML by following our [guides](https://docs.zenml.io/user-guide) or more generally our [docs](https://docs.zenml.io/)
-* Explore our [projects repository](https://github.com/zenml-io/zenml-projects) to find interesting use cases that leverage zenml
+This quickstart shows the foundation. In production, you might:
 
-## What next?
+- **Collect real conversation data** from agent interactions via tracing tools like Langfuse, Datadog, etc.
+- **Fine-tune larger models** (DistilBERT, small LLMs) for better accuracy
+- **A/B test model versions** by deploying different tagged artifacts
+- **Deploy to any cloud infrastructure** with [stacks](https://docs.zenml.io/stacks)
 
-* If you have questions or feedback... join our [**Slack Community**](https://zenml.io/slack) and become part of the
-  ZenML family!
-* If you want to quickly get started with ZenML, check out [ZenML Pro](https://zenml.io/pro).
+## 🎯 The Big Picture
+
+This demonstrates ZenML's core value: **one framework for ML and Agents**. Train offline, tag as production, serve online, evaluate performance - all with the same developer experience.
+
+---
+
+**Ready to build your own AI workflows?**
+
+- 📖 [Full ZenML Documentation](https://docs.zenml.io/)
+- 💬 [Join our Community](https://zenml.io/slack)
+- 🏢 [ZenML Pro](https://zenml.io/pro) for teams

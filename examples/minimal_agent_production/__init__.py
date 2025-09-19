@@ -1,21 +1,19 @@
-"""Minimal Agent Production Example - Document Analysis Pipeline.
+"""Document Analysis Pipeline - Production Ready with ZenML.
 
-This example demonstrates a production-ready document analysis system using ZenML.
-The system transforms documents through analysis pipelines instead of real-time
-chat interfaces, making it ideal for batch processing workflows.
+This example demonstrates how to build and deploy a document analysis system
+as an HTTP endpoint using ZenML pipelines. Analyze documents with AI-powered
+summarization, keyword extraction, sentiment analysis, and readability scoring.
 
 Key Features:
-- Document upload and automatic type inference
+- Deploy pipelines as scalable HTTP endpoints
 - LLM-based analysis with deterministic fallbacks
-- Quality evaluation and metrics collection
-- HTML report generation for visualization
-- Web interface for document submission
+- Quality evaluation and continuous improvement
+- Web interface and programmatic client examples
 
 Main Components:
-- models.py: Pydantic models for data validation
-- pipelines/: ZenML pipeline definitions
-- steps/: Individual pipeline step implementations
-- app/: FastAPI web application
-- run_production.py: Production pipeline execution
-- run_evaluation.py: Quality evaluation pipeline
+- models.py: Pydantic data models
+- pipelines/: Document analysis and evaluation pipelines
+- steps/: Individual processing steps
+- streamlit_app.py: Web interface
+- run_evaluation.py: Quality assessment CLI
 """

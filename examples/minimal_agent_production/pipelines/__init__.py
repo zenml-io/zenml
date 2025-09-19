@@ -1,15 +1,10 @@
 """ZenML pipelines for document analysis.
 
-This module contains pipeline definitions for document analysis workflows:
-
-- production.py: Main document analysis pipeline
-- evaluation.py: Quality evaluation and assessment pipeline  
+This module contains the main document analysis pipeline for production use.
 """
 
-from .evaluation import evaluation_pipeline
-from .production import document_analysis_pipeline
+from .doc_analyzer import doc_analyzer
 
 __all__ = [
-    "document_analysis_pipeline",
-    "evaluation_pipeline",
+    "doc_analyzer",
 ]

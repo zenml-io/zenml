@@ -1,0 +1,219 @@
+/* ZenML Evaluation Dashboard Styles */
+
+.evaluation-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.evaluation-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.evaluation-title {
+    color: #1e293b;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.evaluation-subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.confusion-matrix-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.confusion-matrix-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.performance-comparison {
+    background: linear-gradient(135deg, #fefbff 0%, #f0f9ff 100%);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #e0e7ff;
+}
+
+.performance-title {
+    color: #1e293b;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    text-align: center;
+}
+
+.metrics-container {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.metric-section {
+    flex: 1;
+    min-width: 250px;
+}
+
+.metric-header {
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    text-align: center;
+}
+
+.metric-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.metric-bar-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 60px;
+}
+
+.metric-bar-track {
+    flex: 1;
+    background: #e5e7eb;
+    border-radius: 4px;
+    height: 20px;
+    position: relative;
+}
+
+.metric-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.metric-bar-fill.winner {
+    background: linear-gradient(135deg, #059669, #10b981);
+}
+
+.metric-bar-fill.loser {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.winner-announcement {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.winner-announcement.classifier-wins {
+    background: linear-gradient(135deg, #dcfdf7, #a7f3d0);
+    border: 1px solid #10b981;
+}
+
+.winner-announcement.llm-wins {
+    background: linear-gradient(135deg, #ede9fe, #c4b5fd);
+    border: 1px solid #8b5cf6;
+}
+
+.winner-announcement.mixed {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #f59e0b;
+}
+
+.winner-text {
+    font-size: 13px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.winner-text.classifier-wins {
+    color: #065f46;
+}
+
+.winner-text.llm-wins {
+    color: #581c87;
+}
+
+.winner-text.mixed {
+    color: #92400e;
+}
+
+.approach-comparison {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.approach-card {
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+}
+
+.approach-badge {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: white;
+}
+
+.approach-badge.llm-only {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.approach-badge.with-classifier {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.approach-description {
+    color: #64748b;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.interpretation-note {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 16px;
+    text-align: center;
+}
+
+.interpretation-text {
+    color: #92400e;
+    font-size: 12px;
+    margin: 0;
+    font-weight: 500;
+}
