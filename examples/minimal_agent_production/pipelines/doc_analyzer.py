@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 # Docker settings for reproducible pipeline execution
 docker_settings = DockerSettings(
     requirements="requirements.txt",
-    python_package_installer="uv",
+    parent_image="zenmldocker/zenml:0.85.0-py3.12",
 )
 
 
@@ -34,7 +34,7 @@ docker_settings = DockerSettings(
     model=Model(name="document_analysis_agent", version="production"),
     enable_cache=False,  # Disable caching for serving
 )
-def document_analysis_pipeline(
+def doc_analyzer(
     content: Optional[str] = None,
     url: Optional[str] = None,
     path: Optional[str] = None,
@@ -89,7 +89,7 @@ def document_analysis_pipeline(
     render_analysis_report_step(analysis)
 
     logger.info(
-        f"Document analysis pipeline completed successfully for: {document.filename}"
+        f"Document analysis pipeline completed successfully for: {filename or 'document'}"
     )
 
     # Return analysis for serving deployment
