@@ -279,16 +279,18 @@ class PipelineServingService:
             output_mappings = self.snapshot.pipeline_spec.outputs
             for output_mapping in output_mappings:
                 if output_mapping.step_name in runtime_outputs.keys():
-                    filtered_outputs[f"{output_mapping.step_name}-{output_mapping.output_name}"] = (
-                        runtime_outputs[output_mapping.step_name].get(
-                            output_mapping.output_name, None
-                        )
+                    filtered_outputs[
+                        f"{output_mapping.step_name}-{output_mapping.output_name}"
+                    ] = runtime_outputs[output_mapping.step_name].get(
+                        output_mapping.output_name, None
                     )
                 else:
                     logger.warning(
                         f"Output {output_mapping.output_name} not found in runtime outputs for step {output_mapping.step_name}"
                     )
-                    filtered_outputs[f"{output_mapping.step_name}-{output_mapping.output_name}"] = None
+                    filtered_outputs[
+                        f"{output_mapping.step_name}-{output_mapping.output_name}"
+                    ] = None
         else:
             logger.debug("No output mappings found, returning empty outputs")
 
