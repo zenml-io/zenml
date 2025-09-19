@@ -1,11 +1,18 @@
 """Visualization utilities for the ZenML quickstart."""
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 
 def load_template(template_name: str) -> str:
-    """Load HTML template from the visualizations folder."""
+    """Load HTML template from the visualizations folder.
+
+    Args:
+        template_name: Name of the template file to load.
+
+    Returns:
+        Content of the template file as a string.
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     template_path = os.path.join(current_dir, template_name)
 
@@ -14,7 +21,14 @@ def load_template(template_name: str) -> str:
 
 
 def load_css(css_name: str) -> str:
-    """Load CSS file from the visualizations folder."""
+    """Load CSS file from the visualizations folder.
+
+    Args:
+        css_name: Name of the CSS file to load.
+
+    Returns:
+        Content of the CSS file as a string.
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     css_path = os.path.join(current_dir, css_name)
 
@@ -31,14 +45,27 @@ def render_evaluation_template(
     accuracy_winner: str,
     f1_winner: str
 ) -> str:
-    """Render the evaluation template with performance data."""
+    """Render the evaluation template with performance data.
+
+    Args:
+        img_base64: Base64-encoded image data for confusion matrices.
+        llm_accuracy: Accuracy score for LLM-only mode.
+        classifier_accuracy: Accuracy score for classifier mode.
+        llm_f1: F1 score for LLM-only mode.
+        classifier_f1: F1 score for classifier mode.
+        accuracy_winner: Winner for accuracy metric.
+        f1_winner: Winner for F1 metric.
+
+    Returns:
+        Rendered HTML template as a string.
+    """
 
     # Load template and CSS
     template = load_template("evaluation_template.html")
     css_styles = load_css("styles.css")
 
     # Determine winner classes and messages
-    def get_winner_info():
+    def get_winner_info() -> Tuple[str, str, str]:
         if (accuracy_winner == 'With Classifier' and f1_winner == 'With Classifier') or \
            (accuracy_winner == 'With Classifier' and f1_winner == 'Tie') or \
            (f1_winner == 'With Classifier' and accuracy_winner == 'Tie'):

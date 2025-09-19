@@ -43,7 +43,11 @@ def _load_production_classifier_if_any() -> None:
 
 
 def on_init_hook(**_: Any) -> None:
-    """Initialize the agent by loading production classifier if available."""
+    """Initialize the agent by loading production classifier if available.
+
+    Args:
+        **_: Unused keyword arguments from ZenML.
+    """
     _load_production_classifier_if_any()
 
 
@@ -55,8 +59,11 @@ def agent_serving_pipeline(
     """Agent serving pipeline that optionally uses classifier.
 
     Args:
-        text: Customer input text to process
-        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False)
+        text: Customer input text to process.
+        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False).
+
+    Returns:
+        JSON-formatted agent response containing intent classification and generated response.
     """
     # Classify the intent (classifier usage controlled by parameter)
     classification_result = classify_intent(text, use_classifier)

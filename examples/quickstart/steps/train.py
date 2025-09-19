@@ -20,7 +20,15 @@ def train_classifier_step(
 ) -> Annotated[
     Pipeline, ArtifactConfig(name="intent-classifier", tags=["demo"])
 ]:
-    """Train a classifier and tag THIS artifact version as 'production'."""
+    """Train a classifier and tag THIS artifact version as 'production'.
+
+    Args:
+        texts: List of text samples for training.
+        labels: List of corresponding labels for the text samples.
+
+    Returns:
+        Trained sklearn pipeline with TF-IDF vectorizer and LogisticRegression.
+    """
     logger.info(f"Training classifier on {len(texts)} examples...")
 
     # Split the data

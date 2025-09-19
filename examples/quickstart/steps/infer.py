@@ -23,8 +23,11 @@ def classify_intent(
     """Classify intent using loaded classifier or fall back to LLM.
 
     Args:
-        text: Customer input text
-        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False)
+        text: Customer input text.
+        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False).
+
+    Returns:
+        Dictionary containing intent, confidence, source, and input text.
     """
     result = {
         "text": text,
@@ -97,7 +100,14 @@ def classify_intent(
 def generate_response(
     classification_result: Dict[str, Any],
 ) -> Annotated[str, "agent_response"]:
-    """Generate response based on classified intent."""
+    """Generate response based on classified intent.
+
+    Args:
+        classification_result: Dictionary containing intent classification results.
+
+    Returns:
+        JSON-formatted string containing the agent response and metadata.
+    """
     intent = classification_result.get("intent", "general")
     confidence = classification_result.get("confidence", 0.0)
     source = classification_result.get("intent_source", "none")

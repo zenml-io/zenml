@@ -3,7 +3,7 @@
 import base64
 import io
 import time
-from typing import Annotated, Dict, List, Tuple
+from typing import Annotated, Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,24 +29,30 @@ logger = get_logger(__name__)
 def evaluate_agent_performance(
     test_texts: List[str], test_labels: List[str]
 ) -> Tuple[
-    Annotated[Dict, "evaluation_results"],
+    Annotated[Dict[str, Any], "evaluation_results"],
     Annotated[HTMLString, "confusion_matrices_html"],
 ]:
-    """Evaluate both LLM-only and With Intent Classifier agent performance."""
+    """Evaluate both LLM-only and With Intent Classifier agent performance.
+
+    Args:
+        test_texts: List of test text samples.
+        test_labels: List of corresponding ground truth labels.
+
+    Returns:
+        Tuple of evaluation results dictionary and HTML visualization string.
+    """
     logger.info(f"Evaluating agent performance on {len(test_texts)} examples")
 
     # Evaluate LLM-only mode
     logger.info("Evaluating LLM-only mode...")
-    llm_predictions, llm_latencies = _evaluate_llm_mode(
-        test_texts, test_labels
-    )
+    llm_predictions, llm_latencies = _evaluate_llm_mode(test_texts)
 
     # Evaluate With Intent Classifier mode (try to load production classifier)
     classifier = _load_production_classifier()
     if classifier is not None:
         logger.info("Evaluating With Intent Classifier mode...")
         classifier_predictions, classifier_latencies = (
-            _evaluate_with_classifier_mode(test_texts, test_labels, classifier)
+            _evaluate_with_classifier_mode(test_texts, classifier)
         )
     else:
         logger.warning(
@@ -55,20 +61,24 @@ def evaluate_agent_performance(
         classifier_predictions, classifier_latencies = [], []
 
     # Calculate metrics
-    results = {
+    results: Dict[str, Any] = {
         "test_size": len(test_texts),
         "llm_only": _calculate_metrics(
             test_labels, llm_predictions, llm_latencies
         ),
     }
 
+    llm_metrics = results["llm_only"]
+    assert isinstance(llm_metrics, dict)
+
+    classifier_metrics: Dict[str, Any] = {}
     if classifier_predictions:
         results["with_classifier"] = _calculate_metrics(
             test_labels, classifier_predictions, classifier_latencies
         )
-        results["comparison"] = _compare_modes(
-            results["llm_only"], results["with_classifier"]
-        )
+        classifier_metrics = results["with_classifier"]
+        assert isinstance(classifier_metrics, dict)
+        results["comparison"] = _compare_modes(llm_metrics, classifier_metrics)
 
     # Generate visualizations
     confusion_matrix_html = None
@@ -85,18 +95,18 @@ def evaluate_agent_performance(
                 "modes_evaluated": "LLM + With Classifier"
                 if classifier_predictions
                 else "LLM only",
-                "llm_accuracy": results["llm_only"]["accuracy"],
-                "classifier_accuracy": results["with_classifier"]["accuracy"]
-                if "with_classifier" in results
+                "llm_accuracy": llm_metrics["accuracy"],
+                "classifier_accuracy": classifier_metrics.get("accuracy")
+                if classifier_metrics
                 else None,
             },
             "performance_comparison": results.get("comparison", {}),
             "latency_analysis": {
-                "llm_avg_latency": results["llm_only"]["avg_latency_ms"],
-                "classifier_avg_latency": results["with_classifier"][
+                "llm_avg_latency": llm_metrics["avg_latency_ms"],
+                "classifier_avg_latency": classifier_metrics.get(
                     "avg_latency_ms"
-                ]
-                if "with_classifier" in results
+                )
+                if classifier_metrics
                 else None,
                 "speedup_factor": results["comparison"]["latency_improvement"]
                 if "comparison" in results
@@ -115,8 +125,12 @@ def evaluate_agent_performance(
     return results, html_output
 
 
-def _load_production_classifier():
-    """Load the production-tagged classifier from the artifact store."""
+def _load_production_classifier() -> Any:
+    """Load the production-tagged classifier from the artifact store.
+
+    Returns:
+        The loaded classifier model or None if not found.
+    """
     try:
         client = Client()
         # Find the intent-classifier artifact with production tag
@@ -140,11 +154,15 @@ def _load_production_classifier():
         return None
 
 
-def _evaluate_llm_mode(
-    test_texts: List[str],
-    test_labels: List[str],  # noqa: ARG001
-) -> Tuple[List[str], List[float]]:
-    """Evaluate LLM-only mode performance (generic responses, no intent classification)."""
+def _evaluate_llm_mode(test_texts: List[str]) -> Tuple[List[str], List[float]]:
+    """Evaluate LLM-only mode performance (generic responses, no intent classification).
+
+    Args:
+        test_texts: List of test text samples.
+
+    Returns:
+        Tuple of (predictions, latencies) for LLM-only mode.
+    """
     predictions = []
     latencies = []
 
@@ -164,11 +182,17 @@ def _evaluate_llm_mode(
 
 
 def _evaluate_with_classifier_mode(
-    test_texts: List[str],
-    test_labels: List[str],
-    classifier,  # noqa: ARG001
+    test_texts: List[str], classifier: Any
 ) -> Tuple[List[str], List[float]]:
-    """Evaluate With Intent Classifier mode performance."""
+    """Evaluate With Intent Classifier mode performance.
+
+    Args:
+        test_texts: List of test text samples.
+        classifier: The trained classifier model.
+
+    Returns:
+        Tuple of (predictions, latencies) for classifier mode.
+    """
     predictions = []
     latencies = []
 
@@ -188,8 +212,17 @@ def _evaluate_with_classifier_mode(
 
 def _calculate_metrics(
     labels: List[str], predictions: List[str], latencies: List[float]
-) -> Dict:
-    """Calculate performance metrics."""
+) -> Dict[str, Any]:
+    """Calculate performance metrics.
+
+    Args:
+        labels: List of ground truth labels.
+        predictions: List of predicted labels.
+        latencies: List of prediction latencies in milliseconds.
+
+    Returns:
+        Dictionary containing accuracy, F1 score, and latency metrics.
+    """
     return {
         "accuracy": round(accuracy_score(labels, predictions), 3),
         "f1_score": round(
@@ -204,8 +237,18 @@ def _calculate_metrics(
     }
 
 
-def _compare_modes(llm_results: Dict, classifier_results: Dict) -> Dict:
-    """Compare LLM-only and With Intent Classifier mode performance."""
+def _compare_modes(
+    llm_results: Dict[str, Any], classifier_results: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Compare LLM-only and With Intent Classifier mode performance.
+
+    Args:
+        llm_results: Performance metrics for LLM-only mode.
+        classifier_results: Performance metrics for classifier mode.
+
+    Returns:
+        Dictionary containing improvement metrics and winner information.
+    """
     return {
         "accuracy_improvement": round(
             classifier_results["accuracy"] - llm_results["accuracy"], 3
@@ -232,7 +275,16 @@ def _compare_modes(llm_results: Dict, classifier_results: Dict) -> Dict:
 def _create_comparison_plots(
     labels: List[str], llm_preds: List[str], classifier_preds: List[str]
 ) -> str:
-    """Create modern, interactive-style confusion matrices with ZenML branding."""
+    """Create modern, interactive-style confusion matrices with ZenML branding.
+
+    Args:
+        labels: List of ground truth labels.
+        llm_preds: List of predictions from LLM-only mode.
+        classifier_preds: List of predictions from classifier mode.
+
+    Returns:
+        Base64-encoded HTML string containing the confusion matrix plots.
+    """
     # Get unique labels for consistent ordering
     unique_labels = sorted(list(set(labels)))
 
@@ -373,7 +425,11 @@ def _create_comparison_plots(
 def generate_test_dataset() -> Tuple[
     Annotated[List[str], "test_texts"], Annotated[List[str], "test_labels"]
 ]:
-    """Generate a test dataset for evaluation (different from training)."""
+    """Generate a test dataset for evaluation (different from training).
+
+    Returns:
+        Tuple of (test_texts, test_labels) for evaluating agent performance.
+    """
     # Create additional test examples not in the training set
     test_data = [
         # Card lost variations

@@ -1,7 +1,7 @@
 """Utility functions for the quickstart example."""
 
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Type
 
 from zenml.logger import get_logger
 
@@ -19,16 +19,20 @@ except ImportError:
 class ClassifierManager:
     """Singleton to manage classifier state across pipeline steps."""
 
-    _instance = None
-    _router = None
+    _instance: Optional["ClassifierManager"] = None
+    _router: Optional[Any] = None
 
-    def __new__(cls):
-        """Create singleton instance."""
+    def __new__(cls: Type["ClassifierManager"]) -> "ClassifierManager":
+        """Create singleton instance.
+
+        Returns:
+            The singleton ClassifierManager instance.
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def set_classifier(self, classifier):
+    def set_classifier(self, classifier: Any) -> None:
         """Store the loaded classifier.
 
         Args:
@@ -36,7 +40,7 @@ class ClassifierManager:
         """
         self._router = classifier
 
-    def get_classifier(self):
+    def get_classifier(self) -> Optional[Any]:
         """Retrieve the stored classifier.
 
         Returns:
@@ -44,7 +48,7 @@ class ClassifierManager:
         """
         return self._router
 
-    def has_classifier(self):
+    def has_classifier(self) -> bool:
         """Check if a classifier is loaded.
 
         Returns:
@@ -105,7 +109,11 @@ Respond with just the intent name (e.g., "card_lost") and a confidence score 0-1
             max_tokens=50,
         )
 
-        result = response.choices[0].message.content.strip()
+        result = response.choices[0].message.content
+        if result is None:
+            result = "general,0.5"
+        else:
+            result = result.strip()
 
         # Parse response (e.g., "card_lost,0.85")
         if "," in result:
@@ -205,7 +213,8 @@ Response:"""
             max_tokens=150,
         )
 
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        return content.strip() if content else get_template_response(intent)
 
     except Exception as e:
         logger.error(f"LLM response generation failed: {e}")

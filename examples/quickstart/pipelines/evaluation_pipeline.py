@@ -22,7 +22,11 @@ from zenml.config import DockerSettings
     },
 )
 def agent_evaluation_pipeline() -> Any:
-    """Compare LLM-only vs Hybrid agent performance."""
+    """Compare LLM-only vs Hybrid agent performance.
+
+    Returns:
+        Tuple of evaluation results and HTML visualization for dashboard display.
+    """
     # Generate test dataset
     test_texts, test_labels = generate_test_dataset()
 

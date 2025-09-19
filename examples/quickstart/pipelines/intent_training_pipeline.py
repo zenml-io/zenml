@@ -23,7 +23,11 @@ from zenml.config import DockerSettings
     },
 )
 def intent_training_pipeline() -> Any:
-    """Train intent classifier and tag as production."""
+    """Train intent classifier and tag as production.
+
+    Returns:
+        Trained sklearn pipeline with TF-IDF vectorizer and LogisticRegression classifier.
+    """
     texts, labels = load_toy_intent_data()
     classifier = train_classifier_step(texts, labels)
     return classifier
