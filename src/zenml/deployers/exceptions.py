@@ -13,19 +13,10 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML deployers."""
 
-from typing import (
-    TYPE_CHECKING,
-)
-
 from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 
-if TYPE_CHECKING:
-    pass
-
 logger = get_logger(__name__)
-
-DEFAULT_DEPLOYMENT_LCM_TIMEOUT = 300
 
 
 class DeployerError(Exception):

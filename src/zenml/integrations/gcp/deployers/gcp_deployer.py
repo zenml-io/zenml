@@ -1374,4 +1374,3 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             )
 
         return self.do_get_deployment_state(deployment)
-

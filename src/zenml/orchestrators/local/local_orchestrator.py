@@ -177,16 +177,23 @@ class LocalOrchestrator(BaseOrchestrator):
                 if execution_mode == ExecutionMode.FAIL_FAST:
                     raise
 
-        # If the run context is not set globally, we also run the cleanup hook
-        if not self._run_context:
-            if (
-                cleanup_hook_source
-                := snapshot.pipeline_configuration.cleanup_hook_source
-            ):
-                logger.info("Executing the pipeline's cleanup hook...")
-                load_and_run_hook(
-                    cleanup_hook_source,
-                )
+            finally:
+                try:
+                    # If the run context is not set globally, we also run the
+                    # cleanup hook
+                    if not self._run_context:
+                        if (
+                            cleanup_hook_source
+                            := snapshot.pipeline_configuration.cleanup_hook_source
+                        ):
+                            logger.info(
+                                "Executing the pipeline's cleanup hook..."
+                            )
+                            load_and_run_hook(
+                                cleanup_hook_source,
+                            )
+                except Exception:
+                    logger.exception("Failed to execute cleanup hook.")
 
         if failed_steps:
             raise RuntimeError(

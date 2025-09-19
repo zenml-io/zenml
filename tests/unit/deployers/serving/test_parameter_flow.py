@@ -20,7 +20,6 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.deployers.server import runtime
-from zenml.deployers.server.service import PipelineDeploymentService
 
 
 class WeatherRequest(BaseModel):

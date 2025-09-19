@@ -30,7 +30,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, create_model
-from starlette.concurrency import run_in_threadpool
 
 from zenml.deployers.server.service import PipelineDeploymentService
 from zenml.logger import get_logger
@@ -154,12 +153,11 @@ def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
         name="invoke_pipeline",
         summary="Invoke the pipeline with validated parameters",
     )
-    async def invoke(
+    def _(
         body: InvokeBody,  # type: ignore[valid-type]
         _: None = Depends(verify_token),
     ) -> Dict[str, Any]:
-        return await run_in_threadpool(
-            service.execute_pipeline,
+        return service.execute_pipeline(
             body.parameters.model_dump(),  # type: ignore[attr-defined]
             body.run_name,  # type: ignore[attr-defined]
             body.timeout,  # type: ignore[attr-defined]
