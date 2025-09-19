@@ -51,6 +51,7 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
+from zenml.steps.step_context import StepSharedContext
 from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
@@ -214,7 +215,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The deployment to prepare or run.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
@@ -232,8 +233,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
+            placeholder_run: An optional placeholder run for the snapshot.
+                This will be deleted in case the pipeline run failed.
 
         Raises:
             KeyboardInterrupt: If the orchestrator is synchronous and the
@@ -250,10 +251,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        base_environment = get_config_environment_vars(
+        base_environment, secrets = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
+
+        # TODO: for now, we don't support separate secrets from environment
+        # in the orchestrator environment
+        base_environment.update(secrets)
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -385,11 +390,16 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
-    def run_step(self, step: "Step") -> None:
+    def run_step(
+        self,
+        step: "Step",
+        run_context: Optional[StepSharedContext] = None,
+    ) -> None:
         """Runs the given step.
 
         Args:
             step: The step to run.
+            run_context: A shared run context.
 
         Raises:
             RunStoppedException: If the run was stopped.
@@ -403,6 +413,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 snapshot=self._active_snapshot,
                 step=step,
                 orchestrator_run_id=self.get_orchestrator_run_id(),
+                run_context=run_context,
             )
             launcher.launch()
 

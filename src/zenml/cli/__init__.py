@@ -2510,6 +2510,7 @@ from zenml.cli.authorized_device import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
+from zenml.cli.deployment import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa

@@ -43,6 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.steps.step_context import StepSharedContext
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -107,6 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        run_context: Optional[StepSharedContext] = None,
     ):
         """Initializes the launcher.
 
@@ -114,6 +116,7 @@ class StepLauncher:
             snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+            run_context: The shared run context.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -121,6 +124,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._run_context = run_context
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -137,9 +141,16 @@ class StepLauncher:
 
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful shutdown, chaining previous handlers."""
-        # Save previous handlers
-        self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
-        self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        try:
+            # Save previous handlers
+            self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
+            self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot set up signal handlers: {e}")
+            self._prev_sigterm_handler = None
+            self._prev_sigint_handler = None
+            return
 
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully.
@@ -231,8 +242,13 @@ class StepLauncher:
                     self._prev_sigint_handler(signum, frame)
 
         # Register handlers for common termination signals
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
+        try:
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot register signal handlers: {e}")
+            # Continue without signal handling - the step will still run
 
     def launch(self) -> None:
         """Launches the step.
@@ -409,7 +425,6 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Prepare step run information.
         step_run_info = StepRunInfo(
             config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
@@ -424,7 +439,6 @@ class StepLauncher:
             step_run=step_run, stack=self._stack, step=self._step
         )
 
-        # Run the step.
         start_time = time.time()
         try:
             if self._step.config.step_operator:
@@ -480,9 +494,13 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars(
+        environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
+        # TODO: for now, we don't support separate secrets from environment
+        # in the step operator environment
+        environment.update(secrets)
+
         environment.update(
             env_utils.get_step_environment(
                 step_config=step_run_info.config,
@@ -518,7 +536,9 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(step=self._step, stack=self._stack)
+        runner = StepRunner(
+            step=self._step, stack=self._stack, run_context=self._run_context
+        )
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,

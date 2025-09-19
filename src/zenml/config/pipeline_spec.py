@@ -46,6 +46,7 @@ class PipelineSpec(FrozenBaseModel):
     version: str = "0.5"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
+    input_schema: Dict[str, Any] = {}
     steps: List[StepSpec]
     outputs: List[OutputSpec] = []
     output_schema: Optional[Dict[str, Any]] = Field(

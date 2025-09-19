@@ -68,6 +68,7 @@ from zenml.constants import (
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
+    DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -165,6 +166,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -1758,6 +1763,98 @@ class RestZenStore(BaseZenStore):
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)
+
+    # -------------------- Deployments --------------------
+
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_resource(
+            resource=deployment,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_deployments(
+        self,
+        deployment_filter_model: DeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            filter_model=deployment_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        return self._update_resource(
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
+        )
 
     # -------------------- Run templates --------------------
 
@@ -3973,7 +4070,7 @@ class RestZenStore(BaseZenStore):
         expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
+        deployment_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token.
 
@@ -3982,7 +4079,7 @@ class RestZenStore(BaseZenStore):
             expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
-            step_run_id: The ID of the step run to get a token for.
+            deployment_id: The ID of the deployment to get a token for.
 
         Returns:
             The API token.
@@ -3999,8 +4096,8 @@ class RestZenStore(BaseZenStore):
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
             params["pipeline_run_id"] = pipeline_run_id
-        if step_run_id:
-            params["step_run_id"] = step_run_id
+        if deployment_id:
+            params["deployment_id"] = deployment_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(

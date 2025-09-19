@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
-    from zenml.types import HookSpecification
+    from zenml.types import HookSpecification, InitHookSpecification
     from zenml.utils.tag_utils import Tag
 
     F = TypeVar("F", bound=Callable[..., None])
@@ -62,6 +62,9 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
@@ -85,6 +88,9 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
@@ -111,6 +117,14 @@ def pipeline(
             function with a single argument of type `BaseException`, or a source
             path to such a function (e.g. `module.my_function`).
         on_success: Callback function in event of success of the step. Can be a
+            function with no arguments, or a source path to such a function
+            (e.g. `module.my_function`).
+        on_init: Callback function to run on initialization of the pipeline. Can
+            be a function with no arguments, or a source path to such a function
+            (e.g. `module.my_function`) if the function returns a value, it will
+            be stored as the pipeline state.
+        on_init_kwargs: Arguments for the init hook.
+        on_cleanup: Callback function to run on cleanup of the pipeline. Can be a
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
@@ -140,6 +154,9 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_init=on_init,
+            on_init_kwargs=on_init_kwargs,
+            on_cleanup=on_cleanup,
             model=model,
             retry=retry,
             substitutions=substitutions,

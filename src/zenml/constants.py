@@ -216,6 +216,7 @@ ENV_ZENML_RUNNER_POD_TIMEOUT = "ZENML_RUNNER_POD_TIMEOUT"
 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
     "ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY"
 )
+
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
@@ -402,6 +403,7 @@ LOGS = "/logs"
 PIPELINE_BUILDS = "/pipeline_builds"
 PIPELINE_CONFIGURATION = "/pipeline-configuration"
 PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
+DEPLOYMENTS = "/deployments"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
@@ -456,6 +458,9 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
+
+# deployer constants
+DEPLOYER_DOCKER_IMAGE_KEY = "deployer"
 
 # Secret constants
 SECRET_VALUES = "values"

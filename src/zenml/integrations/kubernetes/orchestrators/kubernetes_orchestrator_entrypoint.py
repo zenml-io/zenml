@@ -300,7 +300,7 @@ def main() -> None:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
 
-        shared_env = get_config_environment_vars()
+        shared_env, secrets = get_config_environment_vars()
         shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
         try:
@@ -426,6 +426,8 @@ def main() -> None:
                         },
                     }
                 )
+            else:
+                step_env.update(secrets)
 
             pod_manifest = build_pod_manifest(
                 pod_name=None,

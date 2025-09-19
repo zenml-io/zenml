@@ -43,6 +43,8 @@ class JWTToken(BaseModel):
         schedule_id: The id of the schedule for which the token was issued.
         pipeline_run_id: The id of the pipeline run for which the token was
             issued.
+        deployment_id: The id of the deployment for which the token was
+            issued.
         step_run_id: The id of the step run for which the token was
             issued.
         session_id: The id of the authenticated session (used for CSRF).
@@ -54,6 +56,7 @@ class JWTToken(BaseModel):
     api_key_id: Optional[UUID] = None
     schedule_id: Optional[UUID] = None
     pipeline_run_id: Optional[UUID] = None
+    deployment_id: Optional[UUID] = None
     session_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
@@ -147,6 +150,16 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
+        deployment_id: Optional[UUID] = None
+        if "deployment_id" in claims:
+            try:
+                deployment_id = UUID(claims.pop("deployment_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the deployment_id claim is not a valid "
+                    "UUID"
+                )
+
         session_id: Optional[UUID] = None
         if "session_id" in claims:
             try:
@@ -163,6 +176,7 @@ class JWTToken(BaseModel):
             api_key_id=api_key_id,
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
+            deployment_id=deployment_id,
             session_id=session_id,
             claims=claims,
         )
@@ -200,6 +214,8 @@ class JWTToken(BaseModel):
             claims["schedule_id"] = str(self.schedule_id)
         if self.pipeline_run_id:
             claims["pipeline_run_id"] = str(self.pipeline_run_id)
+        if self.deployment_id:
+            claims["deployment_id"] = str(self.deployment_id)
         if self.session_id:
             claims["session_id"] = str(self.session_id)
 

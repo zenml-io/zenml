@@ -171,7 +171,7 @@ def main() -> None:
 
         logger.info("Fetching pipeline run: %s", run.id)
 
-        shared_env = get_config_environment_vars()
+        shared_env, secrets = get_config_environment_vars()
         shared_env[ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID] = (
             orchestrator_run_id
         )
@@ -211,6 +211,8 @@ def main() -> None:
                         step_config=step.config, stack=active_stack
                     )
                 )
+                # For now, we don't support separating secrets from environment
+                step_env.update(secrets)
 
                 # Create the Docker run command
                 run_command = create_docker_run_command(

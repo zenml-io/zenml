@@ -415,8 +415,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The list of upstream steps for each step.
 
         Raises:
-            RuntimeError: If the pipeline run has no deployment or
-                the deployment has no pipeline spec.
+            RuntimeError: If the pipeline run has no snapshot or
+                the snapshot has no pipeline spec.
         """
         if self.snapshot and self.snapshot.pipeline_spec:
             pipeline_spec = PipelineSpec.model_validate_json(

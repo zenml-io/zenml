@@ -720,12 +720,14 @@ class BaseStep:
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(
+                on_failure, allow_exception_arg=True
+            )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
-            success_hook_source = resolve_and_validate_hook(on_success)
+            success_hook_source, _ = resolve_and_validate_hook(on_success)
 
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)

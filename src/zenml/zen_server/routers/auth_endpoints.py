@@ -478,6 +478,7 @@ def api_token(
     expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
+    deployment_id: Optional[UUID] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Generate an API token for the current user.
@@ -488,14 +489,14 @@ def api_token(
     * Generic API token: This token is short-lived and can be used for
     generic automation tasks. The expiration can be set by the user, but the
     server will impose a maximum expiration time.
-    * Workload API token: This token is scoped to a specific pipeline run, step
-    run or schedule and is used by pipeline workloads to authenticate with the
-    server. A pipeline run ID, step run ID or schedule ID must be provided and
-    the generated token will only be valid for the indicated pipeline run, step
-    run or schedule. No time limit is imposed on the validity of the token.
-    A workload API token can be used to authenticate and generate another
-    workload API token, but only for the same schedule, pipeline run ID or step
-    run ID, in that order.
+    * Workload API token: This token is scoped to a specific pipeline run,
+    schedule or deployment and is used by pipeline workloads to
+    authenticate with the server. A pipeline run ID, schedule ID or deployment
+    ID must be provided and the generated token will only be valid for the
+    indicated pipeline run, schedule or deployment.
+    No time limit is imposed on the validity of the token. A workload API token
+    can be used to authenticate and generate another workload API token, but
+    only for the same schedule, pipeline run ID or deployment ID, in that order.
 
     Args:
         token_type: The type of API token to generate.
@@ -506,6 +507,8 @@ def api_token(
         schedule_id: The ID of the schedule to scope the workload API token to.
         pipeline_run_id: The ID of the pipeline run to scope the workload API
             token to.
+        deployment_id: The ID of the deployment to scope the workload
+            API token to.
         auth_context: The authentication context.
 
     Returns:
@@ -521,10 +524,10 @@ def api_token(
         raise AuthorizationException("Not authenticated.")
 
     if token_type == APITokenType.GENERIC:
-        if schedule_id or pipeline_run_id:
+        if schedule_id or pipeline_run_id or deployment_id:
             raise ValueError(
-                "Generic API tokens cannot be scoped to a schedule or pipeline "
-                "run."
+                "Generic API tokens cannot be scoped to a schedule, pipeline "
+                "run or deployment."
             )
 
         config = server_config()
@@ -548,10 +551,12 @@ def api_token(
 
     schedule_id = schedule_id or token.schedule_id
     pipeline_run_id = pipeline_run_id or token.pipeline_run_id
+    deployment_id = deployment_id or token.deployment_id
 
-    if not pipeline_run_id and not schedule_id:
+    if not pipeline_run_id and not schedule_id and not deployment_id:
         raise ValueError(
-            "Workload API tokens must be scoped to a schedule or pipeline run."
+            "Workload API tokens must be scoped to a schedule, pipeline run or "
+            "deployment."
         )
 
     if schedule_id and token.schedule_id and schedule_id != token.schedule_id:
@@ -570,6 +575,17 @@ def api_token(
             f"Unable to scope API token to pipeline run {pipeline_run_id}. The "
             f"token used to authorize this request is already scoped to "
             f"pipeline run {token.pipeline_run_id}."
+        )
+
+    if (
+        deployment_id
+        and token.deployment_id
+        and deployment_id != token.deployment_id
+    ):
+        raise AuthorizationException(
+            f"Unable to scope API token to deployment {deployment_id}. The "
+            f"token used to authorize this request is already scoped to "
+            f"deployment {token.deployment_id}."
         )
 
     project_id: Optional[UUID] = None
@@ -614,6 +630,19 @@ def api_token(
                 "for security reasons."
             )
 
+    if deployment_id:
+        # The deployment must exist
+        try:
+            deployment = zen_store().get_deployment(
+                deployment_id, hydrate=False
+            )
+        except KeyError:
+            raise ValueError(
+                f"Deployment {deployment_id} does not exist and API tokens cannot "
+                "be generated for non-existent deployments for security reasons."
+            )
+        project_id = deployment.project_id
+
     assert project_id is not None
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN,
@@ -628,6 +657,7 @@ def api_token(
         device=auth_context.device,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
+        deployment_id=deployment_id,
         # Don't include the access token as a cookie in the response
         response=None,
         # Never expire the token

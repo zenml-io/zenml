@@ -14,10 +14,11 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode
+from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -26,6 +27,7 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.stack import Stack
+from zenml.steps.step_context import StepSharedContext
 from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
@@ -43,6 +45,15 @@ class LocalOrchestrator(BaseOrchestrator):
     """
 
     _orchestrator_run_id: Optional[str] = None
+    _run_context: Optional[StepSharedContext] = None
+
+    def set_shared_run_state(self, state: Optional[Any]) -> None:
+        """Sets the state to be shared between all steps of all runs executed by this orchestrator.
+
+        Args:
+            state: the state to be shared
+        """
+        self._run_context = StepSharedContext(state=state)
 
     def submit_pipeline(
         self,
@@ -90,6 +101,24 @@ class LocalOrchestrator(BaseOrchestrator):
 
         failed_steps: List[str] = []
         skipped_steps: List[str] = []
+
+        # If the run context is not set globally, we initialize it by running
+        # the init hook
+        if self._run_context:
+            run_context = self._run_context
+        else:
+            state = None
+            if (
+                init_hook_source
+                := snapshot.pipeline_configuration.init_hook_source
+            ):
+                logger.info("Executing the pipeline's init hook...")
+                state = load_and_run_hook(
+                    init_hook_source,
+                    hook_parameters=snapshot.pipeline_configuration.init_hook_kwargs,
+                    raise_on_error=True,
+                )
+            run_context = StepSharedContext(state=state)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -141,12 +170,31 @@ class LocalOrchestrator(BaseOrchestrator):
             step_environment = step_environments[step_name]
             try:
                 with temporary_environment(step_environment):
-                    self.run_step(step=step)
+                    self.run_step(step=step, run_context=run_context)
             except Exception:
+                logger.exception("Failed to execute step %s.", step_name)
                 failed_steps.append(step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
                     raise
+
+            finally:
+                try:
+                    # If the run context is not set globally, we also run the
+                    # cleanup hook
+                    if not self._run_context:
+                        if (
+                            cleanup_hook_source
+                            := snapshot.pipeline_configuration.cleanup_hook_source
+                        ):
+                            logger.info(
+                                "Executing the pipeline's cleanup hook..."
+                            )
+                            load_and_run_hook(
+                                cleanup_hook_source,
+                            )
+                except Exception:
+                    logger.exception("Failed to execute cleanup hook.")
 
         if failed_steps:
             raise RuntimeError(
