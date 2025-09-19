@@ -655,9 +655,14 @@ class Compiler:
         except Exception as e:
             logger.warning("Failed to compute pipeline output schema: %s", e)
             output_schema = None
-            
+
         try:
-            input_schema = pipeline.get_parameters_model().model_json_schema()
+            if pipeline.get_parameters_model():
+                input_schema = (
+                    pipeline.get_parameters_model().model_json_schema()
+                )
+            else:
+                input_schema = None
         except Exception as e:
             logger.warning("Failed to compute pipeline input schema: %s", e)
             input_schema = None

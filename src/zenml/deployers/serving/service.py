@@ -51,7 +51,7 @@ class PipelineServingService:
             snapshot_id: The ID of the snapshot to deploy.
         """
         self.snapshot_id: Union[str, UUID] = snapshot_id
-        self.snapshot: Optional[PipelineSnapshotResponse] = None
+        self._client = Client()
         self.pipeline_state: Optional[Any] = None
 
         # Execution tracking
@@ -63,9 +63,21 @@ class PipelineServingService:
         self._orchestrator: Optional[BaseOrchestrator] = None
         self._params_model: Optional[Type[BaseModel]] = None
         # Lazily initialized cached client
-        self._client: Optional[Client] = None
 
-        logger.info(f"Initializing service for snapshot: {snapshot_id}")
+        logger.info("Loading pipeline snapshot configuration...")
+
+        try:
+            # Accept both str and UUID for flexibility
+            if isinstance(self.snapshot_id, str):
+                snapshot_id = UUID(self.snapshot_id)
+            else:
+                snapshot_id = self.snapshot_id
+
+            self.snapshot: PipelineSnapshotResponse = (
+                self._client.zen_store.get_snapshot(snapshot_id=snapshot_id)
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to load snapshot: {e}")
 
     @property
     def params_model(self) -> Optional[Type[BaseModel]]:
@@ -101,8 +113,6 @@ class PipelineServingService:
         Returns:
             The cached ZenML client instance.
         """
-        if self._client is None:
-            self._client = Client()
         return self._client
 
     def initialize(self) -> None:
@@ -112,20 +122,6 @@ class PipelineServingService:
             Exception: If the service cannot be initialized.
         """
         try:
-            logger.info("Loading pipeline snapshot configuration...")
-
-            # Load snapshot from ZenML store
-            client = self._get_client()
-            # Accept both str and UUID for flexibility
-            if isinstance(self.snapshot_id, str):
-                snapshot_id = UUID(self.snapshot_id)
-            else:
-                snapshot_id = self.snapshot_id
-
-            self.snapshot = client.zen_store.get_snapshot(
-                snapshot_id=snapshot_id
-            )
-
             # Activate integrations to ensure all components are available
             integration_registry.activate_integrations()
 
@@ -201,10 +197,6 @@ class PipelineServingService:
         """
         # Unused parameters for future implementation
         _ = run_name, timeout
-
-        if not self.snapshot:
-            raise RuntimeError("Service not properly initialized")
-
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
@@ -234,9 +226,6 @@ class PipelineServingService:
         Returns:
             A dictionary containing service information.
         """
-        if not self.snapshot:
-            return {"error": "Service not initialized"}
-
         return {
             "snapshot_id": str(self.snapshot_id),
             "pipeline_name": self.snapshot.pipeline_configuration.name,
@@ -270,7 +259,7 @@ class PipelineServingService:
         Returns:
             True if the service is healthy, otherwise False.
         """
-        return self.snapshot is not None
+        return True
 
     def _map_outputs(
         self,
@@ -285,16 +274,23 @@ class PipelineServingService:
             A dictionary containing outputs and any warnings from filtering.
         """
         filtered_outputs = {}
-        output_mappings = self.snapshot.pipeline_spec.outputs
-        if runtime_outputs:
+        if runtime_outputs and self.snapshot.pipeline_spec:
             # Filter outputs based on pipeline schema (raises RuntimeError if missing)
-            for step_name, output_name in output_mappings.items():
-                if step_name in runtime_outputs:
-                    filtered_outputs[output_name] = runtime_outputs[step_name][
-                        output_name
-                    ]
+            output_mappings = self.snapshot.pipeline_spec.outputs
+            for output_mapping in output_mappings:
+                if output_mapping.step_name in runtime_outputs.keys():
+                    filtered_outputs[f"{output_mapping.step_name}-{output_mapping.output_name}"] = (
+                        runtime_outputs[output_mapping.step_name].get(
+                            output_mapping.output_name, None
+                        )
+                    )
+                else:
+                    logger.warning(
+                        f"Output {output_mapping.output_name} not found in runtime outputs for step {output_mapping.step_name}"
+                    )
+                    filtered_outputs[f"{output_mapping.step_name}-{output_mapping.output_name}"] = None
         else:
-            logger.debug("No output mappings found, returning all outputs")
+            logger.debug("No output mappings found, returning empty outputs")
 
         return filtered_outputs
 
@@ -317,14 +313,13 @@ class PipelineServingService:
             RuntimeError: If the pipeline cannot be executed.
 
         """
-        client = self._get_client()
+        client = self._client
         active_stack: Stack = client.active_stack
 
         if self._orchestrator is None:
             raise RuntimeError("Orchestrator not initialized")
 
         # Create a placeholder run and execute with a known run id
-        assert self.snapshot is not None
         placeholder_run = run_utils.create_placeholder_run(
             snapshot=self.snapshot, logs=None
         )
@@ -356,7 +351,7 @@ class PipelineServingService:
             runtime.stop()
 
         # Fetch the concrete run via its id
-        run: PipelineRunResponse = self._get_client().get_pipeline_run(
+        run: PipelineRunResponse = self._client.get_pipeline_run(
             name_id_or_prefix=placeholder_run.id,
             hydrate=True,
             include_full_metadata=True,
@@ -378,7 +373,6 @@ class PipelineServingService:
                 build_params_model_from_snapshot,
             )
 
-            assert self.snapshot is not None
             return build_params_model_from_snapshot(self.snapshot, strict=True)
         except Exception as e:
             logger.error(f"Failed to construct parameter model: {e}")
@@ -391,13 +385,10 @@ class PipelineServingService:
             Exception: If executing the hook fails.
         """
         init_hook_source = (
-            self.snapshot
-            and self.snapshot.pipeline_configuration.init_hook_source
+            self.snapshot.pipeline_configuration.init_hook_source
         )
         init_hook_kwargs = (
             self.snapshot.pipeline_configuration.init_hook_kwargs
-            if self.snapshot
-            else None
         )
 
         if not init_hook_source:
@@ -414,8 +405,6 @@ class PipelineServingService:
 
     def _log_initialization_success(self) -> None:
         """Log successful initialization."""
-        assert self.snapshot is not None
-
         pipeline_name = self.snapshot.pipeline_configuration.name
         step_count = len(self.snapshot.step_configurations)
         stack_name = (
@@ -449,8 +438,6 @@ class PipelineServingService:
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
 
-        assert self.snapshot is not None
-
         response = {
             "success": True,
             "outputs": mapped_outputs,
@@ -478,7 +465,7 @@ class PipelineServingService:
             The JSON schema for pipeline parameters if available.
         """
         try:
-            if self.snapshot and self.snapshot.pipeline_spec:
+            if self.snapshot.pipeline_spec:
                 return self.snapshot.pipeline_spec.input_schema
         except Exception:
             return None
@@ -492,7 +479,7 @@ class PipelineServingService:
             The JSON schema for the serving response if available.
         """
         try:
-            if self.snapshot and self.snapshot.pipeline_spec:
+            if self.snapshot.pipeline_spec:
                 return self.snapshot.pipeline_spec.output_schema
         except Exception:
             return None
