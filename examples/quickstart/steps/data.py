@@ -20,7 +20,6 @@ INTENT_DATA = [
     ("i need to cancel my card immediately it's gone", "card_lost"),
     ("card replacement please mine is lost", "card_lost"),
     ("urgent my card is missing and i need help", "card_lost"),
-
     # Payments (10 examples)
     ("i need to make a payment", "payments"),
     ("how do i pay my bill", "payments"),
@@ -32,7 +31,6 @@ INTENT_DATA = [
     ("i need to pay my credit card bill", "payments"),
     ("how much is my minimum payment this month", "payments"),
     ("can i make a partial payment today", "payments"),
-
     # Account Balance (8 examples)
     ("what is my current balance", "account_balance"),
     ("how much do i owe", "account_balance"),
@@ -42,7 +40,6 @@ INTENT_DATA = [
     ("how much money is in my account", "account_balance"),
     ("show me my account summary", "account_balance"),
     ("what's my outstanding balance", "account_balance"),
-
     # Dispute (8 examples)
     ("i want to dispute a charge", "dispute"),
     ("this transaction is wrong", "dispute"),
@@ -52,7 +49,6 @@ INTENT_DATA = [
     ("this charge is incorrect please fix it", "dispute"),
     ("someone used my card without permission", "dispute"),
     ("i don't recognize this transaction", "dispute"),
-
     # Credit Limit (6 examples)
     ("can you increase my credit limit", "credit_limit"),
     ("i need a higher credit limit", "credit_limit"),
@@ -60,7 +56,6 @@ INTENT_DATA = [
     ("how do i request a credit line increase", "credit_limit"),
     ("my credit limit is too low can you help", "credit_limit"),
     ("i want to apply for a credit increase", "credit_limit"),
-
     # General (8 examples)
     ("hello", "general"),
     ("hi there", "general"),
@@ -77,7 +72,11 @@ INTENT_DATA = [
 def load_toy_intent_data() -> Tuple[
     Annotated[List[str], "texts"], Annotated[List[str], "labels"]
 ]:
-    """Load small toy dataset for intent classification."""
+    """Load small toy dataset for intent classification.
+
+    Returns:
+        Tuple of (texts, labels) for training the intent classifier.
+    """
     texts, labels = zip(*INTENT_DATA)
     logger.info(
         f"Loaded {len(texts)} training examples across {len(set(labels))} intents:"

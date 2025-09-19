@@ -1,17 +1,17 @@
 """Agent serving pipeline that loads production classifier if available."""
 
-from typing import Any
+from typing import Any, Optional
 
 from steps.infer import classify_intent, generate_response
+
+# Import classifier manager
+from utils import classifier_manager
 
 from zenml import pipeline
 from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-# Import classifier manager
-from utils import classifier_manager
 
 
 def _load_production_classifier_if_any() -> None:
@@ -50,10 +50,16 @@ def on_init_hook(**_: Any) -> None:
 @pipeline(enable_cache=False, on_init=on_init_hook)
 def agent_serving_pipeline(
     text: str = "my card is lost and i need a replacement",
+    use_classifier: Optional[bool] = True,
 ) -> Any:
-    """Agent serving pipeline that uses classifier if available."""
-    # Classify the intent
-    classification_result = classify_intent(text)
+    """Agent serving pipeline that optionally uses classifier.
+
+    Args:
+        text: Customer input text to process
+        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False)
+    """
+    # Classify the intent (classifier usage controlled by parameter)
+    classification_result = classify_intent(text, use_classifier)
 
     # Generate response based on classification
     response = generate_response(classification_result)

@@ -1,7 +1,7 @@
 """Inference step for agent serving pipeline."""
 
 import json
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any, Dict, Optional
 
 from utils import (
     call_llm_for_intent,
@@ -18,8 +18,14 @@ logger = get_logger(__name__)
 @step
 def classify_intent(
     text: str,
+    use_classifier: Optional[bool] = True,
 ) -> Annotated[Dict[str, Any], "classification_result"]:
-    """Classify intent using loaded classifier or fall back to LLM."""
+    """Classify intent using loaded classifier or fall back to LLM.
+
+    Args:
+        text: Customer input text
+        use_classifier: Whether to use the trained classifier (True) or force LLM-only mode (False)
+    """
     result = {
         "text": text,
         "intent": None,
@@ -28,7 +34,7 @@ def classify_intent(
     }
 
     classifier = classifier_manager.get_classifier()
-    if classifier is not None:
+    if classifier is not None and use_classifier:
         try:
             # Use the trained classifier
             predicted_intent = classifier.predict([text])[0]
@@ -51,10 +57,17 @@ def classify_intent(
                 {"intent": "general", "intent_source": "classifier_error"}
             )
     else:
-        # No classifier - use LLM for intent classification
-        logger.info(
-            "No classifier loaded, using LLM for intent classification"
-        )
+        # Classifier disabled or not available - use LLM for intent classification
+        if not use_classifier and classifier is not None:
+            logger.info(
+                "Classifier disabled by parameter, using LLM for intent classification"
+            )
+        elif classifier is None:
+            logger.info(
+                "No classifier loaded, using LLM for intent classification"
+            )
+        else:
+            logger.info("Using LLM for intent classification")
         llm_result = call_llm_for_intent(text)
         result.update(llm_result)
 
@@ -69,8 +82,9 @@ def classify_intent(
             },
             "system_state": {
                 "classifier_loaded": classifier_manager.has_classifier(),
+                "classifier_enabled": use_classifier,
                 "mode": "hybrid"
-                if classifier_manager.has_classifier()
+                if classifier_manager.has_classifier() and use_classifier
                 else "llm_only",
             },
         }

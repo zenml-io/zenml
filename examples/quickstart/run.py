@@ -18,7 +18,9 @@ def main() -> None:
         "--train", action="store_true", help="Run the training pipeline."
     )
     ap.add_argument(
-        "--evaluate", action="store_true", help="Run the evaluation pipeline to compare agent modes."
+        "--evaluate",
+        action="store_true",
+        help="Run the evaluation pipeline to compare agent modes.",
     )
     args = ap.parse_args()
 
@@ -31,9 +33,13 @@ def main() -> None:
             ">> Done. Check dashboard: artifact 'intent-classifier' latest version has tag 'production'."
         )
     elif args.evaluate:
-        print(">> Running agent_evaluation_pipeline to compare LLM vs Hybrid performance.")
-        results = agent_evaluation_pipeline()
-        print(">> Evaluation complete. Check dashboard for detailed metrics and visualizations.")
+        print(
+            ">> Running agent_evaluation_pipeline to compare LLM vs Hybrid performance."
+        )
+        agent_evaluation_pipeline()
+        print(
+            ">> Evaluation complete. Check dashboard for detailed metrics and visualizations."
+        )
     else:
         print("Usage:")
         print("  python run.py --train      # Train classifier")

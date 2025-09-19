@@ -23,20 +23,33 @@ class ClassifierManager:
     _router = None
 
     def __new__(cls):
+        """Create singleton instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def set_classifier(self, classifier):
-        """Store the loaded classifier."""
+        """Store the loaded classifier.
+
+        Args:
+            classifier: The trained classifier to store.
+        """
         self._router = classifier
 
     def get_classifier(self):
-        """Retrieve the stored classifier."""
+        """Retrieve the stored classifier.
+
+        Returns:
+            The stored classifier or None if not set.
+        """
         return self._router
 
     def has_classifier(self):
-        """Check if a classifier is loaded."""
+        """Check if a classifier is loaded.
+
+        Returns:
+            True if classifier is loaded, False otherwise.
+        """
         return self._router is not None
 
 
@@ -45,7 +58,14 @@ classifier_manager = ClassifierManager()
 
 
 def call_llm_for_intent(text: str) -> Dict[str, Any]:
-    """Use LLM to classify intent and provide confidence."""
+    """Use LLM to classify intent and provide confidence.
+
+    Args:
+        text: Customer input text to classify.
+
+    Returns:
+        Dictionary with intent, confidence, and source information.
+    """
     if not OPENAI_AVAILABLE:
         logger.warning("OpenAI not available, using fallback")
         return {
@@ -113,60 +133,36 @@ Respond with just the intent name (e.g., "card_lost") and a confidence score 0-1
 
 
 def call_llm_generic_response(text: str) -> Dict[str, Any]:
-    """Use LLM to provide generic banking response without intent classification."""
-    if not OPENAI_AVAILABLE:
-        logger.warning("OpenAI not available, using fallback")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "fallback",
-        }
+    """Simulate generic banking response without intent classification.
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        logger.warning("OPENAI_API_KEY not set, using fallback")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "fallback",
-        }
+    For evaluation purposes, this always returns 'general' intent to simulate
+    the LLM-only mode where no intent classification occurs.
 
-    try:
-        client = OpenAI(api_key=api_key)
+    Args:
+        text: Customer input text (used for logging only).
 
-        prompt = f"""You are a generic banking support assistant. A customer says: "{text}"
+    Returns:
+        Dictionary with 'general' intent for LLM-only mode simulation.
+    """
+    logger.info(f"LLM Generic: '{text}' → general (generic response)")
 
-Provide a generic, helpful banking response without trying to classify their specific intent. Keep it general and redirect them to contact support for specific help."""
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=100,
-        )
-
-        result = response.choices[0].message.content.strip()
-
-        # Log the result - everything goes to "general" for LLM-only mode
-        logger.info(f"LLM Generic: '{text}' → general (generic response)")
-
-        return {
-            "intent": "general",
-            "confidence": 0.5,
-            "intent_source": "llm_generic",
-        }
-
-    except Exception as e:
-        logger.error(f"LLM call failed: {e}")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "llm_error",
-        }
+    return {
+        "intent": "general",
+        "confidence": 0.5,
+        "intent_source": "llm_generic",
+    }
 
 
 def generate_llm_response(original_text: str, intent: str) -> str:
-    """Generate personalized response using LLM."""
+    """Generate personalized response using LLM.
+
+    Args:
+        original_text: The customer's original input text.
+        intent: The classified intent for the response.
+
+    Returns:
+        Generated response string tailored to the intent.
+    """
     if not OPENAI_AVAILABLE:
         return get_template_response(intent)
 
@@ -217,7 +213,14 @@ Response:"""
 
 
 def get_template_response(intent: str) -> str:
-    """Fallback template responses."""
+    """Fallback template responses.
+
+    Args:
+        intent: The intent for which to get a template response.
+
+    Returns:
+        Template response string for the given intent.
+    """
     responses = {
         "card_lost": "I understand you've lost your card. Here are the immediate steps: 1) Log into your account to freeze the card, 2) Call our 24/7 hotline at 1-800-SUPPORT, 3) Order a replacement card through the app. Your new card will arrive in 3-5 business days.",
         "payments": "For payment assistance: You can make payments through our mobile app, website, or by calling 1-800-PAY-BILL. Automatic payments can be set up in your account settings. Your next payment due date is visible in the app dashboard.",

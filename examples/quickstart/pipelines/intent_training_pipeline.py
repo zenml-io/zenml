@@ -20,7 +20,7 @@ from zenml.config import DockerSettings
                 "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
             },
         )
-    }
+    },
 )
 def intent_training_pipeline() -> Any:
     """Train intent classifier and tag as production."""

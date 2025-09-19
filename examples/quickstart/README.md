@@ -45,6 +45,9 @@ pip install "zenml[server]" scikit-learn openai
 export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ```
 
+**Requirements:**
+- Docker must be installed and running (used for pipeline deployment)
+
 ### Setup
 ```bash
 zenml init
@@ -147,13 +150,21 @@ def on_init_hook():
 ```
 quickstart/
 ├── run.py                          # Training & Evaluation CLI
-├── utils.py                        # Shared utilities
+├── utils.py                        # Shared utilities (LLM calls, classifier manager)
 ├── configs/agent.yaml              # Deployment config
 ├── pipelines/
-│   ├── intent_training_pipeline.py # Batch training
-│   ├── agent_serving_pipeline.py   # Real-time serving
-│   └── evaluation_pipeline.py      # Performance comparison
-└── steps/                          # Pipeline steps
+│   ├── intent_training_pipeline.py # Batch training (TF-IDF + LogisticRegression)
+│   ├── agent_serving_pipeline.py   # Real-time serving with auto-upgrade
+│   └── evaluation_pipeline.py      # Performance comparison with visualizations
+├── steps/                          # Pipeline steps
+│   ├── data.py                     # Banking intent dataset (50+ examples)
+│   ├── train.py                    # Training step with production tagging
+│   ├── infer.py                    # Inference with generic/structured responses
+│   └── evaluate.py                 # Comparison with confusion matrices
+└── visualizations/                 # HTML templates and CSS
+    ├── __init__.py                 # Template rendering utilities
+    ├── evaluation_template.html    # HTML template for performance comparison
+    └── styles.css                  # ZenML-styled CSS for dashboard
 ```
 
 ## 🔄 What's Next?

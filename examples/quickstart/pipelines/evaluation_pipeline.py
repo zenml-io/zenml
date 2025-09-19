@@ -19,7 +19,7 @@ from zenml.config import DockerSettings
                 "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
             },
         )
-    }
+    },
 )
 def agent_evaluation_pipeline() -> Any:
     """Compare LLM-only vs Hybrid agent performance."""
@@ -27,6 +27,8 @@ def agent_evaluation_pipeline() -> Any:
     test_texts, test_labels = generate_test_dataset()
 
     # Run comprehensive evaluation
-    evaluation_results, confusion_matrices_html = evaluate_agent_performance(test_texts, test_labels)
+    evaluation_results, confusion_matrices_html = evaluate_agent_performance(
+        test_texts, test_labels
+    )
 
     return evaluation_results, confusion_matrices_html
