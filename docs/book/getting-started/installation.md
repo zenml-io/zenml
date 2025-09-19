@@ -9,51 +9,41 @@ icon: cauldron
 {% step %}
 #### Install ZenML
 
+ZenML currently supports **Python 3.9, 3.10, 3.11, and 3.12**. Please make sure that you are using a supported Python version.
+
 {% tabs %}
-{% tab title="Direct (pip)" %}
-**ZenML** is a Python package that can be installed directly via `pip`:
+{% tab title="Base package" %}
+**ZenML** is a Python package that can be installed using `pip` or other Python package managers:
 
 ```shell
 pip install zenml
 ```
 
 {% hint style="warning" %}
-Note that ZenML currently supports **Python 3.9, 3.10, 3.11, and 3.12**. Please make sure that you are using a supported Python version.
+Installing the base package only allows you to connect to a [deployed ZenML server](./deploying-zenml/). If you want to use ZenML purely locally, install it with the `local` extra:
+```shell
+pip install 'zenml[local]'
+```
 {% endhint %}
 {% endtab %}
 
-{% tab title="Dashboard" %}
-ZenML comes bundled with a web dashboard that lives inside a [sister repository](https://github.com/zenml-io/zenml-dashboard). In order to get access to the dashboard **locally**, you need to launch the [ZenML Server and Dashboard locally](deploying-zenml/). For this, you need to install the optional dependencies for the ZenML Server:
+{% tab title="Local Dashboard" %}
+If you want to use the [ZenML dashboard](https://github.com/zenml-io/zenml-dashboard) locally, you need to install ZenML with the `server` extra: 
 
 ```shell
-pip install "zenml[server]"
+pip install 'zenml[server]'
 ```
 
-{% hint style="info" %}
-We highly encourage you to install ZenML in a virtual environment. At ZenML, we like to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) or [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) to manage our Python virtual environments.
-{% endhint %}
-{% endtab %}
-
-{% tab title="MacOS Silicon (M1, M2)" %}
-A change in how forking works on Macs running on Apple Silicon means that you\
-should set the following environment variable, which will ensure that your connections to the server remain unbroken:
-
+{% hint style="warning" %}
+If you want to run a local server while running on a Mac with Apple Silicon (M1, M2, M3, M4), you should set the following environment variable:
 ```bash
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
-
-pip install zenml
 ```
+You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html).
+{% endhint %}
 
-You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server, then you don't need to set it.
 {% endtab %}
 
-{% tab title="Nightly Builds" %}
-ZenML also publishes nightly builds under the [`zenml-nightly` package name](https://pypi.org/project/zenml-nightly/). These are built from the latest [`develop` branch](https://github.com/zenml-io/zenml/tree/develop) (to which work ready for release is published) and are not guaranteed to be stable. To install the nightly build, run:
-
-```shell
-pip install zenml-nightly
-```
-{% endtab %}
 {% endtabs %}
 {% endstep %}
 
@@ -96,11 +86,12 @@ If you would like to run the ZenML server with Docker:
 docker run -it -d -p 8080:8080 zenmldocker/zenml-server
 ```
 
-## Deploying the server
+## Starting the local server
 
-Though ZenML can run entirely as a pip package on a local system, complete with the dashboard. You can do this easily:
+By default, ZenML runs without a server connected to a local database on your machine. If you want to access the dashboard locally, you need to start a local server:
 
 ```shell
+# Make sure to have the `server` extra installed
 pip install "zenml[server]"
 zenml login --local  # opens the dashboard locally 
 ```

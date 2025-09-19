@@ -167,7 +167,7 @@ def init(
         except ImportError:
             error(
                 "You need to install the ZenML project template requirements "
-                "to use templates. Please run `pip install zenml[templates]` "
+                "to use templates. Please run `pip install 'zenml[templates]'` "
                 "and try again."
             )
             return
