@@ -150,16 +150,6 @@ class DeploymentResponseBody(ProjectScopedResponseBody):
 class DeploymentResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for deployments."""
 
-    snapshot_id: Optional[UUID] = Field(
-        default=None,
-        title="The pipeline snapshot ID.",
-        description="The ID of the pipeline snapshot being deployed.",
-    )
-    deployer_id: Optional[UUID] = Field(
-        default=None,
-        title="The deployer ID.",
-        description="The ID of the deployer component managing this deployment.",
-    )
     deployment_metadata: Dict[str, Any] = Field(
         title="The metadata of the deployment.",
     )
@@ -231,24 +221,6 @@ class DeploymentResponse(
         return self.get_body().status
 
     @property
-    def snapshot_id(self) -> Optional[UUID]:
-        """The pipeline snapshot ID.
-
-        Returns:
-            The pipeline snapshot ID.
-        """
-        return self.get_metadata().snapshot_id
-
-    @property
-    def deployer_id(self) -> Optional[UUID]:
-        """The deployer ID.
-
-        Returns:
-            The deployer ID.
-        """
-        return self.get_metadata().deployer_id
-
-    @property
     def deployment_metadata(self) -> Dict[str, Any]:
         """The metadata of the deployment.
 
@@ -283,6 +255,30 @@ class DeploymentResponse(
             The deployer.
         """
         return self.get_resources().deployer
+
+    @property
+    def snapshot_id(self) -> Optional[UUID]:
+        """The pipeline snapshot ID.
+
+        Returns:
+            The pipeline snapshot ID.
+        """
+        snapshot = self.get_resources().snapshot
+        if snapshot:
+            return snapshot.id
+        return None
+
+    @property
+    def deployer_id(self) -> Optional[UUID]:
+        """The deployer ID.
+
+        Returns:
+            The deployer ID.
+        """
+        deployer = self.get_resources().deployer
+        if deployer:
+            return deployer.id
+        return None
 
 
 # ------------------ Filter Model ------------------

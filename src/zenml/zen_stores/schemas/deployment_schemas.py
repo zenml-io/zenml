@@ -177,8 +177,6 @@ class DeploymentSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = DeploymentResponseMetadata(
-                snapshot_id=self.snapshot_id,
-                deployer_id=self.deployer_id,
                 deployment_metadata=json.loads(self.deployment_metadata),
                 auth_key=self.auth_key,
             )

@@ -50,6 +50,9 @@ class PipelineDeploymentService:
 
         Args:
             snapshot_id: The ID of the snapshot to deploy.
+
+        Raises:
+            RuntimeError: If the snapshot cannot be loaded.
         """
         self.snapshot_id: Union[str, UUID] = snapshot_id
         self._client = Client()
@@ -196,9 +199,6 @@ class PipelineDeploymentService:
 
         Returns:
             A dictionary containing details about the execution result.
-
-        Raises:
-            RuntimeError: If the service has not been initialized.
         """
         # Unused parameters for future implementation
         _ = run_name, timeout

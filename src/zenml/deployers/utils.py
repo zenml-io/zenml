@@ -126,8 +126,6 @@ def invoke_deployment(
         DeploymentProvisionError: If the deployment is not running
             or has no URL.
         DeploymentHTTPError: If the HTTP request to the endpoint fails.
-        DeploymentInvalidParametersError: If the parameters for the
-            deployment are invalid.
     """
     client = Client()
     try:
