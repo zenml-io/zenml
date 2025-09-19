@@ -376,8 +376,8 @@ def deployment_snapshot_request_from_source_snapshot(
                 ]
             else:
                 raise ValueError(
-                    f"Missing required parameter '{param_name}' for step '{invocation_id}' "
-                    "in deployment execution"
+                    f"Missing required parameter '{param_name}' for step "
+                    f"'{invocation_id}' in deployment execution"
                 )
 
         # Deployment-specific step overrides
@@ -432,6 +432,11 @@ def deployment_snapshot_request_from_source_snapshot(
     # Compute the source snapshot ID
     source_snapshot_id = source_snapshot.source_snapshot_id
 
+    if source_snapshot.stack is None:
+        raise ValueError("Source snapshot stack is None")
+    if source_snapshot.pipeline is None:
+        raise ValueError("Source snapshot pipeline is None")
+
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
         run_name_template=source_snapshot.run_name_template,
@@ -441,9 +446,7 @@ def deployment_snapshot_request_from_source_snapshot(
         client_version=zenml_version,
         server_version=zenml_version,
         stack=source_snapshot.stack.id,
-        pipeline=source_snapshot.pipeline.id
-        if source_snapshot.pipeline
-        else None,
+        pipeline=source_snapshot.pipeline.id,
         schedule=None,
         code_reference=code_reference_request,
         code_path=source_snapshot.code_path,
