@@ -1,14 +1,15 @@
-# ZenML Quickstart: From Agent-Only to Agent+Classifier
+# ZenML Quickstart: Transform Generic AI to Specialized Support Agent
 
-Build a customer support agent that evolves from generic to specialized responses - all without changing code.
+See how ZenML enables you to evolve a generic banking agent into a specialized support system that gives targeted responses.
 
 ## 🎯 What You'll Learn
 
-This quickstart demonstrates the evolution from generic LLM responses to structured, intent-driven customer support. You'll see how adding a simple intent classifier dramatically improves response quality and user experience. We will:
+This quickstart shows you how you might first develop an agent that gives generic responses, then upgrade it with intent classification for specialized support. You'll see how ZenML makes this evolution seamless:
 
 - Deploy a generic banking advice agent that gives general banking advice
 - Train an intent classifier and tag it as "production"
-- Compare generic responses vs. structured, targeted responses
+- Upgrade the deployed agent automatically (it detects the new classifier)
+- Compare generic responses vs. specialized, targeted responses
 - Evaluate performance with metrics and visualizations
 
 ### Understanding ZenML Pipelines
@@ -27,7 +28,7 @@ Example of a simple pipeline:
 def my_pipeline():
     data = load_data()        # Step 1: Load data
     model = train_model(data) # Step 2: Train model using data from step 1
-    do_agentic_loop(model)    # Step 3: Evaluate the model with an agent (toy example)
+    do_agentic_loop(model)    # Step 3: Use model with an agent (toy example)
 ```
 
 **Key insight**: ZenML unifies batch training and real-time serving with the same primitives.

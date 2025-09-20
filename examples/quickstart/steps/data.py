@@ -1,3 +1,19 @@
+# Apache Software License 2.0
+#
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Data loading step for intent classification."""
 
 from typing import Annotated, List, Tuple
@@ -7,7 +23,6 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Expanded dataset for intent classification with more diverse examples
 INTENT_DATA = [
     # Card Lost (10 examples)
     ("my card is lost and i need a replacement", "card_lost"),
@@ -87,6 +102,48 @@ INTENT_DATA = [
     ("i need assistance with banking", "general"),
     ("how are you today", "general"),
     ("goodbye and thank you for your help", "general"),
+    # More Card Lost (6 examples)
+    ("please freeze my card i cant find it", "card_lost"),
+    ("how do i report my card stolen", "card_lost"),
+    ("need a new card mine went missing", "card_lost"),
+    ("lost debit card cancel it now", "card_lost"),
+    ("misplaced my credit card can you disable it", "card_lost"),
+    ("i lost my atm card what now", "card_lost"),
+    # More Payments (6 examples)
+    ("set up autopay for my account", "payments"),
+    ("why was my payment declined", "payments"),
+    ("make a one time payment today", "payments"),
+    ("can i change my payment date", "payments"),
+    ("payment is pending how long will it take", "payments"),
+    ("set a recurring monthly payment", "payments"),
+    # More Account Balance (6 examples)
+    ("whats my available credit right now", "account_balance"),
+    ("show balance for my checking account", "account_balance"),
+    ("how much can i spend before reaching my limit", "account_balance"),
+    ("tell me my statement balance", "account_balance"),
+    ("balance inquiry please", "account_balance"),
+    ("how much do i have available to spend", "account_balance"),
+    # More Dispute (6 examples)
+    ("i want to file a chargeback", "dispute"),
+    ("merchant charged me twice", "dispute"),
+    ("charged the wrong amount", "dispute"),
+    ("i didnt receive the service i paid for", "dispute"),
+    ("how do i dispute a fraudulent transaction", "dispute"),
+    ("there is an unauthorized withdrawal on my card", "dispute"),
+    # More Credit Limit (6 examples)
+    ("lower my credit limit please", "credit_limit"),
+    ("temporary limit increase for travel", "credit_limit"),
+    ("why was my credit limit reduced", "credit_limit"),
+    ("can you review my credit line", "credit_limit"),
+    ("whats my current credit limit", "credit_limit"),
+    ("reduce my credit line for safety", "credit_limit"),
+    # More General (6 examples)
+    ("good afternoon", "general"),
+    ("thanks for your help", "general"),
+    ("i need support with my account", "general"),
+    ("can i talk to an agent", "general"),
+    ("help please", "general"),
+    ("can you assist me with something", "general"),
 ]
 
 

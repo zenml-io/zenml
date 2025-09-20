@@ -1,24 +1,34 @@
+# Apache Software License 2.0
+#
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Evaluation steps for comparing agent performance."""
 
-import base64
-import io
 import time
 from typing import Annotated, Any, Dict, List, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
-    confusion_matrix,
     f1_score,
 )
-from utils import call_llm_generic_response
-from visualizations import render_evaluation_template
+from utils import call_llm_generic_response, load_production_classifier
+from visualizations import create_comparison_plots
 
 from zenml import log_metadata, step
-from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.types import HTMLString
 
@@ -32,7 +42,7 @@ def evaluate_agent_performance(
     Annotated[Dict[str, Any], "evaluation_results"],
     Annotated[HTMLString, "confusion_matrices_html"],
 ]:
-    """Evaluate both LLM-only and With Intent Classifier agent performance.
+    """Evaluate both LLM-only and with Intent Classifier agent performance.
 
     Args:
         test_texts: List of test text samples.
@@ -48,7 +58,7 @@ def evaluate_agent_performance(
     llm_predictions, llm_latencies = _evaluate_llm_mode(test_texts)
 
     # Evaluate With Intent Classifier mode (try to load production classifier)
-    classifier = _load_production_classifier()
+    classifier = load_production_classifier()
     if classifier is not None:
         logger.info("Evaluating With Intent Classifier mode...")
         classifier_predictions, classifier_latencies = (
@@ -83,7 +93,7 @@ def evaluate_agent_performance(
     # Generate visualizations
     confusion_matrix_html = None
     if classifier_predictions:
-        confusion_matrix_html = _create_comparison_plots(
+        confusion_matrix_html = create_comparison_plots(
             test_labels, llm_predictions, classifier_predictions
         )
 
@@ -108,7 +118,7 @@ def evaluate_agent_performance(
                 )
                 if classifier_metrics
                 else None,
-                "speedup_factor": results["comparison"]["latency_improvement"]
+                "speedup_factor": results["comparison"]["speedup_factor"]
                 if "comparison" in results
                 else None,
             },
@@ -123,35 +133,6 @@ def evaluate_agent_performance(
     )
 
     return results, html_output
-
-
-def _load_production_classifier() -> Any:
-    """Load the production-tagged classifier from the artifact store.
-
-    Returns:
-        The loaded classifier model or None if not found.
-    """
-    try:
-        client = Client()
-        # Find the intent-classifier artifact with production tag
-        artifacts = client.list_artifact_versions(
-            name="intent-classifier", tags=["production"]
-        )
-        if not artifacts.items:
-            logger.warning("No production-tagged classifier found")
-            return None
-
-        # Get the latest production artifact
-        latest_artifact = artifacts.items[
-            0
-        ]  # Already sorted by created time desc
-        classifier = latest_artifact.load()
-        logger.info(f"Loaded production classifier: {latest_artifact.id}")
-        return classifier
-
-    except Exception as e:
-        logger.error(f"Failed to load production classifier: {e}")
-        return None
 
 
 def _evaluate_llm_mode(test_texts: List[str]) -> Tuple[List[str], List[float]]:
@@ -193,19 +174,15 @@ def _evaluate_with_classifier_mode(
     Returns:
         Tuple of (predictions, latencies) for classifier mode.
     """
-    predictions = []
-    latencies = []
+    # Use batch prediction for efficiency
+    start_time = time.time()
+    predictions = classifier.predict(test_texts).tolist()
+    end_time = time.time()
 
-    for text in test_texts:
-        start_time = time.time()
-        # Classifier prediction (fast)
-        predicted_intent = classifier.predict([text])[0]
-        end_time = time.time()
-
-        predictions.append(predicted_intent)
-        latencies.append(
-            (end_time - start_time) * 1000
-        )  # Convert to milliseconds
+    # Calculate per-sample latency (total time divided by number of samples)
+    total_latency_ms = (end_time - start_time) * 1000
+    avg_latency_per_sample = total_latency_ms / len(test_texts)
+    latencies = [avg_latency_per_sample] * len(test_texts)
 
     return predictions, latencies
 
@@ -224,12 +201,10 @@ def _calculate_metrics(
         Dictionary containing accuracy, F1 score, and latency metrics.
     """
     return {
-        "accuracy": round(accuracy_score(labels, predictions), 3),
-        "f1_score": round(
-            f1_score(labels, predictions, average="weighted"), 3
-        ),
-        "avg_latency_ms": round(np.mean(latencies), 2),
-        "p95_latency_ms": round(np.percentile(latencies, 95), 2),
+        "accuracy": accuracy_score(labels, predictions),
+        "f1_score": f1_score(labels, predictions, average="weighted"),
+        "avg_latency_ms": np.mean(latencies),
+        "p95_latency_ms": np.percentile(latencies, 95),
         "total_predictions": len(predictions),
         "classification_report": classification_report(
             labels, predictions, output_dict=True
@@ -267,158 +242,9 @@ def _compare_modes(
         "speedup_factor": round(
             llm_results["avg_latency_ms"]
             / classifier_results["avg_latency_ms"],
-            1,
+            2,
         ),
     }
-
-
-def _create_comparison_plots(
-    labels: List[str], llm_preds: List[str], classifier_preds: List[str]
-) -> str:
-    """Create modern, interactive-style confusion matrices with ZenML branding.
-
-    Args:
-        labels: List of ground truth labels.
-        llm_preds: List of predictions from LLM-only mode.
-        classifier_preds: List of predictions from classifier mode.
-
-    Returns:
-        Base64-encoded HTML string containing the confusion matrix plots.
-    """
-    # Get unique labels for consistent ordering
-    unique_labels = sorted(list(set(labels)))
-
-    # Create confusion matrices
-    llm_cm = confusion_matrix(labels, llm_preds, labels=unique_labels)
-    classifier_cm = confusion_matrix(
-        labels, classifier_preds, labels=unique_labels
-    )
-
-    # Calculate performance metrics for display
-    llm_accuracy = accuracy_score(labels, llm_preds)
-    classifier_accuracy = accuracy_score(labels, classifier_preds)
-    llm_f1 = f1_score(labels, llm_preds, average="weighted")
-    classifier_f1 = f1_score(labels, classifier_preds, average="weighted")
-
-    # Determine which is better
-    accuracy_winner = (
-        "With Classifier"
-        if classifier_accuracy > llm_accuracy
-        else "LLM-only"
-        if llm_accuracy > classifier_accuracy
-        else "Tie"
-    )
-    f1_winner = (
-        "With Classifier"
-        if classifier_f1 > llm_f1
-        else "LLM-only"
-        if llm_f1 > classifier_f1
-        else "Tie"
-    )
-
-    # ZenML color palette (defined but used in color scheme below)
-    # zenml_colors = ["#f8faff", "#e1e7ff", "#c7d2fe", "#a5b4fc", "#8b5cf6", "#7c3aed", "#6d28d9"]
-
-    # Set modern style
-    plt.style.use("default")
-
-    # Create figure with better layout and modern styling
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
-    fig.patch.set_facecolor("#ffffff")
-
-    # Modern LLM confusion matrix with ZenML colors
-    sns.heatmap(
-        llm_cm,
-        annot=True,
-        fmt="d",
-        cmap=sns.light_palette("#8b5cf6", as_cmap=True),
-        xticklabels=unique_labels,
-        yticklabels=unique_labels,
-        ax=ax1,
-        cbar_kws={"shrink": 0.8},
-        square=True,
-        linewidths=0.5,
-        linecolor="white",
-        annot_kws={"size": 12, "weight": "bold"},
-    )
-    ax1.set_title(
-        "LLM-Only Mode",
-        fontsize=16,
-        fontweight="bold",
-        color="#374151",
-        pad=20,
-    )
-    ax1.set_xlabel(
-        "Predicted Intent", fontsize=12, fontweight="600", color="#6b7280"
-    )
-    ax1.set_ylabel(
-        "True Intent", fontsize=12, fontweight="600", color="#6b7280"
-    )
-    ax1.tick_params(axis="both", which="major", labelsize=10)
-
-    # Modern With Intent Classifier confusion matrix with complementary ZenML colors
-    sns.heatmap(
-        classifier_cm,
-        annot=True,
-        fmt="d",
-        cmap=sns.light_palette("#10b981", as_cmap=True),  # ZenML green accent
-        xticklabels=unique_labels,
-        yticklabels=unique_labels,
-        ax=ax2,
-        cbar_kws={"shrink": 0.8},
-        square=True,
-        linewidths=0.5,
-        linecolor="white",
-        annot_kws={"size": 12, "weight": "bold"},
-    )
-    ax2.set_title(
-        "With Intent Classifier",
-        fontsize=16,
-        fontweight="bold",
-        color="#374151",
-        pad=20,
-    )
-    ax2.set_xlabel(
-        "Predicted Intent", fontsize=12, fontweight="600", color="#6b7280"
-    )
-    ax2.set_ylabel(
-        "True Intent", fontsize=12, fontweight="600", color="#6b7280"
-    )
-    ax2.tick_params(axis="both", which="major", labelsize=10)
-
-    # Improve overall layout
-    plt.tight_layout(pad=3.0)
-
-    # Convert plot to high-quality base64 image
-    img_buffer = io.BytesIO()
-    plt.savefig(
-        img_buffer,
-        format="png",
-        dpi=200,
-        bbox_inches="tight",
-        facecolor="white",
-        edgecolor="none",
-        pad_inches=0.2,
-    )
-    img_buffer.seek(0)
-    img_base64 = base64.b64encode(img_buffer.getvalue()).decode()
-    plt.close()
-
-    # Use the template system to render the visualization
-    html_content = render_evaluation_template(
-        img_base64=img_base64,
-        llm_accuracy=llm_accuracy,
-        classifier_accuracy=classifier_accuracy,
-        llm_f1=llm_f1,
-        classifier_f1=classifier_f1,
-        accuracy_winner=accuracy_winner,
-        f1_winner=f1_winner,
-    )
-
-    logger.info(
-        "Generated modern confusion matrix visualization with ZenML styling"
-    )
-    return html_content
 
 
 @step

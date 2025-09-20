@@ -1,7 +1,5 @@
 settings:
   docker:
     requirements: requirements.txt
-    parent_image: zenmldocker/zenml:0.85.0-py3.12
-    platform: linux/amd64
     environment:
       OPENAI_API_KEY: "${OPENAI_API_KEY}"

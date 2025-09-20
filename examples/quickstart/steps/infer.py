@@ -1,10 +1,26 @@
+# Apache Software License 2.0
+#
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Inference step for agent serving pipeline."""
 
 import json
 from typing import Annotated, Any, Dict
 
 from utils import (
-    call_llm_for_intent,
+    call_llm_generic_response,
     classifier_manager,
     generate_llm_response,
 )
@@ -71,7 +87,7 @@ def classify_intent(
             )
         else:
             logger.info("Using LLM for intent classification")
-        llm_result = call_llm_for_intent(text)
+        llm_result = call_llm_generic_response(text)
         result.update(llm_result)
 
     # Log step metadata about classification
@@ -123,7 +139,6 @@ def generate_response(
         response = generate_llm_response(original_text, intent)
         response_mode = "llm_only"
 
-    # Add metadata to response
     metadata = {
         "intent": intent,
         "confidence": confidence,
@@ -131,7 +146,6 @@ def generate_response(
         "response_mode": response_mode,
     }
 
-    # Log response generation metadata
     log_metadata(
         metadata={
             "response_details": {
