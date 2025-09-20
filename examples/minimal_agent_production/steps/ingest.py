@@ -15,10 +15,6 @@ from models import DocumentRequest
 from zenml import step
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.client import Client
-from zenml.logger import get_logger
-
-# Get ZenML logger for consistent logging
-logger = get_logger(__name__)
 
 
 @step
@@ -28,7 +24,6 @@ def ingest_document_step(
     path: Optional[str] = None,
     filename: Optional[str] = None,
     document_type: str = "text",
-    analysis_type: str = "full",
 ) -> DocumentRequest:
     """Ingest and validate document data for analysis from multiple sources.
 
@@ -43,7 +38,6 @@ def ingest_document_step(
         path: Path to file in artifact store or local filesystem (optional)
         filename: Name for the document (auto-generated if not provided)
         document_type: Type of document (text, markdown, report, article)
-        analysis_type: Type of analysis to perform (full, summary_only, etc.)
 
     Returns:
         DocumentRequest: Structured document data ready for analysis
@@ -51,19 +45,15 @@ def ingest_document_step(
     Raises:
         ValueError: If no content source is provided or content is invalid
     """
-    logger.info("Starting document ingestion...")
-
     # Determine input source and extract content
     document_content = ""
     actual_filename = filename
 
     if content:
-        logger.info("Using direct content input")
         document_content = content
         if not actual_filename:
             actual_filename = "direct_input.txt"
     elif url:
-        logger.info(f"Downloading content from URL: {url}")
         document_content = _download_from_url(url)
         if not actual_filename:
             # Extract filename from URL
@@ -72,7 +62,6 @@ def ingest_document_step(
                 os.path.basename(parsed_url.path) or "downloaded_content.txt"
             )
     elif path:
-        logger.info(f"Loading content from path: {path}")
         document_content = _load_from_path(path)
         if not actual_filename:
             actual_filename = os.path.basename(path)
@@ -80,7 +69,6 @@ def ingest_document_step(
         error_msg = (
             "No content source provided. Must specify content, url, or path."
         )
-        logger.error(error_msg)
         raise ValueError(error_msg)
 
     # Validate content
@@ -88,30 +76,15 @@ def ingest_document_step(
         error_msg = (
             f"Document content is empty after processing: {actual_filename}"
         )
-        logger.error(error_msg)
         raise ValueError(error_msg)
-
-    # Log document statistics for monitoring
-    content_stats = {
-        "character_count": len(document_content),
-        "word_count": len(document_content.split()),
-        "line_count": len(document_content.split("\n")),
-        "document_type": document_type,
-        "analysis_type": analysis_type,
-        "filename": actual_filename,
-    }
-
-    logger.info(f"Document statistics: {content_stats}")
 
     # Create and return the document request
     document = DocumentRequest(
         filename=actual_filename,
         content=document_content,
         document_type=document_type,
-        analysis_type=analysis_type,
     )
 
-    logger.info(f"Successfully ingested document: {actual_filename}")
     return document
 
 
@@ -128,7 +101,6 @@ def _download_from_url(url: str) -> str:
         ValueError: If download fails or content is invalid
     """
     try:
-        logger.info(f"Downloading from {url}")
         response = requests.get(url, timeout=30)
         response.raise_for_status()
 
@@ -150,7 +122,6 @@ def _download_from_url(url: str) -> str:
 
     except Exception as e:
         error_msg = f"Failed to download from URL {url}: {str(e)}"
-        logger.error(error_msg)
         raise ValueError(error_msg)
 
 
@@ -172,24 +143,20 @@ def _load_from_path(path: str) -> str:
 
         # Check if path exists in artifact store
         if artifact_store.exists(path):
-            logger.info(f"Loading from artifact store: {path}")
             # Read file from artifact store
             with artifact_store.open(path, "r") as f:
-                content = f.read()
+                content: str = f.read()
             return content
         else:
             # Try local filesystem
             if os.path.exists(path):
-                logger.info(f"Loading from local filesystem: {path}")
                 with open(path, "r", encoding="utf-8") as f:
-                    content = f.read()
+                    content: str = f.read()
                 return content
             else:
                 error_msg = f"File not found in artifact store or local filesystem: {path}"
-                logger.error(error_msg)
                 raise ValueError(error_msg)
 
     except Exception as e:
         error_msg = f"Failed to load file from path {path}: {str(e)}"
-        logger.error(error_msg)
         raise ValueError(error_msg)

@@ -41,14 +41,12 @@ class DocumentRequest(BaseModel):
         filename: Name of the document file
         content: Raw text content of the document
         document_type: Type classification (text, markdown, report, etc.)
-        analysis_type: Depth of analysis to perform (full, summary_only, etc.)
         created_at: Timestamp when the request was created
     """
 
     filename: str
     content: str
     document_type: Optional[str] = Field(default="text")
-    analysis_type: Optional[str] = Field(default="full")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
@@ -89,5 +87,3 @@ class DocumentAnalysis(BaseModel):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-
-

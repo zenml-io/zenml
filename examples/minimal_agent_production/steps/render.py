@@ -10,11 +10,7 @@ from typing import Annotated
 from models import DocumentAnalysis
 
 from zenml import step
-from zenml.logger import get_logger
 from zenml.types import HTMLString
-
-# Get ZenML logger for consistent logging
-logger = get_logger(__name__)
 
 
 @step
@@ -38,10 +34,6 @@ def render_analysis_report_step(
         >>> html_report = render_analysis_report_step(analysis)
         >>> # HTML report will be displayed in ZenML dashboard
     """
-    logger.info(
-        f"Rendering HTML report for document: {analysis.document.filename}"
-    )
-
     # Prepare data for template
     keywords_html = ", ".join(analysis.keywords)
     formatted_timestamp = analysis.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -66,10 +58,6 @@ def render_analysis_report_step(
         "deterministic": "🔧 Rule-Based",
         "deterministic_fallback": "🔧 Rule-Based (Fallback)",
     }.get(analysis_method, "Unknown")
-
-    logger.debug(
-        f"Report data prepared: {len(keywords_html)} char keywords, method={analysis_method}"
-    )
 
     # Inline CSS styles for the report
     css_content = """
@@ -290,10 +278,6 @@ def render_analysis_report_step(
                   <span class="metadata-value">{analysis.document.document_type.title()}</span>
                 </div>
                 <div class="metadata-item">
-                  <span class="metadata-label">Analysis Type:</span>
-                  <span class="metadata-value">{analysis.document.analysis_type.title()}</span>
-                </div>
-                <div class="metadata-item">
                   <span class="metadata-label">Prompt Tokens:</span>
                   <span class="metadata-value">{analysis.tokens_prompt:,}</span>
                 </div>
@@ -314,9 +298,5 @@ def render_analysis_report_step(
       </body>
     </html>
     """.strip()
-
-    logger.info(
-        f"HTML report generated successfully ({len(html_content):,} characters)"
-    )
 
     return HTMLString(html_content)
