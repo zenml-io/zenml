@@ -309,6 +309,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         else:
             logger.info("Connector not found continuing build with kubectl")
             self._run_kaniko_build_kubectl(pod_name, spec_overrides, build_context)
+            
     def _run_kaniko_build_kubectl(
         self,
         pod_name: str,
