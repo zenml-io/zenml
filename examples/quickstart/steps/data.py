@@ -49,14 +49,34 @@ INTENT_DATA = [
     ("this charge is incorrect please fix it", "dispute"),
     ("someone used my card without permission", "dispute"),
     ("i don't recognize this transaction", "dispute"),
-    # Credit Limit (6 examples)
+    # Credit Limit (8 examples)
     ("can you increase my credit limit", "credit_limit"),
     ("i need a higher credit limit", "credit_limit"),
     ("please raise my spending limit", "credit_limit"),
     ("how do i request a credit line increase", "credit_limit"),
     ("my credit limit is too low can you help", "credit_limit"),
     ("i want to apply for a credit increase", "credit_limit"),
-    # General (8 examples)
+    ("what's the process for a credit limit increase", "credit_limit"),
+    ("i need more spending power on my card", "credit_limit"),
+    # Account Information (8 examples)
+    ("i need to update my address", "account_info"),
+    ("how do i change my phone number", "account_info"),
+    ("can you update my personal information", "account_info"),
+    ("i moved and need to update my details", "account_info"),
+    ("how do i change my email address", "account_info"),
+    ("i need to update my contact information", "account_info"),
+    ("can you help me change my account settings", "account_info"),
+    ("i want to update my profile", "account_info"),
+    # Transfers (8 examples)
+    ("i need to transfer money", "transfers"),
+    ("how do i send money to another account", "transfers"),
+    ("can you help me with a wire transfer", "transfers"),
+    ("i want to transfer funds between accounts", "transfers"),
+    ("how do i send money to my friend", "transfers"),
+    ("what are your transfer limits", "transfers"),
+    ("i need to move money from savings to checking", "transfers"),
+    ("can you process an international transfer", "transfers"),
+    # General (10 examples)
     ("hello", "general"),
     ("hi there", "general"),
     ("can you help me", "general"),
@@ -65,6 +85,8 @@ INTENT_DATA = [
     ("i have a question about my account", "general"),
     ("what services do you offer", "general"),
     ("i need assistance with banking", "general"),
+    ("how are you today", "general"),
+    ("goodbye and thank you for your help", "general"),
 ]
 
 

@@ -2,7 +2,8 @@
 """ZenML Quickstart — From Agent-Only to Agent+Classifier.
 
 Usage:
-  python run.py --train    # Train classifier and tag as production
+  python run.py --train      # Train classifier and tag as production
+  python run.py --evaluate   # Compare agent performance
 """
 
 import argparse

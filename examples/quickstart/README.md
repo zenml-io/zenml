@@ -6,7 +6,7 @@ Build a customer support agent that evolves from generic to specialized response
 
 This quickstart demonstrates the evolution from generic LLM responses to structured, intent-driven customer support. You'll see how adding a simple intent classifier dramatically improves response quality and user experience. We will:
 
-- Deploy a generic LLM agent that gives general banking advice
+- Deploy a generic banking advice agent that gives general banking advice
 - Train an intent classifier and tag it as "production"
 - Compare generic responses vs. structured, targeted responses
 - Evaluate performance with metrics and visualizations
@@ -58,7 +58,7 @@ zenml deployer register docker -f docker
 zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
-### Phase 1: Deploy Generic LLM Agent
+### Phase 1: Deploy Generic Banking Advice Agent
 
 Deploy the agent serving pipeline as a REST API. This creates a running service that gives generic banking advice without intent classification:
 
@@ -82,10 +82,10 @@ zenml deployment invoke support_agent \
 ### Phase 2: Train Intent Classifier
 
 ```bash
-python run.py --train
+python run.py --train    # Train classifier and tag as production
 ```
 
-This trains a TF-IDF + LogisticRegression classifier on banking intents and tags it as "production".
+This trains a TF-IDF + LogisticRegression classifier on 8 banking intent categories (70+ examples) and automatically tags the best model as "production" for the serving pipeline to discover.
 
 ### Phase 3: Upgrade to Structured Responses
 
@@ -108,14 +108,17 @@ zenml deployment invoke support_agent \
 See the dramatic difference! Run evaluation to compare generic vs. structured responses:
 
 ```bash
-python run.py --evaluate
+python run.py --evaluate   # Compare agent performance
 ```
 
-This generates:
+This generates rich visualizations viewable in the ZenML dashboard:
 - Accuracy & F1 scores comparing generic vs. classified responses
 - Response time analysis
 - Confusion matrices with ZenML styling
-- Performance comparison visualizations
+- Performance comparison charts
+- Interactive HTML reports with detailed metrics
+
+**View Results**: After running evaluation, visit your ZenML dashboard to see the generated visualizations and detailed performance comparison.
 
 ## 🤖 How It Works
 
@@ -129,7 +132,7 @@ def support_agent(text: str, use_classifier: bool):
     return response
 ```
 
-The magic happens in the init hook:
+The magic happens in the init hook (learn more about [ZenML hooks](https://docs.zenml.io/how-to/pipeline-development/use-pipeline-step-hooks)):
 ```python
 def on_init_hook():
     # Find artifact tagged "production"

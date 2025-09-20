@@ -56,8 +56,7 @@ zenml deployment describe doc-analyzer
 zenml deployment invoke doc-analyzer --json '{
   "content": "Artificial Intelligence is transforming how we work. Machine learning models can now process vast amounts of data to extract meaningful insights, helping businesses make better decisions faster than ever before.",
   "filename": "ai-overview.txt",
-  "document_type": "text",
-  "analysis_type": "full"
+  "document_type": "text"
 }'
 ```
 
@@ -77,17 +76,11 @@ streamlit run streamlit_app.py
 
 ### Phase 4: Monitor and Improve
 
-Run quality evaluation on your analyses:
-
-```bash
-python run_evaluation.py
-```
-
-This creates detailed reports showing:
-- **Summary quality scores**: How well summaries capture key information
-- **Keyword relevance**: Whether extracted terms are meaningful
-- **Processing metrics**: Speed and token usage over time
-- **HTML visualizations**: Rich reports in your ZenML dashboard
+The pipeline automatically generates rich HTML reports for each analysis, providing:
+- **Analysis metrics**: Summary quality, keyword relevance, sentiment analysis
+- **Processing statistics**: Speed, token usage, and performance tracking
+- **Visual dashboards**: Rich HTML reports in your ZenML dashboard
+- **Error handling**: Graceful fallbacks when AI services are unavailable
 
 ## 🤖 How It Works
 
@@ -107,7 +100,7 @@ def document_analysis_pipeline(
     return analysis
 ```
 
-**Smart fallbacks**: Uses OpenAI/LiteLLM when available, gracefully falls back to rule-based analysis offline.
+**Smart fallbacks**: Uses OpenAI when available, gracefully falls back to rule-based analysis offline.
 
 ## 🏗️ Multiple Ways to Analyze
 
@@ -187,7 +180,6 @@ examples/minimal_agent_production/
 │   ├── render.py                # Rich HTML report generation
 │   ├── evaluate.py              # Quality scoring and metrics
 │   └── utils.py                 # Text processing utilities
-├── static/css/                  # Styling for dashboard reports
 ├── models.py                    # Pydantic data models
 ├── streamlit_app.py             # Web interface
 └── run_evaluation.py            # Quality assessment CLI
