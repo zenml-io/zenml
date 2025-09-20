@@ -143,7 +143,9 @@ Example:
         tokens_completion = (
             response.usage.completion_tokens
             if response.usage
-            else len(response_text.split()) if response_text else 0
+            else len(response_text.split())
+            if response_text
+            else 0
         )
 
         return {

@@ -145,17 +145,19 @@ def _load_from_path(path: str) -> str:
         if artifact_store.exists(path):
             # Read file from artifact store
             with artifact_store.open(path, "r") as f:
-                content: str = f.read()
-            return content
-        else:
-            # Try local filesystem
-            if os.path.exists(path):
-                with open(path, "r", encoding="utf-8") as f:
-                    content: str = f.read()
-                return content
-            else:
-                error_msg = f"File not found in artifact store or local filesystem: {path}"
-                raise ValueError(error_msg)
+                file_content: str = f.read()
+            return file_content
+
+        # Try local filesystem
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                local_content: str = f.read()
+            return local_content
+
+        error_msg = (
+            f"File not found in artifact store or local filesystem: {path}"
+        )
+        raise ValueError(error_msg)
 
     except Exception as e:
         error_msg = f"Failed to load file from path {path}: {str(e)}"
