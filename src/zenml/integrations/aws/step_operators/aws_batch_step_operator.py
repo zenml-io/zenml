@@ -130,26 +130,19 @@ class AWSBatchJobDefinitionRetryStrategy(BaseModel):
     """An AWS Batch job subconfiguration model for retry specifications."""
     attempts: PositiveInt = 2
     evaluateOnExit: List[Dict[str,str]] = [
-        # {
-        #     "onExitCode": "137",  # out-of-memory killed
-        #     "action": "RETRY"
-        # },
-        # {
-        #     "onReason": "*Host EC2 terminated",
-        #     "action": "RETRY"
-        # },
-        # {
-        #     "action": "EXIT"
-        # }
+        {
+            "onExitCode": "137",  # out-of-memory killed
+            "action": "RETRY"
+        },
+        {
+            "onReason": "*Host EC2 terminated", # host EC2 rugpulled->try again
+            "action": "RETRY"
+        }
     ]
 
 class AWSBatchJobBaseDefinition(BaseModel):
-    """A utility to validate AWS Batch job descriptions.
-    
-    Defaults fall into two categories:
-    - reasonable default values
-    - aligning the job description to be a valid 'container' type configuration,
-        as multinode jobs are not supported yet."""
+    """A utility to validate AWS Batch job descriptions. Base class
+    for container and multinode job definition types."""
     
     jobDefinitionName: str
     type: Literal['container','multinode']
@@ -402,14 +395,6 @@ class AWSBatchStepOperator(BaseStepOperator):
         step_settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
 
         job_name = self.generate_unique_batch_job_name(info)
-        # container_properties = AWSBatchJobDefinitionContainerProperties(
-        #         executionRoleArn=self.config.execution_role,
-        #         jobRoleArn=self.config.job_role,
-        #         image=image_name,
-        #         command=entrypoint_command,
-        #         environment=self.map_environment(environment),
-        #         resourceRequirements=self.map_resource_settings(resource_settings),
-        #     ).model_dump(exclude='instanceType')
 
         node_count = step_settings.node_count
 
@@ -427,37 +412,9 @@ class AWSBatchStepOperator(BaseStepOperator):
                     resourceRequirements=self.map_resource_settings(resource_settings),
                 )
             )
-            # kwargs = {
-            #     'type':'container',
-            #     'containerProperties':container_properties
-            # }
-            # return AWSBatchJobDefinition(
-            #     jobDefinitionName=job_name,
-            #     timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
-            #     **kwargs
-            # ).model_dump(exclude='nodeProperties')
-        else:
 
-            # kwargs = {
-            #     'type':'multinode',
-            #     'nodeProperties':AWSBatchJobDefinitionNodeProperties(
-            #         numNodes=node_count,
-            #         nodeRangeProperties=[
-            #             AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(
-            #                 targetNodes=','.join([str(node_index) for node_index in range(node_count)]),
-            #                 container=AWSBatchJobDefinitionContainerProperties(
-            #                     executionRoleArn=self.config.execution_role,
-            #                     jobRoleArn=self.config.job_role,
-            #                     image=image_name,
-            #                     command=entrypoint_command,
-            #                     environment=self.map_environment(environment),
-            #                     instanceType=step_settings.instance_type,
-            #                     resourceRequirements=self.map_resource_settings(resource_settings),
-            #                 )
-            #             )
-            #         ]
-            #     )
-            # }           
+        else:
+    
             return AWSBatchJobMultinodeTypeDefinition(
                 jobDefinitionName=job_name,
                 timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
@@ -549,13 +506,14 @@ class AWSBatchStepOperator(BaseStepOperator):
                 response = batch_client.describe_jobs(jobs=[job_id])
                 status = response['jobs'][0]['status']
                 
-                if status == ['SUCCEEDED']:
+                if status == 'SUCCEEDED':
                     logger.info(f"Job completed successfully: {job_id}")
                     break
-                elif status == ["FAILED"]:
+                elif status == "FAILED":
                     status_reason = response['jobs'][0].get('statusReason', 'Unknown')
                     raise RuntimeError(f'Job {job_id} failed: {status_reason}')
                 else:
+                    logger.info(f"Job {job_id} neither failed nor succeeded: {status}. Waiting another 10 seconds.")
                     time.sleep(10)
             except ClientError as e:
                 logger.error(f"Failed to describe job {job_id}: {e}")
