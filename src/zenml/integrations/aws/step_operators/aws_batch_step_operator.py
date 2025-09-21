@@ -135,7 +135,7 @@ class AWSBatchJobDefinitionRetryStrategy(BaseModel):
             "action": "RETRY"
         },
         {
-            "onReason": "*Host EC2 terminated", # host EC2 rugpulled->try again
+            "onReason": "Host EC2 terminated", # host EC2 rugpulled->try again
             "action": "RETRY"
         }
     ]
@@ -393,6 +393,9 @@ class AWSBatchStepOperator(BaseStepOperator):
 
         resource_settings = info.config.resource_settings
         step_settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
+
+        if step_settings.environment:
+            environment.update(step_settings.environment)
 
         job_name = self.generate_unique_batch_job_name(info)
 
