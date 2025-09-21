@@ -43,7 +43,6 @@ class AWSIntegration(Integration):
     NAME = AWS
     REQUIREMENTS = [
         "sagemaker>=2.237.3",
-        "boto3>=1.40.30,<2.0",
         "kubernetes",
         "aws-profile-manager",
     ]

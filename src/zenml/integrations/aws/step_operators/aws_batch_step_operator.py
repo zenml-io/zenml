@@ -96,23 +96,26 @@ def get_context() -> AWSBatchContext:
     """Utility to retrieve the AWS Batch runtime context."""
     return AWSBatchContext()
 
-class AWSBatchJobDefinitionContainerProperties(BaseModel):
-    """An AWS Batch job subconfiguration model for a container specification."""
+class AWSBatchJobDefinitionContainerTypeContainerProperties(BaseModel):
+    """An AWS Batch job subconfiguration model for a container type job's container specification."""
     image: str
     command: List[str]
     jobRoleArn: str
     executionRoleArn: str
     environment: List[Dict[str,str]] = [] # keys: 'name','value'
-    instanceType: str
     resourceRequirements: List[Dict[str,str]] = [] # keys: 'value','type', with type one of 'GPU','VCPU','MEMORY'
     secrets: List[Dict[str,str]] = [] # keys: 'name','value'
+
+class AWSBatchJobDefinitionMultinodeTypeContainerProperties(AWSBatchJobDefinitionContainerTypeContainerProperties):
+    """An AWS Batch job subconfiguration model for a multinode type job's container specification."""
+    instanceType: Optional[str] = ""
 
 class AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(BaseModel):
     """An AWS Batch job subconfiguration model for a node in a multinode job
     specifications.
     """
     targetNodes: str
-    container: AWSBatchJobDefinitionContainerProperties
+    container: AWSBatchJobDefinitionMultinodeTypeContainerProperties
 
 class AWSBatchJobDefinitionNodeProperties(BaseModel):
     """An AWS Batch job subconfiguration model for multinode job specifications.
@@ -127,21 +130,20 @@ class AWSBatchJobDefinitionRetryStrategy(BaseModel):
     """An AWS Batch job subconfiguration model for retry specifications."""
     attempts: PositiveInt = 2
     evaluateOnExit: List[Dict[str,str]] = [
-        {
-            "onExitCode": "137",  # out-of-memory killed
-            "action": "RETRY"
-        },
-        {
-            "onReason": "*Host EC2*",
-            "action": "RETRY"
-        },
-        {
-            "onExitCode": "*",  # match everything else
-            "action": "EXIT"
-        }
+        # {
+        #     "onExitCode": "137",  # out-of-memory killed
+        #     "action": "RETRY"
+        # },
+        # {
+        #     "onReason": "*Host EC2 terminated",
+        #     "action": "RETRY"
+        # },
+        # {
+        #     "action": "EXIT"
+        # }
     ]
 
-class AWSBatchJobDefinition(BaseModel):
+class AWSBatchJobBaseDefinition(BaseModel):
     """A utility to validate AWS Batch job descriptions.
     
     Defaults fall into two categories:
@@ -150,17 +152,25 @@ class AWSBatchJobDefinition(BaseModel):
         as multinode jobs are not supported yet."""
     
     jobDefinitionName: str
-    type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
+    type: Literal['container','multinode']
     parameters: Dict[str,str] = {}
-    schedulingPriority: int = 0 # ignored in FIFO queues
-    containerProperties: Optional[AWSBatchJobDefinitionContainerProperties] = None
-    nodeProperties: Optional[AWSBatchJobDefinitionNodeProperties] = None
+    # schedulingPriority: int = 0 # ignored in FIFO queues
     retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
     propagateTags: bool = False
     timeout: Dict[str,int] = {'attemptDurationSeconds':60} # key 'attemptDurationSeconds'
     tags: Dict[str,str] = {}
-    platformCapabilities: Literal['EC2','FARGATE'] = "EC2" #-- hardcode this to EC2, so we can use container and multinode interchangeably without worrying too much
+    platformCapabilities: List[Literal["EC2","FARGATE"]] = ["EC2"] #-- hardcode this to EC2, so we can use container and multinode interchangeably without worrying too much
 
+class AWSBatchJobContainerTypeDefinition(AWSBatchJobBaseDefinition):
+    """A utility to validate AWS Batch job descriptions of type contaienr."""
+    
+    type: Literal['container','multinode'] = 'container' # we dont support multinode type in this version
+    containerProperties: Optional[AWSBatchJobDefinitionContainerTypeContainerProperties] = None
+
+class AWSBatchJobMultinodeTypeDefinition(AWSBatchJobBaseDefinition):
+    """A utility to validate AWS Batch job descriptions of type multinode."""
+    type: Literal['container','multinode'] = 'multinode' # we dont support multinode type in this version
+    nodeProperties: Optional[AWSBatchJobDefinitionNodeProperties] = None
 
 class AWSBatchStepOperator(BaseStepOperator):
     """Step operator to run a step on AWS Batch.
@@ -230,9 +240,7 @@ class AWSBatchStepOperator(BaseStepOperator):
                     aws_session_token=credentials["SessionToken"],
                     region_name=self.config.region,
                 )
-        return Session(
-            boto_session=boto_session,
-        )
+        return boto_session
 
     @property
     def entrypoint_config_class(
@@ -320,7 +328,19 @@ class AWSBatchStepOperator(BaseStepOperator):
         mapped_resource_settings = []
 
         if resource_settings.empty:
-            return mapped_resource_settings
+            # aws batch job description requires a value for vcpu
+            mapped_resource_settings.extend(
+                [
+                    {
+                        "value": "1",
+                        "type": 'VCPU'
+                    },
+                    {
+                        "value": "1024",
+                        "type": 'MEMORY'
+                    }
+                ]
+            )
         else:
 
             if resource_settings.cpu_count is not None:
@@ -372,7 +392,7 @@ class AWSBatchStepOperator(BaseStepOperator):
         suffix = random_str(4)
         return f"{job_name}-{suffix}"
 
-    def generate_job_definition(self, info: "StepRunInfo", entrypoint_command: List[str], environment: Dict[str,str]) -> AWSBatchJobDefinition:
+    def generate_job_definition(self, info: "StepRunInfo", entrypoint_command: List[str], environment: Dict[str,str]) -> AWSBatchJobContainerTypeDefinition | AWSBatchJobMultinodeTypeDefinition:
         """Utility to map zenml internal configurations to a valid AWS Batch 
         job definition."""
         
@@ -382,43 +402,84 @@ class AWSBatchStepOperator(BaseStepOperator):
         step_settings = cast(AWSBatchStepOperatorSettings, self.get_settings(info))
 
         job_name = self.generate_unique_batch_job_name(info)
-        container_properties = AWSBatchJobDefinitionContainerProperties(
-                executionRoleArn=self.config.execution_role,
-                jobRoleArn=self.config.job_role,
-                image=image_name,
-                command=entrypoint_command,
-                environment=self.map_environment(environment),
-                instanceType=step_settings.instance_type,
-                resourceRequirements=self.map_resource_settings(resource_settings),
-            ),
+        # container_properties = AWSBatchJobDefinitionContainerProperties(
+        #         executionRoleArn=self.config.execution_role,
+        #         jobRoleArn=self.config.job_role,
+        #         image=image_name,
+        #         command=entrypoint_command,
+        #         environment=self.map_environment(environment),
+        #         resourceRequirements=self.map_resource_settings(resource_settings),
+        #     ).model_dump(exclude='instanceType')
 
         node_count = step_settings.node_count
 
         if node_count == 1:
-            kwargs = {
-                'type':'container',
-                'containerProperties':container_properties
-            }
+            return AWSBatchJobContainerTypeDefinition(
+                jobDefinitionName=job_name,
+                timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
+                type="container",
+                containerProperties=AWSBatchJobDefinitionContainerTypeContainerProperties(
+                    executionRoleArn=self.config.execution_role,
+                    jobRoleArn=self.config.job_role,
+                    image=image_name,
+                    command=entrypoint_command,
+                    environment=self.map_environment(environment),
+                    resourceRequirements=self.map_resource_settings(resource_settings),
+                )
+            )
+            # kwargs = {
+            #     'type':'container',
+            #     'containerProperties':container_properties
+            # }
+            # return AWSBatchJobDefinition(
+            #     jobDefinitionName=job_name,
+            #     timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
+            #     **kwargs
+            # ).model_dump(exclude='nodeProperties')
         else:
-            kwargs = {
-                'type':'multinode',
-                'nodeProperties':AWSBatchJobDefinitionNodeProperties(
+
+            # kwargs = {
+            #     'type':'multinode',
+            #     'nodeProperties':AWSBatchJobDefinitionNodeProperties(
+            #         numNodes=node_count,
+            #         nodeRangeProperties=[
+            #             AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(
+            #                 targetNodes=','.join([str(node_index) for node_index in range(node_count)]),
+            #                 container=AWSBatchJobDefinitionContainerProperties(
+            #                     executionRoleArn=self.config.execution_role,
+            #                     jobRoleArn=self.config.job_role,
+            #                     image=image_name,
+            #                     command=entrypoint_command,
+            #                     environment=self.map_environment(environment),
+            #                     instanceType=step_settings.instance_type,
+            #                     resourceRequirements=self.map_resource_settings(resource_settings),
+            #                 )
+            #             )
+            #         ]
+            #     )
+            # }           
+            return AWSBatchJobMultinodeTypeDefinition(
+                jobDefinitionName=job_name,
+                timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
+                type="multinode",
+                nodeProperties=AWSBatchJobDefinitionNodeProperties(
                     numNodes=node_count,
                     nodeRangeProperties=[
                         AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(
                             targetNodes=','.join([str(node_index) for node_index in range(node_count)]),
-                            container=container_properties
+                            container=AWSBatchJobDefinitionMultinodeTypeContainerProperties(
+                                executionRoleArn=self.config.execution_role,
+                                jobRoleArn=self.config.job_role,
+                                image=image_name,
+                                command=entrypoint_command,
+                                environment=self.map_environment(environment),
+                                instanceType=step_settings.instance_type,
+                                resourceRequirements=self.map_resource_settings(resource_settings),
+                            )
                         )
                     ]
                 )
-            }           
-
-
-        return AWSBatchJobDefinition(
-            jobDefinitionName=job_name,
-            timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
-            **kwargs
-        )
+            )
 
 
     def get_docker_builds(
