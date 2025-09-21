@@ -417,7 +417,6 @@ class AWSBatchStepOperator(BaseStepOperator):
             )
 
         else:
-    
             return AWSBatchJobMultinodeTypeDefinition(
                 jobDefinitionName=job_name,
                 timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
@@ -426,7 +425,7 @@ class AWSBatchStepOperator(BaseStepOperator):
                     numNodes=node_count,
                     nodeRangeProperties=[
                         AWSBatchJobDefinitionNodePropertiesNodeRangeProperty(
-                            targetNodes=','.join([str(node_index) for node_index in range(node_count)]),
+                            targetNodes=f"0:{node_count-1}",
                             container=AWSBatchJobDefinitionMultinodeTypeContainerProperties(
                                 executionRoleArn=self.config.execution_role,
                                 jobRoleArn=self.config.job_role,
@@ -436,7 +435,7 @@ class AWSBatchStepOperator(BaseStepOperator):
                                 instanceType=step_settings.instance_type,
                                 resourceRequirements=self.map_resource_settings(resource_settings),
                             )
-                        )
+                        ),
                     ]
                 )
             )
@@ -486,6 +485,8 @@ class AWSBatchStepOperator(BaseStepOperator):
         """
 
         job_definition = self.generate_job_definition(info, entrypoint_command, environment)
+
+        logger.info(f"Job definition: {job_definition}")
 
         boto_session = self._get_aws_session()
         batch_client = boto_session.client('batch')
