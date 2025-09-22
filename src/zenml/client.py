@@ -3649,6 +3649,8 @@ class Client(metaclass=ClientMetaClass):
                     stack=stack.id if stack else None,
                     project=pipeline.project_id,
                     runnable=True,
+                    # Only try to run named snapshots
+                    named_only=True,
                 )
 
                 for snapshot in all_snapshots:
