@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class AWSBatchStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
-    instance_type: Union[str,List[str]] = Field(
+    instance_type: Union[str] = Field(
         default='optimal',
         description="The instance type for AWS Batch to use for the step" \
         " execution. Example: 'm5.xlarge'",
