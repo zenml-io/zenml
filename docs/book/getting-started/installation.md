@@ -44,6 +44,15 @@ You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/
 
 {% endtab %}
 
+{% tab title="Jupyter Notebooks" %}
+If you write your ZenML pipelines ins Jupyter notebooks, we recommend installing ZenML with the `jupyter` extra which includes improved CLI output and logs:
+
+```shell
+pip install 'zenml[jupyter]'
+```
+
+{% endtab %}
+
 {% endtabs %}
 {% endstep %}
 
