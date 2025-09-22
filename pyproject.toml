@@ -28,26 +28,19 @@ classifiers = [
 requires-python = ">=3.9,<3.13"
 
 dependencies = [
-    "alembic>=1.8.1,<=1.15.2",
-    "bcrypt==4.0.1",
     "click>=8.0.1,<=8.2.1",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "packaging>=24.1",
-    "passlib[bcrypt]~=1.7.4",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.11.9",
     "pydantic-settings",
-    "pymysql>=1.1.1,~=1.1.0",
     "python-dateutil>=2.8.1,<3.0.0",
     "pyyaml>=6.0.1",
-    "rich[jupyter]>=12.0.0",
+    "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
     "setuptools>=70.0.0",
-    "sqlalchemy>=2.0.0,<3.0.0",
-    "sqlalchemy_utils",
-    "sqlmodel==0.0.18",
     "importlib_metadata<=7.0.0; python_version < '3.10'",
 ]
 
@@ -61,7 +54,17 @@ Issues = "https://github.com/zenml-io/zenml/issues"
 zenml = "zenml.cli.cli:cli"
 
 [project.optional-dependencies]
+local = [
+    "alembic>=1.8.1,<=1.15.2",
+    "bcrypt==4.0.1",
+    "passlib[bcrypt]~=1.7.4",
+    "pymysql>=1.1.1,~=1.1.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
+    "sqlalchemy_utils",
+    "sqlmodel==0.0.18",
+]
 server = [
+    "zenml[local]",  # Includes all the DB dependencies
     "fastapi>=0.100,<=0.115.8",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
@@ -74,6 +77,7 @@ server = [
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
 ]
+jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3>=1.16.0"]
