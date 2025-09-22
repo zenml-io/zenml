@@ -113,7 +113,7 @@ azureml = [
     "azure-ai-ml==1.23.1",
 ]
 dev = [
-    "bandit>=1.7.5,<2.0,0",
+    "bandit>=1.7.5,<2.0.0",
     "ruff>=0.1.7",
     "yamlfix>=1.16.0",
     "coverage[toml]>=5.5,<6.0.0",
