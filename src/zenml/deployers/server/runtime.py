@@ -27,10 +27,7 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from zenml.logger import get_logger
 from zenml.models import PipelineSnapshotResponse
-
-logger = get_logger(__name__)
 
 
 class _DeploymentState(BaseModel):
@@ -134,32 +131,6 @@ def get_outputs() -> Dict[str, Dict[str, Any]]:
         A dictionary of outputs for all steps.
     """
     return dict(_get_context().outputs)
-
-
-def get_parameter_override(name: str) -> Optional[Any]:
-    """Get a parameter override from the current deployment context.
-
-    This function allows the orchestrator to check for parameter overrides
-    without importing deployment-specific modules directly. Only direct
-    parameters are supported; nested extraction from complex objects is not
-    performed.
-
-    Args:
-        name: Parameter name to look up
-
-    Returns:
-        Parameter value if found, None otherwise
-    """
-    if not is_active():
-        return None
-
-    state = _get_context()
-    pipeline_params = state.pipeline_parameters
-    if not pipeline_params:
-        return None
-
-    # Check direct parameter only
-    return pipeline_params.get(name)
 
 
 def should_use_in_memory_mode() -> bool:

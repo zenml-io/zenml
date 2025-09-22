@@ -52,45 +52,6 @@ class TestServingRuntimeContext:
 
         assert not runtime.is_active()
 
-    def test_parameter_override_basic(self):
-        """Test basic parameter override functionality."""
-        snapshot = MagicMock()
-        snapshot.id = "test-snapshot"
-
-        runtime.start(
-            request_id="test-request",
-            snapshot=snapshot,
-            parameters={
-                "city": "Munich",
-                "country": "Germany",
-                "temperature": 20,
-            },
-        )
-
-        # Test parameter retrieval
-        assert runtime.get_parameter_override("city") == "Munich"
-        assert runtime.get_parameter_override("country") == "Germany"
-        assert runtime.get_parameter_override("temperature") == 20
-        assert runtime.get_parameter_override("missing") is None
-
-    def test_parameter_override_inactive_context(self):
-        """Test parameter override when context is inactive."""
-        # Don't start context
-        assert runtime.get_parameter_override("city") is None
-
-    def test_parameter_override_empty_parameters(self):
-        """Test parameter override with empty parameters."""
-        snapshot = MagicMock()
-        snapshot.id = "test-snapshot"
-
-        runtime.start(
-            request_id="test-request",
-            snapshot=snapshot,
-            parameters={},
-        )
-
-        assert runtime.get_parameter_override("city") is None
-
     def test_step_outputs_recording(self):
         """Test step outputs recording and retrieval."""
         snapshot = MagicMock()
@@ -232,7 +193,6 @@ class TestServingRuntimeContext:
         runtime.put_in_memory_data("memory://artifact/1", "berlin_data")
 
         # Verify first context state
-        assert runtime.get_parameter_override("city") == "Berlin"
         assert runtime.get_outputs()["step1"]["result"] == "berlin_result"
         assert (
             runtime.get_in_memory_data("memory://artifact/1") == "berlin_data"
@@ -249,7 +209,6 @@ class TestServingRuntimeContext:
         )
 
         # Should have clean state
-        assert runtime.get_parameter_override("city") == "Munich"
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
 
@@ -314,7 +273,6 @@ class TestServingRuntimeContext:
 
         # Verify data is stored
         assert runtime.is_active()
-        assert runtime.get_parameter_override("city") == "Berlin"
         assert runtime.get_outputs() != {}
         assert runtime.has_in_memory_data("memory://artifact/1")
         assert runtime.should_use_in_memory_mode() is True
