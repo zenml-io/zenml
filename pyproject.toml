@@ -9,7 +9,7 @@ description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
 license = "Apache-2.0"
-keywords = ["machine learning", "production", "pipeline", "mlops", "devops"]
+keywords = ["machine learning", "production", "pipeline", "mlops", "devops", "ai", "agents", "agentic workflows"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
