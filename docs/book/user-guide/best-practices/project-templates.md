@@ -20,7 +20,7 @@ Do you have a personal project powered by ZenML that you would like to see here?
 First, to use the templates, you need to have ZenML and its `templates` extras installed:
 
 ```bash
-pip install zenml[templates]
+pip install 'zenml[templates]'
 ```
 
 {% hint style="warning" %}
