@@ -255,7 +255,7 @@ class AppRunnerDeploymentMetadata(BaseModel):
 
 
 class AWSDeployer(ContainerizedDeployer):
-    """Deployer responsible for serving pipelines on AWS App Runner."""
+    """Deployer responsible for deploying pipelines on AWS App Runner."""
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 
