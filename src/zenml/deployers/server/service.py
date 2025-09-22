@@ -14,7 +14,6 @@
 """Pipeline deployment service."""
 
 import contextvars
-import os
 import time
 import traceback
 from datetime import datetime, timezone
@@ -124,25 +123,6 @@ class PipelineDeploymentService:
             The parameter model.
         """
         return self._params_model
-
-    def _get_max_output_size_bytes(self) -> int:
-        """Get max output size in bytes with bounds checking.
-
-        Returns:
-            The max output size in bytes.
-        """
-        try:
-            size_mb = int(
-                os.environ.get("ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB", "1")
-            )
-            # Enforce reasonable bounds: 1MB to 100MB
-            size_mb = max(1, min(size_mb, 100))
-            return size_mb * 1024 * 1024
-        except (ValueError, TypeError):
-            logger.warning(
-                "Invalid ZENML_DEPLOYMENT_MAX_OUTPUT_SIZE_MB. Using 1MB."
-            )
-            return 1024 * 1024
 
     def initialize(self) -> None:
         """Initialize service with proper error handling.

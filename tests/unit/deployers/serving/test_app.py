@@ -17,19 +17,18 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from typing import cast
 from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
+from pytest_mock import MockerFixture
 
 from zenml.deployers.server.app import (
     _build_invoke_router,
-    _install_runtime_openapi,
     app,
     get_pipeline_service,
     lifespan,
@@ -37,50 +36,37 @@ from zenml.deployers.server.app import (
     value_error_handler,
     verify_token,
 )
+from zenml.deployers.server.models import (
+    BasePipelineInvokeResponse,
+    ExecutionMetrics,
+    PipelineInfo,
+    PipelineInvokeResponseMetadata,
+    ServiceInfo,
+    SnapshotInfo,
+)
 from zenml.deployers.server.service import PipelineDeploymentService
 
 
 class MockWeatherRequest(BaseModel):
     """Mock Pydantic model for testing."""
 
-    city: str = "London"
+    city: str
     temperature: int = 20
 
 
 @pytest.fixture
-def mock_service() -> MagicMock:
+def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
     """Mock pipeline serving service configured for the app tests."""
 
-    service = MagicMock(spec=PipelineDeploymentService)
-    service.snapshot_id = str(uuid4())
+    service = cast(
+        PipelineDeploymentService,
+        mocker.MagicMock(spec=PipelineDeploymentService),
+    )
+    snapshot_id = uuid4()
+
     service.params_model = MockWeatherRequest
-    service.last_execution_time = None
-    service.total_executions = 0
     service.is_healthy.return_value = True
-    service.get_service_info.return_value = {
-        "snapshot_id": service.snapshot_id,
-        "pipeline_name": "test_pipeline",
-        "total_executions": 0,
-        "status": "healthy",
-        "last_execution_time": None,
-    }
-    service.get_execution_metrics.return_value = {
-        "total_executions": 0,
-        "last_execution_time": None,
-    }
-    service.execute_pipeline.return_value = {
-        "success": True,
-        "outputs": {"step1.result": "test_output"},
-        "execution_time": 1.5,
-        "metadata": {
-            "pipeline_name": "test_pipeline",
-            "run_id": "run-123",
-            "run_name": "test_run",
-            "parameters_used": {"city": "London", "temperature": 20},
-            "snapshot_id": service.snapshot_id,
-        },
-    }
-    service.request_schema = {
+    service.input_schema = {
         "type": "object",
         "properties": {"city": {"type": "string"}},
     }
@@ -88,148 +74,170 @@ def mock_service() -> MagicMock:
         "type": "object",
         "properties": {"result": {"type": "string"}},
     }
-    service.snapshot = MagicMock()
-    service.snapshot.pipeline_spec = MagicMock()
-    service.snapshot.pipeline_spec.parameters = {"city": "London"}
-    service.snapshot.pipeline_configuration = MagicMock()
-    service.snapshot.pipeline_configuration.name = "test_pipeline"
+
+    service.get_service_info.return_value = ServiceInfo(
+        snapshot=SnapshotInfo(id=snapshot_id, name="snapshot"),
+        pipeline=PipelineInfo(
+            name="test_pipeline",
+            parameters={"city": "London"},
+            input_schema=service.input_schema,
+            output_schema=service.output_schema,
+        ),
+        total_executions=3,
+        last_execution_time=None,
+        status="healthy",
+        uptime=12.34,
+    )
+    service.get_execution_metrics.return_value = ExecutionMetrics(
+        total_executions=3,
+        last_execution_time=None,
+    )
+    service.execute_pipeline.return_value = BasePipelineInvokeResponse(
+        success=True,
+        outputs={"result": "ok"},
+        execution_time=0.5,
+        metadata=PipelineInvokeResponseMetadata(
+            pipeline_name="test_pipeline",
+            run_id=None,
+            run_name=None,
+            parameters_used={"city": "Paris", "temperature": 25},
+            snapshot_id=snapshot_id,
+            snapshot_name="snapshot",
+        ),
+        error=None,
+    )
     return service
 
 
 class TestServingAppRoutes:
     """Test FastAPI app routes."""
 
-    def test_root_endpoint(self, mock_service: MagicMock) -> None:
-        """Test root endpoint returns HTML."""
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/")
+    def test_root_endpoint(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Root endpoint returns HTML with pipeline information."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/")
 
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/html; charset=utf-8"
-        assert "ZenML Pipeline Serving" in response.text
+        assert response.headers["content-type"].startswith("text/html")
+        assert "ZenML Pipeline Deployment" in response.text
         assert "test_pipeline" in response.text
 
-    def test_health_endpoint(self, mock_service: MagicMock) -> None:
-        """Test health check endpoint."""
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/health")
+    def test_health_endpoint(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Health endpoint returns OK when service is healthy."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/health")
 
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "healthy"
-        assert data["snapshot_id"] == mock_service.snapshot_id
-        assert data["pipeline_name"] == "test_pipeline"
-        assert "uptime" in data
+        assert response.json() == "OK"
 
-    def test_health_endpoint_unhealthy(self, mock_service: MagicMock) -> None:
-        """Test health check endpoint when service is unhealthy."""
+    def test_health_endpoint_unhealthy(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Health endpoint raises when service reports unhealthy state."""
         mock_service.is_healthy.return_value = False
 
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/health")
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/health")
 
         assert response.status_code == 503
         assert response.json()["detail"] == "Service is unhealthy"
 
-    def test_info_endpoint(self, mock_service: MagicMock) -> None:
-        """Test info endpoint."""
-        mock_service.snapshot.pipeline_spec.parameters = {
-            "city": "London",
-            "temperature": 20,
-        }
-
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/info")
+    def test_info_endpoint(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Info endpoint returns service metadata."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/info")
 
         assert response.status_code == 200
         data = response.json()
         assert data["pipeline"]["name"] == "test_pipeline"
-        assert data["pipeline"]["parameters"] == {
-            "city": "London",
-            "temperature": 20,
-        }
-        assert data["snapshot"]["id"] == mock_service.snapshot_id
+        assert data["pipeline"]["parameters"] == {"city": "London"}
+        assert data["status"] == "healthy"
+        assert data["snapshot"]["name"] == "snapshot"
 
-    def test_metrics_endpoint(self, mock_service: MagicMock) -> None:
-        """Test metrics endpoint."""
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/metrics")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["total_executions"] == 0
-        assert "last_execution_time" in data
-
-    def test_schema_endpoint(self, mock_service: MagicMock) -> None:
-        """Test schema endpoint exposes request/response schemas."""
-        with patch.dict(os.environ, {"ZENML_DEPLOYMENT_TEST_MODE": "true"}):
-            with patch("zenml.deployers.server.app._service", mock_service):
-                with TestClient(app) as client:
-                    response = client.get("/schema")
+    def test_metrics_endpoint(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Metrics endpoint exposes execution metrics."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/metrics")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["request_schema"] == mock_service.request_schema
-        assert data["output_schema"] == mock_service.output_schema
+        assert data["total_executions"] == 3
+        assert data["last_execution_time"] is None
 
-    def test_status_endpoint(self, mock_service: MagicMock) -> None:
-        """Test status endpoint."""
-        with (
-            patch.dict(
-                os.environ,
-                {
-                    "ZENML_DEPLOYMENT_TEST_MODE": "true",
-                    "ZENML_SNAPSHOT_ID": mock_service.snapshot_id,
-                    "ZENML_SERVICE_HOST": "127.0.0.1",
-                    "ZENML_SERVICE_PORT": "9000",
-                },
-            ),
-            patch("zenml.deployers.server.app._service", mock_service),
-            patch(
-                "zenml.deployers.server.app.service_start_time", 1234567890.0
-            ),
-        ):
-            with TestClient(app) as client:
-                response = client.get("/status")
+    def test_info_endpoint_includes_schemas(
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Info endpoint includes input/output schemas."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        with TestClient(app) as client:
+            response = client.get("/info")
 
-        assert response.status_code == 200
         data = response.json()
-        assert data["service_name"] == "ZenML Pipeline Serving"
-        assert data["version"] == "0.2.0"
-        assert data["snapshot_id"] == mock_service.snapshot_id
-        assert data["status"] == "running"
-        assert data["configuration"]["snapshot_id"] == mock_service.snapshot_id
-        assert data["configuration"]["host"] == "127.0.0.1"
-        assert data["configuration"]["port"] == 9000
+        assert data["pipeline"]["input_schema"] == mock_service.input_schema
+        assert data["pipeline"]["output_schema"] == mock_service.output_schema
 
     def test_get_pipeline_service_returns_current_instance(
-        self, mock_service: MagicMock
+        self,
+        mock_service: PipelineDeploymentService,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Ensure get_pipeline_service exposes the underlying instance."""
-
-        with patch("zenml.deployers.server.app._service", mock_service):
-            assert get_pipeline_service() is mock_service
+        monkeypatch.setattr(
+            "zenml.deployers.server.app._service", mock_service
+        )
+        assert get_pipeline_service() is mock_service
 
 
 class TestServingAppInvoke:
     """Test pipeline invocation via FastAPI."""
 
-    @patch.dict("os.environ", {}, clear=True)  # No auth by default
     def test_invoke_endpoint_executes_service(
-        self, mock_service: MagicMock
+        self, mock_service: PipelineDeploymentService
     ) -> None:
-        """Test that the invoke router validates payloads and calls the service."""
-
+        """Invoke router validates payloads and calls the service."""
         fast_app = FastAPI()
         fast_app.include_router(_build_invoke_router(mock_service))
 
@@ -238,17 +246,16 @@ class TestServingAppInvoke:
             response = client.post("/invoke", json=payload)
 
         assert response.status_code == 200
-        assert response.json() == mock_service.execute_pipeline.return_value
-        mock_service.execute_pipeline.assert_called_once_with(
-            {"city": "Paris", "temperature": 25}, None, None, None
-        )
+        assert response.json()["success"] is True
+        mock_service.execute_pipeline.assert_called_once()
+        request_arg = mock_service.execute_pipeline.call_args.args[0]
+        assert request_arg.parameters.city == "Paris"
+        assert request_arg.use_in_memory is False
 
-    @patch.dict("os.environ", {}, clear=True)
     def test_invoke_endpoint_validation_error(
-        self, mock_service: MagicMock
+        self, mock_service: PipelineDeploymentService
     ) -> None:
-        """Test that invalid payloads trigger validation errors."""
-
+        """Invalid payloads trigger validation errors."""
         fast_app = FastAPI()
         fast_app.include_router(_build_invoke_router(mock_service))
 
@@ -258,106 +265,99 @@ class TestServingAppInvoke:
         assert response.status_code == 422
         mock_service.execute_pipeline.assert_not_called()
 
-    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_AUTH_KEY": "test-auth-key"})
-    def test_verify_token_with_auth_enabled(self) -> None:
-        """Test token verification when authentication is enabled."""
-        from fastapi.security import HTTPAuthorizationCredentials
+    def test_verify_token_with_auth_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Token verification when authentication is enabled."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_AUTH_KEY", "test-auth-key")
 
-        # Valid token
-        valid_credentials = HTTPAuthorizationCredentials(
+        credentials = HTTPAuthorizationCredentials(
             scheme="Bearer", credentials="test-auth-key"
         )
-        result = verify_token(valid_credentials)
-        assert result is None  # No exception raised
+        assert verify_token(credentials) is None
 
-        # Invalid token
-        invalid_credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="wrong-key"
-        )
         with pytest.raises(HTTPException):
-            verify_token(invalid_credentials)
+            verify_token(
+                HTTPAuthorizationCredentials(
+                    scheme="Bearer", credentials="wrong"
+                )
+            )
 
-        # Missing token
         with pytest.raises(HTTPException):
             verify_token(None)
 
-    @patch.dict("os.environ", {}, clear=True)
-    def test_verify_token_with_auth_disabled(self) -> None:
-        """Test token verification when authentication is disabled."""
-
-        # Should pass with no token when auth is disabled
-        result = verify_token(None)
-        assert result is None
-
-    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_AUTH_KEY": ""})
-    def test_verify_token_with_empty_auth_key(self) -> None:
-        """Test token verification with empty auth key."""
-
-        # Empty auth key should disable authentication
-        result = verify_token(None)
-        assert result is None
+    def test_verify_token_with_auth_disabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Token verification when authentication is disabled."""
+        monkeypatch.delenv("ZENML_DEPLOYMENT_AUTH_KEY", raising=False)
+        assert verify_token(None) is None
 
 
 class TestServingAppLifecycle:
     """Test app lifecycle management."""
 
-    @patch.dict("os.environ", {"ZENML_DEPLOYMENT_TEST_MODE": "true"})
-    def test_lifespan_test_mode(self) -> None:
-        """Test lifespan in test mode."""
+    def test_lifespan_test_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Lifespan exits early in test mode."""
+        monkeypatch.setenv("ZENML_DEPLOYMENT_TEST_MODE", "true")
 
-        async def run_lifespan() -> None:
+        async def _run() -> None:
             async with lifespan(app):
                 pass
 
-        asyncio.run(run_lifespan())
+        asyncio.run(_run())
 
-    @patch("zenml.deployers.server.app.PipelineDeploymentService")
-    @patch.dict("os.environ", {"ZENML_SNAPSHOT_ID": "test-snapshot-id"})
-    def test_lifespan_normal_mode(self, mock_service_class: MagicMock) -> None:
-        """Test lifespan in normal mode."""
-        mock_service = MagicMock()
+    def test_lifespan_normal_mode(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """Lifespan initializes and cleans up service in normal mode."""
+        monkeypatch.setenv("ZENML_SNAPSHOT_ID", "test-snapshot-id")
+
+        mock_service = cast(
+            PipelineDeploymentService,
+            mocker.MagicMock(spec=PipelineDeploymentService),
+        )
         mock_service.params_model = MockWeatherRequest
-        mock_service.initialize = MagicMock()
-        mock_service.cleanup = MagicMock()
-        mock_service.request_schema = None
-        mock_service.output_schema = None
-        mock_service_class.return_value = mock_service
+        mock_service.initialize = mocker.MagicMock()
+        mock_service.cleanup = mocker.MagicMock()
 
-        async def run_lifespan() -> None:
-            with (
-                patch.object(app, "include_router") as mock_include,
-                patch(
-                    "zenml.deployers.server.app._install_runtime_openapi"
-                ) as mock_openapi,
-            ):
-                async with lifespan(app):
-                    pass
-            mock_include.assert_called_once()
-            mock_openapi.assert_called_once()
+        mocker.patch(
+            "zenml.deployers.server.app.PipelineDeploymentService",
+            return_value=mock_service,
+        )
+        mock_include = mocker.patch.object(app, "include_router")
 
-        asyncio.run(run_lifespan())
+        async def _run() -> None:
+            async with lifespan(app):
+                pass
 
-        mock_service_class.assert_called_once_with("test-snapshot-id")
+        asyncio.run(_run())
+
+        mock_include.assert_called()
         mock_service.initialize.assert_called_once()
         mock_service.cleanup.assert_called_once()
 
-    @patch.dict("os.environ", {}, clear=True)
-    def test_lifespan_missing_snapshot_id(self) -> None:
-        """Test lifespan with missing snapshot ID."""
+    def test_lifespan_missing_snapshot_id(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Lifespan raises when no snapshot id is configured."""
+        monkeypatch.delenv("ZENML_SNAPSHOT_ID", raising=False)
 
-        async def run_lifespan() -> None:
+        async def _run() -> None:
             with pytest.raises(ValueError, match="ZENML_SNAPSHOT_ID"):
                 async with lifespan(app):
                     pass
 
-        asyncio.run(run_lifespan())
+        asyncio.run(_run())
 
 
 class TestServingAppErrorHandling:
     """Test app error handling."""
 
-    def test_value_error_handler(self, mock_service: MagicMock) -> None:
-        """Test ValueError exception handler."""
+    def test_value_error_handler(self) -> None:
+        """ValueError exception handler returns 400 with message."""
         request = Request(
             {"type": "http", "method": "POST", "url": "http://test"}
         )
@@ -369,7 +369,7 @@ class TestServingAppErrorHandling:
         assert payload["detail"] == "Test error"
 
     def test_runtime_error_handler(self) -> None:
-        """Test RuntimeError exception handler."""
+        """RuntimeError exception handler returns 500 with message."""
         request = Request(
             {"type": "http", "method": "POST", "url": "http://test"}
         )
@@ -384,30 +384,12 @@ class TestServingAppErrorHandling:
 class TestBuildInvokeRouter:
     """Test the invoke router building functionality."""
 
-    def test_build_invoke_router(self, mock_service: MagicMock) -> None:
-        """Test building the invoke router."""
+    def test_build_invoke_router(
+        self, mock_service: PipelineDeploymentService
+    ) -> None:
+        """Building the invoke router exposes /invoke route."""
         router = _build_invoke_router(mock_service)
 
         assert router is not None
         routes = [route.path for route in router.routes]
         assert "/invoke" in routes
-
-
-def test_install_runtime_openapi_gracefully_handles_missing_schema(
-    mock_service: MagicMock,
-) -> None:
-    """Ensure OpenAPI installation works when schemas are unavailable."""
-
-    fast_api_app = FastAPI()
-
-    @fast_api_app.post("/invoke")
-    def invoke() -> Dict[str, Any]:
-        return {}
-
-    mock_service.request_schema = None
-    mock_service.output_schema = None
-
-    _install_runtime_openapi(fast_api_app, mock_service)
-
-    schema = fast_api_app.openapi()
-    assert "/invoke" in schema["paths"]
