@@ -1,1 +1,1 @@
-zenml[server]
+zenml[server, jupyter]
