@@ -16,8 +16,7 @@
 from enum import Enum
 from typing import Optional, Union
 
-from pydantic import Field, NonNegativeInt, PositiveFloat
-from pydantic_settings import SettingsConfigDict
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
 
 from zenml.config.base_settings import BaseSettings
 
@@ -115,7 +114,7 @@ class ResourceSettings(BaseSettings):
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
 
-    model_config = SettingsConfigDict(
+    model_config = ConfigDict(
         # public attributes are immutable
         frozen=True,
         # prevent extra attributes during model initialization
