@@ -16,7 +16,7 @@ This guide will help you build and deploy your first ZenML pipeline, starting lo
 Start by installing ZenML in a fresh Python environment:
 
 ```bash
-pip install zenml
+pip install 'zenml[server]'
 zenml login
 ```
 
@@ -82,7 +82,7 @@ The fastest way to create a cloud stack is through the **Infrastructure-as-Code*
 
 You'll need:
 
-* [Terraform](https://www.terraform.io/downloads.html) version 1.9+ installed locally
+* [Terraform](https://developer.hashicorp.com/terraform/install) version 1.9+ installed locally
 * Authentication configured for your preferred cloud provider (AWS, GCP, or Azure)
 * Appropriate permissions to create resources in your cloud account
 

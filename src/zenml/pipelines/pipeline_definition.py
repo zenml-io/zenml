@@ -1346,7 +1346,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             hash_.update(self.source_code.encode())
 
         for step_spec in pipeline_spec.steps:
-            invocation = self.invocations[step_spec.pipeline_parameter_name]
+            invocation = self.invocations[step_spec.invocation_id]
             step_source = invocation.step.source_code
             hash_.update(step_source.encode())
 

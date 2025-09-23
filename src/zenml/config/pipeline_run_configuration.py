@@ -110,7 +110,7 @@ class PipelineRunConfiguration(
         default=None,
         description="The init hook source for the pipeline run.",
     )
-    init_hook_args: Optional[Dict[str, Any]] = Field(
+    init_hook_kwargs: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The init hook args for the pipeline run.",
     )

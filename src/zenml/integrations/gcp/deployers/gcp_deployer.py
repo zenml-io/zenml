@@ -249,7 +249,7 @@ class CloudRunDeploymentMetadata(BaseModel):
 
 
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
-    """Deployer responsible for serving pipelines on GCP Cloud Run."""
+    """Deployer responsible for deploying pipelines on GCP Cloud Run."""
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 

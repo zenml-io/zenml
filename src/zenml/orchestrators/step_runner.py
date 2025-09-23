@@ -551,13 +551,13 @@ class StepRunner:
             StepInterfaceError: If the step function return values do not
                 match the output annotations.
         """
-        step_name = self._step.spec.pipeline_parameter_name
+        invocation_id = self._step.spec.invocation_id
 
         # if there are no outputs, the return value must be `None`.
         if len(output_annotations) == 0:
             if return_values is not None:
                 raise StepInterfaceError(
-                    f"Wrong step function output type for step `{step_name}`: "
+                    f"Wrong step function output type for step `{invocation_id}`: "
                     f"Expected no outputs but the function returned something: "
                     f"{return_values}."
                 )
@@ -573,7 +573,7 @@ class StepRunner:
         # or tuple.
         if not isinstance(return_values, (list, tuple)):
             raise StepInterfaceError(
-                f"Wrong step function output type for step `{step_name}`: "
+                f"Wrong step function output type for step `{invocation_id}`: "
                 f"Expected multiple outputs ({output_annotations}) but "
                 f"the function did not return a list or tuple "
                 f"(actual return value: {return_values})."
@@ -584,7 +584,7 @@ class StepRunner:
         if len(output_annotations) != len(return_values):
             raise StepInterfaceError(
                 f"Wrong amount of step function outputs for step "
-                f"'{step_name}: Expected {len(output_annotations)} outputs "
+                f"'{invocation_id}: Expected {len(output_annotations)} outputs "
                 f"but the function returned {len(return_values)} outputs"
                 f"(return values: {return_values})."
             )
@@ -605,7 +605,7 @@ class StepRunner:
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{step_name}' (expected type: {output_type}, "
+                        f"'{invocation_id}' (expected type: {output_type}, "
                         f"actual type: {type(return_value)})."
                     )
             validated_outputs[output_name] = return_value

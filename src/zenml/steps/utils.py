@@ -603,10 +603,11 @@ def get_unique_step_output_names(
     output_name to make it unique.
 
     Args:
-        step_outputs: The step outputs.
+        step_outputs: The step outputs as arbitrary objects indexed by
+            (invocation_id, output_name).
 
     Returns:
-        The unique step output names.
+        The input dictionary complemented with unique step output names.
     """
     output_name_count: Dict[str, int] = {}
     for _, output_name in step_outputs.keys():

@@ -95,6 +95,7 @@ from zenml.utils import dict_utils, secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -110,6 +111,7 @@ if TYPE_CHECKING:
         DeploymentResponse,
         FlavorResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
@@ -2314,6 +2316,55 @@ def print_pipeline_runs_table(
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def fetch_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+) -> "PipelineSnapshotResponse":
+    """Fetch a snapshot by name or ID.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot.
+        pipeline_name_or_id: The name or ID of the pipeline.
+
+    Returns:
+        The snapshot.
+    """
+    if is_valid_uuid(snapshot_name_or_id):
+        return Client().get_snapshot(snapshot_name_or_id)
+    elif pipeline_name_or_id:
+        try:
+            return Client().get_snapshot(
+                snapshot_name_or_id,
+                pipeline_name_or_id=pipeline_name_or_id,
+            )
+        except KeyError:
+            error(
+                f"There are no snapshots with name `{snapshot_name_or_id}` for "
+                f"pipeline `{pipeline_name_or_id}`."
+            )
+    else:
+        snapshots = Client().list_snapshots(
+            name=snapshot_name_or_id,
+        )
+        if snapshots.total == 0:
+            error(f"There are no snapshots with name `{snapshot_name_or_id}`.")
+        elif snapshots.total == 1:
+            return snapshots.items[0]
+
+        snapshot_index = multi_choice_prompt(
+            object_type="snapshots",
+            choices=[
+                [snapshot.pipeline.name, snapshot.name]
+                for snapshot in snapshots.items
+            ],
+            headers=["Pipeline", "Snapshot"],
+            prompt_text=f"There are multiple snapshots with name "
+            f"`{snapshot_name_or_id}`. Please select the snapshot to run",
+        )
+        assert snapshot_index is not None
+        return snapshots.items[snapshot_index]
 
 
 def get_deployment_status_emoji(
