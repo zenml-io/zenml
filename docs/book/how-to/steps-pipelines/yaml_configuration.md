@@ -116,6 +116,25 @@ Set a custom name for the pipeline run:
 run_name: "training_run_cifar10_resnet50_lr0.001"
 ```
 
+{% hint style="warning" %}
+**Important:** Pipeline run names must be unique within a project. If you try to run a pipeline with a name that already exists, you'll get an error. To avoid this:
+
+1. **Use dynamic placeholders** to ensure uniqueness:
+   ```yaml
+   # Example 1: Use placeholders for date and time to ensure uniqueness
+   run_name: "training_run_{date}_{time}"
+   
+   # Example 2: Combine placeholders with specific details for better context
+   run_name: "training_run_cifar10_resnet50_lr0.001_{date}_{time}"
+   ```
+
+2. **Remove the 'run_name' from your config** to let ZenML auto-generate unique names
+
+3. **Change the run_name** before rerunning the pipeline
+
+Available placeholders: `{date}`, `{time}`, and any parameters defined in your pipeline configuration.
+{% endhint %}
+
 ## Resource and Component Configuration
 
 ### Docker Settings
