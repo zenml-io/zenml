@@ -39,7 +39,6 @@ class _DeploymentState(BaseModel):
     snapshot_id: Optional[str] = None
     pipeline_parameters: Dict[str, Any] = Field(default_factory=dict)
     outputs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    # Per-request in-memory mode override
 
     # In-memory data storage for artifacts
     in_memory_data: Dict[str, Any] = Field(default_factory=dict)
