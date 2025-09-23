@@ -160,11 +160,6 @@ class TestServingRuntimeContext:
         )
         assert runtime.get_in_memory_data("memory://missing") is None
 
-        # Check existence
-        assert runtime.has_in_memory_data("memory://artifact/1")
-        assert runtime.has_in_memory_data("memory://artifact/2")
-        assert not runtime.has_in_memory_data("memory://missing")
-
     def test_in_memory_data_inactive_context(self):
         """Test in-memory data operations when context is inactive."""
         # Don't start context
@@ -172,7 +167,6 @@ class TestServingRuntimeContext:
 
         # Should not store anything
         assert runtime.get_in_memory_data("memory://artifact/1") is None
-        assert not runtime.has_in_memory_data("memory://artifact/1")
 
     def test_context_isolation(self):
         """Test that multiple contexts don't interfere with each other."""
@@ -274,7 +268,6 @@ class TestServingRuntimeContext:
         # Verify data is stored
         assert runtime.is_active()
         assert runtime.get_outputs() != {}
-        assert runtime.has_in_memory_data("memory://artifact/1")
         assert runtime.should_use_in_memory_mode() is True
 
         # Stop context (triggers reset)
@@ -292,5 +285,4 @@ class TestServingRuntimeContext:
 
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
-        assert not runtime.has_in_memory_data("memory://artifact/1")
         assert runtime.should_use_in_memory_mode() is False

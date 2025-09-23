@@ -656,14 +656,10 @@ class Compiler:
             logger.warning("Failed to compute pipeline output schema: %s", e)
             output_schema = None
 
-        try:
-            parameters_model = pipeline.get_parameters_model()
-            if parameters_model:
-                input_schema = parameters_model.model_json_schema()
-            else:
-                input_schema = None
-        except Exception as e:
-            logger.warning("Failed to compute pipeline input schema: %s", e)
+        parameters_model = pipeline.get_parameters_model()
+        if parameters_model:
+            input_schema = parameters_model.model_json_schema()
+        else:
             input_schema = None
 
         return PipelineSpec(

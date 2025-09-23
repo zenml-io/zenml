@@ -170,18 +170,3 @@ def get_in_memory_data(uri: str) -> Any:
         state = _get_context()
         return state.in_memory_data.get(uri)
     return None
-
-
-def has_in_memory_data(uri: str) -> bool:
-    """Check if data exists in memory for the given URI.
-
-    Args:
-        uri: The artifact URI to check.
-
-    Returns:
-        True if data exists in memory for the URI.
-    """
-    if is_active():
-        state = _get_context()
-        return uri in state.in_memory_data
-    return False

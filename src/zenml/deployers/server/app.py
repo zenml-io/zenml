@@ -71,7 +71,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     try:
         global _service
-        # Defer UUID parsing to the service itself to simplify testing
         _service = PipelineDeploymentService(snapshot_id)
         _service.initialize()
         # params model is available.
