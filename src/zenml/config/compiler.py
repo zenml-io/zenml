@@ -454,7 +454,7 @@ class Compiler:
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
-            pipeline_parameter_name=invocation.id,
+            invocation_id=invocation.id,
         )
 
     def _compile_step_invocation(
