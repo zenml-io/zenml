@@ -16,6 +16,7 @@
 import inspect
 import os
 import re
+import textwrap
 import traceback
 from typing import TYPE_CHECKING, Optional
 
@@ -81,7 +82,7 @@ def collect_exception_information(
         # part of the traceback that is happening in the ZenML code.
         tb = tb[start_index:]
 
-    tb_bytes = "\n".join(tb).encode()
+    tb_bytes = textwrap.dedent("\n".join(tb)).encode()
     tb_bytes = tb_bytes[:MEDIUMTEXT_MAX_LENGTH]
 
     return ExceptionInfo(

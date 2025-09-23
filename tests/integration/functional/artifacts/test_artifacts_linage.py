@@ -294,7 +294,7 @@ def test_input_artifacts_typing(clean_client: Client):
     def my_pipeline():
         a = producer_step()
         consumer_step(a, 42, id="cs1", after=["producer_step"])
-        consumer_step(ExternalArtifact(value=42), 42, id="cs2", after=["cs1"])
+        consumer_step(ExternalArtifact(value=43), 43, id="cs2", after=["cs1"])
         consumer_step(
             clean_client.get_artifact_version("shared_name", 1),
             41,

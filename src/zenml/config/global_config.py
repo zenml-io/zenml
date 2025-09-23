@@ -510,21 +510,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        # Step 1: Create a baseline store configuration
+        store: Optional[StoreConfiguration] = baseline or self.store
 
-        if baseline is not None:
-            # Use the provided baseline store configuration
-            store = baseline
-        elif self.store is not None:
-            # Use the current store configuration as a baseline
-            store = self.store
-        else:
-            # Start with the default store configuration as a baseline
-            store = self.get_default_store()
-
-        # Step 2: Replace or update the baseline store configuration with the
-        # environment variables
-
+        # Step 1: Read environment variable overrides
         env_store_config: Dict[str, str] = {}
         env_secrets_store_config: Dict[str, str] = {}
         env_backup_secrets_store_config: Dict[str, str] = {}
@@ -565,9 +553,18 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 )
             else:
                 logger.debug(
-                    "Using environment variables to update the default store"
+                    "Using environment variables to update store config"
                 )
+                if not store:
+                    store = self.get_default_store()
                 store = store.model_copy(update=env_store_config, deep=True)
+
+        # Step 2: Only after we've applied the environment variables, we
+        # fallback to the default store if no store configuration is set. This
+        # is to avoid importing the SQL store config in cases where a rest store
+        # is configured with environment variables.
+        if not store:
+            store = self.get_default_store()
 
         # Step 3: Replace or update the baseline secrets store configuration
         # with the environment variables. This only applies to SQL stores.
@@ -664,13 +661,23 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._configure_store(default_store_cfg)
         logger.debug("Using the default store for the global config.")
 
-    def uses_default_store(self) -> bool:
-        """Check if the global configuration uses the default store.
+    @property
+    def uses_local_store(self) -> bool:
+        """Check if the global configuration uses a local store.
 
         Returns:
-            `True` if the global configuration uses the default store.
+            `True` if the global configuration uses a local store.
         """
-        return self.store_configuration.url == self.get_default_store().url
+        return self.store_configuration.url.startswith("sqlite://")
+
+    @property
+    def uses_sql_store(self) -> bool:
+        """Check if the global configuration uses a SQL store.
+
+        Returns:
+            If the global configuration uses a SQL store.
+        """
+        return self.store_configuration.type == StoreType.SQL
 
     def set_store(
         self,

@@ -21,9 +21,9 @@ from uuid import UUID
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Relationship
+from sqlmodel import Field, Relationship
 
-from zenml.enums import StackComponentType
+from zenml.enums import SecretResourceTypes, StackComponentType
 from zenml.models import (
     ComponentRequest,
     ComponentResponse,
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas.secret_schemas import SecretSchema
     from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
@@ -66,6 +67,7 @@ class StackComponentSchema(NamedSchema, table=True):
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
+    environment: Optional[bytes] = Field(default=None)
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -113,6 +115,15 @@ class StackComponentSchema(NamedSchema, table=True):
     )
 
     connector_resource_id: Optional[str]
+    secrets: List["SecretSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK_COMPONENT.value}', foreign(SecretResourceSchema.resource_id)==StackComponentSchema.id)",
+            secondary="secret_resource",
+            secondaryjoin="SecretSchema.id == foreign(SecretResourceSchema.secret_id)",
+            order_by="SecretSchema.name",
+            overlaps="secrets",
+        ),
+    )
 
     @classmethod
     def get_query_options(
@@ -178,6 +189,9 @@ class StackComponentSchema(NamedSchema, table=True):
             labels=base64.b64encode(
                 json.dumps(request.labels).encode("utf-8")
             ),
+            environment=base64.b64encode(
+                json.dumps(request.environment).encode("utf-8")
+            ),
             connector=service_connector,
             connector_resource_id=request.connector_resource_id,
         )
@@ -194,7 +208,8 @@ class StackComponentSchema(NamedSchema, table=True):
             The updated `StackComponentSchema`.
         """
         for field, value in component_update.model_dump(
-            exclude_unset=True, exclude={"user", "connector"}
+            exclude_unset=True,
+            exclude={"user", "connector", "add_secrets", "remove_secrets"},
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
@@ -203,6 +218,10 @@ class StackComponentSchema(NamedSchema, table=True):
             elif field == "labels":
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
+                )
+            elif field == "environment":
+                self.environment = base64.b64encode(
+                    json.dumps(component_update.environment).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -244,6 +263,11 @@ class StackComponentSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            environment = None
+            if self.environment:
+                environment = json.loads(
+                    base64.b64decode(self.environment).decode()
+                )
             metadata = ComponentResponseMetadata(
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
@@ -251,10 +275,12 @@ class StackComponentSchema(NamedSchema, table=True):
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels
                 else None,
+                environment=environment or {},
                 connector_resource_id=self.connector_resource_id,
                 connector=self.connector.to_model()
                 if self.connector
                 else None,
+                secrets=[secret.id for secret in self.secrets],
             )
         resources = None
         if include_resources:

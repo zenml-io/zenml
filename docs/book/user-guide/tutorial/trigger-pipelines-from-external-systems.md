@@ -470,7 +470,6 @@ def evaluate(
 docker_settings = DockerSettings(
     requirements="requirements.txt",
     required_integrations=["sklearn"],
-    python_package_installer="uv",
 )
 
 @pipeline(settings={"docker": docker_settings})

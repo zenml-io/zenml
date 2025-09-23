@@ -62,6 +62,7 @@ from zenml.steps.utils import (
     resolve_type_annotation,
 )
 from zenml.utils import (
+    env_utils,
     exception_utils,
     materializer_utils,
     source_utils,
@@ -193,11 +194,25 @@ class StepRunner:
                 input_artifacts=input_artifacts,
             )
 
+            # Get all step environment variables. For most orchestrators, the
+            # non-secret environment variables have been set before by the
+            # orchestrator. But for some orchestrators, this is not possible and
+            # we therefore make sure to set them here so they're at least
+            # available for the user code.
+            step_environment = env_utils.get_step_environment(
+                step_config=step_run.config, stack=self._stack
+            )
+            secret_environment = env_utils.get_step_secret_environment(
+                step_config=step_run.config, stack=self._stack
+            )
+            step_environment.update(secret_environment)
+
             step_failed = False
             try:
-                return_values = step_instance.call_entrypoint(
-                    **function_params
-                )
+                with env_utils.temporary_environment(step_environment):
+                    return_values = step_instance.call_entrypoint(
+                        **function_params
+                    )
             except BaseException as step_exception:  # noqa: E722
                 step_failed = True
 

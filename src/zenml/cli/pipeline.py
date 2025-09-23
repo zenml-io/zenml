@@ -15,7 +15,8 @@
 
 import json
 import os
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 
 import click
 
@@ -31,6 +32,7 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineFilter,
     PipelineRunFilter,
+    PipelineSnapshotFilter,
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
@@ -335,7 +337,7 @@ def create_run_template(
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
 ) -> None:
-    """Create a run template for a pipeline.
+    """DEPRECATED: Create a run template for a pipeline.
 
     Args:
         source: Importable source resolving to a pipeline instance.
@@ -344,6 +346,11 @@ def create_run_template(
         stack_name_or_id: Name or ID of the stack for which the template should
             be created.
     """
+    cli_utils.warning(
+        "The `zenml pipeline create-run-template` command is deprecated and "
+        "will be removed in a future version. Please use `zenml pipeline "
+        "snapshot create` instead."
+    )
     if not Client().root:
         cli_utils.warning(
             "You're running the `zenml pipeline create-run-template` command "
@@ -407,8 +414,8 @@ def delete_pipeline(
     if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete pipeline "
-            f"`{pipeline_name_or_id}`? This will change all "
-            "existing runs of this pipeline to become unlisted."
+            f"`{pipeline_name_or_id}`? This will delete all "
+            "runs and snapshots of this pipeline."
         )
         if not confirmation:
             cli_utils.declare("Pipeline deletion canceled.")
@@ -736,3 +743,232 @@ def delete_pipeline_build(
         cli_utils.error(str(e))
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
+
+
+@pipeline.group()
+def snapshot() -> None:
+    """Commands for pipeline snapshots."""
+
+
+@snapshot.command("create", help="Create a snapshot of a pipeline.")
+@click.argument("source")
+@click.option(
+    "--name",
+    "-n",
+    type=str,
+    required=True,
+    help="The name of the snapshot.",
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The description of the snapshot.",
+)
+@click.option(
+    "--replace",
+    "-r",
+    is_flag=True,
+    required=False,
+    help="Whether to replace the existing snapshot with the same name.",
+)
+@click.option(
+    "--tags",
+    "-t",
+    type=str,
+    required=False,
+    multiple=True,
+    help="The tags to add to the snapshot.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the snapshot.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to use for the snapshot.",
+)
+def create_pipeline_snapshot(
+    source: str,
+    name: str,
+    description: Optional[str] = None,
+    replace: Optional[bool] = None,
+    tags: Optional[List[str]] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+) -> None:
+    """Create a snapshot of a pipeline.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        name: Name of the snapshot.
+        description: Description of the snapshot.
+        tags: Tags to add to the snapshot.
+        replace: Whether to replace the existing snapshot with the same name.
+        config_path: Path to configuration file for the snapshot.
+        stack_name_or_id: Name or ID of the stack for which the snapshot
+            should be created.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline snapshot create` command "
+            "without a ZenML repository. Your current working directory will "
+            "be used as the source root relative to which the registered step "
+            "classes will be resolved. To silence this warning, run `zenml "
+            "init` at your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path
+        )
+        snapshot = pipeline_instance.create_snapshot(
+            name=name,
+            description=description,
+            replace=replace,
+            tags=tags,
+        )
+
+    cli_utils.declare(
+        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
+        f"this snapshot from the dashboard or by calling `zenml pipeline "
+        f"snapshot trigger {snapshot.id}`"
+    )
+
+
+@snapshot.command("run", help="Run a snapshot.")
+@click.argument("snapshot_name_or_id")
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the run.",
+)
+def run_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+    config_path: Optional[str] = None,
+) -> None:
+    """Run a snapshot.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot to run.
+        pipeline_name_or_id: The name or ID of the pipeline.
+        config_path: Path to configuration file for the run.
+    """
+    if uuid_utils.is_valid_uuid(snapshot_name_or_id):
+        snapshot_id = UUID(snapshot_name_or_id)
+    elif pipeline_name_or_id:
+        try:
+            snapshot_id = (
+                Client()
+                .get_snapshot(
+                    snapshot_name_or_id,
+                    pipeline_name_or_id=pipeline_name_or_id,
+                )
+                .id
+            )
+        except KeyError:
+            cli_utils.error(
+                f"There are no snapshots with name `{snapshot_name_or_id}` for "
+                f"pipeline `{pipeline_name_or_id}`."
+            )
+    else:
+        snapshots = Client().list_snapshots(
+            name=snapshot_name_or_id,
+        )
+        if snapshots.total == 0:
+            cli_utils.error(
+                f"There are no snapshots with name `{snapshot_name_or_id}`."
+            )
+        elif snapshots.total == 1:
+            snapshot_id = snapshots.items[0].id
+        else:
+            snapshot_index = cli_utils.multi_choice_prompt(
+                object_type="snapshots",
+                choices=[
+                    [snapshot.pipeline.name, snapshot.name]
+                    for snapshot in snapshots.items
+                ],
+                headers=["Pipeline", "Snapshot"],
+                prompt_text=f"There are multiple snapshots with name "
+                f"`{snapshot_name_or_id}`. Please select the snapshot to run",
+            )
+            assert snapshot_index is not None
+            snapshot_id = snapshots.items[snapshot_index].id
+
+    try:
+        run = Client().trigger_pipeline(
+            snapshot_name_or_id=snapshot_id,
+            config_path=config_path,
+        )
+        cli_utils.declare(f"Started snapshot run `{run.id}`.")
+    except Exception as e:
+        cli_utils.error(f"Failed to run snapshot: {e}")
+
+
+@snapshot.command("list", help="List pipeline snapshots.")
+@list_options(PipelineSnapshotFilter)
+def list_pipeline_snapshots(**kwargs: Any) -> None:
+    """List all pipeline snapshots for the filter.
+
+    Args:
+        **kwargs: Keyword arguments to filter pipeline snapshots.
+    """
+    client = Client()
+    try:
+        with console.status("Listing pipeline snapshots...\n"):
+            pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        if not pipeline_snapshots.items:
+            cli_utils.declare("No pipeline snapshots found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipeline_snapshots,
+            exclude_columns=[
+                "created",
+                "updated",
+                "user_id",
+                "project_id",
+                "pipeline_configuration",
+                "step_configurations",
+                "client_environment",
+                "client_version",
+                "server_version",
+                "run_name_template",
+                "pipeline_version_hash",
+                "pipeline_spec",
+                "build",
+                "schedule",
+                "code_reference",
+                "config_schema",
+                "config_template",
+                "source_snapshot_id",
+                "template_id",
+                "code_path",
+            ],
+        )

@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from zenml import pipeline, step
+from zenml.enums import ExecutionMode
 from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -256,7 +257,9 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
     pipeline_ = one_step_pipeline(step_instance)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 @step
@@ -323,7 +326,9 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
     pipeline_ = one_step_pipeline(step_instance)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 @step
@@ -531,7 +536,9 @@ def test_string_outputs_do_not_get_split(one_step_pipeline):
     pipeline_ = one_step_pipeline(step_with_two_letter_string_output)
 
     with pytest.raises(StepInterfaceError):
-        pipeline_.with_options(unlisted=True)()
+        pipeline_.with_options(
+            unlisted=True, execution_mode=ExecutionMode.FAIL_FAST
+        )()
 
 
 def test_step_decorator_configuration_gets_applied_during_initialization(
@@ -907,7 +914,7 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
         RuntimeError,
         match="Configured parameter for the step 'step_with_int_input' conflict with parameter passed in runtime",
     ):
-        deployment = Compiler().compile(
+        snapshot = Compiler().compile(
             pipeline=test_pipeline,
             stack=Client().active_stack,
             run_configuration=run_config,
@@ -917,15 +924,15 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
     run_config = PipelineRunConfiguration.model_validate(
         {"steps": {"step_with_int_input": {"parameters": {"input_": 1}}}}
     )
-    deployment = Compiler().compile(
+    snapshot = Compiler().compile(
         pipeline=test_pipeline,
         stack=Client().active_stack,
         run_configuration=run_config,
     )
     assert (
-        deployment.step_configurations[
-            "step_with_int_input"
-        ].config.parameters["input_"]
+        snapshot.step_configurations["step_with_int_input"].config.parameters[
+            "input_"
+        ]
         == 1
     )
 

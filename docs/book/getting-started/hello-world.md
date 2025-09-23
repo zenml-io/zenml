@@ -16,7 +16,7 @@ This guide will help you build and deploy your first ZenML pipeline, starting lo
 Start by installing ZenML in a fresh Python environment:
 
 ```bash
-pip install zenml
+pip install 'zenml[server]'
 zenml login
 ```
 

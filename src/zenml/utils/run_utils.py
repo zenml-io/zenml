@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for runs."""
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, cast
 
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import IllegalOperationError
@@ -165,3 +165,42 @@ def refresh_run_status(
         )
 
     return run
+
+
+def build_dag(steps: Dict[str, List[str]]) -> Dict[str, Set[str]]:
+    """Build DAG with downstream steps from a list of steps.
+
+    Args:
+        steps: The list of steps.
+
+    Returns:
+        The DAG with downstream steps.
+    """
+    dag: Dict[str, Set[str]] = {step: set() for step in steps}
+
+    for step_name, upstream_steps in steps.items():
+        for upstream_step in upstream_steps:
+            dag[upstream_step].add(step_name)
+
+    return dag
+
+
+def find_all_downstream_steps(
+    step_name: str, dag: Dict[str, Set[str]]
+) -> Set[str]:
+    """Find all downstream steps of a given step.
+
+    Args:
+        step_name: The name of the step to find the downstream steps of.
+        dag: The DAG.
+
+    Returns:
+        The set of downstream steps.
+    """
+    downstream_steps = set()
+    for downstream_step in dag[step_name]:
+        downstream_steps.add(downstream_step)
+        downstream_steps.update(
+            find_all_downstream_steps(downstream_step, dag)
+        )
+    return downstream_steps
