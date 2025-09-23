@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Type, List, Union
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, PositiveInt, field_validator
 from zenml.utils.secret_utils import SecretField
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.aws import (
@@ -35,27 +35,34 @@ if TYPE_CHECKING:
 class AWSBatchStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
-    instance_type: Union[str] = Field(
-        default='optimal',
-        description="The instance type for AWS Batch to use for the step" \
-        " execution. Example: 'm5.xlarge'",
-    )
     environment: Dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to pass to the container during " \
             "execution. Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
     )
-    node_count: PositiveInt = Field(
-        default=1,
-        description="The number of AWS Batch nodes to run the step on. If > 1," \
-        "an AWS Batch multinode job will be run, with the network connectivity" \
-        "between the nodes provided by AWS Batch. See https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html" \
-        "for details."
+    job_queue_name: str = Field(
+        default="",
+        description="The AWS Batch job queue to submit the step AWS Batch job"
+         " to. If not provided, falls back to the default job queue name "
+         "specified at stack registration time."
+    )
+    platform_capability: str = Field(
+        default="FARGATE",
+        description="The AWS Batch platform capability for the step AWS Batch "
+        "job to be orchestrated with. Defaults to 'FARGATE'."
     )
     timeout_seconds: PositiveInt = Field(
         default=3600,
         description="The number of seconds before AWS Batch times out the job."
     )
+
+    @field_validator("platform_capability")
+    def validate_platform_capability(cls, value):
+        if value not in ["FARGATE","EC2"]:
+            raise ValueError(f"Invalid platform capability {value}. Must be "
+                             "either 'FARGATE' or 'EC2'")
+        
+        return value
 
 
 
@@ -76,8 +83,8 @@ class AWSBatchStepOperatorConfig(
     job_role: str = Field(
         description="The IAM role arn of the ECS job role."
     )
-    job_queue_name: str = Field(
-        description="The AWS Batch job queue to submit AWS Batch jobs to."
+    default_job_queue_name: str = Field(
+        description="The default AWS Batch job queue to submit AWS Batch jobs to."
     )
     aws_access_key_id: Optional[str] = SecretField(
         default=None,
