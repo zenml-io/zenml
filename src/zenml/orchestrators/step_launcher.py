@@ -133,7 +133,7 @@ class StepLauncher:
             )
 
         self._stack = Stack.from_model(snapshot.stack)
-        self._step_name = step.spec.pipeline_parameter_name
+        self._invocation_id = step.spec.invocation_id
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
@@ -166,7 +166,7 @@ class StepLauncher:
             """
             logger.info(
                 f"Received signal shutdown {signum}. Requesting shutdown "
-                f"for step '{self._step_name}'..."
+                f"for step '{self._invocation_id}'..."
             )
 
             try:
@@ -276,7 +276,7 @@ class StepLauncher:
             # Configure the logs
             logs_uri = step_logging.prepare_logs_uri(
                 artifact_store=self._stack.artifact_store,
-                step_name=self._step_name,
+                step_name=self._invocation_id,
             )
 
             logs_context = step_logging.PipelineLogsStorageContext(
@@ -309,14 +309,16 @@ class StepLauncher:
                 stack=self._stack,
             )
             step_run_request = request_factory.create_request(
-                invocation_id=self._step_name
+                invocation_id=self._invocation_id
             )
             step_run_request.logs = logs_model
 
             try:
                 request_factory.populate_request(request=step_run_request)
             except BaseException as e:
-                logger.exception(f"Failed preparing step `{self._step_name}`.")
+                logger.exception(
+                    f"Failed preparing step `{self._invocation_id}`."
+                )
                 step_run_request.status = ExecutionStatus.FAILED
                 step_run_request.end_time = utc_now()
                 step_run_request.exception_info = (
@@ -332,7 +334,7 @@ class StepLauncher:
                     )
 
             if not step_run.status.is_finished:
-                logger.info(f"Step `{self._step_name}` has started.")
+                logger.info(f"Step `{self._invocation_id}` has started.")
 
                 try:
                     # here pass a forced save_to_file callable to be
@@ -361,14 +363,14 @@ class StepLauncher:
                 except BaseException as e:  # noqa: E722
                     logger.error(
                         "Failed to run step `%s`: %s",
-                        self._step_name,
+                        self._invocation_id,
                         e,
                     )
                     publish_utils.publish_failed_step_run(step_run.id)
                     raise
             else:
                 logger.info(
-                    f"Using cached version of step `{self._step_name}`."
+                    f"Using cached version of step `{self._invocation_id}`."
                 )
                 if (
                     model_version := step_run.model_version
@@ -429,7 +431,7 @@ class StepLauncher:
             config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
-            pipeline_step_name=self._step_name,
+            pipeline_step_name=self._invocation_id,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
             force_write_logs=force_write_logs,
@@ -466,7 +468,7 @@ class StepLauncher:
 
         duration = time.time() - start_time
         logger.info(
-            f"Step `{self._step_name}` has finished in "
+            f"Step `{self._invocation_id}` has finished in "
             f"`{string_utils.get_human_readable_time(duration)}`."
         )
 
@@ -489,7 +491,7 @@ class StepLauncher:
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
             + entrypoint_cfg_class.get_entrypoint_arguments(
-                step_name=self._step_name,
+                step_name=self._invocation_id,
                 snapshot_id=self._snapshot.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
@@ -511,7 +513,7 @@ class StepLauncher:
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
-            self._step_name,
+            self._invocation_id,
         )
         step_operator.launch(
             info=step_run_info,

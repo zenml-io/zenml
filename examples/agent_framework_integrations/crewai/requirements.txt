@@ -1,2 +1,2 @@
 crewai>=0.28.8
-zenml
+zenml[local]

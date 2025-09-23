@@ -1254,7 +1254,6 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "run_name_template",
                 "pipeline_version_hash",
                 "pipeline_spec",
-                "stack",
                 "build",
                 "schedule",
                 "code_reference",

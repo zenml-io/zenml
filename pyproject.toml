@@ -41,29 +41,31 @@ include = ["src/zenml", "*.txt", "*.sh", "*.md"]
 zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
-alembic = { version = ">=1.8.1,<=1.15.2" }
-bcrypt = { version = "4.0.1" }
 click = "^8.0.1,<=8.2.1"
 cloudpickle = ">=2.0.0"
 distro = "^1.6.0"
 docker = "~7.1.0"
 gitpython = "^3.1.18"
 packaging = ">=24.1"
-passlib = { extras = ["bcrypt"], version = "~1.7.4" }
 psutil = ">=5.0.0"
 pydantic = ">=2.0,<=2.11.9"
 pydantic-settings = "*"
 jsonref = "*"
-pymysql = { version = "~1.1.0,>=1.1.1" }
 python = ">=3.9,<3.13"
 python-dateutil = "^2.8.1"
 pyyaml = ">=6.0.1"
-rich = { extras = ["jupyter"], version = ">=12.0.0" }
+rich = ">=12.0.0"
 setuptools = ">=70.0.0"
-sqlalchemy = "^2.0.0"
-sqlalchemy_utils = "*"
-sqlmodel = "0.0.18"
 importlib_metadata = { version = "<=7.0.0", python = "<3.10" }
+
+# Optional dependencies for the local extra
+alembic = { version = ">=1.8.1,<=1.15.2", optional = true }
+sqlalchemy = { version = "^2.0.0", optional = true }
+sqlalchemy_utils = { version = "*", optional = true }
+sqlmodel = { version = "0.0.18", optional = true }
+pymysql = { version = "~1.1.0,>=1.1.1", optional = true }
+passlib = { extras = ["bcrypt"], version = "~1.7.4", optional = true }
+bcrypt = { version = "4.0.1", optional = true }
 
 # Optional dependencies for the ZenServer
 fastapi = { version = ">=0.100, <=0.115.8", optional = true }
@@ -76,6 +78,9 @@ ipinfo = { version = ">=4.4.3", optional = true }
 secure = { version = "~0.3.0", optional = true }
 tldextract = { version = "~5.1.0", optional = true }
 itsdangerous = { version = "~2.2.0", optional = true }
+
+# Optional dependencies for the jupyter extra
+ipywidgets = { version = ">=7.5.1,<9", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -186,7 +191,26 @@ types-passlib = { version = "^1.7.7", optional = true }
 types-jsonschema = { version = "*", optional = true }
 
 [tool.poetry.extras]
+# If modifying this, make sure to also modify the server extra
+local = [
+    "alembic",
+    "bcrypt",
+    "passlib",
+    "pymysql",
+    "sqlalchemy",
+    "sqlalchemy_utils",
+    "sqlmodel",
+]
 server = [
+    # DB dependencies from local extra
+    "alembic",
+    "bcrypt",
+    "passlib",
+    "pymysql",
+    "sqlalchemy",
+    "sqlalchemy_utils",
+    "sqlmodel",
+    # Server dependencies
     "fastapi",
     "uvicorn",
     "python-multipart",
@@ -199,6 +223,7 @@ server = [
     "tldextract",
     "itsdangerous",
 ]
+jupyter = ["ipywidgets"]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3"]

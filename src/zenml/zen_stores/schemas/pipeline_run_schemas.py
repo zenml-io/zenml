@@ -424,9 +424,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
             steps = {}
             for step_spec in pipeline_spec.steps:
-                steps[step_spec.pipeline_parameter_name] = (
-                    step_spec.upstream_steps
-                )
+                steps[step_spec.invocation_id] = step_spec.upstream_steps
             return steps
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
