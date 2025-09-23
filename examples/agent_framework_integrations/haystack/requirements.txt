@@ -1,2 +1,2 @@
 haystack-ai>=2.0.0
-zenml
+zenml[local]
