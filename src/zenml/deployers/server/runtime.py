@@ -54,7 +54,6 @@ class _DeploymentState(BaseModel):
         self.in_memory_data.clear()
 
 
-# Use contextvars for thread-safe, request-scoped state
 _deployment_context: contextvars.ContextVar[_DeploymentState] = (
     contextvars.ContextVar("deployment_context", default=_DeploymentState())
 )
