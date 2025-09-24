@@ -1750,7 +1750,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
 
-    def _compute_output_schema(self) -> Dict[str, Any]:
+    def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
         """Computes the output schema for the pipeline.
 
         Returns:
@@ -1828,8 +1828,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """Create a JSON schema that represents the pipeline input parameters.
 
         Returns:
-            A JSON schema that represents the pipeline input
-            parameters.
+            A JSON schema that represents the pipeline input parameters.
         """
         input_model = self._compute_input_model()
         if not input_model:
