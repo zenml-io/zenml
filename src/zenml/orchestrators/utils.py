@@ -434,8 +434,27 @@ def deployment_snapshot_request_from_source_snapshot(
 
     if source_snapshot.stack is None:
         raise ValueError("Source snapshot stack is None")
-    if source_snapshot.pipeline is None:
-        raise ValueError("Source snapshot pipeline is None")
+
+    # Update the pipeline spec parameters by overriding only known keys
+    updated_pipeline_spec = source_snapshot.pipeline_spec
+    try:
+        if (
+            source_snapshot.pipeline_spec
+            and source_snapshot.pipeline_spec.parameters is not None
+        ):
+            original_params: Dict[str, Any] = dict(
+                source_snapshot.pipeline_spec.parameters
+            )
+            merged_params: Dict[str, Any] = original_params.copy()
+            for k, v in deployment_parameters.items():
+                if k in original_params:
+                    merged_params[k] = v
+            updated_pipeline_spec = pydantic_utils.update_model(
+                source_snapshot.pipeline_spec, {"parameters": merged_params}
+            )
+    except Exception:
+        # In case of any unforeseen errors, fall back to the original spec
+        updated_pipeline_spec = source_snapshot.pipeline_spec
 
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
@@ -454,5 +473,5 @@ def deployment_snapshot_request_from_source_snapshot(
         template=template_id,
         source_snapshot=source_snapshot_id,
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
-        pipeline_spec=source_snapshot.pipeline_spec,
+        pipeline_spec=updated_pipeline_spec,
     )
