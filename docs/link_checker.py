@@ -61,6 +61,7 @@ import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 try:
     import requests
@@ -70,6 +71,60 @@ try:
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
+
+# ------------------------------------------------------------------------------
+# Centralized exceptions for HTTP status codes we consider acceptable for
+# specific URLs or domains during link validation.
+#
+# How to extend:
+#   - To allow particular statuses for a *single* URL, add an entry to
+#     EXEMPT_URL_STATUS with the normalized URL (no trailing slash) and a set
+#     of allowed status codes.
+#   - To allow particular statuses for an entire *domain*, add an entry to
+#     EXEMPT_DOMAIN_STATUS with the domain suffix (e.g. "example.com") and a
+#     set of allowed status codes. Matching uses host.endswith(domain).
+# ------------------------------------------------------------------------------
+
+EXEMPT_URL_STATUS: Dict[str, set] = {
+    # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
+    "https://huggingface.co/settings/tokens": {403},
+}
+
+EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
+    # Some HashiCorp properties rate-limit automated checks.
+    "hashicorp.com": {429},
+}
+
+
+def is_exception_status(cleaned_url: str, status_code: int) -> bool:
+    """
+    Return True if (cleaned_url, status_code) should be treated as valid based
+    on configured exemptions.
+
+    Rules:
+      - Exact-URL exemptions: compared after stripping any trailing slash.
+      - Domain exemptions: suffix match against the URL hostname.
+    """
+    if not cleaned_url.startswith(("http://", "https://")):
+        return False
+
+    # Exact URL exemptions (normalize by removing trailing slash)
+    normalized = cleaned_url.rstrip("/")
+    allowed = EXEMPT_URL_STATUS.get(normalized)
+    if allowed and status_code in allowed:
+        return True
+
+    # Domain exemptions
+    try:
+        host = urlparse(cleaned_url).hostname or ""
+    except Exception:
+        host = ""
+
+    for domain, codes in EXEMPT_DOMAIN_STATUS.items():
+        if host.endswith(domain) and status_code in codes:
+            return True
+
+    return False
 
 
 def find_markdown_files(directory: str) -> List[str]:
@@ -280,6 +335,10 @@ def check_link_validity(
             response = session.get(
                 cleaned_url, timeout=timeout, allow_redirects=True
             )
+
+        # Check configured exception rules (domain- and URL-specific)
+        if is_exception_status(cleaned_url, response.status_code):
+            return (url, True, None, response.status_code)
 
         is_valid = response.status_code < 400
 
