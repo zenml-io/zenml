@@ -26,25 +26,23 @@ import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
-    BasePipelineInvokeRequest,
-    BasePipelineInvokeResponse,
+    BaseDeploymentInvocationRequest,
+    BaseDeploymentInvocationResponse,
     DeploymentInfo,
+    DeploymentInvocationResponseMetadata,
     ExecutionMetrics,
     PipelineInfo,
-    PipelineInvokeResponseMetadata,
     ServiceInfo,
     SnapshotInfo,
 )
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
-from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunTriggerInfo,
     PipelineSnapshotResponse,
 )
-from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
@@ -118,10 +116,6 @@ class PipelineDeploymentService:
             updated=datetime.now(),
         )
 
-        self._params_model = self.build_params_model_from_snapshot(
-            self.snapshot
-        )
-
         logger.info("Loading pipeline snapshot configuration...")
 
         try:
@@ -134,15 +128,6 @@ class PipelineDeploymentService:
         if self.deployment.snapshot is None:
             raise RuntimeError("Deployment has no snapshot")
         self.snapshot = self.deployment.snapshot
-
-    @property
-    def params_model(self) -> Optional[Type[BaseModel]]:
-        """Get the parameter model.
-
-        Returns:
-            The parameter model.
-        """
-        return self._params_model
 
     def initialize(self) -> None:
         """Initialize service with proper error handling.
@@ -188,65 +173,17 @@ class PipelineDeploymentService:
             logger.exception(f"Failed to execute cleanup hook: {e}")
             raise
 
-    def build_params_model_from_snapshot(
-        self,
-        snapshot: PipelineSnapshotResponse,
-    ) -> Optional[Type[BaseModel]]:
-        """Construct a Pydantic model representing pipeline parameters.
-
-        Load the pipeline class from `pipeline_spec.source` and derive the
-        entrypoint signature types to create a dynamic Pydantic model
-        (extra='forbid') to use for parameter validation.
-
-        Args:
-            snapshot: The snapshot to derive the model from.
-
-        Returns:
-            A Pydantic `BaseModel` subclass that validates the pipeline parameters,
-            or None if the snapshot lacks a valid `pipeline_spec.source`.
-
-        Raises:
-            RuntimeError: If the pipeline class cannot be loaded or if no
-                parameters model can be constructed for the pipeline.
-        """
-        if not snapshot.pipeline_spec or not snapshot.pipeline_spec.source:
-            msg = (
-                f"Snapshot `{snapshot.id}` is missing pipeline_spec.source; "
-                "cannot build parameter model."
-            )
-            logger.error(msg)
-            return None
-
-        try:
-            pipeline_class: Pipeline = source_utils.load(
-                snapshot.pipeline_spec.source
-            )
-        except Exception as e:
-            logger.debug(f"Failed to load pipeline class from snapshot: {e}")
-            logger.error(f"Failed to load pipeline class from snapshot: {e}")
-            raise RuntimeError(
-                f"Failed to load pipeline class from snapshot: {e}"
-            )
-
-        model = pipeline_class._compute_input_model()
-        if not model:
-            raise RuntimeError(
-                f"Failed to construct parameters model from pipeline "
-                f"`{snapshot.pipeline_configuration.name}`."
-            )
-        return model
-
     def execute_pipeline(
         self,
-        request: BasePipelineInvokeRequest,
-    ) -> BasePipelineInvokeResponse:
+        request: BaseDeploymentInvocationRequest,
+    ) -> BaseDeploymentInvocationResponse:
         """Execute the deployment with the given parameters.
 
         Args:
             request: Runtime parameters supplied by the caller.
 
         Returns:
-            A BasePipelineInvokeResponse describing the execution result.
+            A BaseDeploymentInvocationResponse describing the execution result.
         """
         # Unused parameters for future implementation
         _ = request.run_name, request.timeout
@@ -392,6 +329,9 @@ class PipelineDeploymentService:
     ) -> Tuple[PipelineRunResponse, PipelineSnapshotResponse]:
         """Prepare the execution with the orchestrator.
 
+        Args:
+            resolved_params: The resolved parameters.
+
         Returns:
             A tuple of (placeholder_run, deployment_snapshot).
         """
@@ -531,7 +471,7 @@ class PipelineDeploymentService:
         mapped_outputs: Optional[Dict[str, Any]] = None,
         placeholder_run: Optional[PipelineRunResponse] = None,
         error: Optional[Exception] = None,
-    ) -> BasePipelineInvokeResponse:
+    ) -> BaseDeploymentInvocationResponse:
         """Build success response with execution tracking.
 
         Args:
@@ -542,7 +482,7 @@ class PipelineDeploymentService:
             error: The error that occurred.
 
         Returns:
-            A BasePipelineInvokeResponse describing the execution.
+            A BaseDeploymentInvocationResponse describing the execution.
         """
         execution_time = time.time() - start_time
         self.total_executions += 1
@@ -563,12 +503,12 @@ class PipelineDeploymentService:
                 )
                 run = placeholder_run
 
-        return BasePipelineInvokeResponse(
+        return BaseDeploymentInvocationResponse(
             success=(error is None),
             outputs=mapped_outputs,
             error=str(error) if error else None,
             execution_time=execution_time,
-            metadata=PipelineInvokeResponseMetadata(
+            metadata=DeploymentInvocationResponseMetadata(
                 deployment_id=self.deployment.id,
                 deployment_name=self.deployment.name,
                 pipeline_name=self.snapshot.pipeline_configuration.name,
@@ -581,8 +521,52 @@ class PipelineDeploymentService:
         )
 
     # ----------
-    # Schemas for OpenAPI enrichment
+    # Schemas and models for OpenAPI enrichment
     # ----------
+
+    @property
+    def input_model(
+        self,
+    ) -> Type[BaseModel]:
+        """Construct a Pydantic model representing pipeline input parameters.
+
+        Load the pipeline class from `pipeline_spec.source` and derive the
+        entrypoint signature types to create a dynamic Pydantic model
+        (extra='forbid') to use for parameter validation.
+
+        Returns:
+            A Pydantic `BaseModel` subclass that validates the pipeline input
+            parameters.
+
+        Raises:
+            RuntimeError: If the pipeline class cannot be loaded or if no
+                parameters model can be constructed for the pipeline.
+        """
+        if (
+            not self.snapshot.pipeline_spec
+            or not self.snapshot.pipeline_spec.source
+        ):
+            raise RuntimeError(
+                f"Snapshot `{self.snapshot.id}` is missing a "
+                "pipeline_spec.source; cannot build input model."
+            )
+
+        try:
+            pipeline_class: Pipeline = source_utils.load(
+                self.snapshot.pipeline_spec.source
+            )
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to load pipeline class from snapshot"
+            ) from e
+
+        model = pipeline_class._compute_input_model()
+        if not model:
+            raise RuntimeError(
+                f"Failed to construct input model from pipeline "
+                f"`{self.snapshot.pipeline_configuration.name}`."
+            )
+        return model
 
     @property
     def input_schema(self) -> Dict[str, Any]:
@@ -590,6 +574,9 @@ class PipelineDeploymentService:
 
         Returns:
             The JSON schema for pipeline parameters.
+
+        Raises:
+            RuntimeError: If the pipeline input schema is not available.
         """
         if (
             self.snapshot.pipeline_spec
@@ -606,6 +593,9 @@ class PipelineDeploymentService:
 
         Returns:
             The JSON schema for the pipeline outputs.
+
+        Raises:
+            RuntimeError: If the pipeline output schema is not available.
         """
         if (
             self.snapshot.pipeline_spec

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from zenml.deployers.server.service import PipelineDeploymentService
 
 
-class PipelineInvokeResponseMetadata(BaseModel):
+class DeploymentInvocationResponseMetadata(BaseModel):
     """Pipeline invoke response metadata model."""
 
     deployment_id: UUID = Field(title="The ID of the deployment.")
@@ -48,7 +48,7 @@ class PipelineInvokeResponseMetadata(BaseModel):
     )
 
 
-class BasePipelineInvokeRequest(BaseModel):
+class BaseDeploymentInvocationRequest(BaseModel):
     """Base pipeline invoke request model."""
 
     parameters: BaseModel = Field(
@@ -66,7 +66,7 @@ class BasePipelineInvokeRequest(BaseModel):
     )
 
 
-class BasePipelineInvokeResponse(BaseModel):
+class BaseDeploymentInvocationResponse(BaseModel):
     """Base pipeline invoke response model."""
 
     success: bool = Field(
@@ -80,7 +80,7 @@ class BasePipelineInvokeResponse(BaseModel):
     execution_time: float = Field(
         title="The time taken to execute the pipeline."
     )
-    metadata: PipelineInvokeResponseMetadata = Field(
+    metadata: DeploymentInvocationResponseMetadata = Field(
         title="The metadata of the pipeline execution."
     )
     error: Optional[str] = Field(
@@ -170,15 +170,14 @@ def get_pipeline_invoke_models(
         return BaseModel, BaseModel
 
     else:
-        assert service.params_model is not None
 
-        class PipelineInvokeRequest(BasePipelineInvokeRequest):
+        class PipelineInvokeRequest(BaseDeploymentInvocationRequest):
             parameters: Annotated[
-                service.params_model,
+                service.input_model,
                 WithJsonSchema(service.input_schema, mode="validation"),
             ]
 
-        class PipelineInvokeResponse(BasePipelineInvokeResponse):
+        class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
             outputs: Annotated[
                 Optional[Dict[str, Any]],
                 WithJsonSchema(service.output_schema, mode="serialization"),

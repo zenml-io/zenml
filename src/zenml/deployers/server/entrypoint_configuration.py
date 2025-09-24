@@ -71,6 +71,9 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Returns:
             List of command-line arguments
+
+        Raises:
+            ValueError: If the deployment ID is not a valid UUID.
         """
         # Get base arguments (snapshot_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)

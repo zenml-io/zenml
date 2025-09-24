@@ -27,7 +27,6 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
 
 from zenml.deployers.server.models import (
     ExecutionMetrics,
@@ -75,16 +74,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         global _service
         _service = PipelineDeploymentService(deployment_id)
         _service.initialize()
-        # params model is available.
-        try:
-            params_model = _service.params_model
-            if isinstance(params_model, type) and issubclass(
-                params_model, BaseModel
-            ):
-                app.include_router(_build_invoke_router(_service))
-        except Exception:
-            # Skip router installation if parameter model is not ready
-            pass
+        app.include_router(_build_invoke_router(_service))
         logger.info("✅ Pipeline deployment service initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize: {e}")

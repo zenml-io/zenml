@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
 from zenml.deployers.server import runtime
-from zenml.deployers.server.models import BasePipelineInvokeRequest
+from zenml.deployers.server.models import BaseDeploymentInvocationRequest
 from zenml.deployers.server.service import PipelineDeploymentService
 
 
@@ -53,6 +53,13 @@ class _DummySnapshot:
         self.stack = SimpleNamespace(name="test-stack")
 
 
+class _DummyDeployment:
+    def __init__(self) -> None:
+        self.id = uuid4()
+        self.name = "test-deployment"
+        self.snapshot = _DummySnapshot()
+
+
 class _DummyRun:
     def __init__(self) -> None:
         self.id = uuid4()
@@ -73,18 +80,21 @@ def _make_service(
 ) -> PipelineDeploymentService:
     """Construct a deployment service instance backed by dummy artifacts."""
 
-    snapshot = _DummySnapshot()
+    deployment = _DummyDeployment()
 
     class DummyZenStore:
         """Return the snapshot associated with the provided ID."""
 
+        def get_deployment(self, deployment_id: object) -> _DummyDeployment:  # noqa: D401
+            return deployment
+
         def get_snapshot(self, snapshot_id: object) -> _DummySnapshot:  # noqa: D401
-            return snapshot
+            return deployment.snapshot
 
         def create_snapshot(self, request: object) -> _DummySnapshot:  # noqa: D401
             """Return the snapshot that would be created in the real store."""
 
-            return snapshot
+            return deployment.snapshot
 
     class DummyClient:
         """Client stub exposing zen_store and active stack attributes."""
@@ -103,7 +113,7 @@ def _make_service(
     monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
 
     service = PipelineDeploymentService(uuid4())
-    service._params_model = _DummyParams
+    service.params_model = _DummyParams
     return service
 
 
@@ -130,7 +140,7 @@ def test_service_captures_in_memory_outputs(
 
     service._orchestrator = _DummyOrchestrator()
 
-    request = BasePipelineInvokeRequest(
+    request = BaseDeploymentInvocationRequest(
         parameters=_DummyParams(),
         use_in_memory=True,
     )

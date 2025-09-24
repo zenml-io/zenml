@@ -37,11 +37,11 @@ from zenml.deployers.server.app import (
     verify_token,
 )
 from zenml.deployers.server.models import (
-    BasePipelineInvokeResponse,
+    BaseDeploymentInvocationResponse,
     DeploymentInfo,
+    DeploymentInvocationResponseMetadata,
     ExecutionMetrics,
     PipelineInfo,
-    PipelineInvokeResponseMetadata,
     ServiceInfo,
     SnapshotInfo,
 )
@@ -66,7 +66,7 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
     snapshot_id = uuid4()
     deployment_id = uuid4()
 
-    service.params_model = MockWeatherRequest
+    service.input_model = MockWeatherRequest
     service.is_healthy.return_value = True
     service.input_schema = {
         "type": "object",
@@ -95,11 +95,11 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
         total_executions=3,
         last_execution_time=None,
     )
-    service.execute_pipeline.return_value = BasePipelineInvokeResponse(
+    service.execute_pipeline.return_value = BaseDeploymentInvocationResponse(
         success=True,
         outputs={"result": "ok"},
         execution_time=0.5,
-        metadata=PipelineInvokeResponseMetadata(
+        metadata=DeploymentInvocationResponseMetadata(
             deployment_id=deployment_id,
             deployment_name="deployment",
             pipeline_name="test_pipeline",
@@ -324,7 +324,7 @@ class TestServingAppLifecycle:
             PipelineDeploymentService,
             mocker.MagicMock(spec=PipelineDeploymentService),
         )
-        mock_service.params_model = MockWeatherRequest
+        mock_service.input_model = MockWeatherRequest
         mock_service.initialize = mocker.MagicMock()
         mock_service.cleanup = mocker.MagicMock()
 

@@ -24,12 +24,12 @@ from pydantic import BaseModel
 
 import zenml.deployers.server.app as serving_app
 from zenml.deployers.server.models import (
-    BasePipelineInvokeRequest,
-    BasePipelineInvokeResponse,
+    BaseDeploymentInvocationRequest,
+    BaseDeploymentInvocationResponse,
     DeploymentInfo,
+    DeploymentInvocationResponseMetadata,
     ExecutionMetrics,
     PipelineInfo,
-    PipelineInvokeResponseMetadata,
     ServiceInfo,
     SnapshotInfo,
 )
@@ -42,7 +42,7 @@ class MockWeatherRequest(BaseModel):
     temperature: int = 20
 
 
-class StubPipelineServingService:
+class StubDeploymentService:
     """Stub service implementing the interface used by the FastAPI app."""
 
     def __init__(self, deployment_id: str) -> None:
@@ -54,8 +54,7 @@ class StubPipelineServingService:
         self._healthy = True
         self.initialized = False
         self.cleaned_up = False
-        self._params_model = MockWeatherRequest
-        self.last_request: Optional[BasePipelineInvokeRequest] = None
+        self.last_request: Optional[BaseDeploymentInvocationRequest] = None
         self.input_schema = {
             "type": "object",
             "properties": {"city": {"type": "string"}},
@@ -87,14 +86,14 @@ class StubPipelineServingService:
         )
 
     @property
-    def params_model(self) -> type[BaseModel]:  # noqa: D401
+    def input_model(self) -> type[BaseModel]:  # noqa: D401
         """Expose the request model expected by the service.
 
         Returns:
             The request model expected by the service.
         """
 
-        return self._params_model
+        return MockWeatherRequest
 
     def initialize(self) -> None:  # noqa: D401
         """Mark the service as initialized for verification in tests."""
@@ -148,8 +147,8 @@ class StubPipelineServingService:
         return ExecutionMetrics(total_executions=1, last_execution_time=None)
 
     def execute_pipeline(
-        self, request: BasePipelineInvokeRequest
-    ) -> BasePipelineInvokeResponse:  # noqa: D401
+        self, request: BaseDeploymentInvocationRequest
+    ) -> BaseDeploymentInvocationResponse:  # noqa: D401
         """Execute the pipeline.
 
         Args:
@@ -159,11 +158,11 @@ class StubPipelineServingService:
             The response from the pipeline.
         """
         self.last_request = request
-        return BasePipelineInvokeResponse(
+        return BaseDeploymentInvocationResponse(
             success=True,
             outputs={"result": "ok"},
             execution_time=0.5,
-            metadata=PipelineInvokeResponseMetadata(
+            metadata=DeploymentInvocationResponseMetadata(
                 deployment_id=self.deployment.id,
                 deployment_name=self.deployment.name,
                 pipeline_name="test_pipeline",
@@ -181,7 +180,7 @@ class StubPipelineServingService:
 def client_service_pair(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[
-    Tuple[TestClient, StubPipelineServingService, ModuleType], None, None
+    Tuple[TestClient, StubDeploymentService, ModuleType], None, None
 ]:
     """Provide a fresh FastAPI client and stub service per test.
 
@@ -192,12 +191,12 @@ def client_service_pair(
         A tuple containing the FastAPI client, the stub service, and the reloaded app.
     """
     reloaded_app = importlib.reload(serving_app)
-    service = StubPipelineServingService(str(uuid4()))
+    service = StubDeploymentService(str(uuid4()))
 
-    monkeypatch.setenv("ZENML_DEPLOYMENT_ID", service.deployment.id)
+    monkeypatch.setenv("ZENML_DEPLOYMENT_ID", str(service.deployment.id))
     monkeypatch.delenv("ZENML_DEPLOYMENT_TEST_MODE", raising=False)
 
-    def _service_factory(_: str) -> StubPipelineServingService:
+    def _service_factory(_: str) -> StubDeploymentService:
         """Factory function for creating a stub service.
 
         Args:
@@ -224,7 +223,7 @@ class TestFastAPIAppEndpoints:
     def test_root_endpoint(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Ensure the root endpoint renders the deployment overview."""
@@ -238,7 +237,7 @@ class TestFastAPIAppEndpoints:
     def test_health_endpoint_healthy(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Ensure the health endpoint returns OK for healthy services."""
@@ -250,7 +249,7 @@ class TestFastAPIAppEndpoints:
     def test_health_endpoint_unhealthy(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Return a 503 status when the service reports unhealthy."""
@@ -262,7 +261,7 @@ class TestFastAPIAppEndpoints:
     def test_info_endpoint(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Expose pipeline and snapshot metadata via /info."""
@@ -277,7 +276,7 @@ class TestFastAPIAppEndpoints:
     def test_metrics_endpoint(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Surface execution metrics through the metrics endpoint."""
@@ -291,7 +290,7 @@ class TestFastAPIAppEndpoints:
     def test_invoke_endpoint_success(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Propagate successful execution responses for valid payloads."""
@@ -309,16 +308,16 @@ class TestFastAPIAppEndpoints:
     def test_invoke_endpoint_execution_failure(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Propagate failure responses without raising errors."""
         client, service, module = client_service_pair
-        failure_response = BasePipelineInvokeResponse(
+        failure_response = BaseDeploymentInvocationResponse(
             success=False,
             outputs=None,
             execution_time=0.1,
-            metadata=PipelineInvokeResponseMetadata(
+            metadata=DeploymentInvocationResponseMetadata(
                 deployment_id=service.deployment.id,
                 deployment_name=service.deployment.name,
                 pipeline_name="test_pipeline",
@@ -343,13 +342,13 @@ class TestFastAPIAppEndpoints:
         self,
         monkeypatch: pytest.MonkeyPatch,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Trigger service cleanup when the application shuts down."""
         reloaded_app = importlib.reload(serving_app)
-        service = StubPipelineServingService(str(uuid4()))
-        monkeypatch.setenv("ZENML_DEPLOYMENT_ID", service.deployment.id)
+        service = StubDeploymentService(str(uuid4()))
+        monkeypatch.setenv("ZENML_DEPLOYMENT_ID", str(service.deployment.id))
         monkeypatch.setattr(
             reloaded_app,
             "PipelineDeploymentService",
@@ -368,7 +367,7 @@ class TestOpenAPIIntegration:
     def test_openapi_includes_invoke_models(
         self,
         client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
+            TestClient, StubDeploymentService, ModuleType
         ],
     ) -> None:
         """Include invoke request / response models within the OpenAPI schema."""
