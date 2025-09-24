@@ -142,8 +142,6 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        # Store step_run_info for effective config access
-        self._step_run_info = step_run_info
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
@@ -415,7 +413,7 @@ class StepRunner:
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance = copy.deepcopy(step_instance)
-        step_instance._configuration = self._step_run_info.config
+        step_instance._configuration = self._step.config
         return step_instance
 
     def _load_output_materializers(

@@ -11,15 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Shared utilities to construct and validate pipeline parameter models.
-
-This module centralizes the logic to:
-- Build a Pydantic model for pipeline parameters from a snapshot
-- Validate and normalize request parameters using that model
-
-It is intentionally independent of FastAPI or deployment internals so that
-other entry points (e.g., CLI) can reuse the same behavior.
-"""
+"""Parameters model builder for deployments."""
 
 from typing import Optional, Type
 
@@ -34,9 +26,8 @@ logger = get_logger(__name__)
 
 
 def build_params_model_from_snapshot(
-    snapshot: PipelineSnapshotResponse,
     *,
-    strict: bool = True,
+    snapshot: PipelineSnapshotResponse,
 ) -> Optional[Type[BaseModel]]:
     """Construct a Pydantic model representing pipeline parameters.
 
@@ -61,8 +52,7 @@ def build_params_model_from_snapshot(
             f"Snapshot `{snapshot.id}` is missing pipeline_spec.source; "
             "cannot build parameter model."
         )
-        if strict:
-            raise RuntimeError(msg)
+        logger.error(msg)
         return None
 
     try:
@@ -71,9 +61,8 @@ def build_params_model_from_snapshot(
         )
     except Exception as e:
         logger.debug(f"Failed to load pipeline class from snapshot: {e}")
-        if strict:
-            raise
-        return None
+        logger.error(f"Failed to load pipeline class from snapshot: {e}")
+        raise RuntimeError(f"Failed to load pipeline class from snapshot: {e}")
 
     model = pipeline_class.get_parameters_model()
     if not model:
@@ -81,9 +70,9 @@ def build_params_model_from_snapshot(
             f"Failed to construct parameters model from pipeline "
             f"`{snapshot.pipeline_configuration.name}`."
         )
-        if strict:
-            raise RuntimeError(message)
-        else:
+        logger.error(message)
+        raise RuntimeError(message)
+    else:
             logger.debug(message)
 
     return model

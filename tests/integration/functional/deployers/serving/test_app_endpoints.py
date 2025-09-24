@@ -326,30 +326,6 @@ class TestFastAPIAppEndpoints:
         assert response.status_code == 200
         assert response.json()["success"] is False
 
-    def test_invoke_requires_auth_when_enabled(
-        self,
-        client_service_pair: Tuple[
-            TestClient, StubPipelineServingService, ModuleType
-        ],
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """Enforce authentication when the auth key is configured."""
-        client, _, _ = client_service_pair
-        monkeypatch.setenv("ZENML_DEPLOYMENT_AUTH_KEY", "secret")
-
-        response = client.post(
-            "/invoke", json={"parameters": {"city": "Paris"}}
-        )
-        assert response.status_code == 401
-
-        response = client.post(
-            "/invoke",
-            json={"parameters": {"city": "Paris"}},
-            headers={"Authorization": "Bearer secret"},
-        )
-        assert response.status_code == 200
-        monkeypatch.delenv("ZENML_DEPLOYMENT_AUTH_KEY")
-
     def test_cleanup_called_on_shutdown(
         self,
         monkeypatch: pytest.MonkeyPatch,

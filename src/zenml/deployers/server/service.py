@@ -34,6 +34,7 @@ from zenml.deployers.server.models import (
     ServiceInfo,
     SnapshotInfo,
 )
+from zenml.deployers.server.parameters import build_params_model_from_snapshot
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
@@ -135,7 +136,7 @@ class PipelineDeploymentService:
             integration_registry.activate_integrations()
 
             # Build parameter model
-            self._params_model = self._build_params_model()
+            self._params_model = build_params_model_from_snapshot(self.snapshot, strict=True)
 
             # Initialize orchestrator
             self._orchestrator = SharedLocalOrchestrator(
@@ -324,14 +325,6 @@ class PipelineDeploymentService:
 
         return filtered_outputs
 
-    def _prepare_execute_with_orchestrator(
-        self,
-    ) -> PipelineRunResponse:
-        # Create a placeholder run and execute with a known run id
-        return run_utils.create_placeholder_run(
-            snapshot=self.snapshot, logs=None
-        )
-
     def _execute_with_orchestrator(
         self,
         placeholder_run: PipelineRunResponse,
@@ -410,25 +403,6 @@ class PipelineDeploymentService:
 
         # Store captured outputs for the caller to use
         return captured_outputs
-
-    def _build_params_model(self) -> Any:
-        """Build the pipeline parameters model from the deployment.
-
-        Returns:
-            A parameters model derived from the deployment configuration.
-
-        Raises:
-            Exception: If the model cannot be constructed.
-        """
-        try:
-            from zenml.deployers.server.parameters import (
-                build_params_model_from_snapshot,
-            )
-
-            return build_params_model_from_snapshot(self.snapshot, strict=True)
-        except Exception as e:
-            logger.error(f"Failed to construct parameter model: {e}")
-            raise
 
     def _execute_init_hook(self) -> None:
         """Execute init hook if present.
