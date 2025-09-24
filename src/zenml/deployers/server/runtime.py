@@ -86,7 +86,7 @@ def start(
     state.active = True
     state.request_id = request_id
     state.snapshot_id = str(snapshot.id)
-    state.pipeline_parameters = dict(parameters or {})
+    state.pipeline_parameters = parameters
     state.outputs = {}
     state.use_in_memory = use_in_memory
     _deployment_context.set(state)

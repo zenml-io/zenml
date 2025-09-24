@@ -50,6 +50,7 @@ def _make_snapshot() -> SimpleNamespace:
         input_schema={"type": "object"},
         output_schema={"type": "object"},
         outputs=[],
+        source="test.module.pipeline",
     )
     stack = SimpleNamespace(name="test_stack")
 
@@ -146,8 +147,8 @@ def test_initialize_sets_up_orchestrator(
     )
 
     monkeypatch.setattr(
-        "zenml.deployers.server.parameters.build_params_model_from_snapshot",
-        lambda snapshot, strict: WeatherParams,
+        "zenml.deployers.server.service.build_params_model_from_snapshot",
+        lambda *, snapshot: WeatherParams,
     )
 
     mock_orchestrator = mocker.MagicMock()
@@ -189,11 +190,8 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
     }
     mapped_outputs = {"result": "value"}
 
-    service._prepare_execute_with_orchestrator = mocker.MagicMock(
-        return_value=placeholder_run
-    )
     service._execute_with_orchestrator = mocker.MagicMock(
-        return_value=captured_outputs
+        return_value=(placeholder_run, captured_outputs)
     )
     service._map_outputs = mocker.MagicMock(return_value=mapped_outputs)
     service._build_response = mocker.MagicMock(return_value="response")
@@ -204,9 +202,9 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
     result = service.execute_pipeline(request)
 
     assert result == "response"
-    service._prepare_execute_with_orchestrator.assert_called_once_with()
     service._execute_with_orchestrator.assert_called_once_with(
-        placeholder_run, {"city": "Berlin", "temperature": 20}, False
+        resolved_params={"city": "Berlin", "temperature": 20},
+        use_in_memory=False,
     )
     service._map_outputs.assert_called_once_with(captured_outputs)
     service._build_response.assert_called_once()
