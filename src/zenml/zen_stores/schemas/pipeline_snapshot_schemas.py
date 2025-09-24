@@ -217,8 +217,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The latest run for this snapshot.
         """
-        from sqlmodel import or_
-
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
             PipelineSnapshotSchema,
@@ -234,16 +232,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
-                        or_(
-                            # The run is created directly from this snapshot
-                            # (e.g. regular run, scheduled runs)
-                            PipelineSnapshotSchema.id == self.id,
-                            # The snapshot for this run used this snapshot as a
-                            # source (e.g. run triggered from the server,
-                            # invocation of a deployment)
-                            PipelineSnapshotSchema.source_snapshot_id
-                            == self.id,
-                        )
+                        # The snapshot for this run used this snapshot as a
+                        # source (e.g. run triggered from the server,
+                        # invocation of a deployment). We currently do not
+                        # include runs created directly from a snapshot (e.g.
+                        # run directly, scheduled runs), as these happen before
+                        # the user officially creates (= assigns a name to) the
+                        # snapshot.
+                        col(PipelineSnapshotSchema.source_snapshot_id)
+                        == self.id,
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
