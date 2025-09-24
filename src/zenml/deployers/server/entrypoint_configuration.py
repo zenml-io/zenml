@@ -21,6 +21,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
 from zenml.utils import uuid_utils
@@ -130,6 +131,9 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
             Exception: If the server fails to start.
         """
         import uvicorn
+
+        # Activate integrations to ensure all components are available
+        integration_registry.activate_integrations()
 
         # Extract configuration from entrypoint args
         deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
