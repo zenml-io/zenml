@@ -249,7 +249,6 @@ class DockerDeployer(ContainerizedDeployer):
             state.url = "http://localhost"
             if metadata.port:
                 state.url += f":{metadata.port}"
-            # TODO: check if the deployment is healthy.
 
         return state
 
