@@ -516,13 +516,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
-                pipeline=self.pipeline.to_model(),
-                stack=self.stack.to_model() if self.stack else None,
-                build=self.build.to_model() if self.build else None,
-                schedule=self.schedule.to_model() if self.schedule else None,
-                code_reference=self.code_reference.to_model()
-                if self.code_reference
-                else None,
                 pipeline_version_hash=self.pipeline_version_hash,
                 pipeline_spec=PipelineSpec.model_validate_json(
                     self.pipeline_spec
@@ -543,6 +536,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
+                pipeline=self.pipeline.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
+                build=self.build.to_model() if self.build else None,
+                schedule=self.schedule.to_model() if self.schedule else None,
+                code_reference=self.code_reference.to_model()
+                if self.code_reference
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,

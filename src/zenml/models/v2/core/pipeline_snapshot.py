@@ -274,23 +274,6 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    pipeline: PipelineResponse = Field(
-        title="The pipeline associated with the snapshot."
-    )
-    stack: Optional[StackResponse] = Field(
-        default=None, title="The stack associated with the snapshot."
-    )
-    build: Optional[PipelineBuildResponse] = Field(
-        default=None,
-        title="The pipeline build associated with the snapshot.",
-    )
-    schedule: Optional[ScheduleResponse] = Field(
-        default=None, title="The schedule associated with the snapshot."
-    )
-    code_reference: Optional[CodeReferenceResponse] = Field(
-        default=None,
-        title="The code reference associated with the snapshot.",
-    )
     template_id: Optional[UUID] = Field(
         default=None,
         description="Template from which this snapshot was created.",
@@ -311,6 +294,23 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     """Run snapshot resources."""
 
+    pipeline: PipelineResponse = Field(
+        title="The pipeline associated with the snapshot."
+    )
+    stack: Optional[StackResponse] = Field(
+        default=None, title="The stack associated with the snapshot."
+    )
+    build: Optional[PipelineBuildResponse] = Field(
+        default=None,
+        title="The pipeline build associated with the snapshot.",
+    )
+    schedule: Optional[ScheduleResponse] = Field(
+        default=None, title="The schedule associated with the snapshot."
+    )
+    code_reference: Optional[CodeReferenceResponse] = Field(
+        default=None,
+        title="The code reference associated with the snapshot.",
+    )
     tags: List[TagResponse] = Field(
         default=[],
         title="Tags associated with the snapshot.",
@@ -456,51 +456,6 @@ class PipelineSnapshotResponse(
         return self.get_metadata().code_path
 
     @property
-    def pipeline(self) -> PipelineResponse:
-        """The `pipeline` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().pipeline
-
-    @property
-    def stack(self) -> Optional[StackResponse]:
-        """The `stack` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().stack
-
-    @property
-    def build(self) -> Optional[PipelineBuildResponse]:
-        """The `build` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().build
-
-    @property
-    def schedule(self) -> Optional[ScheduleResponse]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().schedule
-
-    @property
-    def code_reference(self) -> Optional[CodeReferenceResponse]:
-        """The `code_reference` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().code_reference
-
-    @property
     def template_id(self) -> Optional[UUID]:
         """The `template_id` property.
 
@@ -535,6 +490,51 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_metadata().config_template
+
+    @property
+    def pipeline(self) -> PipelineResponse:
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline
+
+    @property
+    def stack(self) -> Optional[StackResponse]:
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().stack
+
+    @property
+    def build(self) -> Optional[PipelineBuildResponse]:
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().build
+
+    @property
+    def schedule(self) -> Optional[ScheduleResponse]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().schedule
+
+    @property
+    def code_reference(self) -> Optional[CodeReferenceResponse]:
+        """The `code_reference` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().code_reference
 
     @property
     def tags(self) -> List[TagResponse]:
