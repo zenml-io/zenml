@@ -170,6 +170,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
+    source_snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin="PipelineSnapshotSchema.source_snapshot_id == foreign(PipelineSnapshotSchema.id)",
+            viewonly=True,
+        ),
+    )
     user: Optional["UserSchema"] = Relationship(
         back_populates="snapshots",
     )
