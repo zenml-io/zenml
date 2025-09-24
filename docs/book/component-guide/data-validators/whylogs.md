@@ -8,7 +8,7 @@ description: >-
 
 The whylogs/WhyLabs [Data Validator](./) flavor provided with the ZenML integration uses the open-source [whylogs](https://github.com/whylabs/whylogs) library together with the now open-sourced [WhyLabs platform](https://github.com/whylabs/whylabs-oss) to generate and track data profiles, highly accurate descriptive representations of your data. The profiles can be used to implement automated corrective actions in your pipelines, or to render interactive representations for further visual interpretation, evaluation and documentation.
 
-> **Warning:** WhyLabs was acquired by Apple and the hosted WhyLabs platform is being discontinued. While the whylogs library remains open source and the WhyLabs platform source code is publicly available, hosted deployments may no longer be accessible. Make sure to plan your usage of the integration accordingly and consider self-hosting the OSS platform if you still need WhyLabs features.
+> **Warning:** [WhyLabs was acquired by Apple](https://whylabs.ai/) and the hosted WhyLabs platform is being discontinued. While the whylogs library remains open source and the WhyLabs platform source code is publicly available, hosted deployments may no longer be accessible. Make sure to plan your usage of the integration accordingly and consider self-hosting the OSS platform if you still need WhyLabs features.
 
 ### When would you want to use it?
 
