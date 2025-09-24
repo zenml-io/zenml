@@ -19,6 +19,7 @@ It provides several key features:
    - Validates links by making HTTP requests
    - Supports parallel validation for better performance
    - Provides detailed error reporting for broken links
+   - Soft-passes HTTP 429 responses for specific domains (e.g., HashiCorp docs) to avoid CI flakiness
 
 Usage Examples:
     # Find all links containing 'docs.zenml.io' in a directory
@@ -39,6 +40,9 @@ Usage Examples:
     # Use custom URL path mappings
     python link_checker.py --dir docs --replace-links --url-mapping user-guide=user-guides
 
+    # Soft-pass 429 for HashiCorp docs and skip HEAD for those domains (defaults)
+    python link_checker.py --dir docs --substring http --validate-links --ci-mode
+
 Arguments:
     --dir: Directory containing markdown files to scan
     --files: List of specific markdown files to scan
@@ -49,6 +53,9 @@ Arguments:
     --timeout: Timeout for HTTP requests in seconds (default: 10)
     --url-mapping: Path segment mappings in format old=new (can be used multiple times)
     --ci-mode: CI mode: only report broken links and exit with error code on failures
+    --ignore-429-domain: Domain for which HTTP 429 should be treated as a soft pass (can be used multiple times)
+    --no-head-domain: Domain for which to skip HEAD and use GET directly (can be used multiple times)
+    --user-agent: Custom User-Agent header to use for HTTP requests
 
 Note:
     The 'requests' package is required for link validation. Install it with:
@@ -93,7 +100,26 @@ EXEMPT_URL_STATUS: Dict[str, set] = {
 EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     # Some HashiCorp properties rate-limit automated checks.
     "hashicorp.com": {429},
+    "developer.hashicorp.com": {429},
+    "terraform.io": {429},
+    "www.terraform.io": {429},
 }
+
+# Default policies for troublesome domains that frequently rate-limit automated traffic.
+# These defaults can be extended via CLI flags.
+DEFAULT_IGNORE_429_DOMAINS = {
+    "developer.hashicorp.com",
+    "terraform.io",
+    "www.terraform.io",
+}
+DEFAULT_NO_HEAD_DOMAINS = {
+    "developer.hashicorp.com",
+    "terraform.io",
+    "www.terraform.io",
+}
+DEFAULT_USER_AGENT = (
+    "ZenML-LinkChecker/1.0 (+https://github.com/zenml-io/zenml)"
+)
 
 
 def is_exception_status(cleaned_url: str, status_code: int) -> bool:
@@ -282,7 +308,11 @@ def is_local_development_url(url: str) -> bool:
 
 
 def check_link_validity(
-    url: str, timeout: int = 10
+    url: str,
+    timeout: int = 10,
+    ignore_429_domains: Optional[set] = None,
+    no_head_domains: Optional[set] = None,
+    user_agent: Optional[str] = None,
 ) -> Tuple[str, bool, Optional[str], Optional[int]]:
     """
     Check if a URL is valid by making an HTTP request.
@@ -290,6 +320,9 @@ def check_link_validity(
     Args:
         url: The URL to check
         timeout: Request timeout in seconds
+        ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
+        no_head_domains: Domains for which to skip HEAD and only use GET
+        user_agent: Custom User-Agent header
 
     Returns:
         Tuple of (url, is_valid, error_message, status_code)
@@ -313,24 +346,46 @@ def check_link_validity(
     if is_local_development_url(cleaned_url):
         return url, True, None, None
 
-    # Configure session with retries
+    parsed = urlparse(cleaned_url)
+    hostname = (parsed.hostname or "").lower()
+    ignore_429 = bool(ignore_429_domains) and hostname in ignore_429_domains
+    skip_head = bool(no_head_domains) and hostname in no_head_domains
+
+    # Configure session with retries. We respect Retry-After and avoid raising
+    # on final status, returning the last response instead. This allows us
+    # to interpret 429 as a soft-pass for specific domains.
     session = requests.Session()
     retries = Retry(
         total=3,
-        backoff_factor=0.5,
+        backoff_factor=1.0,
+        respect_retry_after_header=True,
         status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=["HEAD", "GET"],
+        raise_on_status=False,
     )
     session.mount("http://", HTTPAdapter(max_retries=retries))
     session.mount("https://", HTTPAdapter(max_retries=retries))
+    session.headers.update(
+        {
+            "User-Agent": user_agent or DEFAULT_USER_AGENT,
+            "Accept": "*/*",
+        }
+    )
 
     try:
-        # First try with HEAD request
-        response = session.head(
-            cleaned_url, timeout=timeout, allow_redirects=True
-        )
+        # Strategy: HEAD first unless the domain is known to dislike HEAD,
+        # then fallback to GET if needed. Some sites rate-limit or block HEAD.
+        response = None
+        if not skip_head:
+            response = session.head(
+                cleaned_url, timeout=timeout, allow_redirects=True
+            )
+        else:
+            response = session.get(
+                cleaned_url, timeout=timeout, allow_redirects=True
+            )
 
-        # If HEAD fails, try GET
+        # If HEAD fails (>=400), try GET
         if response.status_code >= 400:
             response = session.get(
                 cleaned_url, timeout=timeout, allow_redirects=True
@@ -340,13 +395,21 @@ def check_link_validity(
         if is_exception_status(cleaned_url, response.status_code):
             return (url, True, None, response.status_code)
 
+        # Also check for 429 soft-pass for configured domains (backward compatibility)
+        if response.status_code == 429 and ignore_429:
+            return (
+                url,
+                True,
+                "429 rate-limited (soft-pass for domain)",
+                429,
+            )
+
         is_valid = response.status_code < 400
 
         # Additional check for Gitbook URLs that return 200 for non-existent pages
         if is_valid and "docs.zenml.io" in cleaned_url:
             # We need to check for "noindex" meta tag which indicates a 404 page in Gitbook
             try:
-                # Use GET to fetch the page content
                 content_response = session.get(cleaned_url, timeout=timeout)
                 content = content_response.text.lower()
 
@@ -373,11 +436,24 @@ def check_link_validity(
         )
 
     except requests.RequestException as e:
+        # If we hit retry exhaustion with 429, soft-pass for configured domains
+        if "429" in str(e) and ignore_429:
+            return (
+                url,
+                True,
+                "429 rate-limited (soft-pass for domain)",
+                429,
+            )
         return url, False, str(e), None
 
 
 def validate_urls(
-    urls: List[str], max_workers: int = 10
+    urls: List[str],
+    max_workers: int = 10,
+    timeout: int = 10,
+    ignore_429_domains: Optional[set] = None,
+    no_head_domains: Optional[set] = None,
+    user_agent: Optional[str] = None,
 ) -> Dict[str, Tuple[bool, Optional[str], Optional[int]]]:
     """
     Validate multiple URLs in parallel.
@@ -385,6 +461,10 @@ def validate_urls(
     Args:
         urls: List of URLs to validate
         max_workers: Maximum number of parallel workers
+        timeout: Request timeout
+        ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
+        no_head_domains: Domains for which to skip HEAD and only use GET
+        user_agent: Custom User-Agent header
 
     Returns:
         Dictionary of {url: (is_valid, error_message, status_code)}
@@ -395,8 +475,6 @@ def validate_urls(
     results = {}
 
     # Count and report GitHub links that will be skipped in validation
-    from urllib.parse import urlparse
-
     github_urls = [
         url
         for url in urls
@@ -428,7 +506,14 @@ def validate_urls(
         # Submit all URLs (GitHub links will be auto-skipped in check_link_validity)
         for url in urls:
             future_to_url[
-                executor.submit(check_link_validity, url, timeout=15)
+                executor.submit(
+                    check_link_validity,
+                    url,
+                    timeout=timeout,
+                    ignore_429_domains=ignore_429_domains,
+                    no_head_domains=no_head_domains,
+                    user_agent=user_agent,
+                )
             ] = url
 
         # Process results
@@ -443,7 +528,12 @@ def validate_urls(
                         f"  Checked URL {i}/{len(urls)} [github.com]: ✓ Skipped (automatically marked valid)"
                     )
                 else:
-                    status = "✅ Valid" if is_valid else f"❌ {error_message}"
+                    if is_valid and status_code == 429:
+                        status = "✅ Valid (429 soft-pass)"
+                    else:
+                        status = (
+                            "✅ Valid" if is_valid else f"❌ {error_message}"
+                        )
                     domain = (
                         url.split("/")[2]
                         if "://" in url and "/" in url.split("://", 1)[1]
@@ -541,6 +631,11 @@ def replace_links_in_file(
     dry_run: bool = False,
     validate_links: bool = False,
     url_mappings: Dict[str, str] = None,
+    *,
+    timeout: int = 10,
+    ignore_429_domains: Optional[set] = None,
+    no_head_domains: Optional[set] = None,
+    user_agent: Optional[str] = None,
 ) -> Dict[str, Tuple[str, bool, Optional[str]]]:
     """
     Replace relative links in the file with absolute URLs.
@@ -551,6 +646,10 @@ def replace_links_in_file(
         dry_run: If True, don't actually modify the file
         validate_links: If True, validate the generated links
         url_mappings: Dictionary of path segment mappings {old: new}
+        timeout: HTTP timeout for validation requests
+        ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
+        no_head_domains: Domains for which to skip HEAD and only use GET
+        user_agent: Custom User-Agent header
 
     Returns:
         Dictionary of {original_link: (new_link, is_valid, error_message)}
@@ -655,7 +754,13 @@ def replace_links_in_file(
     # Validate links if requested
     validation_results = {}
     if validate_links and transformed_urls:
-        validation_results = validate_urls(transformed_urls)
+        validation_results = validate_urls(
+            transformed_urls,
+            timeout=timeout,
+            ignore_429_domains=ignore_429_domains,
+            no_head_domains=no_head_domains,
+            user_agent=user_agent,
+        )
 
         # Update the replacements dictionary with validation results
         for rel_link, (trans_link, _, _) in replacements.items():
@@ -790,6 +895,23 @@ def main():
         action="store_true",
         help="CI mode: only report broken links and exit with error code on failures",
     )
+    parser.add_argument(
+        "--ignore-429-domain",
+        action="append",
+        default=[],
+        help="Domain for which to consider HTTP 429 as a soft pass (can be used multiple times). Defaults include developer.hashicorp.com and terraform.io.",
+    )
+    parser.add_argument(
+        "--no-head-domain",
+        action="append",
+        default=[],
+        help="Domain for which to skip HEAD and only use GET (can be used multiple times). Defaults include developer.hashicorp.com and terraform.io.",
+    )
+    parser.add_argument(
+        "--user-agent",
+        default=DEFAULT_USER_AGENT,
+        help="User-Agent to use for HTTP requests.",
+    )
     args = parser.parse_args()
 
     # Check for requests module if validation is enabled
@@ -825,6 +947,14 @@ def main():
         if not args.ci_mode:
             print(f"Scanning {len(files_to_scan)} specified markdown files")
 
+    # Merge defaults with CLI-provided domain policies
+    ignore_429_domains = DEFAULT_IGNORE_429_DOMAINS.union(
+        set(args.ignore_429_domain or [])
+    )
+    no_head_domains = DEFAULT_NO_HEAD_DOMAINS.union(
+        set(args.no_head_domain or [])
+    )
+
     if args.replace_links:
         # Replace links mode
         total_replacements = 0
@@ -839,6 +969,10 @@ def main():
                     args.dry_run,
                     args.validate_links,
                     url_mappings,
+                    timeout=args.timeout,
+                    ignore_429_domains=ignore_429_domains,
+                    no_head_domains=no_head_domains,
+                    user_agent=args.user_agent,
                 )
                 if replacements:
                     if not args.ci_mode:
@@ -946,7 +1080,13 @@ def main():
         if args.validate_links and links_to_validate:
             if not args.ci_mode:
                 print(f"\nValidating {len(links_to_validate)} links...")
-            validation_results = validate_urls(list(set(links_to_validate)))
+            validation_results = validate_urls(
+                list(set(links_to_validate)),
+                timeout=args.timeout,
+                ignore_429_domains=ignore_429_domains,
+                no_head_domains=no_head_domains,
+                user_agent=args.user_agent,
+            )
 
             valid_count = sum(
                 1 for result in validation_results.values() if result[0]

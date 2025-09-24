@@ -186,7 +186,6 @@ class PipelineSnapshotUpdate(BaseUpdate):
         default=None,
         title="The name of the snapshot. If set to "
         "False, the name will be removed.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
         default=None,
