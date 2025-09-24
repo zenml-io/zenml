@@ -1097,6 +1097,11 @@ class AWSDeployer(ContainerizedDeployer):
         Returns:
             Tuple of (cpu, memory) that best matches requirements, in AWS App
             Runner format.
+
+        Raises:
+            ValueError: If the requested resource requirements cannot be matched
+                to any of the supported combinations for the AWS App Runner
+                service and strict_resource_matching is True.
         """
         if requested_cpu is None and requested_memory_gb is None:
             return f"{DEFAULT_CPU:g} vCPU", f"{DEFAULT_MEMORY:g} GB"

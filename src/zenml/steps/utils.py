@@ -18,6 +18,7 @@ import ast
 import contextlib
 import inspect
 import textwrap
+from collections import Counter
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -609,12 +610,9 @@ def get_unique_step_output_names(
     Returns:
         The input dictionary complemented with unique step output names.
     """
-    output_name_count: Dict[str, int] = {}
-    for _, output_name in step_outputs.keys():
-        if output_name in output_name_count:
-            output_name_count[output_name] += 1
-        else:
-            output_name_count[output_name] = 1
+    output_name_count = Counter(
+        output_name for _, output_name in step_outputs.keys()
+    )
 
     unique_step_output_mapping = {}
     for invocation_id, output_name in step_outputs.keys():

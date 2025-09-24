@@ -42,11 +42,17 @@ class PipelineSpec(FrozenBaseModel):
     #   inputs in the step specs refer to the pipeline parameter names
     # - 0.4: New Pipeline class, the upstream steps and
     #   inputs in the step specs refer to the pipeline parameter names
-    # - 0.5: Adds outputs and output schema
+    # - 0.5: Adds input schema, outputs and output schema
     version: str = "0.5"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
-    input_schema: Dict[str, Any] = {}
+    input_schema: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="JSON schema of the pipeline inputs. This is only set "
+        "for pipeline specs with version >= 0.5. If the value is None, the "
+        "schema generation failed, which is most likely because some of the "
+        "pipeline inputs are not JSON serializable.",
+    )
     steps: List[StepSpec]
     outputs: List[OutputSpec] = []
     output_schema: Optional[Dict[str, Any]] = Field(

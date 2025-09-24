@@ -507,29 +507,33 @@ class PipelineDeploymentService:
     # ----------
 
     @property
-    def input_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for pipeline input parameters if available.
+    def input_schema(self) -> Dict[str, Any]:
+        """Return the JSON schema for pipeline input parameters.
 
         Returns:
-            The JSON schema for pipeline parameters if available.
+            The JSON schema for pipeline parameters.
         """
-        try:
-            if self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.input_schema
-        except Exception:
-            return None
-        return None
+        if (
+            self.snapshot.pipeline_spec
+            and self.snapshot.pipeline_spec.input_schema
+        ):
+            return self.snapshot.pipeline_spec.input_schema
+        # This should never happen, given that we check for this in the
+        # base deployer.
+        raise RuntimeError("The pipeline input schema is not available.")
 
     @property
-    def output_schema(self) -> Optional[Dict[str, Any]]:
-        """Return the JSON schema for the deployment response if available.
+    def output_schema(self) -> Dict[str, Any]:
+        """Return the JSON schema for the pipeline outputs.
 
         Returns:
-            The JSON schema for the deployment response if available.
+            The JSON schema for the pipeline outputs.
         """
-        try:
-            if self.snapshot.pipeline_spec:
-                return self.snapshot.pipeline_spec.output_schema
-        except Exception:
-            return None
-        return None
+        if (
+            self.snapshot.pipeline_spec
+            and self.snapshot.pipeline_spec.output_schema
+        ):
+            return self.snapshot.pipeline_spec.output_schema
+        # This should never happen, given that we check for this in the
+        # base deployer.
+        raise RuntimeError("The pipeline output schema is not available.")
