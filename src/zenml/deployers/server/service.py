@@ -137,7 +137,7 @@ class PipelineDeploymentService:
 
             # Build parameter model
             self._params_model = build_params_model_from_snapshot(
-                self.snapshot, strict=True
+                snapshot=self.snapshot
             )
 
             # Initialize orchestrator
