@@ -97,11 +97,9 @@ class DeploymentUpdate(BaseUpdate):
         default=None,
         title="The new URL of the deployment.",
     )
-    status: Optional[str] = Field(
+    status: Optional[DeploymentStatus] = Field(
         default=None,
         title="The new status of the deployment.",
-        description="Possible values are: "
-        f"{', '.join(DeploymentStatus.values())}",
     )
     deployment_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -142,11 +140,10 @@ class DeploymentResponseBody(ProjectScopedResponseBody):
         title="The URL of the deployment.",
         description="The HTTP URL where the deployment can be accessed.",
     )
-    status: Optional[str] = Field(
+    status: Optional[DeploymentStatus] = Field(
         default=None,
         title="The status of the deployment.",
-        description="Current operational status of the deployment. Possible "
-        f"values are: {', '.join(DeploymentStatus.values())}",
+        description="Current operational status of the deployment.",
     )
 
 
@@ -215,7 +212,7 @@ class DeploymentResponse(
         return self.get_body().url
 
     @property
-    def status(self) -> Optional[str]:
+    def status(self) -> Optional[DeploymentStatus]:
         """The status of the deployment.
 
         Returns:

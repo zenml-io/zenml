@@ -61,7 +61,7 @@ def get_step_context() -> "StepContext":
     )
 
 
-class StepSharedContext:
+class RunContext:
     """Provides context shared between all steps in a pipeline run."""
 
     def __init__(

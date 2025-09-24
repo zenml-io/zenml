@@ -63,8 +63,13 @@ def _make_snapshot() -> SimpleNamespace:
     )
 
 
+def _make_deployment(snapshot: SimpleNamespace) -> SimpleNamespace:
+    """Create a deployment stub with the attributes accessed by the service."""
+    return SimpleNamespace(id=uuid4(), name="deployment", snapshot=snapshot)
+
+
 def _make_service_stub(
-    snapshot: SimpleNamespace, mocker: MockerFixture
+    deployment: SimpleNamespace, mocker: MockerFixture
 ) -> PipelineDeploymentService:
     """Create a service instance without running __init__ for isolated tests."""
     service = PipelineDeploymentService.__new__(PipelineDeploymentService)
@@ -75,7 +80,8 @@ def _make_service_stub(
     service.service_start_time = 100.0
     service.last_execution_time = None
     service.total_executions = 0
-    service.snapshot = snapshot
+    service.deployment = deployment
+    service.snapshot = deployment.snapshot
     return service
 
 

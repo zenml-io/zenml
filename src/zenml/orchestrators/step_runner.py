@@ -59,8 +59,8 @@ from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
 from zenml.steps.step_context import (
+    RunContext,
     StepContext,
-    StepSharedContext,
     get_step_context,
 )
 from zenml.steps.utils import (
@@ -100,7 +100,7 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
-        run_context: Optional[StepSharedContext] = None,
+        run_context: Optional[RunContext] = None,
     ):
         """Initializes the step runner.
 

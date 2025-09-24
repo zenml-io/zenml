@@ -54,11 +54,9 @@ from zenml.deployers.exceptions import (
 )
 from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
+    DEPLOYMENT_ID_OPTION,
     PORT_OPTION,
     DeploymentEntrypointConfiguration,
-)
-from zenml.entrypoints.base_entrypoint_configuration import (
-    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.logger import get_logger
@@ -304,7 +302,7 @@ class DockerDeployer(ContainerizedDeployer):
         entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
 
         entrypoint_kwargs = {
-            SNAPSHOT_ID_OPTION: snapshot.id,
+            DEPLOYMENT_ID_OPTION: deployment.id,
             PORT_OPTION: 8000,
         }
         if deployment.auth_key:

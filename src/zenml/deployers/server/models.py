@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 class PipelineInvokeResponseMetadata(BaseModel):
     """Pipeline invoke response metadata model."""
 
+    deployment_id: UUID = Field(title="The ID of the deployment.")
+    deployment_name: str = Field(title="The name of the deployment.")
     snapshot_id: UUID = Field(title="The ID of the snapshot.")
     snapshot_name: Optional[str] = Field(
         default=None, title="The name of the snapshot."
@@ -102,6 +104,13 @@ class PipelineInfo(BaseModel):
     )
 
 
+class DeploymentInfo(BaseModel):
+    """Deployment info model."""
+
+    id: UUID = Field(title="The ID of the deployment.")
+    name: str = Field(title="The name of the deployment.")
+
+
 class SnapshotInfo(BaseModel):
     """Snapshot info model."""
 
@@ -114,6 +123,9 @@ class SnapshotInfo(BaseModel):
 class ServiceInfo(BaseModel):
     """Service info model."""
 
+    deployment: DeploymentInfo = Field(
+        title="The deployment of the pipeline service."
+    )
     snapshot: SnapshotInfo = Field(
         title="The snapshot of the pipeline service."
     )

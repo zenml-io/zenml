@@ -28,6 +28,7 @@ from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
     BasePipelineInvokeRequest,
     BasePipelineInvokeResponse,
+    DeploymentInfo,
     ExecutionMetrics,
     PipelineInfo,
     PipelineInvokeResponseMetadata,
@@ -39,8 +40,10 @@ from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.models import PipelineSnapshotResponse
-from zenml.models.v2.core.pipeline_run import PipelineRunResponse
+from zenml.models import (
+    PipelineRunResponse,
+    PipelineRunTriggerInfo,
+)
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
@@ -81,18 +84,18 @@ class SharedLocalOrchestrator(LocalOrchestrator):
 class PipelineDeploymentService:
     """Pipeline deployment service."""
 
-    def __init__(self, snapshot_id: Union[str, UUID]) -> None:
+    def __init__(self, deployment_id: Union[str, UUID]) -> None:
         """Initialize service with minimal state.
 
         Args:
-            snapshot_id: The ID of the snapshot to deploy.
+            deployment_id: The ID of the running deployment.
 
         Raises:
-            RuntimeError: If the snapshot cannot be loaded.
+            RuntimeError: If the deployment or snapshot cannot be loaded.
         """
         # Accept both str and UUID for flexibility
-        if isinstance(snapshot_id, str):
-            snapshot_id = UUID(snapshot_id)
+        if isinstance(deployment_id, str):
+            deployment_id = UUID(deployment_id)
 
         self._client = Client()
         self.pipeline_state: Optional[Any] = None
@@ -110,11 +113,15 @@ class PipelineDeploymentService:
         logger.info("Loading pipeline snapshot configuration...")
 
         try:
-            self.snapshot: PipelineSnapshotResponse = (
-                self._client.zen_store.get_snapshot(snapshot_id=snapshot_id)
+            self.deployment = self._client.zen_store.get_deployment(
+                deployment_id=deployment_id
             )
         except Exception as e:
-            raise RuntimeError(f"Failed to load snapshot: {e}")
+            raise RuntimeError(f"Failed to load deployment: {e}") from e
+
+        if self.deployment.snapshot is None:
+            raise RuntimeError("Deployment has no snapshot")
+        self.snapshot = self.deployment.snapshot
 
     @property
     def params_model(self) -> Optional[Type[BaseModel]]:
@@ -245,6 +252,10 @@ class PipelineDeploymentService:
         """
         uptime = time.time() - self.service_start_time
         return ServiceInfo(
+            deployment=DeploymentInfo(
+                id=self.deployment.id,
+                name=self.deployment.name,
+            ),
             snapshot=SnapshotInfo(
                 id=self.snapshot.id,
                 name=self.snapshot.name,
@@ -372,7 +383,11 @@ class PipelineDeploymentService:
 
         # Create a placeholder run using the new deployment snapshot
         placeholder_run = run_utils.create_placeholder_run(
-            snapshot=deployment_snapshot, logs=None
+            snapshot=deployment_snapshot,
+            logs=None,
+            trigger_info=PipelineRunTriggerInfo(
+                deployment_id=self.deployment.id,
+            ),
         )
 
         # Start deployment runtime context with parameters (still needed for
@@ -493,6 +508,8 @@ class PipelineDeploymentService:
             error=str(error) if error else None,
             execution_time=execution_time,
             metadata=PipelineInvokeResponseMetadata(
+                deployment_id=self.deployment.id,
+                deployment_name=self.deployment.name,
                 pipeline_name=self.snapshot.pipeline_configuration.name,
                 run_id=run.id if run else None,
                 run_name=run.name if run else None,

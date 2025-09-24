@@ -26,6 +26,7 @@ import zenml.deployers.server.app as serving_app
 from zenml.deployers.server.models import (
     BasePipelineInvokeRequest,
     BasePipelineInvokeResponse,
+    DeploymentInfo,
     ExecutionMetrics,
     PipelineInfo,
     PipelineInvokeResponseMetadata,
@@ -44,13 +45,12 @@ class MockWeatherRequest(BaseModel):
 class StubPipelineServingService:
     """Stub service implementing the interface used by the FastAPI app."""
 
-    def __init__(self, snapshot_id: str) -> None:
+    def __init__(self, deployment_id: str) -> None:
         """Initialize the stub service.
 
         Args:
             snapshot_id: The ID of the snapshot to use for the service.
         """
-        self.snapshot_id = snapshot_id
         self._healthy = True
         self.initialized = False
         self.cleaned_up = False
@@ -79,6 +79,11 @@ class StubPipelineServingService:
                 input_schema=self.input_schema,
                 output_schema=self.output_schema,
             ),
+        )
+        self.deployment = SimpleNamespace(
+            id=uuid4(),
+            name="deployment",
+            snapshot=self.snapshot,
         )
 
     @property
@@ -118,6 +123,10 @@ class StubPipelineServingService:
         """Retrieve public metadata describing the stub deployment."""
 
         return ServiceInfo(
+            deployment=DeploymentInfo(
+                id=self.deployment.id,
+                name=self.deployment.name,
+            ),
             snapshot=SnapshotInfo(
                 id=self.snapshot.id, name=self.snapshot.name
             ),
@@ -155,6 +164,8 @@ class StubPipelineServingService:
             outputs={"result": "ok"},
             execution_time=0.5,
             metadata=PipelineInvokeResponseMetadata(
+                deployment_id=self.deployment.id,
+                deployment_name=self.deployment.name,
                 pipeline_name="test_pipeline",
                 run_id=None,
                 run_name=None,
@@ -183,7 +194,7 @@ def client_service_pair(
     reloaded_app = importlib.reload(serving_app)
     service = StubPipelineServingService(str(uuid4()))
 
-    monkeypatch.setenv("ZENML_SNAPSHOT_ID", service.snapshot_id)
+    monkeypatch.setenv("ZENML_DEPLOYMENT_ID", service.deployment.id)
     monkeypatch.delenv("ZENML_DEPLOYMENT_TEST_MODE", raising=False)
 
     def _service_factory(_: str) -> StubPipelineServingService:
@@ -308,6 +319,8 @@ class TestFastAPIAppEndpoints:
             outputs=None,
             execution_time=0.1,
             metadata=PipelineInvokeResponseMetadata(
+                deployment_id=service.deployment.id,
+                deployment_name=service.deployment.name,
                 pipeline_name="test_pipeline",
                 run_id=None,
                 run_name=None,
@@ -336,11 +349,11 @@ class TestFastAPIAppEndpoints:
         """Trigger service cleanup when the application shuts down."""
         reloaded_app = importlib.reload(serving_app)
         service = StubPipelineServingService(str(uuid4()))
-        monkeypatch.setenv("ZENML_SNAPSHOT_ID", service.snapshot_id)
+        monkeypatch.setenv("ZENML_DEPLOYMENT_ID", service.deployment.id)
         monkeypatch.setattr(
             reloaded_app,
             "PipelineDeploymentService",
-            lambda snapshot_id: service,
+            lambda deployment_id: service,
         )
         with TestClient(reloaded_app.app):
             pass

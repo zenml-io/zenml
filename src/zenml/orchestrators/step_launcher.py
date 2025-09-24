@@ -43,7 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.steps.step_context import StepSharedContext
+from zenml.steps.step_context import RunContext
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -108,7 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
-        run_context: Optional[StepSharedContext] = None,
+        run_context: Optional[RunContext] = None,
     ):
         """Initializes the launcher.
 

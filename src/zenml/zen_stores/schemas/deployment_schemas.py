@@ -25,6 +25,7 @@ from sqlmodel import Field, Relationship, String
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import DeploymentStatus
+from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
     DeploymentResponse,
@@ -43,6 +44,8 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
+
+logger = get_logger(__name__)
 
 
 class DeploymentSchema(NamedSchema, table=True):
@@ -165,13 +168,24 @@ class DeploymentSchema(NamedSchema, table=True):
         Returns:
             The created `DeploymentResponse`.
         """
+        status: Optional[DeploymentStatus] = None
+        if self.status in DeploymentStatus.values():
+            status = DeploymentStatus(self.status)
+        elif self.status is not None:
+            status = DeploymentStatus.UNKNOWN
+            logger.warning(
+                f"Deployment status '{self.status}' used for deployment "
+                f"{self.name} is not a valid DeploymentStatus value. "
+                "Using UNKNOWN instead."
+            )
+
         body = DeploymentResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             url=self.url,
-            status=self.status,
+            status=status,
         )
 
         metadata = None

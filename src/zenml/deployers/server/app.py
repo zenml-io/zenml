@@ -65,13 +65,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("🚀 Starting ZenML Pipeline Serving service...")
 
-    snapshot_id = os.getenv("ZENML_SNAPSHOT_ID")
-    if not snapshot_id:
-        raise ValueError("ZENML_SNAPSHOT_ID environment variable is required")
+    deployment_id = os.getenv("ZENML_DEPLOYMENT_ID")
+    if not deployment_id:
+        raise ValueError(
+            "ZENML_DEPLOYMENT_ID environment variable is required"
+        )
 
     try:
         global _service
-        _service = PipelineDeploymentService(snapshot_id)
+        _service = PipelineDeploymentService(deployment_id)
         _service.initialize()
         # params model is available.
         try:
@@ -107,7 +109,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 # Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
-    title="ZenML Pipeline Deployment",
+    title=f"ZenML Pipeline Deployment {os.getenv('ZENML_DEPLOYMENT_ID')}",
     description="deploy ZenML pipelines as FastAPI endpoints",
     version="0.2.0",
     lifespan=lifespan,
@@ -346,8 +348,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--snapshot_id",
-        default=os.getenv("ZENML_SNAPSHOT_ID"),
+        "--deployment_id",
+        default=os.getenv("ZENML_DEPLOYMENT_ID"),
         help="Pipeline snapshot ID",
     )
     parser.add_argument(
@@ -371,8 +373,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.snapshot_id:
-        os.environ["ZENML_SNAPSHOT_ID"] = args.snapshot_id
+    if args.deployment_id:
+        os.environ["ZENML_DEPLOYMENT_ID"] = args.deployment_id
     if args.auth_key:
         os.environ["ZENML_DEPLOYMENT_AUTH_KEY"] = args.auth_key
 

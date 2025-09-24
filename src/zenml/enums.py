@@ -508,3 +508,4 @@ class PipelineRunTriggeredByType(StrEnum):
     """All possible types that can trigger a pipeline run."""
 
     STEP_RUN = "step_run"
+    DEPLOYMENT = "deployment"
