@@ -163,6 +163,35 @@ class BaseDeployer(StackComponent, ABC):
             DeploymentUpdate.from_operational_state(operational_state),
         )
 
+    def _check_deployment_inputs_outputs(
+        self,
+        snapshot: PipelineSnapshotResponse,
+    ) -> None:
+        """Check if the deployment has compiled schemas for the pipeline inputs and outputs.
+
+        Args:
+            snapshot: The pipeline snapshot to check.
+
+        Raises:
+            DeploymentProvisionError: if the deployment has no compiled schemas
+            for the pipeline inputs and outputs.
+        """
+        if (
+            not snapshot.pipeline_spec
+            or not snapshot.pipeline_spec.input_schema
+            or not snapshot.pipeline_spec.output_schema
+        ):
+            raise DeploymentProvisionError(
+                f"The pipeline with name '{snapshot.pipeline.name}' referenced "
+                f"by the deployment with name or ID "
+                f"'{snapshot.name or snapshot.id}' "
+                "is missing the compiled schemas for the pipeline inputs or "
+                "outputs. This is most likely because some of the pipeline "
+                "inputs or outputs are not JSON serializable. Please check that "
+                "all the pipeline input arguments and return values have data "
+                "types that are JSON serializable."
+            )
+
     def _check_deployment_deployer(
         self,
         deployment: DeploymentResponse,
@@ -382,6 +411,8 @@ class BaseDeployer(StackComponent, ABC):
                 f"A deployment with ID '{deployment_name_or_id}' "
                 "already exists"
             )
+
+        self._check_deployment_inputs_outputs(snapshot)
 
         client = Client()
 

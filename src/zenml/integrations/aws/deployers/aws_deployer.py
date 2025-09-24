@@ -69,10 +69,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Default resource and scaling configuration constants
-DEFAULT_CPU = "0.25 vCPU"
-DEFAULT_MEMORY = "0.5 GB"
-DEFAULT_MIN_SIZE = 1
-DEFAULT_MAX_SIZE = 25
+DEFAULT_CPU = 0.25  # vCPU
+DEFAULT_MEMORY = 0.5  # GB
+DEFAULT_MIN_REPLICAS = 1
+DEFAULT_MAX_REPLICAS = 25
 DEFAULT_MAX_CONCURRENCY = 100
 
 # AWS App Runner built-in limits
@@ -407,7 +407,7 @@ class AWSDeployer(ContainerizedDeployer):
         """
         tags = {
             **settings.tags,
-            "zenml-deployment-uuid": str(deployment.id),
+            "zenml-deployment-id": str(deployment.id),
             "zenml-deployment-name": deployment.name,
             "zenml-deployer-name": str(self.name),
             "zenml-deployer-id": str(self.id),
@@ -472,6 +472,13 @@ class AWSDeployer(ContainerizedDeployer):
                 char,
                 sanitized,
             )
+
+        # Remove leading and trailing extra allowed characters before truncating
+        sanitized = re.sub(
+            r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$",
+            "",
+            sanitized,
+        )
 
         # Truncate to fit within max_length character limit including suffix
         max_base_length = (
@@ -1025,6 +1032,8 @@ class AWSDeployer(ContainerizedDeployer):
     def _convert_resource_settings_to_aws_format(
         self,
         resource_settings: ResourceSettings,
+        resource_combinations: List[Tuple[float, float]],
+        strict_resource_matching: bool = False,
     ) -> Tuple[str, str]:
         """Convert ResourceSettings to AWS App Runner resource format.
 
@@ -1033,6 +1042,12 @@ class AWSDeployer(ContainerizedDeployer):
 
         Args:
             resource_settings: The resource settings from pipeline configuration.
+            resource_combinations: List of supported CPU (vCPU) and memory (GB)
+                combinations.
+            strict_resource_matching: Whether to enforce strict matching of
+                resource requirements to AWS App Runner supported CPU and
+                memory combinations or approximate the closest matching
+                supported combination.
 
         Returns:
             Tuple of (cpu, memory) in AWS App Runner format.
@@ -1043,7 +1058,10 @@ class AWSDeployer(ContainerizedDeployer):
             requested_memory_gb = resource_settings.get_memory(unit="GB")
 
         cpu, memory = self._select_aws_cpu_memory_combination(
-            requested_cpu, requested_memory_gb
+            requested_cpu,
+            requested_memory_gb,
+            resource_combinations,
+            strict_resource_matching,
         )
 
         return cpu, memory
@@ -1052,10 +1070,12 @@ class AWSDeployer(ContainerizedDeployer):
         self,
         requested_cpu: Optional[float],
         requested_memory_gb: Optional[float],
+        resource_combinations: List[Tuple[float, float]],
+        strict_resource_matching: bool = False,
     ) -> Tuple[str, str]:
         """Select the best AWS App Runner CPU-memory combination.
 
-        AWS App Runner only supports these specific combinations:
+        AWS App Runner only supports specific CPU and memory combinations, e.g.:
         - 0.25 vCPU: 0.5 GB, 1 GB
         - 0.5 vCPU: 1 GB
         - 1 vCPU: 2 GB, 3 GB, 4 GB
@@ -1067,36 +1087,42 @@ class AWSDeployer(ContainerizedDeployer):
         Args:
             requested_cpu: Requested CPU count (can be None)
             requested_memory_gb: Requested memory in GB (can be None)
+            resource_combinations: List of supported CPU (vCPU) and memory (GB)
+                combinations.
+            strict_resource_matching: Whether to enforce strict matching of
+                resource requirements to AWS App Runner supported CPU and
+                memory combinations or approximate the closest matching
+                supported combination.
 
         Returns:
-            Tuple of (cpu, memory) that best matches requirements
-        """
-        valid_combinations = [
-            # (cpu_value, cpu_string, memory_value, memory_string)
-            (0.25, "0.25 vCPU", 0.5, "0.5 GB"),
-            (0.25, "0.25 vCPU", 1.0, "1 GB"),
-            (0.5, "0.5 vCPU", 1.0, "1 GB"),
-            (1.0, "1 vCPU", 2.0, "2 GB"),
-            (1.0, "1 vCPU", 3.0, "3 GB"),
-            (1.0, "1 vCPU", 4.0, "4 GB"),
-            (2.0, "2 vCPU", 4.0, "4 GB"),
-            (2.0, "2 vCPU", 6.0, "6 GB"),
-            (4.0, "4 vCPU", 8.0, "8 GB"),
-            (4.0, "4 vCPU", 10.0, "10 GB"),
-            (4.0, "4 vCPU", 12.0, "12 GB"),
-        ]
+            Tuple of (cpu, memory) that best matches requirements, in AWS App
+            Runner format.
 
+        Raises:
+            ValueError: If the requested resource requirements cannot be matched
+                to any of the supported combinations for the AWS App Runner
+                service and strict_resource_matching is True.
+        """
         if requested_cpu is None and requested_memory_gb is None:
-            return DEFAULT_CPU, DEFAULT_MEMORY
+            return f"{DEFAULT_CPU:g} vCPU", f"{DEFAULT_MEMORY:g} GB"
+
+        sorted_combinations = sorted(resource_combinations)
 
         best_combination = None
+        exact_match = False
         best_score = float("inf")  # Lower is better
 
-        for cpu_val, cpu_str, mem_val, mem_str in valid_combinations:
+        for cpu_val, mem_val in sorted_combinations:
             cpu_ok = requested_cpu is None or cpu_val >= requested_cpu
             mem_ok = (
                 requested_memory_gb is None or mem_val >= requested_memory_gb
             )
+            exact_match = (
+                cpu_val == requested_cpu and mem_val == requested_memory_gb
+            )
+            if exact_match:
+                best_combination = (cpu_val, mem_val)
+                break
 
             if cpu_ok and mem_ok:
                 # Calculate "waste" score (how much over-provisioning)
@@ -1114,13 +1140,27 @@ class AWSDeployer(ContainerizedDeployer):
 
                 if score < best_score:
                     best_score = score
-                    best_combination = (cpu_str, mem_str)
+                    best_combination = (cpu_val, mem_val)
 
         # If no combination satisfies requirements, use the highest available
         if best_combination is None:
-            return "4 vCPU", "12 GB"
+            best_combination = sorted_combinations[-1]
 
-        return best_combination
+        result = (
+            f"{best_combination[0]:g} vCPU",
+            f"{best_combination[1]:g} GB",
+        )
+
+        if strict_resource_matching and not exact_match:
+            raise ValueError(
+                f"Requested resource requirements ({requested_cpu} vCPU, "
+                f"{requested_memory_gb} GB) cannot be matched to any of the "
+                f"supported combinations for the AWS App Runner service. "
+                f"The closest matching combination is {result[0]} and "
+                f"{result[1]}."
+            )
+
+        return result
 
     def _convert_scaling_settings_to_aws_format(
         self,
@@ -1132,22 +1172,23 @@ class AWSDeployer(ContainerizedDeployer):
             resource_settings: The resource settings from pipeline configuration.
 
         Returns:
-            Tuple of (min_size, max_size, max_concurrency) for AWS App Runner.
+            Tuple of (min_replicas, max_replicas, max_concurrency) for AWS App
+            Runner.
         """
-        min_size = DEFAULT_MIN_SIZE
+        min_replicas = DEFAULT_MIN_REPLICAS
         if resource_settings.min_replicas is not None:
-            min_size = max(
+            min_replicas = max(
                 1, resource_settings.min_replicas
             )  # AWS App Runner min is 1
 
-        max_size = DEFAULT_MAX_SIZE
+        max_replicas = DEFAULT_MAX_REPLICAS
         if resource_settings.max_replicas is not None:
             # ResourceSettings uses 0 to mean "no limit"
             # AWS App Runner needs a specific value, so we use the platform maximum
             if resource_settings.max_replicas == 0:
-                max_size = AWS_APP_RUNNER_MAX_SIZE
+                max_replicas = AWS_APP_RUNNER_MAX_SIZE
             else:
-                max_size = min(
+                max_replicas = min(
                     resource_settings.max_replicas, AWS_APP_RUNNER_MAX_SIZE
                 )
 
@@ -1158,7 +1199,7 @@ class AWSDeployer(ContainerizedDeployer):
                 AWS_APP_RUNNER_MAX_CONCURRENCY,
             )
 
-        return min_size, max_size, max_concurrency
+        return min_replicas, max_replicas, max_concurrency
 
     def do_provision_deployment(
         self,
@@ -1199,6 +1240,8 @@ class AWSDeployer(ContainerizedDeployer):
 
         cpu, memory = self._convert_resource_settings_to_aws_format(
             resource_settings,
+            self.config.resource_combinations,
+            settings.strict_resource_matching,
         )
         min_size, max_size, max_concurrency = (
             self._convert_scaling_settings_to_aws_format(
@@ -1258,12 +1301,14 @@ class AWSDeployer(ContainerizedDeployer):
         elif "amazonaws.com" in image:
             image_repo_type = "ECR"
         else:
-            image_repo_type = "ECR_PUBLIC"  # Default fallback
-            logger.warning(
-                "App Runner only supports ECR and ECR public repositories and "
-                f"the container image '{image}' does not appear to be hosted on "
-                "either of them. Proceeding with the deployment, but be warned "
-                "that the App Runner service will probably fail."
+            raise DeploymentProvisionError(
+                f"AWS App Runner only supports Amazon ECR and ECR Public "
+                f"repositories. The container image '{image}' does not appear "
+                f"to be hosted on either platform. Supported image repositories:\n"
+                f"- ECR Public: public.ecr.aws/...\n"
+                f"- ECR Private: *.amazonaws.com/...\n"
+                f"Please push your image to one of these registries before "
+                f"deploying to App Runner."
             )
 
         image_config: Dict[str, Any] = {

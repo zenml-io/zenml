@@ -63,7 +63,7 @@ def build_params_model_from_snapshot(
         logger.error(f"Failed to load pipeline class from snapshot: {e}")
         raise RuntimeError(f"Failed to load pipeline class from snapshot: {e}")
 
-    model = pipeline_class.get_parameters_model()
+    model = pipeline_class._compute_input_model()
     if not model:
         raise RuntimeError(
             f"Failed to construct parameters model from pipeline `{snapshot.pipeline_configuration.name}`."

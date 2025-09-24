@@ -650,17 +650,8 @@ class Compiler:
             )
             for output_artifact in pipeline._output_artifacts
         ]
-        try:
-            output_schema = pipeline._compute_output_schema()
-        except Exception as e:
-            logger.warning("Failed to compute pipeline output schema: %s", e)
-            output_schema = None
-
-        parameters_model = pipeline.get_parameters_model()
-        if parameters_model:
-            input_schema = parameters_model.model_json_schema()
-        else:
-            input_schema = None
+        input_schema = pipeline._compute_input_schema()
+        output_schema = pipeline._compute_output_schema()
 
         return PipelineSpec(
             steps=step_specs,

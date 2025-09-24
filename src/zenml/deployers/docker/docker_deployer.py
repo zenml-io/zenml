@@ -414,8 +414,11 @@ class DockerDeployer(ContainerizedDeployer):
                 auto_remove=False,
                 ports=ports,
                 labels={
-                    "zenml-deployment-uuid": str(deployment.id),
+                    "zenml-deployment-id": str(deployment.id),
                     "zenml-deployment-name": deployment.name,
+                    "zenml-deployer-name": str(self.name),
+                    "zenml-deployer-id": str(self.id),
+                    "managed-by": "zenml",
                 },
                 extra_hosts=extra_hosts,
                 **run_args,

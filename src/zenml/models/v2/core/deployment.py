@@ -100,6 +100,8 @@ class DeploymentUpdate(BaseUpdate):
     status: Optional[str] = Field(
         default=None,
         title="The new status of the deployment.",
+        description="Possible values are: "
+        f"{', '.join(DeploymentStatus.values())}",
     )
     deployment_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -143,7 +145,8 @@ class DeploymentResponseBody(ProjectScopedResponseBody):
     status: Optional[str] = Field(
         default=None,
         title="The status of the deployment.",
-        description="Current operational status of the deployment.",
+        description="Current operational status of the deployment. Possible "
+        f"values are: {', '.join(DeploymentStatus.values())}",
     )
 
 

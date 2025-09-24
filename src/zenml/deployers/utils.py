@@ -25,7 +25,6 @@ from zenml.deployers.exceptions import (
     DeploymentHTTPError,
     DeploymentNotFoundError,
     DeploymentProvisionError,
-    DeploymentSchemaNotFoundError,
 )
 from zenml.enums import DeploymentStatus
 from zenml.models import DeploymentResponse
@@ -45,25 +44,18 @@ def get_deployment_input_schema(
         The schema for the deployment's input parameters.
 
     Raises:
-        DeploymentSchemaNotFoundError: If the deployment has no associated
-            snapshot, pipeline spec, or parameters schema.
+        RuntimeError: If the deployment has no associated input schema.
     """
-    if not deployment.snapshot:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated snapshot."
-        )
+    if (
+        deployment.snapshot
+        and deployment.snapshot.pipeline_spec
+        and deployment.snapshot.pipeline_spec.input_schema
+    ):
+        return deployment.snapshot.pipeline_spec.input_schema
 
-    if not deployment.snapshot.pipeline_spec:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated pipeline spec."
-        )
-
-    if not deployment.snapshot.pipeline_spec.input_schema:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated parameters schema."
-        )
-
-    return deployment.snapshot.pipeline_spec.input_schema
+    raise RuntimeError(
+        f"Deployment {deployment.name} has no associated input schema."
+    )
 
 
 def get_deployment_output_schema(
@@ -78,25 +70,18 @@ def get_deployment_output_schema(
         The schema for the deployment's output parameters.
 
     Raises:
-        DeploymentSchemaNotFoundError: If the deployment has no associated
-            snapshot, pipeline spec, or output schema.
+        RuntimeError: If the deployment has no associated output schema.
     """
-    if not deployment.snapshot:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated snapshot."
-        )
+    if (
+        deployment.snapshot
+        and deployment.snapshot.pipeline_spec
+        and deployment.snapshot.pipeline_spec.output_schema
+    ):
+        return deployment.snapshot.pipeline_spec.output_schema
 
-    if not deployment.snapshot.pipeline_spec:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated pipeline spec."
-        )
-
-    if not deployment.snapshot.pipeline_spec.output_schema:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated output schema."
-        )
-
-    return deployment.snapshot.pipeline_spec.output_schema
+    raise RuntimeError(
+        f"Deployment {deployment.name} has no associated output schema."
+    )
 
 
 def get_deployment_invocation_example(

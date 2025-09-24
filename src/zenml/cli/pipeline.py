@@ -1147,7 +1147,6 @@ def deploy_snapshot(
         pipeline_name_or_id: The name or ID of the pipeline.
         deployment_name_or_id: Name or ID of the deployment to use for the
             pipeline.
-        config_path: Path to pipeline configuration file.
         update: If True, update the deployment with the same name if it
             already exists.
         overtake: If True, update the deployment with the same name if

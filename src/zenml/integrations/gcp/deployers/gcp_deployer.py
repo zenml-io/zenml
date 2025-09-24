@@ -382,7 +382,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         """
         return {
             **settings.labels,
-            "zenml-deployment-uuid": str(deployment.id),
+            "zenml-deployment-id": str(deployment.id),
             "zenml-deployment-name": deployment.name,
             "zenml-deployer-name": str(self.name),
             "zenml-deployer-id": str(self.id),
@@ -431,6 +431,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         # Remove consecutive hyphens
         sanitized = re.sub(r"-+", "-", sanitized)
+
+        # Remove leading and trailing hyphens before truncating
+        sanitized = re.sub(
+            r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$",
+            "",
+            sanitized,
+        )
 
         # Truncate to fit within max_length character limit including suffix
         max_base_length = (
@@ -492,7 +499,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             The Secret Manager secret name.
         """
         deployment_id_short = str(deployment_id)[:8]
-        raw_name = f"{prefix}_{env_var_name}"
+        raw_name = f"{prefix}{env_var_name}"
 
         return self._sanitize_name(
             raw_name, deployment_id_short, max_length=255
