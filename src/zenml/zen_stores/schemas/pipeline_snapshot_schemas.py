@@ -539,12 +539,16 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             latest_run = self.latest_run
+            latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
+                latest_run_user=latest_run_user.to_model()
+                if latest_run_user
+                else None,
             )
 
         return PipelineSnapshotResponse(

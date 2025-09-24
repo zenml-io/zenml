@@ -55,6 +55,7 @@ from zenml.models.v2.core.pipeline_build import (
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -322,6 +323,10 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
         default=None,
         title="The status of the latest run of the snapshot.",
     )
+    latest_run_user: Optional[UserResponse] = Field(
+        default=None,
+        title="The user that created the latest run of the snapshot.",
+    )
 
 
 class PipelineSnapshotResponse(
@@ -557,6 +562,15 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_resources().latest_run_status
+
+    @property
+    def latest_run_user(self) -> Optional[UserResponse]:
+        """The `latest_run_user` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_run_user
 
 
 # ------------------ Filter Model ------------------
