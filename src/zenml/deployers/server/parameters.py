@@ -73,6 +73,6 @@ def build_params_model_from_snapshot(
         logger.error(message)
         raise RuntimeError(message)
     else:
-            logger.debug(message)
+        logger.debug(message)
 
     return model
