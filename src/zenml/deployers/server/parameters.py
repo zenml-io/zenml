@@ -37,15 +37,14 @@ def build_params_model_from_snapshot(
 
     Args:
         snapshot: The snapshot to derive the model from.
-        strict: Whether to raise an error if the model cannot be constructed.
 
     Returns:
         A Pydantic `BaseModel` subclass that validates the pipeline parameters,
-        or None if the model could not be constructed.
+        or None if the snapshot lacks a valid `pipeline_spec.source`.
 
     Raises:
-        RuntimeError: If the model cannot be constructed and `strict` is True.
-        Exception: If loading the pipeline class fails when `strict` is True.
+        RuntimeError: If the pipeline class cannot be loaded or if no
+            parameters model can be constructed for the pipeline.
     """
     if not snapshot.pipeline_spec or not snapshot.pipeline_spec.source:
         msg = (
@@ -66,11 +65,7 @@ def build_params_model_from_snapshot(
 
     model = pipeline_class._compute_input_model()
     if not model:
-        message = (
-            f"Failed to construct parameters model from pipeline "
-            f"`{snapshot.pipeline_configuration.name}`."
+        raise RuntimeError(
+            f"Failed to construct parameters model from pipeline `{snapshot.pipeline_configuration.name}`."
         )
-        logger.error(message)
-        raise RuntimeError(message)
-
     return model

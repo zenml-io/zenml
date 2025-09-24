@@ -17,7 +17,7 @@ import contextvars
 import time
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -217,11 +217,12 @@ class PipelineDeploymentService:
 
         placeholder_run: Optional[PipelineRunResponse] = None
         try:
-            placeholder_run = self._prepare_execute_with_orchestrator()
-
             # Execute pipeline and get runtime outputs captured internally
-            captured_outputs = self._execute_with_orchestrator(
-                placeholder_run, parameters, request.use_in_memory
+            placeholder_run, captured_outputs = (
+                self._execute_with_orchestrator(
+                    resolved_params=parameters,
+                    use_in_memory=request.use_in_memory,
+                )
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
@@ -340,19 +341,17 @@ class PipelineDeploymentService:
 
     def _execute_with_orchestrator(
         self,
-        placeholder_run: PipelineRunResponse,
         resolved_params: Dict[str, Any],
         use_in_memory: bool,
-    ) -> Optional[Dict[str, Dict[str, Any]]]:
+    ) -> Tuple[PipelineRunResponse, Optional[Dict[str, Dict[str, Any]]]]:
         """Run the snapshot via the orchestrator and return the concrete run.
 
         Args:
-            placeholder_run: The placeholder run to execute the pipeline on.
             resolved_params: Normalized pipeline parameters.
             use_in_memory: Whether runtime should capture in-memory outputs.
 
         Returns:
-            The in-memory outputs of the pipeline execution.
+            A tuple of (placeholder_run, in-memory outputs of the execution).
 
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
@@ -417,9 +416,7 @@ class PipelineDeploymentService:
         finally:
             # Always stop deployment runtime context
             runtime.stop()
-
-        # Store captured outputs for the caller to use
-        return captured_outputs
+        return placeholder_run, captured_outputs
 
     def _execute_init_hook(self) -> None:
         """Execute init hook if present.

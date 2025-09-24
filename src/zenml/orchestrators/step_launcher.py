@@ -26,6 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
+from zenml.deployers.server import runtime
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
@@ -438,7 +439,10 @@ class StepLauncher:
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=self._stack, step=self._step
+            step_run=step_run,
+            stack=self._stack,
+            step=self._step,
+            create_dirs=not runtime.should_use_in_memory_mode(),
         )
 
         start_time = time.time()
