@@ -434,8 +434,6 @@ def deployment_snapshot_request_from_source_snapshot(
 
     if source_snapshot.stack is None:
         raise ValueError("Source snapshot stack is None")
-    if source_snapshot.pipeline is None:
-        raise ValueError("Source snapshot pipeline is None")
 
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
