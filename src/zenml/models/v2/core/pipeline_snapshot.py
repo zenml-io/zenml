@@ -599,6 +599,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "stack",
         "runnable",
         "deployable",
+        "deployed",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -650,6 +651,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether the snapshot is deployable.",
     )
+    deployed: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is deployed.",
+    )
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -662,9 +667,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlmodel import and_, col, select
+        from sqlmodel import and_, col, not_, select
 
         from zenml.zen_stores.schemas import (
+            DeploymentSchema,
             PipelineBuildSchema,
             PipelineSchema,
             PipelineSnapshotSchema,
@@ -735,6 +741,20 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             )
 
             custom_filters.append(deployable_filter)
+
+        if self.deployed is not None:
+            deployment_exists = (
+                select(DeploymentSchema.id)
+                .where(
+                    DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id
+                )
+                .exists()
+            )
+            if self.deployed is True:
+                deployed_filter = and_(deployment_exists)
+            else:
+                deployed_filter = and_(not_(deployment_exists))
+            custom_filters.append(deployed_filter)
 
         return custom_filters
 

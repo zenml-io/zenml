@@ -107,7 +107,7 @@ class DeploymentSchema(NamedSchema, table=True):
         nullable=True,
     )
     snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
-        back_populates="deployments",
+        back_populates="deployment",
     )
 
     deployer_id: Optional[UUID] = build_foreign_key_field(
