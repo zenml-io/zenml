@@ -398,7 +398,7 @@ class PipelineDeploymentService:
             request_id=str(uuid4()),
             snapshot=deployment_snapshot,
             parameters=resolved_params,
-            use_in_memory=use_in_memory,
+            skip_artifact_materialization=use_in_memory,
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None

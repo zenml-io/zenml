@@ -673,7 +673,7 @@ class StepRunner:
                 materializer_class = materializer_registry[data_type]
 
             # Choose materializer class upfront based on serving mode
-            if runtime.should_use_in_memory_mode():
+            if runtime.should_skip_artifact_materialization():
                 materializer_class = InMemoryMaterializer
             uri = output_artifact_uris[output_name]
             artifact_config = output_annotations[output_name].artifact_config
