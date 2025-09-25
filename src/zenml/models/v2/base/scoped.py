@@ -555,6 +555,7 @@ class TaggableFilter(BaseFilter):
             from zenml.zen_stores.schemas import (
                 ArtifactSchema,
                 ArtifactVersionSchema,
+                DeploymentSchema,
                 ModelSchema,
                 ModelVersionSchema,
                 PipelineRunSchema,
@@ -574,6 +575,7 @@ class TaggableFilter(BaseFilter):
                 PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
                 RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
                 PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
+                DeploymentSchema: TaggableResourceTypes.DEPLOYMENT,
             }
 
             sorted_tags = (

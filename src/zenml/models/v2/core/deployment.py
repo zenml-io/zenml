@@ -38,15 +38,19 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.component import ComponentResponse
+    from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_snapshot import (
         PipelineSnapshotResponse,
     )
+    from zenml.models.v2.core.tag import TagResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -85,6 +89,10 @@ class DeploymentRequest(ProjectScopedRequest):
         title="The auth key of the deployment.",
         description="The auth key of the deployment.",
     )
+    tags: Optional[List[Union[str, Tag]]] = Field(
+        default=None,
+        title="Tags of the deployment.",
+    )
 
 
 # ------------------ Update Model ------------------
@@ -117,6 +125,12 @@ class DeploymentUpdate(BaseUpdate):
     auth_key: Optional[str] = Field(
         default=None,
         title="The new auth key of the deployment.",
+    )
+    add_tags: Optional[List[str]] = Field(
+        default=None, title="New tags to add to the deployment."
+    )
+    remove_tags: Optional[List[str]] = Field(
+        default=None, title="Tags to remove from the deployment."
     )
 
     @classmethod
@@ -181,6 +195,14 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
         default=None,
         title="The deployer.",
         description="The deployer component managing this deployment.",
+    )
+    pipeline: Optional["PipelineResponse"] = Field(
+        default=None,
+        title="The pipeline.",
+        description="The pipeline being deployed.",
+    )
+    tags: List["TagResponse"] = Field(
+        title="Tags associated with the deployment.",
     )
 
 
@@ -266,6 +288,23 @@ class DeploymentResponse(
         return self.get_resources().deployer
 
     @property
+    def pipeline(self) -> Optional["PipelineResponse"]:
+        """The pipeline.
+
+        Returns:
+            The pipeline.
+        """
+        return self.get_resources().pipeline
+
+    def tags(self) -> List["TagResponse"]:
+        """The tags of the deployment.
+
+        Returns:
+            The tags of the deployment.
+        """
+        return self.get_resources().tags
+
+    @property
     def snapshot_id(self) -> Optional[UUID]:
         """The pipeline snapshot ID.
 
@@ -293,12 +332,21 @@ class DeploymentResponse(
 # ------------------ Filter Model ------------------
 
 
-class DeploymentFilter(ProjectScopedFilter):
+class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of deployments."""
 
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline",
+    ]
+    CLI_EXCLUDE_FIELDS = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(

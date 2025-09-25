@@ -847,14 +847,14 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 1
     custom_version = custom_versions[-1]
 
-    assert run_1.model_version_id == implicit_version.id
+    assert run_1.model_version.id == implicit_version.id
     for name, step_ in run_1.steps.items():
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_1.id
     )
@@ -870,14 +870,14 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 2
     custom_version = custom_versions[-1]
 
-    assert run_2.model_version_id == implicit_version.id
+    assert run_2.model_version.id == implicit_version.id
     for name, step_ in run_2.steps.items():
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_2.id
     )
@@ -894,16 +894,16 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 3
     custom_version = custom_versions[-1]
 
-    assert run_3.model_version_id == implicit_version.id
+    assert run_3.model_version.id == implicit_version.id
     for name, step_ in run_3.steps.items():
         assert step_.status == ExecutionStatus.CACHED
 
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_3.id
     )
@@ -952,10 +952,10 @@ def test_model_version_fetching_by_stage(clean_client: "Client"):
     mv_1.set_stage("production")
 
     run = _fetch_by_version_number_pipeline()
-    assert run.model_version_id == mv_1.id
+    assert run.model_version.id == mv_1.id
 
     run = _fetch_latest_version_pipeline()
-    assert run.model_version_id == mv_2.id
+    assert run.model_version.id == mv_2.id
 
     run = _fetch_prod_version_pipeline()
-    assert run.model_version_id == mv_1.id
+    assert run.model_version.id == mv_1.id

@@ -79,6 +79,32 @@ try:
 except ImportError:
     HAS_REQUESTS = False
 
+# ------------------------------------------------------------------------------
+# Centralized exceptions for HTTP status codes we consider acceptable for
+# specific URLs or domains during link validation.
+#
+# How to extend:
+#   - To allow particular statuses for a *single* URL, add an entry to
+#     EXEMPT_URL_STATUS with the normalized URL (no trailing slash) and a set
+#     of allowed status codes.
+#   - To allow particular statuses for an entire *domain*, add an entry to
+#     EXEMPT_DOMAIN_STATUS with the domain suffix (e.g. "example.com") and a
+#     set of allowed status codes. Matching uses host.endswith(domain).
+# ------------------------------------------------------------------------------
+
+EXEMPT_URL_STATUS: Dict[str, set] = {
+    # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
+    "https://huggingface.co/settings/tokens": {403},
+}
+
+EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
+    # Some HashiCorp properties rate-limit automated checks.
+    "hashicorp.com": {429},
+    "developer.hashicorp.com": {429},
+    "terraform.io": {429},
+    "www.terraform.io": {429},
+}
+
 # Default policies for troublesome domains that frequently rate-limit automated traffic.
 # These defaults can be extended via CLI flags.
 DEFAULT_IGNORE_429_DOMAINS = {
@@ -94,6 +120,37 @@ DEFAULT_NO_HEAD_DOMAINS = {
 DEFAULT_USER_AGENT = (
     "ZenML-LinkChecker/1.0 (+https://github.com/zenml-io/zenml)"
 )
+
+
+def is_exception_status(cleaned_url: str, status_code: int) -> bool:
+    """
+    Return True if (cleaned_url, status_code) should be treated as valid based
+    on configured exemptions.
+
+    Rules:
+      - Exact-URL exemptions: compared after stripping any trailing slash.
+      - Domain exemptions: suffix match against the URL hostname.
+    """
+    if not cleaned_url.startswith(("http://", "https://")):
+        return False
+
+    # Exact URL exemptions (normalize by removing trailing slash)
+    normalized = cleaned_url.rstrip("/")
+    allowed = EXEMPT_URL_STATUS.get(normalized)
+    if allowed and status_code in allowed:
+        return True
+
+    # Domain exemptions
+    try:
+        host = urlparse(cleaned_url).hostname or ""
+    except Exception:
+        host = ""
+
+    for domain, codes in EXEMPT_DOMAIN_STATUS.items():
+        if host.endswith(domain) and status_code in codes:
+            return True
+
+    return False
 
 
 def find_markdown_files(directory: str) -> List[str]:
@@ -334,7 +391,11 @@ def check_link_validity(
                 cleaned_url, timeout=timeout, allow_redirects=True
             )
 
-        # Soft-pass 429 for configured domains
+        # Check configured exception rules (domain- and URL-specific)
+        if is_exception_status(cleaned_url, response.status_code):
+            return (url, True, None, response.status_code)
+
+        # Also check for 429 soft-pass for configured domains (backward compatibility)
         if response.status_code == 429 and ignore_429:
             return (
                 url,

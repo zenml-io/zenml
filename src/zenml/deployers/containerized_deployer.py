@@ -19,7 +19,9 @@ from typing import (
     Set,
 )
 
+import zenml
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     DEPLOYER_DOCKER_IMAGE_KEY,
 )
@@ -69,6 +71,12 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         """
         requirements = super().requirements
         requirements.update(self.CONTAINER_REQUIREMENTS)
+
+        if self.config.is_local and GlobalConfiguration().uses_sql_store:
+            # If we're directly connected to a DB, we need to install the
+            # `local` extra in the Docker image to include the DB dependencies.
+            requirements.add(f"'zenml[local]=={zenml.__version__}'")
+
         return requirements
 
     def get_docker_builds(
