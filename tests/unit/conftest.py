@@ -632,6 +632,7 @@ def sample_snapshot_response_model(
             created=datetime.now(),
             updated=datetime.now(),
             runnable=True,
+            deployable=True,
         ),
         metadata=PipelineSnapshotResponseMetadata(
             run_name_template="",
