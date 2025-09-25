@@ -181,7 +181,7 @@ class PipelineRunContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         for run in self.runs:
             try:
-                self.client.delete_snapshot(run.snapshot_id)
+                self.client.delete_snapshot(run.snapshot.id)
             except KeyError:
                 pass
             try:

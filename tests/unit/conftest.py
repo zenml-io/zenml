@@ -638,9 +638,9 @@ def sample_snapshot_response_model(
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
             server_version="0.12.3",
-            pipeline=create_pipeline_model(),
         ),
         resources=PipelineSnapshotResponseResources(
+            pipeline=create_pipeline_model(),
             user=sample_user_model,
         ),
     )

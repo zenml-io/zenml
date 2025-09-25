@@ -37,6 +37,7 @@ from zenml.enums import (
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    PipelineResponse,
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,
@@ -272,23 +273,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         from zenml.zen_stores.schemas import ModelVersionSchema
 
-        options = [
-            selectinload(jl_arg(PipelineRunSchema.snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.pipeline)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.stack)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.build)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.schedule)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.snapshot)).joinedload(
-                jl_arg(PipelineSnapshotSchema.code_reference)
-            ),
-        ]
+        options = []
 
         # if include_metadata:
         #     options.extend(
@@ -304,6 +289,28 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(
+                        jl_arg(PipelineSnapshotSchema.source_snapshot)
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(
+                        jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
@@ -493,29 +500,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.snapshot.pipeline_configuration
             )
             client_environment = json.loads(self.snapshot.client_environment)
-
-            stack = (
-                self.snapshot.stack.to_model() if self.snapshot.stack else None
-            )
-            pipeline = (
-                self.snapshot.pipeline.to_model()
-                if self.snapshot.pipeline
-                else None
-            )
-            build = (
-                self.snapshot.build.to_model() if self.snapshot.build else None
-            )
-            schedule = (
-                self.snapshot.schedule.to_model()
-                if self.snapshot.schedule
-                else None
-            )
-            code_reference = (
-                self.snapshot.code_reference.to_model()
-                if self.snapshot.code_reference
-                else None
-            )
-
         elif self.pipeline_configuration is not None:
             config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
@@ -525,13 +509,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.client_environment
                 else {}
             )
-
-            stack = self.stack.to_model() if self.stack else None
-            pipeline = self.pipeline.to_model() if self.pipeline else None
-            build = self.build.to_model() if self.build else None
-            schedule = self.schedule.to_model() if self.schedule else None
-            code_reference = None
-
         else:
             raise RuntimeError(
                 "Pipeline run model creation has failed. Each pipeline run "
@@ -546,20 +523,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
             status_reason=self.status_reason,
-            stack=stack,
-            pipeline=pipeline,
-            build=build,
-            schedule=schedule,
-            code_reference=code_reference,
-            trigger_execution=(
-                self.trigger_execution.to_model()
-                if self.trigger_execution
-                else None
-            ),
             created=self.created,
             updated=self.updated,
-            snapshot_id=self.snapshot_id,
-            model_version_id=self.model_version_id,
             in_progress=self.in_progress,
         )
         metadata = None
@@ -597,9 +562,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 template_id=self.snapshot.template_id
                 if self.snapshot
                 else None,
-                source_snapshot_id=self.snapshot.source_snapshot_id
-                if self.snapshot
-                else None,
                 is_templatable=is_templatable,
             )
 
@@ -613,9 +575,57 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if log_entry.source == "client"
             ]
 
+            if self.snapshot:
+                source_snapshot = (
+                    self.snapshot.source_snapshot.to_model()
+                    if self.snapshot.source_snapshot
+                    else None
+                )
+                stack = (
+                    self.snapshot.stack.to_model()
+                    if self.snapshot.stack
+                    else None
+                )
+                pipeline: Optional["PipelineResponse"] = (
+                    self.snapshot.pipeline.to_model()
+                )
+                build = (
+                    self.snapshot.build.to_model()
+                    if self.snapshot.build
+                    else None
+                )
+                schedule = (
+                    self.snapshot.schedule.to_model()
+                    if self.snapshot.schedule
+                    else None
+                )
+                code_reference = (
+                    self.snapshot.code_reference.to_model()
+                    if self.snapshot.code_reference
+                    else None
+                )
+            else:
+                source_snapshot = None
+                stack = self.stack.to_model() if self.stack else None
+                pipeline = self.pipeline.to_model() if self.pipeline else None
+                build = self.build.to_model() if self.build else None
+                schedule = self.schedule.to_model() if self.schedule else None
+                code_reference = None
+
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
                 snapshot=self.snapshot.to_model() if self.snapshot else None,
+                source_snapshot=source_snapshot,
+                stack=stack,
+                pipeline=pipeline,
+                build=build,
+                schedule=schedule,
+                code_reference=code_reference,
+                trigger_execution=(
+                    self.trigger_execution.to_model()
+                    if self.trigger_execution
+                    else None
+                ),
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
