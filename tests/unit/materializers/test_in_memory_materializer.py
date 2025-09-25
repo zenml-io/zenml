@@ -14,7 +14,9 @@ def test_in_memory_materializer_uses_runtime(monkeypatch) -> None:
     from zenml.deployers.server import runtime
 
     monkeypatch.setattr(runtime, "is_active", lambda: True)
-    monkeypatch.setattr(runtime, "should_use_in_memory_mode", lambda: True)
+    monkeypatch.setattr(
+        runtime, "should_skip_artifact_materialization", lambda: True
+    )
     monkeypatch.setattr(runtime, "put_in_memory_data", stored.__setitem__)
     monkeypatch.setattr(runtime, "get_in_memory_data", stored.get)
 

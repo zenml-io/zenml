@@ -34,7 +34,7 @@ class _DeploymentState(BaseModel):
     model_config = {"extra": "forbid"}
 
     active: bool = False
-    use_in_memory: bool = False
+    skip_artifact_materialization: bool = False
     request_id: Optional[str] = None
     snapshot_id: Optional[str] = None
     pipeline_parameters: Dict[str, Any] = Field(default_factory=dict)
@@ -50,7 +50,7 @@ class _DeploymentState(BaseModel):
         self.snapshot_id = None
         self.pipeline_parameters.clear()
         self.outputs.clear()
-        self.use_in_memory = False
+        self.skip_artifact_materialization = False
         self.in_memory_data.clear()
 
 
@@ -72,7 +72,7 @@ def start(
     request_id: str,
     snapshot: PipelineSnapshotResponse,
     parameters: Dict[str, Any],
-    use_in_memory: bool = False,
+    skip_artifact_materialization: bool = False,
 ) -> None:
     """Initialize deployment state for the current request context.
 
@@ -80,7 +80,7 @@ def start(
         request_id: The ID of the request.
         snapshot: The snapshot to deploy.
         parameters: The parameters to deploy.
-        use_in_memory: Whether to use in-memory mode.
+        skip_artifact_materialization: Whether to skip artifact materialization.
     """
     state = _DeploymentState()
     state.active = True
@@ -88,7 +88,7 @@ def start(
     state.snapshot_id = str(snapshot.id)
     state.pipeline_parameters = dict(parameters or {})
     state.outputs = {}
-    state.use_in_memory = use_in_memory
+    state.skip_artifact_materialization = skip_artifact_materialization
     _deployment_context.set(state)
 
 
@@ -131,15 +131,15 @@ def get_outputs() -> Dict[str, Dict[str, Any]]:
     return dict(_get_context().outputs)
 
 
-def should_use_in_memory_mode() -> bool:
-    """Check if the current request should use in-memory mode.
+def should_skip_artifact_materialization() -> bool:
+    """Check if the current request should skip artifact materialization.
 
     Returns:
-        True if in-memory mode is enabled for this request.
+        True if artifact materialization is skipped for this request.
     """
     if is_active():
         state = _get_context()
-        return state.use_in_memory
+        return state.skip_artifact_materialization
     return False
 
 

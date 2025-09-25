@@ -219,8 +219,8 @@ class TestServingRuntimeContext:
             use_in_memory=True,
         )
 
-        assert runtime.should_use_in_memory_mode() is True
-        assert runtime.should_use_in_memory_mode() is True
+        assert runtime.should_skip_artifact_materialization() is True
+        assert runtime.should_skip_artifact_materialization() is True
 
         runtime.stop()
 
@@ -232,7 +232,7 @@ class TestServingRuntimeContext:
             use_in_memory=False,
         )
 
-        assert runtime.should_use_in_memory_mode() is False
+        assert runtime.should_skip_artifact_materialization() is False
 
         runtime.stop()
 
@@ -243,11 +243,11 @@ class TestServingRuntimeContext:
             parameters={},
         )
 
-        assert runtime.should_use_in_memory_mode() is False
+        assert runtime.should_skip_artifact_materialization() is False
 
     def test_use_in_memory_inactive_context(self):
         """Test use_in_memory functions when context is inactive."""
-        assert runtime.should_use_in_memory_mode() is False
+        assert runtime.should_skip_artifact_materialization() is False
 
     def test_context_reset_clears_all_data(self):
         """Test that context reset clears all stored data."""
@@ -268,7 +268,7 @@ class TestServingRuntimeContext:
         # Verify data is stored
         assert runtime.is_active()
         assert runtime.get_outputs() != {}
-        assert runtime.should_use_in_memory_mode() is True
+        assert runtime.should_skip_artifact_materialization() is True
 
         # Stop context (triggers reset)
         runtime.stop()
@@ -285,4 +285,4 @@ class TestServingRuntimeContext:
 
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
-        assert runtime.should_use_in_memory_mode() is False
+        assert runtime.should_skip_artifact_materialization() is False

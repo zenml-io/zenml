@@ -1808,7 +1808,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             defaults: Dict[str, Any] = self._parameters
             model_args: Dict[str, Any] = {}
             for name, param in entrypoint_definition.inputs.items():
-                model_args[name] = (param.annotation, defaults.get(name, ...))
+                if name in defaults:
+                    default_value = defaults[name]
+                elif param.default is not inspect.Parameter.empty:
+                    default_value = param.default
+                else:
+                    default_value = ...
+
+                model_args[name] = (param.annotation, default_value)
 
             model_args["__config__"] = ConfigDict(extra="forbid")
             params_model: Type[BaseModel] = create_model(
