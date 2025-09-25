@@ -48,6 +48,7 @@ from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
 )
+from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
@@ -313,6 +314,10 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     """Run snapshot resources."""
 
+    deployment: Optional[DeploymentResponse] = Field(
+        default=None,
+        title="The deployment associated with the snapshot.",
+    )
     tags: List[TagResponse] = Field(
         default=[],
         title="Tags associated with the snapshot.",
@@ -542,6 +547,15 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_metadata().config_template
+
+    @property
+    def deployment(self) -> Optional[DeploymentResponse]:
+        """The `deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().deployment
 
     @property
     def tags(self) -> List[TagResponse]:
