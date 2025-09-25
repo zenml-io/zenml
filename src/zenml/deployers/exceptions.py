@@ -59,9 +59,5 @@ class DeploymentHTTPError(DeployerError):
     """Error raised when an HTTP request to a deployment fails."""
 
 
-class DeploymentSchemaNotFoundError(KeyError, DeployerError):
-    """Error raised when a deployment schema is not found."""
-
-
 class DeploymentInvalidParametersError(DeployerError):
     """Error raised when the parameters for a deployment are invalid."""

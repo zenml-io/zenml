@@ -58,7 +58,11 @@ def generate_artifact_uri(
 
 
 def prepare_output_artifact_uris(
-    step_run: "StepRunResponse", stack: "Stack", step: "Step"
+    step_run: "StepRunResponse",
+    stack: "Stack",
+    step: "Step",
+    *,
+    create_dirs: bool = True,
 ) -> Dict[str, str]:
     """Prepares the output artifact URIs to run the current step.
 
@@ -66,6 +70,7 @@ def prepare_output_artifact_uris(
         step_run: The step run for which to prepare the artifact URIs.
         stack: The stack on which the pipeline is running.
         step: The step configuration.
+        create_dirs: Whether to pre-create directories in the artifact store.
 
     Raises:
         RuntimeError: If an artifact URI already exists.
@@ -75,18 +80,43 @@ def prepare_output_artifact_uris(
     """
     artifact_store = stack.artifact_store
     output_artifact_uris: Dict[str, str] = {}
+
     for output_name in step.config.outputs.keys():
         substituted_output_name = string_utils.format_name_template(
             output_name, substitutions=step_run.config.substitutions
         )
-        artifact_uri = generate_artifact_uri(
-            artifact_store=stack.artifact_store,
-            step_run=step_run,
-            output_name=substituted_output_name,
-        )
-        if artifact_store.exists(artifact_uri):
-            raise RuntimeError("Artifact already exists")
-        artifact_store.makedirs(artifact_uri)
+        if create_dirs:
+            artifact_uri = generate_artifact_uri(
+                artifact_store=artifact_store,
+                step_run=step_run,
+                output_name=substituted_output_name,
+            )
+        else:
+            # Produce a clear in-memory URI that doesn't point to the store.
+            sanitized_output = substituted_output_name
+            for banned_character in [
+                "<",
+                ">",
+                ":",
+                '"',
+                "/",
+                "\\",
+                "|",
+                "?",
+                "*",
+            ]:
+                sanitized_output = sanitized_output.replace(
+                    banned_character, "_"
+                )
+            artifact_uri = (
+                f"memory://{step_run.name}/{sanitized_output}/"
+                f"{step_run.id}/{str(uuid4())[:8]}"
+            )
+
+        if create_dirs:
+            if artifact_store.exists(artifact_uri):
+                raise RuntimeError("Artifact already exists")
+            artifact_store.makedirs(artifact_uri)
         output_artifact_uris[output_name] = artifact_uri
     return output_artifact_uris
 

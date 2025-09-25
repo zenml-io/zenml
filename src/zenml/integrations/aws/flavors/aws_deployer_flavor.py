@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS App Runner deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
 
 from pydantic import Field
 
@@ -73,6 +73,7 @@ class AWSDeployerSettings(BaseDeployerSettings):
     health_check_protocol: str = Field(
         default="TCP",
         description="Health check protocol. Options: 'TCP', 'HTTP'.",
+        pattern="^TCP|HTTP$",
     )
 
     health_check_timeout_seconds: int = Field(
@@ -178,12 +179,78 @@ class AWSDeployerSettings(BaseDeployerSettings):
         "Example: {'LATEST': 80, 'my-stable-revision': 20}",
     )
 
+    # Resource matching
+    strict_resource_matching: bool = Field(
+        default=False,
+        description="Whether to enforce strict matching of resource requirements "
+        "to AWS App Runner supported CPU (vCPU) and memory (GB) combinations. "
+        "When True, raises an error if no exact match is found. When False, "
+        "automatically selects the closest matching supported combination. "
+        "See https://docs.aws.amazon.com/apprunner/latest/dg/architecture.html#architecture.vcpu-memory "
+        "for more details.",
+    )
+
+
+# AWS App Runner supported CPU (vCPU) and memory (GB) combinations
+DEFAULT_RESOURCE_COMBINATIONS = [
+    (
+        0.25,
+        0.5,
+    ),
+    (
+        0.25,
+        1.0,
+    ),
+    (
+        0.5,
+        1.0,
+    ),
+    (
+        1.0,
+        2.0,
+    ),
+    (
+        1.0,
+        3.0,
+    ),
+    (
+        1.0,
+        4.0,
+    ),
+    (
+        2.0,
+        4.0,
+    ),
+    (
+        2.0,
+        6.0,
+    ),
+    (
+        4.0,
+        8.0,
+    ),
+    (
+        4.0,
+        10.0,
+    ),
+    (
+        4.0,
+        12.0,
+    ),
+]
+
 
 class AWSDeployerConfig(
     BaseDeployerConfig,
     AWSDeployerSettings,
 ):
     """Configuration for the AWS App Runner deployer."""
+
+    resource_combinations: List[Tuple[float, float]] = Field(
+        default=DEFAULT_RESOURCE_COMBINATIONS,
+        description="AWS App Runner supported CPU (vCPU), memory (GB) "
+        "combinations.",
+    )
 
     @property
     def is_remote(self) -> bool:

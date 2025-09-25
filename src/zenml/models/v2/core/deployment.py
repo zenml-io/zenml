@@ -16,8 +16,12 @@
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
+    List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -37,10 +41,15 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
     from zenml.models.v2.core.component import ComponentResponse
     from zenml.models.v2.core.pipeline_snapshot import (
         PipelineSnapshotResponse,
     )
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 class DeploymentOperationalState(BaseModel):
@@ -97,7 +106,7 @@ class DeploymentUpdate(BaseUpdate):
         default=None,
         title="The new URL of the deployment.",
     )
-    status: Optional[str] = Field(
+    status: Optional[DeploymentStatus] = Field(
         default=None,
         title="The new status of the deployment.",
     )
@@ -140,7 +149,7 @@ class DeploymentResponseBody(ProjectScopedResponseBody):
         title="The URL of the deployment.",
         description="The HTTP URL where the deployment can be accessed.",
     )
-    status: Optional[str] = Field(
+    status: Optional[DeploymentStatus] = Field(
         default=None,
         title="The status of the deployment.",
         description="Current operational status of the deployment.",
@@ -212,7 +221,7 @@ class DeploymentResponse(
         return self.get_body().url
 
     @property
-    def status(self) -> Optional[str]:
+    def status(self) -> Optional[DeploymentStatus]:
         """The status of the deployment.
 
         Returns:
@@ -287,6 +296,11 @@ class DeploymentResponse(
 class DeploymentFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of deployments."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "pipeline",
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the deployment.",
@@ -299,6 +313,11 @@ class DeploymentFilter(ProjectScopedFilter):
         default=None,
         description="Status of the deployment.",
     )
+    pipeline: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Pipeline associated with the deployment.",
+        union_mode="left_to_right",
+    )
     snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline snapshot ID associated with the deployment.",
@@ -309,3 +328,36 @@ class DeploymentFilter(ProjectScopedFilter):
         description="Deployer ID managing the deployment.",
         union_mode="left_to_right",
     )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import (
+            DeploymentSchema,
+            PipelineSchema,
+            PipelineSnapshotSchema,
+        )
+
+        custom_filters = super().get_custom_filters(table)
+
+        if self.pipeline:
+            pipeline_filter = and_(
+                DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline, table=PipelineSchema
+                ),
+            )
+            custom_filters.append(pipeline_filter)
+
+        return custom_filters

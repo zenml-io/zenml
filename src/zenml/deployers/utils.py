@@ -25,7 +25,6 @@ from zenml.deployers.exceptions import (
     DeploymentHTTPError,
     DeploymentNotFoundError,
     DeploymentProvisionError,
-    DeploymentSchemaNotFoundError,
 )
 from zenml.enums import DeploymentStatus
 from zenml.models import DeploymentResponse
@@ -33,37 +32,56 @@ from zenml.steps.step_context import get_step_context
 from zenml.utils.json_utils import pydantic_encoder
 
 
-def get_deployment_schema(
+def get_deployment_input_schema(
     deployment: DeploymentResponse,
 ) -> Dict[str, Any]:
-    """Get the schema for a deployment.
+    """Get the schema for a deployment's input parameters.
 
     Args:
         deployment: The deployment for which to get the schema.
 
     Returns:
-        The schema for the deployment.
+        The schema for the deployment's input parameters.
 
     Raises:
-        DeploymentSchemaNotFoundError: If the deployment has no associated
-            snapshot, pipeline spec, or parameters schema.
+        RuntimeError: If the deployment has no associated input schema.
     """
-    if not deployment.snapshot:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated snapshot."
-        )
+    if (
+        deployment.snapshot
+        and deployment.snapshot.pipeline_spec
+        and deployment.snapshot.pipeline_spec.input_schema
+    ):
+        return deployment.snapshot.pipeline_spec.input_schema
 
-    if not deployment.snapshot.pipeline_spec:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated pipeline spec."
-        )
+    raise RuntimeError(
+        f"Deployment {deployment.name} has no associated input schema."
+    )
 
-    if not deployment.snapshot.pipeline_spec.input_schema:
-        raise DeploymentSchemaNotFoundError(
-            f"Deployment {deployment.name} has no associated parameters schema."
-        )
 
-    return deployment.snapshot.pipeline_spec.input_schema
+def get_deployment_output_schema(
+    deployment: DeploymentResponse,
+) -> Dict[str, Any]:
+    """Get the schema for a deployment's output parameters.
+
+    Args:
+        deployment: The deployment for which to get the schema.
+
+    Returns:
+        The schema for the deployment's output parameters.
+
+    Raises:
+        RuntimeError: If the deployment has no associated output schema.
+    """
+    if (
+        deployment.snapshot
+        and deployment.snapshot.pipeline_spec
+        and deployment.snapshot.pipeline_spec.output_schema
+    ):
+        return deployment.snapshot.pipeline_spec.output_schema
+
+    raise RuntimeError(
+        f"Deployment {deployment.name} has no associated output schema."
+    )
 
 
 def get_deployment_invocation_example(
@@ -77,7 +95,7 @@ def get_deployment_invocation_example(
     Returns:
         A dictionary containing the example invocation parameters.
     """
-    parameters_schema = get_deployment_schema(deployment)
+    parameters_schema = get_deployment_input_schema(deployment)
 
     properties = parameters_schema.get("properties", {})
 
@@ -209,9 +227,6 @@ def invoke_deployment(
     # Add authorization header if auth_key is present
     if deployment.auth_key:
         headers["Authorization"] = f"Bearer {deployment.auth_key}"
-
-    # TODO: use the current ZenML API token, if any, to authenticate the request
-    # if the deployment requires authentication and allows it.
 
     try:
         step_context = get_step_context()

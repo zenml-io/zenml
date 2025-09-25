@@ -19,11 +19,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, select
 
-from zenml.enums import SecretResourceTypes
+from zenml.enums import SecretResourceTypes, StackComponentType
 from zenml.models import (
     StackRequest,
     StackResponse,
@@ -122,6 +122,38 @@ class StackSchema(NamedSchema, table=True):
             overlaps="secrets",
         ),
     )
+
+    @property
+    def has_deployer(self) -> bool:
+        """If the stack has a deployer component.
+
+        Returns:
+            If the stack has a deployer component.
+        """
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
+            StackCompositionSchema,
+        )
+
+        if session := object_session(self):
+            query = (
+                select(StackComponentSchema.id)
+                .where(
+                    StackComponentSchema.type
+                    == StackComponentType.DEPLOYER.value
+                )
+                .where(
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id
+                )
+                .where(StackCompositionSchema.stack_id == self.id)
+            )
+
+            return session.execute(query).first() is not None
+        else:
+            raise RuntimeError(
+                "Missing DB session to check if stack has a deployer component."
+            )
 
     @classmethod
     def from_request(

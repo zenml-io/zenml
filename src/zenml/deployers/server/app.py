@@ -14,10 +14,8 @@
 """FastAPI application for running ZenML pipeline deployments."""
 
 import os
-import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import AsyncGenerator, Literal, Optional
 
 from fastapi import (
     APIRouter,
@@ -29,15 +27,17 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, create_model
 
+from zenml.deployers.server.models import (
+    ExecutionMetrics,
+    ServiceInfo,
+    get_pipeline_invoke_models,
+)
 from zenml.deployers.server.service import PipelineDeploymentService
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Track service start time
-service_start_time: Optional[float] = None
 _service: Optional[PipelineDeploymentService] = None
 
 
@@ -55,38 +55,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         ValueError: If no deployment identifier is configured.
         Exception: If initialization or cleanup fails.
     """
-    global service_start_time
-
     # Check for test mode
     if os.getenv("ZENML_DEPLOYMENT_TEST_MODE", "false").lower() == "true":
         logger.info("🧪 Running in test mode - skipping initialization")
-        service_start_time = time.time()
         yield
         return
 
     # Startup
     logger.info("🚀 Starting ZenML Pipeline Serving service...")
-    service_start_time = time.time()
 
-    snapshot_id = os.getenv("ZENML_SNAPSHOT_ID")
-    if not snapshot_id:
-        raise ValueError("ZENML_SNAPSHOT_ID environment variable is required")
+    deployment_id = os.getenv("ZENML_DEPLOYMENT_ID")
+    if not deployment_id:
+        raise ValueError(
+            "ZENML_DEPLOYMENT_ID environment variable is required"
+        )
 
     try:
         global _service
-        # Defer UUID parsing to the service itself to simplify testing
-        _service = PipelineDeploymentService(snapshot_id)
+        _service = PipelineDeploymentService(deployment_id)
         _service.initialize()
-        # params model is available.
-        try:
-            params_model = _service.params_model
-            if isinstance(params_model, type) and issubclass(
-                params_model, BaseModel
-            ):
-                app.include_router(_build_invoke_router(_service))
-        except Exception:
-            # Skip router installation if parameter model is not ready
-            pass
+        app.include_router(_build_invoke_router(_service))
         logger.info("✅ Pipeline deployment service initialized successfully")
     except Exception as e:
         logger.error(f"❌ Failed to initialize: {e}")
@@ -107,12 +95,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     finally:
         # Ensure globals are reset to avoid stale references across lifecycles
         _service = None
-        service_start_time = None
 
 
 # Create FastAPI application with OpenAPI security scheme
 app = FastAPI(
-    title="ZenML Pipeline Deployment",
+    title=f"ZenML Pipeline Deployment {os.getenv('ZENML_DEPLOYMENT_ID')}",
     description="deploy ZenML pipelines as FastAPI endpoints",
     version="0.2.0",
     lifespan=lifespan,
@@ -137,32 +124,23 @@ def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
     Returns:
         A router exposing the `/invoke` endpoint wired to the service.
     """
-    assert service.params_model is not None
     router = APIRouter()
 
-    InvokeBody = create_model(
-        "PipelineInvokeRequest",
-        parameters=(service.params_model, ...),
-        run_name=(Optional[str], None),
-        timeout=(Optional[int], None),
-        use_in_memory=(Optional[bool], None),
+    PipelineInvokeRequest, PipelineInvokeResponse = get_pipeline_invoke_models(
+        service
     )
 
     @router.post(
         "/invoke",
         name="invoke_pipeline",
         summary="Invoke the pipeline with validated parameters",
+        response_model=PipelineInvokeResponse,
     )
     def _(
-        body: InvokeBody,  # type: ignore[valid-type]
+        request: PipelineInvokeRequest,  # type: ignore[valid-type]
         _: None = Depends(verify_token),
-    ) -> Dict[str, Any]:
-        return service.execute_pipeline(
-            body.parameters.model_dump(),  # type: ignore[attr-defined]
-            body.run_name,  # type: ignore[attr-defined]
-            body.timeout,  # type: ignore[attr-defined]
-            body.use_in_memory,  # type: ignore[attr-defined]
-        )
+    ) -> PipelineInvokeResponse:  # type: ignore[valid-type]
+        return service.execute_pipeline(request)
 
     return router
 
@@ -259,7 +237,7 @@ async def root(
         <div class="section">
             <h2>Service Status</h2>
             <p>Status: <span class="status">Running</span></p>
-            <p>Pipeline: <strong>{info["pipeline_name"]}</strong></p>
+            <p>Pipeline: <strong>{info.pipeline.name}</strong></p>
         </div>
         <div class="section">
             <h2>Documentation</h2>
@@ -274,14 +252,14 @@ async def root(
 @app.get("/health")
 async def health_check(
     service: PipelineDeploymentService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
+) -> Literal["OK"]:
     """Service health check endpoint.
 
     Args:
         service: The pipeline serving service dependency.
 
     Returns:
-        A dictionary describing the health of the service.
+        "OK" if the service is healthy, otherwise raises an HTTPException.
 
     Raises:
         HTTPException: If the service is not healthy.
@@ -289,109 +267,37 @@ async def health_check(
     if not service.is_healthy():
         raise HTTPException(503, "Service is unhealthy")
 
-    info = service.get_service_info()
-    uptime = time.time() - service_start_time if service_start_time else 0
-
-    return {
-        "status": "healthy",
-        "snapshot_id": info["snapshot_id"],
-        "pipeline_name": info["pipeline_name"],
-        "uptime": uptime,
-        "last_execution": service.last_execution_time,
-    }
+    return "OK"
 
 
 @app.get("/info")
-async def pipeline_info(
+async def info(
     service: PipelineDeploymentService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
-    """Get detailed pipeline information and parameter schema.
+) -> ServiceInfo:
+    """Get detailed information about the service, including pipeline metadata and schema.
 
     Args:
         service: The pipeline serving service dependency.
 
     Returns:
-        A dictionary containing pipeline metadata and schema information.
+        Service info.
     """
-    info = service.get_service_info()
-
-    return {
-        "pipeline": {
-            "name": info["pipeline_name"],
-            "parameters": service.snapshot.pipeline_spec.parameters
-            if service.snapshot and service.snapshot.pipeline_spec
-            else {},
-        },
-        "snapshot": {
-            "id": info["snapshot_id"],
-        },
-    }
+    return service.get_service_info()
 
 
 @app.get("/metrics")
 async def execution_metrics(
     service: PipelineDeploymentService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
+) -> ExecutionMetrics:
     """Get pipeline execution metrics and statistics.
 
     Args:
         service: The pipeline serving service dependency.
 
     Returns:
-        A dictionary with execution metrics captured by the service.
+        Aggregated execution metrics.
     """
-    metrics = service.get_execution_metrics()
-    return metrics
-
-
-@app.get("/schema")
-async def get_schemas(
-    service: PipelineDeploymentService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
-    """Expose current request/response schemas for verification/debugging.
-
-    Args:
-        service: The pipeline serving service dependency.
-
-    Returns:
-        A dictionary containing request and response schema definitions.
-    """
-    return {
-        "request_schema": service.request_schema,
-        "output_schema": service.output_schema,
-    }
-
-
-@app.get("/status")
-async def service_status(
-    service: PipelineDeploymentService = Depends(get_pipeline_service),
-) -> Dict[str, Any]:
-    """Get detailed service status information.
-
-    Args:
-        service: The pipeline serving service dependency.
-
-    Returns:
-        A dictionary containing status and configuration information.
-    """
-    info = service.get_service_info()
-
-    return {
-        "service_name": "ZenML Pipeline Deployment",
-        "version": "0.2.0",
-        "snapshot_id": info["snapshot_id"],
-        "status": "running" if service.is_healthy() else "unhealthy",
-        "started_at": datetime.fromtimestamp(
-            service_start_time, tz=timezone.utc
-        )
-        if service_start_time
-        else datetime.now(timezone.utc),
-        "configuration": {
-            "snapshot_id": os.getenv("ZENML_SNAPSHOT_ID"),
-            "host": os.getenv("ZENML_SERVICE_HOST", "0.0.0.0"),
-            "port": int(os.getenv("ZENML_SERVICE_PORT", "8001")),
-        },
-    }
+    return service.get_execution_metrics()
 
 
 # Custom exception handlers
@@ -432,8 +338,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--snapshot_id",
-        default=os.getenv("ZENML_SNAPSHOT_ID"),
+        "--deployment_id",
+        default=os.getenv("ZENML_DEPLOYMENT_ID"),
         help="Pipeline snapshot ID",
     )
     parser.add_argument(
@@ -457,8 +363,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.snapshot_id:
-        os.environ["ZENML_SNAPSHOT_ID"] = args.snapshot_id
+    if args.deployment_id:
+        os.environ["ZENML_DEPLOYMENT_ID"] = args.deployment_id
     if args.auth_key:
         os.environ["ZENML_DEPLOYMENT_AUTH_KEY"] = args.auth_key
 

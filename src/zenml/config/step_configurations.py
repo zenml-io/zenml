@@ -406,8 +406,15 @@ class StepSpec(FrozenBaseModel):
     source: SourceWithValidator
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
-    # The default value is to ensure compatibility with specs of version <0.2
-    pipeline_parameter_name: str = ""
+    invocation_id: str
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _migrate_invocation_id(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        if "invocation_id" not in data:
+            data["invocation_id"] = data.pop("pipeline_parameter_name", "")
+        return data
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.
@@ -431,7 +438,7 @@ class StepSpec(FrozenBaseModel):
             if self.inputs != other.inputs:
                 return False
 
-            if self.pipeline_parameter_name != other.pipeline_parameter_name:
+            if self.invocation_id != other.invocation_id:
                 return False
 
             return self.source.import_path == other.source.import_path

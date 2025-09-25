@@ -87,6 +87,7 @@ from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
+from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import (
     code_repository_utils,
     code_utils,
@@ -1205,40 +1206,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             "pipeline_run_id": str(run_id) if run_id else None,
         }
 
-    def get_parameters_model(self) -> Optional[Type[BaseModel]]:
-        """Create a Pydantic model that represents the pipeline parameters.
-
-        Returns:
-            A Pydantic model that represents the pipeline parameters.
-        """
-        from zenml.steps.entrypoint_function_utils import (
-            validate_entrypoint_function,
-        )
-
-        try:
-            entrypoint_definition = validate_entrypoint_function(
-                self.entrypoint
-            )
-
-            defaults: Dict[str, Any] = self._parameters
-            model_args: Dict[str, Any] = {}
-            for name, param in entrypoint_definition.inputs.items():
-                model_args[name] = (param.annotation, defaults.get(name, ...))
-
-            model_args["__config__"] = ConfigDict(extra="forbid")
-            params_model: Type[BaseModel] = create_model(
-                "PipelineParameters",
-                **model_args,
-            )
-            return params_model
-        except Exception:
-            logger.exception(
-                f"Failed to generate the input parameters schema for pipeline "
-                f"`{self.name}`. This may cause problems when deploying the "
-                f"pipeline.",
-            )
-            return None
-
     def _compile(
         self, config_path: Optional[str] = None, **run_configuration_args: Any
     ) -> Tuple[
@@ -1345,7 +1312,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             hash_.update(self.source_code.encode())
 
         for step_spec in pipeline_spec.steps:
-            invocation = self.invocations[step_spec.pipeline_parameter_name]
+            invocation = self.invocations[step_spec.invocation_id]
             step_source = invocation.step.source_code
             hash_.update(step_source.encode())
 
@@ -1783,30 +1750,99 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
 
-    def _compute_output_schema(self) -> Dict[str, Any]:
+    def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
         """Computes the output schema for the pipeline.
 
         Returns:
             The output schema for the pipeline.
         """
-
-        def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
-            return (
-                output_artifact.invocation_id.replace("-", "_")
-                + "-"
-                + output_artifact.output_name.replace("-", "_")
+        try:
+            # Generate unique step output names
+            unique_step_output_mapping = get_unique_step_output_names(
+                {
+                    (o.invocation_id, o.output_name): o
+                    for o in self._output_artifacts
+                }
             )
 
-        fields: Dict[str, Any] = {
-            _get_schema_output_name(output_artifact): (
-                output_artifact.annotation.resolved_annotation,
-                ...,
+            fields: Dict[str, Any] = {
+                entry[1]: (
+                    entry[0].annotation.resolved_annotation,
+                    ...,
+                )
+                for _, entry in unique_step_output_mapping.items()
+            }
+            output_model_class: Type[BaseModel] = create_model(
+                "PipelineOutput",
+                __config__=ConfigDict(arbitrary_types_allowed=True),
+                **fields,
             )
-            for output_artifact in self._output_artifacts
-        }
-        output_model_class: Type[BaseModel] = create_model(
-            "PipelineOutput",
-            __config__=ConfigDict(arbitrary_types_allowed=True),
-            **fields,
+            return output_model_class.model_json_schema(mode="serialization")
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the output schema for "
+                f"pipeline `{self.name}: {e}. This is most likely "
+                "because some of the pipeline outputs are not JSON "
+                "serializable. This means that the pipeline cannot be "
+                "deployed.",
+            )
+
+        return None
+
+    def _compute_input_model(self) -> Optional[Type[BaseModel]]:
+        """Create a Pydantic model that represents the pipeline input parameters.
+
+        Returns:
+            A Pydantic model that represents the pipeline input
+            parameters.
+        """
+        from zenml.steps.entrypoint_function_utils import (
+            validate_entrypoint_function,
         )
-        return output_model_class.model_json_schema(mode="serialization")
+
+        try:
+            entrypoint_definition = validate_entrypoint_function(
+                self.entrypoint
+            )
+
+            defaults: Dict[str, Any] = self._parameters
+            model_args: Dict[str, Any] = {}
+            for name, param in entrypoint_definition.inputs.items():
+                model_args[name] = (param.annotation, defaults.get(name, ...))
+
+            model_args["__config__"] = ConfigDict(extra="forbid")
+            params_model: Type[BaseModel] = create_model(
+                "PipelineInput",
+                **model_args,
+            )
+            return params_model
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the input parameters model for pipeline "
+                f"`{self.name}: {e}. This means that the pipeline cannot be "
+                "deployed.",
+            )
+            return None
+
+    def _compute_input_schema(self) -> Optional[Dict[str, Any]]:
+        """Create a JSON schema that represents the pipeline input parameters.
+
+        Returns:
+            A JSON schema that represents the pipeline input parameters.
+        """
+        input_model = self._compute_input_model()
+        if not input_model:
+            return None
+
+        try:
+            return input_model.model_json_schema()
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the input parameters schema for "
+                f"pipeline `{self.name}: {e}. This is most likely "
+                "because some of the pipeline inputs are not JSON "
+                "serializable. This means that the pipeline cannot be "
+                "deployed.",
+            )
+
+        return None

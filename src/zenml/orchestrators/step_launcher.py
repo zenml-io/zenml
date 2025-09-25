@@ -26,6 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
+from zenml.deployers.server import runtime
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
@@ -43,7 +44,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.steps.step_context import StepSharedContext
+from zenml.steps.step_context import RunContext
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -108,7 +109,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
-        run_context: Optional[StepSharedContext] = None,
+        run_context: Optional[RunContext] = None,
     ):
         """Initializes the launcher.
 
@@ -133,7 +134,7 @@ class StepLauncher:
             )
 
         self._stack = Stack.from_model(snapshot.stack)
-        self._step_name = step.spec.pipeline_parameter_name
+        self._invocation_id = step.spec.invocation_id
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
@@ -166,7 +167,7 @@ class StepLauncher:
             """
             logger.info(
                 f"Received signal shutdown {signum}. Requesting shutdown "
-                f"for step '{self._step_name}'..."
+                f"for step '{self._invocation_id}'..."
             )
 
             try:
@@ -276,7 +277,7 @@ class StepLauncher:
             # Configure the logs
             logs_uri = step_logging.prepare_logs_uri(
                 artifact_store=self._stack.artifact_store,
-                step_name=self._step_name,
+                step_name=self._invocation_id,
             )
 
             logs_context = step_logging.PipelineLogsStorageContext(
@@ -309,14 +310,16 @@ class StepLauncher:
                 stack=self._stack,
             )
             step_run_request = request_factory.create_request(
-                invocation_id=self._step_name
+                invocation_id=self._invocation_id
             )
             step_run_request.logs = logs_model
 
             try:
                 request_factory.populate_request(request=step_run_request)
             except BaseException as e:
-                logger.exception(f"Failed preparing step `{self._step_name}`.")
+                logger.exception(
+                    f"Failed preparing step `{self._invocation_id}`."
+                )
                 step_run_request.status = ExecutionStatus.FAILED
                 step_run_request.end_time = utc_now()
                 step_run_request.exception_info = (
@@ -332,7 +335,7 @@ class StepLauncher:
                     )
 
             if not step_run.status.is_finished:
-                logger.info(f"Step `{self._step_name}` has started.")
+                logger.info(f"Step `{self._invocation_id}` has started.")
 
                 try:
                     # here pass a forced save_to_file callable to be
@@ -361,14 +364,14 @@ class StepLauncher:
                 except BaseException as e:  # noqa: E722
                     logger.error(
                         "Failed to run step `%s`: %s",
-                        self._step_name,
+                        self._invocation_id,
                         e,
                     )
                     publish_utils.publish_failed_step_run(step_run.id)
                     raise
             else:
                 logger.info(
-                    f"Using cached version of step `{self._step_name}`."
+                    f"Using cached version of step `{self._invocation_id}`."
                 )
                 if (
                     model_version := step_run.model_version
@@ -425,36 +428,26 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        effective_step_config = self._step.config.model_copy(deep=True)
-        from zenml.deployers.server import runtime
-
-        serving_active = runtime.is_active()
-        if serving_active:
-            updates = {
-                "enable_cache": False,
-                "step_operator": None,
-                "retry": None,
-            }
-            effective_step_config = effective_step_config.model_copy(
-                update=updates
-            )
         step_run_info = StepRunInfo(
-            config=effective_step_config,
+            config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
-            pipeline_step_name=self._step_name,
+            pipeline_step_name=self._invocation_id,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
             force_write_logs=force_write_logs,
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=self._stack, step=self._step
+            step_run=step_run,
+            stack=self._stack,
+            step=self._step,
+            create_dirs=not runtime.should_use_in_memory_mode(),
         )
 
         start_time = time.time()
         try:
-            if self._step.config.step_operator and not serving_active:
+            if self._step.config.step_operator:
                 step_operator_name = None
                 if isinstance(self._step.config.step_operator, str):
                     step_operator_name = self._step.config.step_operator
@@ -479,7 +472,7 @@ class StepLauncher:
 
         duration = time.time() - start_time
         logger.info(
-            f"Step `{self._step_name}` has finished in "
+            f"Step `{self._invocation_id}` has finished in "
             f"`{string_utils.get_human_readable_time(duration)}`."
         )
 
@@ -502,7 +495,7 @@ class StepLauncher:
         entrypoint_command = (
             entrypoint_cfg_class.get_entrypoint_command()
             + entrypoint_cfg_class.get_entrypoint_arguments(
-                step_name=self._step_name,
+                step_name=self._invocation_id,
                 snapshot_id=self._snapshot.id,
                 step_run_id=str(step_run_info.step_run_id),
             )
@@ -524,7 +517,7 @@ class StepLauncher:
         logger.info(
             "Using step operator `%s` to run step `%s`.",
             step_operator.name,
-            self._step_name,
+            self._invocation_id,
         )
         step_operator.launch(
             info=step_run_info,

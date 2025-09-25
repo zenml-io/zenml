@@ -134,7 +134,7 @@ curl -N -H "Accept: text/event-stream" "http://localhost:8001/stream/$JOB_ID"
 Key environment variables
 
 - `ZENML_PIPELINE_DEPLOYMENT_ID`: Deployment UUID (required).
-- `ZENML_SERVING_CAPTURE_DEFAULT`: Default capture mode (`none` for run-only, `full` for tracking).
+- `ZENML_DEPLOYMENT_CAPTURE_DEFAULT`: Default capture mode (`none` for run-only, `full` for tracking).
 - `ZENML_SERVICE_HOST` (default: `0.0.0.0`), `ZENML_SERVICE_PORT` (default: `8001`).
 - `ZENML_LOG_LEVEL`: Logging verbosity.
 
@@ -151,7 +151,7 @@ Control what gets tracked per invocation:
 Configuration locations:
 - **Pipeline-level**: `@pipeline(settings={"capture": "none"})`
 - **Request-level**: `{"capture_override": {"mode": "full"}}`
-- **Environment**: `ZENML_SERVING_CAPTURE_DEFAULT=none`
+- **Environment**: `ZENML_DEPLOYMENT_CAPTURE_DEFAULT=none`
 
 Precedence: Request > Pipeline > Environment > Default
 

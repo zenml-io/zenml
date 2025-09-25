@@ -59,8 +59,8 @@ from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
 from zenml.steps.step_context import (
+    RunContext,
     StepContext,
-    StepSharedContext,
     get_step_context,
 )
 from zenml.steps.utils import (
@@ -100,7 +100,7 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
-        run_context: Optional[StepSharedContext] = None,
+        run_context: Optional[RunContext] = None,
     ):
         """Initializes the step runner.
 
@@ -142,8 +142,6 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
-        # Store step_run_info for effective config access
-        self._step_run_info = step_run_info
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
@@ -415,7 +413,7 @@ class StepRunner:
 
         step_instance = BaseStep.load_from_source(self._step.spec.source)
         step_instance = copy.deepcopy(step_instance)
-        step_instance._configuration = self._step_run_info.config
+        step_instance._configuration = self._step.config
         return step_instance
 
     def _load_output_materializers(
@@ -475,12 +473,7 @@ class StepRunner:
                     input_artifacts[arg], arg_type
                 )
             elif arg in self.configuration.parameters:
-                # Check for parameter overrides from serving context
-                override = runtime.get_parameter_override(arg)
-                if override is not None:
-                    function_params[arg] = override
-                else:
-                    function_params[arg] = self.configuration.parameters[arg]
+                function_params[arg] = self.configuration.parameters[arg]
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."
@@ -558,13 +551,13 @@ class StepRunner:
             StepInterfaceError: If the step function return values do not
                 match the output annotations.
         """
-        step_name = self._step.spec.pipeline_parameter_name
+        invocation_id = self._step.spec.invocation_id
 
         # if there are no outputs, the return value must be `None`.
         if len(output_annotations) == 0:
             if return_values is not None:
                 raise StepInterfaceError(
-                    f"Wrong step function output type for step `{step_name}`: "
+                    f"Wrong step function output type for step `{invocation_id}`: "
                     f"Expected no outputs but the function returned something: "
                     f"{return_values}."
                 )
@@ -580,7 +573,7 @@ class StepRunner:
         # or tuple.
         if not isinstance(return_values, (list, tuple)):
             raise StepInterfaceError(
-                f"Wrong step function output type for step `{step_name}`: "
+                f"Wrong step function output type for step `{invocation_id}`: "
                 f"Expected multiple outputs ({output_annotations}) but "
                 f"the function did not return a list or tuple "
                 f"(actual return value: {return_values})."
@@ -591,7 +584,7 @@ class StepRunner:
         if len(output_annotations) != len(return_values):
             raise StepInterfaceError(
                 f"Wrong amount of step function outputs for step "
-                f"'{step_name}: Expected {len(output_annotations)} outputs "
+                f"'{invocation_id}: Expected {len(output_annotations)} outputs "
                 f"but the function returned {len(return_values)} outputs"
                 f"(return values: {return_values})."
             )
@@ -612,7 +605,7 @@ class StepRunner:
                 if not isinstance(return_value, output_type):
                     raise StepInterfaceError(
                         f"Wrong type for output '{output_name}' of step "
-                        f"'{step_name}' (expected type: {output_type}, "
+                        f"'{invocation_id}' (expected type: {output_type}, "
                         f"actual type: {type(return_value)})."
                     )
             validated_outputs[output_name] = return_value

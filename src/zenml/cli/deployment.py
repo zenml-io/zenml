@@ -15,12 +15,13 @@
 
 import json
 from typing import Any, List, Optional
+from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.deployers.exceptions import DeploymentInvalidParametersError
@@ -155,10 +156,19 @@ def describe_deployment(
 @click.option(
     "--snapshot",
     "-s",
-    "snapshot_id",
+    "snapshot_name_or_id",
     type=str,
     required=False,
-    help="ID of the snapshot to use.",
+    help="ID or name of the snapshot to use. If not provided, the current "
+    "snapshot configured for the deployment will be used.",
+)
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline to which the snapshot belongs.",
 )
 @click.option(
     "--overtake",
@@ -182,7 +192,8 @@ def describe_deployment(
 )
 def provision_deployment(
     deployment_name_or_id: str,
-    snapshot_id: Optional[str] = None,
+    snapshot_name_or_id: Optional[str] = None,
+    pipeline_name_or_id: Optional[str] = None,
     overtake: bool = False,
     timeout: Optional[int] = None,
 ) -> None:
@@ -190,12 +201,19 @@ def provision_deployment(
 
     Args:
         deployment_name_or_id: The name or ID of the deployment to deploy.
-        snapshot_id: The ID of the pipeline snapshot to use.
+        snapshot_name_or_id: The ID or name of the pipeline snapshot to use.
+        pipeline_name_or_id: The name or ID of the pipeline to which the
+            snapshot belongs.
         overtake: If True, provision the deployment with the given name
             even if it is owned by a different user.
         timeout: The maximum time in seconds to wait for the deployment
             to be provisioned.
     """
+    snapshot_id: Optional[UUID] = None
+    if snapshot_name_or_id:
+        snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
+        snapshot_id = snapshot.id
+
     client = Client()
     try:
         deployment = client.get_deployment(deployment_name_or_id)

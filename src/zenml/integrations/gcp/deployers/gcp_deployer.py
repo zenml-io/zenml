@@ -46,11 +46,9 @@ from zenml.deployers.exceptions import (
 )
 from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
+    DEPLOYMENT_ID_OPTION,
     PORT_OPTION,
     DeploymentEntrypointConfiguration,
-)
-from zenml.entrypoints.base_entrypoint_configuration import (
-    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.integrations.gcp.flavors.gcp_deployer_flavor import (
@@ -249,7 +247,7 @@ class CloudRunDeploymentMetadata(BaseModel):
 
 
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
-    """Deployer responsible for serving pipelines on GCP Cloud Run."""
+    """Deployer responsible for deploying pipelines on GCP Cloud Run."""
 
     CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 
@@ -382,7 +380,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         """
         return {
             **settings.labels,
-            "zenml-deployment-uuid": str(deployment.id),
+            "zenml-deployment-id": str(deployment.id),
             "zenml-deployment-name": deployment.name,
             "zenml-deployer-name": str(self.name),
             "zenml-deployer-id": str(self.id),
@@ -431,6 +429,13 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
         # Remove consecutive hyphens
         sanitized = re.sub(r"-+", "-", sanitized)
+
+        # Remove leading and trailing hyphens before truncating
+        sanitized = re.sub(
+            r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$",
+            "",
+            sanitized,
+        )
 
         # Truncate to fit within max_length character limit including suffix
         max_base_length = (
@@ -492,7 +497,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             The Secret Manager secret name.
         """
         deployment_id_short = str(deployment_id)[:8]
-        raw_name = f"{prefix}_{env_var_name}"
+        raw_name = f"{prefix}{env_var_name}"
 
         return self._sanitize_name(
             raw_name, deployment_id_short, max_length=255
@@ -1042,7 +1047,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                SNAPSHOT_ID_OPTION: snapshot.id,
+                DEPLOYMENT_ID_OPTION: deployment.id,
                 PORT_OPTION: settings.port,
                 AUTH_KEY_OPTION: deployment.auth_key,
             }
