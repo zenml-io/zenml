@@ -3748,6 +3748,7 @@ class Client(metaclass=ClientMetaClass):
         status: Optional[DeploymentStatus] = None,
         url: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
         """List deployments.
@@ -3767,6 +3768,7 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the deployment to filter by.
             url: The url of the deployment to filter by.
             user: Filter by user name/ID.
+            pipeline: Filter by pipeline name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3789,6 +3791,7 @@ class Client(metaclass=ClientMetaClass):
                 deployer_id=deployer_id,
                 status=status,
                 url=url,
+                pipeline=pipeline,
             ),
             hydrate=hydrate,
         )
