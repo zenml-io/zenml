@@ -64,17 +64,11 @@ zenml stack register docker-deployer -o default -a default -D docker --set
 First, let's run the agent pipeline directly in batch mode to see how it works without deployment. This runs the pipeline once and returns the result:
 
 ```bash
-python run.py --agent
-```
-
-This executes the pipeline with the default input text: *"my card is lost and i need a replacement"*
-
-**What happens**: The agent runs without a classifier (none has been trained yet), so it falls back to generic LLM responses.
-
-Try with custom text:
 ```bash
 python run.py --agent --text "I want to open a savings account"
 ```
+
+The agent runs without a classifier (none has been trained yet), so it falls back to generic LLM responses.
 
 **Key insight**: In batch mode, you need to run the pipeline each time you want a response. This is fine for testing but not practical for a customer support system.
 
