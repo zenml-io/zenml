@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.component import ComponentResponse
+    from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_snapshot import (
         PipelineSnapshotResponse,
     )
@@ -182,6 +183,11 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
         title="The deployer.",
         description="The deployer component managing this deployment.",
     )
+    pipeline: Optional["PipelineResponse"] = Field(
+        default=None,
+        title="The pipeline.",
+        description="The pipeline being deployed.",
+    )
 
 
 class DeploymentResponse(
@@ -264,6 +270,15 @@ class DeploymentResponse(
             The deployer.
         """
         return self.get_resources().deployer
+
+    @property
+    def pipeline(self) -> Optional["PipelineResponse"]:
+        """The pipeline.
+
+        Returns:
+            The pipeline.
+        """
+        return self.get_resources().pipeline
 
     @property
     def snapshot_id(self) -> Optional[UUID]:
