@@ -30,14 +30,14 @@ def upgrade() -> None:
     )
 
     connection = op.get_bind()
-    connection.execute(  # nosec
+    connection.execute(
         sa.text(f"""
             UPDATE pipeline_run 
             SET in_progress = CASE 
                 WHEN status IN ({finished_statuses}) THEN false 
                 ELSE true 
             END
-        """)
+        """)  # nosec
     )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
