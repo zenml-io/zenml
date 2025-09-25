@@ -8147,7 +8147,7 @@ class Client(metaclass=ClientMetaClass):
         """Attach a tag to resources.
 
         Args:
-            tag: name or id of the tag to be attached.
+            tag: name of the tag or tag_utils.Tag object to be attached.
             resources: the resources to attach the tag to.
         """
         if isinstance(tag, str):
