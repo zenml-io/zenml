@@ -48,10 +48,10 @@ class AWSBatchStepOperatorSettings(BaseSettings):
          "`backend`."
     )
     backend: Literal['EC2','FARGATE'] = Field(
-        default="EC2",
+        default="FARGATE",
         description="The AWS Batch platform capability for the step AWS Batch "
         "job to be orchestrated with. Must be compatible with `job_queue_name`."
-        "Defaults to 'EC2'."
+        "Defaults to 'FARGATE'."
     )
     assign_public_ip: Literal['ENABLED','DISABLED'] = Field(
         default="ENABLED",
