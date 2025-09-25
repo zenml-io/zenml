@@ -295,6 +295,7 @@ class DeploymentResponse(
             The pipeline.
         """
         return self.get_resources().pipeline
+
     def tags(self) -> List["TagResponse"]:
         """The tags of the deployment.
 
