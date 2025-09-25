@@ -451,7 +451,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 included.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The response.
         """
@@ -459,12 +458,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
+        deployable = False
+        if self.build and self.stack and self.stack.has_deployer:
+            deployable = True
+
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             runnable=runnable,
+            deployable=deployable,
         )
         metadata = None
         if include_metadata:

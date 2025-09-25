@@ -3393,6 +3393,7 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
         runnable: Optional[bool] = None,
+        deployable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
@@ -3418,6 +3419,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The ID of the schedule to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             runnable: Whether the snapshot is runnable.
+            deployable: Whether the snapshot is deployable.
             tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3444,6 +3446,7 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             source_snapshot_id=source_snapshot_id,
             runnable=runnable,
+            deployable=deployable,
             tag=tag,
             tags=tags,
         )
