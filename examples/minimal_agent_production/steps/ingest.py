@@ -6,7 +6,7 @@ formats, preparing them for analysis.
 """
 
 import os
-from typing import Optional
+from typing import Optional, Annotated
 from urllib.parse import urlparse
 
 import requests
@@ -24,7 +24,7 @@ def ingest_document_step(
     path: Optional[str] = None,
     filename: Optional[str] = None,
     document_type: str = "text",
-) -> DocumentRequest:
+) -> Annotated[DocumentRequest, "Documents"]:
     """Ingest and validate document data for analysis from multiple sources.
 
     This step creates a structured DocumentRequest object from various input sources:
