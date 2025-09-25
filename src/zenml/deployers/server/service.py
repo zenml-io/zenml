@@ -43,6 +43,7 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineSnapshotResponse,
 )
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
@@ -56,10 +57,12 @@ logger = get_logger(__name__)
 
 
 class SharedLocalOrchestrator(LocalOrchestrator):
-    """Local orchestrator that uses a separate run id for each request.
+    """Local orchestrator tweaked for deployments.
 
-    This is a slight modification of the LocalOrchestrator to allow for
-    request-scoped orchestrator run ids by storing them in contextvars.
+    This is a slight modification of the LocalOrchestrator:
+    - uses request-scoped orchestrator run ids by storing them in contextvars
+    - bypasses the init/cleanup hook execution because they are run globally by
+    the deployment service
     """
 
     # Use contextvars for thread-safe, request-scoped state
@@ -79,6 +82,28 @@ class SharedLocalOrchestrator(LocalOrchestrator):
             self._shared_orchestrator_run_id.set(run_id)
         return run_id
 
+    @classmethod
+    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the init hook.
+
+        Args:
+            snapshot: The snapshot to run the init hook for.
+        """
+        # Bypass the init hook execution because it is run globally by
+        # the deployment service
+        pass
+
+    @classmethod
+    def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the cleanup hook.
+
+        Args:
+            snapshot: The snapshot to run the cleanup hook for.
+        """
+        # Bypass the cleanup hook execution because it is run globally by
+        # the deployment service
+        pass
+
 
 class PipelineDeploymentService:
     """Pipeline deployment service."""
@@ -97,7 +122,6 @@ class PipelineDeploymentService:
             deployment_id = UUID(deployment_id)
 
         self._client = Client()
-        self.pipeline_state: Optional[Any] = None
 
         # Execution tracking
         self.service_start_time = time.time()
@@ -137,9 +161,7 @@ class PipelineDeploymentService:
         """
         try:
             # Execute init hook
-            self._execute_init_hook()
-
-            self._orchestrator.set_shared_run_state(self.pipeline_state)
+            BaseOrchestrator.run_init_hook(self.snapshot)
 
             # Log success
             self._log_initialization_success()
@@ -150,28 +172,8 @@ class PipelineDeploymentService:
             raise
 
     def cleanup(self) -> None:
-        """Execute cleanup hook if present.
-
-        Raises:
-            Exception: If the cleanup hook cannot be executed.
-        """
-        cleanup_hook_source = (
-            self.snapshot
-            and self.snapshot.pipeline_configuration.cleanup_hook_source
-        )
-
-        if not cleanup_hook_source:
-            return
-
-        logger.info("Executing pipeline's cleanup hook...")
-        try:
-            with env_utils.temporary_environment(
-                self.snapshot.pipeline_configuration.environment
-            ):
-                load_and_run_hook(cleanup_hook_source)
-        except Exception as e:
-            logger.exception(f"Failed to execute cleanup hook: {e}")
-            raise
+        """Execute cleanup hook if present."""
+        BaseOrchestrator.run_cleanup_hook(self.snapshot)
 
     def execute_pipeline(
         self,

@@ -430,7 +430,11 @@ def _parse_hook_inputs(
         resolved_type = resolve_type_annotation(arg_type) if arg_type else None
 
         # Handle BaseException parameters - inject step_exception
-        if resolved_type and issubclass(resolved_type, BaseException):
+        if (
+            resolved_type
+            and isinstance(resolved_type, type)
+            and issubclass(resolved_type, BaseException)
+        ):
             function_params[arg] = step_exception
             continue
 

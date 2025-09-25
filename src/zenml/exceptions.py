@@ -248,3 +248,7 @@ class RunMonitoringError(ZenMLBaseException):
 
 class HookValidationException(ZenMLBaseException):
     """Exception raised when hook validation fails."""
+
+
+class HookExecutionException(ZenMLBaseException):
+    """Exception raised when hook execution fails."""

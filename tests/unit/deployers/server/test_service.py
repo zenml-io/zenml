@@ -83,7 +83,6 @@ def _make_service_stub(mocker: MockerFixture) -> PipelineDeploymentService:
         new_callable=mocker.PropertyMock,
         return_value=WeatherParams,
     )
-    service.pipeline_state = None
     service.service_start_time = 100.0
     service.last_execution_time = None
     service.total_executions = 0
@@ -179,9 +178,6 @@ def test_initialize_sets_up_orchestrator(
     service.initialize()
 
     assert service._orchestrator is mock_orchestrator
-    mock_orchestrator.set_shared_run_state.assert_called_once_with(
-        service.pipeline_state
-    )
 
 
 def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:

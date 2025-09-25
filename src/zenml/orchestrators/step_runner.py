@@ -23,7 +23,6 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Tuple,
     Type,
 )
@@ -59,7 +58,6 @@ from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
 from zenml.steps.step_context import (
-    RunContext,
     StepContext,
     get_step_context,
 )
@@ -100,18 +98,15 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
-        run_context: Optional[RunContext] = None,
     ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
-            run_context: Optional run context shared by all steps.
         """
         self._step = step
         self._stack = stack
-        self._run_context = run_context
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -198,9 +193,6 @@ class StepRunner:
                 output_artifact_configs={
                     k: v.artifact_config for k, v in output_annotations.items()
                 },
-                pipeline_state=self._run_context.state
-                if self._run_context
-                else None,
             )
 
             # Parse the inputs for the entrypoint function.
@@ -225,23 +217,15 @@ class StepRunner:
 
             step_failed = False
             try:
-                with env_utils.temporary_environment(step_environment):
-                    # We run the init hook at step level if we're not in an
-                    # environment that supports a shared run context
-                    if not self._run_context:
-                        if (
-                            init_hook_source
-                            := pipeline_run.config.init_hook_source
-                        ):
-                            logger.info(
-                                "Executing the pipeline's init hook..."
-                            )
-                            step_context.pipeline_state = load_and_run_hook(
-                                init_hook_source,
-                                hook_parameters=pipeline_run.config.init_hook_kwargs,
-                                raise_on_error=True,
-                            )
+                if (
+                    pipeline_run.snapshot
+                    and self._stack.orchestrator.run_init_cleanup_at_step_level
+                ):
+                    self._stack.orchestrator.run_init_hook(
+                        snapshot=pipeline_run.snapshot
+                    )
 
+                with env_utils.temporary_environment(step_environment):
                     return_values = step_instance.call_entrypoint(
                         **function_params
                     )
@@ -344,20 +328,13 @@ class StepRunner:
 
                     # We run the cleanup hook at step level if we're not in an
                     # environment that supports a shared run context
-                    if not self._run_context:
-                        if (
-                            cleanup_hook_source
-                            := pipeline_run.config.cleanup_hook_source
-                        ):
-                            logger.info(
-                                "Executing the pipeline's cleanup hook..."
-                            )
-                            with env_utils.temporary_environment(
-                                step_environment
-                            ):
-                                load_and_run_hook(
-                                    cleanup_hook_source,
-                                )
+                    if (
+                        pipeline_run.snapshot
+                        and self._stack.orchestrator.run_init_cleanup_at_step_level
+                    ):
+                        self._stack.orchestrator.run_cleanup_hook(
+                            snapshot=pipeline_run.snapshot
+                        )
 
                 finally:
                     step_context._cleanup_registry.execute_callbacks(

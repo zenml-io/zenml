@@ -129,6 +129,9 @@ class StackSchema(NamedSchema, table=True):
 
         Returns:
             If the stack has a deployer component.
+
+        Raises:
+            RuntimeError: if the stack has no DB session.
         """
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
