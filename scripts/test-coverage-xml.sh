@@ -27,7 +27,7 @@ else
     RERUNS="$RERUNS_DEFAULT"
 fi
 if ! [[ "$RERUNS" =~ ^[0-9]+$ ]]; then
-    echo "Warning: PYTEST_RERUNS='$PYTEST_RERUNS' is invalid. Falling back to ${RERUNS_DEFAULT}." >&2
+    echo "Warning: PYTEST_RERUNS='$RERUNS' is invalid. Falling back to ${RERUNS_DEFAULT}." >&2
     RERUNS="$RERUNS_DEFAULT"
 fi
 
@@ -37,7 +37,7 @@ else
     RERUNS_DELAY="$DELAY_DEFAULT"
 fi
 if ! [[ "$RERUNS_DELAY" =~ ^[0-9]+$ ]]; then
-    echo "Warning: PYTEST_RERUNS_DELAY='$PYTEST_RERUNS_DELAY' is invalid. Falling back to ${DELAY_DEFAULT}." >&2
+    echo "Warning: PYTEST_RERUNS_DELAY='$RERUNS_DELAY' is invalid. Falling back to ${DELAY_DEFAULT}." >&2
     RERUNS_DELAY="$DELAY_DEFAULT"
 fi
 
