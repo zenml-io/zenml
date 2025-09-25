@@ -4168,6 +4168,7 @@ class Client(metaclass=ClientMetaClass):
         template_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
+        linked_to_model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -4210,6 +4211,11 @@ class Client(metaclass=ClientMetaClass):
             template_id: The ID of the template to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             model_version_id: The ID of the model version to filter by.
+            linked_to_model_version_id: Filter by model version linked to the
+                pipeline run. The difference to `model_version_id` is that this
+                filter will not only include pipeline runs which are directly
+                linked to the model version, but also if any step run is linked
+                to the model version.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -4256,6 +4262,7 @@ class Client(metaclass=ClientMetaClass):
             template_id=template_id,
             source_snapshot_id=source_snapshot_id,
             model_version_id=model_version_id,
+            linked_to_model_version_id=linked_to_model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
             status=status,
