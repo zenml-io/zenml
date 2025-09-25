@@ -18,6 +18,7 @@
 """ZenML Quickstart — From Agent-Only to Agent+Classifier.
 
 Usage:
+  python run.py --agent      # Run agent in batch mode (before deployment)
   python run.py --train      # Train classifier and tag as production
   python run.py --evaluate   # Compare agent performance
 """
@@ -26,11 +27,17 @@ import argparse
 
 from pipelines.evaluation_pipeline import agent_evaluation_pipeline
 from pipelines.intent_training_pipeline import intent_training_pipeline
+from pipelines.support_agent import support_agent
 
 
 def main() -> None:
     """Main entry point for the quickstart CLI."""
     ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--agent",
+        action="store_true",
+        help="Run the agent pipeline in batch mode (before deployment).",
+    )
     ap.add_argument(
         "--train", action="store_true", help="Run the training pipeline."
     )
@@ -39,9 +46,18 @@ def main() -> None:
         action="store_true",
         help="Run the evaluation pipeline to compare agent modes.",
     )
+    ap.add_argument(
+        "--text",
+        type=str,
+        default="my card is lost and i need a replacement",
+        help="Custom text input for the agent (use with --agent).",
+    )
     args = ap.parse_args()
 
-    if args.train:
+    if args.agent:
+        print(f">> Running support_agent pipeline in batch mode with text: '{args.text}'")
+        support_agent(text=args.text)
+    elif args.train:
         print(
             ">> Running intent_training_pipeline (auto-tags artifact VERSION as 'production')."
         )
@@ -59,6 +75,8 @@ def main() -> None:
         )
     else:
         print("Usage:")
+        print("  python run.py --agent      # Run agent in batch mode")
+        print("  python run.py --agent --text 'Custom query'  # Run with custom text")
         print("  python run.py --train      # Train classifier")
         print("  python run.py --evaluate   # Evaluate agent performance")
         print("\nQuickstart flow:")
@@ -67,14 +85,15 @@ def main() -> None:
         print(
             "   zenml stack register docker-deployer -o default -a default -D docker --set"
         )
+        print("1. Test agent locally: python run.py --agent")
         print(
-            "1. Deploy agent: zenml pipeline deploy pipelines.support_agent.support_agent -n support_agent -c configs/agent.yaml"
+            "2. Deploy agent: zenml pipeline deploy pipelines.support_agent.support_agent -n support_agent -c configs/agent.yaml"
         )
-        print("2. Train classifier: python run.py --train")
+        print("3. Train classifier: python run.py --train")
         print(
-            "3. Update agent: zenml pipeline deploy pipelines.support_agent.support_agent -n support_agent -c configs/agent.yaml -u"
+            "4. Update agent: zenml pipeline deploy pipelines.support_agent.support_agent -n support_agent -c configs/agent.yaml -u"
         )
-        print("4. Evaluate performance: python run.py --evaluate")
+        print("5. Evaluate performance: python run.py --evaluate")
 
 
 if __name__ == "__main__":

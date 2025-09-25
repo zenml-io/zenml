@@ -16,7 +16,6 @@
 
 """Pipeline for evaluating agent performance across different modes."""
 
-import os
 from typing import Any
 
 from steps.evaluate import evaluate_agent_performance, generate_test_dataset

@@ -6,7 +6,7 @@ formats, preparing them for analysis.
 """
 
 import os
-from typing import Optional, Annotated
+from typing import Annotated, Optional
 from urllib.parse import urlparse
 
 import requests

@@ -16,7 +16,6 @@
 
 """Intent classification training pipeline."""
 
-import os
 from typing import Any
 
 from steps.data import load_toy_intent_data

@@ -44,7 +44,7 @@ Note, this is purely a toy example meant to illustrate some of the key concepts 
 
 ### Prerequisites
 ```bash
-pip install "zenml[server]" scikit-learn openai
+pip install -r requirements.txt
 export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ```
 
@@ -59,7 +59,26 @@ zenml deployer register docker -f docker
 zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
-### Phase 1: Deploy Generic Banking Advice Agent
+### Phase 1: Run The Agent in Batch Mode
+
+First, let's run the agent pipeline directly in batch mode to see how it works without deployment. This runs the pipeline once and returns the result:
+
+```bash
+python run.py --agent
+```
+
+This executes the pipeline with the default input text: *"my card is lost and i need a replacement"*
+
+**What happens**: The agent runs without a classifier (none has been trained yet), so it falls back to generic LLM responses.
+
+Try with custom text:
+```bash
+python run.py --agent --text "I want to open a savings account"
+```
+
+**Key insight**: In batch mode, you need to run the pipeline each time you want a response. This is fine for testing but not practical for a customer support system.
+
+### Phase 2: Deploy Generic Banking Advice Agent
 
 Deploy the agent serving pipeline as a REST API. This creates a running service that gives generic banking advice without intent classification:
 
@@ -80,7 +99,7 @@ zenml deployment invoke support_agent \
 
 **Result**: Generic response - `"intent": "general", "response": "I understand you need banking assistance. Please contact our support team for personalized help."`
 
-### Phase 2: Train Intent Classifier
+### Phase 3: Train Intent Classifier
 
 ```bash
 python run.py --train    # Train classifier and tag as production
@@ -88,7 +107,7 @@ python run.py --train    # Train classifier and tag as production
 
 This trains a TF-IDF + LogisticRegression classifier on 8 banking intent categories (70+ examples) and automatically tags the best model as "production" for the serving pipeline to discover.
 
-### Phase 3: Upgrade to Structured Responses
+### Phase 4: Upgrade to Structured Responses
 
 Update the existing deployment. The agent service will restart and automatically load the newly trained "production" classifier:
 
@@ -104,7 +123,7 @@ zenml deployment invoke support_agent \
 
 **Result**: Targeted response - `"intent": "card_lost", "response": "I'll help you with your lost card immediately. Let me freeze your current card and start the replacement process. You should receive your new card within 3-5 business days."`
 
-### Phase 4: Evaluate Performance
+### Phase 5: Evaluate Performance
 
 See the dramatic difference! Run evaluation to compare generic vs. structured responses:
 
