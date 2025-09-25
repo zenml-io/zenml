@@ -168,7 +168,9 @@ def test_getting_image_from_snapshot(
             snapshot=sample_snapshot_response_model
         )
 
-    sample_snapshot_response_model.resources.build = sample_build_response_model
+    sample_snapshot_response_model.resources.build = (
+        sample_build_response_model
+    )
     assert not sample_build_response_model.images
 
     with pytest.raises(KeyError):
