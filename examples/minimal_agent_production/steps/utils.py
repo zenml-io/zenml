@@ -5,8 +5,6 @@ analysis pipeline, including markdown/HTML cleaning, content extraction,
 and document type inference.
 """
 
-from __future__ import annotations
-
 import re
 from typing import Optional
 
