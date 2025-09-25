@@ -203,32 +203,6 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The reason for the status of the pipeline run.",
     )
-    stack: Optional["StackResponse"] = Field(
-        default=None, title="The stack that was used for this run."
-    )
-    pipeline: Optional["PipelineResponse"] = Field(
-        default=None, title="The pipeline this run belongs to."
-    )
-    build: Optional["PipelineBuildResponse"] = Field(
-        default=None, title="The pipeline build that was used for this run."
-    )
-    schedule: Optional["ScheduleResponse"] = Field(
-        default=None, title="The schedule that was used for this run."
-    )
-    code_reference: Optional["CodeReferenceResponse"] = Field(
-        default=None, title="The code reference that was used for this run."
-    )
-    snapshot_id: Optional[UUID] = Field(
-        default=None, title="The snapshot that was used for this run."
-    )
-    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
-        default=None, title="The trigger execution that triggered this run."
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -286,10 +260,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         description="DEPRECATED: Template used for the pipeline run.",
         deprecated=True,
     )
-    source_snapshot_id: Optional[UUID] = Field(
-        default=None,
-        description="Source snapshot used for the pipeline run.",
-    )
     is_templatable: bool = Field(
         default=False,
         description="Whether a template can be created from this run.",
@@ -300,6 +270,25 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     snapshot: Optional["PipelineSnapshotResponse"] = None
+    source_snapshot: Optional["PipelineSnapshotResponse"] = None
+    stack: Optional["StackResponse"] = Field(
+        default=None, title="The stack that was used for this run."
+    )
+    pipeline: Optional["PipelineResponse"] = Field(
+        default=None, title="The pipeline this run belongs to."
+    )
+    build: Optional["PipelineBuildResponse"] = Field(
+        default=None, title="The pipeline build that was used for this run."
+    )
+    schedule: Optional["ScheduleResponse"] = Field(
+        default=None, title="The schedule that was used for this run."
+    )
+    code_reference: Optional["CodeReferenceResponse"] = Field(
+        default=None, title="The code reference that was used for this run."
+    )
+    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
+        default=None, title="The trigger execution that triggered this run."
+    )
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
@@ -382,78 +371,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
-
-    @property
-    def stack(self) -> Optional["StackResponse"]:
-        """The `stack` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().stack
-
-    @property
-    def pipeline(self) -> Optional["PipelineResponse"]:
-        """The `pipeline` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().pipeline
-
-    @property
-    def build(self) -> Optional["PipelineBuildResponse"]:
-        """The `build` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().build
-
-    @property
-    def schedule(self) -> Optional["ScheduleResponse"]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().schedule
-
-    @property
-    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
-        """The `trigger_execution` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().trigger_execution
-
-    @property
-    def code_reference(self) -> Optional["CodeReferenceResponse"]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().code_reference
-
-    @property
-    def snapshot_id(self) -> Optional["UUID"]:
-        """The `snapshot_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().snapshot_id
-
-    @property
-    def model_version_id(self) -> Optional[UUID]:
-        """The `model_version_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model_version_id
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:
@@ -565,15 +482,6 @@ class PipelineRunResponse(
         return self.get_metadata().template_id
 
     @property
-    def source_snapshot_id(self) -> Optional[UUID]:
-        """The `source_snapshot_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().source_snapshot_id
-
-    @property
     def is_templatable(self) -> bool:
         """The `is_templatable` property.
 
@@ -590,6 +498,69 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().snapshot
+
+    @property
+    def source_snapshot(self) -> Optional["PipelineSnapshotResponse"]:
+        """The `source_snapshot` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().source_snapshot
+
+    @property
+    def stack(self) -> Optional["StackResponse"]:
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().stack
+
+    @property
+    def pipeline(self) -> Optional["PipelineResponse"]:
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline
+
+    @property
+    def build(self) -> Optional["PipelineBuildResponse"]:
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().build
+
+    @property
+    def schedule(self) -> Optional["ScheduleResponse"]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().schedule
+
+    @property
+    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
+        """The `trigger_execution` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().trigger_execution
+
+    @property
+    def code_reference(self) -> Optional["CodeReferenceResponse"]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().code_reference
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:
