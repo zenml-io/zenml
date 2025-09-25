@@ -7,7 +7,7 @@
     </a>
   <br />
   <div align="center">
-    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents, built on the MLOps principles you already trust.</h3>
+    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents.</h3>
   </div>
 
   [![PyPi][pypi-shield]][pypi-url]
@@ -31,12 +31,11 @@
 
 <div align="center">
 <p>
-    <a href="https://zenml.io/features">Features</a> •
+    <a href="https://zenml.io/projects">Projects</a> •
     <a href="https://zenml.io/roadmap">Roadmap</a> •
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
     <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
     <a href="https://www.zenml.io/blog">Blog</a> •
-    <a href="https://zenml.io/podcast">Podcast</a>
     <br />
     <br />
     🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
@@ -45,120 +44,21 @@
 
 ---
 
-ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
+ZenML is built for ML or AI Engineers working on traditional ML use-cases, LLM workflows, or agents, in a company setting.
+At it's core, ZenML allows you to write **workflows (pipelines)** that run on any **infrastructure backend (stacks)**. You can embed any Pythonic logic within these pipelines, like training a model, or running an agentic loop. ZenML then operationalizes your application by:
 
-With ZenML you can build and evaluate pipelines — and deploy them as always‑warm HTTP endpoints with health, metrics, and OpenAPI — all from a single CLI command.
+1. Automatically containerizing and tracking your code.
+2. Tracking individual runs with metrics, logs, and metadata.
+3. Abstracting away infrastructure complexity.
+4. Integrating your existing tools and infrastructure e.g. MLflow, Langgraph, Langfuse, Sagemaker, GCP Vertex, etc.
+5. Allowing you to quickly iterate on experiments with an observable layer, in development and in production.
 
-## 🚀 What’s New
+...amongst many other features.
 
-- Pipeline Deployment (Always‑Warm HTTP Endpoints): Deploy your pipeline behind a FastAPI app with validated parameters, health, metrics, and OpenAPI.
+ZenML is used by thousands of companies to run their AI workflows. Here are some featured ones:
 
-- Quickstart (train → evaluate → deploy): https://docs.zenml.io/getting-started/quickstart
-- MLOps Starter (end‑to‑end batch + deployment): https://github.com/zenml-io/zenml-projects
-
-
-## 🚨 The Problem: MLOps Works for Models, But What About AI?
-
-![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
-
-You're an ML engineer. You've perfected deploying `scikit-learn` models and wrangling PyTorch jobs. Your MLOps stack is dialed in. But now, you're being asked to build and ship AI agents, and suddenly your trusted toolkit is starting to crack.
-
-- **The Adaptation Struggle:** Your MLOps habits (rigorous testing, versioning, CI/CD) don’t map cleanly onto agent development. How do you version a prompt? How do you regression test a non-deterministic system? The tools that gave you confidence for models now create friction for agents.
-
-- **The Divided Stack:** To cope, teams are building a second, parallel stack just for LLM-based systems. Now you’re maintaining two sets of tools, two deployment pipelines, and two mental models. Your classical models live in one world, your agents in another. It's expensive, complex, and slows everyone down.
-
-- **The Broken Feedback Loop:** Getting an agent from your local environment to production is a slow, painful journey. By the time you get feedback on performance, cost, or quality, the requirements have already changed. Iteration is a guessing game, not a data-driven process.
-
-## 💡 The Solution: One Framework for your Entire AI Stack
-
-Stop maintaining two separate worlds. ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It’s one platform to develop, evaluate, and deploy your entire AI portfolio.
-
-With built‑in pipeline deployment, you can expose pipelines as always‑warm HTTP endpoints (with health checks, metrics, and OpenAPI) using a single CLI command.
-
-```python
-# Morning: Your sklearn pipeline is still versioned and reproducible.
-train_and_deploy_classifier()
-
-# Afternoon: Your new agent evaluation pipeline uses the same logic.
-evaluate_and_deploy_agent()
-
-# Same platform. Same principles. New possibilities.
-```
-
-With ZenML, you're not replacing your knowledge; you're extending it. Use the pipelines and practices you already know to version, test, deploy, and monitor everything from classic models to the most advanced agents.
-
-## 💻 See It In Action: Multi-Agent Architecture Comparison
-
-**The Challenge:** Your team built three different customer service agents. Which one should go to production? With ZenML, you can build a reproducible pipeline to test them on real data and make a data-driven decision, with full observability via Langgraph, LiteLLM & Langfuse.
-
-https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
-
-```python
-from zenml import pipeline, step
-from zenml.types import HTMLString
-import pandas as pd
-
-@step
-def train_intent_classifier(queries: pd.DataFrame):
-    """Train a scikit-learn classifier alongside your agents."""
-    return train_sklearn_pipeline(queries)
-
-@step
-def load_prompts() -> dict:
-    """Load prompts as versioned ZenML artifacts."""
-    return load_agent_prompts_from_files()
-
-@step
-def run_architecture_comparison(queries: pd.DataFrame, classifier, prompts: dict) -> tuple:
-    """Test three different agent architectures on the same data."""
-    architectures = {
-        "single_agent": SingleAgentRAG(prompts),
-        "multi_specialist": MultiSpecialistAgents(prompts), 
-        "langgraph_workflow": LangGraphAgent(prompts)  # Real LangGraph implementation!
-    }
-    
-    # ZenML automatically versions agent code, prompts, and configurations
-    # LiteLLM provides unified access to 100+ LLM providers
-    # Langgraph orchestrates a multi-agent graph
-    # Langfuse tracks costs, performance, and traces for full observability
-    results = test_all_architectures(queries, architectures)
-    mermaid_diagram = generate_langgraph_visualization()
-    
-    return results, mermaid_diagram
-
-@step
-def evaluate_and_decide(queries: pd.DataFrame, results: dict) -> HTMLString:
-    """Generate beautiful HTML report with winner selection."""
-    return create_styled_comparison_report(results)
-
-@pipeline
-def compare_agent_architectures(queries: pd.DataFrame):
-    """Data-driven agent architecture decisions with full MLOps tracking."""
-    prompts = load_prompts()  # Prompts as versioned artifacts
-    classifier = train_intent_classifier(queries)
-    results, viz = run_architecture_comparison(queries, classifier, prompts)
-    report = evaluate_and_decide(queries, results)
-
-if __name__ == "__main__":
-    # Pass your queries as a pipeline parameter
-    # Example: load from CSV, DB, or a dataframe constructed in code
-    queries_df = pd.read_csv("customer_queries.csv")
-    compare_agent_architectures(queries=queries_df)
-    # 🎯 Rich visualizations automatically appear in ZenML dashboard
-```
-
-**🚀 [See the complete working example →](examples/agent_comparison/)**
-Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](examples/minimal_agent_production/) example — a lightweight document analysis service with pipelines, evaluation, and a simple web UI.
-
-**The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
-
-![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
-
-Next step: deploy your chosen production pipeline as an HTTP endpoint:
-
-```bash
-zenml pipeline deploy compare_agent_architectures --port 8001
-```
+LISTOFCOMPANIES
+(please email support@zenml.io if you want to be featured)
 
 ## 🚀 Get Started (5 minutes)
 
