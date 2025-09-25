@@ -170,6 +170,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
+    source_snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin="PipelineSnapshotSchema.source_snapshot_id == foreign(PipelineSnapshotSchema.id)",
+            viewonly=True,
+        ),
+    )
     user: Optional["UserSchema"] = Relationship(
         back_populates="snapshots",
     )
@@ -217,8 +223,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The latest run for this snapshot.
         """
-        from sqlmodel import or_
-
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
             PipelineSnapshotSchema,
@@ -234,16 +238,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
-                        or_(
-                            # The run is created directly from this snapshot
-                            # (e.g. regular run, scheduled runs)
-                            PipelineSnapshotSchema.id == self.id,
-                            # The snapshot for this run used this snapshot as a
-                            # source (e.g. run triggered from the server,
-                            # invocation of a deployment)
-                            PipelineSnapshotSchema.source_snapshot_id
-                            == self.id,
-                        )
+                        # The snapshot for this run used this snapshot as a
+                        # source (e.g. run triggered from the server,
+                        # invocation of a deployment). We currently do not
+                        # include runs created directly from a snapshot (e.g.
+                        # run directly, scheduled runs), as these happen before
+                        # the user officially creates (= assigns a name to) the
+                        # snapshot.
+                        col(PipelineSnapshotSchema.source_snapshot_id)
+                        == self.id,
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
@@ -516,13 +519,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
-                pipeline=self.pipeline.to_model(),
-                stack=self.stack.to_model() if self.stack else None,
-                build=self.build.to_model() if self.build else None,
-                schedule=self.schedule.to_model() if self.schedule else None,
-                code_reference=self.code_reference.to_model()
-                if self.code_reference
-                else None,
                 pipeline_version_hash=self.pipeline_version_hash,
                 pipeline_spec=PipelineSpec.model_validate_json(
                     self.pipeline_spec
@@ -539,12 +535,23 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             latest_run = self.latest_run
+            latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
+                pipeline=self.pipeline.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
+                build=self.build.to_model() if self.build else None,
+                schedule=self.schedule.to_model() if self.schedule else None,
+                code_reference=self.code_reference.to_model()
+                if self.code_reference
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
+                latest_run_user=latest_run_user.to_model()
+                if latest_run_user
+                else None,
             )
 
         return PipelineSnapshotResponse(
