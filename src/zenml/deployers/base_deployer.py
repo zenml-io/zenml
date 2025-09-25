@@ -247,6 +247,46 @@ class BaseDeployer(StackComponent, ABC):
                     "lead to unexpected behavior and is not allowed."
                 )
 
+    def _check_snapshot_already_deployed(
+        self,
+        snapshot: PipelineSnapshotResponse,
+        new_deployment_id_or_name: Union[str, UUID],
+    ) -> None:
+        """Check if the snapshot is already deployed to another deployment.
+
+        Args:
+            snapshot: The pipeline snapshot to check.
+            new_deployment_id_or_name: The ID or name of the deployment that is
+                being provisioned.
+
+        Raises:
+            DeploymentAlreadyExistsError: if the snapshot is already deployed to
+                another deployment.
+        """
+        if snapshot.deployment and (
+            isinstance(snapshot.deployment.id, UUID)
+            and snapshot.deployment.id != new_deployment_id_or_name
+            or (
+                isinstance(snapshot.deployment.id, str)
+                and snapshot.deployment.name != new_deployment_id_or_name
+            )
+        ):
+            raise DeploymentAlreadyExistsError(
+                f"The pipeline snapshot with name or ID "
+                f"'{snapshot.name or snapshot.id}' "
+                f"already has an associated deployment: "
+                f"'{snapshot.deployment.name or snapshot.deployment.id}'. "
+                "You can try one of the following:\n"
+                "1. Delete the existing deployment before provisioning "
+                f"a new one: 'zenml deployment delete "
+                f"{snapshot.deployment.name or snapshot.deployment.id}'\n"
+                "2. Update the existing deployment with the snapshot: 'zenml "
+                f"pipeline snapshot deploy {snapshot.name or snapshot.id} "
+                f"--deployment {snapshot.deployment.name or snapshot.deployment.id}'\n"
+                "3. Create and deploy a different snapshot: 'zenml snapshot "
+                "create ...'\n"
+            )
+
     def _generate_auth_key(self, key_length: int = 32) -> str:
         """Generate an authentication key.
 
@@ -446,6 +486,8 @@ class BaseDeployer(StackComponent, ABC):
                 deployment_name_or_id, project=snapshot.project_id
             )
 
+            self._check_snapshot_already_deployed(snapshot, deployment.id)
+
             logger.debug(
                 f"Existing deployment found with name '{deployment.name}'"
             )
@@ -454,6 +496,10 @@ class BaseDeployer(StackComponent, ABC):
                 raise DeploymentNotFoundError(
                     f"Deployment with ID '{deployment_name_or_id}' not found"
                 )
+
+            self._check_snapshot_already_deployed(
+                snapshot, deployment_name_or_id
+            )
 
             logger.debug(
                 f"Creating new deployment {deployment_name_or_id} with "
