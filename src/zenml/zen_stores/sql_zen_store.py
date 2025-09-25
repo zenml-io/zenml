@@ -5258,6 +5258,13 @@ class SqlZenStore(BaseZenStore):
             deployment_schema = DeploymentSchema.from_request(deployment)
             session.add(deployment_schema)
             session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment.tags,
+                resources=deployment_schema,
+                session=session,
+            )
+
             session.refresh(deployment_schema)
             return deployment_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -5352,6 +5359,17 @@ class SqlZenStore(BaseZenStore):
             deployment.update(deployment_update)
             session.add(deployment)
             session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment_update.add_tags,
+                resources=deployment,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=deployment_update.remove_tags,
+                resources=deployment,
+                session=session,
+            )
 
             session.refresh(deployment)
 
@@ -13123,6 +13141,7 @@ class SqlZenStore(BaseZenStore):
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
             PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
+            DeploymentSchema: TaggableResourceTypes.DEPLOYMENT,
         }
         if type(resource) not in resource_types:
             raise ValueError(
@@ -13165,6 +13184,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
             TaggableResourceTypes.PIPELINE_SNAPSHOT: PipelineSnapshotSchema,
+            TaggableResourceTypes.DEPLOYMENT: DeploymentSchema,
         }
 
         return resource_type_to_schema_mapping[resource_type]
@@ -13831,6 +13851,32 @@ class SqlZenStore(BaseZenStore):
                                     tag_id=tag_schema.id,
                                     resource_id=older_snapshots.items[0].id,
                                     resource_type=TaggableResourceTypes.PIPELINE_SNAPSHOT,
+                                )
+                            )
+                    elif isinstance(resource, DeploymentSchema):
+                        if not resource.snapshot:
+                            continue
+                        scope_id = resource.snapshot.pipeline_id
+                        scope_ids[TaggableResourceTypes.DEPLOYMENT].append(
+                            scope_id
+                        )
+
+                        # TODO: This is very inefficient, we should use a
+                        # better query
+                        older_deployments = self.list_deployments(
+                            DeploymentFilter(
+                                id=f"notequals:{resource.id}",
+                                project=resource.project.id,
+                                pipeline=scope_id,
+                                tags=[tag_schema.name],
+                            )
+                        )
+                        if older_deployments.items:
+                            detach_resources.append(
+                                TagResourceRequest(
+                                    tag_id=tag_schema.id,
+                                    resource_id=older_deployments.items[0].id,
+                                    resource_type=TaggableResourceTypes.DEPLOYMENT,
                                 )
                             )
                     else:
