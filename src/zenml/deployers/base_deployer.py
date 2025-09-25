@@ -174,7 +174,7 @@ class BaseDeployer(StackComponent, ABC):
 
         Raises:
             DeploymentProvisionError: if the deployment has no compiled schemas
-            for the pipeline inputs and outputs.
+                for the pipeline inputs and outputs.
         """
         if (
             not snapshot.pipeline_spec

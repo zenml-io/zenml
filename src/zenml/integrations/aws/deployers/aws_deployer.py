@@ -45,11 +45,9 @@ from zenml.deployers.exceptions import (
 )
 from zenml.deployers.server.entrypoint_configuration import (
     AUTH_KEY_OPTION,
+    DEPLOYMENT_ID_OPTION,
     PORT_OPTION,
     DeploymentEntrypointConfiguration,
-)
-from zenml.entrypoints.base_entrypoint_configuration import (
-    SNAPSHOT_ID_OPTION,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.integrations.aws.flavors.aws_deployer_flavor import (
@@ -1283,7 +1281,7 @@ class AWSDeployer(ContainerizedDeployer):
         entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
-                SNAPSHOT_ID_OPTION: snapshot.id,
+                DEPLOYMENT_ID_OPTION: deployment.id,
                 PORT_OPTION: settings.port,
                 AUTH_KEY_OPTION: deployment.auth_key,
             }

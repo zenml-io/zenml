@@ -397,6 +397,7 @@ class TaggableResourceTypes(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     RUN_TEMPLATE = "run_template"
     PIPELINE_SNAPSHOT = "pipeline_snapshot"
+    DEPLOYMENT = "deployment"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -508,3 +509,4 @@ class PipelineRunTriggeredByType(StrEnum):
     """All possible types that can trigger a pipeline run."""
 
     STEP_RUN = "step_run"
+    DEPLOYMENT = "deployment"

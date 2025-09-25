@@ -33,7 +33,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -48,6 +48,7 @@ from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
 )
+from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
@@ -152,7 +153,6 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     template: Optional[UUID] = Field(
         default=None,
         description="DEPRECATED: Template used for the snapshot.",
-        deprecated=True,
     )
     source_snapshot: Optional[UUID] = Field(
         default=None,
@@ -228,6 +228,9 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
 
     runnable: bool = Field(
         title="If a run can be started from the snapshot.",
+    )
+    deployable: bool = Field(
+        title="If the snapshot can be deployed.",
     )
 
 
@@ -310,6 +313,10 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     """Run snapshot resources."""
 
+    deployment: Optional[DeploymentResponse] = Field(
+        default=None,
+        title="The deployment associated with the snapshot.",
+    )
     tags: List[TagResponse] = Field(
         default=[],
         title="Tags associated with the snapshot.",
@@ -359,6 +366,15 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_body().runnable
+
+    @property
+    def deployable(self) -> bool:
+        """The `deployable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().deployable
 
     @property
     def description(self) -> Optional[str]:
@@ -532,6 +548,15 @@ class PipelineSnapshotResponse(
         return self.get_metadata().config_template
 
     @property
+    def deployment(self) -> Optional[DeploymentResponse]:
+        """The `deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().deployment
+
+    @property
     def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
@@ -572,6 +597,8 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "pipeline",
         "stack",
         "runnable",
+        "deployable",
+        "deployed",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -619,6 +646,14 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether the snapshot is runnable.",
     )
+    deployable: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is deployable.",
+    )
+    deployed: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is deployed.",
+    )
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -631,12 +666,15 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlmodel import and_, col
+        from sqlmodel import and_, col, not_, select
 
         from zenml.zen_stores.schemas import (
+            DeploymentSchema,
             PipelineBuildSchema,
             PipelineSchema,
             PipelineSnapshotSchema,
+            StackComponentSchema,
+            StackCompositionSchema,
             StackSchema,
         )
 
@@ -678,6 +716,44 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             )
 
             custom_filters.append(runnable_filter)
+
+        if self.deployable is True:
+            deployer_exists = (
+                select(StackComponentSchema.id)
+                .where(
+                    StackComponentSchema.type
+                    == StackComponentType.DEPLOYER.value
+                )
+                .where(
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id
+                )
+                .where(
+                    StackCompositionSchema.stack_id
+                    == PipelineSnapshotSchema.stack_id
+                )
+                .exists()
+            )
+            deployable_filter = and_(
+                col(PipelineSnapshotSchema.build_id).is_not(None),
+                deployer_exists,
+            )
+
+            custom_filters.append(deployable_filter)
+
+        if self.deployed is not None:
+            deployment_exists = (
+                select(DeploymentSchema.id)
+                .where(
+                    DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id
+                )
+                .exists()
+            )
+            if self.deployed is True:
+                deployed_filter = and_(deployment_exists)
+            else:
+                deployed_filter = and_(not_(deployment_exists))
+            custom_filters.append(deployed_filter)
 
         return custom_filters
 

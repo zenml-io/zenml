@@ -27,9 +27,11 @@ if TYPE_CHECKING:
     from zenml.deployers.server.service import PipelineDeploymentService
 
 
-class PipelineInvokeResponseMetadata(BaseModel):
+class DeploymentInvocationResponseMetadata(BaseModel):
     """Pipeline invoke response metadata model."""
 
+    deployment_id: UUID = Field(title="The ID of the deployment.")
+    deployment_name: str = Field(title="The name of the deployment.")
     snapshot_id: UUID = Field(title="The ID of the snapshot.")
     snapshot_name: Optional[str] = Field(
         default=None, title="The name of the snapshot."
@@ -46,7 +48,7 @@ class PipelineInvokeResponseMetadata(BaseModel):
     )
 
 
-class BasePipelineInvokeRequest(BaseModel):
+class BaseDeploymentInvocationRequest(BaseModel):
     """Base pipeline invoke request model."""
 
     parameters: BaseModel = Field(
@@ -64,7 +66,7 @@ class BasePipelineInvokeRequest(BaseModel):
     )
 
 
-class BasePipelineInvokeResponse(BaseModel):
+class BaseDeploymentInvocationResponse(BaseModel):
     """Base pipeline invoke response model."""
 
     success: bool = Field(
@@ -78,7 +80,7 @@ class BasePipelineInvokeResponse(BaseModel):
     execution_time: float = Field(
         title="The time taken to execute the pipeline."
     )
-    metadata: PipelineInvokeResponseMetadata = Field(
+    metadata: DeploymentInvocationResponseMetadata = Field(
         title="The metadata of the pipeline execution."
     )
     error: Optional[str] = Field(
@@ -102,6 +104,13 @@ class PipelineInfo(BaseModel):
     )
 
 
+class DeploymentInfo(BaseModel):
+    """Deployment info model."""
+
+    id: UUID = Field(title="The ID of the deployment.")
+    name: str = Field(title="The name of the deployment.")
+
+
 class SnapshotInfo(BaseModel):
     """Snapshot info model."""
 
@@ -114,6 +123,9 @@ class SnapshotInfo(BaseModel):
 class ServiceInfo(BaseModel):
     """Service info model."""
 
+    deployment: DeploymentInfo = Field(
+        title="The deployment of the pipeline service."
+    )
     snapshot: SnapshotInfo = Field(
         title="The snapshot of the pipeline service."
     )
@@ -158,15 +170,14 @@ def get_pipeline_invoke_models(
         return BaseModel, BaseModel
 
     else:
-        assert service.params_model is not None
 
-        class PipelineInvokeRequest(BasePipelineInvokeRequest):
+        class PipelineInvokeRequest(BaseDeploymentInvocationRequest):
             parameters: Annotated[
-                service.params_model,
+                service.input_model,
                 WithJsonSchema(service.input_schema, mode="validation"),
             ]
 
-        class PipelineInvokeResponse(BasePipelineInvokeResponse):
+        class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
             outputs: Annotated[
                 Optional[Dict[str, Any]],
                 WithJsonSchema(service.output_schema, mode="serialization"),

@@ -14,17 +14,18 @@
 """SQLModel implementation of pipeline deployments table."""
 
 import json
-from typing import Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, String
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import DeploymentStatus
+from zenml.enums import DeploymentStatus, TaggableResourceTypes
+from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
     DeploymentResponse,
@@ -43,6 +44,11 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
+
+logger = get_logger(__name__)
 
 
 class DeploymentSchema(NamedSchema, table=True):
@@ -104,7 +110,7 @@ class DeploymentSchema(NamedSchema, table=True):
         nullable=True,
     )
     snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
-        back_populates="deployments",
+        back_populates="deployment",
     )
 
     deployer_id: Optional[UUID] = build_foreign_key_field(
@@ -116,6 +122,16 @@ class DeploymentSchema(NamedSchema, table=True):
         nullable=True,
     )
     deployer: Optional["StackComponentSchema"] = Relationship()
+
+    tags: List["TagSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.DEPLOYMENT.value}', foreign(TagResourceSchema.resource_id)==DeploymentSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
+            overlaps="tags",
+        ),
+    )
 
     @classmethod
     def get_query_options(
@@ -142,8 +158,10 @@ class DeploymentSchema(NamedSchema, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(DeploymentSchema.user)),
-                    joinedload(jl_arg(DeploymentSchema.snapshot)),
                     joinedload(jl_arg(DeploymentSchema.deployer)),
+                    selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.pipeline)
+                    ),
                 ]
             )
 
@@ -165,13 +183,24 @@ class DeploymentSchema(NamedSchema, table=True):
         Returns:
             The created `DeploymentResponse`.
         """
+        status: Optional[DeploymentStatus] = None
+        if self.status in DeploymentStatus.values():
+            status = DeploymentStatus(self.status)
+        elif self.status is not None:
+            status = DeploymentStatus.UNKNOWN
+            logger.warning(
+                f"Deployment status '{self.status}' used for deployment "
+                f"{self.name} is not a valid DeploymentStatus value. "
+                "Using UNKNOWN instead."
+            )
+
         body = DeploymentResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             url=self.url,
-            status=self.status,
+            status=status,
         )
 
         metadata = None
@@ -185,8 +214,12 @@ class DeploymentSchema(NamedSchema, table=True):
         if include_resources:
             resources = DeploymentResponseResources(
                 user=self.user.to_model() if self.user else None,
+                tags=[tag.to_model() for tag in self.tags],
                 snapshot=self.snapshot.to_model() if self.snapshot else None,
                 deployer=self.deployer.to_model() if self.deployer else None,
+                pipeline=self.snapshot.pipeline.to_model()
+                if self.snapshot and self.snapshot.pipeline
+                else None,
             )
 
         return DeploymentResponse(

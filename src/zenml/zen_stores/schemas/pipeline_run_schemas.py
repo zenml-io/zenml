@@ -339,6 +339,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if request.trigger_info.step_run_id:
                 triggered_by = request.trigger_info.step_run_id
                 triggered_by_type = PipelineRunTriggeredByType.STEP_RUN.value
+            elif request.trigger_info.deployment_id:
+                triggered_by = request.trigger_info.deployment_id
+                triggered_by_type = PipelineRunTriggeredByType.DEPLOYMENT.value
 
         return cls(
             project_id=request.project,

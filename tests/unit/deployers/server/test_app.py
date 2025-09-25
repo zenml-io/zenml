@@ -37,10 +37,11 @@ from zenml.deployers.server.app import (
     verify_token,
 )
 from zenml.deployers.server.models import (
-    BasePipelineInvokeResponse,
+    BaseDeploymentInvocationResponse,
+    DeploymentInfo,
+    DeploymentInvocationResponseMetadata,
     ExecutionMetrics,
     PipelineInfo,
-    PipelineInvokeResponseMetadata,
     ServiceInfo,
     SnapshotInfo,
 )
@@ -63,8 +64,9 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
         mocker.MagicMock(spec=PipelineDeploymentService),
     )
     snapshot_id = uuid4()
+    deployment_id = uuid4()
 
-    service.params_model = MockWeatherRequest
+    service.input_model = MockWeatherRequest
     service.is_healthy.return_value = True
     service.input_schema = {
         "type": "object",
@@ -76,6 +78,7 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
     }
 
     service.get_service_info.return_value = ServiceInfo(
+        deployment=DeploymentInfo(id=deployment_id, name="deployment"),
         snapshot=SnapshotInfo(id=snapshot_id, name="snapshot"),
         pipeline=PipelineInfo(
             name="test_pipeline",
@@ -92,11 +95,13 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
         total_executions=3,
         last_execution_time=None,
     )
-    service.execute_pipeline.return_value = BasePipelineInvokeResponse(
+    service.execute_pipeline.return_value = BaseDeploymentInvocationResponse(
         success=True,
         outputs={"result": "ok"},
         execution_time=0.5,
-        metadata=PipelineInvokeResponseMetadata(
+        metadata=DeploymentInvocationResponseMetadata(
+            deployment_id=deployment_id,
+            deployment_name="deployment",
             pipeline_name="test_pipeline",
             run_id=None,
             run_name=None,
@@ -313,13 +318,13 @@ class TestServingAppLifecycle:
         mocker: MockerFixture,
     ) -> None:
         """Lifespan initializes and cleans up service in normal mode."""
-        monkeypatch.setenv("ZENML_SNAPSHOT_ID", "test-snapshot-id")
+        monkeypatch.setenv("ZENML_DEPLOYMENT_ID", "test-deployment-id")
 
         mock_service = cast(
             PipelineDeploymentService,
             mocker.MagicMock(spec=PipelineDeploymentService),
         )
-        mock_service.params_model = MockWeatherRequest
+        mock_service.input_model = MockWeatherRequest
         mock_service.initialize = mocker.MagicMock()
         mock_service.cleanup = mocker.MagicMock()
 
@@ -343,10 +348,10 @@ class TestServingAppLifecycle:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Lifespan raises when no snapshot id is configured."""
-        monkeypatch.delenv("ZENML_SNAPSHOT_ID", raising=False)
+        monkeypatch.delenv("ZENML_DEPLOYMENT_ID", raising=False)
 
         async def _run() -> None:
-            with pytest.raises(ValueError, match="ZENML_SNAPSHOT_ID"):
+            with pytest.raises(ValueError, match="ZENML_DEPLOYMENT_ID"):
                 async with lifespan(app):
                     pass
 

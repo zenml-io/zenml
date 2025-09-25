@@ -3393,6 +3393,8 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
         runnable: Optional[bool] = None,
+        deployable: Optional[bool] = None,
+        deployed: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
@@ -3418,6 +3420,8 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The ID of the schedule to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             runnable: Whether the snapshot is runnable.
+            deployable: Whether the snapshot is deployable.
+            deployed: Whether the snapshot is deployed.
             tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3444,6 +3448,8 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             source_snapshot_id=source_snapshot_id,
             runnable=runnable,
+            deployable=deployable,
+            deployed=deployed,
             tag=tag,
             tags=tags,
         )
@@ -3745,6 +3751,9 @@ class Client(metaclass=ClientMetaClass):
         status: Optional[DeploymentStatus] = None,
         url: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
         """List deployments.
@@ -3764,6 +3773,9 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the deployment to filter by.
             url: The url of the deployment to filter by.
             user: Filter by user name/ID.
+            pipeline: Filter by pipeline name/ID.
+            tag: Tag to filter by.
+            tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3786,6 +3798,9 @@ class Client(metaclass=ClientMetaClass):
                 deployer_id=deployer_id,
                 status=status,
                 url=url,
+                pipeline=pipeline,
+                tag=tag,
+                tags=tags,
             ),
             hydrate=hydrate,
         )
@@ -4632,6 +4647,7 @@ class Client(metaclass=ClientMetaClass):
         hydrate: bool = False,
         include_full_metadata: bool = False,
         triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
+        triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -4678,6 +4694,8 @@ class Client(metaclass=ClientMetaClass):
                 the response.
             triggered_by_step_run_id: The ID of the step run that triggered
                 the pipeline run.
+            triggered_by_deployment_id: The ID of the deployment that triggered
+                the pipeline run.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -4719,6 +4737,7 @@ class Client(metaclass=ClientMetaClass):
             in_progress=in_progress,
             templatable=templatable,
             triggered_by_step_run_id=triggered_by_step_run_id,
+            triggered_by_deployment_id=triggered_by_deployment_id,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,

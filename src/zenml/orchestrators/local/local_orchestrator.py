@@ -27,7 +27,7 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.stack import Stack
-from zenml.steps.step_context import StepSharedContext
+from zenml.steps.step_context import RunContext
 from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
@@ -45,7 +45,7 @@ class LocalOrchestrator(BaseOrchestrator):
     """
 
     _orchestrator_run_id: Optional[str] = None
-    _run_context: Optional[StepSharedContext] = None
+    _run_context: Optional[RunContext] = None
 
     def set_shared_run_state(self, state: Optional[Any]) -> None:
         """Sets the state to be shared between all steps of all runs executed by this orchestrator.
@@ -53,7 +53,7 @@ class LocalOrchestrator(BaseOrchestrator):
         Args:
             state: the state to be shared
         """
-        self._run_context = StepSharedContext(state=state)
+        self._run_context = RunContext(state=state)
 
     def submit_pipeline(
         self,
@@ -118,7 +118,7 @@ class LocalOrchestrator(BaseOrchestrator):
                     hook_parameters=snapshot.pipeline_configuration.init_hook_kwargs,
                     raise_on_error=True,
                 )
-            run_context = StepSharedContext(state=state)
+            run_context = RunContext(state=state)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():

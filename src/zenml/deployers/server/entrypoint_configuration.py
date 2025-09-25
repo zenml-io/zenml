@@ -15,16 +15,21 @@
 
 import os
 from typing import Any, List, Set
+from uuid import UUID
 
+from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
-    SNAPSHOT_ID_OPTION,
     BaseEntrypointConfiguration,
 )
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
+from zenml.utils import uuid_utils
 
 logger = get_logger(__name__)
 
 # Deployment-specific entrypoint options
+DEPLOYMENT_ID_OPTION = "deployment_id"
 HOST_OPTION = "host"
 PORT_OPTION = "port"
 WORKERS_OPTION = "workers"
@@ -48,7 +53,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
             Set of required option names
         """
         return {
-            SNAPSHOT_ID_OPTION,
+            DEPLOYMENT_ID_OPTION,
             HOST_OPTION,
             PORT_OPTION,
             WORKERS_OPTION,
@@ -66,12 +71,26 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Returns:
             List of command-line arguments
+
+        Raises:
+            ValueError: If the deployment ID is not a valid UUID.
         """
         # Get base arguments (snapshot_id, etc.)
         base_args = super().get_entrypoint_arguments(**kwargs)
 
+        deployment_id = kwargs.get(DEPLOYMENT_ID_OPTION)
+        if not uuid_utils.is_valid_uuid(deployment_id):
+            raise ValueError(
+                f"Missing or invalid deployment ID as argument for entrypoint "
+                f"configuration. Please make sure to pass a valid UUID to "
+                f"`{cls.__name__}.{cls.get_entrypoint_arguments.__name__}"
+                f"({DEPLOYMENT_ID_OPTION}=<UUID>)`."
+            )
+
         # Add deployment-specific arguments with defaults
         deployment_args = [
+            f"--{DEPLOYMENT_ID_OPTION}",
+            str(kwargs.get(DEPLOYMENT_ID_OPTION, "")),
             f"--{HOST_OPTION}",
             str(kwargs.get(HOST_OPTION, "0.0.0.0")),
             f"--{PORT_OPTION}",
@@ -88,6 +107,23 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         return base_args + deployment_args
 
+    def load_snapshot(self) -> "PipelineSnapshotResponse":
+        """Loads the deployment snapshot.
+
+        Returns:
+            The deployment snapshot.
+
+        Raises:
+            RuntimeError: If the deployment has no snapshot.
+        """
+        deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
+        deployment = Client().zen_store.get_deployment(
+            deployment_id=deployment_id
+        )
+        if deployment.snapshot is None:
+            raise RuntimeError("Deployment has no snapshot")
+        return deployment.snapshot
+
     def run(self) -> None:
         """Run the ZenML pipeline deployment application.
 
@@ -99,8 +135,11 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         """
         import uvicorn
 
+        # Activate integrations to ensure all components are available
+        integration_registry.activate_integrations()
+
         # Extract configuration from entrypoint args
-        snapshot_id = self.entrypoint_args[SNAPSHOT_ID_OPTION]
+        deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
         host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")
         port = int(self.entrypoint_args.get(PORT_OPTION, 8001))
         workers = int(self.entrypoint_args.get(WORKERS_OPTION, 1))
@@ -117,14 +156,15 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         self.download_code_if_necessary(snapshot=snapshot)
 
         # Set environment variables for the deployment application
-        os.environ["ZENML_SNAPSHOT_ID"] = snapshot_id
+        os.environ["ZENML_DEPLOYMENT_ID"] = deployment_id
         if create_runs:
             os.environ["ZENML_DEPLOYMENT_CREATE_RUNS"] = "true"
         if auth_key:
             os.environ["ZENML_DEPLOYMENT_AUTH_KEY"] = auth_key
 
         logger.info("🚀 Starting ZenML Pipeline Deployment...")
-        logger.info(f"   Snapshot ID: {snapshot_id}")
+        logger.info(f"   Deployment ID: {deployment_id}")
+        logger.info(f"   Snapshot ID: {snapshot.id}")
         logger.info(f"   Host: {host}")
         logger.info(f"   Port: {port}")
         logger.info(f"   Workers: {workers}")

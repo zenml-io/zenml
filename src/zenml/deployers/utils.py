@@ -228,9 +228,6 @@ def invoke_deployment(
     if deployment.auth_key:
         headers["Authorization"] = f"Bearer {deployment.auth_key}"
 
-    # TODO: use the current ZenML API token, if any, to authenticate the request
-    # if the deployment requires authentication and allows it.
-
     try:
         step_context = get_step_context()
     except RuntimeError:

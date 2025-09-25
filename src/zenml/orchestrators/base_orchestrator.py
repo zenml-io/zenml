@@ -51,7 +51,7 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.steps.step_context import StepSharedContext
+from zenml.steps.step_context import RunContext
 from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
@@ -393,7 +393,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def run_step(
         self,
         step: "Step",
-        run_context: Optional[StepSharedContext] = None,
+        run_context: Optional[RunContext] = None,
     ) -> None:
         """Runs the given step.
 

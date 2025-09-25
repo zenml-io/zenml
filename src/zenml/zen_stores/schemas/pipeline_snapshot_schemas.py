@@ -199,7 +199,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "order_by": "asc(StepConfigurationSchema.index)",
         }
     )
-    deployments: List["DeploymentSchema"] = Relationship(
+    deployment: Optional["DeploymentSchema"] = Relationship(
         back_populates="snapshot"
     )
     step_count: int
@@ -451,7 +451,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 included.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The response.
         """
@@ -459,12 +458,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
+        deployable = False
+        if self.build and self.stack and self.stack.has_deployer:
+            deployable = True
+
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             runnable=runnable,
+            deployable=deployable,
         )
         metadata = None
         if include_metadata:
@@ -548,6 +552,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
