@@ -399,7 +399,7 @@ def _validate_hook_arguments(
     return validated_kwargs
 
 
-def parse_hook_inputs(
+def _parse_hook_inputs(
     hook: Callable[..., Any],
     hook_inputs: Optional[Dict[str, Any]] = None,
     step_exception: Optional[BaseException] = None,
@@ -525,7 +525,7 @@ def load_and_run_hook(
     try:
         hook = source_utils.load(hook_source)
 
-        function_params = parse_hook_inputs(
+        function_params = _parse_hook_inputs(
             hook=hook,
             hook_inputs=hook_parameters,
             step_exception=step_exception,
