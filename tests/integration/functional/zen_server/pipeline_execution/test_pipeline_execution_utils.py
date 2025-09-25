@@ -49,7 +49,7 @@ def test_creating_snapshot_request_from_template(
             updated=datetime.utcnow(),
         ),
     )
-    snapshot.metadata.build = build
+    snapshot.resources.build = build
 
     with does_not_raise():
         snapshot_request_from_source_snapshot(
