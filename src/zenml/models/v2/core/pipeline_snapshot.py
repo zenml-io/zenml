@@ -153,7 +153,6 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     template: Optional[UUID] = Field(
         default=None,
         description="DEPRECATED: Template used for the snapshot.",
-        deprecated=True,
     )
     source_snapshot: Optional[UUID] = Field(
         default=None,
