@@ -30,7 +30,7 @@ def upgrade() -> None:
     )
 
     connection = op.get_bind()
-    connection.execute(
+    connection.execute(  # nosec
         sa.text(f"""
             UPDATE pipeline_run 
             SET in_progress = CASE 

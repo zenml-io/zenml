@@ -271,8 +271,7 @@ max-complexity = 18
 convention = "google"
 
 [tool.bandit]
-skips = ["B615", "B104"]
-exclude_dirs = ["src/zenml/zen_stores/migrations/"]
+skips = ["B615"]
 
 [tool.mypy]
 
