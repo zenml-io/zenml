@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Amazon SageMaker step operator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type, List, Union
+from typing import TYPE_CHECKING, Dict, Optional, Type, Literal
 
 from pydantic import Field, PositiveInt, field_validator
 from zenml.utils.secret_utils import SecretField
@@ -44,25 +44,24 @@ class AWSBatchStepOperatorSettings(BaseSettings):
         default="",
         description="The AWS Batch job queue to submit the step AWS Batch job"
          " to. If not provided, falls back to the default job queue name "
-         "specified at stack registration time."
+         "specified at stack registration time. Must be compatible with"
+         "`backend`."
     )
-    platform_capability: str = Field(
-        default="FARGATE",
+    backend: Literal['EC2','FARGATE'] = Field(
+        default="EC2",
         description="The AWS Batch platform capability for the step AWS Batch "
-        "job to be orchestrated with. Defaults to 'FARGATE'."
+        "job to be orchestrated with. Must be compatible with `job_queue_name`."
+        "Defaults to 'EC2'."
+    )
+    assign_public_ip: Literal['ENABLED','DISABLED'] = Field(
+        default="ENABLED",
+        description="Sets the network configuration's assignPublicIp field."
+        "Only relevant for FARGATE backend."
     )
     timeout_seconds: PositiveInt = Field(
         default=3600,
         description="The number of seconds before AWS Batch times out the job."
     )
-
-    @field_validator("platform_capability")
-    def validate_platform_capability(cls, value):
-        if value not in ["FARGATE","EC2"]:
-            raise ValueError(f"Invalid platform capability {value}. Must be "
-                             "either 'FARGATE' or 'EC2'")
-        
-        return value
 
 
 

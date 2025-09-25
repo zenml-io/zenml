@@ -25,8 +25,7 @@ from typing import (
     Literal,
     cast,
 )
-from pydantic import BaseModel, PositiveInt, Field, field_validator
-from pydantic_settings import BaseSettings as PydanticBaseSettings
+from pydantic import BaseModel, PositiveInt, field_validator
 from boto3 import Session
 
 from zenml.client import Client
@@ -73,6 +72,25 @@ class AWSBatchJobDefinitionContainerProperties(BaseModel):
     resourceRequirements: List[ResourceRequirement] = [] # keys: 'value','type', with type one of 'GPU','VCPU','MEMORY'
     secrets: List[Dict[str,str]] = [] # keys: 'name','value'
 
+
+class AWSBatchJobDefinitionEC2ContainerProperties(AWSBatchJobDefinitionContainerProperties):
+    logConfiguration: dict[Literal["logDriver"],Literal["awsfirelens", "awslogs", "fluentd", "gelf", "json-file", "journald", "logentries", "syslog", "splunk"]] = {"logDriver":"awslogs"}
+
+class AWSBatchJobDefinitionFargateContainerProperties(AWSBatchJobDefinitionContainerProperties):
+    logConfiguration: dict[Literal["logDriver"],Literal["awslogs","splunk"]] = {"logDriver":"awslogs"}
+    networkConfiguration: dict[Literal['assignPublicIp'],Literal['ENABLED','DISABLED']] = {"assignPublicIp": "ENABLED"}
+
+    @field_validator("resourceRequirements")
+    def check_resource_requirements(cls,value: List[ResourceRequirement]):
+        for resource_requirement in value:
+            if resource_requirement.type == "GPU":
+                raise ValueError(
+                    f"Invalid fargate resource requirement: GPU.Use EC2 "
+                    "platform capability if you need custom devices."
+                )
+            
+        return value
+
 class AWSBatchJobDefinitionRetryStrategy(BaseModel):
     """An AWS Batch job subconfiguration model for retry specifications."""
     attempts: PositiveInt = 2
@@ -93,7 +111,6 @@ class AWSBatchJobDefinition(BaseModel):
     
     jobDefinitionName: str
     type: str = 'container'
-    containerProperties: Optional[AWSBatchJobDefinitionContainerProperties] = None
     parameters: Dict[str,str] = {}
     # schedulingPriority: int = 0 # ignored in FIFO queues
     retryStrategy: AWSBatchJobDefinitionRetryStrategy = AWSBatchJobDefinitionRetryStrategy()
@@ -102,26 +119,13 @@ class AWSBatchJobDefinition(BaseModel):
     tags: Dict[str,str] = {}
     platformCapabilities: List[Literal["EC2","FARGATE"]]
 
+class AWSBatchJobEC2Definition(AWSBatchJobDefinition):
+    containerProperties: AWSBatchJobDefinitionEC2ContainerProperties
+    platformCapabilities: list[Literal["EC2"]] = ["EC2"]
 
-class AWSBatchJobDefinitionOnEC2(AWSBatchJobDefinition):
-    platformCapabilities: str = "EC2"
-    logConfiguration: dict[Literal["logDriver"],Literal["awsfirelens", "awslogs", "fluentd", "gelf", "json-file", "journald", "logentries", "syslog", "splunk"]] = {"logDriver":"awslogs"}
-
-class AWSBatchJobDefinitionOnFargate(AWSBatchJobDefinition):
-    platformCapabilities: str = "FARGATE"
-    logConfiguration: dict[Literal["logDriver"],Literal["awslogs","splunk"]] = {"logDriver":"awslogs"}
-    networkConfiguration: dict[Literal["assignPublicIp"],Literal["ENABLED","DISABLED"]] = {"assignPublicIp":"DISABLED"}
-    
-    @field_validator("containerProperties")
-    def check_resource_requirements(cls,value: AWSBatchJobDefinitionContainerProperties):
-        for resource_requirement in value.resourceRequirements:
-            if resource_requirement.type == "GPU":
-                raise ValueError(
-                    f"Invalid fargate resource requirement: GPU.Use EC2 "
-                    "platform capability if you need custom devices."
-                )
-            
-        return value
+class AWSBatchJobFargateDefinition(AWSBatchJobDefinition):
+    containerProperties: AWSBatchJobDefinitionFargateContainerProperties
+    platformCapabilities: list[Literal["FARGATE"]] = ["FARGATE"]    
 
 class AWSBatchStepOperator(BaseStepOperator):
     """Step operator to run a step on AWS Batch.
@@ -349,22 +353,27 @@ class AWSBatchStepOperator(BaseStepOperator):
 
         job_name = self.generate_unique_batch_job_name(info)
 
-        if step_settings.platform_capability == "EC2":
-            AWSBatchJobDefinitionClass = AWSBatchJobDefinitionOnEC2
-        else:
-            AWSBatchJobDefinitionClass = AWSBatchJobDefinitionOnFargate
+        if step_settings.backend == "EC2":
+            AWSBatchJobDefinitionClass = AWSBatchJobEC2Definition
+            AWSBatchContainerProperties = AWSBatchJobDefinitionEC2ContainerProperties
+            container_kwargs = {}
+        elif step_settings.backend == 'FARGATE':
+            AWSBatchJobDefinitionClass = AWSBatchJobFargateDefinition
+            AWSBatchContainerProperties = AWSBatchJobDefinitionFargateContainerProperties
+            container_kwargs = {'networkConfiguration': {"assignPublicIp":step_settings.assign_public_ip}}
 
         return AWSBatchJobDefinitionClass(
             jobDefinitionName=job_name,
             timeout={'attemptDurationSeconds':step_settings.timeout_seconds},
             type="container",
-            containerProperties=AWSBatchJobDefinitionContainerProperties(
+            containerProperties=AWSBatchContainerProperties(
                 executionRoleArn=self.config.execution_role,
                 jobRoleArn=self.config.job_role,
                 image=image_name,
                 command=entrypoint_command,
                 environment=self.map_environment(environment),
                 resourceRequirements=self.map_resource_settings(resource_settings),
+                **container_kwargs
             )
         )
 
