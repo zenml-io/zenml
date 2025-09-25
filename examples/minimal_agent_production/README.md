@@ -1,30 +1,36 @@
-# Document Analysis Pipeline: From Upload to Insights
+# Deploying agents with ZenML: Document Analysis Pipeline
 
-Transform any document into structured insights with AI-powered analysis - deployed as a production HTTP endpoint.
+ZenML can be used to develop and deploy agents or LLM-powered workflows. This example use-case
+transforms any document into structured insights with AI-powered analysis - deployed as a production HTTP endpoint.
 
 ## 🎯 What You'll Build
 
-This example shows how to create a document analysis system that goes beyond simple text processing. You'll deploy a pipeline that can:
+This example shows how to create a document analysis system with ZenML. You'll deploy a pipeline that can:
 
 - **Analyze any document**: PDFs, markdown, plain text, or web content
 - **Extract structured insights**: Summaries, keywords, sentiment, and readability scores
 - **Scale automatically**: Handle multiple requests with built-in caching and error handling
 - **Monitor quality**: Built-in evaluation pipeline to track analysis performance over time
 
-### Why Document Analysis vs. Chatbots?
+Every document analysis provides:
 
-Document analysis is perfect for ZenML pipelines because:
+1. **Smart Summarization**: 2-3 sentence summaries that capture the essence
+2. **Keyword Extraction**: Top 5 most relevant terms and phrases  
+3. **Sentiment Analysis**: Positive, negative, or neutral classification
+4. **Readability Scoring**: 0-1 scale assessment of text complexity
+5. **Processing Metrics**: Word count, processing time, and token usage
 
-- **Batch-oriented**: Natural fit for pipeline processing paradigms
-- **Asynchronous**: Users expect longer processing times for thorough analysis
-- **Traceable**: Rich artifacts and metadata for every analysis
-- **Evaluatable**: Clear metrics for continuous improvement
+The key insight in this example is that you can use the same pipeline principles that are used
+in "normal" batch pipelines written in ZenML, and deploy it as a real-time agentic endpoint.
 
-## 🚀 Quick Start
+This avoids the complexity of having to create a bespoke FastAPI endpoint, and add all the monitoring
+overhead that results in productionalizing agents.
+
+## 🚀 Get Started
 
 ### Prerequisites
 ```bash
-pip install "zenml[server]" requests streamlit
+pip install "zenml[servers]" requests streamlit
 export OPENAI_API_KEY=sk-xxx  # Optional - works offline without it
 ```
 
@@ -69,18 +75,6 @@ Launch the Streamlit frontend for easy document upload:
 ```bash
 streamlit run streamlit_app.py
 ```
-
-- **Upload files**: Drag and drop any text document
-- **Analyze URLs**: Point to web content for instant analysis  
-- **Batch processing**: Analyze multiple documents from file paths
-
-### Phase 4: Monitor and Improve
-
-The pipeline automatically generates rich HTML reports for each analysis, providing:
-- **Analysis metrics**: Summary quality, keyword relevance, sentiment analysis
-- **Processing statistics**: Speed, token usage, and performance tracking
-- **Visual dashboards**: Rich HTML reports in your ZenML dashboard
-- **Error handling**: Graceful fallbacks when AI services are unavailable
 
 ## 🤖 How It Works
 
@@ -158,16 +152,6 @@ zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer \
   --config production.yaml
 ```
 
-## 📊 Rich Analysis Features
-
-Every document analysis provides:
-
-1. **Smart Summarization**: 2-3 sentence summaries that capture the essence
-2. **Keyword Extraction**: Top 5 most relevant terms and phrases  
-3. **Sentiment Analysis**: Positive, negative, or neutral classification
-4. **Readability Scoring**: 0-1 scale assessment of text complexity
-5. **Processing Metrics**: Word count, processing time, and token usage
-
 ## 📁 Project Structure
 
 ```
@@ -184,24 +168,6 @@ examples/minimal_agent_production/
 ├── streamlit_app.py             # Web interface
 └── run_evaluation.py            # Quality assessment CLI
 ```
-
-## 🎯 Perfect For
-
-- **Content Management**: Automatically categorize and summarize documents
-- **Research Analysis**: Process papers, reports, and articles at scale
-- **Quality Assessment**: Systematic evaluation of document quality
-- **Knowledge Management**: Extract insights from document repositories
-- **Compliance Review**: Structured analysis for regulatory requirements
-
-## 🔄 What's Next?
-
-This foundation enables powerful extensions:
-
-- **Multi-language support** with international LLM providers
-- **Custom analysis types** for domain-specific insights
-- **Automated workflows** triggered by document uploads
-- **Integration with document stores** like SharePoint or Google Drive
-- **Advanced evaluation metrics** with custom quality rubrics
 
 ## 🎯 The Big Picture
 
