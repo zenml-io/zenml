@@ -8149,6 +8149,12 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag: name of the tag or tag_utils.Tag object to be attached.
             resources: the resources to attach the tag to.
+
+        Raises:
+            ValueError: If the tag is an exclusive tag and is being
+                attached to multiple resources or if the tag is a
+                cascading tag as cascading tags can only be used
+                with the pipeline decorator.
         """
         if isinstance(tag, str):
             tag_request = TagRequest(name=tag)
