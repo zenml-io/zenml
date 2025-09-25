@@ -19,9 +19,10 @@ from zenml.config.resource_settings import ResourceSettings
 from zenml.integrations.aws.step_operators.aws_batch_step_operator import (
     AWSBatchStepOperator, 
     ResourceRequirement, 
-    AWSBatchJobDefinitionOnEC2, 
-    AWSBatchJobDefinitionOnFargate,
-    AWSBatchJobDefinitionContainerProperties
+    AWSBatchJobEC2Definition, 
+    AWSBatchJobFargateDefinition,
+    AWSBatchJobDefinitionEC2ContainerProperties,
+    AWSBatchJobDefinitionFargateContainerProperties
 )
 
 def test_aws_batch_step_operator_map_environment():
@@ -66,20 +67,35 @@ def test_aws_batch_step_operator_map_resource_settings(test_resource_settings,ex
 
     assert AWSBatchStepOperator.map_resource_settings(test_resource_settings) == expected
 
-def test_aws_batch_job_definition_on_ec2():
-    AWSBatchJobDefinitionOnEC2(
+def test_aws_batch_job_ec2_definition():
+    AWSBatchJobEC2Definition(
         jobDefinitionName="test",
+        containerProperties=AWSBatchJobDefinitionEC2ContainerProperties(
+            image="test-image",
+            command=["test","command"],
+            jobRoleArn="test-job-role-arn",
+            executionRoleArn="test-execution-role-arn",
+            resourceRequirements=[ResourceRequirement(value="1",type="GPU")]
+        )
     )
     
-def test_aws_batch_job_definition_on_fargate():
-    AWSBatchJobDefinitionOnFargate(
+def test_aws_batch_job_fargate_definition():
+    AWSBatchJobFargateDefinition(
         jobDefinitionName="test",
+        containerProperties=AWSBatchJobDefinitionFargateContainerProperties(
+            image="test-image",
+            command=["test","command"],
+            jobRoleArn="test-job-role-arn",
+            executionRoleArn="test-execution-role-arn",
+            resourceRequirements=[ResourceRequirement(value="2",type="VCPU")]
+        )
     )
 
-def test_aws_batch_job_definition_on_fargate_raise_gpu():
+def test_aws_batch_job_fargate_definition_raise_gpu():
     with pytest.raises(ValueError, match="Invalid fargate resource requirement: GPU.Use EC2 platform capability if you need custom devices."):
-        AWSBatchJobDefinitionOnFargate(
-            containerProperties=AWSBatchJobDefinitionContainerProperties(
+        AWSBatchJobFargateDefinition(
+            jobDefinitionName="test",
+            containerProperties=AWSBatchJobDefinitionFargateContainerProperties(
                 image="test-image",
                 command=["test","command"],
                 jobRoleArn="test-job-role-arn",
