@@ -3956,12 +3956,12 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if stack_component.type == StackComponentType.DEPLOYER:
-                deployments = self.list_deployments(
-                    DeploymentFilter(
-                        deployer_id=stack_component.id,
-                        status=f"notequals:{DeploymentStatus.ABSENT.value}",
-                    ),
-                ).items
+                deployments = session.exec(
+                    select(DeploymentSchema)
+                    .where(DeploymentSchema.deployer_id == stack_component.id)
+                    .where(DeploymentSchema.status != DeploymentStatus.ABSENT)
+                ).all()
+
                 if len(deployments) > 0:
                     raise IllegalOperationError(
                         f"The {stack_component.name} deployer stack component "
