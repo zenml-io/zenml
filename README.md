@@ -64,7 +64,7 @@ LISTOFCOMPANIES
 
 ### 🏗️ Architecture Overview
 
-ZenML uses a **client-server architecture** with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)) for pipeline visualization and management:
+ZenML uses a [**client-server architecture**](https://zenml.io/system-architecture) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
 
 - **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
 - **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
