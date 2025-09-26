@@ -119,21 +119,27 @@ class BaseEntrypointConfiguration(ABC):
         Raises:
             ValueError: If no valid snapshot ID is passed.
         """
-        snapshot_id = kwargs.get(SNAPSHOT_ID_OPTION)
-        if not uuid_utils.is_valid_uuid(snapshot_id):
-            raise ValueError(
-                f"Missing or invalid snapshot ID as argument for entrypoint "
-                f"configuration. Please make sure to pass a valid UUID to "
-                f"`{cls.__name__}.{cls.get_entrypoint_arguments.__name__}"
-                f"({SNAPSHOT_ID_OPTION}=<UUID>)`."
-            )
-
         arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve(cls).import_path,
-            f"--{SNAPSHOT_ID_OPTION}",
-            str(snapshot_id),
         ]
+
+        if SNAPSHOT_ID_OPTION in cls.get_entrypoint_options():
+            snapshot_id = kwargs.get(SNAPSHOT_ID_OPTION)
+            if not uuid_utils.is_valid_uuid(snapshot_id):
+                raise ValueError(
+                    f"Missing or invalid snapshot ID as argument for entrypoint "
+                    f"configuration. Please make sure to pass a valid UUID to "
+                    f"`{cls.__name__}.{cls.get_entrypoint_arguments.__name__}"
+                    f"({SNAPSHOT_ID_OPTION}=<UUID>)`."
+                )
+
+            arguments.extend(
+                [
+                    f"--{SNAPSHOT_ID_OPTION}",
+                    str(snapshot_id),
+                ]
+            )
 
         return arguments
 

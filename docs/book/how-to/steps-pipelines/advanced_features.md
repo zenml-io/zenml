@@ -628,8 +628,8 @@ This is particularly useful for steps that interact with external services or re
 Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
 
 ```python
-def success_hook(step_name, step_output):
-    print(f"Step {step_name} completed successfully with output: {step_output}")
+def success_hook():
+    print(f"Step completed successfully")
 
 def failure_hook(exception: BaseException):
     print(f"Step failed with error: {str(exception)}")
@@ -638,6 +638,11 @@ def failure_hook(exception: BaseException):
 def my_step():
     return 42
 ```
+
+The following conventions apply to hooks:
+
+* the success hook takes no arguments
+* the failure hook optionally takes a single `BaseException` typed argument
 
 You can also define hooks at the pipeline level to apply to all steps:
 

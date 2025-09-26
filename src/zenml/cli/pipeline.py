@@ -16,15 +16,15 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
+from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
@@ -299,6 +299,201 @@ def run_pipeline(
             prevent_build_reuse=prevent_build_reuse,
         )
         pipeline_instance()
+
+
+@pipeline.command(
+    "deploy",
+    help="Deploy a pipeline. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+@click.option(
+    "--name",
+    "-n",
+    "deployment_name",
+    type=str,
+    required=False,
+    help="The name of the deployment resulted from deploying the pipeline. If "
+    "not provided, the name of the pipeline will be used. If an existing "
+    "deployment with the same name already exists, an error will be raised, "
+    "unless the --update or --overtake flag is used.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the deployment.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to deploy on.",
+)
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+    help="ID or path of the build to use.",
+)
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
+@click.option(
+    "--update",
+    "-u",
+    "update",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already exists.",
+)
+@click.option(
+    "--overtake",
+    "-o",
+    "overtake",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already "
+    "exists, even if it is owned by a different user.",
+)
+@click.option(
+    "--attach",
+    "-a",
+    "attach",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Attach to the deployment logs.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline to be deployed.",
+)
+def deploy_pipeline(
+    source: str,
+    deployment_name: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
+    update: bool = False,
+    overtake: bool = False,
+    attach: bool = False,
+    timeout: Optional[int] = None,
+) -> None:
+    """Deploy a pipeline for online inference.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        deployment_name: Name of the deployment used to deploy the pipeline on.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            be deployed.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            deployment.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
+        update: If True, update the deployment with the same name if it
+            already exists.
+        overtake: If True, update the deployment with the same name if
+            it already exists, even if it is owned by a different user.
+        attach: If True, attach to the deployment logs.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline deploy` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        build: Union[str, PipelineBuildBase, None] = None
+        if build_path_or_id:
+            if uuid_utils.is_valid_uuid(build_path_or_id):
+                build = build_path_or_id
+            elif os.path.exists(build_path_or_id):
+                build = PipelineBuildBase.from_yaml(build_path_or_id)
+            else:
+                cli_utils.error(
+                    f"The specified build {build_path_or_id} is not a valid UUID "
+                    "or file path."
+                )
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
+        if not deployment_name:
+            deployment_name = pipeline_instance.name
+        client = Client()
+        try:
+            deployment = client.get_deployment(deployment_name)
+        except KeyError:
+            pass
+        else:
+            if (
+                deployment.user
+                and deployment.user.id != client.active_user.id
+                and not overtake
+            ):
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists "
+                    f"and is owned by a different user '{deployment.user.name}'."
+                    "\nDo you want to continue and update the existing deployment "
+                    "(hint: use the --overtake flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
+            elif not update and not overtake:
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists.\n"
+                    "Do you want to continue and update the existing "
+                    "deployment "
+                    "(hint: use the --update flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
+
+        deployment = pipeline_instance.deploy(
+            deployment_name=deployment_name, timeout=timeout
+        )
+
+        cli_utils.pretty_print_deployment(deployment, show_secret=False)
+
+        if attach:
+            deployer = BaseDeployer.get_active_deployer()
+            for log in deployer.get_deployment_logs(
+                deployment_name_or_id=deployment.id,
+                follow=True,
+            ):
+                print(log)
 
 
 @pipeline.command(
@@ -877,55 +1072,151 @@ def run_snapshot(
         pipeline_name_or_id: The name or ID of the pipeline.
         config_path: Path to configuration file for the run.
     """
-    if uuid_utils.is_valid_uuid(snapshot_name_or_id):
-        snapshot_id = UUID(snapshot_name_or_id)
-    elif pipeline_name_or_id:
-        try:
-            snapshot_id = (
-                Client()
-                .get_snapshot(
-                    snapshot_name_or_id,
-                    pipeline_name_or_id=pipeline_name_or_id,
-                )
-                .id
-            )
-        except KeyError:
-            cli_utils.error(
-                f"There are no snapshots with name `{snapshot_name_or_id}` for "
-                f"pipeline `{pipeline_name_or_id}`."
-            )
-    else:
-        snapshots = Client().list_snapshots(
-            name=snapshot_name_or_id,
-        )
-        if snapshots.total == 0:
-            cli_utils.error(
-                f"There are no snapshots with name `{snapshot_name_or_id}`."
-            )
-        elif snapshots.total == 1:
-            snapshot_id = snapshots.items[0].id
-        else:
-            snapshot_index = cli_utils.multi_choice_prompt(
-                object_type="snapshots",
-                choices=[
-                    [snapshot.pipeline.name, snapshot.name]
-                    for snapshot in snapshots.items
-                ],
-                headers=["Pipeline", "Snapshot"],
-                prompt_text=f"There are multiple snapshots with name "
-                f"`{snapshot_name_or_id}`. Please select the snapshot to run",
-            )
-            assert snapshot_index is not None
-            snapshot_id = snapshots.items[snapshot_index].id
-
+    snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
     try:
         run = Client().trigger_pipeline(
-            snapshot_name_or_id=snapshot_id,
+            snapshot_name_or_id=snapshot.id,
             config_path=config_path,
         )
         cli_utils.declare(f"Started snapshot run `{run.id}`.")
     except Exception as e:
         cli_utils.error(f"Failed to run snapshot: {e}")
+
+
+@snapshot.command("deploy", help="Deploy a snapshot.")
+@click.argument("snapshot_name_or_id")
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline.",
+)
+@click.option(
+    "--deployment",
+    "-d",
+    "deployment_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the deployment to use for the pipeline. If "
+    "not provided, the name of the snapshot or pipeline will be used. If an "
+    "existing deployment with the same name already exists, an error will be "
+    "raised, unless the --update or --overtake flag is used.",
+)
+@click.option(
+    "--update",
+    "-u",
+    "update",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already exists.",
+)
+@click.option(
+    "--overtake",
+    "-o",
+    "overtake",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already "
+    "exists, even if it is owned by a different user.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the snapshot to be deployed.",
+)
+def deploy_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+    deployment_name_or_id: Optional[str] = None,
+    update: bool = False,
+    overtake: bool = False,
+    timeout: Optional[int] = None,
+) -> None:
+    """Deploy a pipeline for online inference.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot to deploy.
+        pipeline_name_or_id: The name or ID of the pipeline.
+        deployment_name_or_id: Name or ID of the deployment to use for the
+            pipeline.
+        update: If True, update the deployment with the same name if it
+            already exists.
+        overtake: If True, update the deployment with the same name if
+            it already exists, even if it is owned by a different user.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
+    """
+    snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
+
+    if not deployment_name_or_id:
+        deployment_name_or_id = snapshot.name or snapshot.pipeline.name
+
+    if not deployment_name_or_id:
+        cli_utils.error(
+            "No deployment name or ID provided. Please provide a deployment name or ID."
+        )
+
+    client = Client()
+    try:
+        deployment = client.get_deployment(deployment_name_or_id)
+    except KeyError:
+        pass
+    else:
+        if (
+            deployment.user
+            and deployment.user.id != client.active_user.id
+            and not overtake
+        ):
+            confirmation = cli_utils.confirmation(
+                f"Deployment with name or ID '{deployment_name_or_id}' is "
+                f"owned by a different user '{deployment.user.name}'.\nDo you "
+                "want to continue and provision it "
+                "(hint: use the --overtake flag to skip this check)?"
+            )
+            if not confirmation:
+                cli_utils.declare("Deployment provisioning canceled.")
+                return
+
+        elif (
+            not update
+            and not overtake
+            and not uuid_utils.is_valid_uuid(deployment_name_or_id)
+        ):
+            confirmation = cli_utils.confirmation(
+                f"Deployment with name or ID '{deployment_name_or_id}' already "
+                "exists.\n"
+                "Do you want to continue and update the existing "
+                "deployment "
+                "(hint: use the --update flag to skip this check) ?"
+            )
+            if not confirmation:
+                cli_utils.declare("Deployment canceled.")
+                return
+
+    with console.status(
+        f"Provisioning deployment '{deployment_name_or_id}'...\n"
+    ):
+        try:
+            deployment = Client().provision_deployment(
+                name_id_or_prefix=deployment_name_or_id,
+                snapshot_id=snapshot.id,
+                timeout=timeout,
+            )
+        except KeyError as e:
+            cli_utils.error(str(e))
+        else:
+            cli_utils.declare(
+                f"Provisioned deployment '{deployment_name_or_id}'."
+            )
+            cli_utils.pretty_print_deployment(deployment, show_secret=True)
 
 
 @snapshot.command("list", help="List pipeline snapshots.")

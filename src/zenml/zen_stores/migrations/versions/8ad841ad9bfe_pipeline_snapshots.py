@@ -236,10 +236,10 @@ def add_unlisted_pipeline_if_necessary() -> None:
 
     now = utc_now()
 
-    for project_id in projects_with_orphaned_snapshots:
+    for project_id_row in projects_with_orphaned_snapshots:
         existing_pipeline = connection.execute(
             sa.select(pipeline_table.c.id)
-            .where(pipeline_table.c.project_id == project_id)
+            .where(pipeline_table.c.project_id == project_id_row.project_id)
             .where(pipeline_table.c.name == "unlisted")
         ).fetchone()
 
@@ -255,14 +255,17 @@ def add_unlisted_pipeline_if_necessary() -> None:
                     name="unlisted",
                     description="Auto-created pipeline for snapshots without "
                     "pipeline reference",
-                    project_id=project_id,
+                    project_id=project_id_row.project_id,
                     user_id=None,
                 )
             )
 
         connection.execute(
             sa.update(pipeline_snapshot_table)
-            .where(pipeline_snapshot_table.c.project_id == project_id)
+            .where(
+                pipeline_snapshot_table.c.project_id
+                == project_id_row.project_id
+            )
             .where(pipeline_snapshot_table.c.pipeline_id.is_(None))
             .values(pipeline_id=unlisted_pipeline_id)
         )
@@ -366,7 +369,7 @@ def migrate_run_templates() -> None:
     snapshot_updates = [
         {
             "id_": source_snapshot_id,
-            "version": template_name,
+            "name": template_name,
             "description": template_description,
         }
         for template_name, template_description, source_snapshot_id in connection.execute(
@@ -378,7 +381,7 @@ def migrate_run_templates() -> None:
             sa.update(pipeline_snapshot_table)
             .where(pipeline_snapshot_table.c.id == sa.bindparam("id_"))
             .values(
-                version=sa.bindparam("version"),
+                name=sa.bindparam("name"),
                 description=sa.bindparam("description"),
             ),
             snapshot_updates,

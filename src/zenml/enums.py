@@ -161,6 +161,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
+    DEPLOYER = "deployer"
 
     @property
     def plural(self) -> str:
@@ -396,6 +397,7 @@ class TaggableResourceTypes(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     RUN_TEMPLATE = "run_template"
     PIPELINE_SNAPSHOT = "pipeline_snapshot"
+    DEPLOYMENT = "deployment"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -493,7 +495,18 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
+class DeploymentStatus(StrEnum):
+    """Status of a deployment."""
+
+    UNKNOWN = "unknown"
+    PENDING = "pending"
+    RUNNING = "running"
+    ABSENT = "absent"
+    ERROR = "error"
+
+
 class PipelineRunTriggeredByType(StrEnum):
     """All possible types that can trigger a pipeline run."""
 
     STEP_RUN = "step_run"
+    DEPLOYMENT = "deployment"

@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
@@ -168,6 +169,9 @@ class UserSchema(NamedSchema, table=True):
     api_keys: List["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["DeploymentSchema"] = Relationship(
+        back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
         back_populates="user",

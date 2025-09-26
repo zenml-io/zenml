@@ -106,6 +106,18 @@ class PipelineRunConfiguration(
         default=None,
         description="The failure hook source for all steps of the pipeline run.",
     )
+    init_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The init hook source for the pipeline run.",
+    )
+    init_hook_kwargs: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="The init hook args for the pipeline run.",
+    )
+    cleanup_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The cleanup hook source for the pipeline run.",
+    )
     success_hook_source: Optional[SourceWithValidator] = Field(
         default=None,
         description="The success hook source for all steps of the pipeline run.",

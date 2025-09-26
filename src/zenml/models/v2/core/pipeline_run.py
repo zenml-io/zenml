@@ -82,6 +82,10 @@ class PipelineRunTriggerInfo(BaseZenModel):
         default=None,
         title="The ID of the step run that triggered the pipeline run.",
     )
+    deployment_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the deployment that triggered the pipeline run.",
+    )
 
 
 class PipelineRunRequest(ProjectScopedRequest):
@@ -636,6 +640,7 @@ class PipelineRunFilter(
         "pipeline_name",
         "templatable",
         "triggered_by_step_run_id",
+        "triggered_by_deployment_id",
         "linked_to_model_version_id",
     ]
     CLI_EXCLUDE_FIELDS = [
@@ -764,6 +769,11 @@ class PipelineRunFilter(
         description="The ID of the step run that triggered this pipeline run.",
         union_mode="left_to_right",
     )
+    triggered_by_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The ID of the deployment that triggered this pipeline run.",
+        union_mode="left_to_right",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -785,6 +795,7 @@ class PipelineRunFilter(
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
             CodeRepositorySchema,
+            DeploymentSchema,
             ModelSchema,
             ModelVersionPipelineRunSchema,
             ModelVersionSchema,
@@ -965,6 +976,19 @@ class PipelineRunFilter(
                 self.generate_custom_query_conditions_for_column(
                     value=self.triggered_by_step_run_id,
                     table=StepRunSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(trigger_filter)
+
+        if self.triggered_by_deployment_id:
+            trigger_filter = and_(
+                PipelineRunSchema.triggered_by == DeploymentSchema.id,
+                PipelineRunSchema.triggered_by_type
+                == PipelineRunTriggeredByType.DEPLOYMENT.value,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.triggered_by_deployment_id,
+                    table=DeploymentSchema,
                     column="id",
                 ),
             )

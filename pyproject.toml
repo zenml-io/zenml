@@ -33,6 +33,7 @@ dependencies = [
     "distro>=1.6.0,<2.0.0",
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
+    "jsonref",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.11.9",
@@ -368,5 +369,6 @@ module = [
     "numba.*",
     "uvloop.*",
     "litellm",
+    "jsonref",
 ]
 ignore_missing_imports = true
