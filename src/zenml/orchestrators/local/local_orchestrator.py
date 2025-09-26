@@ -92,7 +92,8 @@ class LocalOrchestrator(BaseOrchestrator):
             Optional submission result.
 
         Raises:
-            Exception: If the pipeline run fails.
+            step_exception: The exception that occurred while running a failed
+                step.
             RuntimeError: If the pipeline run fails.
         """
         if snapshot.schedule:
@@ -165,7 +166,6 @@ class LocalOrchestrator(BaseOrchestrator):
                 with temporary_environment(step_environment):
                     self.run_step(step=step)
             except Exception as e:
-                logger.exception("Failed to execute step %s.", step_name)
                 failed_steps.append(step_name)
                 logger.exception("Step %s failed.", step_name)
 
