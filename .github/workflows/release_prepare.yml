@@ -9,7 +9,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
-    if: github.event.created && github.repository == 'zenml-io/zenml'
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.old-version.outputs.old_version }}
