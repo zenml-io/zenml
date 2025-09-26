@@ -5075,6 +5075,37 @@ class TestModelVersionPipelineRunLinks:
             )
             assert link_1.id == link_2.id
 
+    def test_linked_pipeline_run_fetching(self):
+        """Test that model version pipeline run links can be fetched using
+        the list_pipeline_runs method.
+        """
+        with ModelContext(True, create_prs=2) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequest(
+                    model_version=model_version.id,
+                    pipeline_run=prs[0].id,
+                )
+            )
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequest(
+                    model_version=model_version.id,
+                    pipeline_run=prs[1].id,
+                )
+            )
+
+            assert (
+                Client()
+                .list_pipeline_runs(
+                    linked_to_model_version_id=model_version.id
+                )
+                .total
+                == 2
+            )
+
     def test_link_delete_found(self):
         with ModelContext(True, create_prs=1) as (
             model_version,

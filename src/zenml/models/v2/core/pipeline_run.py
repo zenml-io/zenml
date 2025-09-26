@@ -636,6 +636,7 @@ class PipelineRunFilter(
         "pipeline_name",
         "templatable",
         "triggered_by_step_run_id",
+        "linked_to_model_version_id",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -700,6 +701,14 @@ class PipelineRunFilter(
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Model version associated with the pipeline run.",
+        union_mode="left_to_right",
+    )
+    linked_to_model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Filter by model version linked to the pipeline run. "
+        "The difference to `model_version_id` is that this filter will "
+        "not only include pipeline runs which are directly linked to the model "
+        "version, but also if any step run is linked to the model version.",
         union_mode="left_to_right",
     )
     status: Optional[str] = Field(
@@ -777,6 +786,7 @@ class PipelineRunFilter(
             CodeReferenceSchema,
             CodeRepositorySchema,
             ModelSchema,
+            ModelVersionPipelineRunSchema,
             ModelVersionSchema,
             PipelineBuildSchema,
             PipelineRunSchema,
@@ -959,6 +969,20 @@ class PipelineRunFilter(
                 ),
             )
             custom_filters.append(trigger_filter)
+
+        if self.linked_to_model_version_id:
+            linked_to_model_version_filter = and_(
+                PipelineRunSchema.id
+                == ModelVersionPipelineRunSchema.pipeline_run_id,
+                ModelVersionPipelineRunSchema.model_version_id
+                == ModelVersionSchema.id,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.linked_to_model_version_id,
+                    table=ModelVersionSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(linked_to_model_version_filter)
 
         return custom_filters
 
