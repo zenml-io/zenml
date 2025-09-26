@@ -37,7 +37,7 @@ def upgrade() -> None:
                 WHEN status IN ({finished_statuses}) THEN false 
                 ELSE true 
             END
-        """)
+        """)  # nosec
     )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
