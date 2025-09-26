@@ -1,7 +1,7 @@
 ---
 name: General Issue
 description: I have a general issue I would like to write about
-title: '[GENERAL]: '
+type: Task
 labels: [backend, general]
 body:
   - type: markdown

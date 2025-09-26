@@ -1,8 +1,8 @@
 ---
 name: Bug Report
 description: File a bug report
-title: '[BUG]: '
-labels: [backend, bug]
+labels: [backend]
+type: Bug
 body:
   - type: markdown
     attributes:

@@ -1,7 +1,7 @@
 ---
 name: Feature Request
 description: Suggest a new feature or enhancement
-title: '[FEATURE]: '
+type: Feature
 labels: [backend]
 body:
   - type: markdown
