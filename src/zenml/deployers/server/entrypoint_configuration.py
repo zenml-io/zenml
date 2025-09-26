@@ -92,7 +92,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
             f"--{DEPLOYMENT_ID_OPTION}",
             str(kwargs.get(DEPLOYMENT_ID_OPTION, "")),
             f"--{HOST_OPTION}",
-            str(kwargs.get(HOST_OPTION, "0.0.0.0")),
+            str(kwargs.get(HOST_OPTION, "0.0.0.0")),  # nosec
             f"--{PORT_OPTION}",
             str(kwargs.get(PORT_OPTION, 8001)),
             f"--{WORKERS_OPTION}",
@@ -140,7 +140,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Extract configuration from entrypoint args
         deployment_id = self.entrypoint_args[DEPLOYMENT_ID_OPTION]
-        host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")
+        host = self.entrypoint_args.get(HOST_OPTION, "0.0.0.0")  # nosec
         port = int(self.entrypoint_args.get(PORT_OPTION, 8001))
         workers = int(self.entrypoint_args.get(WORKERS_OPTION, 1))
         log_level = self.entrypoint_args.get(LOG_LEVEL_OPTION, "info")
