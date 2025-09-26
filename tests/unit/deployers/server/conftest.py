@@ -1,4 +1,4 @@
-"""Test-specific fixtures for serving unit tests."""
+"""Test-specific fixtures for deployment unit tests."""
 
 from types import SimpleNamespace
 from typing import Iterator, Tuple

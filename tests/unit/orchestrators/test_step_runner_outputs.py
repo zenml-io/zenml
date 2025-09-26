@@ -7,11 +7,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from zenml.enums import ArtifactType
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.orchestrators.step_runner import StepRunner
 
 
-class _DummyMaterializer:
-    ASSOCIATED_ARTIFACT_TYPE = "data"
+class _DummyMaterializer(BaseMaterializer):
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_TYPES = (int,)
 
     def __init__(self, uri: str, artifact_store: Any) -> None:
         self.uri = uri

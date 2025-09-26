@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for serving app functionality."""
+"""Unit tests for deployment app functionality."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ class MockWeatherRequest(BaseModel):
 
 @pytest.fixture
 def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
-    """Mock pipeline serving service configured for the app tests."""
+    """Mock pipeline deployment service configured for the app tests."""
 
     service = cast(
         PipelineDeploymentService,
@@ -114,7 +114,7 @@ def mock_service(mocker: MockerFixture) -> PipelineDeploymentService:
     return service
 
 
-class TestServingAppRoutes:
+class TestDeploymentAppRoutes:
     """Test FastAPI app routes."""
 
     def test_root_endpoint(
@@ -236,7 +236,7 @@ class TestServingAppRoutes:
         assert get_pipeline_service() is mock_service
 
 
-class TestServingAppInvoke:
+class TestDeploymentAppInvoke:
     """Test pipeline invocation via FastAPI."""
 
     def test_invoke_endpoint_executes_service(
@@ -255,7 +255,7 @@ class TestServingAppInvoke:
         mock_service.execute_pipeline.assert_called_once()
         request_arg = mock_service.execute_pipeline.call_args.args[0]
         assert request_arg.parameters.city == "Paris"
-        assert request_arg.use_in_memory is False
+        assert request_arg.skip_artifact_materialization is False
 
     def test_invoke_endpoint_validation_error(
         self, mock_service: PipelineDeploymentService
@@ -299,7 +299,7 @@ class TestServingAppInvoke:
         assert verify_token(None) is None
 
 
-class TestServingAppLifecycle:
+class TestDeploymentAppLifecycle:
     """Test app lifecycle management."""
 
     def test_lifespan_test_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -358,7 +358,7 @@ class TestServingAppLifecycle:
         asyncio.run(_run())
 
 
-class TestServingAppErrorHandling:
+class TestDeploymentAppErrorHandling:
     """Test app error handling."""
 
     def test_value_error_handler(self) -> None:

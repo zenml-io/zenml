@@ -208,7 +208,7 @@ class PipelineDeploymentService:
                 placeholder_run=placeholder_run,
                 deployment_snapshot=deployment_snapshot,
                 resolved_params=parameters,
-                use_in_memory=request.use_in_memory,
+                skip_artifact_materialization=request.skip_artifact_materialization,
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
@@ -370,7 +370,7 @@ class PipelineDeploymentService:
         placeholder_run: PipelineRunResponse,
         deployment_snapshot: PipelineSnapshotResponse,
         resolved_params: Dict[str, Any],
-        use_in_memory: bool,
+        skip_artifact_materialization: bool,
     ) -> Optional[Dict[str, Dict[str, Any]]]:
         """Run the snapshot via the orchestrator and return the concrete run.
 
@@ -379,7 +379,8 @@ class PipelineDeploymentService:
             deployment_snapshot: The deployment snapshot to execute the pipeline
                 on.
             resolved_params: Normalized pipeline parameters.
-            use_in_memory: Whether runtime should capture in-memory outputs.
+            skip_artifact_materialization: Whether runtime should skip artifact
+                materialization.
 
         Returns:
             The in-memory outputs of the execution.
@@ -400,7 +401,7 @@ class PipelineDeploymentService:
             request_id=str(uuid4()),
             snapshot=deployment_snapshot,
             parameters=resolved_params,
-            skip_artifact_materialization=use_in_memory,
+            skip_artifact_materialization=skip_artifact_materialization,
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None

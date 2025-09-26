@@ -62,13 +62,11 @@ def get_step_context() -> "StepContext":
 
 
 def get_or_create_run_context() -> "RunContext":
-    """Get the context of the currently running pipeline.
+    """Get or create the context of the currently running pipeline.
 
     Returns:
         The context of the currently running pipeline.
     """
-    if RunContext._exists():
-        return RunContext()
     return RunContext()
 
 

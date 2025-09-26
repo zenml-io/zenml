@@ -213,7 +213,7 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
         placeholder_run=placeholder_run,
         deployment_snapshot=deployment_snapshot,
         resolved_params={"city": "Berlin", "temperature": 20},
-        use_in_memory=False,
+        skip_artifact_materialization=False,
     )
     service._map_outputs.assert_called_once_with(captured_outputs)
     service._build_response.assert_called_once()

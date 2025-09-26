@@ -60,9 +60,10 @@ class BaseDeploymentInvocationRequest(BaseModel):
     timeout: int = Field(
         default=300, title="The timeout for the pipeline execution."
     )
-    use_in_memory: bool = Field(
+    skip_artifact_materialization: bool = Field(
         default=False,
-        title="Whether to keep outputs in memory for fast access.",
+        title="Whether to keep outputs in memory for fast access instead of "
+        "storing them as artifacts.",
     )
 
 

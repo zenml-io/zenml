@@ -10,7 +10,7 @@ def test_in_memory_materializer_uses_runtime(monkeypatch) -> None:
 
     stored: Dict[str, Any] = {}
 
-    # Patch the serving runtime helpers used by the materializer.
+    # Patch the deployment runtime helpers used by the materializer.
     from zenml.deployers.server import runtime
 
     monkeypatch.setattr(runtime, "is_active", lambda: True)
@@ -36,13 +36,13 @@ def test_in_memory_materializer_uses_runtime(monkeypatch) -> None:
 
 
 def test_in_memory_materializer_metadata_methods() -> None:
-    """Test that metadata methods return empty results in serving mode."""
+    """Test that metadata methods return empty results in deployment mode."""
 
     materializer = InMemoryMaterializer(
         uri="s3://bucket/artifact", artifact_store=None
     )
 
-    # All metadata methods should return empty/None in serving mode
+    # All metadata methods should return empty/None in deployment mode
     assert materializer.extract_full_metadata({}) == {}
     assert materializer.compute_content_hash({}) is None
     assert materializer.save_visualizations({}) == {}

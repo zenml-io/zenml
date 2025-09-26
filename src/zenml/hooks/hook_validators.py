@@ -22,7 +22,7 @@ from typing import (
     Union,
 )
 
-from pydantic import ConfigDict, PydanticSchemaGenerationError, ValidationError
+from pydantic import ConfigDict, ValidationError
 
 from zenml.config.source import Source
 from zenml.exceptions import HookValidationException
@@ -69,7 +69,7 @@ def resolve_and_validate_hook(
 
     # Validate hook arguments
     try:
-        hook_args = ()
+        hook_args: Tuple[Any, ...] = ()
         if allow_exception_arg:
             hook_args = (Exception(),)
         hook_kwargs = hook_kwargs or {}

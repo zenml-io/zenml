@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Integration tests for FastAPI serving application endpoints."""
+"""Integration tests for FastAPI deployment application endpoints."""
 
 import importlib
 from types import ModuleType, SimpleNamespace
@@ -22,7 +22,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-import zenml.deployers.server.app as serving_app
+import zenml.deployers.server.app as deployment_app
 from zenml.deployers.server.models import (
     BaseDeploymentInvocationRequest,
     BaseDeploymentInvocationResponse,
@@ -190,7 +190,7 @@ def client_service_pair(
     Yields:
         A tuple containing the FastAPI client, the stub service, and the reloaded app.
     """
-    reloaded_app = importlib.reload(serving_app)
+    reloaded_app = importlib.reload(deployment_app)
     service = StubDeploymentService(str(uuid4()))
 
     monkeypatch.setenv("ZENML_DEPLOYMENT_ID", str(service.deployment.id))
@@ -346,7 +346,7 @@ class TestFastAPIAppEndpoints:
         ],
     ) -> None:
         """Trigger service cleanup when the application shuts down."""
-        reloaded_app = importlib.reload(serving_app)
+        reloaded_app = importlib.reload(deployment_app)
         service = StubDeploymentService(str(uuid4()))
         monkeypatch.setenv("ZENML_DEPLOYMENT_ID", str(service.deployment.id))
         monkeypatch.setattr(
