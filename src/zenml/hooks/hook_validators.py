@@ -16,6 +16,7 @@
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Optional,
     Tuple,
@@ -35,6 +36,64 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.types import HookSpecification, InitHookSpecification
+
+
+def _validate_hook_arguments(
+    _func: Callable[..., Any],
+    hook_kwargs: Dict[str, Any],
+    exception_arg: Union[BaseException, bool] = False,
+) -> Dict[str, Any]:
+    """Validates hook arguments.
+
+    Args:
+        func: The hook function to validate.
+        hook_kwargs: The hook keyword arguments to validate.
+        exception_arg: The exception argument to validate.
+
+    Returns:
+        The validated hook arguments.
+
+    Raises:
+        HookValidationException: If the hook arguments are not valid.
+    """
+    # Validate hook arguments
+    try:
+        hook_args: Tuple[Any, ...] = ()
+        if isinstance(exception_arg, BaseException):
+            hook_args = (exception_arg,)
+        elif exception_arg is True:
+            hook_args = (Exception(),)
+        config = ConfigDict(arbitrary_types_allowed=len(hook_args) > 0)
+        validated_kwargs = validate_function_args(
+            _func, config, *hook_args, **hook_kwargs
+        )
+    except (ValidationError, TypeError) as e:
+        exc_msg = (
+            "Failed to validate hook arguments for {func}: {e}\n"
+            "Please observe the following guidelines:\n"
+            "- the success hook takes no arguments\n"
+            "- the failure hook optionally takes a single `BaseException` "
+            "typed argument\n"
+            "- the init hook takes any number of JSON-safe arguments\n"
+            "- the cleanup hook takes no arguments\n"
+        )
+
+        if not hook_args:
+            raise HookValidationException(exc_msg.format(func=_func, e=e))
+
+        # If we have an exception argument, we try again without it. This is
+        # to account for the case where the hook function does not expect an
+        # exception argument.
+        hook_args = ()
+        config = ConfigDict(arbitrary_types_allowed=False)
+        try:
+            validated_kwargs = validate_function_args(
+                _func, config, *hook_args, **hook_kwargs
+            )
+        except (ValidationError, TypeError) as e:
+            raise HookValidationException(exc_msg.format(func=_func, e=e))
+
+    return validated_kwargs
 
 
 def resolve_and_validate_hook(
@@ -68,24 +127,9 @@ def resolve_and_validate_hook(
         raise ValueError(f"{func} is not a valid function.")
 
     # Validate hook arguments
-    try:
-        hook_args: Tuple[Any, ...] = ()
-        if allow_exception_arg:
-            hook_args = (Exception(),)
-        hook_kwargs = hook_kwargs or {}
-        config = ConfigDict(arbitrary_types_allowed=allow_exception_arg)
-        validated_kwargs = validate_function_args(
-            func, config, *hook_args, **hook_kwargs
-        )
-    except (ValidationError, TypeError) as e:
-        raise HookValidationException(
-            f"Failed to validate hook arguments for {func}: {e}\n"
-            "Please observe the following guidelines:\n"
-            "- the success hook takes no arguments\n"
-            "- the failure hook takes a single `BaseException` typed argument\n"
-            "- the init hook takes any number of JSON-safe arguments\n"
-            "- the cleanup hook takes no arguments\n"
-        )
+    validated_kwargs = _validate_hook_arguments(
+        func, hook_kwargs or {}, allow_exception_arg
+    )
 
     return source_utils.resolve(func), validated_kwargs
 
@@ -120,28 +164,14 @@ def load_and_run_hook(
             logger.error(msg)
             return None
     try:
-        # Validate hook arguments
-        hook_args: Tuple[Any, ...] = ()
-        if step_exception:
-            hook_args = (step_exception,)
-        hook_parameters = hook_parameters or {}
-        config = ConfigDict(arbitrary_types_allowed=step_exception is not None)
-        validated_kwargs = validate_function_args(
-            hook, config, *hook_args, **hook_parameters
+        validated_kwargs = _validate_hook_arguments(
+            hook, hook_parameters or {}, step_exception or False
         )
-    except (ValueError, TypeError) as e:
-        msg = (
-            f"Failed to validate hook arguments for {hook}: {e}\n"
-            "Please observe the following guidelines:\n"
-            "- the success hook takes no arguments\n"
-            "- the failure hook takes a single `BaseException` typed argument\n"
-            "- the init hook takes any number of JSON-safe arguments\n"
-            "- the cleanup hook takes no arguments\n"
-        )
+    except HookValidationException as e:
         if raise_on_error:
-            raise RuntimeError(msg) from e
+            raise
         else:
-            logger.error(msg)
+            logger.error(e)
             return None
 
     try:

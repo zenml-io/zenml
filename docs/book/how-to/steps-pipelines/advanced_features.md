@@ -642,7 +642,7 @@ def my_step():
 The following conventions apply to hooks:
 
 * the success hook takes no arguments
-* the failure hook takes a single `BaseException` typed argument
+* the failure hook optionally takes a single `BaseException` typed argument
 
 You can also define hooks at the pipeline level to apply to all steps:
 
