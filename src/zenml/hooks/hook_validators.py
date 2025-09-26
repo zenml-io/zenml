@@ -46,7 +46,7 @@ def _validate_hook_arguments(
     """Validates hook arguments.
 
     Args:
-        func: The hook function to validate.
+        _func: The hook function to validate.
         hook_kwargs: The hook keyword arguments to validate.
         exception_arg: The exception argument to validate.
 
@@ -115,7 +115,6 @@ def resolve_and_validate_hook(
 
     Raises:
         ValueError: If `hook_func` is not a valid callable.
-        HookValidationException: If hook validation fails.
     """
     # Resolve the hook function
     if isinstance(hook, (str, Source)):
@@ -152,6 +151,7 @@ def load_and_run_hook(
         The return value of the hook function.
 
     Raises:
+        HookValidationException: If hook validation fails.
         RuntimeError: If the hook fails and raise_on_error is True.
     """
     try:
