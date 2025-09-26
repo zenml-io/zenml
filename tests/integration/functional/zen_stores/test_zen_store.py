@@ -5076,7 +5076,7 @@ class TestModelVersionPipelineRunLinks:
             assert link_1.id == link_2.id
 
     def test_linked_pipeline_run_fetching(self):
-        """Test that model version pipeline run linkes can be fetched using
+        """Test that model version pipeline run links can be fetched using
         the list_pipeline_runs method.
         """
         with ModelContext(True, create_prs=2) as (
