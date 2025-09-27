@@ -27,6 +27,7 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -247,6 +248,12 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
     ]
 
+    # Set default sort_by to display_order
+    sort_by: str = Field(
+        default="display_order",
+        description="Which column to sort by.",
+    )
+
     deployment: Optional[UUID] = Field(
         default=None,
         description="ID of the deployment associated with the visualization.",
@@ -263,6 +270,39 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         default=None,
         description="Display order of the visualization.",
     )
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the deployment visualization query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "display_order":
+            column = getattr(table, sort_by)
+            if operand == SorterOps.DESCENDING:
+                return query.order_by(desc(column).nullslast(), asc(table.id))
+            return query.order_by(asc(column).nullsfirst(), asc(table.id))
+        elif sort_by in {"created", "updated"}:
+            column = getattr(table, sort_by)
+            if operand == SorterOps.DESCENDING:
+                return query.order_by(desc(column), asc(table.id))
+            return query.order_by(asc(column), asc(table.id))
+
+        return super().apply_sorting(query=query, table=table)
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
