@@ -143,6 +143,7 @@ from zenml.enums import (
     OnboardingStep,
     SecretResourceTypes,
     SecretsStoreType,
+    SorterOps,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -206,6 +207,10 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    DeploymentVisualizationFilter,
+    DeploymentVisualizationRequest,
+    DeploymentVisualizationResponse,
+    DeploymentVisualizationUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -361,6 +366,7 @@ from zenml.zen_stores.schemas import (
     CodeReferenceSchema,
     CodeRepositorySchema,
     DeploymentSchema,
+    DeploymentVisualizationSchema,
     EventSourceSchema,
     FlavorSchema,
     ModelSchema,
@@ -5392,6 +5398,218 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(deployment)
+            session.commit()
+
+    # -------------------- Deployment visualizations --------------------
+
+    def _validate_deployment_visualization_index(
+        self,
+        session: Session,
+        artifact_version_id: UUID,
+        visualization_index: int,
+    ) -> None:
+        """Ensure the artifact version exposes the given visualization index.
+
+        Args:
+            session: The session to use.
+            artifact_version_id: The ID of the artifact version to validate.
+            visualization_index: The index of the visualization to validate.
+        """
+        count = session.scalar(
+            select(func.count(ArtifactVisualizationSchema.id)).where(
+                ArtifactVisualizationSchema.artifact_version_id
+                == artifact_version_id
+            )
+        )
+        if not count or visualization_index >= count:
+            raise IllegalOperationError(
+                "Artifact version "
+                f"`{artifact_version_id}` does not expose a visualization "
+                f"with index {visualization_index}."
+            )
+
+    def create_deployment_visualization(
+        self, visualization: DeploymentVisualizationRequest
+    ) -> DeploymentVisualizationResponse:
+        """Persist a curated deployment visualization link.
+
+        Args:
+            visualization: The visualization to create.
+
+        Returns:
+            The created deployment visualization.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=visualization, session=session
+            )
+
+            deployment = self._get_schema_by_id(
+                resource_id=visualization.deployment_id,
+                schema_class=DeploymentSchema,
+                session=session,
+            )
+            artifact_version = self._get_schema_by_id(
+                resource_id=visualization.artifact_version_id,
+                schema_class=ArtifactVersionSchema,
+                session=session,
+            )
+
+            project_id = deployment.project_id
+            if visualization.project and visualization.project != project_id:
+                raise IllegalOperationError(
+                    "Deployment visualizations must target the same project "
+                    "as the deployment."
+                )
+            if artifact_version.project_id != project_id:
+                raise IllegalOperationError(
+                    "Artifact version does not belong to the deployment "
+                    "project."
+                )
+
+            self._validate_deployment_visualization_index(
+                session=session,
+                artifact_version_id=visualization.artifact_version_id,
+                visualization_index=visualization.visualization_index,
+            )
+
+            duplicate = session.exec(
+                select(DeploymentVisualizationSchema)
+                .where(
+                    DeploymentVisualizationSchema.deployment_id
+                    == visualization.deployment_id
+                )
+                .where(
+                    DeploymentVisualizationSchema.artifact_version_id
+                    == visualization.artifact_version_id
+                )
+                .where(
+                    DeploymentVisualizationSchema.visualization_index
+                    == visualization.visualization_index
+                )
+            ).first()
+            if duplicate is not None:
+                raise EntityExistsError(
+                    "A curated visualization with the same deployment, "
+                    "artifact version, and index already exists."
+                )
+
+            schema = DeploymentVisualizationSchema.from_request(visualization)
+            schema.project_id = project_id
+            session.add(schema)
+            session.commit()
+            session.refresh(schema)
+
+            return schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+                include_deployment=False,
+            )
+
+    def get_deployment_visualization(
+        self, deployment_visualization_id: UUID, hydrate: bool = True
+    ) -> DeploymentVisualizationResponse:
+        """Fetch a curated deployment visualization by ID.
+
+        Args:
+            deployment_visualization_id: The ID of the visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment visualization.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=deployment_visualization_id,
+                schema_class=DeploymentVisualizationSchema,
+                session=session,
+            )
+            return schema.to_model(
+                include_metadata=hydrate,
+                include_resources=hydrate,
+                include_deployment=hydrate,
+            )
+
+    def list_deployment_visualizations(
+        self,
+        filter_model: DeploymentVisualizationFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentVisualizationResponse]:
+        """List all deployment visualizations matching the given filter.
+
+        Args:
+            filter_model: The filter model to use.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all deployment visualizations matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=filter_model, session=session
+            )
+            if not filter_model.order_by:
+                filter_model.order_by = "display_order"
+            if getattr(filter_model, "sort", None) is None:
+                filter_model.sort = SorterOps.ASCENDING
+
+            query = select(DeploymentVisualizationSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=DeploymentVisualizationSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_deployment_visualization(
+        self,
+        deployment_visualization_id: UUID,
+        update: DeploymentVisualizationUpdate,
+    ) -> DeploymentVisualizationResponse:
+        """Update mutable fields on a curated deployment visualization.
+
+        Args:
+            deployment_visualization_id: The ID of the visualization to update.
+            update: The update to apply.
+
+        Returns:
+            The updated deployment visualization.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=deployment_visualization_id,
+                schema_class=DeploymentVisualizationSchema,
+                session=session,
+            )
+            schema.update(update)
+            session.add(schema)
+            session.commit()
+            session.refresh(schema)
+
+            return schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+                include_deployment=False,
+            )
+
+    def delete_deployment_visualization(
+        self, deployment_visualization_id: UUID
+    ) -> None:
+        """Delete a curated deployment visualization.
+
+        Args:
+            deployment_visualization_id: The ID of the visualization to delete.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=deployment_visualization_id,
+                schema_class=DeploymentVisualizationSchema,
+                session=session,
+            )
+            session.delete(schema)
             session.commit()
 
     # -------------------- Run templates --------------------

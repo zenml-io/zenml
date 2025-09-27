@@ -23,14 +23,20 @@ from fastapi import (
 
 from zenml.constants import (
     API,
+    DEPLOYMENT_VISUALIZATIONS,
     DEPLOYMENTS,
     VERSION_1,
 )
+from zenml.enums import SorterOps
 from zenml.models import (
     DeploymentFilter,
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    DeploymentVisualizationFilter,
+    DeploymentVisualizationRequest,
+    DeploymentVisualizationResponse,
+    DeploymentVisualizationUpdate,
 )
 from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
@@ -52,6 +58,12 @@ from zenml.zen_server.utils import (
 router = APIRouter(
     prefix=API + VERSION_1 + DEPLOYMENTS,
     tags=["deployments"],
+    responses={401: error_response, 403: error_response},
+)
+
+deployment_visualization_router = APIRouter(
+    prefix=API + VERSION_1 + DEPLOYMENT_VISUALIZATIONS,
+    tags=["deployment_visualizations"],
     responses={401: error_response, 403: error_response},
 )
 
@@ -182,4 +194,147 @@ def delete_deployment(
         id=deployment_id,
         get_method=zen_store().get_deployment,
         delete_method=zen_store().delete_deployment,
+    )
+
+
+@router.post(
+    "/{deployment_id}/visualizations",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_deployment_visualization(
+    deployment_id: UUID,
+    visualization: DeploymentVisualizationRequest,
+    _: AuthContext = Security(authorize),
+) -> DeploymentVisualizationResponse:
+    """Creates a curated deployment visualization.
+
+    Args:
+        deployment_id: ID of the deployment to add visualization to.
+        visualization: Deployment visualization to create.
+
+    Returns:
+        The created deployment visualization.
+    """
+    # Ensure deployment_id matches path parameter
+    visualization = visualization.model_copy(
+        update={"deployment_id": deployment_id}
+    )
+    return verify_permissions_and_create_entity(
+        request_model=visualization,
+        create_method=zen_store().create_deployment_visualization,
+    )
+
+
+@router.get(
+    "/{deployment_id}/visualizations",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def list_deployment_visualizations(
+    deployment_id: UUID,
+    visualization_filter_model: DeploymentVisualizationFilter = Depends(
+        make_dependable(DeploymentVisualizationFilter)
+    ),
+    hydrate: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Page[DeploymentVisualizationResponse]:
+    """Gets a list of visualizations for a specific deployment.
+
+    Args:
+        deployment_id: ID of the deployment to list visualizations for.
+        visualization_filter_model: Filter model used for pagination, sorting,
+            filtering.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        List of deployment visualization objects for the deployment.
+    """
+    # Set deployment filter to the path parameter
+    visualization_filter_model = visualization_filter_model.model_copy(
+        update={"deployment": deployment_id}
+    )
+    if visualization_filter_model.sort is None:
+        visualization_filter_model.sort = SorterOps.ASCENDING
+    return verify_permissions_and_list_entities(
+        filter_model=visualization_filter_model,
+        resource_type=ResourceType.DEPLOYMENT,
+        list_method=zen_store().list_deployment_visualizations,
+        hydrate=hydrate,
+    )
+
+
+@deployment_visualization_router.get(
+    "/{deployment_visualization_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def get_deployment_visualization(
+    deployment_visualization_id: UUID,
+    hydrate: bool = True,
+    _: AuthContext = Security(authorize),
+) -> DeploymentVisualizationResponse:
+    """Gets a specific deployment visualization using its unique id.
+
+    Args:
+        deployment_visualization_id: ID of the deployment visualization to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
+
+    Returns:
+        A specific deployment visualization object.
+    """
+    return verify_permissions_and_get_entity(
+        id=deployment_visualization_id,
+        get_method=zen_store().get_deployment_visualization,
+        hydrate=hydrate,
+    )
+
+
+@deployment_visualization_router.patch(
+    "/{deployment_visualization_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def update_deployment_visualization(
+    deployment_visualization_id: UUID,
+    visualization_update: DeploymentVisualizationUpdate,
+    _: AuthContext = Security(authorize),
+) -> DeploymentVisualizationResponse:
+    """Updates a specific deployment visualization.
+
+    Args:
+        deployment_visualization_id: ID of the deployment visualization to update.
+        visualization_update: Update model for the deployment visualization.
+
+    Returns:
+        The updated deployment visualization.
+    """
+    return verify_permissions_and_update_entity(
+        id=deployment_visualization_id,
+        update_model=visualization_update,
+        get_method=zen_store().get_deployment_visualization,
+        update_method=zen_store().update_deployment_visualization,
+    )
+
+
+@deployment_visualization_router.delete(
+    "/{deployment_visualization_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def delete_deployment_visualization(
+    deployment_visualization_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Deletes a specific deployment visualization.
+
+    Args:
+        deployment_visualization_id: ID of the deployment visualization to delete.
+    """
+    verify_permissions_and_delete_entity(
+        id=deployment_visualization_id,
+        get_method=zen_store().get_deployment_visualization,
+        delete_method=zen_store().delete_deployment_visualization,
     )

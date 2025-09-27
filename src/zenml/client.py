@@ -110,6 +110,10 @@ from zenml.models import (
     ComponentUpdate,
     DeploymentFilter,
     DeploymentResponse,
+    DeploymentVisualizationFilter,
+    DeploymentVisualizationRequest,
+    DeploymentVisualizationResponse,
+    DeploymentVisualizationUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -3733,6 +3737,114 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
             project=project,
             hydrate=hydrate,
+        )
+
+    def add_visualization_to_deployment(
+        self,
+        deployment_id: UUID,
+        artifact_version_id: UUID,
+        visualization_index: int,
+        *,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+    ) -> DeploymentVisualizationResponse:
+        """Curate a deployment visualization.
+
+        Args:
+            deployment_id: The ID of the deployment to add visualization to.
+            artifact_version_id: The ID of the artifact version containing the visualization.
+            visualization_index: The index of the visualization within the artifact version.
+            display_name: Optional display name for the visualization.
+            display_order: Optional display order for sorting visualizations.
+
+        Returns:
+            The created deployment visualization.
+        """
+        deployment = self.get_deployment(deployment_id)
+        request = DeploymentVisualizationRequest(
+            project=deployment.project_id,
+            deployment_id=deployment_id,
+            artifact_version_id=artifact_version_id,
+            visualization_index=visualization_index,
+            display_name=display_name,
+            display_order=display_order,
+        )
+        return self.zen_store.create_deployment_visualization(request)
+
+    def list_deployment_visualizations(
+        self,
+        deployment_id: UUID,
+        *,
+        page: Optional[int] = None,
+        size: Optional[int] = None,
+        order_by: Optional[str] = None,
+        sort: Optional[SorterOps] = None,
+        hydrate: bool = False,
+    ) -> Page[DeploymentVisualizationResponse]:
+        """List curated deployment visualizations for a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to list visualizations for.
+            page: Page number for pagination.
+            size: Page size for pagination.
+            order_by: Field to order by. Defaults to "display_order".
+            sort: Sort order. Defaults to ascending.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A Page[DeploymentVisualizationResponse] containing the visualizations.
+        """
+        deployment = self.get_deployment(deployment_id)
+        filter_model = DeploymentVisualizationFilter(
+            project=deployment.project_id,
+            deployment=deployment_id,
+            page=page,
+            size=size,
+            order_by=order_by or "display_order",
+            sort=sort or SorterOps.ASCENDING,
+        )
+        return self.zen_store.list_deployment_visualizations(
+            filter_model=filter_model,
+            hydrate=hydrate,
+        )
+
+    def update_deployment_visualization(
+        self,
+        deployment_visualization_id: UUID,
+        *,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+    ) -> DeploymentVisualizationResponse:
+        """Update display metadata for a curated deployment visualization.
+
+        Args:
+            deployment_visualization_id: The ID of the deployment visualization to update.
+            display_name: New display name for the visualization.
+            display_order: New display order for the visualization.
+
+        Returns:
+            The updated deployment visualization.
+        """
+        update_model = DeploymentVisualizationUpdate(
+            display_name=display_name,
+            display_order=display_order,
+        )
+        return self.zen_store.update_deployment_visualization(
+            deployment_visualization_id=deployment_visualization_id,
+            update=update_model,
+        )
+
+    def delete_deployment_visualization(
+        self, deployment_visualization_id: UUID
+    ) -> None:
+        """Delete a curated deployment visualization.
+
+        Args:
+            deployment_visualization_id: The ID of the deployment visualization to delete.
+        """
+        self.zen_store.delete_deployment_visualization(
+            deployment_visualization_id=deployment_visualization_id
         )
 
     def list_deployments(

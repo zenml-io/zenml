@@ -46,6 +46,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.deployment_visualization_schemas import (
+        DeploymentVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 logger = get_logger(__name__)
@@ -133,6 +136,14 @@ class DeploymentSchema(NamedSchema, table=True):
         ),
     )
 
+    visualizations: List["DeploymentVisualizationSchema"] = Relationship(
+        back_populates="deployment",
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "order_by": "CASE WHEN display_order IS NULL THEN 1 ELSE 0 END, display_order, created"
+        },
+    )
+
     @classmethod
     def get_query_options(
         cls,
@@ -155,12 +166,21 @@ class DeploymentSchema(NamedSchema, table=True):
         options = []
 
         if include_resources:
+            from zenml.zen_stores.schemas.deployment_visualization_schemas import (
+                DeploymentVisualizationSchema,
+            )
+
             options.extend(
                 [
                     joinedload(jl_arg(DeploymentSchema.user)),
                     joinedload(jl_arg(DeploymentSchema.deployer)),
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
+                    ),
+                    selectinload(
+                        jl_arg(DeploymentSchema.visualizations)
+                    ).selectinload(
+                        jl_arg(DeploymentVisualizationSchema.artifact_version)
                     ),
                 ]
             )
@@ -220,6 +240,14 @@ class DeploymentSchema(NamedSchema, table=True):
                 pipeline=self.snapshot.pipeline.to_model()
                 if self.snapshot and self.snapshot.pipeline
                 else None,
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=include_metadata,
+                        include_resources=include_resources,
+                        include_deployment=False,
+                    )
+                    for visualization in (self.visualizations or [])
+                ],
             )
 
         return DeploymentResponse(

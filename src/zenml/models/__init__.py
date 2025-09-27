@@ -164,6 +164,15 @@ from zenml.models.v2.core.deployment import (
     DeploymentResponseMetadata,
     DeploymentResponseResources,
 )
+from zenml.models.v2.core.deployment_visualization import (
+    DeploymentVisualizationFilter,
+    DeploymentVisualizationRequest,
+    DeploymentVisualizationResponse,
+    DeploymentVisualizationResponseBody,
+    DeploymentVisualizationResponseMetadata,
+    DeploymentVisualizationResponseResources,
+    DeploymentVisualizationUpdate,
+)
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
     OAuthDeviceFilter,
@@ -653,6 +662,13 @@ __all__ = [
     "DeploymentResponseBody",
     "DeploymentResponseMetadata",
     "DeploymentResponseResources",
+    "DeploymentVisualizationFilter",
+    "DeploymentVisualizationRequest",
+    "DeploymentVisualizationResponse",
+    "DeploymentVisualizationResponseBody",
+    "DeploymentVisualizationResponseMetadata",
+    "DeploymentVisualizationResponseResources",
+    "DeploymentVisualizationUpdate",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
