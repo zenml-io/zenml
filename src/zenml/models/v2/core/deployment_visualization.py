@@ -20,6 +20,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    cast,
 )
 from uuid import UUID
 
@@ -243,6 +244,7 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         "display_order",
         "created",
         "updated",
+        "visualization_index",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -291,15 +293,30 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
 
         sort_by, operand = self.sorting_params
 
-        # Handle explicit created/updated sorting
-        if sort_by in {"created", "updated"}:
-            return super().apply_sorting(query=query, table=table)
+        # Special handling for display_order with nulls first/last
+        if sort_by == "display_order":
+            column = getattr(table, "display_order")
+            if operand == SorterOps.DESCENDING:
+                return cast(
+                    AnyQuery,
+                    query.order_by(desc(column).nulls_last(), asc(table.id)),
+                )
+            return cast(
+                AnyQuery,
+                query.order_by(asc(column).nulls_first(), asc(table.id)),
+            )
 
-        # For all other cases (including display_order), use display_order sorting
-        column = getattr(table, "display_order")
-        if operand == SorterOps.DESCENDING:
-            return query.order_by(desc(column).nullslast(), asc(table.id))
-        return query.order_by(asc(column).nullsfirst(), asc(table.id))
+        # Direct sorting for other custom columns
+        if sort_by in {"created", "updated", "visualization_index"}:
+            column = getattr(table, sort_by)
+            if operand == SorterOps.DESCENDING:
+                return cast(
+                    AnyQuery, query.order_by(desc(column), asc(table.id))
+                )
+            return cast(AnyQuery, query.order_by(asc(column), asc(table.id)))
+
+        # Delegate to parent for other columns
+        return super().apply_sorting(query=query, table=table)
 
     def get_custom_filters(
         self, table: Type["AnySchema"]

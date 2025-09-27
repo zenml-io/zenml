@@ -138,10 +138,7 @@ class DeploymentSchema(NamedSchema, table=True):
 
     visualizations: List["DeploymentVisualizationSchema"] = Relationship(
         back_populates="deployment",
-        sa_relationship_kwargs=dict(
-            lazy="selectin",
-            order_by="CASE WHEN display_order IS NULL THEN 1 ELSE 0 END, display_order, created",
-        ),
+        sa_relationship_kwargs=dict(lazy="selectin"),
     )
 
     @classmethod
