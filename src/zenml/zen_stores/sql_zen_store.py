@@ -143,7 +143,6 @@ from zenml.enums import (
     OnboardingStep,
     SecretResourceTypes,
     SecretsStoreType,
-    SorterOps,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -5416,7 +5415,9 @@ class SqlZenStore(BaseZenStore):
             visualization_index: The index of the visualization to validate.
         """
         count = session.scalar(
-            select(func.count(ArtifactVisualizationSchema.id)).where(
+            select(func.count())
+            .select_from(ArtifactVisualizationSchema)
+            .where(
                 ArtifactVisualizationSchema.artifact_version_id
                 == artifact_version_id
             )
@@ -5550,10 +5551,16 @@ class SqlZenStore(BaseZenStore):
             self._set_filter_project_id(
                 filter_model=filter_model, session=session
             )
-            if not filter_model.order_by:
-                filter_model.order_by = "display_order"
-            if getattr(filter_model, "sort", None) is None:
-                filter_model.sort = SorterOps.ASCENDING
+            default_sort_by = (
+                type(filter_model).model_fields["sort_by"].default
+            )
+            if (
+                not filter_model.sort_by
+                or filter_model.sort_by == default_sort_by
+            ):
+                filter_model = filter_model.model_copy(
+                    update={"sort_by": "display_order"}
+                )
 
             query = select(DeploymentVisualizationSchema)
             return self.filter_and_paginate(

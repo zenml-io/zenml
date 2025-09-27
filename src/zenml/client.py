@@ -3832,7 +3832,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.update_deployment_visualization(
             deployment_visualization_id=deployment_visualization_id,
-            update=update_model,
+            visualization_update=update_model,
         )
 
     def delete_deployment_visualization(

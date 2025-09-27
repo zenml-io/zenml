@@ -27,7 +27,6 @@ from zenml.constants import (
     DEPLOYMENTS,
     VERSION_1,
 )
-from zenml.enums import SorterOps
 from zenml.models import (
     DeploymentFilter,
     DeploymentRequest,
@@ -255,8 +254,17 @@ def list_deployment_visualizations(
     visualization_filter_model = visualization_filter_model.model_copy(
         update={"deployment": deployment_id}
     )
-    if visualization_filter_model.sort is None:
-        visualization_filter_model.sort = SorterOps.ASCENDING
+    default_sort_by = (
+        type(visualization_filter_model).model_fields["sort_by"].default
+    )
+    if (
+        not visualization_filter_model.sort_by
+        or visualization_filter_model.sort_by == default_sort_by
+    ):
+        visualization_filter_model = visualization_filter_model.model_copy(
+            update={"sort_by": "display_order"}
+        )
+
     return verify_permissions_and_list_entities(
         filter_model=visualization_filter_model,
         resource_type=ResourceType.DEPLOYMENT,
