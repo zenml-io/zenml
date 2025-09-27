@@ -1159,7 +1159,7 @@ def logout(
     if server is None:
         # Log out from the current server
 
-        if gc.uses_default_store():
+        if gc.uses_local_store:
             cli_utils.declare(
                 "The client is not currently connected to a ZenML server.\n"
                 "Hint: You can run 'zenml server list' to view the available "

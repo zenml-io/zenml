@@ -106,6 +106,10 @@ class _sanitize_paths:
             IllegalOperationError: If the path is a local file and the server
                 is not configured to allow local file access.
         """
+        # Skip validation for memory:// URIs used in serving mode
+        if path.startswith("memory://"):
+            return
+
         if not self.allow_local_file_access and not io_utils.is_remote(path):
             raise IllegalOperationError(
                 "Files in a local artifact store cannot be accessed from the "
@@ -138,6 +142,11 @@ class _sanitize_paths:
         else:
             # Neither string nor bytes, this is not a path
             return potential_path
+
+        # Preserve special in-memory scheme used by serving mode as-is
+        # to avoid treating it as a local filesystem path.
+        if isinstance(path, str) and path.startswith("memory://"):
+            return path
 
         if io_utils.is_remote(path):
             # If we have a remote path, replace windows path separators with

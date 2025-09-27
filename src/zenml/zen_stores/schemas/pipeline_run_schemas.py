@@ -32,10 +32,12 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunTriggeredByType,
     TaggableResourceTypes,
 )
 from zenml.logger import get_logger
 from zenml.models import (
+    PipelineResponse,
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,
@@ -52,10 +54,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
-from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-    PipelineDeploymentSchema,
-)
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
+    PipelineSnapshotSchema,
+)
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -89,9 +91,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     __tablename__ = "pipeline_run"
     __table_args__ = (
         UniqueConstraint(
-            "deployment_id",
+            "snapshot_id",
             "orchestrator_run_id",
-            name="unique_orchestrator_run_id_for_deployment_id",
+            name="unique_orchestrator_run_id_for_snapshot_id",
         ),
         UniqueConstraint(
             "name",
@@ -112,10 +114,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Foreign keys
-    deployment_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineDeploymentSchema.__tablename__,
-        source_column="deployment_id",
+        target=PipelineSnapshotSchema.__tablename__,
+        source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=True,
@@ -154,7 +156,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Relationships
-    deployment: Optional["PipelineDeploymentSchema"] = Relationship(
+    snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="pipeline_runs"
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
@@ -224,6 +226,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
+    triggered_by: Optional[UUID] = None
+    triggered_by_type: Optional[str] = None
 
     services: List["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
@@ -269,23 +273,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         from zenml.zen_stores.schemas import ModelVersionSchema
 
-        options = [
-            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.pipeline)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.stack)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.build)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.schedule)
-            ),
-            selectinload(jl_arg(PipelineRunSchema.deployment)).joinedload(
-                jl_arg(PipelineDeploymentSchema.code_reference)
-            ),
-        ]
+        options = []
 
         # if include_metadata:
         #     options.extend(
@@ -301,6 +289,28 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(
+                        jl_arg(PipelineSnapshotSchema.source_snapshot)
+                    ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.snapshot)
+                    ).joinedload(
+                        jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
@@ -330,6 +340,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
             orchestrator_environment = "{}"
 
+        triggered_by = None
+        triggered_by_type = None
+        if request.trigger_info:
+            if request.trigger_info.step_run_id:
+                triggered_by = request.trigger_info.step_run_id
+                triggered_by_type = PipelineRunTriggeredByType.STEP_RUN.value
+            elif request.trigger_info.deployment_id:
+                triggered_by = request.trigger_info.deployment_id
+                triggered_by_type = PipelineRunTriggeredByType.DEPLOYMENT.value
+
         return cls(
             project_id=request.project,
             user_id=request.user,
@@ -341,23 +361,25 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             in_progress=not request.status.is_finished,
             status_reason=request.status_reason,
             pipeline_id=request.pipeline,
-            deployment_id=request.deployment,
+            snapshot_id=request.snapshot,
             trigger_execution_id=request.trigger_execution_id,
+            triggered_by=triggered_by,
+            triggered_by_type=triggered_by_type,
         )
 
     def get_pipeline_configuration(self) -> PipelineConfiguration:
         """Get the pipeline configuration for the pipeline run.
 
         Raises:
-            RuntimeError: if the pipeline run has no deployment and no pipeline
+            RuntimeError: if the pipeline run has no snapshot and no pipeline
                 configuration.
 
         Returns:
             The pipeline configuration.
         """
-        if self.deployment:
+        if self.snapshot:
             pipeline_config = PipelineConfiguration.model_validate_json(
-                self.deployment.pipeline_configuration
+                self.snapshot.pipeline_configuration
             )
         elif self.pipeline_configuration:
             pipeline_config = PipelineConfiguration.model_validate_json(
@@ -365,7 +387,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
         else:
             raise RuntimeError(
-                "Pipeline run has no deployment and no pipeline configuration."
+                "Pipeline run has no snapshot and no pipeline configuration."
             )
 
         pipeline_config.finalize_substitutions(
@@ -380,21 +402,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             step_name: The name of the step to get the configuration for.
 
         Raises:
-            RuntimeError: If the pipeline run has no deployment.
+            RuntimeError: If the pipeline run has no snapshot.
 
         Returns:
             The step configuration.
         """
-        if self.deployment:
+        if self.snapshot:
             pipeline_configuration = self.get_pipeline_configuration()
             return Step.from_dict(
                 data=json.loads(
-                    self.deployment.get_step_configuration(step_name).config
+                    self.snapshot.get_step_configuration(step_name).config
                 ),
                 pipeline_configuration=pipeline_configuration,
             )
         else:
-            raise RuntimeError("Pipeline run has no deployment.")
+            raise RuntimeError("Pipeline run has no snapshot.")
 
     def get_upstream_steps(self) -> Dict[str, List[str]]:
         """Get the list of all the upstream steps for each step.
@@ -403,21 +425,19 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The list of upstream steps for each step.
 
         Raises:
-            RuntimeError: If the pipeline run has no deployment or
-                the deployment has no pipeline spec.
+            RuntimeError: If the pipeline run has no snapshot or
+                the snapshot has no pipeline spec.
         """
-        if self.deployment and self.deployment.pipeline_spec:
+        if self.snapshot and self.snapshot.pipeline_spec:
             pipeline_spec = PipelineSpec.model_validate_json(
-                self.deployment.pipeline_spec
+                self.snapshot.pipeline_spec
             )
             steps = {}
             for step_spec in pipeline_spec.steps:
-                steps[step_spec.pipeline_parameter_name] = (
-                    step_spec.upstream_steps
-                )
+                steps[step_spec.invocation_id] = step_spec.upstream_steps
             return steps
         else:
-            raise RuntimeError("Pipeline run has no deployment.")
+            raise RuntimeError("Pipeline run has no snapshot.")
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
@@ -443,8 +463,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     metadata_collection[f"{s.name}::{k}"] = v
 
             # Fetch the metadata related to the schedule of this run
-            if self.deployment is not None:
-                if schedule := self.deployment.schedule:
+            if self.snapshot is not None:
+                if schedule := self.snapshot.schedule:
                     schedule_metadata = schedule.fetch_metadata_collection()
                     for k, v in schedule_metadata.items():
                         metadata_collection[f"schedule:{k}"] = v
@@ -475,38 +495,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             RuntimeError: if the model creation fails.
         """
-        if self.deployment is not None:
+        if self.snapshot is not None:
             config = PipelineConfiguration.model_validate_json(
-                self.deployment.pipeline_configuration
+                self.snapshot.pipeline_configuration
             )
-            client_environment = json.loads(self.deployment.client_environment)
-
-            stack = (
-                self.deployment.stack.to_model()
-                if self.deployment.stack
-                else None
-            )
-            pipeline = (
-                self.deployment.pipeline.to_model()
-                if self.deployment.pipeline
-                else None
-            )
-            build = (
-                self.deployment.build.to_model()
-                if self.deployment.build
-                else None
-            )
-            schedule = (
-                self.deployment.schedule.to_model()
-                if self.deployment.schedule
-                else None
-            )
-            code_reference = (
-                self.deployment.code_reference.to_model()
-                if self.deployment.code_reference
-                else None
-            )
-
+            client_environment = json.loads(self.snapshot.client_environment)
         elif self.pipeline_configuration is not None:
             config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
@@ -516,17 +509,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.client_environment
                 else {}
             )
-
-            stack = self.stack.to_model() if self.stack else None
-            pipeline = self.pipeline.to_model() if self.pipeline else None
-            build = self.build.to_model() if self.build else None
-            schedule = self.schedule.to_model() if self.schedule else None
-            code_reference = None
-
         else:
             raise RuntimeError(
                 "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a deployment_id or "
+                "entry should either have a snapshot_id or "
                 "pipeline_configuration."
             )
 
@@ -537,30 +523,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
             status_reason=self.status_reason,
-            stack=stack,
-            pipeline=pipeline,
-            build=build,
-            schedule=schedule,
-            code_reference=code_reference,
-            trigger_execution=(
-                self.trigger_execution.to_model()
-                if self.trigger_execution
-                else None
-            ),
             created=self.created,
             updated=self.updated,
-            deployment_id=self.deployment_id,
-            model_version_id=self.model_version_id,
             in_progress=self.in_progress,
         )
         metadata = None
         if include_metadata:
             is_templatable = False
             if (
-                self.deployment
-                and self.deployment.build
-                and not self.deployment.build.is_local
-                and self.deployment.build.stack_id
+                self.snapshot
+                and self.snapshot.build
+                and not self.snapshot.build.is_local
+                and self.snapshot.build.stack_id
             ):
                 is_templatable = True
 
@@ -584,11 +558,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 client_environment=client_environment,
                 orchestrator_environment=orchestrator_environment,
                 orchestrator_run_id=self.orchestrator_run_id,
-                code_path=self.deployment.code_path
-                if self.deployment
-                else None,
-                template_id=self.deployment.template_id
-                if self.deployment
+                code_path=self.snapshot.code_path if self.snapshot else None,
+                template_id=self.snapshot.template_id
+                if self.snapshot
                 else None,
                 is_templatable=is_templatable,
             )
@@ -603,8 +575,57 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if log_entry.source == "client"
             ]
 
+            if self.snapshot:
+                source_snapshot = (
+                    self.snapshot.source_snapshot.to_model()
+                    if self.snapshot.source_snapshot
+                    else None
+                )
+                stack = (
+                    self.snapshot.stack.to_model()
+                    if self.snapshot.stack
+                    else None
+                )
+                pipeline: Optional["PipelineResponse"] = (
+                    self.snapshot.pipeline.to_model()
+                )
+                build = (
+                    self.snapshot.build.to_model()
+                    if self.snapshot.build
+                    else None
+                )
+                schedule = (
+                    self.snapshot.schedule.to_model()
+                    if self.snapshot.schedule
+                    else None
+                )
+                code_reference = (
+                    self.snapshot.code_reference.to_model()
+                    if self.snapshot.code_reference
+                    else None
+                )
+            else:
+                source_snapshot = None
+                stack = self.stack.to_model() if self.stack else None
+                pipeline = self.pipeline.to_model() if self.pipeline else None
+                build = self.build.to_model() if self.build else None
+                schedule = self.schedule.to_model() if self.schedule else None
+                code_reference = None
+
             resources = PipelineRunResponseResources(
                 user=self.user.to_model() if self.user else None,
+                snapshot=self.snapshot.to_model() if self.snapshot else None,
+                source_snapshot=source_snapshot,
+                stack=stack,
+                pipeline=pipeline,
+                build=build,
+                schedule=schedule,
+                code_reference=code_reference,
+                trigger_execution=(
+                    self.trigger_execution.to_model()
+                    if self.trigger_execution
+                    else None
+                ),
                 model_version=self.model_version.to_model()
                 if self.model_version
                 else None,
@@ -682,12 +703,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         if (
-            self.deployment_id != request.deployment
+            self.snapshot_id != request.snapshot
             or self.pipeline_id != request.pipeline
             or self.project_id != request.project
         ):
             raise ValueError(
-                "Deployment, project or pipeline ID of placeholder run "
+                "Snapshot, project or pipeline ID of placeholder run "
                 "do not match the IDs of the run request."
             )
 
@@ -760,7 +781,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         )
                     ).all()
 
-                    if self.deployment and self.deployment.pipeline_spec:
+                    if self.snapshot and self.snapshot.pipeline_spec:
                         step_dict = self.get_upstream_steps()
 
                         dag = build_dag(step_dict)

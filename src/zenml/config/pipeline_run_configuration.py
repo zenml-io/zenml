@@ -20,11 +20,11 @@ from pydantic import Field, SerializeAsAny
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.cache_policy import CachePolicyWithValidator
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.source import SourceWithValidator
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.config.strict_base_model import StrictBaseModel
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
@@ -33,7 +33,7 @@ from zenml.utils.tag_utils import Tag
 
 
 class PipelineRunConfiguration(
-    StrictBaseModel, pydantic_utils.YAMLSerializationMixin
+    FrozenBaseModel, pydantic_utils.YAMLSerializationMixin
 ):
     """Class for pipeline run configurations."""
 
@@ -78,6 +78,14 @@ class PipelineRunConfiguration(
     settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = Field(
         default=None, description="Settings for the pipeline run."
     )
+    environment: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="The environment for all steps of the pipeline run.",
+    )
+    secrets: Optional[List[Union[str, UUID]]] = Field(
+        default=None,
+        description="The secrets for all steps of the pipeline run.",
+    )
     tags: Optional[List[Union[str, Tag]]] = Field(
         default=None, description="Tags to apply to the pipeline run."
     )
@@ -97,6 +105,18 @@ class PipelineRunConfiguration(
     failure_hook_source: Optional[SourceWithValidator] = Field(
         default=None,
         description="The failure hook source for all steps of the pipeline run.",
+    )
+    init_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The init hook source for the pipeline run.",
+    )
+    init_hook_kwargs: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="The init hook args for the pipeline run.",
+    )
+    cleanup_hook_source: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="The cleanup hook source for the pipeline run.",
     )
     success_hook_source: Optional[SourceWithValidator] = Field(
         default=None,

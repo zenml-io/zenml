@@ -15,13 +15,14 @@
 
 import os
 import random
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.global_config import (
     GlobalConfiguration,
 )
+from zenml.config.step_configurations import Step
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -33,7 +34,13 @@ from zenml.constants import (
 )
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
+from zenml.models import (
+    CodeReferenceRequest,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+)
 from zenml.stack import StackComponent
+from zenml.utils import pydantic_utils
 
 logger = get_logger(__name__)
 
@@ -105,7 +112,8 @@ def is_setting_enabled(
 def get_config_environment_vars(
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
-) -> Dict[str, str]:
+    deployment_id: Optional[UUID] = None,
+) -> Tuple[Dict[str, str], Dict[str, str]]:
     """Gets environment variables to set for mirroring the active config.
 
     If a schedule ID, pipeline run ID or step run ID is given, and the current
@@ -118,27 +126,30 @@ def get_config_environment_vars(
         schedule_id: Optional schedule ID to use to generate a new API token.
         pipeline_run_id: Optional pipeline run ID to use to generate a new API
             token.
+        deployment_id: Optional deployment ID to use to generate a new API
+            token.
 
     Returns:
-        Environment variable dict.
+        Environment variable dict and secrets dict.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.rest_zen_store import RestZenStore
 
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
+    secrets: Dict[str, str] = {}
 
     if (
         global_config.store_configuration.type == StoreType.REST
         and global_config.zen_store.get_store_info().auth_scheme
         != AuthScheme.NO_AUTH
     ):
+        assert isinstance(global_config.zen_store, RestZenStore)
+
         credentials_store = get_credentials_store()
         url = global_config.store_configuration.url
         api_token = credentials_store.get_token(url, allow_expired=False)
         if schedule_id or pipeline_run_id:
-            assert isinstance(global_config.zen_store, RestZenStore)
-
             # The user has the option to manually set an expiration for the API
             # token generated for a pipeline run. In this case, we generate a new
             # generic API token that will be valid for the indicated duration.
@@ -194,13 +205,17 @@ def get_config_environment_vars(
                     pipeline_run_id=pipeline_run_id,
                 )
 
-            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
-                new_api_token
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = new_api_token
+        elif deployment_id:
+            new_api_token = global_config.zen_store.get_api_token(
+                token_type=APITokenType.WORKLOAD,
+                deployment_id=deployment_id,
             )
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = new_api_token
         elif api_token:
             # For all other cases, the pipeline run environment is configured
             # with the current access token.
-            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 api_token.access_token
             )
 
@@ -217,7 +232,7 @@ def get_config_environment_vars(
         Client().active_project.id
     )
 
-    return environment_vars
+    return environment_vars, secrets
 
 
 class register_artifact_store_filesystem:
@@ -316,3 +331,147 @@ class register_artifact_store_filesystem:
             # that belongs to the active artifact store as it may have been
             # overwritten.
             Client().active_stack.artifact_store._register()
+
+
+def deployment_snapshot_request_from_source_snapshot(
+    source_snapshot: PipelineSnapshotResponse,
+    deployment_parameters: Dict[str, Any],
+    template_id: Optional[UUID] = None,
+) -> PipelineSnapshotRequest:
+    """Generate a snapshot request for deployment execution.
+
+    This is a simplified version optimized for deployment execution that:
+    - Applies hardcoded deployment-specific overrides (disabled caching, no step operators)
+    - Only handles parameter overrides (no secrets handling)
+    - Removes zen_store dependency for secrets
+
+    Args:
+        source_snapshot: The source snapshot from which to create the
+            snapshot request.
+        deployment_parameters: Parameters to override for deployment execution.
+        template_id: The ID of the template from which to create the snapshot
+            request.
+
+    Raises:
+        ValueError: If there are missing/extra step parameters.
+
+    Returns:
+        The generated snapshot request.
+    """
+    # Deployment-specific pipeline configuration (disabled caching)
+    pipeline_configuration = pydantic_utils.update_model(
+        source_snapshot.pipeline_configuration, {"enable_cache": False}
+    )
+
+    steps = {}
+    for invocation_id, step in source_snapshot.step_configurations.items():
+        # Apply deployment parameters to steps that need them
+        step_parameters = {}
+        for param_name in step.config.parameters:
+            if param_name in deployment_parameters:
+                step_parameters[param_name] = deployment_parameters[param_name]
+            elif param_name in step.config.parameters:
+                step_parameters[param_name] = step.config.parameters[
+                    param_name
+                ]
+            else:
+                raise ValueError(
+                    f"Missing required parameter '{param_name}' for step "
+                    f"'{invocation_id}' in deployment execution"
+                )
+
+        # Deployment-specific step overrides
+        step_update = {
+            "enable_cache": False,  # Disable caching for all steps
+            "step_operator": None,  # Remove step operators for deployments
+            "retry": None,  # Remove retry configuration
+            "parameters": step_parameters,
+        }
+
+        step_config = pydantic_utils.update_model(
+            step.step_config_overrides, step_update
+        )
+        merged_step_config = step_config.apply_pipeline_configuration(
+            pipeline_configuration
+        )
+
+        # Validate parameters
+        required_parameters = set(step.config.parameters)
+        configured_parameters = set(step_parameters)
+
+        unknown_parameters = configured_parameters - required_parameters
+        if unknown_parameters:
+            raise ValueError(
+                "Deployment parameters contain the following unknown "
+                f"parameters for step {invocation_id}: {unknown_parameters}."
+            )
+
+        missing_parameters = required_parameters - configured_parameters
+        if missing_parameters:
+            raise ValueError(
+                "Deployment execution is missing the following required "
+                f"parameters for step {invocation_id}: {missing_parameters}."
+            )
+
+        steps[invocation_id] = Step(
+            spec=step.spec,
+            config=merged_step_config,
+            step_config_overrides=step_config,
+        )
+
+    code_reference_request = None
+    if source_snapshot.code_reference:
+        code_reference_request = CodeReferenceRequest(
+            commit=source_snapshot.code_reference.commit,
+            subdirectory=source_snapshot.code_reference.subdirectory,
+            code_repository=source_snapshot.code_reference.code_repository.id,
+        )
+
+    zenml_version = Client().zen_store.get_store_info().version
+
+    # Compute the source snapshot ID
+    source_snapshot_id = source_snapshot.source_snapshot_id
+
+    if source_snapshot.stack is None:
+        raise ValueError("Source snapshot stack is None")
+
+    # Update the pipeline spec parameters by overriding only known keys
+    updated_pipeline_spec = source_snapshot.pipeline_spec
+    try:
+        if (
+            source_snapshot.pipeline_spec
+            and source_snapshot.pipeline_spec.parameters is not None
+        ):
+            original_params: Dict[str, Any] = dict(
+                source_snapshot.pipeline_spec.parameters
+            )
+            merged_params: Dict[str, Any] = original_params.copy()
+            for k, v in deployment_parameters.items():
+                if k in original_params:
+                    merged_params[k] = v
+            updated_pipeline_spec = pydantic_utils.update_model(
+                source_snapshot.pipeline_spec, {"parameters": merged_params}
+            )
+    except Exception:
+        # In case of any unforeseen errors, fall back to the original spec
+        updated_pipeline_spec = source_snapshot.pipeline_spec
+
+    return PipelineSnapshotRequest(
+        project=source_snapshot.project_id,
+        run_name_template=source_snapshot.run_name_template,
+        pipeline_configuration=pipeline_configuration,
+        step_configurations=steps,
+        client_environment={},
+        client_version=zenml_version,
+        server_version=zenml_version,
+        stack=source_snapshot.stack.id,
+        pipeline=source_snapshot.pipeline.id,
+        schedule=None,
+        code_reference=code_reference_request,
+        code_path=source_snapshot.code_path,
+        build=source_snapshot.build.id if source_snapshot.build else None,
+        template=template_id,
+        source_snapshot=source_snapshot_id,
+        pipeline_version_hash=source_snapshot.pipeline_version_hash,
+        pipeline_spec=updated_pipeline_spec,
+    )

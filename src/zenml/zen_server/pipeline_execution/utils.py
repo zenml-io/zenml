@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Utility functions to run a pipeline from the server."""
 
 import hashlib
@@ -34,17 +47,17 @@ from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
     FlavorFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineRunResponse,
+    PipelineRunTriggerInfo,
     PipelineRunUpdate,
-    RunTemplateResponse,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotRunRequest,
     StackResponse,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
-    get_default_run_name,
     validate_run_config_is_runnable_from_server,
     validate_stack_is_runnable_from_server,
 )
@@ -55,12 +68,12 @@ from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
     report_usage,
 )
-from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
+from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.utils import (
-    run_template_executor,
     server_config,
+    snapshot_executor,
     workload_manager,
     zen_store,
 )
@@ -125,37 +138,47 @@ class BoundedThreadPoolExecutor:
         self._executor.shutdown(**kwargs)
 
 
-def run_template(
-    template: RunTemplateResponse,
+def run_snapshot(
+    snapshot: PipelineSnapshotResponse,
     auth_context: AuthContext,
-    run_config: Optional[PipelineRunConfiguration] = None,
+    request: PipelineSnapshotRunRequest,
     sync: bool = False,
+    template_id: Optional[UUID] = None,
 ) -> PipelineRunResponse:
-    """Run a pipeline from a template.
+    """Run a pipeline from a snapshot.
 
     Args:
-        template: The template to run.
+        snapshot: The snapshot to run.
         auth_context: Authentication context.
-        run_config: The run configuration.
-        sync: Whether to run the template synchronously.
+        request: The run request.
+        sync: Whether to run the snapshot synchronously.
+        template_id: The ID of the template from which to create the snapshot
+            request.
 
     Raises:
-        ValueError: If the template can not be run.
+        ValueError: If the snapshot can not be run.
         RuntimeError: If the server URL is not set in the server configuration.
         MaxConcurrentTasksError: If the maximum number of concurrent run
-            template tasks is reached.
+            snapshot tasks is reached.
 
     Returns:
         ID of the new pipeline run.
     """
-    if not template.runnable:
-        raise ValueError(
-            "This template can not be run because its associated deployment, "
-            "stack or build have been deleted."
-        )
+    if not snapshot.runnable:
+        if stack := snapshot.stack:
+            validate_stack_is_runnable_from_server(
+                zen_store=zen_store(), stack=stack
+            )
+        if not snapshot.build:
+            raise ValueError(
+                "This snapshot can not be run via the server because it does "
+                "not have an associated build. This is probably because the "
+                "build has been deleted."
+            )
+        raise ValueError("This snapshot can not be run via the server.")
 
     # Guaranteed by the `runnable` check above
-    build = template.build
+    build = snapshot.build
     assert build
     stack = build.stack
     assert stack
@@ -165,24 +188,25 @@ def run_template(
     ):
         raise ValueError(
             f"The stack {stack.name} has been updated since it was used for "
-            "the run that is the base for this template. This means the Docker "
+            "the snapshot. This means the Docker "
             "images associated with this template most likely do not contain "
-            "the necessary requirements. Please create a new template from a "
-            "recent run on this stack."
+            "the necessary requirements. Please create a new snapshot with "
+            "the updated stack."
         )
 
     validate_stack_is_runnable_from_server(zen_store=zen_store(), stack=stack)
-    if run_config:
-        validate_run_config_is_runnable_from_server(run_config)
+    if request.run_configuration:
+        validate_run_config_is_runnable_from_server(request.run_configuration)
 
-    deployment_request = deployment_request_from_template(
-        template=template,
-        config=run_config or PipelineRunConfiguration(),
+    snapshot_request = snapshot_request_from_source_snapshot(
+        source_snapshot=snapshot,
+        config=request.run_configuration or PipelineRunConfiguration(),
+        template_id=template_id,
     )
 
-    ensure_async_orchestrator(deployment=deployment_request, stack=stack)
+    ensure_async_orchestrator(snapshot=snapshot_request, stack=stack)
 
-    new_deployment = zen_store().create_deployment(deployment_request)
+    new_snapshot = zen_store().create_snapshot(snapshot_request)
 
     server_url = server_config().server_url
     if not server_url:
@@ -192,7 +216,15 @@ def run_template(
     assert build.zenml_version
     zenml_version = build.zenml_version
 
-    placeholder_run = create_placeholder_run(deployment=new_deployment)
+    trigger_info = None
+    if request.step_run:
+        trigger_info = PipelineRunTriggerInfo(
+            step_run_id=request.step_run,
+        )
+
+    placeholder_run = create_placeholder_run(
+        snapshot=new_snapshot, trigger_info=trigger_info
+    )
 
     report_usage(
         feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
@@ -211,7 +243,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project_id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_snapshot.project_id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -222,7 +254,7 @@ def run_template(
 
     command = RunnerEntrypointConfiguration.get_entrypoint_command()
     args = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-        deployment_id=new_deployment.id,
+        snapshot_id=new_snapshot.id,
         placeholder_run_id=placeholder_run.id,
     )
 
@@ -257,25 +289,25 @@ def run_template(
 
     def _task() -> None:
         runner_image = workload_manager().build_and_push_image(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             dockerfile=dockerfile,
             image_name=f"{RUNNER_IMAGE_REPOSITORY}:{image_hash}",
             sync=True,
         )
 
         workload_manager().log(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             message="Starting pipeline run.",
         )
 
         runner_timeout = handle_int_env_var(
-            ENV_ZENML_RUNNER_POD_TIMEOUT, default=60
+            ENV_ZENML_RUNNER_POD_TIMEOUT, default=180
         )
 
         # could do this same thing with a step operator, but we need some
         # minor changes to the abstract interface to support that.
         workload_manager().run(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             image=runner_image,
             command=command,
             arguments=args,
@@ -284,7 +316,7 @@ def run_template(
             sync=True,
         )
         workload_manager().log(
-            workload_id=new_deployment.id,
+            workload_id=new_snapshot.id,
             message="Pipeline run started successfully.",
         )
 
@@ -293,9 +325,9 @@ def run_template(
             event=AnalyticsEvent.RUN_PIPELINE
         ) as analytics_handler:
             analytics_handler.metadata = get_pipeline_run_analytics_metadata(
-                deployment=new_deployment,
+                snapshot=new_snapshot,
                 stack=stack,
-                template_id=template.id,
+                source_snapshot_id=snapshot.id,
                 run_id=placeholder_run.id,
             )
 
@@ -303,8 +335,8 @@ def run_template(
                 _task()
             except Exception:
                 logger.exception(
-                    "Failed to run template %s, run ID: %s",
-                    str(template.id),
+                    "Failed to run snapshot %s, run ID: %s",
+                    str(snapshot.id),
                     str(placeholder_run.id),
                 )
                 run_status = zen_store().get_run_status(placeholder_run.id)
@@ -326,28 +358,26 @@ def run_template(
         _task_with_analytics_and_error_handling()
     else:
         try:
-            run_template_executor().submit(
-                _task_with_analytics_and_error_handling
-            )
+            snapshot_executor().submit(_task_with_analytics_and_error_handling)
         except MaxConcurrentTasksError:
             zen_store().delete_run(run_id=placeholder_run.id)
             raise MaxConcurrentTasksError(
-                "Maximum number of concurrent run template tasks reached."
+                "Maximum number of concurrent snapshot tasks reached."
             ) from None
 
     return placeholder_run
 
 
 def ensure_async_orchestrator(
-    deployment: PipelineDeploymentRequest, stack: StackResponse
+    snapshot: PipelineSnapshotRequest, stack: StackResponse
 ) -> None:
     """Ensures the orchestrator is configured to run async.
 
     Args:
-        deployment: Deployment request in which the orchestrator
+        snapshot: Snapshot request in which the orchestrator
             configuration should be updated to ensure the orchestrator is
             running async.
-        stack: The stack on which the deployment will run.
+        stack: The stack on which the snapshot will run.
     """
     orchestrator = stack.components[StackComponentType.ORCHESTRATOR][0]
     flavors = zen_store().list_flavors(
@@ -358,13 +388,13 @@ def ensure_async_orchestrator(
     if "synchronous" in flavor.config_class.model_fields:
         key = settings_utils.get_flavor_setting_key(flavor)
 
-        if settings := deployment.pipeline_configuration.settings.get(key):
+        if settings := snapshot.pipeline_configuration.settings.get(key):
             settings_dict = settings.model_dump()
         else:
             settings_dict = {}
 
         settings_dict["synchronous"] = False
-        deployment.pipeline_configuration.settings[key] = (
+        snapshot.pipeline_configuration.settings[key] = (
             BaseSettings.model_validate(settings_dict)
         )
 
@@ -437,39 +467,45 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
-def deployment_request_from_template(
-    template: RunTemplateResponse,
+def snapshot_request_from_source_snapshot(
+    source_snapshot: PipelineSnapshotResponse,
     config: PipelineRunConfiguration,
-) -> "PipelineDeploymentRequest":
-    """Generate a deployment request from a template.
+    template_id: Optional[UUID] = None,
+) -> "PipelineSnapshotRequest":
+    """Generate a snapshot request from a source snapshot.
 
     Args:
-        template: The template from which to create the deployment request.
+        source_snapshot: The source snapshot from which to create the
+            snapshot request.
         config: The run configuration.
+        template_id: The ID of the template from which to create the snapshot
+            request.
 
     Raises:
         ValueError: If there are missing/extra step parameters in the run
             configuration.
 
     Returns:
-        The generated deployment request.
+        The generated snapshot request.
     """
-    deployment = template.source_deployment
-    assert deployment
-
     pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
         exclude={"name", "parameters"},
         exclude_unset=True,
         exclude_none=True,
     )
+    if pipeline_secrets := pipeline_update.get("secrets", []):
+        pipeline_update["secrets"] = [
+            zen_store().get_secret_by_name_or_id(secret).id
+            for secret in pipeline_secrets
+        ]
     pipeline_configuration = pydantic_utils.update_model(
-        deployment.pipeline_configuration, pipeline_update
+        source_snapshot.pipeline_configuration, pipeline_update
     )
 
     steps = {}
     step_config_updates = config.steps or {}
-    for invocation_id, step in deployment.step_configurations.items():
+    for invocation_id, step in source_snapshot.step_configurations.items():
         step_update = step_config_updates.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
@@ -479,6 +515,11 @@ def deployment_request_from_template(
             exclude_unset=True,
             exclude_none=True,
         )
+        if step_secrets := step_update.get("secrets", []):
+            step_update["secrets"] = [
+                zen_store().get_secret_by_name_or_id(secret).id
+                for secret in step_secrets
+            ]
         step_config = pydantic_utils.update_model(
             step.step_config_overrides, step_update
         )
@@ -510,66 +551,84 @@ def deployment_request_from_template(
         )
 
     code_reference_request = None
-    if deployment.code_reference:
+    if source_snapshot.code_reference:
         code_reference_request = CodeReferenceRequest(
-            commit=deployment.code_reference.commit,
-            subdirectory=deployment.code_reference.subdirectory,
-            code_repository=deployment.code_reference.code_repository.id,
+            commit=source_snapshot.code_reference.commit,
+            subdirectory=source_snapshot.code_reference.subdirectory,
+            code_repository=source_snapshot.code_reference.code_repository.id,
         )
 
     zenml_version = zen_store().get_store_info().version
-    assert deployment.stack
-    assert deployment.build
-    deployment_request = PipelineDeploymentRequest(
-        project=deployment.project_id,
-        run_name_template=config.run_name
-        or get_default_run_name(pipeline_name=pipeline_configuration.name),
+    assert source_snapshot.stack
+    assert source_snapshot.build
+
+    # Compute the source snapshot ID:
+    # - If the source snapshot has a name, we use it as the source snapshot.
+    #   That way, all runs will be associated with this snapshot.
+    # - If the source snapshot is based on another snapshot (which therefore
+    #   has a name), we use that one instead.
+    # - If the source snapshot does not have a name and is not based on another
+    #   snapshot, we don't set a source snapshot.
+    #
+    # With this, we ensure that all runs are associated with the closest named
+    # source snapshot.
+    source_snapshot_id = None
+    if source_snapshot.name:
+        source_snapshot_id = source_snapshot.id
+    elif source_snapshot.source_snapshot_id:
+        source_snapshot_id = source_snapshot.source_snapshot_id
+
+    return PipelineSnapshotRequest(
+        project=source_snapshot.project_id,
+        run_name_template=config.run_name or source_snapshot.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,
-        stack=deployment.stack.id,
-        pipeline=deployment.pipeline.id if deployment.pipeline else None,
-        build=deployment.build.id,
+        stack=source_snapshot.stack.id,
+        pipeline=source_snapshot.pipeline.id
+        if source_snapshot.pipeline
+        else None,
+        build=source_snapshot.build.id,
         schedule=None,
         code_reference=code_reference_request,
-        code_path=deployment.code_path,
-        template=template.id,
-        pipeline_version_hash=deployment.pipeline_version_hash,
-        pipeline_spec=deployment.pipeline_spec,
+        code_path=source_snapshot.code_path,
+        template=template_id,
+        source_snapshot=source_snapshot_id,
+        pipeline_version_hash=source_snapshot.pipeline_version_hash,
+        pipeline_spec=source_snapshot.pipeline_spec,
     )
-
-    return deployment_request
 
 
 def get_pipeline_run_analytics_metadata(
-    deployment: "PipelineDeploymentResponse",
+    snapshot: "PipelineSnapshotResponse",
     stack: StackResponse,
-    template_id: UUID,
+    source_snapshot_id: UUID,
     run_id: UUID,
 ) -> Dict[str, Any]:
     """Get metadata for the pipeline run analytics event.
 
     Args:
-        deployment: The deployment of the run.
+        snapshot: The snapshot of the run.
         stack: The stack on which the run will happen.
-        template_id: ID of the template from which the run was started.
+        source_snapshot_id: ID of the source snapshot from which the run
+            was started.
         run_id: ID of the run.
 
     Returns:
         The analytics metadata.
     """
     custom_materializer = False
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         for output in step.config.outputs.values():
             for source in output.materializer_source:
                 if not source.is_internal:
                     custom_materializer = True
 
-    assert deployment.user_id
+    assert snapshot.user_id
     stack_creator = stack.user_id
-    own_stack = stack_creator and stack_creator == deployment.user_id
+    own_stack = stack_creator and stack_creator == snapshot.user_id
 
     stack_metadata = {
         component_type.value: component_list[0].flavor_name
@@ -577,13 +636,13 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
-        "project_id": deployment.project_id,
+        "project_id": snapshot.project_id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
-        "total_steps": len(deployment.step_configurations),
-        "schedule": deployment.schedule is not None,
+        "total_steps": len(snapshot.step_configurations),
+        "schedule": snapshot.schedule is not None,
         "custom_materializer": custom_materializer,
         "own_stack": own_stack,
         "pipeline_run_id": str(run_id),
-        "template_id": str(template_id),
+        "source_snapshot_id": str(source_snapshot_id),
     }

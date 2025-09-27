@@ -114,9 +114,11 @@ zenml login --local
 ```
 
 In the dashboard, open the latest run to explore:
-- **Steps** like `ingest_document_step`, `analyze_document_step`, `render_report_step`
-- **Artifacts** like `DocumentAnalysis` with summary, keywords, sentiment, readability score
-- **Metadata** such as latency, token usage, and model name (when in LLM mode)
+* **Steps** like `ingest_document_step`, `analyze_document_step`, `render_report_step`
+* **Artifacts** like `DocumentAnalysis` with summary, keywords, sentiment, readability score
+* **Metadata** such as latency, token usage, and model name (when in LLM mode)
+
+Tip: Switch to the [Timeline view](../how-to/dashboard/dashboard-features.md#timeline-view) to compare step durations, spot bottlenecks, and understand parallel execution at a glance.
 
 <figure>
   <img src="../.gitbook/assets/your_first_pipeline_analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
@@ -159,4 +161,5 @@ Key files to explore:
 - Add guardrails/structured outputs via Pydantic models
 - Add retrieval or additional steps for more advanced analysis
 
-Looking for the code? Browse the complete example at `examples/minimal_agent_production`.
+Looking for the code? Browse the complete example at
+`examples/minimal_agent_production`.

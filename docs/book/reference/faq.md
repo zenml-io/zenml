@@ -81,7 +81,7 @@ To reset your ZenML client, you can run `zenml clean` which will wipe your local
 
 #### How do I create dynamic pipelines and steps?
 
-Please read our [general information on how to compose steps + pipelines together](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](../user-guide/tutorial/hyper-parameter-tuning.md) which is related to this topic.
+Please read our [general information on how to compose steps + pipelines together](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline) to start with. You might also find the code examples in [our guide to implementing hyperparameter tuning](https://docs.zenml.io/user-guides/tutorial/hyper-parameter-tuning) which is related to this topic.
 
 #### How do I use templates and starter code with ZenML?
 
