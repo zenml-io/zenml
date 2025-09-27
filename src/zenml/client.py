@@ -3777,8 +3777,8 @@ class Client(metaclass=ClientMetaClass):
         *,
         page: Optional[int] = None,
         size: Optional[int] = None,
-        order_by: Optional[str] = None,
-        sort: Optional[SorterOps] = None,
+        sort_by: Optional[str] = None,
+        visualization_index: Optional[int] = None,
         hydrate: bool = False,
     ) -> Page[DeploymentVisualizationResponse]:
         """List curated deployment visualizations for a deployment.
@@ -3787,23 +3787,36 @@ class Client(metaclass=ClientMetaClass):
             deployment_id: The ID of the deployment to list visualizations for.
             page: Page number for pagination.
             size: Page size for pagination.
-            order_by: Field to order by. Defaults to "display_order".
-            sort: Sort order. Defaults to ascending.
+            sort_by: Field to order by. Defaults to "display_order" in the filter.
+            visualization_index: Filter by visualization index. Must be non-negative.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             A Page[DeploymentVisualizationResponse] containing the visualizations.
+
+        Raises:
+            ValueError: If visualization_index is negative.
         """
+        if visualization_index is not None and visualization_index < 0:
+            raise ValueError("visualization_index must be non-negative")
+
         deployment = self.get_deployment(deployment_id)
         filter_model = DeploymentVisualizationFilter(
             project=deployment.project_id,
             deployment=deployment_id,
-            page=page,
-            size=size,
-            order_by=order_by or "display_order",
-            sort=sort or SorterOps.ASCENDING,
         )
+
+        # Only set optional filter params if provided, relying on filter defaults
+        if page is not None:
+            filter_model.page = page
+        if size is not None:
+            filter_model.size = size
+        if sort_by is not None:
+            filter_model.sort_by = sort_by
+        if visualization_index is not None:
+            filter_model.visualization_index = visualization_index
+
         return self.zen_store.list_deployment_visualizations(
             filter_model=filter_model,
             hydrate=hydrate,

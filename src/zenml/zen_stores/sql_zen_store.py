@@ -5551,16 +5551,6 @@ class SqlZenStore(BaseZenStore):
             self._set_filter_project_id(
                 filter_model=filter_model, session=session
             )
-            default_sort_by = (
-                type(filter_model).model_fields["sort_by"].default
-            )
-            if (
-                not filter_model.sort_by
-                or filter_model.sort_by == default_sort_by
-            ):
-                filter_model = filter_model.model_copy(
-                    update={"sort_by": "display_order"}
-                )
 
             query = select(DeploymentVisualizationSchema)
             return self.filter_and_paginate(
