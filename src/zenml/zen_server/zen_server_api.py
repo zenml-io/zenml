@@ -57,6 +57,7 @@ from zenml.zen_server.routers import (
     artifact_version_endpoints,
     auth_endpoints,
     code_repositories_endpoints,
+    deployment_endpoints,
     devices_endpoints,
     event_source_endpoints,
     flavors_endpoints,
@@ -65,6 +66,7 @@ from zenml.zen_server.routers import (
     models_endpoints,
     pipeline_builds_endpoints,
     pipeline_deployments_endpoints,
+    pipeline_snapshot_endpoints,
     pipelines_endpoints,
     plugin_endpoints,
     projects_endpoints,
@@ -97,11 +99,11 @@ from zenml.zen_server.utils import (
     initialize_plugins,
     initialize_rbac,
     initialize_request_manager,
-    initialize_run_template_executor,
+    initialize_snapshot_executor,
     initialize_workload_manager,
     initialize_zen_store,
-    run_template_executor,
     server_config,
+    snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
 )
@@ -165,7 +167,7 @@ async def initialize() -> None:
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
-    initialize_run_template_executor()
+    initialize_snapshot_executor()
     initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
@@ -183,7 +185,7 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
-    run_template_executor().shutdown(wait=True)
+    snapshot_executor().shutdown(wait=True)
     await cleanup_request_manager()
 
 
@@ -262,6 +264,7 @@ app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
+app.include_router(deployment_endpoints.router)
 app.include_router(plugin_endpoints.plugin_router)
 app.include_router(event_source_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
@@ -273,6 +276,7 @@ app.include_router(model_versions_endpoints.model_version_pipeline_runs_router)
 app.include_router(pipelines_endpoints.router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
+app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(run_templates_endpoints.router)

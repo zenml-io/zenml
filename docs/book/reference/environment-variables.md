@@ -135,11 +135,12 @@ For more information on server configuration, see the [ZenML Server documentatio
 
 ## Client configuration
 
-Setting the `ZENML_STORE_URL` and `ZENML_STORE_API_KEY` environment variables automatically connects your ZenML Client to the specified server. This method is particularly useful when you are using the ZenML client in an automated CI/CD workload environment like GitHub Actions or GitLab CI or in a containerized environment like Docker or Kubernetes:
+Setting the `ZENML_STORE_URL`, `ZENML_STORE_API_KEY` and `ZENML_ACTIVE_PROJECT_ID` environment variables automatically connects your ZenML Client to the specified server for a specific project. This method is particularly useful when you are using the ZenML client in an automated CI/CD workload environment like GitHub Actions or GitLab CI or in a containerized environment like Docker or Kubernetes:
 
 ```bash
 export ZENML_STORE_URL=https://...
 export ZENML_STORE_API_KEY=<API_KEY>
+export ZENML_ACTIVE_PROJECT_ID=<PROJECT_ID>
 ```
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

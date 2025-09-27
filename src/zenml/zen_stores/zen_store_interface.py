@@ -49,6 +49,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -79,9 +83,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -89,6 +90,11 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotRunRequest,
+    PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -1275,14 +1281,120 @@ class ZenStoreInterface(ABC):
             KeyError: if the build doesn't exist.
         """
 
-    # -------------------- Pipeline deployments --------------------
+    # -------------------- Pipeline Snapshots --------------------
+
+    @abstractmethod
+    def create_snapshot(
+        self,
+        snapshot: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
+        """Creates a new snapshot.
+
+        Args:
+            snapshot: The snapshot to create.
+
+        Returns:
+            The newly created snapshot.
+
+        Raises:
+            EntityExistsError: If an identical snapshot already exists.
+        """
+
+    @abstractmethod
+    def get_snapshot(
+        self,
+        snapshot_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
+    ) -> PipelineSnapshotResponse:
+        """Get a snapshot with a given ID.
+
+        Args:
+            snapshot_id: ID of the snapshot.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
+            include_config_schema: Whether to include the config schema in the
+                response.
+
+        Returns:
+            The snapshot.
+
+        Raises:
+            KeyError: If the snapshot does not exist.
+        """
+
+    @abstractmethod
+    def list_snapshots(
+        self,
+        snapshot_filter_model: PipelineSnapshotFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineSnapshotResponse]:
+        """List all snapshots matching the given filter criteria.
+
+        Args:
+            snapshot_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all snapshots matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_snapshot(
+        self,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
+        """Update a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_update: The update to apply.
+
+        Returns:
+            The updated snapshot.
+        """
+
+    @abstractmethod
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to delete.
+
+        Raises:
+            KeyError: If the snapshot doesn't exist.
+        """
+
+    @abstractmethod
+    def run_snapshot(
+        self,
+        snapshot_id: UUID,
+        run_request: PipelineSnapshotRunRequest,
+    ) -> PipelineRunResponse:
+        """Run a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to run.
+            run_request: Configuration for the run.
+
+        Returns:
+            The created pipeline run.
+        """
+
+    # -------------------- Deployments --------------------
 
     @abstractmethod
     def create_deployment(
-        self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
-        """Creates a new deployment.
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
 
         Args:
             deployment: The deployment to create.
@@ -1291,25 +1403,20 @@ class ZenStoreInterface(ABC):
             The newly created deployment.
 
         Raises:
-            EntityExistsError: If an identical deployment already exists.
+            EntityExistsError: If a deployment with the same name already
+                exists in the same project.
         """
 
     @abstractmethod
     def get_deployment(
-        self,
-        deployment_id: UUID,
-        hydrate: bool = True,
-        step_configuration_filter: Optional[List[str]] = None,
-    ) -> PipelineDeploymentResponse:
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            step_configuration_filter: List of step configurations to include in
-                the response. If not given, all step configurations will be
-                included.
 
         Returns:
             The deployment.
@@ -1321,9 +1428,9 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_deployments(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        deployment_filter_model: DeploymentFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[DeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1333,18 +1440,35 @@ class ZenStoreInterface(ABC):
                 by including metadata fields in the response.
 
         Returns:
-            A page of all deployments matching the filter criteria.
+            A list of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
         """
 
     @abstractmethod
     def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+        """Delete a deployment.
 
         Args:
             deployment_id: The ID of the deployment to delete.
 
         Raises:
-            KeyError: If the deployment doesn't exist.
+            KeyError: If the deployment does not exist.
         """
 
     # -------------------- Run templates --------------------

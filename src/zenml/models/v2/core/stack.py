@@ -28,7 +28,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
-from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
@@ -80,6 +79,15 @@ class StackRequest(UserScopedRequest):
             "existing components or request information for brand new "
             "components.",
         )
+    )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this stack.",
+    )
+    secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="Secrets to set as environment variables when running on this "
+        "stack.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -171,9 +179,21 @@ class StackUpdate(BaseUpdate):
         "instances of components of this type.",
         default=None,
     )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this stack.",
+    )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
+    )
+    add_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="New secrets to add to the stack.",
+    )
+    remove_secrets: Optional[List[Union[UUID, str]]] = Field(
+        default=None,
+        title="Secrets to remove from the stack.",
     )
 
     @field_validator("components")
@@ -232,6 +252,15 @@ class StackResponseMetadata(UserScopedResponseMetadata):
     stack_spec_path: Optional[str] = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
+    )
+    environment: Dict[str, str] = Field(
+        default={},
+        title="Environment variables to set when running on this stack.",
+    )
+    secrets: List[UUID] = Field(
+        default=[],
+        title="Secrets to set as environment variables when running on this "
+        "stack.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -362,6 +391,24 @@ class StackResponse(
         return self.get_metadata().components
 
     @property
+    def environment(self) -> Dict[str, str]:
+        """The `environment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().environment
+
+    @property
+    def secrets(self) -> List[UUID]:
+        """The `secrets` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().secrets
+
+    @property
     def labels(self) -> Optional[Dict[str, Any]]:
         """The `labels` property.
 
@@ -410,13 +457,15 @@ class StackFilter(UserScopedFilter):
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters(table)
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
         )
+
+        custom_filters = super().get_custom_filters(table)
 
         if self.component_id:
             component_id_filter = and_(

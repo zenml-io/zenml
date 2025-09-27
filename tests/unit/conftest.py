@@ -49,11 +49,6 @@ from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
-    PipelineDeploymentResponseBody,
-    PipelineDeploymentResponseMetadata,
-    PipelineDeploymentResponseResources,
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
@@ -62,6 +57,11 @@ from zenml.models import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunResponseResources,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
     ProjectResponse,
     ProjectResponseBody,
     ProjectResponseMetadata,
@@ -400,7 +400,7 @@ def sample_step_request_model() -> StepRunRequest:
         config=config,
         project=uuid4(),
         user=uuid4(),
-        deployment=uuid4(),
+        snapshot=uuid4(),
     )
 
 
@@ -444,9 +444,9 @@ def sample_pipeline_run(
 
 
 @pytest.fixture
-def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
-    """Return sample pipeline deployment request for testing purposes."""
-    return PipelineDeploymentRequest(
+def sample_pipeline_snapshot_request_model() -> PipelineSnapshotRequest:
+    """Return sample pipeline snapshot request for testing purposes."""
+    return PipelineSnapshotRequest(
         user=uuid4(),
         project=uuid4(),
         run_name_template="aria-blupus",
@@ -454,6 +454,7 @@ def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
         client_version="0.12.3",
         server_version="0.12.3",
         stack=uuid4(),
+        pipeline=uuid4(),
     )
 
 
@@ -467,7 +468,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
         project=uuid4(),
-        deployment=uuid4(),
+        snapshot=uuid4(),
         pipeline=uuid4(),
     )
 
@@ -576,7 +577,7 @@ def create_step_run(
             ),
             metadata=StepRunResponseMetadata(
                 pipeline_run_id=uuid4(),
-                deployment_id=uuid4(),
+                snapshot_id=uuid4(),
                 spec=spec,
                 config=config,
                 **kwargs,
@@ -618,25 +619,29 @@ def create_pipeline_model(
 
 
 @pytest.fixture
-def sample_deployment_response_model(
+def sample_snapshot_response_model(
     sample_user_model: UserResponse,
     sample_project_model: ProjectResponse,
-) -> PipelineDeploymentResponse:
-    return PipelineDeploymentResponse(
+    create_pipeline_model: PipelineResponse,
+) -> PipelineSnapshotResponse:
+    return PipelineSnapshotResponse(
         id=uuid4(),
-        body=PipelineDeploymentResponseBody(
+        body=PipelineSnapshotResponseBody(
             user_id=sample_user_model.id,
             project_id=sample_project_model.id,
             created=datetime.now(),
             updated=datetime.now(),
+            runnable=True,
+            deployable=True,
         ),
-        metadata=PipelineDeploymentResponseMetadata(
+        metadata=PipelineSnapshotResponseMetadata(
             run_name_template="",
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
             server_version="0.12.3",
         ),
-        resources=PipelineDeploymentResponseResources(
+        resources=PipelineSnapshotResponseResources(
+            pipeline=create_pipeline_model(),
             user=sample_user_model,
         ),
     )
