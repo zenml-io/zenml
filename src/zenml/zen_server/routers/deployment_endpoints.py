@@ -202,7 +202,6 @@ def delete_deployment(
 )
 @async_fastapi_endpoint_wrapper
 def create_deployment_visualization(
-    deployment_id: UUID,
     visualization: DeploymentVisualizationRequest,
     _: AuthContext = Security(authorize),
 ) -> DeploymentVisualizationResponse:
@@ -215,10 +214,6 @@ def create_deployment_visualization(
     Returns:
         The created deployment visualization.
     """
-    # Ensure deployment_id matches path parameter
-    visualization = visualization.model_copy(
-        update={"deployment_id": deployment_id}
-    )
     return verify_permissions_and_create_entity(
         request_model=visualization,
         create_method=zen_store().create_deployment_visualization,
@@ -250,11 +245,7 @@ def list_deployment_visualizations(
     Returns:
         List of deployment visualization objects for the deployment.
     """
-    # Set deployment filter to the path parameter
-    visualization_filter_model = visualization_filter_model.model_copy(
-        update={"deployment": deployment_id}
-    )
-
+    visualization_filter_model.deployment = deployment_id
     return verify_permissions_and_list_entities(
         filter_model=visualization_filter_model,
         resource_type=ResourceType.DEPLOYMENT,
