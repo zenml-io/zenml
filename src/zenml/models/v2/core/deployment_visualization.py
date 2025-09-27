@@ -291,18 +291,15 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
 
         sort_by, operand = self.sorting_params
 
-        if sort_by == "display_order":
-            column = getattr(table, sort_by)
-            if operand == SorterOps.DESCENDING:
-                return query.order_by(desc(column).nullslast(), asc(table.id))
-            return query.order_by(asc(column).nullsfirst(), asc(table.id))
-        elif sort_by in {"created", "updated"}:
-            column = getattr(table, sort_by)
-            if operand == SorterOps.DESCENDING:
-                return query.order_by(desc(column), asc(table.id))
-            return query.order_by(asc(column), asc(table.id))
+        # Handle explicit created/updated sorting
+        if sort_by in {"created", "updated"}:
+            return super().apply_sorting(query=query, table=table)
 
-        return super().apply_sorting(query=query, table=table)
+        # For all other cases (including display_order), use display_order sorting
+        column = getattr(table, "display_order")
+        if operand == SorterOps.DESCENDING:
+            return query.order_by(desc(column).nullslast(), asc(table.id))
+        return query.order_by(asc(column).nullsfirst(), asc(table.id))
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
