@@ -45,7 +45,7 @@
 
 ---
 
-ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
+ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's the backbone for ML pipelines — **both batch and real-time** — giving you one platform to develop, evaluate, and deploy your entire AI portfolio from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
 
 
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
@@ -146,6 +146,35 @@ Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](e
 
 ![Development lifecycle](docs/book/.gitbook/assets/readme_development_lifecycle.png)
 
+## 🚀 What's New: Production-Ready AI Pipelines
+
+**From local experiments to production deployment** — ZenML bridges the gap between ML development and production deployment. Build reproducible pipelines that work seamlessly across local development and cloud infrastructure, with built-in support for both traditional ML models and modern AI agents.
+
+```python
+# Your pipeline works everywhere: local, cloud, and as production APIs
+@pipeline
+def training_pipeline():
+    data = load_data()
+    model = train_model(data)
+    return model
+
+# Run locally
+training_pipeline()
+
+# Deploy to cloud with stack switching
+# zenml stack set production  # Switch to production stack
+# training_pipeline()  # Same code, runs on production infrastructure
+
+# Serve via FastAPI (see minimal_agent_production example)
+# Full serving example at examples/minimal_agent_production/
+```
+
+Perfect for:
+- **Reproducible ML workflows** that run anywhere
+- **AI agent pipelines** with full observability and versioning  
+- **Hybrid development** from local prototyping to cloud production
+- **Production APIs** with ZenML's artifact tracking and lineage
+
 ## 🚀 Get Started (5 minutes)
 
 ### 🏗️ Architecture Overview
@@ -172,7 +201,9 @@ zenml login
 export OPENAI_API_KEY=sk-svv....
 ```
 
-### Your First Pipeline (2 minutes)
+### Your First Pipeline: Local → Cloud (3 minutes)
+
+Create a simple pipeline that works locally and scales to the cloud:
 
 ```python
 # simple_pipeline.py
@@ -247,6 +278,7 @@ Run it:
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 python simple_pipeline.py
+# Check the ZenML dashboard to see your pipeline run and artifacts
 ```
 
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
@@ -269,9 +301,19 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
 
 ## 📚 Learn More
 
-### 🖼️ Getting Started Resources
+### 🚀 Get Started with Examples
 
-The best way to learn about ZenML is through our comprehensive documentation and tutorials:
+Jump straight into production-ready examples that showcase ZenML's dual capability for batch and real-time ML:
+
+**🔥 Featured Examples:**
+- **[Quickstart: Local → Cloud](examples/quickstart/)** - Train models locally, then deploy to cloud by switching stacks
+- **[MLOps Starter: End-to-End Pipeline](examples/mlops_starter/)** - Complete MLOps workflow from feature engineering to batch inference  
+- **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with FastAPI, pipelines, evaluation, and web UI
+
+**🤖 AI Agent Examples:**
+- **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
+
+### 📖 Documentation & Guides
 
 - **[Your First AI Pipeline](https://docs.zenml.io/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
