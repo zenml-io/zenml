@@ -1,7 +1,10 @@
 """Simple Pydantic AI agent tools for EDA analysis."""
 
+import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from functools import wraps
+from threading import Lock
+from typing import Any, Callable, Dict, List, Optional
 
 import duckdb
 import pandas as pd
@@ -12,13 +15,18 @@ from pydantic_ai import ModelRetry, RunContext
 class AnalystAgentDeps:
     """Simple storage for analysis results with Out[n] references."""
 
-    output: dict[str, pd.DataFrame] = field(default_factory=dict)
+    output: Dict[str, pd.DataFrame] = field(default_factory=dict)
     query_history: List[Dict[str, Any]] = field(default_factory=list)
+    tool_calls: int = 0
+    started_at: float = field(default_factory=time.monotonic)
+    time_budget_s: Optional[float] = None
+    lock: Lock = field(default_factory=Lock, repr=False, compare=False)
 
     def store(self, value: pd.DataFrame) -> str:
         """Store the output and return reference like Out[1] for the LLM."""
-        ref = f"Out[{len(self.output) + 1}]"
-        self.output[ref] = value
+        with self.lock:
+            ref = f"Out[{len(self.output) + 1}]"
+            self.output[ref] = value
         return ref
 
     def get(self, ref: str) -> pd.DataFrame:
@@ -44,14 +52,16 @@ def run_sql(ctx: RunContext[AnalystAgentDeps], dataset: str, sql: str) -> str:
         result = duckdb.query_df(
             df=data, virtual_table_name="dataset", sql_query=sql
         )
-        ref = ctx.deps.store(result.df())
+        df = result.df()
+        rows = len(df)
+        ref = ctx.deps.store(df)
 
         # Log the query for tracking
         ctx.deps.query_history.append(
-            {"sql": sql, "result_ref": ref, "rows_returned": len(result.df())}
+            {"sql": sql, "result_ref": ref, "rows_returned": rows}
         )
 
-        return f"Query executed successfully. Result stored as `{ref}` ({len(result.df())} rows)."
+        return f"Query executed successfully. Result stored as `{ref}` ({rows} rows)."
     except Exception as e:
         raise ModelRetry(f"SQL query failed: {str(e)}")
 
@@ -155,6 +165,42 @@ def analyze_correlations(
         return "\n".join(result)
     except Exception as e:
         return f"Correlation analysis error: {str(e)}"
+
+
+def budget_wrapper(max_tool_calls: Optional[int]):
+    """Return a decorator that enforces time/tool-call budgets for tools.
+
+    It reads `time_budget_s`, `started_at`, and `tool_calls` from ctx.deps and
+    raises ModelRetry when limits are exceeded.
+    """
+
+    def with_budget(tool: Callable) -> Callable:
+        @wraps(tool)
+        def _wrapped(ctx: RunContext[AnalystAgentDeps], *args, **kwargs):
+            # Enforce budgets atomically to be safe under parallel tool execution
+            with ctx.deps.lock:
+                tb = getattr(ctx.deps, "time_budget_s", None)
+                if (
+                    tb is not None
+                    and (time.monotonic() - ctx.deps.started_at) > tb
+                ):
+                    raise ModelRetry("Time budget exceeded.")
+
+                if (
+                    max_tool_calls is not None
+                    and ctx.deps.tool_calls >= max_tool_calls
+                ):
+                    raise ModelRetry("Tool-call budget exceeded.")
+
+                # Increment tool call count after passing checks
+                ctx.deps.tool_calls += 1
+
+            # Execute the actual tool logic outside the lock
+            return tool(ctx, *args, **kwargs)
+
+        return _wrapped
+
+    return with_budget
 
 
 # Enhanced tool registry

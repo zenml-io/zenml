@@ -16,29 +16,34 @@ def production_eda_pipeline(
     source_config: DataSourceConfig,
     agent_config: Optional[AgentConfig] = None,
 ) -> Dict[str, Any]:
-    """Production EDA pipeline using optimized prompts from the registry.
+    """Production EDA pipeline using an optimized prompt when available.
 
-    This pipeline demonstrates ZenML's artifact retrieval by fetching
-    previously optimized prompts for production analysis.
+    The pipeline automatically attempts to retrieve the latest optimized prompt
+    from the artifact registry (tagged 'optimized') and falls back to the
+    default system prompt if none is available or retrieval fails.
 
     Args:
         source_config: Data source configuration
         agent_config: AI agent configuration
-        use_optimized_prompt: Whether to use optimized prompt from registry
 
     Returns:
-        EDA results and metadata
+        EDA results and metadata, including whether an optimized prompt was used.
     """
     logger.info("🏭 Starting production EDA pipeline")
 
-    # Step 1: Get optimized prompt
-    optimized_prompt = get_optimized_prompt()
-    logger.info("🎯 Retrieved optimized prompt")
+    # Step 1: Get optimized prompt or fall back to default
+    optimized_prompt, used_optimized = get_optimized_prompt()
+    if used_optimized:
+        logger.info("🎯 Using optimized prompt retrieved from artifact")
+    else:
+        logger.warning(
+            "🔍 Optimized prompt not found; falling back to default system prompt"
+        )
 
     # Step 2: Load data
     dataset_df, metadata = ingest_data(source_config=source_config)
 
-    # Step 3: Run EDA analysis with optimized prompt
+    # Step 3: Run EDA analysis with the selected prompt
     report_markdown, report_json, sql_log, analysis_tables = run_eda_agent(
         dataset_df=dataset_df,
         dataset_metadata=metadata,
@@ -53,6 +58,6 @@ def production_eda_pipeline(
         "report_json": report_json,
         "sql_log": sql_log,
         "analysis_tables": analysis_tables,
-        "used_optimized_prompt": optimized_prompt is not None,
+        "used_optimized_prompt": used_optimized,
         "metadata": metadata,
     }

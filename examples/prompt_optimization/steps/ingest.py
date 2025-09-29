@@ -41,10 +41,11 @@ def ingest_data(
         )
 
     # Apply sampling if configured
-    if source_config.sample_size and len(df) > source_config.sample_size:
+    total = len(df)
+    if source_config.sample_size and total > source_config.sample_size:
         df = df.sample(n=source_config.sample_size, random_state=42)
         logger.info(
-            f"Sampled {source_config.sample_size} rows from {len(df)} total"
+            f"Sampled {source_config.sample_size} rows from {total} total"
         )
 
     # Generate simple metadata
