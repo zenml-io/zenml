@@ -110,19 +110,18 @@ Generate EDAReport with data quality score and 2-3 key insights."""
         result = analyst_agent.run_sync(user_prompt, deps=deps)
         eda_report = result.output
     except Exception as e:
-        # Simple fallback - create basic report
         eda_report = EDAReport(
-            headline=f"Basic analysis of {dataset_df.shape[0]} rows, {dataset_df.shape[1]} columns",
+            headline=f"Analysis failed for dataset with {dataset_df.shape[0]} rows",
             key_findings=[
-                f"Dataset contains {len(dataset_df)} rows and {len(dataset_df.columns)} columns"
+                f"Dataset contains {len(dataset_df)} rows and {len(dataset_df.columns)} columns.",
+                "The AI agent failed to generate a report.",
             ],
-            risks=["Analysis failed - using basic fallback"],
-            fixes=[],
-            data_quality_score=50.0,
-            markdown=f"# EDA Report\n\nBasic analysis failed: {str(e)}\n\nDataset shape: {dataset_df.shape}",
-            column_profiles={},
-            correlation_insights=[],
-            missing_data_analysis={},
+            data_quality_score=0.0,
+            markdown=(
+                f"# EDA Report Failed\n\n"
+                f"Analysis failed with error: {str(e)}\n\n"
+                f"Dataset shape: {dataset_df.shape}"
+            ),
         )
 
     # Return results
