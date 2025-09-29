@@ -438,7 +438,7 @@ class StepLauncher:
             step_run=step_run,
             stack=self._stack,
             step=self._step,
-            create_dirs=not runtime.should_skip_artifact_materialization(),
+            skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
 
         start_time = time.time()
