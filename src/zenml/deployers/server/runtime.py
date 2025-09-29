@@ -166,5 +166,5 @@ def get_in_memory_data(uri: str) -> Any:
     """
     if is_active():
         state = _get_context()
-        return state.in_memory_data.get(uri)
+        return state.in_memory_data[uri]
     return None

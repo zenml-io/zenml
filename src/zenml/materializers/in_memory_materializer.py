@@ -58,10 +58,12 @@ class InMemoryMaterializer(BaseMaterializer):
         """
         from zenml.deployers.server import runtime
 
-        value = runtime.get_in_memory_data(self.uri)
-        if value is None:
-            raise RuntimeError(f"No data available for URI `{self.uri}`")
-        return value
+        try:
+            return runtime.get_in_memory_data(self.uri)
+        except KeyError:
+            raise RuntimeError(
+                f"No data available for artifactURI `{self.uri}`"
+            )
 
     def extract_full_metadata(self, data: Any) -> Dict[str, MetadataType]:
         """No metadata extraction.
