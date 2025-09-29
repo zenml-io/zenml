@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, Sequence
 from uuid import uuid4
 
 from zenml.client import Client
+from zenml.constants import IN_MEMORY_ARTIFACT_URI_PREFIX
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
@@ -109,7 +110,7 @@ def prepare_output_artifact_uris(
                     banned_character, "_"
                 )
             artifact_uri = (
-                f"memory://{step_run.name}/{sanitized_output}/"
+                f"{IN_MEMORY_ARTIFACT_URI_PREFIX}{step_run.name}/{sanitized_output}/"
                 f"{step_run.id}/{str(uuid4())[:8]}"
             )
 
