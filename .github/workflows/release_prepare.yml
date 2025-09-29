@@ -119,8 +119,12 @@ jobs:
       # Push the changes
       - name: Push the changes
         run: |
-          git commit -m "Adding the new version to the necessary files."
-          git push origin HEAD:${{ github.ref }}
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Adding the new version to the necessary files."
+            git push origin HEAD:${{ github.ref }}
+          fi
       # Create a PR
       - name: Create a pull request
         # Only run this part once when the release branch is created
