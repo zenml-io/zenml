@@ -23,6 +23,7 @@ except ImportError:
 
 from models import AgentConfig, EDAReport
 from steps.agent_tools import AGENT_TOOLS, AnalystAgentDeps
+from steps.prompt_text import DEFAULT_SYSTEM_PROMPT, build_user_prompt
 
 
 @step
@@ -69,15 +70,7 @@ def run_eda_agent(
         system_prompt = custom_system_prompt
         logger.info("🎯 Using custom optimized system prompt for analysis")
     else:
-        system_prompt = """You are a data analyst. Perform quick but insightful EDA.
-
-FOCUS ON:
-- Data quality score (0-100) based on missing data and duplicates
-- Key patterns and distributions
-- Notable correlations or anomalies
-- 2-3 actionable recommendations
-
-Be concise but specific with numbers. Aim for quality insights, not exhaustive analysis."""
+        system_prompt = DEFAULT_SYSTEM_PROMPT
         logger.info("📝 Using default system prompt for analysis")
 
     analyst_agent = Agent(
@@ -95,16 +88,8 @@ Be concise but specific with numbers. Aim for quality insights, not exhaustive a
     for tool in AGENT_TOOLS:
         analyst_agent.tool(tool)
 
-    # Run focused analysis
-    user_prompt = f"""Quick EDA analysis for dataset '{main_ref}' ({dataset_df.shape[0]} rows, {dataset_df.shape[1]} cols).
-
-STEPS (keep it fast):
-1. display('{main_ref}') - check data structure  
-2. describe('{main_ref}') - get key stats
-3. run_sql('{main_ref}', 'SELECT COUNT(*) as total, COUNT(DISTINCT *) as unique FROM dataset') - check duplicates
-4. If multiple numeric columns: analyze_correlations('{main_ref}')
-
-Generate EDAReport with data quality score and 2-3 key insights."""
+    # Run focused analysis using shared user prompt builder
+    user_prompt = build_user_prompt(main_ref, dataset_df)
 
     try:
         result = analyst_agent.run_sync(user_prompt, deps=deps)
