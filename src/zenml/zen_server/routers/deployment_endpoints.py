@@ -216,15 +216,14 @@ def create_deployment_visualization(
         The created deployment visualization.
 
     Raises:
-        error_response: If the deployment ID in the request does not match the path parameter.
+        KeyError: If the deployment ID in the request does not match the path parameter.
     """
     if (
         visualization.deployment_id
         and visualization.deployment_id != deployment_id
     ):
-        raise error_response(
-            status_code=400,
-            detail="Deployment ID in request does not match path parameter",
+        raise KeyError(
+            "Deployment ID in request does not match path parameter"
         )
     return verify_permissions_and_create_entity(
         request_model=visualization,
