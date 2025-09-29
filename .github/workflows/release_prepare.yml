@@ -74,7 +74,7 @@ jobs:
       # Alembic migration file
       - name: Run Alembic merge
         # Only run this part once when the release branch is created
-        if: ${{ !github.event.created }}
+        if: ${{ github.event.created }}
         shell: bash
         run: |
           alembic merge -m "Release" heads --rev-id ${{ needs.fetch-versions.outputs.new_version }}
@@ -103,7 +103,7 @@ jobs:
       # Generate and append release notes
       - name: Generate release notes
         # Only run this part once when the release branch is created
-        if: ${{ !github.event.created }}
+        if: ${{ github.event.created }}
         run: |
           RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ needs.fetch-versions.outputs.new_version }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ needs.fetch-versions.outputs.old_version }} | jq -r '.body')
           {
@@ -124,7 +124,7 @@ jobs:
       # Create a PR
       - name: Create a pull request
         # Only run this part once when the release branch is created
-        if: ${{ !github.event.created }}
+        if: ${{ github.event.created }}
         run: |
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
@@ -133,7 +133,7 @@ jobs:
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
         # Only run this part once when the release branch is created
-        if: ${{ !github.event.created }}
+        if: ${{ github.event.created }}
         run: |
           curl -X POST \
            -H "Content-Type: application/json" \
