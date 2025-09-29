@@ -5413,6 +5413,9 @@ class SqlZenStore(BaseZenStore):
             session: The session to use.
             artifact_version_id: The ID of the artifact version to validate.
             visualization_index: The index of the visualization to validate.
+
+        Raises:
+            IllegalOperationError: If the artifact version does not expose the given visualization index.
         """
         count = session.scalar(
             select(func.count())
@@ -5436,6 +5439,10 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             visualization: The visualization to create.
+
+        Raises:
+            IllegalOperationError: If the deployment ID in the request does not match the path parameter.
+            EntityExistsError: If a curated visualization with the same deployment, artifact version, and index already exists.
 
         Returns:
             The created deployment visualization.

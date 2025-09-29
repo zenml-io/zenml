@@ -214,6 +214,9 @@ def create_deployment_visualization(
 
     Returns:
         The created deployment visualization.
+
+    Raises:
+        error_response: If the deployment ID in the request does not match the path parameter.
     """
     if (
         visualization.deployment_id
