@@ -16,7 +16,11 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from pydantic import ValidationError
 
-from zenml.config import DockerSettings
+from zenml.config.docker_settings import (
+    DockerSettings,
+    _docker_settings_warnings_logged,
+)
+from zenml.orchestrators import ContainerizedOrchestrator
 
 
 def test_build_skipping():
@@ -28,3 +32,30 @@ def test_build_skipping():
     with does_not_raise():
         DockerSettings(skip_build=False)
         DockerSettings(skip_build=True, parent_image="my_parent_image")
+
+
+def test_generated_warnings():
+    from zenml.client import Client
+
+    if isinstance(
+        Client().active_stack.orchestrator, ContainerizedOrchestrator
+    ):
+        pytest.skip(reason="Check warning generation for local orchestrators")
+
+    if "non_containerized_orchestrator" in _docker_settings_warnings_logged:
+        _docker_settings_warnings_logged.remove(
+            "non_containerized_orchestrator"
+        )
+
+    with pytest.warns(UserWarning) as warning:
+        DockerSettings()
+
+        assert (
+            "You are specifying docker settings without a containerized orchestrator"
+            in str(warning[0].message)
+        )
+
+    with pytest.warns(None):
+        DockerSettings()
+
+    assert "non_containerized_orchestrator" in _docker_settings_warnings_logged

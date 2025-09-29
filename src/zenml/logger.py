@@ -18,8 +18,10 @@ import logging
 import os
 import re
 import sys
+import warnings
+from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Type, Union
 
 if TYPE_CHECKING:
     from zenml.logging.step_logging import ArtifactStoreHandler
@@ -357,6 +359,9 @@ def init_logging() -> None:
         for handler in root_logger.handlers
     )
 
+    # logging capture warnings
+    logging.captureWarnings(True)
+
     if not has_console_handler:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(get_formatter())
@@ -393,3 +398,41 @@ def init_logging() -> None:
         for logger_name in disabled_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
             logging.getLogger(logger_name).disabled = True
+
+
+def simple_warning_formatter(
+    message: Union[Warning, str],
+    category: Type[Warning],
+    filename: str,
+    lineno: int,
+    line: Optional[str] = None,
+) -> str:
+    """Simplified warning formatter that ignores context and filename.
+
+    Args:
+        message : The warning instance or string to display.
+        category : The class of the warning (e.g., `UserWarning`).
+        filename : Name of the file where the warning occurred. (Ignored in this formatter.)
+        lineno : Line number where the warning occurred. (Ignored in this formatter.)
+        line : The line of source code to show. Defaults to None. (Ignored in this formatter.)
+
+    Returns:
+        Warning message.
+    """
+    return f"{category.__name__}: {message}\n"
+
+
+@contextmanager
+def simple_warning_format() -> Generator[None, None, None]:
+    """Warning utility: Simplify formatting for specific calls (Skip path rendering).
+
+    Yields:
+        Empty generator, used as context manager.
+    """
+    original = warnings.formatwarning
+
+    warnings.formatwarning = simple_warning_formatter
+    try:
+        yield
+    finally:
+        warnings.formatwarning = original
