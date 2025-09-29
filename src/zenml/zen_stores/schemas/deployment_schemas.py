@@ -19,7 +19,7 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, String
 
@@ -157,8 +157,8 @@ class DeploymentSchema(NamedSchema, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(DeploymentSchema.user)),
-                    joinedload(jl_arg(DeploymentSchema.deployer)),
+                    selectinload(jl_arg(DeploymentSchema.user)),
+                    selectinload(jl_arg(DeploymentSchema.deployer)),
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
                     ),
