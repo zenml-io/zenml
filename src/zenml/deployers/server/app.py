@@ -343,7 +343,8 @@ if __name__ == "__main__":
         help="Pipeline snapshot ID",
     )
     parser.add_argument(
-        "--host", default=os.getenv("ZENML_SERVICE_HOST", "0.0.0.0")
+        "--host",
+        default=os.getenv("ZENML_SERVICE_HOST", "0.0.0.0"),  # nosec
     )
     parser.add_argument(
         "--port",

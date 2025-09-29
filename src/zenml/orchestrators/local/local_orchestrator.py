@@ -14,11 +14,10 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode
-from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.orchestrators import (
     BaseOrchestrator,
@@ -27,7 +26,6 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.stack import Stack
-from zenml.steps.step_context import RunContext
 from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
@@ -45,15 +43,25 @@ class LocalOrchestrator(BaseOrchestrator):
     """
 
     _orchestrator_run_id: Optional[str] = None
-    _run_context: Optional[RunContext] = None
 
-    def set_shared_run_state(self, state: Optional[Any]) -> None:
-        """Sets the state to be shared between all steps of all runs executed by this orchestrator.
+    @property
+    def run_init_cleanup_at_step_level(self) -> bool:
+        """Whether the orchestrator runs the init and cleanup hooks at step level.
 
-        Args:
-            state: the state to be shared
+        For orchestrators that run their steps in isolated step environments,
+        the run context cannot be shared between steps. In this case, the init
+        and cleanup hooks need to be run at step level for each individual step.
+
+        For orchestrators that run their steps in a shared environment with a
+        shared memory (e.g. the local orchestrator), the init and cleanup hooks
+        can be run at run level and this property should be overridden to return
+        True.
+
+        Returns:
+            Whether the orchestrator runs the init and cleanup hooks at step
+            level.
         """
-        self._run_context = RunContext(state=state)
+        return False
 
     def submit_pipeline(
         self,
@@ -84,7 +92,8 @@ class LocalOrchestrator(BaseOrchestrator):
             Optional submission result.
 
         Raises:
-            Exception: If the pipeline run fails.
+            step_exception: The exception that occurred while running a failed
+                step.
             RuntimeError: If the pipeline run fails.
         """
         if snapshot.schedule:
@@ -100,25 +109,10 @@ class LocalOrchestrator(BaseOrchestrator):
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
         failed_steps: List[str] = []
+        step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
 
-        # If the run context is not set globally, we initialize it by running
-        # the init hook
-        if self._run_context:
-            run_context = self._run_context
-        else:
-            state = None
-            if (
-                init_hook_source
-                := snapshot.pipeline_configuration.init_hook_source
-            ):
-                logger.info("Executing the pipeline's init hook...")
-                state = load_and_run_hook(
-                    init_hook_source,
-                    hook_parameters=snapshot.pipeline_configuration.init_hook_kwargs,
-                    raise_on_error=True,
-                )
-            run_context = RunContext(state=state)
+        self.run_init_hook(snapshot=snapshot)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -170,32 +164,20 @@ class LocalOrchestrator(BaseOrchestrator):
             step_environment = step_environments[step_name]
             try:
                 with temporary_environment(step_environment):
-                    self.run_step(step=step, run_context=run_context)
-            except Exception:
-                logger.exception("Failed to execute step %s.", step_name)
+                    self.run_step(step=step)
+            except Exception as e:
                 failed_steps.append(step_name)
                 logger.exception("Step %s failed.", step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise
+                    step_exception = e
+                    break
 
-            finally:
-                try:
-                    # If the run context is not set globally, we also run the
-                    # cleanup hook
-                    if not self._run_context:
-                        if (
-                            cleanup_hook_source
-                            := snapshot.pipeline_configuration.cleanup_hook_source
-                        ):
-                            logger.info(
-                                "Executing the pipeline's cleanup hook..."
-                            )
-                            load_and_run_hook(
-                                cleanup_hook_source,
-                            )
-                except Exception:
-                    logger.exception("Failed to execute cleanup hook.")
+        self.run_cleanup_hook(snapshot=snapshot)
+
+        if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
+            assert step_exception is not None
+            raise step_exception
 
         if failed_steps:
             raise RuntimeError(

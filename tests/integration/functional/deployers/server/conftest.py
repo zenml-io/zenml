@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Test-specific fixtures for serving integration tests."""
+"""Test-specific fixtures for deployment integration tests."""
 
 from types import SimpleNamespace
 from typing import Generator, Tuple

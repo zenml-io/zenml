@@ -9,7 +9,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
-    if: github.event.created && github.repository == 'zenml-io/zenml'
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.old-version.outputs.old_version }}
@@ -73,6 +73,8 @@ jobs:
           uv pip check || true
       # Alembic migration file
       - name: Run Alembic merge
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         shell: bash
         run: |
           alembic merge -m "Release" heads --rev-id ${{ needs.fetch-versions.outputs.new_version }}
@@ -100,6 +102,8 @@ jobs:
           git add examples/quickstart
       # Generate and append release notes
       - name: Generate release notes
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ needs.fetch-versions.outputs.new_version }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ needs.fetch-versions.outputs.old_version }} | jq -r '.body')
           {
@@ -115,10 +119,16 @@ jobs:
       # Push the changes
       - name: Push the changes
         run: |
-          git commit -m "Adding the new version to the necessary files."
-          git push origin HEAD:${{ github.ref }}
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Adding the new version to the necessary files."
+            git push origin HEAD:${{ github.ref }}
+          fi
       # Create a PR
       - name: Create a pull request
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
@@ -126,6 +136,8 @@ jobs:
             --label "internal" --label "python" --label "run-slow-ci" --label "release"
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           curl -X POST \
            -H "Content-Type: application/json" \

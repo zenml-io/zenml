@@ -142,7 +142,7 @@ def test_service_captures_in_memory_outputs(
 
     request = BaseDeploymentInvocationRequest(
         parameters=_DummyParams(),
-        use_in_memory=True,
+        skip_artifact_materialization=True,
     )
 
     response = service.execute_pipeline(request)

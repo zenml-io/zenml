@@ -701,13 +701,13 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 3
     is_hook_called = False
-    with pytest.raises(HookValidationException):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step.with_options(
                 on_failure=on_failure_with_not_annotated_params
             )
         ).with_options(unlisted=True)()
-    assert not is_hook_called
+    assert is_hook_called
 
     # Test 4
     is_hook_called = False

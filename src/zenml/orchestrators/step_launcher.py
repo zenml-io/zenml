@@ -44,7 +44,6 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
-from zenml.steps.step_context import RunContext
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -109,7 +108,6 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
-        run_context: Optional[RunContext] = None,
     ):
         """Initializes the launcher.
 
@@ -117,7 +115,6 @@ class StepLauncher:
             snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
-            run_context: The shared run context.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -125,7 +122,6 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
-        self._run_context = run_context
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -542,9 +538,7 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(
-            step=self._step, stack=self._stack, run_context=self._run_context
-        )
+        runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,

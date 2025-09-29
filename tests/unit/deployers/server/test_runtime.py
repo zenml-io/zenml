@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for serving runtime context management."""
+"""Unit tests for deployment runtime context management."""
 
 from unittest.mock import MagicMock
 
@@ -20,8 +20,8 @@ import pytest
 from zenml.deployers.server import runtime
 
 
-class TestServingRuntimeContext:
-    """Test serving runtime context management."""
+class TestDeploymentRuntimeContext:
+    """Test deployment runtime context management."""
 
     @pytest.fixture(autouse=True)
     def setup_runtime(self):
@@ -42,7 +42,7 @@ class TestServingRuntimeContext:
             request_id="test-request",
             snapshot=snapshot,
             parameters={"city": "Berlin", "temperature": 25},
-            use_in_memory=True,
+            skip_artifact_materialization=True,
         )
 
         assert runtime.is_active()
@@ -206,17 +206,17 @@ class TestServingRuntimeContext:
         assert runtime.get_outputs() == {}
         assert runtime.get_in_memory_data("memory://artifact/1") is None
 
-    def test_use_in_memory_setting(self):
-        """Test use_in_memory setting functionality."""
+    def test_skip_artifact_materialization_setting(self):
+        """Test skip_artifact_materialization setting functionality."""
         snapshot = MagicMock()
         snapshot.id = "test-snapshot"
 
-        # Test with use_in_memory=True
+        # Test with skip_artifact_materialization=True
         runtime.start(
             request_id="test-request",
             snapshot=snapshot,
             parameters={},
-            use_in_memory=True,
+            skip_artifact_materialization=True,
         )
 
         assert runtime.should_skip_artifact_materialization() is True
@@ -224,19 +224,19 @@ class TestServingRuntimeContext:
 
         runtime.stop()
 
-        # Test with use_in_memory=False
+        # Test with skip_artifact_materialization=False
         runtime.start(
             request_id="test-request",
             snapshot=snapshot,
             parameters={},
-            use_in_memory=False,
+            skip_artifact_materialization=False,
         )
 
         assert runtime.should_skip_artifact_materialization() is False
 
         runtime.stop()
 
-        # Test with use_in_memory=None (default)
+        # Test with skip_artifact_materialization=False (default)
         runtime.start(
             request_id="test-request",
             snapshot=snapshot,
@@ -245,8 +245,8 @@ class TestServingRuntimeContext:
 
         assert runtime.should_skip_artifact_materialization() is False
 
-    def test_use_in_memory_inactive_context(self):
-        """Test use_in_memory functions when context is inactive."""
+    def test_skip_artifact_materialization_inactive_context(self):
+        """Test skip_artifact_materialization functions when context is inactive."""
         assert runtime.should_skip_artifact_materialization() is False
 
     def test_context_reset_clears_all_data(self):
@@ -258,7 +258,7 @@ class TestServingRuntimeContext:
             request_id="test-request",
             snapshot=snapshot,
             parameters={"city": "Berlin"},
-            use_in_memory=True,
+            skip_artifact_materialization=True,
         )
 
         # Store various types of data

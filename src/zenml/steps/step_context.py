@@ -27,7 +27,7 @@ from typing import (
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.callback_registry import CallbackRegistry
-from zenml.utils.singleton import ThreadLocalSingleton
+from zenml.utils.singleton import SingletonMetaClass, ThreadLocalSingleton
 
 if TYPE_CHECKING:
     from zenml.artifacts.artifact_config import ArtifactConfig
@@ -61,19 +61,22 @@ def get_step_context() -> "StepContext":
     )
 
 
-class RunContext:
+def get_or_create_run_context() -> "RunContext":
+    """Get or create the context of the currently running pipeline.
+
+    Returns:
+        The context of the currently running pipeline.
+    """
+    return RunContext()
+
+
+class RunContext(metaclass=SingletonMetaClass):
     """Provides context shared between all steps in a pipeline run."""
 
-    def __init__(
-        self,
-        state: Optional[Any] = None,
-    ):
-        """Initialize the shared context.
-
-        Args:
-            state: Optional pipeline state for the pipeline run
-        """
-        self._state = state
+    def __init__(self) -> None:
+        """Create the run context."""
+        self.initialized = False
+        self._state: Optional[Any] = None
 
     @property
     def state(self) -> Optional[Any]:
@@ -81,8 +84,30 @@ class RunContext:
 
         Returns:
             The pipeline state or None.
+
+        Raises:
+            RuntimeError: If the run context is not initialized.
         """
+        if not self.initialized:
+            raise RuntimeError(
+                "Run context not initialized. The run state is only available "
+                "in the context of a running pipeline."
+            )
         return self._state
+
+    def initialize(self, state: Optional[Any]) -> None:
+        """Initialize the run context.
+
+        Args:
+            state: Optional state for the pipeline run
+
+        Raises:
+            RuntimeError: If the run context is already initialized.
+        """
+        if self.initialized:
+            raise RuntimeError("Run context already initialized.")
+        self._state = state
+        self.initialized = True
 
 
 class StepContext(metaclass=ThreadLocalSingleton):
@@ -120,7 +145,6 @@ class StepContext(metaclass=ThreadLocalSingleton):
         output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
-        pipeline_state: Optional[Any] = None,
     ) -> None:
         """Initialize the context of the currently running step.
 
@@ -133,7 +157,6 @@ class StepContext(metaclass=ThreadLocalSingleton):
                 context is used in.
             output_artifact_configs: The outputs' ArtifactConfigs of the step that this
                 context is used in.
-            pipeline_state: Optional pipeline state for the pipeline
 
         Raises:
             StepContextError: If the keys of the output materializers and
@@ -156,7 +179,6 @@ class StepContext(metaclass=ThreadLocalSingleton):
         )
 
         self.step_name = self.step_run.name
-        self.pipeline_state = pipeline_state
 
         # set outputs
         if output_materializers.keys() != output_artifact_uris.keys():
@@ -193,6 +215,15 @@ class StepContext(metaclass=ThreadLocalSingleton):
             f"run '{self.pipeline_run.id}': This pipeline run does not have "
             f"a pipeline associated with it."
         )
+
+    @property
+    def pipeline_state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+        """
+        return get_or_create_run_context().state
 
     @property
     def model(self) -> "Model":

@@ -14,7 +14,7 @@
 
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import requests
 from bs4 import BeautifulSoup
@@ -73,12 +73,12 @@ def _fetch_documented_supported_resource_combinations(
     return sorted(set(rows), key=lambda x: (x[0], x[1]))
 
 
-def _to_vcpu(s: str) -> float | None:
+def _to_vcpu(s: str) -> Optional[float]:
     m = re.search(r"([\d.]+)\s*v?CPU", s, re.IGNORECASE)
     return float(m.group(1)) if m else None
 
 
-def _to_gb(s: str) -> float | None:
+def _to_gb(s: str) -> Optional[float]:
     # Accept MB/GB but App Runner uses GB in the table
     m = re.search(r"([\d.]+)\s*GB", s, re.IGNORECASE)
     if m:

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Comprehensive test for parameter resolution and flow in serving."""
+"""Comprehensive test for parameter resolution and flow in deployment."""
 
 from unittest.mock import MagicMock
 
@@ -24,7 +24,7 @@ class TestOutputRecording:
     """Test output recording and retrieval functionality."""
 
     @pytest.fixture(autouse=True)
-    def setup_serving_state(self):
+    def setup_deployment_state(self):
         """Set up deployment state for each test."""
         runtime.stop()
         yield
