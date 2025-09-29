@@ -107,6 +107,9 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Use imperative mood: "Add feature" not "Added feature"
 - Reference issue numbers when applicable: "Fix user auth bug (#1234)"
 - For multi-line messages, add a blank line after the summary
+
+Codex-style agents must review the diff (when not already tracked), craft a concise summary line, and include a detailed body covering the key changes. The body should describe the main code adjustments so reviewers can understand the scope from the commit message alone.
+
 - Example:
   ```
   Add retry logic to artifact upload
