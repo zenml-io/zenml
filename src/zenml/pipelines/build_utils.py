@@ -34,7 +34,7 @@ from zenml.models import (
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentBase,
+    PipelineSnapshotBase,
     StackResponse,
 )
 from zenml.stack import Stack
@@ -50,34 +50,34 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def build_required(deployment: "PipelineDeploymentBase") -> bool:
-    """Checks whether a build is required for the deployment and active stack.
+def build_required(snapshot: "PipelineSnapshotBase") -> bool:
+    """Checks whether a build is required for the snapshot and active stack.
 
     Args:
-        deployment: The deployment for which to check.
+        snapshot: The snapshot for which to check.
 
     Returns:
         If a build is required.
     """
     stack = Client().active_stack
-    return bool(stack.get_docker_builds(deployment=deployment))
+    return bool(stack.get_docker_builds(snapshot=snapshot))
 
 
 def requires_included_code(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> bool:
-    """Checks whether the deployment requires included code.
+    """Checks whether the snapshot requires included code.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
         code_repository: If provided, this code repository can be used to
             download the code inside the container images.
 
     Returns:
-        If the deployment requires code included in the container images.
+        If the snapshot requires code included in the container images.
     """
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         docker_settings = step.config.docker_settings
 
         if docker_settings.local_project_install_command:
@@ -99,17 +99,17 @@ def requires_included_code(
 
 
 def requires_download_from_code_repository(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
 ) -> bool:
-    """Checks whether the deployment needs to download code from a repository.
+    """Checks whether the snapshot needs to download code from a repository.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
 
     Returns:
-        If the deployment needs to download code from a code repository.
+        If the snapshot needs to download code from a code repository.
     """
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         docker_settings = step.config.docker_settings
 
         if docker_settings.allow_download_from_artifact_store:
@@ -127,20 +127,20 @@ def requires_download_from_code_repository(
 
 
 def code_download_possible(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> bool:
-    """Checks whether code download is possible for the deployment.
+    """Checks whether code download is possible for the snapshot.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
         code_repository: If provided, this code repository can be used to
             download the code inside the container images.
 
     Returns:
-        Whether code download is possible for the deployment.
+        Whether code download is possible for the snapshot.
     """
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         if step.config.docker_settings.local_project_install_command:
             return False
 
@@ -159,7 +159,7 @@ def code_download_possible(
 
 
 def reuse_or_create_pipeline_build(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     allow_build_reuse: bool,
     pipeline_id: Optional[UUID] = None,
     build: Union["UUID", "PipelineBuildBase", None] = None,
@@ -168,7 +168,7 @@ def reuse_or_create_pipeline_build(
     """Loads or creates a pipeline build.
 
     Args:
-        deployment: The pipeline deployment for which to load or create the
+        snapshot: The pipeline snapshot for which to load or create the
             build.
         allow_build_reuse: If True, the build is allowed to reuse an
             existing build.
@@ -185,14 +185,14 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
-            and not deployment.should_prevent_build_reuse
+            and not snapshot.should_prevent_build_reuse
             and not requires_included_code(
-                deployment=deployment, code_repository=code_repository
+                snapshot=snapshot, code_repository=code_repository
             )
-            and build_required(deployment=deployment)
+            and build_required(snapshot=snapshot)
         ):
             existing_build = find_existing_build(
-                deployment=deployment, code_repository=code_repository
+                snapshot=snapshot, code_repository=code_repository
             )
 
             if existing_build:
@@ -214,7 +214,7 @@ def reuse_or_create_pipeline_build(
                 )
 
         return create_pipeline_build(
-            deployment=deployment,
+            snapshot=snapshot,
             pipeline_id=pipeline_id,
             code_repository=code_repository,
         )
@@ -232,7 +232,7 @@ def reuse_or_create_pipeline_build(
 
     verify_custom_build(
         build=build_model,
-        deployment=deployment,
+        snapshot=snapshot,
         code_repository=code_repository,
     )
 
@@ -240,13 +240,13 @@ def reuse_or_create_pipeline_build(
 
 
 def find_existing_build(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
-    """Find an existing build for a deployment.
+    """Find an existing build for a snapshot.
 
     Args:
-        deployment: The deployment for which to find an existing build.
+        snapshot: The snapshot for which to find an existing build.
         code_repository: The code repository that will be used to download
             files in the images.
 
@@ -262,7 +262,7 @@ def find_existing_build(
         return None
 
     python_version_prefix = ".".join(platform.python_version_tuple()[:2])
-    required_builds = stack.get_docker_builds(deployment=deployment)
+    required_builds = stack.get_docker_builds(snapshot=snapshot)
 
     if not required_builds:
         return None
@@ -303,14 +303,14 @@ def find_existing_build(
 
 
 def create_pipeline_build(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Builds images and registers the output in the server.
 
     Args:
-        deployment: The pipeline deployment.
+        snapshot: The pipeline snapshot.
         pipeline_id: The ID of the pipeline.
         code_repository: If provided, this code repository will be used to
             download inside the build images.
@@ -325,7 +325,7 @@ def create_pipeline_build(
     client = Client()
     stack_model = Client().active_stack_model
     stack = client.active_stack
-    required_builds = stack.get_docker_builds(deployment=deployment)
+    required_builds = stack.get_docker_builds(snapshot=snapshot)
 
     if not required_builds:
         logger.debug("No docker builds required.")
@@ -333,7 +333,7 @@ def create_pipeline_build(
 
     logger.info(
         "Building Docker image(s) for pipeline `%s`.",
-        deployment.pipeline_configuration.name,
+        snapshot.pipeline_configuration.name,
     )
     start_time = time.time()
 
@@ -374,7 +374,7 @@ def create_pipeline_build(
             dockerfile = images[item_key].dockerfile
             requirements = images[item_key].requirements
         else:
-            tag = deployment.pipeline_configuration.name
+            tag = snapshot.pipeline_configuration.name
             if build_config.step_name:
                 tag += f"-{build_config.step_name}"
             tag += f"-{build_config.key}"
@@ -479,7 +479,7 @@ def compute_build_checksum(
 
 
 def verify_local_repository_context(
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     local_repo_context: Optional["LocalRepositoryContext"],
 ) -> Optional[BaseCodeRepository]:
     """Verifies the local repository.
@@ -488,19 +488,19 @@ def verify_local_repository_context(
     inside the images is possible.
 
     Args:
-        deployment: The pipeline deployment.
+        snapshot: The pipeline snapshot.
         local_repo_context: The local repository active at the source root.
 
     Raises:
-        RuntimeError: If the deployment requires code download but code download
+        RuntimeError: If the snapshot requires code download but code download
             is not possible.
 
     Returns:
         The code repository from which to download files for the runs of the
-        deployment, or None if code download is not possible.
+        snapshot, or None if code download is not possible.
     """
-    if build_required(deployment=deployment):
-        if requires_download_from_code_repository(deployment=deployment):
+    if build_required(snapshot=snapshot):
+        if requires_download_from_code_repository(snapshot=snapshot):
             if not local_repo_context:
                 raise RuntimeError(
                     "The `DockerSettings` of the pipeline or one of its "
@@ -537,22 +537,22 @@ def verify_local_repository_context(
 
 def verify_custom_build(
     build: "PipelineBuildResponse",
-    deployment: "PipelineDeploymentBase",
+    snapshot: "PipelineSnapshotBase",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> None:
-    """Verify a custom build for a pipeline deployment.
+    """Verify a custom build for a pipeline snapshot.
 
     Args:
         build: The build to verify.
-        deployment: The deployment for which to verify the build.
+        snapshot: The snapshot for which to verify the build.
         code_repository: Code repository that will be used to download files
-            for the deployment.
+            for the snapshot.
 
     Raises:
-        RuntimeError: If the build can't be used for the deployment.
+        RuntimeError: If the build can't be used for the snapshot.
     """
     stack = Client().active_stack
-    required_builds = stack.get_docker_builds(deployment=deployment)
+    required_builds = stack.get_docker_builds(snapshot=snapshot)
 
     if build.stack and build.stack.id != stack.id:
         logger.warning(
@@ -573,7 +573,7 @@ def verify_custom_build(
 
     if build.requires_code_download:
         if requires_included_code(
-            deployment=deployment, code_repository=code_repository
+            snapshot=snapshot, code_repository=code_repository
         ):
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
@@ -585,7 +585,7 @@ def verify_custom_build(
             )
 
         if (
-            requires_download_from_code_repository(deployment=deployment)
+            requires_download_from_code_repository(snapshot=snapshot)
             and not code_repository
         ):
             raise RuntimeError(
@@ -597,7 +597,7 @@ def verify_custom_build(
             )
 
         if not code_download_possible(
-            deployment=deployment, code_repository=code_repository
+            snapshot=snapshot, code_repository=code_repository
         ):
             raise RuntimeError(
                 "The `DockerSettings` of the pipeline or one of its "
@@ -688,20 +688,20 @@ def compute_stack_checksum(stack: StackResponse) -> str:
 
 
 def should_upload_code(
-    deployment: PipelineDeploymentBase,
+    snapshot: PipelineSnapshotBase,
     build: Optional[PipelineBuildResponse],
     can_download_from_code_repository: bool,
 ) -> bool:
-    """Checks whether the current code should be uploaded for the deployment.
+    """Checks whether the current code should be uploaded for the snapshot.
 
     Args:
-        deployment: The deployment.
-        build: The build for the deployment.
+        snapshot: The snapshot.
+        build: The build for the snapshot.
         can_download_from_code_repository: Whether the code can be downloaded
             from a code repository.
 
     Returns:
-        Whether the current code should be uploaded for the deployment.
+        Whether the current code should be uploaded for the snapshot.
     """
     if not build:
         # No build means we don't need to download code into a Docker container
@@ -710,7 +710,10 @@ def should_upload_code(
         # already be included.
         return False
 
-    for step in deployment.step_configurations.values():
+    if build.contains_code:
+        return False
+
+    for step in snapshot.step_configurations.values():
         docker_settings = step.config.docker_settings
 
         if (
@@ -727,17 +730,17 @@ def should_upload_code(
 
 
 def allows_download_from_code_repository(
-    deployment: PipelineDeploymentBase,
+    snapshot: PipelineSnapshotBase,
 ) -> bool:
     """Checks whether a code repository can be used to download code.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
 
     Returns:
         Whether a code repository can be used to download code.
     """
-    for step in deployment.step_configurations.values():
+    for step in snapshot.step_configurations.values():
         docker_settings = step.config.docker_settings
 
         if docker_settings.allow_download_from_code_repository:
@@ -747,17 +750,17 @@ def allows_download_from_code_repository(
 
 
 def log_code_repository_usage(
-    deployment: PipelineDeploymentBase,
+    snapshot: PipelineSnapshotBase,
     local_repo_context: "LocalRepositoryContext",
 ) -> None:
-    """Log what the code repository can (not) be used for given a deployment.
+    """Log what the code repository can (not) be used for given a snapshot.
 
     Args:
-        deployment: The deployment.
+        snapshot: The snapshot.
         local_repo_context: The local repository context.
     """
-    if build_required(deployment) and allows_download_from_code_repository(
-        deployment
+    if build_required(snapshot) and allows_download_from_code_repository(
+        snapshot
     ):
         if local_repo_context.is_dirty:
             logger.warning(

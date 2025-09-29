@@ -5,11 +5,21 @@ demonstrating how to integrate the Strands framework with ZenML for orchestratio
 and artifact management.
 """
 
+import os
 from typing import Annotated
 
 from agent import agent
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 @step
@@ -37,7 +47,7 @@ Powered by AWS Strands Agent
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def strands_weather_pipeline() -> str:
     """ZenML pipeline that orchestrates the AWS Strands weather agent.
 

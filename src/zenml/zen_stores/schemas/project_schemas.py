@@ -33,13 +33,14 @@ if TYPE_CHECKING:
         ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         ModelSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
-        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
+        PipelineSnapshotSchema,
         RunMetadataSchema,
         ScheduleSchema,
         ServiceSchema,
@@ -102,8 +103,7 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -120,6 +120,10 @@ class ProjectSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["DeploymentSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -60,8 +60,10 @@ class ResourceType(StrEnum):
     MODEL_VERSION = "model_version"
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
-    PIPELINE_DEPLOYMENT = "pipeline_deployment"
+    # We keep this name for backwards compatibility
+    PIPELINE_SNAPSHOT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
+    DEPLOYMENT = "deployment"
     SCHEDULE = "schedule"
     RUN_TEMPLATE = "run_template"
     SERVICE = "service"

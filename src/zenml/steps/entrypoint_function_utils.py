@@ -56,7 +56,7 @@ class StepArtifact:
         self,
         invocation_id: str,
         output_name: str,
-        annotation: Any,
+        annotation: OutputSignature,
         pipeline: "Pipeline",
     ) -> None:
         """Initialize a step artifact.

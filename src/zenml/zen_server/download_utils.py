@@ -16,14 +16,10 @@
 import os
 import tarfile
 import tempfile
-from typing import (
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING
 
 from zenml.artifacts.utils import _load_artifact_store
-from zenml.exceptions import (
-    IllegalOperationError,
-)
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ArtifactVersionResponse,
 )

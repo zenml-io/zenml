@@ -3,7 +3,7 @@ early_access: false
 reviews:
   high_level_summary: true
   poem: true
-  review_status: true
+  review_status: false
   collapse_walkthrough: true
   path_filters:
   - "!**/.xml"

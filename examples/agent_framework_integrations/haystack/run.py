@@ -4,11 +4,21 @@ This pipeline demonstrates how to integrate Haystack RAG pipelines with ZenML
 for orchestration and artifact management.
 """
 
+import os
 from typing import Annotated, Any, Dict
 
 from haystack_agent import pipeline as haystack_pipeline
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 @step
@@ -77,7 +87,7 @@ Answer:
     return formatted.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def haystack_rag_pipeline() -> str:
     """ZenML pipeline that orchestrates the Haystack RAG system.
 

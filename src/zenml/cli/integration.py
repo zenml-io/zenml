@@ -37,6 +37,14 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 
+_WHYLOGS_INTEGRATION_WARNING = (
+    "WhyLabs was acquired by Apple and the hosted WhyLabs platform is being "
+    "discontinued. The whylogs library remains open source and the WhyLabs "
+    "platform is now available as OSS at "
+    "https://github.com/whylabs/whylabs-oss, but hosted functionality may stop "
+    "working. Plan accordingly before continuing with the whylogs integration."
+)
+
 logger = get_logger(__name__)
 
 
@@ -198,6 +206,9 @@ def export_requirements(
                     f"{all_integrations}"
                 )
 
+    if "whylogs" in integrations_to_export:
+        warning(_WHYLOGS_INTEGRATION_WARNING)
+
     requirements = []
     for integration_name in integrations_to_export:
         try:
@@ -317,6 +328,9 @@ def install(
                 )
     else:
         integration_set = set(integrations)
+
+    if "whylogs" in integration_set:
+        warning(_WHYLOGS_INTEGRATION_WARNING)
 
     if sys.version_info.minor == 12 and "tensorflow" in integration_set:
         warning(

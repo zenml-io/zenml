@@ -6,6 +6,7 @@ and artifact management.
 """
 
 import asyncio
+import os
 from typing import Annotated, Any, Dict, List
 
 from autogen_core import (
@@ -19,6 +20,15 @@ from autogen_core import (
 from pydantic import BaseModel
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config import DockerSettings, PythonPackageInstaller
+
+docker_settings = DockerSettings(
+    python_package_installer=PythonPackageInstaller.UV,
+    requirements="requirements.txt",  # relative to the pipeline directory
+    environment={
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    },
+)
 
 
 class TravelQuery(BaseModel):
@@ -279,7 +289,7 @@ def format_travel_plan(
     return summary.strip()
 
 
-@pipeline
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
 def autogen_travel_pipeline() -> str:
     """ZenML pipeline that orchestrates the autogen multi-agent travel system.
 
