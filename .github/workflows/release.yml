@@ -79,7 +79,7 @@ jobs:
     #   - sqlite-db-migration-testing
     #   - mysql-db-migration-testing
     #   - mariadb-db-migration-testing
-    secrets: inherit
+    # secrets: inherit
     runs-on: ubuntu-latest
     environment: release
     permissions:
