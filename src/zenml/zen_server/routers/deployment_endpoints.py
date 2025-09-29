@@ -202,6 +202,7 @@ def delete_deployment(
 )
 @async_fastapi_endpoint_wrapper
 def create_deployment_visualization(
+    deployment_id: UUID,
     visualization: DeploymentVisualizationRequest,
     _: AuthContext = Security(authorize),
 ) -> DeploymentVisualizationResponse:
@@ -214,6 +215,14 @@ def create_deployment_visualization(
     Returns:
         The created deployment visualization.
     """
+    if (
+        visualization.deployment_id
+        and visualization.deployment_id != deployment_id
+    ):
+        raise error_response(
+            status_code=400,
+            detail="Deployment ID in request does not match path parameter",
+        )
     return verify_permissions_and_create_entity(
         request_model=visualization,
         create_method=zen_store().create_deployment_visualization,
