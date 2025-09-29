@@ -1,89 +1,124 @@
 #!/usr/bin/env python3
 """Two-Stage Prompt Optimization Example with ZenML."""
 
+import argparse
 import os
+import sys
 from typing import Optional
 
-import click
 from models import AgentConfig, DataSourceConfig
 from pipelines.production_eda_pipeline import production_eda_pipeline
 from pipelines.prompt_optimization_pipeline import prompt_optimization_pipeline
 
 
-@click.command(
-    help="Run prompt optimization and/or production EDA pipelines (both by default)"
-)
-@click.option(
-    "--optimization-pipeline", is_flag=True, help="Run prompt optimization"
-)
-@click.option("--production-pipeline", is_flag=True, help="Run production EDA")
-@click.option(
-    "--data-source",
-    default="hf:scikit-learn/iris",
-    help="Data source (type:path)",
-)
-@click.option("--target-column", default="target", help="Target column name")
-@click.option(
-    "--model-name", help="Model name (auto-detected if not specified)"
-)
-@click.option("--max-tool-calls", default=6, type=int, help="Max tool calls")
-@click.option(
-    "--timeout-seconds", default=60, type=int, help="Timeout seconds"
-)
-@click.option("--no-cache", is_flag=True, help="Disable caching")
-def main(
-    optimization_pipeline: bool = False,
-    production_pipeline: bool = False,
-    data_source: str = "hf:scikit-learn/iris",
-    target_column: str = "target",
-    model_name: Optional[str] = None,
-    max_tool_calls: int = 6,
-    timeout_seconds: int = 60,
-    no_cache: bool = False,
-):
+def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser.
+
+    Rationale:
+    - Uses only the Python standard library to avoid extra dependencies.
+    - Mirrors the original Click-based flag and option semantics to keep the
+      README usage and user experience unchanged.
+    """
+    parser = argparse.ArgumentParser(
+        description="Run prompt optimization and/or production EDA pipelines (both by default)"
+    )
+    parser.add_argument(
+        "--optimization-pipeline",
+        action="store_true",
+        help="Run prompt optimization",
+    )
+    parser.add_argument(
+        "--production-pipeline",
+        action="store_true",
+        help="Run production EDA",
+    )
+    parser.add_argument(
+        "--data-source",
+        default="hf:scikit-learn/iris",
+        help="Data source (type:path)",
+    )
+    parser.add_argument(
+        "--target-column",
+        default="target",
+        help="Target column name",
+    )
+    parser.add_argument(
+        "--model-name",
+        help="Model name (auto-detected if not specified)",
+    )
+    parser.add_argument(
+        "--max-tool-calls",
+        default=6,
+        type=int,
+        help="Max tool calls",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        default=60,
+        type=int,
+        help="Timeout seconds",
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable caching",
+    )
+    return parser
+
+
+def main() -> int:
     """Run prompt optimization and/or production EDA pipelines."""
+    parser = build_parser()
+    args = parser.parse_args()
+
     # Default: run both pipelines if no flags specified
+    optimization_pipeline = args.optimization_pipeline
+    production_pipeline = args.production_pipeline
     if not optimization_pipeline and not production_pipeline:
         optimization_pipeline = True
         production_pipeline = True
 
-    # Check API keys
+    # Check API keys. We support either OpenAI or Anthropic; at least one is required.
     has_openai = bool(os.getenv("OPENAI_API_KEY"))
     has_anthropic = bool(os.getenv("ANTHROPIC_API_KEY"))
 
     if not (has_openai or has_anthropic):
-        click.echo("❌ Set OPENAI_API_KEY or ANTHROPIC_API_KEY")
-        return
+        print("❌ Set OPENAI_API_KEY or ANTHROPIC_API_KEY", file=sys.stderr)
+        return 1
 
-    # Auto-detect model
+    # Auto-detect model if not explicitly provided. This keeps a sensible default
+    # that aligns with whichever provider the user configured.
+    model_name: Optional[str] = args.model_name
     if model_name is None:
         model_name = "gpt-4o-mini" if has_openai else "claude-3-haiku-20240307"
 
-    # Parse data source
+    # Parse data source "type:path" into its components early so we can fail-fast
+    # with a helpful error if the format is invalid.
     try:
-        source_type, source_path = data_source.split(":", 1)
+        source_type, source_path = args.data_source.split(":", 1)
     except ValueError:
-        click.echo(f"❌ Invalid data source: {data_source}")
-        return
+        print(f"❌ Invalid data source: {args.data_source}", file=sys.stderr)
+        return 2
 
-    # Create configs
+    # Create configs passed to the pipelines
     source_config = DataSourceConfig(
         source_type=source_type,
         source_path=source_path,
-        target_column=target_column,
+        target_column=args.target_column,
     )
 
     agent_config = AgentConfig(
         model_name=model_name,
-        max_tool_calls=max_tool_calls,
-        timeout_seconds=timeout_seconds,
+        max_tool_calls=args.max_tool_calls,
+        timeout_seconds=args.timeout_seconds,
     )
 
-    pipeline_options = {"enable_cache": not no_cache}
+    # ZenML run options: keep parity with the original example
+    pipeline_options = {"enable_cache": not args.no_cache}
 
     # Stage 1: Prompt optimization
     if optimization_pipeline:
-        click.echo("🧪 Running prompt optimization...")
+        print("🧪 Running prompt optimization...")
 
         prompt_variants = [
             "You are a data analyst. Quickly assess data quality (0-100 score) and identify key patterns. Be concise.",
@@ -97,25 +132,25 @@ def main(
                 prompt_variants=prompt_variants,
                 agent_config=agent_config,
             )
-            click.echo("✅ Optimization completed - best prompt tagged")
-
+            print("✅ Optimization completed - best prompt tagged")
         except Exception as e:
-            click.echo(f"❌ Optimization failed: {e}")
+            # Best-effort behavior: log the error and continue to the next stage
+            print(f"❌ Optimization failed: {e}", file=sys.stderr)
 
     # Stage 2: Production analysis
     if production_pipeline:
-        click.echo("🏭 Running production analysis...")
-
+        print("🏭 Running production analysis...")
         try:
             production_eda_pipeline.with_options(**pipeline_options)(
                 source_config=source_config,
                 agent_config=agent_config,
             )
-            click.echo("✅ Production analysis completed")
-
+            print("✅ Production analysis completed")
         except Exception as e:
-            click.echo(f"❌ Production analysis failed: {e}")
+            print(f"❌ Production analysis failed: {e}", file=sys.stderr)
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
