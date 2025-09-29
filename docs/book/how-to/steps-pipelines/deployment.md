@@ -10,34 +10,57 @@ Pipeline deployment allows you to run ZenML pipelines as long-running HTTP servi
 
 A pipeline deployment is a long-running HTTP server that wraps your pipeline in a web application, allowing it to be executed on-demand through HTTP requests. Unlike orchestrators that execute pipelines in batch mode, deployments create persistent services that can handle multiple concurrent pipeline executions.
 
-When you deploy a pipeline, ZenML creates an HTTP server (called a Deployment) that can execute your pipeline multiple times in parallel by invoking HTTP endpoints.
+When you deploy a pipeline, ZenML creates an HTTP server (called a **Deployment**) that can execute your pipeline multiple times in parallel by invoking HTTP endpoints.
+
+## Common Use Cases
+
+Pipeline deployments are ideal for scenarios requiring real-time, on-demand execution of ML workflows:
+
+**Online ML Inference**: Deploy trained models as HTTP services for real-time predictions, such as fraud detection in payment systems, recommendation engines for e-commerce, or image classification APIs. Pipeline deployments handle feature preprocessing, model loading, and prediction logic while managing concurrent requests efficiently.
+
+**LLM Agent Workflows**: Build intelligent agents that combine multiple AI capabilities like intent analysis, retrieval-augmented generation (RAG), and response synthesis. These deployments can power chatbots, customer support systems, or document analysis services that require multi-step reasoning and context retrieval.
+
+**Real-time Data Processing**: Process streaming events or user interactions that require immediate analysis and response, such as real-time analytics dashboards, anomaly detection systems, or personalization engines.
+
+**Multi-step Business Workflows**: Orchestrate complex processes involving multiple AI/ML components, like document processing pipelines that combine OCR, entity extraction, sentiment analysis, and classification into a single deployable service.
 
 ## How Deployments Work
 
-A **Deployer** is a stack component that manages the deployment of pipelines as long-running HTTP servers. The deployer handles:
+To deploy a pipeline or snapshot, a **Deployer** stack component needs to be in your active stack:
+
+```bash
+zenml deployer register <DEPLOYER-NAME> --flavor=<DEPLOYER-FLAVOR>
+zenml stack update -d <DEPLOYER-NAME>
+```
+
+The **Deployer** stack component manages the deployment of pipelines as long-running HTTP servers. It integrates with a specific infrastructure back-end like Docker, AWS App Runner, GCP Cloud Run etc., in order to implement the following functionalities:
 
 - Creating and managing persistent containerized services
 - Exposing HTTP endpoints for pipeline invocation
 - Managing the lifecycle of deployments (creation, updates, deletion)
 - Providing connection information and management commands
 
-## Creating Deployments
+{% hint style="info" %}
+The **Deployer** and **Model Deployer** represent distinct stack components with slightly overlapping responsibilities. The **Deployer** component orchestrates the deployment of arbitrary pipelines as persistent HTTP services, while the **Model Deployer** component focuses exclusively on the deployment and management of ML models for real-time inference scenarios.
 
-### Using the CLI
+The **Deployer** component can easily accommodate ML model deployment through deploying ML inference pipelines. This approach provides enhanced flexibility for implementing custom business logic and preprocessing workflows around the deployed model artifacts. Conversely, specialized **Model Deployer** integrations may offer optimized deployment strategies, superior performance characteristics, and resource utilization efficiencies that exceed the capabilities of general-purpose pipeline deployments.
 
-Deploy a pipeline or snapshot using the ZenML CLI:
+When deciding which component to use, consider the trade-offs between how much control you need over the deployment process and how much you want to offload to a particular integration specialized for ML model serving.
+{% endhint %}
+
+With a **Deployer** stack component in your active stack, a pipeline or snapshot can be deployed using the ZenML CLI:
 
 ```bash
-# Deploy a pipeline
+# Deploy the pipeline `weather_pipeline` in the `weather_agent` module as a
+# deployment named `my_deployment`
 zenml pipeline deploy weather_agent.weather_pipeline --name my_deployment
 
-# Deploy a snapshot
+# Deploy a snapshot named `weather_agent_snapshot` as a deployment named
+# `my_deployment`
 zenml pipeline snapshot deploy weather_agent_snapshot --deployment my_deployment
 ```
 
-### Using the SDK
-
-Deploy directly from your Python code:
+To deploy a pipeline using the ZenML SDK:
 
 ```python
 from zenml.pipeline import pipeline
@@ -46,18 +69,20 @@ from zenml.pipeline import pipeline
 def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
     return process_weather(city=city, temperature=temperature)
 
-# Deploy the pipeline
+# Deploy the pipeline `weather_agent` as a deployment named `my_deployment`
 deployment = weather_agent.deploy(deployment_name="my_deployment")
 print(f"Deployment URL: {deployment.url}")
 ```
 
-You can also deploy snapshots programmatically:
+It is also possible to deploy snapshots programmatically:
 
 ```python
 from zenml.client import Client
 
 client = Client()
 snapshot = client.get_snapshot(snapshot_name_or_id="weather_agent_snapshot")
+# Deploy the snapshot `weather_agent_snapshot` as a deployment named
+# `my_deployment`
 deployment = client.provision_deployment(
     name_id_or_prefix="my_deployment",
     snapshot_id=snapshot.id,
@@ -67,16 +92,23 @@ print(f"Deployment URL: {deployment.url}")
 
 ## Deployment Lifecycle
 
-A deployment contains the following key information:
+Once a Deployment is created, it is tied to the specific **Deployer** stack component that was used to provision it and can be managed independently of the active stack as a standalone entity with its own lifecycle.
+
+A Deployment contains the following key information:
 
 - **`name`**: Unique deployment name within the project
-- **`url`**: HTTP endpoint URL for the deployment
-- **`status`**: Current deployment status (RUNNING, STOPPED, etc.)
-- **`metadata`**: Deployer-specific metadata and configuration
+- **`url`**: HTTP endpoint URL where the deployment can be accessed
+- **`status`**: Current deployment status. This can take one of the following values `DeploymentStatus` enum values:
+    - **`RUNNING`**: The deployment is running and accepting HTTP requests
+    - **`ABSENT`**: The deployment is not currently provisioned
+    - **`PENDING`**: The deployment is currently undergoing some operation (e.g. being created, updated or deleted)
+    - **`ERROR`**: The deployment is in an error state. When in this state, more information about the error can be found in the ZenML logs, the Deployment `metadata` field or in the Deployment logs.
+    - **`UNKNOWN`**: The deployment is in an unknown state
+- **`metadata`**: Deployer-specific metadata describing the deployment's operational state
 
 ### Managing Deployments
 
-List all deployments:
+To list all the deployments managed in your project by all the available Deployers:
 
 ```bash
 zenml deployment list
@@ -96,13 +128,13 @@ This shows a table with deployment details:
 ╰──────────────────────┴────────────────────────┴──────────────────────┴───────────────────────┴───────────┴─────────────────┴─────────────────╯
 ```
 
-Get detailed deployment information:
+Detailed information about a specific deployment can be obtained with the following command:
 
 ```bash
 zenml deployment describe weather_agent
 ```
 
-This provides comprehensive deployment details:
+This provides comprehensive deployment details, including its state and access information:
 
 ```
 🚀 Deployment: weather_agent is: RUNNING ⚙
@@ -136,32 +168,64 @@ cURL Example:
 ╰────────────────────────────────────────────┴─────────────────────────────────────────────────────╯
 ```
 
-Deploying or redeploying a pipeline or snapshot over an existing deployment will update the deployment in place:
+{% hint style="info" %}
+Additional information regarding the deployment can be shown with the same command:
+
+* schema information about the deployment's input and output
+* backend-specific metadata information about the deployment
+* authentication information, if present
+{% endhint %}
+
+Deploying or redeploying a pipeline or snapshot on top of an existing deployment will update the deployment in place:
 
 ```bash
-# Update existing deployment with new pipeline version
+# Update the existing deployment named `my_deployment` with a new pipeline
+# code version
 zenml pipeline deploy weather_agent.weather_pipeline --name my_deployment --update
+
+# Update the existing deployment named `my_deployment` with a new snapshot
+# named `other_weather_agent_snapshot`
+zenml deployment provision my_deployment --snapshot other_weather_agent_snapshot
 ```
 
-Deprovision and remove a deployment completely:
+{% hint style="warning" %}
+**Deployment update checks and limitations**
+
+- Updating a deployment owned by a different user requires additional confirmation. This is to avoid unintentionally updating someone else's deployment.
+- An existing deployment cannot be updated using a stack different from the one it was originally deployed with
+- A pipeline snapshot can only have one deployment running at a time. You cannot deploy the same snapshot multiple times. You either have to delete the existing deployment and deploy the snapshot again or create a different snapshot.
+{% endhint %}
+
+Deprovisioning and deleting a deployment are two different operations. Deprovisioning a deployment keeps a record of it in the ZenML database so that it can be easily restored later if needed. Deleting a deployment completely removes it from the ZenML store:
 
 ```bash
-zenml deployment delete weather_agent
+# Deprovision the deployment named `my_deployment`
+zenml deployment deprovision my_deployment
+
+# Re-provision the deployment named `my_deployment` with the same configuration as before
+zenml deployment provision my_deployment
+
+# Deprovision and delete the deployment named `my_deployment`
+zenml deployment delete my_deployment
 ```
 
-This will prompt for confirmation and then deprovision and delete the deployment.
+{% hint style="warning" %}
+**Deployer deletion**
 
-### Constraints and Limitations
+A Deployer stack component cannot be deleted as long as there is at least one deployment managed by it that is not in an `ABSENT` state. To delete a Deployer stack component, you need to first deprovision or delete all the deployments managed by it. If some deployments are stuck in an `ERROR` state, you can use the `--force` flag to delete them without the need to deprovision them first, but be aware that this may leave some infrastructure resources orphaned.
+{% endhint %}
 
-- A deployment cannot be updated to use a different stack
-- A pipeline snapshot can only have one deployment running at a time
-- For security reasons, updating a deployment belonging to a different user requires the `--overtake` flag
+The server logs of a deployment can be accessed with the following command:
+
+```bash
+zenml deployment logs my_deployment
+```
 
 ## Deployable Pipeline Requirements
 
 While any pipeline can technically be deployed, following these guidelines ensures practical usability:
 
-### Pipeline Parameters
+### Pipeline Input Parameters
 
 Pipelines should accept explicit parameters to enable dynamic invocation:
 
@@ -171,20 +235,24 @@ def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
     return process_weather(city=city, temperature=temperature)
 ```
 
-**Parameter Requirements:**
-- Must have default values
-- Must use JSON-serializable data types (`int`, `float`, `str`, `bool`, `list`, `dict`, `tuple`, Pydantic models)
-- Parameter names must match step input names
+{% hint style="warning" %}
+**Input Parameter Requirements:**
+
+- All pipeline input parameters must have default values. This is a current limitation of the deployment mechanism.
+- Input parameters must use JSON-serializable data types (`int`, `float`, `str`, `bool`, `list`, `dict`, `tuple`, Pydantic models). Other data types are not currently supported and will result in an error when deploying the pipeline.
+- Pipeline input parameter names must match step parameter names. E.g. if the pipeline has an input parameter named `city` that is passed to a step input argument, that step argument must also be named `city`.
+{% endhint %}
+
 
 When deployed, the example pipeline above can be invoked:
 
-* with the following CLI command:
+* with a CLI command like the following:
 
 ```bash
 zenml deployment invoke my_pipeline --city=Paris --temperature=20
 ```
 
-* or with the following HTTP request:
+* or with an HTTP request like the following:
 
 ```bash
 curl -X POST http://localhost:8000/invoke \
@@ -207,10 +275,14 @@ def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
     return weather_analysis
 ```
 
+{% hint style="warning" %}
 **Output Requirements:**
-- Return values must be JSON-serializable
-- Output artifact names determine the response structure
-- For clashing output names, the convention used to differentiate them is `<step_name>.<output_name>`
+
+- Return values must be step outputs.
+- Return values must be JSON-serializable (`int`, `float`, `str`, `bool`, `list`, `dict`, `tuple`, Pydantic models). Other data types are not currently supported and will result in an error when deploying the pipeline.
+- The names of the step output artifacts determine the response structure (see example below)
+- For clashing output names, the naming convention used to differentiate them is `<step_name>.<output_name>`
+{% endhint %}
 
 Invoking a deployment of this pipeline will return the response below. Note how the `outputs` field contains the value returned by the `process_weather` step and the name of the output artifact is used as the key.
 
@@ -238,6 +310,34 @@ Invoking a deployment of this pipeline will return the response below. Note how 
 }
 ```
 
+### Deployment Authentication
+
+A rudimentary form of HTTP Basic authentication can be enabled for deployments by configuring one of two deployer configuration options:
+
+* `generate_auth_key`: set to `True` to automatically generate a shared secret key for the deployment. This is not set by default.
+* `auth_key`: configure the shared secret key manually.
+
+```python
+@pipeline(
+    settings={
+        "deployer": {
+            "generate_auth_key": True,
+        }
+    }
+)
+def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
+    return process_weather(city=city, temperature=temperature)
+```
+
+Deploying the above pipeline automatically generates and returns a key that will be required in the `Authorization` header of HTTP requests made to the deployment:
+
+```bash
+curl -X POST http://localhost:8000/invoke \
+  -H "Authorization: Bearer <GENERATED_AUTH_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"city": "Paris", "temperature": 20}}'
+```
+
 ### Deployment Initialization, Cleanup and State
 
 It often happens that the HTTP requests made to the same deployment share some type of initialization or cleanup or need to share the same global state or. For example:
@@ -246,14 +346,17 @@ It often happens that the HTTP requests made to the same deployment share some t
 
 * a database client must be initialized and shared across all the HTTP requests made to the deployment in order to read and write data
 
-To achieve this, you can configure custom initialization and cleanup hooks for the pipeline being deployed:
+To achieve this, it is possible to configure custom initialization and cleanup hooks for the pipeline being deployed:
 
 ```python
 
 def init_llm(model_name: str):
+    # Initialize and store the LLM in memory when the deployment is started, to
+    # be shared by all the HTTP requests made to the deployment
     return LLM(model_name=model_name)
 
 def cleanup_llm(llm: LLM):
+    # Cleanup the LLM when the deployment is stopped
     llm.cleanup()
 
 @step
@@ -281,7 +384,7 @@ The following happens when the pipeline is deployed and then later invoked:
 2. The value returned by the on_init hook is stored in memory in the deployment and can be accessed by pipeline steps using the `pipeline_state` property of the step context
 3. The on_cleanup hook is executed only once, when the deployment is stopped
 
-This mechanism can be used to initialize and share global state between all the HTTP requests made to the deployment.
+This mechanism can be used to initialize and share global state between all the HTTP requests made to the deployment or to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
 
 ## Best Practices
 
@@ -289,7 +392,7 @@ This mechanism can be used to initialize and share global state between all the 
 2. **Provide Default Values**: Ensure all parameters have sensible defaults
 3. **Return Useful Data**: Design pipeline outputs to provide meaningful responses
 4. **Use Type Annotations**: Leverage Pydantic models for complex parameter types
-5. **Use Global State**: Use the `on_init` and `on_cleanup` hooks along with the `pipeline_state` step context property to initialize and share global state between all the HTTP requests made to the deployment
+5. **Use Global Initialization and State**: Use the `on_init` and `on_cleanup` hooks along with the `pipeline_state` step context property to initialize and share global state between all the HTTP requests made to the deployment. Also use these hooks to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
 5. **Handle Errors Gracefully**: Implement proper error handling in your steps
 6. **Test Locally First**: Validate your deployable pipeline locally before deploying to production
 
