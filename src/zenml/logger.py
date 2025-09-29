@@ -359,6 +359,9 @@ def init_logging() -> None:
         for handler in root_logger.handlers
     )
 
+    # logging capture warnings
+    logging.captureWarnings(True)
+
     if not has_console_handler:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(get_formatter())

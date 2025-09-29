@@ -28,6 +28,7 @@ from typing import (
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.constants import DOCKER_SETTINGS_KEY
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
@@ -43,6 +44,7 @@ from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
+from zenml.utils.warnings import WARNING_CONTROLLER, WarningCodes
 
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -369,6 +371,46 @@ class Compiler:
                 f"steps in this pipeline: {available_steps}."
             )
 
+    @staticmethod
+    def _validate_docker_settings_usage(
+        docker_settings: "BaseSettings | None",
+        stack: "Stack",
+    ) -> None:
+        """Validates that docker settings are used with a proper stack.
+
+        Generates warning for improper docker settings usage or returns.
+
+        Args:
+            docker_settings: The docker settings specified for the step/pipeline.
+            stack: The stack the settings are validated against.
+
+        """
+        from zenml.orchestrators import (
+            ContainerizedOrchestrator,
+            LocalOrchestrator,
+        )
+
+        if not docker_settings or isinstance(
+            stack.orchestrator, ContainerizedOrchestrator
+        ):
+            return
+
+        warning_message = (
+            "You are specifying docker settings but you are not using a"
+            f"containerized orchestrator: {stack.orchestrator.__class__.__name__}."
+            f"Consider switching stack or using a containerized orchestrator, otherwise"
+            f"your docker settings will be ignored."
+        )
+
+        if isinstance(stack.orchestrator, LocalOrchestrator):
+            WARNING_CONTROLLER.info(
+                warning_code=WarningCodes.ZML002, message=warning_message
+            )
+        else:
+            WARNING_CONTROLLER.warn(
+                warning_code=WarningCodes.ZML002, message=warning_message
+            )
+
     def _filter_and_validate_settings(
         self,
         settings: Dict[str, "BaseSettings"],
@@ -397,9 +439,10 @@ class Compiler:
             try:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
-                logger.info(
-                    "Not including stack component settings with key `%s`.",
-                    key,
+                WARNING_CONTROLLER.info(
+                    warning_code=WarningCodes.ZML001.value,
+                    message="Not including stack component settings with key {key}",
+                    key=key,
                 )
                 continue
 
@@ -428,6 +471,11 @@ class Compiler:
                 continue
 
             validated_settings[key] = settings_instance
+
+        self._validate_docker_settings_usage(
+            stack=stack,
+            docker_settings=settings.get(DOCKER_SETTINGS_KEY),
+        )
 
         return validated_settings
 
