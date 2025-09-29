@@ -42,6 +42,8 @@ jobs:
           OLD_VERSION=$(echo "$LATEST_RELEASE" | jq -r .tag)
           echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
   prepare-changes:
+    # Only run this part once when the release branch is created
+    if: github.event.created
     needs: fetch-versions
     runs-on: ubuntu-latest
     steps:
