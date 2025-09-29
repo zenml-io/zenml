@@ -55,7 +55,9 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.agent:
-        print(f">> Running support_agent pipeline in batch mode with text: '{args.text}'")
+        print(
+            f">> Running support_agent pipeline in batch mode with text: '{args.text}'"
+        )
         support_agent(text=args.text)
     elif args.train:
         print(
@@ -76,7 +78,9 @@ def main() -> None:
     else:
         print("Usage:")
         print("  python run.py --agent      # Run agent in batch mode")
-        print("  python run.py --agent --text 'Custom query'  # Run with custom text")
+        print(
+            "  python run.py --agent --text 'Custom query'  # Run with custom text"
+        )
         print("  python run.py --train      # Train classifier")
         print("  python run.py --evaluate   # Evaluate agent performance")
         print("\nQuickstart flow:")
