@@ -1,4 +1,4 @@
-# ZenML (use existing installation)
+# ZenML
 zenml  
 
 # Core dependencies with version constraints for compatibility
@@ -6,7 +6,7 @@ pandas>=2.0.0,<3.0.0
 numpy>=1.24.0,<2.0.0
 duckdb>=1.0.0,<2.0.0
 
-# Pydantic compatibility - CRITICAL: Must be <2.10 for ZenML compatibility
+# Pydantic compatibility
 pydantic
 
 # AI/ML frameworks
