@@ -150,6 +150,7 @@ class TestDeploymentRuntimeContext:
         # Store some data
         runtime.put_in_memory_data("memory://artifact/1", {"data": "value1"})
         runtime.put_in_memory_data("memory://artifact/2", "string_value")
+        runtime.put_in_memory_data("memory://artifact/3", None)
 
         # Retrieve data
         assert runtime.get_in_memory_data("memory://artifact/1") == {
@@ -158,6 +159,7 @@ class TestDeploymentRuntimeContext:
         assert (
             runtime.get_in_memory_data("memory://artifact/2") == "string_value"
         )
+        assert runtime.get_in_memory_data("memory://artifact/3") is None
         with pytest.raises(KeyError):
             runtime.get_in_memory_data("memory://missing")
 
