@@ -8548,6 +8548,9 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
+        Raises:
+            KeyError: If the tag is not found.
+
         Returns:
             The tag of interest.
         """
