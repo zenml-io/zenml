@@ -212,8 +212,12 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
 def test_building_with_identical_keys_and_settings(mocker):
     """Tests that two build configurations with identical keys and identical
     settings don't lead to two builds."""
-    build_config_1 = BuildConfiguration(key="key", settings=DockerSettings())
-    build_config_2 = BuildConfiguration(key="key", settings=DockerSettings())
+    build_config_1 = BuildConfiguration(
+        key="key", settings=DockerSettings(image_tag="v1")
+    )
+    build_config_2 = BuildConfiguration(
+        key="key", settings=DockerSettings(image_tag="v1")
+    )
 
     mocker.patch.object(
         Stack,
@@ -239,6 +243,8 @@ def test_building_with_identical_keys_and_settings(mocker):
     assert build.images["key"].image == "image_name"
 
     mock_build_docker_image.assert_called_once()
+
+    assert mock_build_docker_image.call_args[1]["tag"] == "v1"
 
 
 def test_building_with_identical_keys_and_different_settings(mocker):
@@ -301,8 +307,7 @@ def test_building_with_different_keys_and_identical_settings(mocker):
     assert len(build.images) == 2
     assert build.images["key1"].image == "image_name"
     assert build.images["key2"].image == "image_name"
-
-    mock_build_docker_image.assert_called_once()
+    assert mock_build_docker_image.call_args[1]["tag"] == "pipeline-key1"
 
 
 def test_custom_build_verification(
