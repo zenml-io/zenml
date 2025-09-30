@@ -158,7 +158,8 @@ class TestDeploymentRuntimeContext:
         assert (
             runtime.get_in_memory_data("memory://artifact/2") == "string_value"
         )
-        assert runtime.get_in_memory_data("memory://missing") is None
+        with pytest.raises(KeyError):
+            runtime.get_in_memory_data("memory://missing")
 
     def test_in_memory_data_inactive_context(self):
         """Test in-memory data operations when context is inactive."""
@@ -204,7 +205,8 @@ class TestDeploymentRuntimeContext:
 
         # Should have clean state
         assert runtime.get_outputs() == {}
-        assert runtime.get_in_memory_data("memory://artifact/1") is None
+        with pytest.raises(KeyError):
+            runtime.get_in_memory_data("memory://artifact/1")
 
     def test_skip_artifact_materialization_setting(self):
         """Test skip_artifact_materialization setting functionality."""
@@ -284,5 +286,6 @@ class TestDeploymentRuntimeContext:
         )
 
         assert runtime.get_outputs() == {}
-        assert runtime.get_in_memory_data("memory://artifact/1") is None
+        with pytest.raises(KeyError):
+            runtime.get_in_memory_data("memory://artifact/1")
         assert runtime.should_skip_artifact_materialization() is False
