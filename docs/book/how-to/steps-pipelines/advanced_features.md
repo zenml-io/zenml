@@ -353,9 +353,9 @@ The fan-in, fan-out method has the following limitations:
 2. The number of steps need to be known ahead-of-time, and ZenML does not yet support the ability to dynamically create steps on the fly.
 {% endhint %}
 
-### Dynamic Fan-out/Fan-in with Run Templates
+### Dynamic Fan-out/Fan-in with Snapshots
 
-For scenarios where you need to determine the number of parallel operations at runtime (e.g., based on database queries or dynamic data), you can use [run templates](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) to create a more flexible fan-out/fan-in pattern. This approach allows you to trigger multiple pipeline runs dynamically and then aggregate their results.
+For scenarios where you need to determine the number of parallel operations at runtime (e.g., based on database queries or dynamic data), you can use [snapshots](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) to create a more flexible fan-out/fan-in pattern. This approach allows you to trigger multiple pipeline runs dynamically and then aggregate their results.
 
 ```python
 from typing import List, Optional
@@ -377,16 +377,15 @@ def load_relevant_chunks() -> List[str]:
 @step
 def trigger_chunk_processing(
     chunks: List[str], 
-    template_id: Optional[UUID] = None
+    snapshot_id: Optional[UUID] = None
 ) -> List[UUID]:
     """Trigger multiple pipeline runs for each chunk and wait for completion."""
     client = Client()
     
-    # Use template ID if provided, otherwise give the pipeline name 
-    #  of the pipeline you want triggered. Giving the pipeline name
-    #  will automatically find the latest template associated with
-    #  that pipeline.
-    pipeline_name = None if template_id else "chunk_processing_pipeline"
+    # Use snapshot ID if provided, otherwise give the pipeline name 
+    # of the pipeline you want triggered. Giving the pipeline name
+    # will automatically find the latest snapshot of that pipeline.
+    pipeline_name = None if snapshot_id else "chunk_processing_pipeline"
     
     # Trigger all chunk processing runs
     run_ids = []
@@ -402,7 +401,7 @@ def trigger_chunk_processing(
         }
         
         run = client.trigger_pipeline(
-            template_id=template_id,
+            snapshot_name_or_id=snapshot_id,
             pipeline_name_or_id=pipeline_name,
             run_configuration=run_config,
             synchronous=False  # Run asynchronously

@@ -13,7 +13,7 @@ Whether you're using the open-source (OSS) version or ZenML Pro (where servers a
 2. Mirror everything in both places.
 3. Use GitOps to automate upgrades.
 4. Run the right tests in staging.
-5. Re-create run templates.
+5. Re-create snapshots.
 6. Cut over to production once staging is green.
 
 
@@ -94,44 +94,24 @@ def test_simple_pipeline():
     assert run.status == "COMPLETED"
 ```
 
-## 🔄 Step #5: Update all run templates (deployed pipelines)
+## 🔄 Step #5: Update all snapshots
 
-Pipelines that are already deployed as [run templates](https://docs.zenml.io/concepts/templates) may now break as they have the older version of the ZenML client installed. Therefore, you would need to rebuild the run template and associated images.
+Pipeline snapshots may now break as they have the older version of the ZenML client installed. Therefore, you would need to rebuild the snapshot and associated images.
 
-The easiest way to do this is to re-create a run template from the latest run on the staging server/workspace.
-
-```python
-from zenml.client import Client
-
-client = Client()
-# Make sure this pipeline was run on this workspace
-pipeline = client.get_pipeline("my_pipeline")
-
-# Get latest successful run
-runs = client.list_pipeline_runs(pipeline_id=pipeline.id, size=1)
-if runs:
-    latest_run = runs[0]
-    template = latest_run.create_run_template(
-        name="upgraded-template",
-        deployment_id=latest_run.deployment_id
-    )
-    print(f"Template created: {template.name}")
-```
-
-Or with CLI:
+The easiest way to do this is to re-create a snapshot using the CLI:
 
 ```shell
-zenml pipeline create-run-template my_pipeline \
+zenml pipeline snapshot create run.my_pipeline \
   --name upgraded-template \
   --stack staging-stack \
   --config configs/run.yaml
 ```
 
 {% hint style="info" %}
-Read about [how run templates work](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems).
+Read about [how snapshots work](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems).
 {% endhint %}
 
-After building, execute all run templates end-to-end as a smoke test.
+After building, execute all snapshots end-to-end as a smoke test.
 Ideally, your data science teams have a "smoke test" parameter in the pipeline
 to load mock data just for this scenario!
 
@@ -142,7 +122,7 @@ Once staging is ✅ :
 1. Merge `staging` ➜ `main`.
 2. CI upgrades the production workspace.
 3. Immediately:
-   * Rebuild **all run templates** in prod
+   * Rebuild **all snapshots** in prod
    * **Reschedule** recurring pipelines (delete old schedules, create new ones). Read more [here](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 4. Monitor for a few hours. Done.
 
@@ -175,7 +155,7 @@ If you self-host the ZenML server:
         /               \
       Yes                 No
       |                    |
-Recreate run templates    Fix
+Recreate snapshots        Fix
      │
 Upgrade prod
      |

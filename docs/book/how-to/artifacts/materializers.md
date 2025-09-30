@@ -341,7 +341,7 @@ def example_pipeline():
 example_pipeline()
 ```
 
-You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
+You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](../snapshots/snapshots.md#advanced-usage-running-snapshots-from-other-pipelines)
 
 ## Best Practices
 
