@@ -100,7 +100,9 @@ def lookup_preferred_or_free_port(
         if not allocate_port_if_busy:
             raise IOError(f"TCP port {preferred_ports} is not available.")
 
-    available_port = scan_for_available_port(start=range[0], stop=range[1])
+    available_port = scan_for_available_port(
+        start=range[0], stop=range[1], address=address
+    )
     if available_port:
         return available_port
     raise IOError(f"No free TCP ports found in range {range}")
