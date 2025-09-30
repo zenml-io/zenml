@@ -365,6 +365,7 @@ class DockerDeployer(ContainerizedDeployer):
             preferred_ports=preferred_ports,
             allocate_port_if_busy=settings.allocate_port_if_busy,
             range=settings.port_range,
+            address="0.0.0.0",
         )
         ports: Dict[str, Optional[int]] = {"8000/tcp": port}
 

@@ -71,6 +71,7 @@ def lookup_preferred_or_free_port(
     preferred_ports: List[int] = [],
     allocate_port_if_busy: bool = True,
     range: Tuple[int, int] = SCAN_PORT_RANGE,
+    address: str = "127.0.0.1",
 ) -> int:
     """Find a preferred TCP port that is available or search for a free TCP port.
 
@@ -82,6 +83,7 @@ def lookup_preferred_or_free_port(
         allocate_port_if_busy: If True, allocate a free port if all the
             preferred ports are busy, otherwise an exception will be raised.
         range: The range of ports to search for a free port.
+        address: The IP address for which to find a port.
 
     Returns:
         An available TCP port number
@@ -93,7 +95,7 @@ def lookup_preferred_or_free_port(
     # If a port value is explicitly configured, attempt to use it first
     if preferred_ports:
         for port in preferred_ports:
-            if port_available(port):
+            if port_available(port, address):
                 return port
         if not allocate_port_if_busy:
             raise IOError(f"TCP port {preferred_ports} is not available.")
@@ -105,20 +107,23 @@ def lookup_preferred_or_free_port(
 
 
 def scan_for_available_port(
-    start: int = SCAN_PORT_RANGE[0], stop: int = SCAN_PORT_RANGE[1]
+    start: int = SCAN_PORT_RANGE[0],
+    stop: int = SCAN_PORT_RANGE[1],
+    address: str = "127.0.0.1",
 ) -> Optional[int]:
     """Scan the local network for an available port in the given range.
 
     Args:
         start: the beginning of the port range value to scan
         stop: the (inclusive) end of the port range value to scan
+        address: The IP address for which to find a port.
 
     Returns:
         The first available port in the given range, or None if no available
         port is found.
     """
     for port in range(start, stop + 1):
-        if port_available(port):
+        if port_available(port, address):
             return port
     logger.debug(
         "No free TCP ports found in the range %d - %d",
