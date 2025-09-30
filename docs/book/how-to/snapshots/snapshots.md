@@ -27,7 +27,7 @@ Without snapshots, each scenario would require:
 **Pipeline snapshots solve this problem by creating a reusable configuration** that can be executed with different parameters from any interface:
 
 - **Through Python**: Data scientists can programmatically trigger snapshots with custom parameters
-  ```python
+```python
   from zenml.client import Client
   
   Client().trigger_pipeline(
@@ -39,7 +39,6 @@ Without snapshots, each scenario would require:
           }
       }
   )
-  ```
 
 - **Through REST API**: Your CI/CD system can trigger snapshots via API calls
   ```bash
