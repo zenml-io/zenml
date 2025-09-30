@@ -694,8 +694,5 @@ def log_deployment(
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Streaming logs for deployment '{deployment_name_or_id}'...\n"
-        ):
-            for log in logs:
-                print(log)
+        for log in logs:
+            print(log)
