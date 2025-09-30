@@ -91,6 +91,22 @@ deployment = client.provision_deployment(
 print(f"Deployment URL: {deployment.url}")
 ```
 
+Once deployed, a pipeline can be invoked through the URL exposed by the deployment. Every invocation of the deployment will create a new pipeline run.
+
+The ZenML CLI provides a convenient command to invoke a deployment:
+
+```bash
+zenml deployment invoke my_deployment --city="London" --temperature=20
+```
+
+which is the equivalent of the following HTTP request:
+
+```bash
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"city": "London", "temperature": 20}}'
+```
+
 ## Deployment Lifecycle
 
 Once a Deployment is created, it is tied to the specific **Deployer** stack component that was used to provision it and can be managed independently of the active stack as a standalone entity with its own lifecycle.
@@ -356,7 +372,7 @@ curl -X POST http://localhost:8000/invoke \
   -d '{"parameters": {"city": "Paris", "temperature": 20}}'
 ```
 
-### Deployment Initialization, Cleanup and State
+## Deployment Initialization, Cleanup and State
 
 It often happens that the HTTP requests made to the same deployment share some type of initialization or cleanup or need to share the same global state or. For example:
 
@@ -419,6 +435,5 @@ This mechanism can be used to initialize and share global state between all the 
 Pipeline deployment transforms ZenML pipelines from batch processing workflows into real-time services. By following the guidelines for deployable pipelines and understanding the deployment lifecycle, you can create robust, scalable ML services that integrate seamlessly with web applications and real-time systems.
 
 See also:
-- [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Configuration](./configuration.md) - Pipeline configuration options
-- [Advanced Features](./advanced_features.md) - Advanced pipeline capabilities
+- [Steps & Pipelines](../steps-pipelines/steps_and_pipelines.md) - Core building blocks
+- [Deployer Stack Component](../../component-guide/deployers/README.md) - The stack component that manages the deployment of pipelines as long-running HTTP servers
