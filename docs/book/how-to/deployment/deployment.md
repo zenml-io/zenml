@@ -1,5 +1,6 @@
 ---
 description: Deploy pipelines as HTTP services for real-time execution
+icon: rocket-launch
 ---
 
 # Pipeline Deployment

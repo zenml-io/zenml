@@ -37,7 +37,7 @@
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
   * [Configuration](how-to/steps-pipelines/configuration.md)
   * [Scheduling](how-to/steps-pipelines/scheduling.md)
-  * [Pipeline Deployment](how-to/steps-pipelines/deployment.md)
+* [Pipeline Deployment](how-to/deployment/deployment.md)
   * [Logging](how-to/steps-pipelines/logging.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
