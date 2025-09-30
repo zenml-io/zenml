@@ -209,7 +209,7 @@ zenml deployment provision my_deployment --snapshot other_weather_agent_snapshot
 **Deployment update checks and limitations**
 
 - Updating a deployment owned by a different user requires additional confirmation. This is to avoid unintentionally updating someone else's deployment.
-- An existing deployment cannot be updated using a stack different from the one it was originally deployed with
+- An existing deployment cannot be updated using a stack different from the one it was originally deployed with.
 - A pipeline snapshot can only have one deployment running at a time. You cannot deploy the same snapshot multiple times. You either have to delete the existing deployment and deploy the snapshot again or create a different snapshot.
 {% endhint %}
 
