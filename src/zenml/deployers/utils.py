@@ -295,7 +295,7 @@ def deployment_snapshot_request_from_source_snapshot(
         deployment_parameters: Parameters to override for deployment execution.
 
     Raises:
-        ValueError: If there are missing/extra step parameters.
+        RuntimeError: If the source snapshot does not have an associated stack.
 
     Returns:
         The generated snapshot request.
