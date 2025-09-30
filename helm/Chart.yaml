@@ -1,12 +1,15 @@
 apiVersion: v2
 name: zenml
 version: "0.90.0rc0"
-description: Open source MLOps framework for portable production ready ML pipelines
+description: ZenML: MLOps for Reliable AI: from Classical AI to Agents.
 keywords:
 - mlops
 - zenml
 - server
+- ai
+- agents
+- agentic workflows
 home: https://zenml.io
 sources:
 - https://github.com/zenml-io/zenml
-icon: https://raw.githubusercontent.com/zenml-io/zenml/main/docs/book/.gitbook/assets/zenml_logo.png
+icon: https://raw.githubusercontent.com/zenml-io/zenml/main/docs/book/.gitbook/assets/header.png
