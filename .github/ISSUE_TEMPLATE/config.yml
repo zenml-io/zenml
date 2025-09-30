@@ -1,12 +1,9 @@
 ---
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Feature Request
-    url: https://zenml.io/discussion
-    about: Request a new feature.
-  - name: Slack Channel
-    url: https://zenml.io/slack/
-    about: Chat with us directly here.
   - name: Docs
     url: https://docs.zenml.io/
     about: Read the docs to answer most commonly asked questions.
+  - name: Slack Channel
+    url: https://zenml.io/slack/
+    about: Chat with us directly here.
