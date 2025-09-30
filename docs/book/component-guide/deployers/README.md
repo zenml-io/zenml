@@ -42,151 +42,61 @@ zenml deployer flavor list
 
 ### How to use it
 
-You don't need to directly interact with the ZenML deployer stack component in your code. As long as the deployer that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK.
+You don't need to directly interact with the ZenML deployer stack component in your code. As long as the deployer that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK. The resulting deployment can be managed using the ZenML CLI or the ZenML SDK.
 
 Example:
 
-* set up a stack with a deployer
+* set up a stack with a deployer:
 
 ```bash
 zenml deployer register docker --flavor=local
 zenml stack register docker_deployment -a default -o default -D docker --set
 ```
 
-* deploy a pipeline or snapshot
+* deploy a pipeline with the ZenML SDK:
 
 ```python
 from zenml import pipeline
 
+@step
+def my_step(name: str) -> str:
+    return f"Hello, {name}!"
 
 @pipeline
-def my_pipeline(...) -> ...:
-    ...
+def my_pipeline(name: str = "John") -> str:
+    return my_step(name=name)
+
+if __name__ == "__main__":
+    # Deploy the pipeline `my_pipeline` as a deployment named `my_deployment`
+    deployment = my_pipeline.deploy(deployment_name="my_deployment")
+    print(f"Deployment URL: {deployment.url}")
 ```
 
-#### Specifying deployment resources
+* deploy the same pipeline with the CLI:
 
-If your steps require additional hardware resources, you can specify them on your steps as described [here](https://docs.zenml.io/user-guides/tutorial/distributed-training/).
-
-* **Pipeline Service Management**: Facilitates the deployment of ZenML pipelines as long-running HTTP services to various platforms such as local Docker, Kubernetes clusters, or cloud serverless platforms. The deployer holds all the stack-related configuration attributes required to interact with the deployment platform (e.g. cluster contexts, namespaces, authentication credentials, and resource specifications). The following are examples of configuring deployers and registering them as stack components:
-
-   ```bash
-   # Local Docker deployment
-   zenml deployer register local_docker --flavor=local
-   zenml stack register local_deployment -m default -a default -o default -d local_docker --set
-   ```
-
-   ```bash
-   # Kubernetes deployment
-   zenml integration install kubernetes
-   zenml deployer register k8s_deployer --flavor=k8s \
-   --kubernetes_context=production-cluster --kubernetes_namespace=zenml-deployments
-   zenml stack register k8s_deployment -m default -a aws -o default -d k8s_deployer
-   ```
-
-* **Deployment Lifecycle Management**: Provides mechanisms for comprehensive lifecycle management of pipeline deployments, including the ability to create, update, start, stop, and delete pipeline services. This optimizes resource utilization and facilitates continuous delivery of pipeline updates. Core methods for interacting with pipeline deployments include:
-  - `deploy_pipeline` - Deploys a pipeline or snapshot as an HTTP service and returns a Deployment object
-  - `find_deployments` - Finds and returns a list of Deployment objects representing active pipeline services
-  - `get_deployment` - Retrieves a specific deployment by name or ID
-  - `update_deployment` - Updates an existing deployment with a new pipeline version
-  - `delete_deployment` - Removes a deployment and cleans up associated resources
-
-{% hint style="info" %}
-ZenML uses the Deployment object to represent a pipeline service that has been deployed to a serving environment. The Deployment object is saved in the database and contains information about the deployment configuration, status, and connection details. The Deployment object consists of key attributes including `name`, `url`, `status`, and `metadata` that provide complete information about the deployed service.
-{% endhint %}
-
-   ```python
-   from zenml.client import Client
-
-   client = Client()
-   
-   # Deploy a pipeline
-   deployment = client.deploy_pipeline(
-       pipeline_name_or_id="weather_pipeline",
-       deployment_name="weather_service",
-       stack_name="k8s_deployment"
-   )
-   
-   # Check deployment status
-   if deployment.is_running:
-       print(f"Pipeline service is running at {deployment.url}")
-       
-       # Invoke the deployed pipeline
-       response = deployment.invoke(parameters={"city": "London", "temperature": 20})
-       print(f"Pipeline response: {response}")
-   else:
-       print(f"Deployment status: {deployment.status}")
-   ```
-
-#### How to interact with deployments after creation?
-
-When a Deployer is part of the active ZenML Stack, you can interact with it from the CLI to list, describe, invoke, and manage pipeline deployments:
-
-```
-$ zenml deployment list
-┏━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃         NAME         │ PIPELINE                             │ URL                            │ STATUS                   ┃
-┠──────────────────────┼──────────────────────────────────────┼────────────────────────────────┼──────────────────────────┨
-┃  weather_service     │ weather_pipeline                     │ http://localhost:8001          │ ⚙ RUNNING               ┃
-┠──────────────────────┼──────────────────────────────────────┼────────────────────────────────┼──────────────────────────┨
-┃  ml_inference_api    │ inference_pipeline                   │ http://k8s-cluster/ml-api      │ ⚙ RUNNING               ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-$ zenml deployment describe weather_service
-🚀 Deployment: weather_service is: RUNNING ⚙
-
-Pipeline: weather_pipeline
-Snapshot: 0866c821-d73f-456d-a98d-9aa82f41282e
-Stack: k8s_deployment
-
-📡 Connection Information:
-
-Endpoint URL: http://localhost:8001
-Swagger URL: http://localhost:8001/docs
-CLI Command Example:
-  zenml deployment invoke weather_service --city="London"
-
-cURL Example:
-  curl -X POST http://localhost:8001/invoke \
-    -H "Content-Type: application/json" \
-    -d '{"parameters": {"city": "London"}}'
-
-$ zenml deployment invoke weather_service --city="Paris" --temperature=25
-{
-  "success": true,
-  "outputs": {
-    "weather_analysis": "The weather in Paris is 25 degrees Celsius"
-  },
-  "execution_time": 2.1,
-  "metadata": {
-    "deployment_name": "weather_service",
-    "pipeline_name": "weather_pipeline"
-  }
-}
-
-$ zenml deployment delete weather_service
+```bash
+zenml pipeline deploy --name my_deployment my_module.my_pipeline
 ```
 
-In Python, you can also interact with deployments programmatically:
+* send a request to the deployment with the ZenML CLI:
 
-```python
-from zenml.client import Client
+```bash
+zenml deployment invoke my_deployment --name="Alice"
+```
 
-client = Client()
+* or with curl:
 
-# Get deployment information
-deployment = client.get_deployment("weather_service")
-print(f"Deployment URL: {deployment.url}")
-print(f"Status: {deployment.status}")
+```bash
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"name": "Alice"}}'
+```
 
-# Invoke the deployment
-response = deployment.invoke(parameters={"city": "Tokyo", "temperature": 18})
-print(f"Pipeline output: {response['outputs']}")
+* alternatively, set up a snapshot and deploy it instead of a pipeline:
 
-# List all deployments
-deployments = client.list_deployments()
-for deployment in deployments:
-    print(f"{deployment.name}: {deployment.status}")
+```bash
+zenml pipeline snapshot create --name my_snapshot my_module.my_pipeline
+zenml pipeline snapshot deploy my_snapshot --deployment my_deployment
 ```
 
 #### Pipeline Requirements for Deployment
@@ -201,9 +111,10 @@ Not all pipelines are suitable for deployment as HTTP services. To be deployable
 **Output Requirements:**
 - Pipelines should return meaningful values for HTTP responses
 - Return values must be JSON-serializable
-- Use type annotations to specify output artifact names
+- It's recommended to use type annotations to specify output artifact names
 
-**Example Deployable Pipeline:**
+Example Deployable Pipeline:
+
 ```python
 from typing import Annotated
 from zenml import pipeline, step
@@ -217,12 +128,169 @@ def weather_pipeline(city: str = "Paris", temperature: float = 20.0) -> str:
     """A deployable pipeline that processes weather data."""
     analysis = process_weather(city=city, temperature=temperature)
     return analysis
-
-# Deploy the pipeline
-deployment = weather_pipeline.deploy(deployment_name="weather_service")
 ```
 
-The ZenML integrations that provide Deployer stack components also include standard pipeline steps and utilities for continuous deployment workflows. These components handle the aspects of deploying pipelines as services and managing their lifecycle through the deployment platform's APIs.
+For more information, see the [Deployable Pipeline Requirements](../../how-to/steps-pipelines/deployment.md#deployable-pipeline-requirements) section of the tutorial.
+
+#### Deployment Lifecycle Management
+
+The Deployment object represents a pipeline that has been deployed to a serving environment. The Deployment object is saved in the ZenML database and contains information about the deployment configuration, status, and connection details. Deployments are standalone entities that can be managed independently of the active stack through the Deployer stack components that were originally used to provision them.
+
+Some example of how to manage deployments:
+
+* listing deployments with the CLI:
+
+```bash
+$ zenml deployment list
+┏━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         NAME         │ PIPELINE                             │ URL                            │ STATUS                   ┃
+┠──────────────────────┼──────────────────────────────────────┼────────────────────────────────┼──────────────────────────┨
+┃  weather_service     │ weather_pipeline                     │ http://localhost:8001          │ ⚙ RUNNING               ┃
+┠──────────────────────┼──────────────────────────────────────┼────────────────────────────────┼──────────────────────────┨
+┃  ml_inference_api    │ inference_pipeline                   │ http://k8s-cluster/ml-api      │ ⚙ RUNNING               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+* listing deployments with the SDK:
+
+```python
+from zenml.client import Client
+
+client = Client()
+deployments = client.list_deployments()
+for deployment in deployments:
+    print(f"{deployment.name}: {deployment.status}")
+```
+
+* showing detailed information about a deployment with the CLI:
+
+```bash
+$ zenml deployment describe my_deployment --show-schema
+
+🚀 Deployment: my_deployment is: RUNNING ⚙
+
+Pipeline: my_pipeline
+Snapshot: my_snapshot
+Stack: docker-deployer
+
+📡 Connection Information:
+
+Endpoint URL: http://localhost:8002
+Swagger URL: http://localhost:8002/docs
+CLI Command Example:
+  zenml deployment invoke my_deployment --name="John"
+
+cURL Example:
+  curl -X POST http://localhost:8002/invoke \
+    -H "Content-Type: application/json" \
+    -d '{
+      "parameters": {
+        "name": "John"
+      }
+    }'
+
+📋 Deployment JSON Schemas:
+
+Input Schema:
+{
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "default": "John",
+      "title": "Name",
+      "type": "string"
+    }
+  },
+  "title": "PipelineInput",
+  "type": "object"
+}
+
+Output Schema:
+{
+  "properties": {
+    "output": {
+      "title": "Output",
+      "type": "string"
+    }
+  },
+  "required": [
+    "output"
+  ],
+  "title": "PipelineOutput",
+  "type": "object"
+}
+
+⚙️  Management Commands
+╭────────────────────────────────────────────┬─────────────────────────────────────────────────────╮
+│ zenml deployment logs my_deployment -f     │ Follow deployment logs in real-time                 │
+│ zenml deployment describe my_deployment    │ Show detailed deployment information                │
+│ zenml deployment deprovision my_deployment │ Deprovision this deployment and keep a record of it │
+│ zenml deployment delete my_deployment      │ Deprovision and delete this deployment              │
+╰────────────────────────────────────────────┴─────────────────────────────────────────────────────╯
+```
+
+* showing detailed information about a deployment with the SDK:
+
+```python
+from zenml.client import Client
+deployment = client.get_deployment("my_deployment")
+print(deployment)
+```
+
+* deprovision and delete a deployment with the CLI:
+
+```bash
+$ zenml deployment delete my_deployment
+```
+
+* deprovisioning and deleting a deployment with the SDK:
+```python
+from zenml.client import Client
+client = Client()
+client.delete_deployment("my_deployment")
+```
+
+* sending a request to a deployment with the CLI:
+
+```bash
+$ zenml deployment invoke my_deployment --name="John"
+
+Invoked deployment 'my_deployment' with response:
+{
+  "success": true,
+  "outputs": {
+    "output": "Hello, John!"
+  },
+  "execution_time": 3.2781872749328613,
+  "metadata": {
+    "deployment_id": "95d60dcf-7c37-4e62-a923-a341601903e5",
+    "deployment_name": "my_deployment",
+    "snapshot_id": "f3122ed4-aa13-4113-9f60-a80545f56244",
+    "snapshot_name": "my_snapshot",
+    "pipeline_name": "my_pipeline",
+    "run_id": "ea448522-d5bf-411e-971e-d4550fdbe713",
+    "run_name": "my_pipeline-2025_09_30-12_52_01_012491",
+    "parameters_used": {}
+  },
+  "error": null
+}
+```
+
+* sending a request to a deployment with the SDK:
+
+```python
+from zenml.deployers.utils import invoke_deployment
+
+response = invoke_deployment(
+    deployment_name_or_id="my_deployment",
+    name="John",
+)
+print(response)
+```
+
+#### Specifying deployment resources
+
+If your steps require additional hardware resources, you can specify them on your steps as described [here](https://docs.zenml.io/user-guides/tutorial/distributed-training/).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

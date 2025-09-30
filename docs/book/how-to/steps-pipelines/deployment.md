@@ -33,7 +33,7 @@ zenml deployer register <DEPLOYER-NAME> --flavor=<DEPLOYER-FLAVOR>
 zenml stack update -d <DEPLOYER-NAME>
 ```
 
-The **Deployer** stack component manages the deployment of pipelines as long-running HTTP servers. It integrates with a specific infrastructure back-end like Docker, AWS App Runner, GCP Cloud Run etc., in order to implement the following functionalities:
+The [**Deployer** stack component](../../component-guide/deployers/README.md) manages the deployment of pipelines as long-running HTTP servers. It integrates with a specific infrastructure back-end like Docker, AWS App Runner, GCP Cloud Run etc., in order to implement the following functionalities:
 
 - Creating and managing persistent containerized services
 - Exposing HTTP endpoints for pipeline invocation
@@ -235,7 +235,7 @@ def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
     return process_weather(city=city, temperature=temperature)
 ```
 
-{% hint style="warning" %}
+{% hint style="info" %}
 **Input Parameter Requirements:**
 
 - All pipeline input parameters must have default values. This is a current limitation of the deployment mechanism.
@@ -260,6 +260,23 @@ curl -X POST http://localhost:8000/invoke \
   -d '{"parameters": {"city": "Paris", "temperature": 20}}'
 ```
 
+{% hint style="warning" %}
+Pipeline input parameters behave differently when pipelines are deployed than when they are run as a batch job. When running a parameterized pipeline, its input parameters are evaluated before the pipeline run even starts and can be used to configure the structure of the pipeline DAG. When invoking a deployment, the input parameters do not have an effect on the pipeline DAG structure, so a pipeline like the following will not work as expected:
+
+```python
+@pipeline
+def switcher(
+    mode: str = "analyze",
+    city: str = "Paris",
+    topic: str = "ML",
+) -> str:
+    return (
+        analyze(city) if mode == "analyze" else generate(topic)
+    )  # this will always use the "analyze" step when deploying the pipeline
+```
+
+{% endhint %}
+
 ### Pipeline Outputs
 
 Pipelines should return meaningful values for useful HTTP responses:
@@ -275,7 +292,7 @@ def weather_agent(city: str = "Paris", temperature: float = 20) -> str:
     return weather_analysis
 ```
 
-{% hint style="warning" %}
+{% hint style="info" %}
 **Output Requirements:**
 
 - Return values must be step outputs.
