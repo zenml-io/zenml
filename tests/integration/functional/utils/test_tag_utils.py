@@ -17,10 +17,13 @@ import os
 from typing import Annotated, Tuple
 
 import pytest
+from tests.integration.functional.zen_stores.utils import PipelineRunContext
 
 from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
+from zenml.client import Client
 from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
 from zenml.enums import ExecutionStatus
+from zenml.utils.string_utils import random_str
 
 
 @step
@@ -240,3 +243,36 @@ def test_cascade_tags_for_output_artifacts_of_cached_pipeline_run(
         .tags
     ]
     os.environ.pop(ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, None)
+
+
+def test_tags_with_special_characters():
+    """Test that tags with special characters are handled correctly."""
+    client = Client()
+
+    tags = [
+        f"_tag_with_underscore_{random_str(15)}_",
+        f".tag.with.dots.{random_str(15)}.",
+        f"/tag/with/slashes/{random_str(15)}/",
+        f"=tag=with=equals={random_str(15)}=",
+        f"?tag?with?question?marks?{random_str(15)}?",
+        f".tag.with?special=characters/{random_str(15)}/",
+    ]
+
+    tag_responses = []
+    for tag in tags:
+        tag_responses.append(client.create_tag(tag))
+
+    with PipelineRunContext(1) as pipeline_runs:
+        pipeline_run = pipeline_runs[0]
+        add_tags(tags=tags, run=pipeline_run.id)
+
+        pipeline_run = client.get_pipeline_run(pipeline_run.id)
+        assert all(tag in [t.name for t in pipeline_run.tags] for tag in tags)
+        remove_tags(tags=tags, run=pipeline_run.id)
+
+    for tag_response in tag_responses:
+        client.get_tag(tag_response.id)
+
+    for tag in tags:
+        client.get_tag(tag)
+        client.delete_tag(tag)
