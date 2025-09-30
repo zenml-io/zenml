@@ -75,7 +75,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         if self.config.is_local and GlobalConfiguration().uses_sql_store:
             # If we're directly connected to a DB, we need to install the
             # `local` extra in the Docker image to include the DB dependencies.
-            requirements.add(f"'zenml[local]=={zenml.__version__}'")
+            requirements.add(f"zenml[local]=={zenml.__version__}")
 
         return requirements
 
