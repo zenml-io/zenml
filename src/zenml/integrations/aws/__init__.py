@@ -28,6 +28,7 @@ AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
+AWS_DEPLOYER_FLAVOR = "aws"
 
 # Service connector constants
 AWS_CONNECTOR_TYPE = "aws"
@@ -61,6 +62,7 @@ class AWSIntegration(Integration):
         """
         from zenml.integrations.aws.flavors import (
             AWSContainerRegistryFlavor,
+            AWSDeployerFlavor,
             AWSImageBuilderFlavor,
             SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
@@ -68,6 +70,7 @@ class AWSIntegration(Integration):
 
         return [
             AWSContainerRegistryFlavor,
+            AWSDeployerFlavor,
             AWSImageBuilderFlavor,
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,

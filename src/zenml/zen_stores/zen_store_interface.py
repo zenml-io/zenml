@@ -49,6 +49,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -1382,6 +1386,89 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The created pipeline run.
+        """
+
+    # -------------------- Deployments --------------------
+
+    @abstractmethod
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+
+        Raises:
+            EntityExistsError: If a deployment with the same name already
+                exists in the same project.
+        """
+
+    @abstractmethod
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def list_deployments(
+        self,
+        deployment_filter_model: DeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment does not exist.
         """
 
     # -------------------- Run templates --------------------

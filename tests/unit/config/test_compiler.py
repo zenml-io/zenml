@@ -349,10 +349,11 @@ def test_success_hook_merging(
     pipeline_instance.configure(on_success=pipeline_hook)
     step_instance_1.configure(on_success=step_hook)
 
+    success_hook_source, _ = resolve_and_validate_hook(step_hook)
     run_config = PipelineRunConfiguration(
         steps={
             "_empty_step": StepConfigurationUpdate(
-                success_hook_source=resolve_and_validate_hook(step_hook)
+                success_hook_source=success_hook_source
             )
         },
     )
@@ -368,21 +369,20 @@ def test_success_hook_merging(
     compiled_pipeline_success_hook = (
         snapshot.pipeline_configuration.success_hook_source
     )
-    assert compiled_pipeline_success_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_pipeline_success_hook == resolved_hook
 
     compiled_step_1_success_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.success_hook_source
-    assert compiled_step_1_success_hook == resolve_and_validate_hook(step_hook)
+    resolved_hook, _ = resolve_and_validate_hook(step_hook)
+    assert compiled_step_1_success_hook == resolved_hook
 
     compiled_step_2_success_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.success_hook_source
-    assert compiled_step_2_success_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_step_2_success_hook == resolved_hook
 
 
 def test_failure_hook_merging(
@@ -400,10 +400,11 @@ def test_failure_hook_merging(
     pipeline_instance.configure(on_failure=pipeline_hook)
     step_instance_1.configure(on_failure=step_hook)
 
+    failure_hook_source, _ = resolve_and_validate_hook(step_hook)
     run_config = PipelineRunConfiguration(
         steps={
             "_empty_step": StepConfigurationUpdate(
-                failure_hook_source=resolve_and_validate_hook(step_hook)
+                failure_hook_source=failure_hook_source
             )
         },
     )
@@ -419,21 +420,20 @@ def test_failure_hook_merging(
     compiled_pipeline_failure_hook = (
         snapshot.pipeline_configuration.failure_hook_source
     )
-    assert compiled_pipeline_failure_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_pipeline_failure_hook == resolved_hook
 
     compiled_step_1_failure_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.failure_hook_source
-    assert compiled_step_1_failure_hook == resolve_and_validate_hook(step_hook)
+    resolved_hook, _ = resolve_and_validate_hook(step_hook)
+    assert compiled_step_1_failure_hook == resolved_hook
 
     compiled_step_2_failure_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.failure_hook_source
-    assert compiled_step_2_failure_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_step_2_failure_hook == resolved_hook
 
 
 def test_stack_component_settings_for_missing_component_are_ignored(

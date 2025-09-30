@@ -91,3 +91,9 @@ class AnalyticsEvent(str, Enum):
 
     # Server Settings
     SERVER_SETTINGS_UPDATED = "Server Settings Updated"
+
+    # Deployment
+    DEPLOY_PIPELINE = "Pipeline deployed"
+    CREATE_DEPLOYMENT = "Deployment created"
+    STOP_DEPLOYMENT = "Deployment stopped"
+    DELETE_DEPLOYMENT = "Deployment deleted"

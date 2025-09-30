@@ -26,6 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
+from zenml.deployers.server import runtime
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
@@ -137,9 +138,16 @@ class StepLauncher:
 
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful shutdown, chaining previous handlers."""
-        # Save previous handlers
-        self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
-        self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        try:
+            # Save previous handlers
+            self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
+            self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot set up signal handlers: {e}")
+            self._prev_sigterm_handler = None
+            self._prev_sigint_handler = None
+            return
 
         def signal_handler(signum: int, frame: Any) -> None:
             """Handle shutdown signals gracefully.
@@ -231,8 +239,13 @@ class StepLauncher:
                     self._prev_sigint_handler(signum, frame)
 
         # Register handlers for common termination signals
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
+        try:
+            signal.signal(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+        except ValueError as e:
+            # This happens when not in the main thread
+            logger.debug(f"Cannot register signal handlers: {e}")
+            # Continue without signal handling - the step will still run
 
     def launch(self) -> None:
         """Launches the step.
@@ -411,7 +424,6 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
-        # Prepare step run information.
         step_run_info = StepRunInfo(
             config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,
@@ -423,10 +435,12 @@ class StepLauncher:
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
-            step_run=step_run, stack=self._stack, step=self._step
+            step_run=step_run,
+            stack=self._stack,
+            step=self._step,
+            create_dirs=not runtime.should_skip_artifact_materialization(),
         )
 
-        # Run the step.
         start_time = time.time()
         try:
             if self._step.config.step_operator:
@@ -482,9 +496,13 @@ class StepLauncher:
                 step_run_id=str(step_run_info.step_run_id),
             )
         )
-        environment = orchestrator_utils.get_config_environment_vars(
+        environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
+        # TODO: for now, we don't support separate secrets from environment
+        # in the step operator environment
+        environment.update(secrets)
+
         environment.update(
             env_utils.get_step_environment(
                 step_config=step_run_info.config,

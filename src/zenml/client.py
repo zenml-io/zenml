@@ -24,6 +24,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     Mapping,
     Optional,
@@ -60,6 +61,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     ColorVariants,
+    DeploymentStatus,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -106,6 +108,8 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DeploymentFilter,
+    DeploymentResponse,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -3389,6 +3393,8 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
         runnable: Optional[bool] = None,
+        deployable: Optional[bool] = None,
+        deployed: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
@@ -3414,6 +3420,8 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The ID of the schedule to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             runnable: Whether the snapshot is runnable.
+            deployable: Whether the snapshot is deployable.
+            deployed: Whether the snapshot is deployed.
             tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3440,6 +3448,8 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             source_snapshot_id=source_snapshot_id,
             runnable=runnable,
+            deployable=deployable,
+            deployed=deployed,
             tag=tag,
             tags=tags,
         )
@@ -3696,6 +3706,456 @@ class Client(metaclass=ClientMetaClass):
             run = wait_for_pipeline_run_to_finish(run_id=run.id)
 
         return run
+
+    # ------------------------------ Deployments -----------------------------
+
+    def get_deployment(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+    ) -> DeploymentResponse:
+        """Get a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to get.
+            project: The project name/ID to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_deployment,
+            list_method=self.list_deployments,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+            hydrate=hydrate,
+        )
+
+    def list_deployments(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
+        deployer_id: Optional[Union[str, UUID]] = None,
+        project: Optional[Union[str, UUID]] = None,
+        status: Optional[DeploymentStatus] = None,
+        url: Optional[str] = None,
+        user: Optional[Union[UUID, str]] = None,
+        pipeline: Optional[Union[UUID, str]] = None,
+        tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List deployments.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of deployments to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the deployment to filter by.
+            project: The project name/ID to filter by.
+            snapshot_id: The id of the snapshot to filter by.
+            deployer_id: The id of the deployer to filter by.
+            status: The status of the deployment to filter by.
+            url: The url of the deployment to filter by.
+            user: Filter by user name/ID.
+            pipeline: Filter by pipeline name/ID.
+            tag: Tag to filter by.
+            tags: Tags to filter by.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of deployments.
+        """
+        return self.zen_store.list_deployments(
+            deployment_filter_model=DeploymentFilter(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                created=created,
+                updated=updated,
+                project=project or self.active_project.id,
+                user=user,
+                name=name,
+                snapshot_id=snapshot_id,
+                deployer_id=deployer_id,
+                status=status,
+                url=url,
+                pipeline=pipeline,
+                tag=tag,
+                tags=tags,
+            ),
+            hydrate=hydrate,
+        )
+
+    def provision_deployment(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        snapshot_id: Optional[Union[str, UUID]] = None,
+        timeout: Optional[int] = None,
+    ) -> DeploymentResponse:
+        """Provision a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to provision.
+            project: The project name/ID to filter by.
+            snapshot_id: The ID of the snapshot to use. If not provided,
+                the previous snapshot configured for the deployment will be
+                used.
+            timeout: The maximum time in seconds to wait for the pipeline
+                deployment to be provisioned.
+
+        Returns:
+            The provisioned deployment.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
+            ValueError: If the existing deployment has no associated
+                snapshot.
+            KeyError: If the deployment is not found and no snapshot
+                ID was provided.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack import Stack
+        from zenml.stack.stack_component import StackComponent
+
+        deployment: Optional[DeploymentResponse] = None
+        deployment_name_or_id = name_id_or_prefix
+        try:
+            deployment = self.get_deployment(
+                name_id_or_prefix=name_id_or_prefix,
+                project=project,
+                hydrate=True,
+            )
+            deployment_name_or_id = deployment.id
+        except KeyError:
+            if isinstance(name_id_or_prefix, UUID):
+                raise
+
+        stack = Client().active_stack
+        deployer: Optional[BaseDeployer] = None
+
+        if snapshot_id:
+            snapshot = self.get_snapshot(
+                name_id_or_prefix=snapshot_id,
+                project=project,
+                hydrate=True,
+            )
+        elif not deployment:
+            raise KeyError(
+                f"Deployment with name '{name_id_or_prefix}' was not "
+                "found and no snapshot ID was provided."
+            )
+        else:
+            # Use the current snapshot
+            if not deployment.snapshot:
+                raise ValueError(
+                    f"Deployment '{deployment.name}' has no associated "
+                    "snapshot."
+                )
+            snapshot = deployment.snapshot
+
+            if deployment.deployer:
+                try:
+                    deployer = cast(
+                        BaseDeployer,
+                        StackComponent.from_model(deployment.deployer),
+                    )
+                except ImportError:
+                    raise NotImplementedError(
+                        f"Deployer '{deployment.deployer.name}' could "
+                        f"not be instantiated. This is likely because the "
+                        f"deployer's dependencies are not installed."
+                    )
+
+        if snapshot.stack and snapshot.stack.id != stack.id:
+            # We really need to use the original stack for which the deployment
+            # was created for to provision the deployment, otherwise the deployment
+            # might not have the correct dependencies installed.
+            stack = Stack.from_model(snapshot.stack)
+
+        if not deployer:
+            if stack.deployer:
+                deployer = stack.deployer
+            else:
+                raise ValueError(
+                    f"No deployer was found in the deployment's stack "
+                    f"'{stack.name}' or in your active stack. Please add a "
+                    "deployer to your stack to be able to provision a "
+                    "deployment."
+                )
+
+        # Provision the endpoint through the deployer
+        deployment = deployer.provision_deployment(
+            snapshot=snapshot,
+            stack=stack,
+            deployment_name_or_id=deployment_name_or_id,
+            replace=True,
+            timeout=timeout,
+        )
+        logger.info(
+            f"Provisioned deployment with name '{deployment.name}'.",
+        )
+
+        return deployment
+
+    def deprovision_deployment(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        timeout: Optional[int] = None,
+    ) -> None:
+        """Deprovision a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to deprovision.
+            project: The project name/ID to filter by.
+            timeout: The maximum time in seconds to wait for the deployment to
+                be deprovisioned.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        deployment = self.get_deployment(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if deployment.deployer:
+            # Instantiate and deprovision the deployment through the pipeline
+            # server
+
+            try:
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(deployment.deployer),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Deployer '{deployment.deployer.name}' could "
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
+                )
+            deployer.deprovision_deployment(
+                deployment_name_or_id=deployment.id,
+                timeout=timeout,
+            )
+            logger.info(
+                "Deprovisioned deployment with name '%s'.",
+                deployment.name,
+            )
+        else:
+            logger.info(
+                f"Deployment with name '{deployment.name}' is no longer "
+                "managed by a deployer. This is likely because the deployer "
+                "was deleted. Please delete the deployment instead.",
+            )
+
+    def delete_deployment(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        force: bool = False,
+        timeout: Optional[int] = None,
+    ) -> None:
+        """Deprovision and delete a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to delete.
+            project: The project name/ID to filter by.
+            force: If True, force the deletion even if the deployment cannot be
+                deprovisioned.
+            timeout: The maximum time in seconds to wait for the pipeline
+                deployment to be deprovisioned.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        deployment = self.get_deployment(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if deployment.deployer:
+            # Instantiate and deprovision the deployment through the pipeline
+            # server
+
+            try:
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(deployment.deployer),
+                )
+            except ImportError as e:
+                msg = (
+                    f"Deployer '{deployment.deployer.name}' could "
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed: {e}"
+                )
+                if force:
+                    logger.warning(msg + " Forcing deletion.")
+                    self.zen_store.delete_deployment(
+                        deployment_id=deployment.id
+                    )
+                else:
+                    raise NotImplementedError(msg)
+            except Exception as e:
+                msg = (
+                    f"Failed to instantiate deployer '{deployment.deployer.name}'."
+                    f"Error: {e}"
+                )
+                if force:
+                    logger.warning(msg + " Forcing deletion.")
+                    self.zen_store.delete_deployment(
+                        deployment_id=deployment.id
+                    )
+                else:
+                    raise NotImplementedError(msg)
+            else:
+                deployer.delete_deployment(
+                    deployment_name_or_id=deployment.id,
+                    force=force,
+                    timeout=timeout,
+                )
+        else:
+            self.zen_store.delete_deployment(deployment_id=deployment.id)
+        logger.info("Deleted deployment with name '%s'.", deployment.name)
+
+    def refresh_deployment(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+    ) -> DeploymentResponse:
+        """Refresh the status of a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to refresh.
+            project: The project name/ID to filter by.
+
+        Returns:
+            The refreshed deployment.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated or if
+                the deployment is no longer managed by a deployer.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        deployment = self.get_deployment(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if deployment.deployer:
+            try:
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(deployment.deployer),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Deployer '{deployment.deployer.name}' could "
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
+                )
+            return deployer.refresh_deployment(
+                deployment_name_or_id=deployment.id
+            )
+        else:
+            raise NotImplementedError(
+                f"Deployment '{deployment.name}' is no longer managed by "
+                "a deployer. This is likely because the deployer "
+                "was deleted. Please delete the deployment instead."
+            )
+
+    def get_deployment_logs(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        project: Optional[Union[str, UUID]] = None,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a deployment.
+
+        Args:
+            name_id_or_prefix: Name/ID/ID prefix of the deployment to get the logs
+                of.
+            project: The project name/ID to filter by.
+            follow: If True, follow the logs.
+            tail: The number of lines to show from the end of the logs.
+
+        Yields:
+            The logs of the deployment.
+
+        Raises:
+            NotImplementedError: If the deployer cannot be instantiated or if
+                the deployment is no longer managed by a deployer.
+        """
+        from zenml.deployers.base_deployer import (
+            BaseDeployer,
+        )
+        from zenml.stack.stack_component import StackComponent
+
+        deployment = self.get_deployment(
+            name_id_or_prefix=name_id_or_prefix,
+            project=project,
+            hydrate=False,
+        )
+        if deployment.deployer:
+            try:
+                deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(deployment.deployer),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Deployer '{deployment.deployer.name}' could "
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
+                )
+            yield from deployer.get_deployment_logs(
+                deployment_name_or_id=deployment.id,
+                follow=follow,
+                tail=tail,
+            )
+        else:
+            raise NotImplementedError(
+                f"Deployment '{deployment.name}' is no longer managed by "
+                "a deployer. This is likely because the deployer "
+                "was deleted. Please delete the deployment instead."
+            )
 
     # ------------------------------ Run templates -----------------------------
 
@@ -4168,6 +4628,7 @@ class Client(metaclass=ClientMetaClass):
         template_id: Optional[Union[str, UUID]] = None,
         source_snapshot_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
+        linked_to_model_version_id: Optional[Union[str, UUID]] = None,
         orchestrator_run_id: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -4187,6 +4648,7 @@ class Client(metaclass=ClientMetaClass):
         hydrate: bool = False,
         include_full_metadata: bool = False,
         triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
+        triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -4210,6 +4672,11 @@ class Client(metaclass=ClientMetaClass):
             template_id: The ID of the template to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             model_version_id: The ID of the model version to filter by.
+            linked_to_model_version_id: Filter by model version linked to the
+                pipeline run. The difference to `model_version_id` is that this
+                filter will not only include pipeline runs which are directly
+                linked to the model version, but also if any step run is linked
+                to the model version.
             orchestrator_run_id: The run id of the orchestrator to filter by.
             name: The name of the run to filter by.
             status: The status of the pipeline run
@@ -4232,6 +4699,8 @@ class Client(metaclass=ClientMetaClass):
             include_full_metadata: If True, include metadata of all steps in
                 the response.
             triggered_by_step_run_id: The ID of the step run that triggered
+                the pipeline run.
+            triggered_by_deployment_id: The ID of the deployment that triggered
                 the pipeline run.
 
         Returns:
@@ -4256,6 +4725,7 @@ class Client(metaclass=ClientMetaClass):
             template_id=template_id,
             source_snapshot_id=source_snapshot_id,
             model_version_id=model_version_id,
+            linked_to_model_version_id=linked_to_model_version_id,
             orchestrator_run_id=orchestrator_run_id,
             stack_id=stack_id,
             status=status,
@@ -4274,6 +4744,7 @@ class Client(metaclass=ClientMetaClass):
             in_progress=in_progress,
             templatable=templatable,
             triggered_by_step_run_id=triggered_by_step_run_id,
+            triggered_by_deployment_id=triggered_by_deployment_id,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,

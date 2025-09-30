@@ -44,6 +44,25 @@ class LocalOrchestrator(BaseOrchestrator):
 
     _orchestrator_run_id: Optional[str] = None
 
+    @property
+    def run_init_cleanup_at_step_level(self) -> bool:
+        """Whether the orchestrator runs the init and cleanup hooks at step level.
+
+        For orchestrators that run their steps in isolated step environments,
+        the run context cannot be shared between steps. In this case, the init
+        and cleanup hooks need to be run at step level for each individual step.
+
+        For orchestrators that run their steps in a shared environment with a
+        shared memory (e.g. the local orchestrator), the init and cleanup hooks
+        can be run at run level and this property should be overridden to return
+        True.
+
+        Returns:
+            Whether the orchestrator runs the init and cleanup hooks at step
+            level.
+        """
+        return False
+
     def submit_pipeline(
         self,
         snapshot: "PipelineSnapshotResponse",
@@ -73,7 +92,8 @@ class LocalOrchestrator(BaseOrchestrator):
             Optional submission result.
 
         Raises:
-            Exception: If the pipeline run fails.
+            step_exception: The exception that occurred while running a failed
+                step.
             RuntimeError: If the pipeline run fails.
         """
         if snapshot.schedule:
@@ -89,7 +109,10 @@ class LocalOrchestrator(BaseOrchestrator):
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
         failed_steps: List[str] = []
+        step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
+
+        self.run_init_hook(snapshot=snapshot)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -142,12 +165,19 @@ class LocalOrchestrator(BaseOrchestrator):
             try:
                 with temporary_environment(step_environment):
                     self.run_step(step=step)
-            except Exception:
+            except Exception as e:
                 failed_steps.append(step_name)
                 logger.exception("Step %s failed.", step_name)
 
                 if execution_mode == ExecutionMode.FAIL_FAST:
-                    raise
+                    step_exception = e
+                    break
+
+        self.run_cleanup_hook(snapshot=snapshot)
+
+        if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
+            assert step_exception is not None
+            raise step_exception
 
         if failed_steps:
             raise RuntimeError(

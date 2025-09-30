@@ -63,6 +63,7 @@ class ResourceType(StrEnum):
     # We keep this name for backwards compatibility
     PIPELINE_SNAPSHOT = "pipeline_deployment"
     PIPELINE_BUILD = "pipeline_build"
+    DEPLOYMENT = "deployment"
     SCHEDULE = "schedule"
     RUN_TEMPLATE = "run_template"
     SERVICE = "service"

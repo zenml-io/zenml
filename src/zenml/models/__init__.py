@@ -154,6 +154,16 @@ from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponseMetadata,
     EventSourceFlavorResponseResources,
 )
+from zenml.models.v2.core.deployment import (
+    DeploymentRequest,
+    DeploymentUpdate,
+    DeploymentFilter,
+    DeploymentOperationalState,
+    DeploymentResponse,
+    DeploymentResponseBody,
+    DeploymentResponseMetadata,
+    DeploymentResponseResources,
+)
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
     OAuthDeviceFilter,
@@ -464,6 +474,10 @@ CodeRepositoryResponseResources.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
 ComponentResponseResources.model_rebuild()
+DeploymentRequest.model_rebuild()
+DeploymentResponseBody.model_rebuild()
+DeploymentResponseMetadata.model_rebuild()
+DeploymentResponseResources.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
@@ -631,6 +645,14 @@ __all__ = [
     "ComponentResponseResources",
     "DefaultComponentRequest",
     "DefaultStackRequest",
+    "DeploymentRequest",
+    "DeploymentUpdate",
+    "DeploymentFilter",
+    "DeploymentOperationalState",
+    "DeploymentResponse",
+    "DeploymentResponseBody",
+    "DeploymentResponseMetadata",
+    "DeploymentResponseResources",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",

@@ -64,6 +64,7 @@ from zenml.logging.step_logging import (
 )
 from zenml.models import (
     CodeReferenceRequest,
+    DeploymentResponse,
     LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
@@ -86,6 +87,7 @@ from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
+from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import (
     code_repository_utils,
     code_utils,
@@ -111,7 +113,7 @@ if TYPE_CHECKING:
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
     from zenml.models import ArtifactVersionResponse
-    from zenml.types import HookSpecification
+    from zenml.types import HookSpecification, InitHookSpecification
 
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
@@ -146,6 +148,9 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_init: Optional["InitHookSpecification"] = None,
+        on_init_kwargs: Optional[Dict[str, Any]] = None,
+        on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -177,6 +182,14 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            on_init: Callback function to run on initialization of the pipeline.
+                Can be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`) if the function returns a
+                value, it will be stored as the pipeline state.
+            on_init_kwargs: Arguments for the init hook.
+            on_cleanup: Callback function to run on cleanup of the pipeline. Can
+                be a function with no arguments, or a source path to such a
+                function with no arguments (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             substitutions: Extra placeholders to use in the name templates.
@@ -204,6 +217,9 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
+                on_init=on_init,
+                on_init_kwargs=on_init_kwargs,
+                on_cleanup=on_cleanup,
                 model=model,
                 retry=retry,
                 substitutions=substitutions,
@@ -330,6 +346,9 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_init: Optional["InitHookSpecification"] = None,
+        on_init_kwargs: Optional[Dict[str, Any]] = None,
+        on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
         parameters: Optional[Dict[str, Any]] = None,
@@ -372,6 +391,14 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            on_init: Callback function to run on initialization of the pipeline.
+                Can be a function with no arguments, or a source path to such a
+                function (e.g. `module.my_function`) if the function returns a
+                value, it will be stored as the pipeline state.
+            on_init_kwargs: Arguments for the init hook.
+            on_cleanup: Callback function to run on cleanup of the pipeline. Can
+                be a function with no arguments, or a source path to such a
+                function with no arguments (e.g. `module.my_function`).
             model: configuration of the model version in the Model Control Plane.
             retry: Retry configuration for the pipeline steps.
             parameters: input parameters for the pipeline.
@@ -386,16 +413,49 @@ class Pipeline:
 
         Returns:
             The pipeline instance that this method was called on.
+
+        Raises:
+            ValueError: If on_init_kwargs is provided but on_init is not and
+                the init hook source is found in the current pipeline
+                configuration.
         """
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this pipeline
-            failure_hook_source = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(
+                on_failure, allow_exception_arg=True
+            )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this pipeline
-            success_hook_source = resolve_and_validate_hook(on_success)
+            success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        init_hook_kwargs = None
+        init_hook_source = None
+        if on_init or on_init_kwargs:
+            if not on_init and self.configuration.init_hook_source:
+                # load the init hook source from the existing configuration if
+                # not provided; this is needed for partial updates
+                on_init = source_utils.load(
+                    self.configuration.init_hook_source
+                )
+            if not on_init:
+                raise ValueError(
+                    "on_init is not provided and no init hook source is found "
+                    "in the existing configuration"
+                )
+
+            # string of on_init hook function and JSON-able arguments to be used
+            # for this pipeline
+            init_hook_source, init_hook_kwargs = resolve_and_validate_hook(
+                on_init, on_init_kwargs
+            )
+
+        cleanup_hook_source = None
+        if on_cleanup:
+            # string of on_cleanup hook function to be used for this pipeline
+            cleanup_hook_source, _ = resolve_and_validate_hook(on_cleanup)
 
         if merge and tags and self._configuration.tags:
             # Merge tags explicitly here as the recursive update later only
@@ -419,6 +479,9 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "init_hook_source": init_hook_source,
+                "init_hook_kwargs": init_hook_kwargs,
+                "cleanup_hook_source": cleanup_hook_source,
                 "model": model,
                 "retry": retry,
                 "parameters": parameters,
@@ -631,6 +694,37 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 pipeline_id=pipeline_id,
                 code_repository=code_repository,
             )
+
+    def deploy(
+        self,
+        deployment_name: str,
+        timeout: Optional[int] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> DeploymentResponse:
+        """Deploy the pipeline for online inference.
+
+        Args:
+            deployment_name: The name to use for the deployment.
+            timeout: The maximum time in seconds to wait for the pipeline to be
+                deployed.
+            *args: Pipeline entrypoint input arguments.
+            **kwargs: Pipeline entrypoint input keyword arguments.
+
+        Returns:
+            The deployment response.
+        """
+        self.prepare(*args, **kwargs)
+        snapshot = self._create_snapshot(**self._run_args)
+
+        stack = Client().active_stack
+
+        stack.prepare_pipeline_submission(snapshot=snapshot)
+        return stack.deploy_pipeline(
+            snapshot=snapshot,
+            deployment_name=deployment_name,
+            timeout=timeout,
+        )
 
     def _create_snapshot(
         self,
@@ -1656,30 +1750,106 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
 
-    def _compute_output_schema(self) -> Dict[str, Any]:
+    def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
         """Computes the output schema for the pipeline.
 
         Returns:
             The output schema for the pipeline.
         """
-
-        def _get_schema_output_name(output_artifact: "StepArtifact") -> str:
-            return (
-                output_artifact.invocation_id.replace("-", "_")
-                + "-"
-                + output_artifact.output_name.replace("-", "_")
+        try:
+            # Generate unique step output names
+            unique_step_output_mapping = get_unique_step_output_names(
+                {
+                    (o.invocation_id, o.output_name): o
+                    for o in self._output_artifacts
+                }
             )
 
-        fields: Dict[str, Any] = {
-            _get_schema_output_name(output_artifact): (
-                output_artifact.annotation.resolved_annotation,
-                ...,
+            fields: Dict[str, Any] = {
+                entry[1]: (
+                    entry[0].annotation.resolved_annotation,
+                    ...,
+                )
+                for _, entry in unique_step_output_mapping.items()
+            }
+            output_model_class: Type[BaseModel] = create_model(
+                "PipelineOutput",
+                __config__=ConfigDict(arbitrary_types_allowed=True),
+                **fields,
             )
-            for output_artifact in self._output_artifacts
-        }
-        output_model_class: Type[BaseModel] = create_model(
-            "PipelineOutput",
-            __config__=ConfigDict(arbitrary_types_allowed=True),
-            **fields,
+            return output_model_class.model_json_schema(mode="serialization")
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the output schema for "
+                f"pipeline `{self.name}: {e}. This is most likely "
+                "because some of the pipeline outputs are not JSON "
+                "serializable. This means that the pipeline cannot be "
+                "deployed.",
+            )
+
+        return None
+
+    def _compute_input_model(self) -> Optional[Type[BaseModel]]:
+        """Create a Pydantic model that represents the pipeline input parameters.
+
+        Returns:
+            A Pydantic model that represents the pipeline input
+            parameters.
+        """
+        from zenml.steps.entrypoint_function_utils import (
+            validate_entrypoint_function,
         )
-        return output_model_class.model_json_schema(mode="serialization")
+
+        try:
+            entrypoint_definition = validate_entrypoint_function(
+                self.entrypoint
+            )
+
+            defaults: Dict[str, Any] = self._parameters
+            model_args: Dict[str, Any] = {}
+            for name, param in entrypoint_definition.inputs.items():
+                if name in defaults:
+                    default_value = defaults[name]
+                elif param.default is not inspect.Parameter.empty:
+                    default_value = param.default
+                else:
+                    default_value = ...
+
+                model_args[name] = (param.annotation, default_value)
+
+            model_args["__config__"] = ConfigDict(extra="forbid")
+            params_model: Type[BaseModel] = create_model(
+                "PipelineInput",
+                **model_args,
+            )
+            return params_model
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the input parameters model for pipeline "
+                f"`{self.name}: {e}. This means that the pipeline cannot be "
+                "deployed.",
+            )
+            return None
+
+    def _compute_input_schema(self) -> Optional[Dict[str, Any]]:
+        """Create a JSON schema that represents the pipeline input parameters.
+
+        Returns:
+            A JSON schema that represents the pipeline input parameters.
+        """
+        input_model = self._compute_input_model()
+        if not input_model:
+            return None
+
+        try:
+            return input_model.model_json_schema()
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the input parameters schema for "
+                f"pipeline `{self.name}: {e}. This is most likely "
+                "because some of the pipeline inputs are not JSON "
+                "serializable. This means that the pipeline cannot be "
+                "deployed.",
+            )
+
+        return None

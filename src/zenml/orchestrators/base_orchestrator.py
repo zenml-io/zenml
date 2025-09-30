@@ -37,10 +37,12 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.exceptions import (
+    HookExecutionException,
     IllegalOperationError,
     RunMonitoringError,
     RunStoppedException,
 )
+from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -51,6 +53,8 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
+from zenml.steps.step_context import RunContext, get_or_create_run_context
+from zenml.utils.env_utils import temporary_environment
 from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
@@ -214,7 +218,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The deployment to prepare or run.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
@@ -232,8 +236,8 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
+            placeholder_run: An optional placeholder run for the snapshot.
+                This will be deleted in case the pipeline run failed.
 
         Raises:
             KeyboardInterrupt: If the orchestrator is synchronous and the
@@ -250,10 +254,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        base_environment = get_config_environment_vars(
+        base_environment, secrets = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
+
+        # TODO: for now, we don't support separate secrets from environment
+        # in the orchestrator environment
+        base_environment.update(secrets)
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -385,7 +393,10 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
-    def run_step(self, step: "Step") -> None:
+    def run_step(
+        self,
+        step: "Step",
+    ) -> None:
         """Runs the given step.
 
         Args:
@@ -486,6 +497,96 @@ class BaseOrchestrator(StackComponent, ABC):
             A tuple of supported execution modes.
         """
         return [ExecutionMode.CONTINUE_ON_FAILURE]
+
+    @property
+    def run_init_cleanup_at_step_level(self) -> bool:
+        """Whether the orchestrator runs the init and cleanup hooks at step level.
+
+        For orchestrators that run their steps in isolated step environments,
+        the run context cannot be shared between steps. In this case, the init
+        and cleanup hooks need to be run at step level for each individual step.
+
+        For orchestrators that run their steps in a shared environment with a
+        shared memory (e.g. the local orchestrator), the init and cleanup hooks
+        can be run at run level and this property should be overridden to return
+        True.
+
+        Returns:
+            Whether the orchestrator runs the init and cleanup hooks at step
+            level.
+        """
+        return True
+
+    @classmethod
+    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the init hook.
+
+        Args:
+            snapshot: The snapshot to run the init hook for.
+
+        Raises:
+            HookExecutionException: If the init hook fails.
+        """
+        # The lifetime of the run context starts when the init hook is executed
+        # and ends when the cleanup hook is executed
+        run_context = get_or_create_run_context()
+        init_hook_source = snapshot.pipeline_configuration.init_hook_source
+        init_hook_kwargs = snapshot.pipeline_configuration.init_hook_kwargs
+
+        # We only run the init hook once, if the (thread-local) run context
+        # associated with the current run has not been initialized yet. This
+        # allows us to run the init hook only once per run per execution
+        # environment (process, container, etc.).
+        if not run_context.initialized:
+            if not init_hook_source:
+                run_context.initialize(None)
+                return
+
+            logger.info("Executing the pipeline's init hook...")
+            try:
+                with temporary_environment(
+                    snapshot.pipeline_configuration.environment
+                ):
+                    run_state = load_and_run_hook(
+                        init_hook_source,
+                        hook_parameters=init_hook_kwargs,
+                        raise_on_error=True,
+                    )
+            except Exception as e:
+                raise HookExecutionException(
+                    f"Failed to execute init hook for pipeline "
+                    f"{snapshot.pipeline_configuration.name}"
+                ) from e
+
+            run_context.initialize(run_state)
+
+    @classmethod
+    def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the cleanup hook.
+
+        Args:
+            snapshot: The snapshot to run the cleanup hook for.
+        """
+        # The lifetime of the run context starts when the init hook is executed
+        # and ends when the cleanup hook is executed
+        if not RunContext._exists():
+            return
+
+        if (
+            cleanup_hook_source
+            := snapshot.pipeline_configuration.cleanup_hook_source
+        ):
+            logger.info("Executing the pipeline's cleanup hook...")
+            with temporary_environment(
+                snapshot.pipeline_configuration.environment
+            ):
+                load_and_run_hook(
+                    cleanup_hook_source,
+                    raise_on_error=False,
+                )
+
+        # Destroy the run context, so it's created anew for the next run
+        RunContext._clear()
 
     def _validate_execution_mode(
         self, snapshot: "PipelineSnapshotResponse"

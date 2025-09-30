@@ -134,6 +134,7 @@ from zenml.enums import (
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
+    DeploymentStatus,
     ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
@@ -201,6 +202,10 @@ from zenml.models import (
     DefaultComponentRequest,
     DefaultStackRequest,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -355,6 +360,7 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
+    DeploymentSchema,
     EventSourceSchema,
     FlavorSchema,
     ModelSchema,
@@ -3949,6 +3955,22 @@ class SqlZenStore(BaseZenStore):
                     f"The default {stack_component.type} cannot be deleted."
                 )
 
+            if stack_component.type == StackComponentType.DEPLOYER:
+                deployments = session.exec(
+                    select(DeploymentSchema)
+                    .where(DeploymentSchema.deployer_id == stack_component.id)
+                    .where(DeploymentSchema.status != DeploymentStatus.ABSENT)
+                ).all()
+
+                if len(deployments) > 0:
+                    raise IllegalOperationError(
+                        f"The {stack_component.name} deployer stack component "
+                        f"cannot be deleted because there are still "
+                        f"{len(deployments)} deployments being managed by it "
+                        f"and this would result in orphaned resources."
+                        f"Please deprovision or delete the deployments first."
+                    )
+
             if len(stack_component.stacks) > 0:
                 raise IllegalOperationError(
                     f"Stack Component `{stack_component.name}` of type "
@@ -5196,6 +5218,181 @@ class SqlZenStore(BaseZenStore):
         raise NotImplementedError(
             "Running a snapshot is not possible with a local store."
         )
+
+    # -------------------- Deployments --------------------
+
+    @track_decorator(AnalyticsEvent.CREATE_DEPLOYMENT)
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=deployment, session=session
+            )
+            self._verify_name_uniqueness(
+                resource=deployment,
+                schema=DeploymentSchema,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineSnapshotSchema,
+                reference_id=deployment.snapshot_id,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=StackComponentSchema,
+                reference_id=deployment.deployer_id,
+                session=session,
+                reference_type="deployer",
+            )
+            deployment_schema = DeploymentSchema.from_request(deployment)
+            session.add(deployment_schema)
+            session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment.tags,
+                resources=deployment_schema,
+                session=session,
+            )
+
+            session.refresh(deployment_schema)
+            return deployment_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+        """
+        with Session(self.engine) as session:
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
+                session=session,
+            )
+            return deployment.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_deployments(
+        self,
+        deployment_filter_model: DeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=deployment_filter_model,
+                session=session,
+            )
+            query = select(DeploymentSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=DeploymentSchema,
+                filter_model=deployment_filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_deployment(
+        self,
+        deployment_id: UUID,
+        deployment_update: DeploymentUpdate,
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        with Session(self.engine) as session:
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
+                session=session,
+            )
+
+            self._verify_name_uniqueness(
+                resource=deployment_update,
+                schema=deployment,
+                session=session,
+            )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineSnapshotSchema,
+                reference_id=deployment_update.snapshot_id,
+                session=session,
+            )
+
+            deployment.update(deployment_update)
+            session.add(deployment)
+            session.commit()
+
+            self._attach_tags_to_resources(
+                tags=deployment_update.add_tags,
+                resources=deployment,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=deployment_update.remove_tags,
+                resources=deployment,
+                session=session,
+            )
+
+            session.refresh(deployment)
+
+            return deployment.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    @track_decorator(AnalyticsEvent.DELETE_DEPLOYMENT)
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        with Session(self.engine) as session:
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=DeploymentSchema,
+                session=session,
+            )
+
+            session.delete(deployment)
+            session.commit()
 
     # -------------------- Run templates --------------------
 
@@ -12944,6 +13141,7 @@ class SqlZenStore(BaseZenStore):
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
             PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
+            DeploymentSchema: TaggableResourceTypes.DEPLOYMENT,
         }
         if type(resource) not in resource_types:
             raise ValueError(
@@ -12986,6 +13184,7 @@ class SqlZenStore(BaseZenStore):
             TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
             TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
             TaggableResourceTypes.PIPELINE_SNAPSHOT: PipelineSnapshotSchema,
+            TaggableResourceTypes.DEPLOYMENT: DeploymentSchema,
         }
 
         return resource_type_to_schema_mapping[resource_type]
@@ -13652,6 +13851,32 @@ class SqlZenStore(BaseZenStore):
                                     tag_id=tag_schema.id,
                                     resource_id=older_snapshots.items[0].id,
                                     resource_type=TaggableResourceTypes.PIPELINE_SNAPSHOT,
+                                )
+                            )
+                    elif isinstance(resource, DeploymentSchema):
+                        if not resource.snapshot:
+                            continue
+                        scope_id = resource.snapshot.pipeline_id
+                        scope_ids[TaggableResourceTypes.DEPLOYMENT].append(
+                            scope_id
+                        )
+
+                        # TODO: This is very inefficient, we should use a
+                        # better query
+                        older_deployments = self.list_deployments(
+                            DeploymentFilter(
+                                id=f"notequals:{resource.id}",
+                                project=resource.project.id,
+                                pipeline=scope_id,
+                                tags=[tag_schema.name],
+                            )
+                        )
+                        if older_deployments.items:
+                            detach_resources.append(
+                                TagResourceRequest(
+                                    tag_id=tag_schema.id,
+                                    resource_id=older_deployments.items[0].id,
+                                    resource_type=TaggableResourceTypes.DEPLOYMENT,
                                 )
                             )
                     else:

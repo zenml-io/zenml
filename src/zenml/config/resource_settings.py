@@ -14,9 +14,15 @@
 """Resource settings class used to specify resources for a step."""
 
 from enum import Enum
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
-from pydantic import ConfigDict, Field, NonNegativeInt, PositiveFloat
+from pydantic import (
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+)
 
 from zenml.config.base_settings import BaseSettings
 
@@ -62,15 +68,78 @@ MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
 class ResourceSettings(BaseSettings):
     """Hardware resource settings.
 
+    Deployers and deployed pipelines can also use the following settings:
+
+    * min_replicas and max_replicas allow expressing both fixed scaling and
+    autoscaling range. For a fixed number of instances, set both to the same
+    value (e.g. 3). If min_replicas=0, it indicates the service can scale down
+    to zero instances when idle (if the platform supports it) most serverless
+    platforms do. If max_replicas is None or 0, it will be interpreted as
+    “no specific limit” (use platform default behavior, which might be unlimited
+    or a high default cap). Otherwise, max_replicas puts an upper bound on
+    scaling.
+
+    * autoscaling_metric and autoscaling_target describe when to scale. For
+    example, autoscaling_metric="cpu", autoscaling_target=75.0 means keep CPU
+    around 75% - a Kubernetes integration would create an HPA with target CPU
+    75%, whereas a Knative integration might ignore this if it's using
+    concurrency-based autoscaling. Similarly, "concurrency" with a target of,
+    say, 50 means the system should try to ensure each instance handles ~50
+    concurrent requests before spawning a new instance. The integration code for
+    each platform will translate these generically: e.g. Cloud Run doesn't allow
+    changing the CPU threshold (fixed ~60%), so it might ignore a custom CPU
+    target; Knative supports concurrency and RPS metrics via annotations
+    so those would be applied if specified.
+
+    * max_concurrency is a per-instance concurrency limit. This is particularly
+    useful for platforms that allow configuring a concurrency cap (Knative's
+    containerConcurrency, Cloud Run's concurrency setting, App Runner's max
+    concurrent requests, Modal's max_inputs in the concurrent decorator). If
+    set, this indicates “do not send more than this many simultaneous requests
+    to one instance.” The autoscaler will then naturally create more instances
+    once this limit is hit on each existing instance. If
+    autoscaling_metric="concurrency" and no explicit target is given, one could
+    assume the target is equal to max_concurrency (or a certain utilization of
+    it). In some cases, platforms use a utilization factor - for simplicity, we
+    let the integration decide (some might use 80% of max concurrency as the
+    trigger to scale, for example, if that platform does so internally). If
+    max_concurrency is not set, it implies no fixed limit per instance (the
+    service instance will take as many requests as it can, scaling purely on
+    the chosen metric like CPU or an internal default concurrency).
+
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.
         gpu_count: The amount of GPUs that should be configured.
         memory: The amount of memory that should be configured.
+        min_replicas: Minimum number of container instances (replicas).
+            Use 0 to allow scale-to-zero on idle. Only relevant to
+            deployed pipelines.
+        max_replicas: Maximum number of container instances for autoscaling.
+            Set to 0 to imply "no explicit limit". Only relevant to deployed
+            pipelines.
+        autoscaling_metric: Metric to use for autoscaling triggers.
+            Options: "cpu", "memory", "concurrency", or "rps". Only relevant
+            to deployed pipelines.
+        autoscaling_target: Target value for the autoscaling metric (e.g. 70.0
+            for 70% CPU or 20 for concurrency). Only relevant to deployed
+            pipelines.
+        max_concurrency: Maximum concurrent requests per instance (if supported
+            by the platform). Defines a concurrency limit for each container.
+            Only relevant to deployed pipelines.
     """
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+
+    # Settings only applicable for deployers and deployed pipelines
+    min_replicas: Optional[NonNegativeInt] = None
+    max_replicas: Optional[NonNegativeInt] = None
+    autoscaling_metric: Optional[
+        Literal["cpu", "memory", "concurrency", "rps"]
+    ] = None
+    autoscaling_target: Optional[PositiveFloat] = None
+    max_concurrency: Optional[PositiveInt] = None
 
     @property
     def empty(self) -> bool:

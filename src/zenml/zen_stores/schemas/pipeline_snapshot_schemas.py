@@ -53,6 +53,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.deployment_schemas import (
+        DeploymentSchema,
+    )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
@@ -201,6 +204,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "cascade": "delete",
             "order_by": "asc(StepConfigurationSchema.index)",
         }
+    )
+    deployment: Optional["DeploymentSchema"] = Relationship(
+        back_populates="snapshot"
     )
     step_count: int
     tags: List["TagSchema"] = Relationship(
@@ -448,7 +454,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 included.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The response.
         """
@@ -456,12 +461,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.build and not self.build.is_local and self.build.stack_id:
             runnable = True
 
+        deployable = False
+        if self.build and self.stack and self.stack.has_deployer:
+            deployable = True
+
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             runnable=runnable,
+            deployable=deployable,
         )
         metadata = None
         if include_metadata:
@@ -545,6 +555,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 schedule=self.schedule.to_model() if self.schedule else None,
                 code_reference=self.code_reference.to_model()
                 if self.code_reference
+                else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
                 else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
