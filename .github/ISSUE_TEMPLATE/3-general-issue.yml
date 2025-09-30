@@ -2,7 +2,7 @@
 name: General Issue
 description: I have a general issue I would like to write about
 type: Task
-labels: [backend, general]
+labels: [backend]
 body:
   - type: markdown
     attributes:
