@@ -256,6 +256,7 @@ def test_tags_with_special_characters():
         f"=tag=with=equals={random_str(15)}=",
         f"?tag?with?question?marks?{random_str(15)}?",
         f".tag.with?special=characters/{random_str(15)}/",
+        f"tag/{random_str(15)}?hydrate=false",
     ]
 
     tag_responses = []

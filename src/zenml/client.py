@@ -8490,9 +8490,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
         """
-        self.zen_store.delete_tag(
-            tag_name_or_id=tag_name_or_id,
-        )
+        tag = self.get_tag(tag_name_or_id)
+        self.zen_store.delete_tag(tag_id=tag.id)
 
     def update_tag(
         self,
@@ -8530,8 +8529,10 @@ class Client(metaclass=ClientMetaClass):
             else:
                 update_model.color = color
 
+        tag = self.get_tag(tag_name_or_id)
+
         return self.zen_store.update_tag(
-            tag_name_or_id=tag_name_or_id,
+            tag_id=tag.id,
             tag_update_model=update_model,
         )
 
@@ -8550,10 +8551,27 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The tag of interest.
         """
-        return self.zen_store.get_tag(
-            tag_name_or_id=tag_name_or_id,
-            hydrate=hydrate,
-        )
+        if is_valid_uuid(tag_name_or_id):
+            return self.zen_store.get_tag(
+                tag_id=UUID(str(tag_name_or_id)),
+                hydrate=hydrate,
+            )
+        else:
+            tags = self.zen_store.list_tags(
+                tag_filter_model=TagFilter(
+                    name=f"equals:{tag_name_or_id}",
+                ),
+                hydrate=hydrate,
+            )
+            if len(tags) == 0:
+                raise KeyError(f"Tag with name: {tag_name_or_id} not found")
+
+            if len(tags) > 1:
+                raise KeyError(
+                    f"Multiple tags found with name: {tag_name_or_id}"
+                )
+
+            return tags[0]
 
     def list_tags(
         self,

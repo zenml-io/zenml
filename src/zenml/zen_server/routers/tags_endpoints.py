@@ -29,11 +29,11 @@ from zenml.models import (
     TagResponse,
     TagUpdate,
 )
-from zenml.utils import uuid_utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.utils import (
@@ -101,33 +101,30 @@ def list_tags(
 
 
 @router.get(
-    "/{tag_name_or_id:path}",
+    "/{tag_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def get_tag(
-    tag_name_or_id: str,
+    tag_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> TagResponse:
-    """Get a tag by name or ID.
+    """Get a tag by ID.
 
     Args:
-        tag_name_or_id: The name or ID of the tag to get.
+        tag_id: The ID of the tag to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        The tag with the given name or ID.
+        The tag with the given ID.
     """
-    if uuid_utils.is_valid_uuid(tag_name_or_id):
-        return zen_store().get_tag(
-            tag_name_or_id=UUID(tag_name_or_id), hydrate=hydrate
-        )
-    else:
-        return zen_store().get_tag(
-            tag_name_or_id=tag_name_or_id, hydrate=hydrate
-        )
+    return verify_permissions_and_get_entity(
+        id=tag_id,
+        get_method=zen_store().get_tag,
+        hydrate=hydrate,
+    )
 
 
 @router.put(
@@ -143,7 +140,7 @@ def update_tag(
     """Updates a tag.
 
     Args:
-        tag_id: Id or name of the tag.
+        tag_id: ID of the tag to update.
         tag_update_model: Tag to use for the update.
 
     Returns:
@@ -158,28 +155,21 @@ def update_tag(
 
 
 @router.delete(
-    "/{tag_name_or_id:path}",
+    "/{tag_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def delete_tag(
-    tag_name_or_id: str,
+    tag_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Delete a tag by name or ID.
+    """Delete a tag by ID.
 
     Args:
-        tag_name_or_id: The name or ID of the tag to delete.
+        tag_id: The ID of the tag to delete.
     """
-    if uuid_utils.is_valid_uuid(tag_name_or_id):
-        verify_permissions_and_delete_entity(
-            id=UUID(tag_name_or_id),
-            get_method=zen_store().get_tag,
-            delete_method=zen_store().delete_tag,
-        )
-    else:
-        verify_permissions_and_delete_entity(
-            id=tag_name_or_id,
-            get_method=zen_store().get_tag,
-            delete_method=zen_store().delete_tag,
-        )
+    verify_permissions_and_delete_entity(
+        id=tag_id,
+        get_method=zen_store().get_tag,
+        delete_method=zen_store().delete_tag,
+    )
