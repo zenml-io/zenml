@@ -77,7 +77,7 @@ def train_classifier_step(
     logger.info(f"Vectorizer: {pipeline_name}")
     logger.info(f"Accuracy on test set: {accuracy:.3f}")
     logger.info("Classification Report:")
-    logger.info(f"\n{classification_report(y_test, y_pred)}")
+    logger.info(f"\n{classification_report(y_test, y_pred, zero_division=0)}")
 
     # Log training metadata to artifact
     intent_counts = {intent: labels.count(intent) for intent in set(labels)}
