@@ -53,8 +53,6 @@ Without snapshots, each scenario would require:
 
 This enables your team to standardize execution patterns while maintaining flexibility - perfect for production ML workflows that need to be triggered from various systems.
 
-![Working with Snapshots](../../.gitbook/assets/run-templates.gif)
-
 ## Understanding Pipeline Snapshots
 
 While the simplest way to execute a ZenML pipeline is to directly call your pipeline function, pipeline snapshots offer several advantages for more complex workflows:
@@ -103,14 +101,14 @@ If you later want to run this snapshot, you need to have an active **remote stac
 
 To create a snapshot through the ZenML dashboard:
 
-1. Navigate to a pipeline run that was executed on a remote stack
-2. Click on `+ New Snapshot`
+1. Navigate to a pipeline run
+2. Click on `...` in the top right, and then on `+ New Snapshot`
 3. Enter a name for the snapshot
 4. Click `Create`
 
-![Create Snapshots on the dashboard](../../.gitbook/assets/run-templates-create-1.png)
+![Create Snapshots on the dashboard](../../.gitbook/assets/create-snapshot-1.png)
 
-![Snapshot Details](../../.gitbook/assets/run-templates-create-2.png)
+![Snapshot Details](../../.gitbook/assets/create-snapshot-2.png)
 
 ## Running Pipeline Snapshots
 
@@ -153,7 +151,7 @@ To run a snapshot from the dashboard:
    * Upload a `.yaml` configuration file
 3. Click `Run` to start the pipeline run
 
-![Run Details](../../.gitbook/assets/run-templates-run-1.png)
+![Run Details](../../.gitbook/assets/run-snapshot.png)
 
 Once you run the snapshot, a new run will be executed on the same stack as the original run.
 
@@ -270,7 +268,9 @@ def trigger_specific_snapshot(df: UnmaterializedArtifact):
 - `Client().trigger_pipeline(snapshot_id=<ID>, ...)` runs a **specific** snapshot by its unique ID
 {% endhint %}
 
-TODO: Add screenshot of DAG with triggered pipeline
+The newly created pipeline run will show up in the DAG next to the step that triggered it:
+
+![Pipeline Snapshot triggered by Step](../../.gitbook/assets/snapshot-run-dag.png)
 
 This pattern is useful for:
 

@@ -476,13 +476,13 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
 
 
 @pipeline(enable_cache=False)
-def fan_out_fan_in_pipeline(template_id: Optional[UUID] = None):
+def fan_out_fan_in_pipeline(snapshot_id: Optional[UUID] = None):
     """Fan-out/fan-in pipeline that orchestrates dynamic chunk processing."""
     # Load chunks dynamically at runtime
     chunks = load_relevant_chunks()
     
     # Trigger chunk processing runs and wait for completion
-    run_ids = trigger_chunk_processing(chunks, template_id)
+    run_ids = trigger_chunk_processing(chunks, snapshot_id)
     
     # Aggregate results from all runs
     results = aggregate_results(run_ids)
@@ -512,17 +512,17 @@ def chunk_processing_pipeline():
 
 # Usage example
 if __name__ == "__main__":
-    # First, create a run template for the chunk processing pipeline
+    # First, create a snapshot for the chunk processing pipeline
     #  This would typically be done once during setup.
     #  Make sure a remote stack is set before running this
-    template = chunk_processing_pipeline.create_run_template(
-        name="chunk_processing_template",
-        description="Template for processing individual chunks"
+    snapshot = chunk_processing_pipeline.create_snapshot(
+        name="chunk_processing",
+        description="Snapshot for processing individual chunks"
     )
 
-    # Run the fan-out/fan-in pipeline with the template
-    #  You can also get the template ID from the dashboard
-    fan_out_fan_in_pipeline(template_id=template.id)
+    # Run the fan-out/fan-in pipeline with the snapshot
+    #  You can also get the snapshot ID from the dashboard
+    fan_out_fan_in_pipeline(snapshot_id=snapshot.id)
 ```
 
 This pattern enables dynamic scaling, true parallelism, and database-driven workflows. Key advantages include fault tolerance and separate monitoring for each chunk. Consider resource management and proper error handling when implementing.
