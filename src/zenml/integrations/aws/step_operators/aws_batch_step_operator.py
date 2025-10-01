@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Sagemaker Step Operator."""
+"""Implementation of the AWS Batch Step Operator."""
 
 import time
 import math
@@ -198,17 +198,6 @@ class AWSBatchStepOperator(BaseStepOperator):
         return boto_session
 
     @property
-    def entrypoint_config_class(
-        self,
-    ) -> Type[StepOperatorEntrypointConfiguration]:
-        """Returns the entrypoint configuration class for this step operator.
-
-        Returns:
-            The entrypoint configuration class for this step operator.
-        """
-        return AWSBatchEntrypointConfiguration
-
-    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -258,11 +247,11 @@ class AWSBatchStepOperator(BaseStepOperator):
         definition spec.
 
         Args:
-            environment (Dict[str,str]): The step's environment variable 
+            environment: The step's environment variable 
             specification
 
         Returns:
-            List[Dict[str,str]]: The mapped environment variable specification
+            The mapped environment variable specification
         """
 
         return [
@@ -275,10 +264,10 @@ class AWSBatchStepOperator(BaseStepOperator):
         in the AWS Batch Job definition spec.
 
         Args:
-            resource_settings (ResourceSettings): The step's resource settings.
+            resource_settings: The step's resource settings.
 
         Returns:
-            List[Dict[str,str]]: The mapped resource settings.
+            The mapped resource settings.
         """
         mapped_resource_settings = []
 
@@ -327,16 +316,17 @@ class AWSBatchStepOperator(BaseStepOperator):
         """Utility to generate a unique AWS Batch job name.
 
         Args:
-            info (StepRunInfo): The step run information.
+            info: The step run information.
 
         Returns:
-            str: A unique name for the step's AWS Batch job definition
+            A unique name for the step's AWS Batch job definition
         """
 
-        # Batch allows 63 characters at maximum for job name - ZenML uses 60 for safety margin.
-        step_name = Client().get_run_step(info.step_run_id).name
-        job_name = f"{info.pipeline.name}-{step_name}"[:55]
-        suffix = random_str(4)
+        # Batch allows 128 alphanumeric characters at maximum for job name - ZenML uses 60 for safety margin.
+        # AWS Batch job description names are more permissive than ZenML pipeline and step naming rules,
+        # so no sanitation needed besides trimming
+        job_name = f"{info.pipeline.name}-{info.pipeline_step_name}"[:120]
+        suffix = random_str(6)
         return f"{job_name}-{suffix}"
 
     def generate_job_definition(self, info: "StepRunInfo", entrypoint_command: List[str], environment: Dict[str,str]) -> AWSBatchJobDefinition:
