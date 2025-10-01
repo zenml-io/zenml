@@ -9,10 +9,20 @@ import time
 from collections import Counter
 from typing import Annotated, Dict, List, Optional, cast
 
+from constants import (
+    CONTENT_PREVIEW_CHARS,
+    DOC_ANALYSIS_LLM_MODEL,
+    KEYWORD_COUNT,
+    LLM_MAX_TOKENS,
+    LLM_TEMPERATURE,
+    MODEL_LABEL_FMT,
+    READABILITY_SCORE_MAP,
+)
 from models import (
     DocumentAnalysis,
     DocumentRequest,
 )
+from prompts import SYSTEM_PROMPT, build_analysis_prompt
 from steps.utils import (
     clean_text_content,
     extract_meaningful_summary,
@@ -25,7 +35,7 @@ from zenml import step
 def perform_llm_analysis(
     content: str,
     filename: str,
-    model: str = "gpt-4o-mini",
+    model: str = DOC_ANALYSIS_LLM_MODEL,
     metadata: Optional[Dict[str, str]] = None,
 ) -> Dict[str, object]:
     """Perform document analysis using OpenAI API.
@@ -55,29 +65,14 @@ def perform_llm_analysis(
 
         from openai import OpenAI
 
-        # Clean content for better LLM analysis
+        # Clean content for better LLM analysis and truncate preview
         cleaned_content = clean_text_content(content)
-        content_preview = cleaned_content[:2000]
+        content_preview = cleaned_content[:CONTENT_PREVIEW_CHARS]
 
-        # Standard analysis request
-        analysis_request = """
-Respond with a JSON object containing:
-- summary: A concise 2-3 sentence summary
-- keywords: Array of 5 relevant keywords
-- sentiment: One of "positive", "negative", or "neutral"
-- readability: One of "easy", "medium", or "hard"
-"""
-
-        # Construct analysis prompt with JSON output format
-        prompt = f"""Analyze this document and provide structured analysis in JSON format.
-
-Document: {filename}
-Content: {content_preview}
-
-{analysis_request}
-
-Example:
-{{"summary": "This document discusses...", "keywords": ["ai", "machine", "learning", "data", "analysis"], "sentiment": "positive", "readability": "medium"}}"""
+        # Build analysis prompt
+        prompt = build_analysis_prompt(
+            filename=filename, content_preview=content_preview
+        )
 
         start_time = time.time()
 
@@ -90,15 +85,15 @@ Example:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a document analysis assistant. Always respond with valid JSON in the exact format requested.",
+                    "content": SYSTEM_PROMPT,
                 },
                 {
                     "role": "user",
                     "content": prompt,
                 },
             ],
-            max_tokens=300,
-            temperature=0.1,  # Low temperature for consistent output
+            max_tokens=LLM_MAX_TOKENS,
+            temperature=LLM_TEMPERATURE,  # Low temperature for consistent output
         )
 
         end_time = time.time()
@@ -125,15 +120,15 @@ Example:
                 "readability": "medium",
             }
 
-        # Ensure we have 5 keywords
-        keywords = analysis_response.get("keywords", [])[:5]
-        while len(keywords) < 5:
+        # Ensure we have the desired number of keywords
+        keywords = analysis_response.get("keywords", [])[:KEYWORD_COUNT]
+        while len(keywords) < KEYWORD_COUNT:
             keywords.append(f"term{len(keywords) + 1}")
 
-        # Convert readability to score
-        readability_score_map = {"easy": 0.9, "medium": 0.6, "hard": 0.3}
-        readability_score = readability_score_map.get(
-            analysis_response.get("readability", "medium").lower(), 0.6
+        # Convert readability to score via map
+        readability_score = READABILITY_SCORE_MAP.get(
+            analysis_response.get("readability", "medium").lower(),
+            READABILITY_SCORE_MAP["medium"],
         )
         sentiment = analysis_response.get("sentiment", "neutral")
 
@@ -161,6 +156,7 @@ Example:
             "tokens_prompt": int(tokens_prompt),
             "tokens_completion": int(tokens_completion),
             "latency_ms": latency_ms,
+            "used_model": model,
         }
 
     except ImportError:
@@ -199,7 +195,7 @@ def perform_deterministic_analysis(
     word_freq = Counter(filtered_words)
 
     # Extract keywords and metrics
-    keyword_count = 5
+    keyword_count = KEYWORD_COUNT
     keywords = [word for word, _ in word_freq.most_common(keyword_count)]
 
     # Ensure we have the right number of keywords
@@ -276,7 +272,10 @@ def analyze_document_step(
 
     # Determine appropriate model label based on analysis method
     if analysis_method == "llm":
-        model_label = "openai-gpt-4o-mini (llm)"
+        used_model = str(
+            analysis_result.get("used_model", DOC_ANALYSIS_LLM_MODEL)
+        )
+        model_label = MODEL_LABEL_FMT.format(model=used_model)
     else:
         model_label = "rule-based (deterministic)"
 

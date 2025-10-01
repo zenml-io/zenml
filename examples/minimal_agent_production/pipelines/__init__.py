@@ -7,5 +7,4 @@ from .doc_analyzer import doc_analyzer
 
 __all__ = [
     "doc_analyzer",
-    "DocumentAnalysis",
 ]

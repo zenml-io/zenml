@@ -7,11 +7,24 @@ sidebar.
 """
 
 import json
-import os
 from typing import Any, Dict, Optional
 
 import requests
 import streamlit as st
+from constants import (
+    DEFAULT_DOC_TYPE,
+    DOCUMENT_ANALYSIS_ENDPOINT,
+    EXTENSION_TO_TYPE,
+    INVOKE_SUFFIX,
+    LLM_MODEL,
+    MODEL_LABEL_FMT,
+    READABILITY_EASY_GT,
+    READABILITY_MEDIUM_GT,
+    REQUEST_TIMEOUT_S,
+    SENTIMENT_EMOJI,
+    UI_PREVIEW_MAX_CHARS,
+    UPLOAD_FILE_TYPES,
+)
 
 
 def post_invoke(
@@ -37,10 +50,10 @@ def post_invoke(
     deployment_payload = {"parameters": payload}
 
     response = requests.post(
-        f"{endpoint_url.rstrip('/')}/invoke",
+        f"{endpoint_url.rstrip('/')}{INVOKE_SUFFIX}",
         data=json.dumps(deployment_payload),
         headers=headers,
-        timeout=120,
+        timeout=REQUEST_TIMEOUT_S,
     )
     response.raise_for_status()
     result: Dict[str, Any] = response.json()
@@ -57,9 +70,7 @@ st.caption(
 
 with st.sidebar:
     st.header("Configuration")
-    default_url = os.getenv(
-        "DOCUMENT_ANALYSIS_ENDPOINT", "http://localhost:8000"
-    )
+    default_url = DOCUMENT_ANALYSIS_ENDPOINT
     endpoint_url = st.text_input("Endpoint URL", value=default_url)
     auth_key = st.text_input("Auth key (optional)", type="password")
     st.markdown("""
@@ -89,7 +100,7 @@ with tab_upload:
     st.markdown("**Upload a document file for analysis**")
     uploaded_file = st.file_uploader(
         "Choose a file",
-        type=["txt", "md", "csv", "json", "py", "js", "html", "xml"],
+        type=UPLOAD_FILE_TYPES,
         help="Upload text files, markdown, code files, or other text-based documents",
     )
 
@@ -98,18 +109,8 @@ with tab_upload:
         content = uploaded_file.read().decode("utf-8")
         file_extension = uploaded_file.name.split(".")[-1].lower()
 
-        # Auto-detect document type based on file extension
-        extension_to_type = {
-            "md": "markdown",
-            "txt": "text",
-            "py": "text",
-            "js": "text",
-            "html": "text",
-            "xml": "text",
-            "csv": "text",
-            "json": "text",
-        }
-        auto_doc_type = extension_to_type.get(file_extension, "text")
+        # Auto-detect document type based on file extension (shared mapping)
+        auto_doc_type = EXTENSION_TO_TYPE.get(file_extension, DEFAULT_DOC_TYPE)
 
         st.success(
             f"✅ File uploaded: {uploaded_file.name} ({len(content)} characters)"
@@ -131,7 +132,9 @@ with tab_upload:
             with st.expander("📄 Preview content"):
                 st.text_area(
                     "File content preview",
-                    content[:1000] + "..." if len(content) > 1000 else content,
+                    content[:UI_PREVIEW_MAX_CHARS] + "..."
+                    if len(content) > UI_PREVIEW_MAX_CHARS
+                    else content,
                     height=200,
                     disabled=True,
                 )
@@ -203,11 +206,10 @@ if request_payload:
             # Metrics row
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                sentiment_emoji = {
-                    "positive": "😊",
-                    "negative": "😞",
-                    "neutral": "😐",
-                }.get(analysis.get("sentiment", "neutral"), "😐")
+                sentiment_emoji = SENTIMENT_EMOJI.get(
+                    analysis.get("sentiment", "neutral"),
+                    SENTIMENT_EMOJI.get("neutral", "😐"),
+                )
                 st.metric(
                     "Sentiment",
                     f"{sentiment_emoji} {analysis.get('sentiment', 'N/A').title()}",
@@ -216,9 +218,9 @@ if request_payload:
                 readability = analysis.get("readability_score", 0)
                 readability_label = (
                     "Easy"
-                    if readability > 0.7
+                    if readability > READABILITY_EASY_GT
                     else "Medium"
-                    if readability > 0.4
+                    if readability > READABILITY_MEDIUM_GT
                     else "Hard"
                 )
                 st.metric(
@@ -236,7 +238,9 @@ if request_payload:
                 "analysis_method", "unknown"
             )
             if analysis_method == "llm":
-                st.info("🤖 Powered by AI (OpenAI GPT-4o-mini)")
+                st.info(
+                    f"🤖 Powered by AI ({analysis.get('model', MODEL_LABEL_FMT.format(model=LLM_MODEL))})"
+                )
             else:
                 st.info("⚙️ Deterministic analysis (offline mode)")
 

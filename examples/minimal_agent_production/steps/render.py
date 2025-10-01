@@ -8,6 +8,12 @@ ZenML dashboard.
 from pathlib import Path
 from typing import Annotated
 
+from constants import (
+    METHOD_DISPLAY_MAP,
+    SENTIMENT_COLORS,
+    TEMPLATE_CSS_FILENAME,
+    TEMPLATE_HTML_FILENAME,
+)
 from models import DocumentAnalysis
 
 from zenml import step
@@ -42,8 +48,8 @@ def render_analysis_report_step(
     template_dir = Path(__file__).parent / "templates"
 
     # Load CSS and HTML templates
-    css_path = template_dir / "report.css"
-    html_path = template_dir / "report.html"
+    css_path = template_dir / TEMPLATE_CSS_FILENAME
+    html_path = template_dir / TEMPLATE_HTML_FILENAME
 
     with open(css_path, "r") as f:
         css_content = f.read()
@@ -56,12 +62,7 @@ def render_analysis_report_step(
     formatted_timestamp = analysis.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
     # Determine sentiment color for styling
-    sentiment_colors = {
-        "positive": "#10b981",  # green
-        "negative": "#ef4444",  # red
-        "neutral": "#6b7280",  # gray
-    }
-    sentiment_color = sentiment_colors.get(
+    sentiment_color = SENTIMENT_COLORS.get(
         analysis.sentiment.lower(), "#6b7280"
     )
 
@@ -70,11 +71,7 @@ def render_analysis_report_step(
 
     # Get analysis method from metadata
     analysis_method = analysis.metadata.get("analysis_method", "unknown")
-    method_display = {
-        "llm": "🤖 AI-Powered",
-        "deterministic": "🔧 Rule-Based",
-        "deterministic_fallback": "🔧 Rule-Based (Fallback)",
-    }.get(analysis_method, "Unknown")
+    method_display = METHOD_DISPLAY_MAP.get(analysis_method, "Unknown")
 
     # Populate template with data
     html_content = html_template.format(

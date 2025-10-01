@@ -10,6 +10,7 @@ from typing import Annotated, Optional
 from urllib.parse import urlparse
 
 import requests
+from constants import DEFAULT_DOC_TYPE, EXTENSION_TO_TYPE, URL_TIMEOUT_S
 from models import DocumentRequest
 
 from zenml import step
@@ -23,7 +24,7 @@ def ingest_document_step(
     url: Optional[str] = None,
     path: Optional[str] = None,
     filename: Optional[str] = None,
-    document_type: str = "text",
+    document_type: str = DEFAULT_DOC_TYPE,
 ) -> Annotated[DocumentRequest, "Documents"]:
     """Ingest and validate document data for analysis from multiple sources.
 
@@ -78,11 +79,26 @@ def ingest_document_step(
         )
         raise ValueError(error_msg)
 
+    # Optionally infer document type from filename extension if not explicitly set beyond the default
+    doc_type = document_type
+    if actual_filename:
+        try:
+            ext = (
+                actual_filename.rsplit(".", 1)[-1].lower()
+                if "." in actual_filename
+                else None
+            )
+            if doc_type == DEFAULT_DOC_TYPE and ext:
+                doc_type = EXTENSION_TO_TYPE.get(ext, DEFAULT_DOC_TYPE)
+        except Exception:
+            # If inference fails, fall back to provided/default type
+            doc_type = document_type
+
     # Create and return the document request
     document = DocumentRequest(
         filename=actual_filename,
         content=document_content,
-        document_type=document_type,
+        document_type=doc_type,
     )
 
     return document
@@ -101,7 +117,7 @@ def _download_from_url(url: str) -> str:
         ValueError: If download fails or content is invalid
     """
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=URL_TIMEOUT_S)
         response.raise_for_status()
 
         # Handle different content types

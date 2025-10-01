@@ -8,6 +8,12 @@ and document type inference.
 import re
 from typing import Optional
 
+from constants import (
+    MAX_SUMMARY_CHARS,
+    MAX_SUMMARY_SENTENCES,
+    MIN_MEANINGFUL_PARAGRAPH_LEN,
+)
+
 from zenml.logger import get_logger
 
 # Get ZenML logger for consistent logging
@@ -145,7 +151,7 @@ def extract_meaningful_summary(
     meaningful_text = ""
     for para in paragraphs:
         # Skip very short lines (likely headers or metadata)
-        if len(para) > 50:
+        if len(para) > MIN_MEANINGFUL_PARAGRAPH_LEN:
             meaningful_text = para
             logger.debug(
                 f"Found meaningful paragraph with {len(para)} characters"
@@ -160,10 +166,10 @@ def extract_meaningful_summary(
 
         for sentence in sentences:
             sentence = sentence.strip()
-            if sentence and total_length < 200:
+            if sentence and total_length < MAX_SUMMARY_CHARS:
                 summary_sentences.append(sentence)
                 total_length += len(sentence)
-            if len(summary_sentences) >= 3:
+            if len(summary_sentences) >= MAX_SUMMARY_SENTENCES:
                 break
 
         if summary_sentences:
@@ -182,7 +188,9 @@ def extract_meaningful_summary(
         # Look for description-like content
         for line in non_empty_lines:
             if len(line) > 100 and not line.isupper():
-                summary = line[:200] + ("..." if len(line) > 200 else "")
+                summary = line[:MAX_SUMMARY_CHARS] + (
+                    "..." if len(line) > MAX_SUMMARY_CHARS else ""
+                )
                 logger.debug("Using fallback line-based summary")
                 return summary
 
