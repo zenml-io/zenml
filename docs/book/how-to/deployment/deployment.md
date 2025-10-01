@@ -34,7 +34,7 @@ zenml deployer register <DEPLOYER-NAME> --flavor=<DEPLOYER-FLAVOR>
 zenml stack update -d <DEPLOYER-NAME>
 ```
 
-The [**Deployer** stack component](../../component-guide/deployers/README.md) manages the deployment of pipelines as long-running HTTP servers. It integrates with a specific infrastructure back-end like Docker, AWS App Runner, GCP Cloud Run etc., in order to implement the following functionalities:
+The [**Deployer** stack component](https://docs.zenml.io/stacks/stack-components/deployers) manages the deployment of pipelines as long-running HTTP servers. It integrates with a specific infrastructure back-end like Docker, AWS App Runner, GCP Cloud Run etc., in order to implement the following functionalities:
 
 - Creating and managing persistent containerized services
 - Exposing HTTP endpoints for pipeline invocation
