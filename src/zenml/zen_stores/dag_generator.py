@@ -27,6 +27,7 @@ class DAGGeneratorHelper:
         """Initialize the DAG generator helper."""
         self.step_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.artifact_nodes: Dict[str, PipelineRunDAG.Node] = {}
+        self.triggered_run_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.edges: List[PipelineRunDAG.Edge] = []
 
     def get_step_node_id(self, name: str) -> str:
@@ -62,6 +63,19 @@ class DAGGeneratorHelper:
         io_str = "inputs" if is_input else "outputs"
 
         return f"{step_name}/{io_str}/{io_type}/{name}"
+
+    def get_triggered_run_node_id(self, name: str) -> str:
+        """Get the ID of a triggered run node.
+
+        Args:
+            name: The name of the triggered run.
+
+        Returns:
+            The ID of the triggered run node.
+        """
+        # Make sure there is no slashes as we use them as delimiters
+        name = name.replace("/", "-")
+        return f"run/{name}"
 
     def add_step_node(
         self,
@@ -119,6 +133,36 @@ class DAGGeneratorHelper:
         self.artifact_nodes[artifact_node.node_id] = artifact_node
         return artifact_node
 
+    def add_triggered_run_node(
+        self,
+        node_id: str,
+        name: str,
+        id: Optional[UUID] = None,
+        **metadata: Any,
+    ) -> PipelineRunDAG.Node:
+        """Add a triggered run node to the DAG.
+
+        Args:
+            node_id: The ID of the node.
+            name: The name of the triggered run.
+            id: The ID of the triggered run.
+            **metadata: Additional node metadata.
+
+        Returns:
+            The added triggered run node.
+        """
+        triggered_run_node = PipelineRunDAG.Node(
+            type="triggered_run",
+            id=id,
+            node_id=node_id,
+            name=name,
+            metadata=metadata,
+        )
+        self.triggered_run_nodes[triggered_run_node.node_id] = (
+            triggered_run_node
+        )
+        return triggered_run_node
+
     def add_edge(self, source: str, target: str, **metadata: Any) -> None:
         """Add an edge to the DAG.
 
@@ -166,6 +210,7 @@ class DAGGeneratorHelper:
             id=pipeline_run_id,
             status=status,
             nodes=list(self.step_nodes.values())
-            + list(self.artifact_nodes.values()),
+            + list(self.artifact_nodes.values())
+            + list(self.triggered_run_nodes.values()),
             edges=self.edges,
         )

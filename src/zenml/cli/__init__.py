@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML CLI.
 
-The ZenML CLI tool is usually downloaded and installed via PyPI and a
-``pip install zenml`` command. Please see the Installation & Setup
-section above for more information about that process.
-
 How to use the CLI
 ------------------
 
@@ -2510,6 +2506,7 @@ from zenml.cli.authorized_device import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
+from zenml.cli.deployment import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa

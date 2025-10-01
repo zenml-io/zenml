@@ -152,7 +152,21 @@ def _store_artifact_data_and_prepare_request(
         Artifact version request for the artifact data that was stored.
     """
     artifact_store = Client().active_stack.artifact_store
-    artifact_store.makedirs(uri)
+
+    # Detect in-memory materializer to avoid touching the artifact store.
+    # Local import to minimize import-time dependencies.
+    from zenml.materializers.in_memory_materializer import (
+        InMemoryMaterializer,
+    )
+
+    is_in_memory = issubclass(materializer_class, InMemoryMaterializer)
+
+    if not is_in_memory:
+        artifact_store.makedirs(uri)
+    else:
+        # Ensure URI clearly indicates in-memory storage and not the artifact store
+        if not uri.startswith("memory://"):
+            uri = f"memory://custom_artifacts/{name}/{uuid4()}"
 
     materializer = materializer_class(uri=uri, artifact_store=artifact_store)
     materializer.uri = materializer.uri.replace("\\", "/")
@@ -190,7 +204,7 @@ def _store_artifact_data_and_prepare_request(
         data_type=source_utils.resolve(data_type),
         content_hash=content_hash,
         project=Client().active_project.id,
-        artifact_store_id=artifact_store.id,
+        artifact_store_id=None if is_in_memory else artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,

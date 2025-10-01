@@ -18,7 +18,7 @@ import json
 from typing import Any, Dict, Optional, Sequence, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
@@ -37,8 +37,11 @@ from zenml.models import (
     SecretUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.base_schemas import NamedSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
@@ -328,3 +331,31 @@ class SecretSchema(NamedSchema, table=True):
         self.values = self._dump_secret_values(
             secret_values, encryption_engine
         )
+
+
+class SecretResourceSchema(BaseSchema, table=True):
+    """SQL Model for secret resource relationship."""
+
+    __tablename__ = "secret_resource"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "resource_id",
+                "resource_type",
+                "secret_id",
+            ],
+            unique=True,
+        ),
+    )
+
+    secret_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=SecretSchema.__tablename__,
+        source_column="secret_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    resource_id: UUID
+    resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))

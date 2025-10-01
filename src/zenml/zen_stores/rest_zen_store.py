@@ -68,6 +68,7 @@ from zenml.constants import (
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
+    DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -81,7 +82,7 @@ from zenml.constants import (
     MODEL_VERSIONS,
     MODELS,
     PIPELINE_BUILDS,
-    PIPELINE_DEPLOYMENTS,
+    PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
     RUN_METADATA,
@@ -165,6 +166,10 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -196,9 +201,6 @@ from zenml.models import (
     PipelineBuildFilter,
     PipelineBuildRequest,
     PipelineBuildResponse,
-    PipelineDeploymentFilter,
-    PipelineDeploymentRequest,
-    PipelineDeploymentResponse,
     PipelineFilter,
     PipelineRequest,
     PipelineResponse,
@@ -206,6 +208,11 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotRunRequest,
+    PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
     ProjectRequest,
@@ -1621,13 +1628,148 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_BUILDS,
         )
 
-    # -------------------------- Pipeline Deployments --------------------------
+    # -------------------------- Pipeline Snapshots --------------------------
+
+    def create_snapshot(
+        self,
+        snapshot: PipelineSnapshotRequest,
+    ) -> PipelineSnapshotResponse:
+        """Creates a new snapshot.
+
+        Args:
+            snapshot: The snapshot to create.
+
+        Returns:
+            The newly created snapshot.
+        """
+        return self._create_resource(
+            resource=snapshot,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+        )
+
+    def get_snapshot(
+        self,
+        snapshot_id: UUID,
+        hydrate: bool = True,
+        step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
+    ) -> PipelineSnapshotResponse:
+        """Get a snapshot with a given ID.
+
+        Args:
+            snapshot_id: ID of the snapshot.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+            step_configuration_filter: List of step configurations to include in
+                the response. If not given, all step configurations will be
+                included.
+            include_config_schema: Whether the config schema will be filled.
+
+        Returns:
+            The snapshot.
+        """
+        return self._get_resource(
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+            params={
+                "hydrate": hydrate,
+                "step_configuration_filter": step_configuration_filter,
+                "include_config_schema": include_config_schema,
+            },
+        )
+
+    def list_snapshots(
+        self,
+        snapshot_filter_model: PipelineSnapshotFilter,
+        hydrate: bool = False,
+    ) -> Page[PipelineSnapshotResponse]:
+        """List all snapshots matching the given filter criteria.
+
+        Args:
+            snapshot_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all snapshots matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+            filter_model=snapshot_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_snapshot(
+        self,
+        snapshot_id: UUID,
+        snapshot_update: PipelineSnapshotUpdate,
+    ) -> PipelineSnapshotResponse:
+        """Update a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_update: The update to apply.
+
+        Returns:
+            The updated snapshot.
+        """
+        return self._update_resource(
+            resource_id=snapshot_id,
+            resource_update=snapshot_update,
+            route=PIPELINE_SNAPSHOTS,
+            response_model=PipelineSnapshotResponse,
+        )
+
+    def delete_snapshot(self, snapshot_id: UUID) -> None:
+        """Deletes a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to delete.
+        """
+        self._delete_resource(
+            resource_id=snapshot_id,
+            route=PIPELINE_SNAPSHOTS,
+        )
+
+    def run_snapshot(
+        self,
+        snapshot_id: UUID,
+        run_request: PipelineSnapshotRunRequest,
+    ) -> PipelineRunResponse:
+        """Run a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to run.
+            run_request: Configuration for the run.
+
+        Raises:
+            RuntimeError: If the server does not support running a snapshot.
+
+        Returns:
+            The created pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
+                body=run_request,
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Running a snapshot is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
+
+    # -------------------- Deployments --------------------
 
     def create_deployment(
-        self,
-        deployment: PipelineDeploymentRequest,
-    ) -> PipelineDeploymentResponse:
-        """Creates a new deployment.
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
 
         Args:
             deployment: The deployment to create.
@@ -1637,44 +1779,35 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=deployment,
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
         )
 
     def get_deployment(
-        self,
-        deployment_id: UUID,
-        hydrate: bool = True,
-        step_configuration_filter: Optional[List[str]] = None,
-    ) -> PipelineDeploymentResponse:
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
         """Get a deployment with a given ID.
 
         Args:
             deployment_id: ID of the deployment.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            step_configuration_filter: List of step configurations to include in
-                the response. If not given, all step configurations will be
-                included.
 
         Returns:
             The deployment.
         """
         return self._get_resource(
             resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
-            params={
-                "hydrate": hydrate,
-                "step_configuration_filter": step_configuration_filter,
-            },
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            params={"hydrate": hydrate},
         )
 
     def list_deployments(
         self,
-        deployment_filter_model: PipelineDeploymentFilter,
+        deployment_filter_model: DeploymentFilter,
         hydrate: bool = False,
-    ) -> Page[PipelineDeploymentResponse]:
+    ) -> Page[DeploymentResponse]:
         """List all deployments matching the given filter criteria.
 
         Args:
@@ -1687,21 +1820,40 @@ class RestZenStore(BaseZenStore):
             A page of all deployments matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=PIPELINE_DEPLOYMENTS,
-            response_model=PipelineDeploymentResponse,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
             filter_model=deployment_filter_model,
             params={"hydrate": hydrate},
         )
 
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        return self._update_resource(
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+        )
+
     def delete_deployment(self, deployment_id: UUID) -> None:
-        """Deletes a deployment.
+        """Delete a deployment.
 
         Args:
             deployment_id: The ID of the deployment to delete.
         """
         self._delete_resource(
             resource_id=deployment_id,
-            route=PIPELINE_DEPLOYMENTS,
+            route=DEPLOYMENTS,
         )
 
     # -------------------- Run templates --------------------
@@ -3918,7 +4070,7 @@ class RestZenStore(BaseZenStore):
         expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
+        deployment_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token.
 
@@ -3927,7 +4079,7 @@ class RestZenStore(BaseZenStore):
             expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
-            step_run_id: The ID of the step run to get a token for.
+            deployment_id: The ID of the deployment to get a token for.
 
         Returns:
             The API token.
@@ -3944,8 +4096,8 @@ class RestZenStore(BaseZenStore):
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
             params["pipeline_run_id"] = pipeline_run_id
-        if step_run_id:
-            params["step_run_id"] = step_run_id
+        if deployment_id:
+            params["deployment_id"] = deployment_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(

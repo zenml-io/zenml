@@ -29,12 +29,13 @@ from zenml.models import (
     ActionRequest,
     ActionResponse,
     ActionUpdate,
+    PipelineSnapshotRunRequest,
     TriggerExecutionResponse,
 )
 from zenml.models.v2.base.base import BaseResponse
 from zenml.zen_server.auth import AuthContext
+from zenml.zen_server.pipeline_execution.utils import run_snapshot
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.template_execution.utils import run_template
 from zenml.zen_server.utils import server_config
 
 logger = get_logger(__name__)
@@ -45,7 +46,7 @@ logger = get_logger(__name__)
 class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
-    template_id: UUID
+    snapshot_id: UUID
     run_config: Optional[PipelineRunConfiguration] = None
 
 
@@ -95,11 +96,13 @@ class PipelineRunActionHandler(BaseActionHandler):
 
         assert isinstance(config, PipelineRunActionConfiguration)
 
-        template = zen_store().get_run_template(config.template_id)
-        logger.debug("Running template:", template)
-        run_template(
-            template=template,
-            run_config=config.run_config,
+        snapshot = zen_store().get_snapshot(config.snapshot_id)
+        logger.debug("Running snapshot:", snapshot)
+        run_snapshot(
+            snapshot=snapshot,
+            request=PipelineSnapshotRunRequest(
+                run_configuration=config.run_config,
+            ),
             auth_context=auth_context,
             sync=True,
         )
@@ -113,15 +116,15 @@ class PipelineRunActionHandler(BaseActionHandler):
             config: Pipeline run action configuration.
 
         Raises:
-            ValueError: In case no deployment can be found with the deployment_id
+            ValueError: In case no snapshot can be found with the snapshot_id
         """
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            zen_store.get_run_template(template_id=config.template_id)
+            zen_store.get_snapshot(snapshot_id=config.snapshot_id)
         except KeyError:
             raise ValueError(
-                f"No template found with id {config.template_id}."
+                f"No snapshot found with id {config.snapshot_id}."
             )
 
     def _validate_action_request(
@@ -178,28 +181,28 @@ class PipelineRunActionHandler(BaseActionHandler):
             List of resources related to the action.
 
         Raises:
-            ValueError: In case the specified template does not exist.
+            ValueError: In case the specified snapshot does not exist.
         """
         assert isinstance(action_config, PipelineRunActionConfiguration)
 
         zen_store = GlobalConfiguration().zen_store
 
         try:
-            template = zen_store.get_run_template(
-                template_id=action_config.template_id, hydrate=hydrate
+            snapshot = zen_store.get_snapshot(
+                snapshot_id=action_config.snapshot_id, hydrate=hydrate
             )
         except KeyError:
             raise ValueError(
-                f"No template found with id {action_config.template_id}."
+                f"No snapshot found with id {action_config.snapshot_id}."
             )
 
         resources: Dict[ResourceType, BaseResponse[Any, Any, Any]] = {
-            ResourceType.RUN_TEMPLATE: template
+            ResourceType.PIPELINE_SNAPSHOT: snapshot
         }
 
-        if template.pipeline is not None:
+        if snapshot.pipeline is not None:
             pipeline = zen_store.get_pipeline(
-                pipeline_id=template.pipeline.id, hydrate=hydrate
+                pipeline_id=snapshot.pipeline.id, hydrate=hydrate
             )
             resources[ResourceType.PIPELINE] = pipeline
 
