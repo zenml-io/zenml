@@ -271,6 +271,12 @@ def analyze_document_step(
         )
         analysis_method = "deterministic_fallback"
 
+    # Determine appropriate model label based on analysis method
+    if analysis_method == "llm":
+        model_label = "openai-gpt-4o-mini (llm)"
+    else:
+        model_label = "rule-based (deterministic)"
+
     # Create analysis object with results
     analysis = DocumentAnalysis(
         document=document,
@@ -281,7 +287,7 @@ def analyze_document_step(
         readability_score=float(
             cast(float, analysis_result["readability_score"])
         ),
-        model=f"openai-gpt-4o-mini ({analysis_method})",
+        model=model_label,
         latency_ms=int(cast(int, analysis_result["latency_ms"])),
         tokens_prompt=int(cast(int, analysis_result["tokens_prompt"])),
         tokens_completion=int(cast(int, analysis_result["tokens_completion"])),
