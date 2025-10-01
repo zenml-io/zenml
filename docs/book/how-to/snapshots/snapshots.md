@@ -5,7 +5,7 @@ icon: print
 
 # Pipeline Snapshots
 
-In ZenML, pipeline snapshots are pre-defined, parameterized configurations for your pipelines that can be easily run from various interfaces - including the Python SDK, CLI, ZenML dashboard, or REST API.
+A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the SDK, CLI, ZenML dashboard or via a REST API. Additionally, snapshots can also be [deployed](../deployment/deployment.md).
 
 {% hint style="info" %}
 Snapshots are the successor and replacement of ZenML run templates.
