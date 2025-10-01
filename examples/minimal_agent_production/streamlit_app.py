@@ -268,9 +268,7 @@ if request_payload:
                     f"**Document Type:** {doc_info.get('document_type', 'N/A')}"
                 )
             with col2:
-                st.write(
-                    f"**Analysis Type:** {doc_info.get('analysis_type', 'N/A')}"
-                )
+                st.write(f"**Analysis Method:** {analysis.get('metadata', {}).get('analysis_method', 'N/A')}")
                 st.write(f"**Model:** {analysis.get('model', 'N/A')}")
 
         # Raw response in expandable section
