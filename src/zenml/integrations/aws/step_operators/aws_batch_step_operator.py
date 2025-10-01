@@ -325,7 +325,7 @@ class AWSBatchStepOperator(BaseStepOperator):
         # Batch allows 128 alphanumeric characters at maximum for job name - ZenML uses 60 for safety margin.
         # AWS Batch job description names are more permissive than ZenML pipeline and step naming rules,
         # so no sanitation needed besides trimming
-        job_name = f"{info.pipeline.name}-{info.pipeline_step_name}"[:120]
+        job_name = f"{info.pipeline.name}-{info.pipeline_step_name}"[:115]
         suffix = random_str(6)
         return f"{job_name}-{suffix}"
 
