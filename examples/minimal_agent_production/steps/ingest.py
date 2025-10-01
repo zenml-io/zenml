@@ -123,15 +123,15 @@ def _download_from_url(url: str) -> str:
         # Handle different content types
         content_type = response.headers.get("content-type", "").lower()
 
-        if "text" in content_type or "json" in content_type:
-            return response.text
-        elif "html" in content_type:
+        if "html" in content_type:
             # Basic HTML text extraction (you might want to use BeautifulSoup for better parsing)
             import re
 
             # Simple HTML tag removal
             clean_text = re.sub(r"<[^>]+>", "", response.text)
             return clean_text
+        elif "text" in content_type or "json" in content_type:
+            return response.text
         else:
             # For binary content, return a placeholder
             return f"[Binary content downloaded from {url}, {len(response.content)} bytes]"
