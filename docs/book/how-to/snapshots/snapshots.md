@@ -45,9 +45,8 @@ Without snapshots, each scenario would require:
   )
 
 - **Through REST API**: Your CI/CD system can trigger snapshots via API calls
-  ```bash
+```bash
   curl -X POST 'https://your-zenml-server/api/v1/pipeline-snapshots/<ID>/runs' -H 'Authorization: Bearer <TOKEN>' -d '{"steps": {...}}'
-  ```
 
 - **Through Browser** (Pro feature): Non-technical stakeholders can run snapshots directly from the ZenML dashboard by simply filling in a form with the required parameters - no coding required!
 
@@ -214,22 +213,18 @@ from zenml.artifacts.utils import load_artifact
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
-
 @step
 def trainer(data_artifact_id: str):
     df = load_artifact(data_artifact_id)
-
 
 @pipeline
 def training_pipeline():
     trainer()
 
-
 @step
 def load_data() -> pd.DataFrame:
     # Your data loading logic here
     return pd.DataFrame()
-
 
 @step
 def trigger_pipeline(df: UnmaterializedArtifact):
@@ -240,7 +235,6 @@ def trigger_pipeline(df: UnmaterializedArtifact):
 
     # This triggers the LATEST runnable snapshot for the "training_pipeline" pipeline
     Client().trigger_pipeline(pipeline_name_or_id="training_pipeline", run_configuration=run_config)
-
 
 @pipeline
 def loads_data_and_triggers_training():
