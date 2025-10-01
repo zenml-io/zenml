@@ -30,7 +30,7 @@ overhead that results in productionalizing agents.
 
 ### Prerequisites
 ```bash
-pip install "zenml[servers]" requests streamlit
+pip install "zenml[server]"
 export OPENAI_API_KEY=sk-xxx  # Optional - works offline without it
 ```
 
