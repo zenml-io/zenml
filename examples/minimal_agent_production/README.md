@@ -43,7 +43,7 @@ zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer
 Find your endpoint URL:
 
 ```bash
-zenml deployment describe doc-analyzer
+zenml deployment describe doc_analyzer
 ```
 
 ### Phase 2: Analyze a Document
@@ -51,7 +51,7 @@ zenml deployment describe doc-analyzer
 #### Use the ZenML CLI
 
 ```bash
-zenml deployment invoke doc-analyzer --json '{
+zenml deployment invoke doc_analyzer --json '{
   "content": "Artificial Intelligence is transforming how we work...",
   "filename": "ai-overview.txt",
   "document_type": "text"
