@@ -62,6 +62,28 @@ def load_css(css_name: str) -> str:
         return f.read()
 
 
+def get_winner_info(accuracy_winner: str, f1_winner: str) -> Tuple[str, str, str]:
+    """Determine winner classes and messages based on metric comparisons.
+
+    Args:
+        accuracy_winner: Winner for accuracy metric ('With Classifier', 'LLM-only', or 'Tie').
+        f1_winner: Winner for F1 metric ('With Classifier', 'LLM-only', or 'Tie').
+
+    Returns:
+        Tuple of (winner_class, winner_text_class, winner_message) for styling and display.
+    """
+    if (accuracy_winner == 'With Classifier' and f1_winner == 'With Classifier') or \
+       (accuracy_winner == 'With Classifier' and f1_winner == 'Tie') or \
+       (f1_winner == 'With Classifier' and accuracy_winner == 'Tie'):
+        return "classifier-wins", "classifier-wins", "🎉 With Intent Classifier wins overall! Better structured responses and targeted support."
+    elif (accuracy_winner == 'LLM-only' and f1_winner == 'LLM-only') or \
+         (accuracy_winner == 'LLM-only' and f1_winner == 'Tie') or \
+         (f1_winner == 'LLM-only' and accuracy_winner == 'Tie'):
+        return "llm-wins", "llm-wins", "🎯 LLM-Only Mode wins overall! Generic responses work better for this dataset."
+    else:
+        return "mixed", "mixed", "🤝 Mixed results - approaches have different strengths. Check detailed metrics."
+
+
 def render_evaluation_template(
     img_base64: str,
     llm_accuracy: float,
@@ -91,19 +113,7 @@ def render_evaluation_template(
     css_styles = load_css("styles.css")
 
     # Determine winner classes and messages
-    def get_winner_info() -> Tuple[str, str, str]:
-        if (accuracy_winner == 'With Classifier' and f1_winner == 'With Classifier') or \
-           (accuracy_winner == 'With Classifier' and f1_winner == 'Tie') or \
-           (f1_winner == 'With Classifier' and accuracy_winner == 'Tie'):
-            return "classifier-wins", "classifier-wins", "🎉 With Intent Classifier wins overall! Better structured responses and targeted support."
-        elif (accuracy_winner == 'LLM-only' and f1_winner == 'LLM-only') or \
-             (accuracy_winner == 'LLM-only' and f1_winner == 'Tie') or \
-             (f1_winner == 'LLM-only' and accuracy_winner == 'Tie'):
-            return "llm-wins", "llm-wins", "🎯 LLM-Only Mode wins overall! Generic responses work better for this dataset."
-        else:
-            return "mixed", "mixed", "🤝 Mixed results - approaches have different strengths. Check detailed metrics."
-
-    winner_class, winner_text_class, winner_message = get_winner_info()
+    winner_class, winner_text_class, winner_message = get_winner_info(accuracy_winner, f1_winner)
 
     # Prepare template variables
     template_vars = {
