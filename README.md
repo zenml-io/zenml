@@ -59,20 +59,80 @@ At it's core, ZenML allows you to write **workflows (pipelines)** that run on an
 ZenML is used by thousands of companies to run their AI workflows. Here are some featured ones:
 
 <div align="center">
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e826c67966c0e639be6591_airbus.svg" alt="Airbus" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308916684f0d07b57ff_axa-min.svg" alt="AXA" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/682337dd23ca98ec293c2dc6_jetbrains-min.svg" alt="JetBrains" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e9897d1b1dc28e560c0c07_rivian-min.svg" alt="Rivian" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac90f19eb6c4cd715f9_wisetech_logo-min.svg" alt="WiseTech Global" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/652d3e5d29d36f927c2bb623_brevo.webp" alt="Brevo" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/airbus.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
+      <img src="https://img.logo.dev/airbus.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png" alt="Airbus" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308916684f0d07b57ff_axa-min.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308916684f0d07b57ff_axa-min.svg" alt="AXA" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg">
+      <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains-variant-4.svg" alt="JetBrains" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/rivian.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
+      <img src="https://img.logo.dev/rivian.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png" alt="Rivian" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac90f19eb6c4cd715f9_wisetech_logo-min.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac90f19eb6c4cd715f9_wisetech_logo-min.svg" alt="WiseTech Global" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/652d3e5d29d36f927c2bb623_brevo.webp">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/652d3e5d29d36f927c2bb623_brevo.webp" alt="Brevo" height="50">
+    </picture>
+  </a>
 </div>
 <div align="center">
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b6199bfeb57b7223_adeo_logo-min.png" alt="ADEO" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b83eea2954b5a561_leroy_merlin_logo-min.svg" alt="Leroy Merlin" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/67e673e60161f59b5db6554c_koble.svg" alt="Koble" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e959c0c5f8422ecac8d81a_Playtika-min.svg" alt="Playtika" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac959d7ca93745e8130_nielsen_iq_logo-min.svg" alt="NIQ" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308b1e802ab9a246134_enel-min.svg" alt="Enel" height="50" style="background-color: white; padding: 5px; border-radius: 4px;"/></a>
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/leroymerlin.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b6199bfeb57b7223_adeo_logo-min.png" alt="ADEO" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b83eea2954b5a561_leroy_merlin_logo-min.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b83eea2954b5a561_leroy_merlin_logo-min.svg" alt="Leroy Merlin" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/koble.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
+      <img src="https://img.logo.dev/koble.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png" alt="Koble" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/playtika.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
+      <img src="https://img.logo.dev/playtika.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png" alt="Playtika" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac959d7ca93745e8130_nielsen_iq_logo-min.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac959d7ca93745e8130_nielsen_iq_logo-min.svg" alt="NIQ" height="50">
+    </picture>
+  </a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308b1e802ab9a246134_enel-min.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308b1e802ab9a246134_enel-min.svg" alt="Enel" height="50">
+    </picture>
+  </a>
 </div>
 
 <sub><i>(please email support@zenml.io if you want to be featured)</i></sub>
@@ -98,99 +158,11 @@ zenml init
 
 # Start local server or connect to a remote one
 zenml login
-
-# Set OpenAI API key (optional)
-export OPENAI_API_KEY=sk-svv....
 ```
 
-### Your First Pipeline (2 minutes)
+Here is a brief demo:
 
-```python
-# simple_pipeline.py
-from zenml import pipeline, step
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-from typing import Tuple
-from typing_extensions import Annotated
-import numpy as np
-
-@step
-def create_dataset() -> Tuple[
-    Annotated[np.ndarray, "X_train"],
-    Annotated[np.ndarray, "X_test"], 
-    Annotated[np.ndarray, "y_train"],
-    Annotated[np.ndarray, "y_test"]
-]:
-    """Generate a simple classification dataset."""
-    X, y = make_classification(n_samples=100, n_features=4, n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    return X_train, X_test, y_train, y_test
-
-@step
-def train_model(X_train: np.ndarray, y_train: np.ndarray) -> RandomForestClassifier:
-    """Train a simple sklearn model."""
-    model = RandomForestClassifier(n_estimators=10, random_state=42)
-    model.fit(X_train, y_train)
-    return model
-
-@step
-def evaluate_model(model: RandomForestClassifier, X_test: np.ndarray, y_test: np.ndarray) -> float:
-    """Evaluate the model accuracy."""
-    predictions = model.predict(X_test)
-    return accuracy_score(y_test, predictions)
-
-@step
-def generate_summary(accuracy: float) -> str:
-    """Use OpenAI to generate a model summary."""
-    import openai
-
-    client = openai.OpenAI()  # Set OPENAI_API_KEY environment variable
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{
-            "role": "user", 
-            "content": f"Write a brief summary of a ML model with {accuracy:.2%} accuracy."
-        }],
-        max_tokens=50
-    )
-    return response.choices[0].message.content
-
-@pipeline
-def simple_ml_pipeline():
-    """A simple pipeline combining sklearn and OpenAI."""
-    X_train, X_test, y_train, y_test = create_dataset()
-    model = train_model(X_train, y_train)
-    accuracy = evaluate_model(model, X_test, y_test)
-    try:
-        import openai  # noqa: F401
-        generate_summary(accuracy)
-    except ImportError:
-        print("OpenAI is not installed. Skipping summary generation.")
-
-
-if __name__ == "__main__":
-    result = simple_ml_pipeline()
-```
-
-Run it:
-```bash
-export OPENAI_API_KEY="your-api-key-here"
-python simple_pipeline.py
-```
-
-Deploy it (HTTP endpoint):
-
-```bash
-zenml pipeline deploy simple_ml_pipeline --port 8001
-
-curl -s -X POST localhost:8001/invoke \
-  -H 'Content-Type: application/json' \
-  -d '{"parameters": {}}'
-```
-
-Open the interactive docs at http://localhost:8001/docs, check health at `/health`, and view metrics at `/metrics`.
+https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
 
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
@@ -221,10 +193,6 @@ The best way to learn about ZenML is through our comprehensive documentation and
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
 
-For visual learners, start with this 11-minute introduction:
-
-[![Introductory Youtube Video](docs/book/.gitbook/assets/readme_youtube_thumbnail.png)](https://www.youtube.com/watch?v=wEVwIkDvUPs)
-
 ### 📖 Production Examples
 
 1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
@@ -233,23 +201,6 @@ For visual learners, start with this 11-minute introduction:
 4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
 5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
 6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
-
-### 🏢 Deployment Options
-
-Pipeline deployment exposes a FastAPI service for your pipeline on your chosen compute. Start local, then scale to Docker or Kubernetes as needed.
-
-For pipeline deployment (HTTP endpoints), start with the Quickstart:
-- https://docs.zenml.io/getting-started/quickstart
-
-**For Teams:**
-- **[Self-hosted](https://docs.zenml.io/getting-started/deploying-zenml)** - Deploy on your infrastructure with Helm/Docker
-- **[ZenML Pro](https://cloud.zenml.io/?utm_source=readme)** - Managed service with enterprise support (free trial)
-
-**Infrastructure Requirements:**
-- Docker (or Kubernetes for production)
-- Object storage (S3/GCS/Azure)
-- MySQL-compatible database (MySQL 8.0+ or MariaDB)
-- _[Complete requirements](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm)_
 
 ### 🎓 Books & Resources
 
@@ -302,7 +253,7 @@ A: ZenML integrates with Kubernetes through the native Kubernetes orchestrator, 
 
 A: ZenML's open-source version is free forever. You likely already have the required infrastructure (like a Kubernetes cluster and object storage). We just help you make better use of it for MLOps.
 
-### 🛠 VS Code Extension
+### 🛠 VS Code / Cursor Extension
 
 Manage pipelines directly from your editor:
 
