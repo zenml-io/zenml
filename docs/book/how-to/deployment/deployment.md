@@ -9,7 +9,7 @@ Pipeline deployment allows you to run ZenML pipelines as long-running HTTP servi
 
 ## What is a Pipeline Deployment?
 
-A pipeline deployment is a long-running HTTP server that wraps your pipeline in a web application, allowing it to be executed on-demand through HTTP requests. Unlike orchestrators that execute pipelines in batch mode, deployments create persistent services that can handle multiple concurrent pipeline executions.
+A pipeline deployment is a long-running HTTP server that wraps your pipeline for real-time, request-response interactions. While traditional (batch) pipeline execution (via orchestrators) is ideal for scheduled batch processing, data transformations, and offline training workflows, deployments are designed for scenarios where you need immediate responses - like serving predictions to a web app, processing user requests, or powering interactive AI agents. Deployments create persistent services that stay running and can handle multiple concurrent requests through HTTP endpoints.
 
 When you deploy a pipeline, ZenML creates an HTTP server (called a **Deployment**) that can execute your pipeline multiple times in parallel by invoking HTTP endpoints.
 
