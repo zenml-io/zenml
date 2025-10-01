@@ -29,7 +29,6 @@ logger = get_logger(__name__)
 try:
     from prompts import (
         TEMPLATE_RESPONSES,
-        build_intent_classification_prompt,
         build_response_prompt,
     )
 except (
@@ -37,7 +36,6 @@ except (
 ):  # Fallback when importing via implicit namespace packages from repo root
     from examples.quickstart.prompts import (
         TEMPLATE_RESPONSES,
-        build_intent_classification_prompt,
         build_response_prompt,
     )
 
@@ -98,80 +96,6 @@ class ClassifierManager:
 
 # Global instance
 classifier_manager = ClassifierManager()
-
-
-def call_llm_for_intent(text: str) -> Dict[str, Any]:
-    """Use LLM to classify intent and provide confidence.
-
-    Args:
-        text: Customer input text to classify.
-
-    Returns:
-        Dictionary with intent, confidence, and source information.
-    """
-    if not OPENAI_AVAILABLE:
-        logger.warning("OpenAI not available, using fallback")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "fallback",
-        }
-
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        logger.warning("OPENAI_API_KEY not set, using fallback")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "fallback",
-        }
-
-    try:
-        client = OpenAI(api_key=api_key)
-
-        prompt = build_intent_classification_prompt(text)
-
-        response = client.chat.completions.create(
-            model=DEFAULT_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=INTENT_TEMPERATURE,
-            max_tokens=50,
-        )
-
-        result = response.choices[0].message.content
-        logger.debug(f"LLM raw response: {result}")
-        if result is None:
-            result = "general,0.5"
-        else:
-            result = result.strip()
-
-        # Parse response (e.g., "card_lost,0.85")
-        try:
-            if "," in result:
-                intent, conf_str = result.split(",", 1)
-                confidence = float(conf_str.strip())
-            else:
-                intent = result.strip()
-                confidence = 0.8
-        except (ValueError, AttributeError):
-            intent = "general"
-            confidence = 0.5
-
-        logger.info(f"LLM: '{text}' → {intent} (confidence: {confidence:.3f})")
-
-        return {
-            "intent": intent,
-            "confidence": confidence,
-            "intent_source": "llm",
-        }
-
-    except Exception as e:
-        logger.error(f"LLM call failed: {e}")
-        return {
-            "intent": "general",
-            "confidence": 0.0,
-            "intent_source": "llm_error",
-        }
 
 
 def call_llm_generic_response(text: str) -> Dict[str, Any]:
