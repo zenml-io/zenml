@@ -5,7 +5,7 @@ icon: rocket
 
 ## Your First AI Pipeline
 
-Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or curl, optionally use a Streamlit web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
+Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or `curl`, optionally use a Streamlit web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
 
 {% hint style="info" %}
 Why pipelines?
@@ -93,11 +93,10 @@ zenml deployment describe doc_analyzer
 Use the ZenML CLI to invoke your deployment:
 
 ```bash
-zenml deployment invoke doc_analyzer --json '{
-  "content": "Artificial Intelligence is transforming how we work...",
-  "filename": "ai-overview.txt",
-  "document_type": "text"
-}'
+zenml deployment invoke doc_analyzer \
+  --content="Artificial Intelligence is transforming how we work..." \
+  --filename="ai-overview.txt" \
+  --document_type="text"
 ```
 
 Or call the HTTP endpoint directly with curl. Send a JSON body that wraps inputs under parameters:
@@ -144,6 +143,8 @@ Endpoint contract (summary):
   - Note: The exact output key may be namespaced; look for a key containing "document_analysis".
 
 ### Use the web interface (optional)
+
+![Streamlit app interface](../.gitbook/assets/minimal_agent_production_streamlit.png)
 
 Launch the Streamlit frontend:
 
