@@ -51,11 +51,10 @@ zenml deployment describe doc_analyzer
 #### Use the ZenML CLI
 
 ```bash
-zenml deployment invoke doc_analyzer --json '{
-  "content": "Artificial Intelligence is transforming how we work...",
-  "filename": "ai-overview.txt",
-  "document_type": "text"
-}'
+zenml deployment invoke doc_analyzer \
+  --content="Artificial Intelligence is transforming how we work..." \
+  --filename="ai-overview.txt" \
+  --document_type="text"
 ```
 
 #### Call the HTTP endpoint directly
@@ -82,6 +81,8 @@ If your deployment requires auth, include:
 ```
 
 ### Phase 3: Use the Web Interface (optional)
+
+![Streamlit app interface](../../docs/book/.gitbook/assets/minimal_agent_production_streamlit.png)
 
 Launch the Streamlit frontend:
 
