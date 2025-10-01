@@ -35,6 +35,9 @@ from zenml.deployers.server.models import (
     ServiceInfo,
     SnapshotInfo,
 )
+from zenml.deployers.utils import (
+    deployment_snapshot_request_from_source_snapshot,
+)
 from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
@@ -337,11 +340,6 @@ class PipelineDeploymentService:
         Returns:
             A tuple of (placeholder_run, deployment_snapshot).
         """
-        # Create a new snapshot with deployment-specific parameters and settings
-        from zenml.orchestrators.utils import (
-            deployment_snapshot_request_from_source_snapshot,
-        )
-
         deployment_snapshot_request = (
             deployment_snapshot_request_from_source_snapshot(
                 source_snapshot=self.snapshot,
