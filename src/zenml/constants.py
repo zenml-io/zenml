@@ -461,6 +461,7 @@ ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
 
 # deployer constants
 DEPLOYER_DOCKER_IMAGE_KEY = "deployer"
+IN_MEMORY_ARTIFACT_URI_PREFIX = "memory://"
 
 # Secret constants
 SECRET_VALUES = "values"

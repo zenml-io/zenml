@@ -18,11 +18,11 @@ from typing import TYPE_CHECKING, Dict, Sequence
 from uuid import uuid4
 
 from zenml.client import Client
+from zenml.constants import IN_MEMORY_ARTIFACT_URI_PREFIX
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores import BaseArtifactStore
     from zenml.config.step_configurations import Step
     from zenml.models import StepRunResponse
     from zenml.stack import Stack
@@ -32,14 +32,15 @@ logger = get_logger(__name__)
 
 
 def generate_artifact_uri(
-    artifact_store: "BaseArtifactStore",
+    artifact_store_path: str,
     step_run: "StepRunResponse",
     output_name: str,
 ) -> str:
     """Generates a URI for an output artifact.
 
     Args:
-        artifact_store: The artifact store on which the artifact will be stored.
+        artifact_store_path: The path of the artifact store in which the
+            artifact will be stored.
         step_run: The step run that created the artifact.
         output_name: The name of the output in the step run for this artifact.
 
@@ -49,7 +50,7 @@ def generate_artifact_uri(
     for banned_character in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
         output_name = output_name.replace(banned_character, "_")
     return os.path.join(
-        artifact_store.path,
+        artifact_store_path,
         step_run.name,
         output_name,
         str(step_run.id),
@@ -62,7 +63,7 @@ def prepare_output_artifact_uris(
     stack: "Stack",
     step: "Step",
     *,
-    create_dirs: bool = True,
+    skip_artifact_materialization: bool = False,
 ) -> Dict[str, str]:
     """Prepares the output artifact URIs to run the current step.
 
@@ -70,7 +71,7 @@ def prepare_output_artifact_uris(
         step_run: The step run for which to prepare the artifact URIs.
         stack: The stack on which the pipeline is running.
         step: The step configuration.
-        create_dirs: Whether to pre-create directories in the artifact store.
+        skip_artifact_materialization: Whether to skip artifact materialization.
 
     Raises:
         RuntimeError: If an artifact URI already exists.
@@ -85,35 +86,18 @@ def prepare_output_artifact_uris(
         substituted_output_name = string_utils.format_name_template(
             output_name, substitutions=step_run.config.substitutions
         )
-        if create_dirs:
-            artifact_uri = generate_artifact_uri(
-                artifact_store=artifact_store,
-                step_run=step_run,
-                output_name=substituted_output_name,
-            )
-        else:
-            # Produce a clear in-memory URI that doesn't point to the store.
-            sanitized_output = substituted_output_name
-            for banned_character in [
-                "<",
-                ">",
-                ":",
-                '"',
-                "/",
-                "\\",
-                "|",
-                "?",
-                "*",
-            ]:
-                sanitized_output = sanitized_output.replace(
-                    banned_character, "_"
-                )
-            artifact_uri = (
-                f"memory://{step_run.name}/{sanitized_output}/"
-                f"{step_run.id}/{str(uuid4())[:8]}"
-            )
+        artifact_store_path = (
+            IN_MEMORY_ARTIFACT_URI_PREFIX
+            if skip_artifact_materialization
+            else artifact_store.path
+        )
+        artifact_uri = generate_artifact_uri(
+            artifact_store_path=artifact_store_path,
+            step_run=step_run,
+            output_name=substituted_output_name,
+        )
 
-        if create_dirs:
+        if not skip_artifact_materialization:
             if artifact_store.exists(artifact_uri):
                 raise RuntimeError("Artifact already exists")
             artifact_store.makedirs(artifact_uri)

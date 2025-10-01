@@ -1035,11 +1035,24 @@ def create_pipeline_snapshot(
             tags=tags,
         )
 
-    cli_utils.declare(
-        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
-        f"this snapshot from the dashboard or by calling `zenml pipeline "
-        f"snapshot trigger {snapshot.id}`"
-    )
+    cli_utils.declare(f"Created pipeline snapshot `{snapshot.name}`.")
+
+    options = []
+
+    if snapshot.runnable:
+        options.append(
+            "* run this snapshot from the dashboard or by calling "
+            f"`zenml pipeline snapshot run {snapshot.id}`"
+        )
+    if snapshot.deployable:
+        options.append(
+            "* deploy this snapshot by calling "
+            f"`zenml pipeline snapshot deploy {snapshot.id}`"
+        )
+
+    if options:
+        cli_utils.declare("You can now:")
+        cli_utils.declare("\n".join(options))
 
 
 @snapshot.command("run", help="Run a snapshot.")

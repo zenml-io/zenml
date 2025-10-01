@@ -38,6 +38,7 @@ from pydantic import Field, model_validator
 from zenml.constants import (
     ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS,
+    IN_MEMORY_ARTIFACT_URI_PREFIX,
     handle_bool_env_var,
 )
 from zenml.enums import StackComponentType
@@ -106,8 +107,8 @@ class _sanitize_paths:
             IllegalOperationError: If the path is a local file and the server
                 is not configured to allow local file access.
         """
-        # Skip validation for memory:// URIs used in serving mode
-        if path.startswith("memory://"):
+        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+            # No need to validate in-memory URIs
             return
 
         if not self.allow_local_file_access and not io_utils.is_remote(path):
@@ -143,9 +144,7 @@ class _sanitize_paths:
             # Neither string nor bytes, this is not a path
             return potential_path
 
-        # Preserve special in-memory scheme used by serving mode as-is
-        # to avoid treating it as a local filesystem path.
-        if isinstance(path, str) and path.startswith("memory://"):
+        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
             return path
 
         if io_utils.is_remote(path):
