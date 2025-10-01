@@ -64,7 +64,6 @@ zenml stack register docker-deployer -o default -a default -D docker --set
 First, let's run the agent pipeline directly in batch mode to see how it works without deployment. This runs the pipeline once and returns the result:
 
 ```bash
-```bash
 python run.py --agent --text "I want to open a savings account"
 ```
 
