@@ -17,6 +17,7 @@
 """Visualization utilities for the ZenML quickstart."""
 
 import base64
+import html
 import io
 import os
 from typing import List, Tuple
@@ -136,6 +137,15 @@ def render_evaluation_template(
         'winner_class': winner_class,
         'winner_text_class': winner_text_class,
         'winner_message': winner_message
+    }
+
+    # Escape string variables to prevent issues with special characters.
+    # We explicitly exclude 'css_styles', which needs to be raw CSS.
+    template_vars = {
+        k: html.escape(str(v))
+        if isinstance(v, str) and k != "css_styles"
+        else v
+        for k, v in template_vars.items()
     }
 
     # Render template
