@@ -51,6 +51,11 @@ def main() -> None:
         default="my card is lost and i need a replacement",
         help="Custom text input for the agent (use with --agent).",
     )
+    ap.add_argument(
+        "--config",
+        type=str,
+        help="Optional YAML config for --train/--evaluate.",
+    )
     args = ap.parse_args()
 
     if args.agent:
@@ -62,7 +67,11 @@ def main() -> None:
         print(
             ">> Running intent_training_pipeline (auto-tags artifact VERSION as 'production')."
         )
-        intent_training_pipeline()
+        # Prefer config-driven execution when provided to match CLI -c behavior.
+        pipe = intent_training_pipeline
+        if args.config:
+            pipe = pipe.with_options(config_path=args.config)
+        pipe()
         print(
             ">> Done. Check dashboard: artifact 'intent-classifier' latest version has tag 'production'."
         )
@@ -70,7 +79,11 @@ def main() -> None:
         print(
             ">> Running agent_evaluation_pipeline to compare LLM vs Hybrid performance."
         )
-        agent_evaluation_pipeline()
+        # Use the same pattern as training to optionally apply a YAML config.
+        pipe = agent_evaluation_pipeline
+        if args.config:
+            pipe = pipe.with_options(config_path=args.config)
+        pipe()
         print(
             ">> Evaluation complete. Check dashboard for detailed metrics and visualizations."
         )

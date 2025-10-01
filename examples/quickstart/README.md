@@ -133,6 +133,8 @@ This generates rich visualizations viewable in the ZenML dashboard:
 
 **View Results**: After running evaluation, visit your ZenML dashboard to see the generated visualizations and detailed performance comparison.
 
+Note: The cloud training configs at `configs/training_{aws,azure,gcp}.yaml` are maintained for our CI/release validation and aren't required for this quickstart. For local runs, just use `python run.py` (with `--train`/`--evaluate`) as shown above—no cloud config needed.
+
 ## 🤖 How It Works
 
 The agent checks for production models at startup:

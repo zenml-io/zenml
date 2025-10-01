@@ -1,4 +1,4 @@
-zenml[server]
+zenml[server]>=0.90.0
 scikit-learn
 openai>=1.0.0
 matplotlib
