@@ -510,45 +510,10 @@ def add_tags(
         )
 
     # Create tag resources and add tags
-    for tag in tags:
-        try:
-            if isinstance(tag, Tag):
-                tag_model = client.get_tag(tag.name)
-
-                if bool(tag.exclusive) != tag_model.exclusive:
-                    raise ValueError(
-                        f"The tag `{tag.name}` is "
-                        f"{'an exclusive' if tag_model.exclusive else 'a non-exclusive'} "
-                        "tag. Please update it before attaching it to a resource."
-                    )
-                if tag.cascade is not None:
-                    raise ValueError(
-                        "Cascading tags can only be used with the "
-                        "pipeline decorator."
-                    )
-            else:
-                tag_model = client.get_tag(tag)
-
-        except KeyError:
-            if isinstance(tag, Tag):
-                tag_model = client.create_tag(
-                    name=tag.name,
-                    exclusive=tag.exclusive
-                    if tag.exclusive is not None
-                    else False,
-                )
-
-                if tag.cascade is not None:
-                    raise ValueError(
-                        "Cascading tags can only be used with the "
-                        "pipeline decorator."
-                    )
-            else:
-                tag_model = client.create_tag(name=tag)
-
-        if resource_id:
+    if resource_id:
+        for tag in tags:
             client.attach_tag(
-                tag_name_or_id=tag_model.name,
+                tag=tag,
                 resources=[TagResource(id=resource_id, type=resource_type)],
             )
 
@@ -939,7 +904,7 @@ def remove_tags(
     for tag_name in tags:
         try:
             # Get the tag
-            tag = client.get_tag(tag_name)
+            tag = client.get_tag(tag_name, allow_name_prefix_match=False)
 
             # Detach tag from resources
             client.detach_tag(

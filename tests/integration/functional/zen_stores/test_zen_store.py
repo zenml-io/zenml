@@ -5261,8 +5261,6 @@ class TestTag:
 
         clean_client.update_tag("foo", name="foo2")
         assert clean_client.get_tag("foo2").color == "red"
-        with pytest.raises(KeyError):
-            clean_client.get_tag("foo")
 
         clean_client.update_tag(tag.id, color="yellow")
         assert clean_client.get_tag(tag.id).color == "yellow"
