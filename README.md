@@ -45,6 +45,7 @@
 ---
 
 ZenML is built for ML or AI Engineers working on traditional ML use-cases, LLM workflows, or agents, in a company setting.
+
 At it's core, ZenML allows you to write **workflows (pipelines)** that run on any **infrastructure backend (stacks)**. You can embed any Pythonic logic within these pipelines, like training a model, or running an agentic loop. ZenML then operationalizes your application by:
 
 1. Automatically containerizing and tracking your code.
@@ -57,7 +58,23 @@ At it's core, ZenML allows you to write **workflows (pipelines)** that run on an
 
 ZenML is used by thousands of companies to run their AI workflows. Here are some featured ones:
 
-LISTOFCOMPANIES
+<div align="center">
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e826c67966c0e639be6591_airbus.svg" alt="Airbus" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308916684f0d07b57ff_axa-min.svg" alt="AXA" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/682337dd23ca98ec293c2dc6_jetbrains-min.svg" alt="JetBrains" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e9897d1b1dc28e560c0c07_rivian-min.svg" alt="Rivian" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac90f19eb6c4cd715f9_wisetech_logo-min.svg" alt="WiseTech Global" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/652d3e5d29d36f927c2bb623_brevo.webp" alt="Brevo" height="50"/></a>
+</div>
+<div align="center">
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b6199bfeb57b7223_adeo_logo-min.png" alt="ADEO" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b83eea2954b5a561_leroy_merlin_logo-min.svg" alt="Leroy Merlin" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/67e673e60161f59b5db6554c_koble.svg" alt="Koble" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66e959c0c5f8422ecac8d81a_Playtika-min.svg" alt="Playtika" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac959d7ca93745e8130_nielsen_iq_logo-min.svg" alt="NIQ" height="50"/></a>&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://zenml.io"><img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/66c84308b1e802ab9a246134_enel-min.svg" alt="Enel" height="50"/></a>
+</div>
+
 (please email support@zenml.io if you want to be featured)
 
 ## 🚀 Get Started (5 minutes)
