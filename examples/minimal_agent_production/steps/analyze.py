@@ -136,7 +136,7 @@ def perform_llm_analysis(
         tokens_prompt = (
             response.usage.prompt_tokens
             if response.usage
-            else len(prompt.split()) * 1.3 # rough estimation
+            else len(prompt.split()) * 1.3  # rough estimation
         )
         tokens_completion = (
             response.usage.completion_tokens

@@ -207,7 +207,10 @@ def _calculate_metrics(
         "p95_latency_ms": np.percentile(latencies, 95),
         "total_predictions": len(predictions),
         "classification_report": classification_report(
-            labels, predictions, output_dict=True, zero_division=0,
+            labels,
+            predictions,
+            output_dict=True,
+            zero_division=0,
         ),
     }
 

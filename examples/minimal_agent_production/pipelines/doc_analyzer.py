@@ -17,10 +17,8 @@ from steps import (
 from zenml import ArtifactConfig, pipeline
 from zenml.config import DockerSettings
 
-# Docker settings for reproducible pipeline execution
 docker_settings = DockerSettings(
     requirements="requirements.txt",
-    parent_image="zenmldocker/zenml:0.85.0-py3.12",
     environment={
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
     },

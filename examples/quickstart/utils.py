@@ -282,7 +282,9 @@ def load_production_classifier() -> Optional[Any]:
     """
     try:
         client = Client()
-        versions = client.list_artifact_versions(name="intent-classifier", tag="production")
+        versions = client.list_artifact_versions(
+            name="intent-classifier", tag="production"
+        )
 
         # Find the most recent version tagged with 'production'
         prod_version = None
