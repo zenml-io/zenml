@@ -40,7 +40,6 @@
 * Make pytest rerun count configurable in CI workflows and address `bandit` errors by @strickvl in https://github.com/zenml-io/zenml/pull/4001
 * Add filter option for runs linked to model version by @schustmi in https://github.com/zenml-io/zenml/pull/4003
 * Deployed pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/3920
-* Prepare release 0.90.0rc0 by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4006
 * Store visualizations for pydantic materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4014
 * Changes to the issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/3991
 * Release testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4020
@@ -54,52 +53,6 @@
 * @Json-Andriopoulos made their first contribution in https://github.com/zenml-io/zenml/pull/4022
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0
-
-
-# 0.90.0rc0
-
-## What's Changed
-* Add 0.85.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3951
-* Add version 0.84.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3949
-* Add documentation for timeline view by @strickvl in https://github.com/zenml-io/zenml/pull/3948
-* Add documentation for the `StepContext` object by @strickvl in https://github.com/zenml-io/zenml/pull/3953
-* Runtime environment variables by @schustmi in https://github.com/zenml-io/zenml/pull/3336
-* Fix legacy merge conflict in docs by @schustmi in https://github.com/zenml-io/zenml/pull/3955
-* Docs/documentation for execution modes by @bcdurak in https://github.com/zenml-io/zenml/pull/3956
-* Pipeline snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/3856
-* Upgrade pydantic by @htahir1 in https://github.com/zenml-io/zenml/pull/3944
-* Dedent exception info traceback by @schustmi in https://github.com/zenml-io/zenml/pull/3957
-* Update (broken) metadata logging example for pipeline runs by @strickvl in https://github.com/zenml-io/zenml/pull/3961
-* Fix cache policy docs formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3965
-* Bugfix for duplicated log records for exceptions by @bcdurak in https://github.com/zenml-io/zenml/pull/3964
-* Bugfix for handling old logs with timestamp by @bcdurak in https://github.com/zenml-io/zenml/pull/3968
-* Snapshot UX improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3959
-* Track pipeline output spec and schema by @schustmi in https://github.com/zenml-io/zenml/pull/3972
-* Misc snapshot improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3980
-* Update self-hosted ZenML Pro deployment docs by @stefannica in https://github.com/zenml-io/zenml/pull/3981
-* Slimmer base package by @schustmi in https://github.com/zenml-io/zenml/pull/3916
-* Cleanup base package workflow by @schustmi in https://github.com/zenml-io/zenml/pull/3983
-* Rename some legacy attributes by @schustmi in https://github.com/zenml-io/zenml/pull/3934
-* Add JAX array materializer by @nicholasjng in https://github.com/zenml-io/zenml/pull/3712
-* Fix requirements for local agentic examples tests by @strickvl in https://github.com/zenml-io/zenml/pull/3986
-* Fix setting a snapshot name to None by @schustmi in https://github.com/zenml-io/zenml/pull/3985
-* Improve error message for duplicate pipeline run names by @strickvl in https://github.com/zenml-io/zenml/pull/3701
-* Fix Terraform documentation URLs and improve link checker robustness by @strickvl in https://github.com/zenml-io/zenml/pull/3988
-* Fix formatting errors on embeddings finetuning docs by @strickvl in https://github.com/zenml-io/zenml/pull/3979
-* Remove remaining RBAC check when fetching tags by @schustmi in https://github.com/zenml-io/zenml/pull/3989
-* Remove dependency on pydantic_settings by @schustmi in https://github.com/zenml-io/zenml/pull/3987
-* Migrate pyproject.toml to project structure by @schustmi in https://github.com/zenml-io/zenml/pull/3982
-* Document `ZENML_ACTIVE_PROJECT_ID` environment variable by @strickvl in https://github.com/zenml-io/zenml/pull/3992
-* Disable coderabbit status message by @strickvl in https://github.com/zenml-io/zenml/pull/3998
-* Snapshot response improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3995
-* Document WhyLabs shutdown in whylogs integration by @strickvl in https://github.com/zenml-io/zenml/pull/3997
-* Make pytest rerun count configurable in CI workflows and address `bandit` errors by @strickvl in https://github.com/zenml-io/zenml/pull/4001
-* Add filter option for runs linked to model version by @schustmi in https://github.com/zenml-io/zenml/pull/4003
-* Deployed pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/3920
-
-
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0rc0
-
 
 # 0.85.0
 
