@@ -1669,7 +1669,7 @@ def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
     run = clean_client_with_run.get_pipeline_run("connected_two_step_pipeline")
     tag = clean_client_with_run.create_tag(name="foo")
     clean_client_with_run.attach_tag(
-        tag.id,
+        tag.name,
         [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
     )
 
@@ -1677,7 +1677,7 @@ def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
     assert "foo" in [t.name for t in run.tags]
 
     clean_client_with_run.detach_tag(
-        tag.id,
+        tag.name,
         [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
     )
     run = clean_client_with_run.get_pipeline_run(run.id)

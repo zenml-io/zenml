@@ -152,7 +152,11 @@ def delete_tag(
         yes: If set, don't ask for confirmation.
     """
     try:
-        tagged_count = Client().get_tag(tag_name_or_id).tagged_count
+        tagged_count = (
+            Client()
+            .get_tag(tag_name_or_id, allow_name_prefix_match=False)
+            .tagged_count
+        )
     except (KeyError, ValueError) as e:
         cli_utils.error(str(e))
 
