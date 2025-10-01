@@ -173,7 +173,7 @@ curl -s -X POST localhost:8001/invoke \
   -d '{"parameters": {}}'
 ```
 
-Open the interactive docs at http://localhost:8001/docs, check health at /health, and view metrics at /metrics.
+Open the interactive docs at http://localhost:8001/docs, check health at `/health`, and view metrics at `/metrics`.
 
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
