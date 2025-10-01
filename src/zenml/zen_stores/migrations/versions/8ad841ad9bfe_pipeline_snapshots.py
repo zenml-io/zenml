@@ -218,10 +218,13 @@ def add_unlisted_pipeline_if_necessary() -> None:
     """Create pipelines for orphaned snapshots without a pipeline reference."""
     connection = op.get_bind()
     meta = sa.MetaData()
-    meta.reflect(bind=connection, only=("pipeline_snapshot", "pipeline"))
+    meta.reflect(
+        bind=connection, only=("pipeline_snapshot", "pipeline", "pipeline_run")
+    )
 
     pipeline_snapshot_table = sa.Table("pipeline_snapshot", meta)
     pipeline_table = sa.Table("pipeline", meta)
+    pipeline_run_table = sa.Table("pipeline_run", meta)
 
     projects_with_orphaned_snapshots = connection.execute(
         sa.select(
@@ -267,6 +270,15 @@ def add_unlisted_pipeline_if_necessary() -> None:
                 == project_id_row.project_id
             )
             .where(pipeline_snapshot_table.c.pipeline_id.is_(None))
+            .values(pipeline_id=unlisted_pipeline_id)
+        )
+
+        connection.execute(
+            sa.update(pipeline_run_table)
+            .where(
+                pipeline_run_table.c.project_id == project_id_row.project_id
+            )
+            .where(pipeline_run_table.c.pipeline_id.is_(None))
             .values(pipeline_id=unlisted_pipeline_id)
         )
 
