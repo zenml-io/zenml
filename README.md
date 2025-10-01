@@ -81,7 +81,7 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 
 ### 🏗️ Architecture Overview
 
-ZenML uses a [**client-server architecture**](https://zenml.io/system-architecture) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
+ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
 
 - **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
 - **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
