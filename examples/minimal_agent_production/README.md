@@ -116,7 +116,6 @@ You can pass a minimal deployment config:
 settings:
   docker:
     requirements: requirements.txt
-    parent_image: zenmldocker/zenml:0.85.0-py3.12
   deployer:
     generate_auth_key: true
 ```
