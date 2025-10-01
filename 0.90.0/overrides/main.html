@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+
+<script>
+  // Load Segment analytics library first
+  !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM";;analytics.SNIPPET_VERSION="4.15.3";
+  analytics.load("CaE5VaNjhyaUt48qXK4rLwwKJ0PdAOFM");
+  
+  // Bot detection function
+  function isBotTraffic() {
+    const userAgent = navigator.userAgent || '';
+    
+    // Check for specific bot signatures found in your traffic
+    const botSignatures = [
+      'ClaudeBot',           // The main culprit from your debugger data
+      'HeadlessChrome',      // Also found in your userAgentData
+      'crawler',
+      'spider',
+      'bot',
+      'scraper',
+      'Googlebot',
+      'Bingbot',
+      'SemrushBot',
+      'AhrefsBot'
+    ];
+    
+    // Check user agent string
+    for (let signature of botSignatures) {
+      if (userAgent.toLowerCase().includes(signature.toLowerCase())) {
+        return true;
+      }
+    }
+    
+    // Check userAgentData brands (modern bot detection)
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.brands) {
+        const brands = navigator.userAgentData.brands;
+        for (let brand of brands) {
+          // Check for specific bot signatures in brand names
+          if (brand.brand === 'HeadlessChrome' || 
+              /^Not.?A_Brand$/i.test(brand.brand) || // Matches 'Not?A_Brand' and similar variations
+              brand.brand.toLowerCase().includes('bot')) {
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      // userAgentData API not supported or error accessing it
+      // Continue with other bot detection methods
+    }
+    
+    // Check for webdriver (automated browser indicator)
+    if (navigator.webdriver === true) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Only send analytics data if this is NOT bot traffic
+  if (!isBotTraffic()) {
+    analytics.page();
+  } else {
+    // Optional: Log for debugging (only in non-production environments)
+    if (window.location.hostname === 'localhost' || window.location.hostname.includes('dev')) {
+      console.log('Bot traffic detected, skipping Segment analytics');
+    }
+  }
+  }}();
+</script>
+
+<!-- Plausible and Reo continue unchanged -->
+<script defer data-domain="apidocs.zenml.io" src="https://plausible.io/js/plausible.js"></script>
+
+<!-- Start of Reo Javascript -->
+<script type="text/javascript">
+  !function(){var e,t,n;e="4d2a332d9b3113a",t=function(){Reo.init({clientID:"4d2a332d9b3113a"})},(n=document.createElement("script")).src="https://static.reo.dev/"+e+"/reo.js",n.defer=!0,n.onload=t,document.head.appendChild(n)}();
+</script>
+<!-- End of Reo Javascript -->
+
+{% endblock %}
