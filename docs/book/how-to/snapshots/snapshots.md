@@ -7,6 +7,10 @@ icon: print
 
 In ZenML, pipeline snapshots are pre-defined, parameterized configurations for your pipelines that can be easily run from various interfaces - including the Python SDK, CLI, ZenML dashboard, or REST API.
 
+{% hint style="info" %}
+Snapshots are the successor and replacement of ZenML run templates.
+{% endhint %}
+
 {% hint style="success" %}
 Running snapshots is a [ZenML Pro](https://zenml.io/pro)-only feature.
 {% endhint %}
@@ -85,7 +89,9 @@ You can create a snapshot using the ZenML CLI:
 
 ```bash
 # The <PIPELINE-SOURCE-PATH> will be `run.my_pipeline` if you defined a
-# pipeline with name `my_pipeline` in a file called `run.py`
+# pipeline with name `my_pipeline` in a file called `run.py`. This will be either relative
+# to your ZenML repository (that you created by running `zenml init`) or your current working
+# directory.
 zenml pipeline snapshot create <PIPELINE-SOURCE-PATH> --name=<SNAPSHOT-NAME>
 ```
 
