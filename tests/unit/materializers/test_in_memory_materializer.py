@@ -57,9 +57,8 @@ def test_in_memory_materializer_missing_data() -> None:
         uri="s3://missing/artifact", artifact_store=None
     )
 
-    # Mock runtime to return None for missing data
     def mock_get_data(uri):
-        return None
+        raise KeyError("No data available")
 
     import unittest.mock
 
