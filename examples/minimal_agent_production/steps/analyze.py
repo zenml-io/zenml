@@ -9,7 +9,10 @@ import time
 from collections import Counter
 from typing import Annotated, Dict, List, Optional, cast
 
-from models import DocumentAnalysis, DocumentRequest
+from models import (
+    DocumentAnalysis,
+    DocumentRequest,
+)
 from steps.utils import (
     clean_text_content,
     extract_meaningful_summary,

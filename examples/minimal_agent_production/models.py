@@ -5,9 +5,13 @@ pipeline for request/response handling, analysis results, and evaluation.
 """
 
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
+
+# Type definitions for constrained string values
+SentimentType = Literal["positive", "negative", "neutral"]
+ReadabilityType = Literal["easy", "medium", "hard"]
 
 
 class AnalysisResponse(BaseModel):
@@ -23,10 +27,10 @@ class AnalysisResponse(BaseModel):
     keywords: List[str] = Field(
         description="5 key keywords or phrases, focus on meaningful terms"
     )
-    sentiment: str = Field(
+    sentiment: SentimentType = Field(
         description="Overall sentiment: positive, negative, or neutral"
     )
-    readability: str = Field(
+    readability: ReadabilityType = Field(
         description="Readability assessment: easy, medium, or hard"
     )
 
@@ -76,7 +80,7 @@ class DocumentAnalysis(BaseModel):
     document: DocumentRequest
     summary: str
     keywords: List[str]
-    sentiment: str
+    sentiment: SentimentType
     word_count: int
     readability_score: float
     model: str
