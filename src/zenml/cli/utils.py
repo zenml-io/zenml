@@ -2383,7 +2383,7 @@ def get_deployment_status_emoji(
     if status == DeploymentStatus.ERROR:
         return ":x:"
     if status == DeploymentStatus.RUNNING:
-        return ":gear:"
+        return ":green_circle:"
     if status == DeploymentStatus.ABSENT:
         return ":stop_sign:"
 
@@ -2437,6 +2437,7 @@ def print_deployment_table(
         status = deployment.status or DeploymentStatus.UNKNOWN.value
         status_emoji = get_deployment_status_emoji(status)
         run_dict = {
+            "ID": deployment.id,
             "NAME": deployment.name,
             "PIPELINE": pipeline_name,
             "SNAPSHOT": deployment.snapshot.name or ""

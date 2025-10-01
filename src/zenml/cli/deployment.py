@@ -93,7 +93,7 @@ def list_deployments(**kwargs: Any) -> None:
         cli_utils.print_page_info(deployments)
 
 
-@deployment.command("describe")
+@deployment.command("describe", help="Describe a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
     "--show-secret",
@@ -151,7 +151,7 @@ def describe_deployment(
         )
 
 
-@deployment.command("provision")
+@deployment.command("provision", help="Provision a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
     "--snapshot",
@@ -253,7 +253,7 @@ def provision_deployment(
             cli_utils.pretty_print_deployment(deployment, show_secret=True)
 
 
-@deployment.command("deprovision")
+@deployment.command("deprovision", help="Deprovision a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=False)
 @click.option(
     "--all",
@@ -408,7 +408,7 @@ def deprovision_deployment(
                     cli_utils.error(error_message)
 
 
-@deployment.command("delete")
+@deployment.command("delete", help="Delete a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=False)
 @click.option(
     "--all",
@@ -564,7 +564,7 @@ def delete_deployment(
                     cli_utils.error(error_message)
 
 
-@deployment.command("refresh")
+@deployment.command("refresh", help="Refresh the status of a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=True)
 def refresh_deployment(
     deployment_name_or_id: str,
@@ -586,7 +586,9 @@ def refresh_deployment(
 
 
 @deployment.command(
-    "invoke", context_settings={"ignore_unknown_options": True}
+    "invoke",
+    context_settings={"ignore_unknown_options": True},
+    help="Invoke a deployment with arguments.",
 )
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
@@ -656,7 +658,7 @@ def invoke_deployment(
             )
 
 
-@deployment.command("logs")
+@deployment.command("logs", help="Get the logs of a deployment.")
 @click.argument("deployment_name_or_id", type=str, required=True)
 @click.option(
     "--follow",
@@ -694,8 +696,5 @@ def log_deployment(
     except KeyError as e:
         cli_utils.error(str(e))
     else:
-        with console.status(
-            f"Streaming logs for deployment '{deployment_name_or_id}'...\n"
-        ):
-            for log in logs:
-                print(log)
+        for log in logs:
+            print(log)

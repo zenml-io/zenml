@@ -21,14 +21,21 @@ import jsonref
 import requests
 
 from zenml.client import Client
+from zenml.config.step_configurations import Step
 from zenml.deployers.exceptions import (
     DeploymentHTTPError,
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
 from zenml.enums import DeploymentStatus
-from zenml.models import DeploymentResponse
+from zenml.models import (
+    CodeReferenceRequest,
+    DeploymentResponse,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+)
 from zenml.steps.step_context import get_step_context
+from zenml.utils import pydantic_utils
 from zenml.utils.json_utils import pydantic_encoder
 
 
@@ -274,3 +281,120 @@ def invoke_deployment(
         raise DeploymentHTTPError(
             f"Request failed for deployment {deployment_name_or_id}: {e}"
         )
+
+
+def deployment_snapshot_request_from_source_snapshot(
+    source_snapshot: PipelineSnapshotResponse,
+    deployment_parameters: Dict[str, Any],
+) -> PipelineSnapshotRequest:
+    """Generate a snapshot request for deployment execution.
+
+    Args:
+        source_snapshot: The source snapshot from which to create the
+            snapshot request.
+        deployment_parameters: Parameters to override for deployment execution.
+
+    Raises:
+        RuntimeError: If the source snapshot does not have an associated stack.
+
+    Returns:
+        The generated snapshot request.
+    """
+    if source_snapshot.stack is None:
+        raise RuntimeError("Missing source snapshot stack")
+
+    pipeline_configuration = pydantic_utils.update_model(
+        source_snapshot.pipeline_configuration, {"enable_cache": False}
+    )
+
+    steps = {}
+    for invocation_id, step in source_snapshot.step_configurations.items():
+        updated_step_parameters = step.config.parameters.copy()
+
+        for param_name in step.config.parameters:
+            if param_name in deployment_parameters:
+                updated_step_parameters[param_name] = deployment_parameters[
+                    param_name
+                ]
+
+        # Deployment-specific step overrides
+        step_update = {
+            "enable_cache": False,  # Disable caching for all steps
+            "step_operator": None,  # Remove step operators for deployments
+            "retry": None,  # Remove retry configuration
+            "parameters": updated_step_parameters,
+        }
+
+        step_config = pydantic_utils.update_model(
+            step.step_config_overrides, step_update
+        )
+        merged_step_config = step_config.apply_pipeline_configuration(
+            pipeline_configuration
+        )
+
+        steps[invocation_id] = Step(
+            spec=step.spec,
+            config=merged_step_config,
+            step_config_overrides=step_config,
+        )
+
+    code_reference_request = None
+    if source_snapshot.code_reference:
+        code_reference_request = CodeReferenceRequest(
+            commit=source_snapshot.code_reference.commit,
+            subdirectory=source_snapshot.code_reference.subdirectory,
+            code_repository=source_snapshot.code_reference.code_repository.id,
+        )
+
+    zenml_version = Client().zen_store.get_store_info().version
+
+    # Compute the source snapshot ID:
+    # - If the source snapshot has a name, we use it as the source snapshot.
+    #   That way, all runs will be associated with this snapshot.
+    # - If the source snapshot is based on another snapshot (which therefore
+    #   has a name), we use that one instead.
+    # - If the source snapshot does not have a name and is not based on another
+    #   snapshot, we don't set a source snapshot.
+    #
+    # With this, we ensure that all runs are associated with the closest named
+    # source snapshot.
+    source_snapshot_id = None
+    if source_snapshot.name:
+        source_snapshot_id = source_snapshot.id
+    elif source_snapshot.source_snapshot_id:
+        source_snapshot_id = source_snapshot.source_snapshot_id
+
+    updated_pipeline_spec = source_snapshot.pipeline_spec
+    if (
+        source_snapshot.pipeline_spec
+        and source_snapshot.pipeline_spec.parameters is not None
+    ):
+        original_params: Dict[str, Any] = dict(
+            source_snapshot.pipeline_spec.parameters
+        )
+        merged_params: Dict[str, Any] = original_params.copy()
+        for k, v in deployment_parameters.items():
+            if k in original_params:
+                merged_params[k] = v
+        updated_pipeline_spec = pydantic_utils.update_model(
+            source_snapshot.pipeline_spec, {"parameters": merged_params}
+        )
+
+    return PipelineSnapshotRequest(
+        project=source_snapshot.project_id,
+        run_name_template=source_snapshot.run_name_template,
+        pipeline_configuration=pipeline_configuration,
+        step_configurations=steps,
+        client_environment={},
+        client_version=zenml_version,
+        server_version=zenml_version,
+        stack=source_snapshot.stack.id,
+        pipeline=source_snapshot.pipeline.id,
+        schedule=None,
+        code_reference=code_reference_request,
+        code_path=source_snapshot.code_path,
+        build=source_snapshot.build.id if source_snapshot.build else None,
+        source_snapshot=source_snapshot_id,
+        pipeline_version_hash=source_snapshot.pipeline_version_hash,
+        pipeline_spec=updated_pipeline_spec,
+    )

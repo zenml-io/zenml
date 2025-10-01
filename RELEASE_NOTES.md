@@ -1,6 +1,6 @@
 <!-- markdown-link-check-disable -->
 
-# 0.90.0rc0
+# 0.90.0
 
 ## What's Changed
 * Add 0.85.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3951
@@ -40,10 +40,19 @@
 * Make pytest rerun count configurable in CI workflows and address `bandit` errors by @strickvl in https://github.com/zenml-io/zenml/pull/4001
 * Add filter option for runs linked to model version by @schustmi in https://github.com/zenml-io/zenml/pull/4003
 * Deployed pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/3920
+* Store visualizations for pydantic materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4014
+* Changes to the issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/3991
+* Release testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4020
+* Bug:4021 Unescape zenml[local] installation by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4022
+* Update outdated information in helm chart by @schustmi in https://github.com/zenml-io/zenml/pull/4018
+* Follow up fixes for deployments by @schustmi in https://github.com/zenml-io/zenml/pull/4013
+* Migrate unlisted pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4026
+* Fixing race conditions for tags by @bcdurak in https://github.com/zenml-io/zenml/pull/4002
 
+## New Contributors
+* @Json-Andriopoulos made their first contribution in https://github.com/zenml-io/zenml/pull/4022
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0rc0
-
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0
 
 # 0.85.0
 

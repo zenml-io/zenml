@@ -48,10 +48,10 @@ class _DeploymentState(BaseModel):
         self.active = False
         self.request_id = None
         self.snapshot_id = None
-        self.pipeline_parameters.clear()
-        self.outputs.clear()
+        self.pipeline_parameters = {}
+        self.outputs = {}
         self.skip_artifact_materialization = False
-        self.in_memory_data.clear()
+        self.in_memory_data = {}
 
 
 _deployment_context: contextvars.ContextVar[_DeploymentState] = (
@@ -166,5 +166,5 @@ def get_in_memory_data(uri: str) -> Any:
     """
     if is_active():
         state = _get_context()
-        return state.in_memory_data.get(uri)
+        return state.in_memory_data[uri]
     return None

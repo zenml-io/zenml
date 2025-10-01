@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from zenml.types import HookSpecification, InitHookSpecification
     from zenml.utils.tag_utils import Tag
 
-    F = TypeVar("F", bound=Callable[..., None])
+    F = TypeVar("F", bound=Callable[..., Any])
 
 logger = get_logger(__name__)
 
