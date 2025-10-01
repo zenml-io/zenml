@@ -1,40 +1,30 @@
 # Deploying agents with ZenML: Document Analysis Pipeline
 
-ZenML can be used to develop and deploy agents or LLM-powered workflows. This example use-case
-transforms any document into structured insights with AI-powered analysis - deployed as a production HTTP endpoint.
+This example shows how to build and deploy an **LLM‑powered document analysis** workflow as a **production HTTP endpoint** using ZenML. You’ll get structured insights (summary, keywords, sentiment, readability) from text‑like inputs, and an optional Streamlit UI to interact with the deployment.
 
-## 🎯 What You'll Build
+## 🎯 What You’ll Build
 
-This example shows how to create a document analysis system with ZenML. You'll deploy a pipeline that can:
+A deployed pipeline that:
 
-- **Analyze any document**: PDFs, markdown, plain text, or web content
-- **Extract structured insights**: Summaries, keywords, sentiment, and readability scores
-- **Scale automatically**: Handle multiple requests with built-in caching and error handling
-- **Monitor quality**: Built-in evaluation pipeline to track analysis performance over time
+- **Ingests text** from direct input, local files, or URLs (HTML is lightly cleaned)
+- **Extracts structured insights**: summary, top keywords, sentiment, readability
+- **Runs online or offline**: uses OpenAI if `OPENAI_API_KEY` is set, otherwise a rule‑based fallback
+- **Surfaces metrics**: word count, latency, token usage (when in LLM mode)
+- **Returns an HTML report** for the ZenML dashboard
 
-Every document analysis provides:
-
-1. **Smart Summarization**: 2-3 sentence summaries that capture the essence
-2. **Keyword Extraction**: Top 5 most relevant terms and phrases  
-3. **Sentiment Analysis**: Positive, negative, or neutral classification
-4. **Readability Scoring**: 0-1 scale assessment of text complexity
-5. **Processing Metrics**: Word count, processing time, and token usage
-
-The key insight in this example is that you can use the same pipeline principles that are used
-in "normal" batch pipelines written in ZenML, and deploy it as a real-time agentic endpoint.
-
-This avoids the complexity of having to create a bespoke FastAPI endpoint, and add all the monitoring
-overhead that results in productionalizing agents.
+> ℹ️ **Scope**: Out‑of‑the‑box input types are text/markdown/code and simple web pages. PDF parsing is **not** included by default.
 
 ## 🚀 Get Started
 
 ### Prerequisites
+
 ```bash
 pip install "zenml[server]"
-export OPENAI_API_KEY=sk-xxx  # Optional - works offline without it
-```
+export OPENAI_API_KEY=sk-xxx   # Optional: if absent, the pipeline falls back to a deterministic analyzer
+````
 
 ### Setup
+
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/minimal_agent_production
@@ -42,134 +32,127 @@ pip install -r requirements.txt
 zenml init
 ```
 
-### Phase 1: Deploy Your Analysis Pipeline
+### Phase 1: Deploy the Analysis Pipeline
 
-Deploy the document analysis pipeline as a REST API:
+Deploy the pipeline as a managed HTTP endpoint:
 
 ```bash
 zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer
 ```
 
-Get your endpoint URL:
+Find your endpoint URL:
+
 ```bash
 zenml deployment describe doc-analyzer
 ```
 
-### Phase 2: Analyze Your First Document
+### Phase 2: Analyze a Document
 
-**Quick test with CLI:**
+#### Use the ZenML CLI
+
 ```bash
 zenml deployment invoke doc-analyzer --json '{
-  "content": "Artificial Intelligence is transforming how we work. Machine learning models can now process vast amounts of data to extract meaningful insights, helping businesses make better decisions faster than ever before.",
+  "content": "Artificial Intelligence is transforming how we work...",
   "filename": "ai-overview.txt",
   "document_type": "text"
 }'
 ```
 
-**Result**: You'll get structured analysis with summary, keywords, sentiment, and readability scores!
+#### Call the HTTP endpoint directly
 
-### Phase 3: Use the Web Interface
+If you prefer `curl`/`requests`, send a JSON body with **parameters**:
 
-Launch the Streamlit frontend for easy document upload:
+```bash
+ENDPOINT=http://localhost:8000   # replace with your deployment URL
+curl -X POST "$ENDPOINT/invoke" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "content": "Your text here...",
+      "filename": "document.txt",
+      "document_type": "text"
+    }
+  }'
+```
+
+If your deployment requires auth, include:
+
+```bash
+-H "Authorization: Bearer <YOUR_KEY>"
+```
+
+### Phase 3: Use the Web Interface (optional)
+
+Launch the Streamlit frontend:
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
+Enter the endpoint URL (e.g., `http://localhost:8000`) and optionally an auth key.
+
 ## 🤖 How It Works
 
-The pipeline intelligently handles different input types:
+The pipeline orchestrates three steps:
 
 ```python
-@pipeline
-def document_analysis_pipeline(
-    content: Optional[str] = None,
-    url: Optional[str] = None, 
-    path: Optional[str] = None,
-    # ... other params
-):
-    document = ingest_document_step(content, url, path)  # Smart ingestion
-    analysis = analyze_document_step(document)          # AI analysis
-    report = render_analysis_report_step(analysis)      # Rich visualization
+@pipeline(settings={"docker": docker_settings}, enable_cache=False)
+def doc_analyzer(content=None, url=None, path=None, filename=None, document_type="text"):
+    document = ingest_document_step(content, url, path, filename, document_type)
+    analysis = analyze_document_step(document)          # OpenAI or deterministic fallback
+    render_analysis_report_step(analysis)               # HTML report for the dashboard
     return analysis
 ```
 
-**Smart fallbacks**: Uses OpenAI when available, gracefully falls back to rule-based analysis offline.
+* **LLM path**: When `OPENAI_API_KEY` is present, `analyze_document_step` calls OpenAI chat completions and parses a structured JSON response.
+* **Fallback path**: A rule‑based analyzer produces a summary, keywords, and readability without external calls.
 
-## 🏗️ Multiple Ways to Analyze
+## 🔧 Production Notes
 
-### Direct Content
-Perfect for real-time text processing:
-```bash
-zenml deployment invoke doc-analyzer --json '{
-  "content": "Your document text here...",
-  "document_type": "text"
-}'
-```
-
-### URL Analysis
-Great for processing web content:
-```bash
-zenml deployment invoke doc-analyzer --json '{
-  "url": "https://example.com/article.html",
-  "document_type": "article"
-}'
-```
-
-### File Path Processing
-Ideal for batch processing stored documents:
-```bash
-zenml deployment invoke doc-analyzer --json '{
-  "path": "documents/report.md",
-  "document_type": "markdown"
-}'
-```
-
-
-## 🔧 Production Configuration
-
-For production deployments, create a config file:
+You can pass a minimal deployment config:
 
 ```yaml
 # production.yaml
 settings:
   docker:
     requirements: requirements.txt
-    python_package_installer: uv
-  resources:
-    memory: "2GB"
-    cpu_count: 2
-    min_replicas: 1
-    max_replicas: 5
-    max_concurrency: 10
+    parent_image: zenmldocker/zenml:0.85.0-py3.12
   deployer:
     generate_auth_key: true
 ```
 
-Deploy with production settings:
+Deploy with:
+
 ```bash
-zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer \
-  --config production.yaml
+zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config production.yaml
 ```
+
+> Scaling & concurrency options vary by orchestrator/deployment target; consult the ZenML deployment docs for the knobs supported in your environment.
 
 ## 📁 Project Structure
 
 ```
 examples/minimal_agent_production/
 ├── pipelines/
-│   └── doc_analyzer.py          # Main document analysis pipeline
+│   └── doc_analyzer.py          # Pipeline definition and Docker settings
 ├── steps/
-│   ├── analyze.py               # AI analysis with smart fallbacks
-│   ├── ingest.py                # Multi-source document ingestion
-│   ├── render.py                # Rich HTML report generation
-│   └── utils.py                 # Text processing utilities
-├── models.py                    # Pydantic data models
-└── streamlit_app.py             # Web interface
+│   ├── analyze.py               # LLM analysis + deterministic fallback
+│   ├── ingest.py                # Text/URL/path ingestion
+│   ├── render.py                # HTML report renderer
+│   ├── utils.py                 # Text cleaning & heuristics
+│   └── templates/
+│       ├── report.css           # Report styling
+│       └── report.html          # Report template
+├── constants.py                  # Tunables & UI constants
+├── models.py                     # Pydantic models for I/O
+├── prompts.py                    # LLM prompt builder
+├── requirements.txt              # Extra deps (OpenAI, Streamlit)
+└── streamlit_app.py              # Optional web UI client
 ```
 
 ## 🎯 The Big Picture
 
-This demonstrates ZenML's power for **production AI systems**. Deploy once, scale automatically, monitor continuously - all while maintaining full reproducibility and evaluation capabilities.
+This is the same **steps → pipeline → artifacts** pattern you use for classic ML, now applied to an LLM workflow. You get deployable endpoints, reproducibility, and dashboard artifacts without building a bespoke web service.
 
 ---
 
