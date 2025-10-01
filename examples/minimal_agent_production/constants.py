@@ -14,9 +14,7 @@ import os
 # -----------------------------------------------------------------------------
 # Allowed environment-based overrides (only these read from env)
 # -----------------------------------------------------------------------------
-DOC_ANALYSIS_LLM_MODEL: str = os.getenv(
-    "DOC_ANALYSIS_LLM_MODEL", "gpt-4o-mini"
-)
+DOC_ANALYSIS_LLM_MODEL: str = os.getenv("DOC_ANALYSIS_LLM_MODEL", "gpt-5-mini")
 DOCUMENT_ANALYSIS_ENDPOINT: str = os.getenv(
     "DOCUMENT_ANALYSIS_ENDPOINT", "http://localhost:8000"
 )

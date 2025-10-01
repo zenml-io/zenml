@@ -43,7 +43,7 @@ def perform_llm_analysis(
     Args:
         content: Document content to analyze
         filename: Document filename for context
-        model: OpenAI model to use (default: gpt-4o-mini)
+        model: OpenAI model to use (default: gpt-5-mini)
         metadata: Optional metadata for request tracking
 
     Returns:
