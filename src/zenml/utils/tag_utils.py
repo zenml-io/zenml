@@ -904,7 +904,7 @@ def remove_tags(
     for tag_name in tags:
         try:
             # Get the tag
-            tag = client.get_tag(tag_name)
+            tag = client.get_tag(tag_name, allow_name_prefix_match=False)
 
             # Detach tag from resources
             client.detach_tag(

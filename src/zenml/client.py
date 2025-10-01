@@ -8490,7 +8490,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
         """
-        tag = self.get_tag(tag_name_or_id)
+        tag = self.get_tag(tag_name_or_id, allow_name_prefix_match=False)
         self.zen_store.delete_tag(tag_id=tag.id)
 
     def update_tag(
@@ -8529,7 +8529,7 @@ class Client(metaclass=ClientMetaClass):
             else:
                 update_model.color = color
 
-        tag = self.get_tag(tag_name_or_id)
+        tag = self.get_tag(tag_name_or_id, allow_name_prefix_match=False)
 
         return self.zen_store.update_tag(
             tag_id=tag.id,
@@ -8539,42 +8539,27 @@ class Client(metaclass=ClientMetaClass):
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-
-        Raises:
-            KeyError: If the tag is not found.
 
         Returns:
             The tag of interest.
         """
-        if is_valid_uuid(tag_name_or_id):
-            return self.zen_store.get_tag(
-                tag_id=UUID(str(tag_name_or_id)),
-                hydrate=hydrate,
-            )
-        else:
-            tags = self.zen_store.list_tags(
-                tag_filter_model=TagFilter(
-                    name=f"equals:{tag_name_or_id}",
-                ),
-                hydrate=hydrate,
-            )
-            if len(tags) == 0:
-                raise KeyError(f"Tag with name: {tag_name_or_id} not found")
-
-            if len(tags) > 1:
-                raise KeyError(
-                    f"Multiple tags found with name: {tag_name_or_id}"
-                )
-
-            return tags[0]
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_tag,
+            list_method=self.list_tags,
+            name_id_or_prefix=tag_name_or_id,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+        )
 
     def list_tags(
         self,
@@ -8656,7 +8641,9 @@ class Client(metaclass=ClientMetaClass):
         try:
             tag_model = self.create_tag(**tag_request.model_dump())
         except EntityExistsError:
-            tag_model = self.get_tag(tag_name_or_id=tag_request.name)
+            tag_model = self.get_tag(
+                tag_name_or_id=tag_request.name, allow_name_prefix_match=False
+            )
 
         if isinstance(tag, tag_utils.Tag):
             if bool(tag.exclusive) != tag_model.exclusive:
@@ -8693,7 +8680,9 @@ class Client(metaclass=ClientMetaClass):
             tag_name_or_id: name or id of the tag to be detached.
             resources: the resources to detach the tag from.
         """
-        tag_model = self.get_tag(tag_name_or_id)
+        tag_model = self.get_tag(
+            tag_name_or_id=tag_name_or_id, allow_name_prefix_match=False
+        )
 
         self.zen_store.batch_delete_tag_resource(
             tag_resources=[
