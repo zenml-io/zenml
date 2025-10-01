@@ -24,43 +24,27 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Import prompt templates and builders in a way that works both when running
+# from the quickstart directory (local script) and from the repo root (orchestrated).
+try:
+    from prompts import (
+        TEMPLATE_RESPONSES,
+        build_intent_classification_prompt,
+        build_response_prompt,
+    )
+except (
+    Exception
+):  # Fallback when importing via implicit namespace packages from repo root
+    from examples.quickstart.prompts import (
+        TEMPLATE_RESPONSES,
+        build_intent_classification_prompt,
+        build_response_prompt,
+    )
+
 # Constants
 DEFAULT_MODEL = "gpt-3.5-turbo"
 INTENT_TEMPERATURE = 0.1
 RESPONSE_TEMPERATURE = 0.7
-
-# Prompts
-INTENT_CLASSIFICATION_PROMPT = """You are a banking support intent classifier. Classify this customer message into one of these intents:
-- card_lost: Customer lost their card or needs replacement
-- payments: Questions about payments, bills, due dates
-- account_balance: Balance inquiries
-- dispute: Transaction disputes or fraud claims
-- credit_limit: Credit limit increase requests
-- general: Greetings, general help, unclear requests
-
-Customer message: "{text}"
-
-Respond with just the intent name (e.g., "card_lost") and a confidence score 0-1. Format: intent_name,confidence"""
-
-# Intent contexts for response generation
-INTENT_CONTEXTS = {
-    "card_lost": "The customer has lost their card and needs help with replacement. Provide clear, step-by-step instructions including freezing the card, reporting it, and getting a replacement.",
-    "payments": "The customer needs help with payments. Provide information about payment methods, due dates, and how to set up automatic payments.",
-    "account_balance": "The customer wants to check their account balance. Explain the different ways they can check their balance.",
-    "dispute": "The customer wants to dispute a transaction. Explain the dispute process and timeline.",
-    "credit_limit": "The customer wants to increase their credit limit. Explain how to request an increase.",
-    "general": "Provide general banking assistance and ask what specific help they need.",
-}
-
-# Template responses for fallback
-TEMPLATE_RESPONSES = {
-    "card_lost": "I understand you've lost your card. Here are the immediate steps: 1) Log into your account to freeze the card, 2) Call our 24/7 hotline at 1-800-SUPPORT, 3) Order a replacement card through the app. Your new card will arrive in 3-5 business days.",
-    "payments": "For payment assistance: You can make payments through our mobile app, website, or by calling 1-800-PAY-BILL. Automatic payments can be set up in your account settings. Your next payment due date is visible in the app dashboard.",
-    "account_balance": "To check your current balance: 1) Log into the mobile app or website, 2) Call our automated balance line at 1-800-BALANCE, 3) Text 'BAL' to 12345. Your balance will be displayed immediately.",
-    "dispute": "To dispute a charge: 1) Log into your account and find the transaction, 2) Click 'Dispute this charge', 3) Provide details about why you're disputing it. We'll investigate within 2-3 business days and provide temporary credit if applicable.",
-    "credit_limit": "For credit limit increases: You can request an increase through your online account under 'Account Services' or call 1-800-CREDIT. We'll review your account and provide a decision within 24 hours.",
-    "general": "I'm here to help with your banking needs. I can assist with card issues, payments, account balances, disputes, and credit limit requests. What specific question can I help you with today?",
-}
 
 # LLM Integration
 try:
@@ -145,7 +129,7 @@ def call_llm_for_intent(text: str) -> Dict[str, Any]:
     try:
         client = OpenAI(api_key=api_key)
 
-        prompt = INTENT_CLASSIFICATION_PROMPT.format(text=text)
+        prompt = build_intent_classification_prompt(text)
 
         response = client.chat.completions.create(
             model=DEFAULT_MODEL,
@@ -231,21 +215,7 @@ def generate_llm_response(original_text: str, intent: str) -> str:
     try:
         client = OpenAI(api_key=api_key)
 
-        # Get context for the intent
-        context = INTENT_CONTEXTS.get(intent, INTENT_CONTEXTS["general"])
-
-        prompt = f"""You are a helpful banking support agent. The customer said: "{original_text}"
-
-Context: {context}
-
-Generate a helpful, professional response that:
-1. Acknowledges their specific request
-2. Provides clear, actionable steps
-3. Is warm but professional
-4. Includes relevant contact information or next steps
-5. Keep it concise (2-3 sentences max)
-
-Response:"""
+        prompt = build_response_prompt(original_text, intent)
 
         response = client.chat.completions.create(
             model=DEFAULT_MODEL,
