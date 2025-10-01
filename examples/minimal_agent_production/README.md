@@ -109,24 +109,31 @@ def doc_analyzer(content=None, url=None, path=None, filename=None, document_type
 
 ## 🔧 Production Notes
 
-You can pass a minimal deployment config:
+The pipeline comes pre-configured with Docker settings in `pipelines/doc_analyzer.py`:
+
+```python
+docker_settings = DockerSettings(
+    requirements="requirements.txt",
+    environment={"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
+)
+```
+
+These settings are automatically applied when you deploy. If you need to override settings or add deployer-specific options (like authentication), create a YAML config file:
 
 ```yaml
-# production.yaml
+# my_config.yaml (optional)
 settings:
-  docker:
-    requirements: requirements.txt
   deployer:
     generate_auth_key: true
 ```
 
-Deploy with:
+Then deploy with:
 
 ```bash
-zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config production.yaml
+zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config my_config.yaml
 ```
 
-> Scaling & concurrency options vary by orchestrator/deployment target; consult the ZenML deployment docs for the knobs supported in your environment.
+> Scaling & concurrency options vary by orchestrator/deployment target; consult the ZenML deployment docs for deployment configuration options.
 
 ## 📁 Project Structure
 
