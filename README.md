@@ -61,8 +61,8 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 <div align="center">
   <a href="https://zenml.io">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/airbus.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
-      <img src="https://img.logo.dev/airbus.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png" alt="Airbus" height="50">
+      <source media="(prefers-color-scheme: dark)" srcset="https://upload.wikimedia.org/wikipedia/commons/f/fd/Airbus_logo_2017.png">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Airbus_Logo_2017.svg" alt="Airbus" height="50">
     </picture>
   </a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://zenml.io">
@@ -73,8 +73,8 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
   </a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://zenml.io">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg">
-      <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains-variant-4.svg" alt="JetBrains" height="50">
+      <source media="(prefers-color-scheme: dark)" srcset="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.png">
+      <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains-variant-2.png" alt="JetBrains" height="50">
     </picture>
   </a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://zenml.io">
@@ -99,8 +99,8 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 <div align="center">
   <a href="https://zenml.io">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://img.logo.dev/leroymerlin.com?token=pk_X91k1h7YSd-C4ZQGeDh0yw&format=png&filter=light">
-      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/65ddeac9b6199bfeb57b7223_adeo_logo-min.png" alt="ADEO" height="50">
+      <source media="(prefers-color-scheme: dark)" srcset="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/67e673a3232ace885101ad41_bundeswehr.svg">
+      <img src="https://cdn.prod.website-files.com/64a817a2e7e2208272d1ce30/67e673a3232ace885101ad41_bundeswehr.svg" alt="Bundeswehr" height="50">
     </picture>
   </a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://zenml.io">
