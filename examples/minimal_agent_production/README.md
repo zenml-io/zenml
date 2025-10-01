@@ -162,11 +162,9 @@ examples/minimal_agent_production/
 │   ├── analyze.py               # AI analysis with smart fallbacks
 │   ├── ingest.py                # Multi-source document ingestion
 │   ├── render.py                # Rich HTML report generation
-│   ├── evaluate.py              # Quality scoring and metrics
 │   └── utils.py                 # Text processing utilities
 ├── models.py                    # Pydantic data models
-├── streamlit_app.py             # Web interface
-└── run_evaluation.py            # Quality assessment CLI
+└── streamlit_app.py             # Web interface
 ```
 
 ## 🎯 The Big Picture
