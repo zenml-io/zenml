@@ -32,7 +32,6 @@ ZenML provides deployer implementations for different deployment environments:
 | [Docker](docker.md)                | `docker`   | Built-in      | Deploys pipelines as locally running Docker containers                                |
 | [GCP Cloud Run](gcp-cloud-run.md)            | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
 | [AWS App Runner](aws-app-runner.md)           | `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |
-| [Custom Implementation](custom.md) | _custom_  |               | Extend the Deployer abstraction and provide your own implementation         |
 
 If you would like to see the available flavors of deployers, you can use the command:
 
@@ -291,6 +290,3 @@ print(response)
 #### Specifying deployment resources
 
 If your steps require additional hardware resources, you can specify them on your steps as described [here](https://docs.zenml.io/user-guides/tutorial/distributed-training/).
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

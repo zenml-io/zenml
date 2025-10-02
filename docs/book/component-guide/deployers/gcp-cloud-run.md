@@ -7,7 +7,7 @@ description: Deploying your pipelines to GCP Cloud Run.
 [GCP Cloud Run](https://cloud.google.com/run) is a fully managed serverless platform that allows you to deploy and run your code in a production-ready, repeatable cloud environment without the need to manage any infrastructure. The GCP Cloud Run deployer is a [deployer](./) flavor included in the ZenML GCP integration that deploys your pipelines to GCP Cloud Run.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML installation](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML setup may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -21,7 +21,6 @@ You should use the GCP Cloud Run deployer if:
 * you need to deploy containerized applications with minimal configuration.
 
 ## How to deploy it
-
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already, including a GCP Cloud Run deployer? Check out [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component and everything else needed by it.
@@ -46,14 +45,12 @@ To use the GCP Cloud Run deployer, you need:
 * [GCP credentials with proper permissions](gcp-cloud-run.md#gcp-credentials-and-permissions)
 * The GCP project ID and location in which you want to deploy your pipelines.
 
-
 ### GCP credentials and permissions
 
 You have two different options to provide credentials to the GCP Cloud Run deployer:
 
 * use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) to authenticate locally with GCP
 * (recommended) configure [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) with GCP credentials and then link the GCP Cloud Run deployer stack component to the Service Connector.
-
 
 #### GCP Permissions
 
@@ -74,7 +71,6 @@ This is the easiest way to configure the GCP Cloud Run deployer, but it has the 
 
 * the setup is not portable on other machines and reproducible by other users (i.e. other users won't be able to use the Deployer to deploy pipelines or manage your Deployments, although they would still be able to access their exposed endpoints and send HTTP requests).
 * it uses the Compute Engine default service account, which is not recommended, given that it has a lot of permissions by default and is used by many other GCP services.
-
 
 The deployer can be registered as follows:
 
@@ -102,7 +98,6 @@ zenml deployer register <DEPLOYER_NAME> \
     --connector <CONNECTOR_NAME>
 ```
 
-
 ### Configuring the stack
 
 With the deployer registered, it can be used in the active stack:
@@ -116,7 +111,7 @@ zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as a Cloud Run service. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now deploy any ZenML pipeline using the GCP Cloud Run deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the GCP Cloud Run deployer:
 
 ```shell
 zenml pipeline deploy my_module.my_pipeline
@@ -157,11 +152,9 @@ For example, if you wanted to disable the use of GCP Secret Manager for the depl
 from zenml import step, pipeline
 from zenml.integrations.gcp.flavors.gcp_deployer_flavor import GCPDeployerSettings
 
-
 @step
 def greet(name: str) -> str:
     return f"Hello {name}!"
-
 
 settings = {
     "deployer": GCPDeployerSettings(
@@ -205,7 +198,7 @@ If resource settings are not set, the default values are as follows:
 * `max_concurrency` is `80`
 
 {% hint style="warning" %}
-GCP Cloud Run defines specific rules concerning allowed combinations of CPU and memory values:
+GCP Cloud Run defines specific rules concerning allowed combinations of CPU and memory values. The following rules apply (as of October 2025):
 
 * CPU constraints:
   * fractional CPUs: 0.08 to < 1.0 (in increments of 0.01)
@@ -226,6 +219,3 @@ Specifying `cpu_count` and `memory` values that are not valid according to these
 * `cpu_count=1.5` and `memory` not specified will be adjusted to `cpu_count=2` and `memory="128MiB"`
 * `cpu_count=6` and `memory="1GB"` will be adjusted to `cpu_count=6` and `memory="4GiB"`
 {% endhint %}
-
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

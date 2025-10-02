@@ -7,7 +7,7 @@ description: Deploying your pipelines to AWS App Runner.
 [AWS App Runner](https://aws.amazon.com/apprunner/) is a fully managed serverless platform that allows you to deploy and run your code in a production-ready, repeatable cloud environment without the need to manage any infrastructure. The AWS App Runner deployer is a [deployer](./) flavor included in the ZenML AWS integration that deploys your pipelines to AWS App Runner.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML installation](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML setup may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -27,12 +27,12 @@ Would you like to skip ahead and deploy a full ZenML cloud stack already, includ
 {% endhint %}
 
 {% hint style="warning" %}
-App Runner is available only in specific regions: https://docs.aws.amazon.com/apprunner/latest/dg/regions.html
+App Runner is available only in [specific AWS regions](https://docs.aws.amazon.com/general/latest/gr/apprunner.html#apprunner_region).
 {% endhint %}
 
 In order to use an AWS App Runner deployer, you need to first deploy [ZenML to the cloud](https://docs.zenml.io/getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same AWS account and region as where the AWS App Runner infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
-The AWS App Runner deployer requires that you have the necessary IAM permissions to create and manage App Runner services, and optionally access to AWS Secrets Manager and CloudWatch Logs for enhanced functionality.
+The AWS App Runner deployer requires that you have [the necessary IAM permissions](aws-app-runner.md#aws-credentials-and-permissions) to create and manage App Runner services, and optionally access to AWS Secrets Manager and CloudWatch Logs for enhanced functionality.
 
 ## How to use it
 
@@ -47,10 +47,9 @@ To use the AWS App Runner deployer, you need:
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack (**NOTE**:must be Amazon ECR or ECR Public).
 * [AWS credentials with proper permissions](aws-app-runner.md#aws-credentials-and-permissions) to create and manage the App Runner services themselves.
-* When using a private ECR container registry, an IAM role with specific ECR permissions should also be created and configured as [the App Runner access role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have ECR access permissions.
-* If opting the AWS Secrets Manager to store sensitive information (enabled by default), an IAM role with specific Secrets Manager permissions should also be created and configured as [the App Runner instance role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have Secrets Manager access permissions.
+* When using a private ECR container registry, an IAM role with specific ECR permissions should also be created and configured as [the App Runner access role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](aws-app-runner.md#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have ECR access permissions.
+* If opting to store sensitive information in the AWS Secrets Manager (enabled by default), an IAM role with specific Secrets Manager permissions should also be created and configured as [the App Runner instance role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](aws-app-runner.md#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have Secrets Manager access permissions.
 * The AWS region in which you want to deploy your pipelines.
-
 
 ### AWS credentials and permissions
 
@@ -73,7 +72,7 @@ Depending on how you configure the AWS App Runner deployer, there can be at most
         * `secretsmanager:PutSecretValue`
         * `secretsmanager:TagResource`
 
-    These permissions should additionally be restricted to only allow access to secrets with a name starting with `zenml-` in the target region and account. Note that this prefix is also configurable and can be changed by setting the `secret_name_prefix` setting.
+        These permissions should additionally be restricted to only allow access to secrets with a name starting with `zenml-` in the target region and account. Note that this prefix is also configurable and can be changed by setting the `secret_name_prefix` setting.
 
     * CloudWatch Logs permissions (for log retrieval):
         * `logs:DescribeLogGroups`
@@ -94,7 +93,6 @@ This is the easiest way to configure the AWS App Runner deployer, but it has the
 
 * the setup is not portable on other machines and reproducible by other users (i.e. other users won't be able to use the Deployer to deploy pipelines or manage your Deployments, although they would still be able to access their exposed endpoints and send HTTP requests).
 * it uses your personal AWS credentials, which may have broader permissions than necessary for the deployer.
-
 
 The deployer can be registered as follows:
 
@@ -124,7 +122,6 @@ zenml deployer register <DEPLOYER_NAME> \
     --connector <CONNECTOR_NAME>
 ```
 
-
 ### Configuring the stack
 
 With the deployer registered, it can be used in the active stack:
@@ -138,7 +135,7 @@ zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as an App Runner service. The container registry must be Amazon ECR (private) or ECR Public. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now deploy any ZenML pipeline using the AWS App Runner deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the AWS App Runner deployer:
 
 ```shell
 zenml pipeline deploy my_module.my_pipeline
@@ -186,11 +183,9 @@ For example, if you wanted to disable the use of AWS Secrets Manager for the dep
 from zenml import step, pipeline
 from zenml.integrations.aws.flavors.aws_deployer_flavor import AWSDeployerSettings
 
-
 @step
 def greet(name: str) -> str:
     return f"Hello {name}!"
-
 
 settings = {
     "deployer": AWSDeployerSettings(
@@ -229,7 +224,7 @@ def greet_pipeline(name: str = "John"):
 {% hint style="warning" %}
 AWS App Runner defines specific rules concerning allowed combinations of CPU (vCPU) and memory (GB) values. For more information, see the [AWS App Runner documentation](https://docs.aws.amazon.com/apprunner/latest/dg/architecture.html#architecture.vcpu-memory).
 
-Supported combinations include:
+Supported combinations (as of October 2025) include:
 - 0.25 vCPU: 0.5 GB, 1 GB
 - 0.5 vCPU: 1 GB
 - 1 vCPU: 2 GB, 3 GB, 4 GB
@@ -238,6 +233,3 @@ Supported combinations include:
 
 By default, specifying `cpu_count` and `memory` values that are not valid according to these rules will **not** result in an error when deploying the pipeline. Instead, the values will be automatically adjusted to the nearest matching valid combination using an algorithm that prioritizes CPU requirements over memory requirements and aims to minimize waste. You can enable `strict_resource_matching=True` in the deployer settings to enforce exact matches and raise an error if no valid combination is found. You can also override and configure your own allowed resource combinations in the deployer's configuration via the `resource_combinations` option.
 {% endhint %}
-
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

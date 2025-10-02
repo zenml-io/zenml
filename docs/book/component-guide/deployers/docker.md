@@ -12,6 +12,7 @@ You should use the Docker deployer if:
 
 * you need a quick and easy way to deploy your pipelines locally.
 * you want to debug issues that happen when deploying your pipeline in Docker containers without waiting and paying for remote infrastructure.
+* you need an easy way to test out how pipeline deployments work
 
 ## How to deploy it
 
@@ -78,5 +79,3 @@ settings = {
 def greet_pipeline(name: str = "John"):
     greet(name=name)
 ```
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
