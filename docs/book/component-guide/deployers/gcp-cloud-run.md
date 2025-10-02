@@ -17,6 +17,8 @@ You should use the GCP Cloud Run deployer if:
 * you're already using GCP.
 * you're looking for a proven production-grade deployer.
 * you're looking for a serverless solution for deploying your pipelines as HTTP micro-services.
+* you want automatic scaling with pay-per-use pricing.
+* you need to deploy containerized applications with minimal configuration.
 
 ## How to deploy it
 
@@ -31,7 +33,7 @@ The only other thing necessary to use the ZenML GCP Cloud Run deployer is enabli
 
 ## How to use it
 
-To use the GCP Cloud Run deployer, we need:
+To use the GCP Cloud Run deployer, you need:
 
 *   The ZenML `gcp` integration installed. If you haven't done so, run
 
@@ -59,10 +61,10 @@ Regardless of the authentication method used, the credentials used with the GCP 
 
 * the `roles/run.admin` role - for managing Cloud Run services
 * the following permissions to manage GCP secrets are required only if the Deployer is configured to use secrets to pass sensitive information to the Cloud Run services instead of regular environment variables (i.e. if the `use_secret_manager` setting is set to `True`):
-  * the unconditional `secretmanager.secrets.create` permission is required to create new secrets in the target GCP project.
-  * the `roles/secretmanager.admin` role restricted to only manage secrets with a name prefix of `zenml-`. Note that this prefix is also configurable and can be changed by setting the `secret_name_prefix` setting.
+    * the unconditional `secretmanager.secrets.create` permission is required to create new secrets in the target GCP project.
+    * the `roles/secretmanager.admin` role restricted to only manage secrets with a name prefix of `zenml-`. Note that this prefix is also configurable and can be changed by setting the `secret_name_prefix` setting.
 
-  As a simpler alternative, the `roles/secretmanager.admin` role can be granted at the project level with no condition applied.
+    As a simpler alternative, the `roles/secretmanager.admin` role can be granted at the project level with no condition applied.
 
 #### Configuration use-case: local `gcloud` CLI with user account
 
@@ -195,10 +197,34 @@ def greet_pipeline(name: str = "John"):
     greet(name=name)
 ```
 
-{% hint style="warning" %}
-GCP Cloud Run defines specific rules concerning allowed combinations of CPU and memory values. For more information, see the [GCP Cloud Run documentation](https://cloud.google.com/run/docs/configuring/services/cpu).
+If resource settings are not set, the default values are as follows:
+* `cpu_count` is `1`
+* `memory` is `2GiB`
+* `min_replicas` is `1`
+* `max_replicas` is `100`
+* `max_concurrency` is `80`
 
-Specifying `cpu_count` and `memory` values that are not valid according to these rules will **not** result in an error when deploying the pipeline. Instead, the values will be automatically adjusted to the nearest matching valid values that satisfy the rules.
+{% hint style="warning" %}
+GCP Cloud Run defines specific rules concerning allowed combinations of CPU and memory values:
+
+* CPU constraints:
+  * fractional CPUs: 0.08 to < 1.0 (in increments of 0.01)
+  * integer CPUs: 1, 2, 4, 6, or 8 (no fractional values allowed >= 1.0)
+
+* minimum memory requirements per CPU configuration:
+  * <=1 CPU: 128 MiB minimum
+  * 2 CPU: 128 MiB minimum
+  * 4 CPU: 2 GiB minimum
+  * 6 CPU: 4 GiB minimum
+  * 8 CPU: 4 GiB minimum
+
+For more information, see the [GCP Cloud Run documentation](https://cloud.google.com/run/docs/configuring/services/cpu).
+
+Specifying `cpu_count` and `memory` values that are not valid according to these rules will **not** result in an error when deploying the pipeline. Instead, the values will be automatically adjusted to the nearest matching valid values that satisfy the rules. Some examples:
+
+* `cpu_count=0.25` and `memory="100MiB"` will be adjusted to `cpu_count=0.25` and `memory="128MiB"`
+* `cpu_count=1.5` and `memory` not specified will be adjusted to `cpu_count=2` and `memory="128MiB"`
+* `cpu_count=6` and `memory="1GB"` will be adjusted to `cpu_count=6` and `memory="4GiB"`
 {% endhint %}
 
 
