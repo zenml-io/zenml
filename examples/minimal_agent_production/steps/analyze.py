@@ -9,7 +9,20 @@ import time
 from collections import Counter
 from typing import Annotated, Dict, List, Optional, cast
 
-from models import AnalysisResponse, DocumentAnalysis, DocumentRequest
+from constants import (
+    CONTENT_PREVIEW_CHARS,
+    DOC_ANALYSIS_LLM_MODEL,
+    KEYWORD_COUNT,
+    LLM_MAX_TOKENS,
+    LLM_TEMPERATURE,
+    MODEL_LABEL_FMT,
+    READABILITY_SCORE_MAP,
+)
+from models import (
+    DocumentAnalysis,
+    DocumentRequest,
+)
+from prompts import SYSTEM_PROMPT, build_analysis_prompt
 from steps.utils import (
     clean_text_content,
     extract_meaningful_summary,
@@ -17,24 +30,20 @@ from steps.utils import (
 )
 
 from zenml import step
-from zenml.logger import get_logger
-
-# Get ZenML logger for consistent logging
-logger = get_logger(__name__)
 
 
 def perform_llm_analysis(
     content: str,
     filename: str,
-    model: str = "gpt-4o-mini",
+    model: str = DOC_ANALYSIS_LLM_MODEL,
     metadata: Optional[Dict[str, str]] = None,
 ) -> Dict[str, object]:
-    """Perform document analysis using LLM services.
+    """Perform document analysis using OpenAI API.
 
     Args:
         content: Document content to analyze
         filename: Document filename for context
-        model: LLM model to use (default: gpt-4o-mini)
+        model: OpenAI model to use (default: gpt-5-mini)
         metadata: Optional metadata for request tracking
 
     Returns:
@@ -48,102 +57,111 @@ def perform_llm_analysis(
         - latency_ms: Processing time in milliseconds
 
     Raises:
-        ImportError: If litellm is not available
+        ImportError: If openai is not available
     """
-    logger.info(f"Starting LLM analysis for document: {filename}")
-
     try:
-        # Lazy imports to avoid hard dependency when offline
-        import instructor
-        from litellm import completion
+        # Lazy import to avoid hard dependency when offline
+        import json
 
-        # Clean content for better LLM analysis
+        from openai import OpenAI
+
+        # Clean content for better LLM analysis and truncate preview
         cleaned_content = clean_text_content(content)
-        content_preview = cleaned_content[:2000]
+        content_preview = cleaned_content[:CONTENT_PREVIEW_CHARS]
 
-        # Construct analysis prompt
-        prompt = f"""Analyze this document and provide structured analysis.
-
-Document: {filename}
-Content: {content_preview}
-
-Provide a concise summary, relevant keywords, sentiment analysis, and readability assessment."""
-
-        logger.debug(
-            f"Sending request to {model} with {len(prompt)} character prompt"
+        # Build analysis prompt
+        prompt = build_analysis_prompt(
+            filename=filename, content_preview=content_preview
         )
+
         start_time = time.time()
 
-        # Create instructor client with litellm
-        client = instructor.from_litellm(completion)
+        # Create OpenAI client
+        client = OpenAI()
 
-        # Call LLM service with structured output
+        # Call OpenAI API
         response = client.chat.completions.create(
             model=model,
-            response_model=AnalysisResponse,
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a document analysis assistant. Provide structured analysis as requested.",
+                    "content": SYSTEM_PROMPT,
                 },
                 {
                     "role": "user",
                     "content": prompt,
                 },
             ],
-            max_tokens=300,
-            metadata=metadata or {},
+            max_tokens=LLM_MAX_TOKENS,
+            temperature=LLM_TEMPERATURE,  # Low temperature for consistent output
         )
 
         end_time = time.time()
         latency_ms = int((end_time - start_time) * 1000)
 
-        # Extract structured response
-        analysis_response = response
+        # Parse JSON response
+        response_text = response.choices[0].message.content
+        if response_text is None:
+            response_text = ""
+        try:
+            analysis_response = json.loads(response_text)
+        except json.JSONDecodeError:
+            # Fallback if JSON parsing fails
+            analysis_response = {
+                "summary": "Document analysis completed",
+                "keywords": [
+                    "document",
+                    "analysis",
+                    "text",
+                    "content",
+                    "review",
+                ],
+                "sentiment": "neutral",
+                "readability": "medium",
+            }
 
-        # Ensure we have 5 keywords
-        keywords = analysis_response.keywords[
-            :5
-        ]  # Take first 5 if more provided
-        while len(keywords) < 5:
+        # Ensure we have the desired number of keywords
+        keywords = analysis_response.get("keywords", [])[:KEYWORD_COUNT]
+        while len(keywords) < KEYWORD_COUNT:
             keywords.append(f"term{len(keywords) + 1}")
 
-        # Convert readability to score
-        readability_score_map = {"easy": 0.9, "medium": 0.6, "hard": 0.3}
-        readability_score = readability_score_map.get(
-            analysis_response.readability.lower(), 0.6
+        # Convert readability to score via map
+        readability_score = READABILITY_SCORE_MAP.get(
+            analysis_response.get("readability", "medium").lower(),
+            READABILITY_SCORE_MAP["medium"],
         )
+        sentiment = analysis_response.get("sentiment", "neutral")
 
-        # For token counting, we'll estimate since instructor wraps the response
-        tokens_prompt = len(prompt.split()) * 1.3  # Rough estimation
-        tokens_completion = len(analysis_response.summary.split()) + len(
-            " ".join(keywords).split()
+        # Get actual token usage from response
+        tokens_prompt = (
+            response.usage.prompt_tokens
+            if response.usage
+            else len(prompt.split()) * 1.3  # rough estimation
         )
-
-        logger.info(
-            f"LLM analysis completed in {latency_ms}ms "
-            f"(estimated tokens: {int(tokens_prompt)} prompt + {int(tokens_completion)} completion)"
-        )
-
-        logger.debug(
-            f"LLM analysis results: {len(analysis_response.summary)} char summary, {len(keywords)} keywords"
+        tokens_completion = (
+            response.usage.completion_tokens
+            if response.usage
+            else len(response_text.split())
+            if response_text
+            else 0
         )
 
         return {
-            "summary": analysis_response.summary,
+            "summary": analysis_response.get(
+                "summary", "Document analysis completed"
+            ),
             "keywords": keywords,
-            "sentiment": analysis_response.sentiment,
+            "sentiment": sentiment,
             "readability_score": readability_score,
             "tokens_prompt": int(tokens_prompt),
             "tokens_completion": int(tokens_completion),
             "latency_ms": latency_ms,
+            "used_model": model,
         }
 
     except ImportError:
-        logger.error("litellm package not available for LLM analysis")
         raise
-    except Exception as e:
-        logger.error(f"LLM analysis failed: {str(e)}")
+    except Exception:
         raise
 
 
@@ -159,7 +177,6 @@ def perform_deterministic_analysis(
     Returns:
         Dict containing analysis results with keys.
     """
-    logger.info(f"Starting fallback analysis for document: {filename}")
     start_time = time.time()
 
     # Basic summary from first meaningful paragraph
@@ -176,10 +193,13 @@ def perform_deterministic_analysis(
         if len(w) > 3 and w not in common_words and w.isalpha()
     ]
     word_freq = Counter(filtered_words)
-    keywords = [word for word, _ in word_freq.most_common(5)]
 
-    # Ensure 5 keywords
-    while len(keywords) < 5:
+    # Extract keywords and metrics
+    keyword_count = KEYWORD_COUNT
+    keywords = [word for word, _ in word_freq.most_common(keyword_count)]
+
+    # Ensure we have the right number of keywords
+    while len(keywords) < keyword_count:
         keywords.append(f"keyword{len(keywords) + 1}")
 
     # Simple sentiment (default to neutral)
@@ -230,29 +250,34 @@ def analyze_document_step(
         >>> print(analysis.summary)
         'Sample content analysis summary...'
     """
-    logger.info(f"Starting document analysis for: {document.filename}")
-
     # Validate input
     if not document.content or not document.content.strip():
-        error_msg = f"Empty document content for file: {document.filename}"
-        logger.error(error_msg)
-        raise ValueError(error_msg)
+        raise ValueError(
+            f"Empty document content for file: {document.filename}"
+        )
 
     # Attempt LLM analysis first, fall back to simple analysis if needed
     try:
-        logger.info("Attempting LLM-based analysis")
         analysis_result = perform_llm_analysis(
             content=document.content,
             filename=document.filename,
             metadata={"source": "document_analysis_pipeline"},
         )
         analysis_method = "llm"
-    except Exception as e:
-        logger.warning(f"LLM analysis failed ({str(e)}), using fallback")
+    except Exception:
         analysis_result = perform_deterministic_analysis(
             content=document.content, filename=document.filename
         )
         analysis_method = "deterministic_fallback"
+
+    # Determine appropriate model label based on analysis method
+    if analysis_method == "llm":
+        used_model = str(
+            analysis_result.get("used_model", DOC_ANALYSIS_LLM_MODEL)
+        )
+        model_label = MODEL_LABEL_FMT.format(model=used_model)
+    else:
+        model_label = "rule-based (deterministic)"
 
     # Create analysis object with results
     analysis = DocumentAnalysis(
@@ -264,7 +289,7 @@ def analyze_document_step(
         readability_score=float(
             cast(float, analysis_result["readability_score"])
         ),
-        model=f"lite-llm-auto ({analysis_method})",
+        model=model_label,
         latency_ms=int(cast(int, analysis_result["latency_ms"])),
         tokens_prompt=int(cast(int, analysis_result["tokens_prompt"])),
         tokens_completion=int(cast(int, analysis_result["tokens_completion"])),
@@ -273,11 +298,6 @@ def analyze_document_step(
             "analysis_method": analysis_method,
             "document_type": document.document_type,
         },
-    )
-
-    logger.info(
-        f"Document analysis completed: {analysis.word_count} words, "
-        f"{analysis.latency_ms}ms, method={analysis_method}"
     )
 
     return analysis
