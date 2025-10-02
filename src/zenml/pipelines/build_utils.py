@@ -374,11 +374,14 @@ def create_pipeline_build(
             dockerfile = images[item_key].dockerfile
             requirements = images[item_key].requirements
         else:
-            tag = snapshot.pipeline_configuration.name
-            if build_config.step_name:
-                tag += f"-{build_config.step_name}"
-            tag += f"-{build_config.key}"
-            tag = docker_utils.sanitize_tag(tag)
+            if build_config.settings.image_tag:
+                tag = build_config.settings.image_tag
+            else:
+                tag = snapshot.pipeline_configuration.name
+                if build_config.step_name:
+                    tag += f"-{build_config.step_name}"
+                tag += f"-{build_config.key}"
+                tag = docker_utils.sanitize_tag(tag)
 
             include_files = build_config.should_include_files(
                 code_repository=code_repository,

@@ -122,6 +122,12 @@ class DockerSettings(BaseSettings):
             this image.
             * If a custom `dockerfile` is specified for this settings
             object, this parent image will be ignored.
+        image_tag: [Optional] Docker image tag use for generated image.
+
+            Additional notes:
+            * This will override the default zenml tagging mechanism
+            using step.name or pipeline.name
+            * Make sure the tag you provide does not lead to image conflicts.
         dockerfile: Path to a custom Dockerfile that should be built. Depending
             on the other values you specify in this object, the resulting
             image will be used directly to run your pipeline or ZenML will use
@@ -207,6 +213,7 @@ class DockerSettings(BaseSettings):
     """
 
     parent_image: Optional[str] = None
+    image_tag: Optional[str] = None
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     parent_image_build_config: Optional[DockerBuildConfig] = None
