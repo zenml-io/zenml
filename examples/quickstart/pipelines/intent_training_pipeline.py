@@ -30,9 +30,6 @@ from zenml.config import DockerSettings
     settings={
         "docker": DockerSettings(
             requirements="requirements.txt",
-            environment={
-                "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-            },
         )
     },
 )

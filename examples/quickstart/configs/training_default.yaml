@@ -1,5 +1,3 @@
 settings:
   docker:
     requirements: requirements.txt
-    environment:
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
