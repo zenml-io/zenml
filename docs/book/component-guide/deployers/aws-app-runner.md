@@ -45,7 +45,7 @@ To use the AWS App Runner deployer, you need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
-* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack (**NOTE**:must be Amazon ECR or ECR Public).
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack (**NOTE**: must be Amazon ECR or ECR Public).
 * [AWS credentials with proper permissions](aws-app-runner.md#aws-credentials-and-permissions) to create and manage the App Runner services themselves.
 * When using a private ECR container registry, an IAM role with specific ECR permissions should also be created and configured as [the App Runner access role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](aws-app-runner.md#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have ECR access permissions.
 * If opting to store sensitive information in the AWS Secrets Manager (enabled by default), an IAM role with specific Secrets Manager permissions should also be created and configured as [the App Runner instance role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](aws-app-runner.md#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have Secrets Manager access permissions.
