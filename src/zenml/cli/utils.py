@@ -200,14 +200,20 @@ def exception(exception: Exception) -> NoReturn:
     Args:
         exception: Input exception.
     """
-    if exception.__str__ is Exception.__str__:
-        # If the exception class overrides the __str__ method, we expect that
-        # to have a reasonable string representation
-        error_message = str(exception)
-    elif exception.args and isinstance(exception.args[0], str):
+    # KeyError add quotes around their error message to handle the case when
+    # someone tried to fetch something with the key '' (empty string). In all
+    # other cases where the key is not empty however, this adds unnecessary
+    # quotes around the error message, which this function removes.
+    if (
+        isinstance(exception, KeyError)
+        and len(exception.args) == 1
+        # If the exception is a KeyError with an empty string as the argument,
+        # we use the default string representation which will print ''
+        and exception.args[0]
+        and isinstance(exception.args[0], str)
+    ):
         error_message = exception.args[0]
     else:
-        # Fallback to the default string representation
         error_message = str(exception)
 
     error(error_message)
