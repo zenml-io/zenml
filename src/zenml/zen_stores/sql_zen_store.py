@@ -13841,7 +13841,7 @@ class SqlZenStore(BaseZenStore):
                             PipelineSnapshotFilter(
                                 id=f"notequals:{resource.id}",
                                 project=resource.project.id,
-                                pipeline_id=scope_id,
+                                pipeline=scope_id,
                                 tags=[tag_schema.name],
                             )
                         )
@@ -13884,9 +13884,8 @@ class SqlZenStore(BaseZenStore):
                             "Can not attach exclusive tag to resource of type "
                             f"{resource_type.value} with ID: `{resource.id}`. "
                             "Exclusive tag functionality only works for "
-                            "templates, for pipeline runs (within the scope of "
-                            "pipelines) and for artifact versions (within the "
-                            "scope of artifacts)."
+                            "pipeline runs, pipeline snapshots, pipeline "
+                            "deployments and artifact versions"
                         )
 
                     # Check for duplicate IDs in any of the scope_ids list

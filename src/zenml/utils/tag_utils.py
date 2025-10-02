@@ -127,14 +127,14 @@ class Tag(BaseModel):
 
 @overload
 def add_tags(
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     run: Union[UUID, str],
 ) -> None: ...
 
@@ -142,7 +142,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     artifact: Union[UUID, str],
 ) -> None: ...
 
@@ -150,7 +150,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -158,7 +158,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     artifact_name: str,
     artifact_version: str,
 ) -> None: ...
@@ -167,7 +167,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     infer_artifact: bool = False,
     artifact_name: Optional[str] = None,
 ) -> None: ...
@@ -176,7 +176,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     pipeline: Union[UUID, str],
 ) -> None: ...
 
@@ -184,7 +184,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     run_template: Union[UUID, str],
 ) -> None: ...
 
@@ -192,7 +192,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     snapshot: Union[UUID, str],
 ) -> None: ...
 
@@ -200,13 +200,13 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     deployment: Union[UUID, str],
 ) -> None: ...
 
 
 def add_tags(
-    tags: List[Union[str, Tag]],
+    tags: Union[str, Tag, List[Union[str, Tag]]],
     # Pipelines
     pipeline: Optional[Union[UUID, str]] = None,
     # Runs
@@ -252,6 +252,9 @@ def add_tags(
     client = Client()
     resource_id = None
     resource_type = None
+
+    if isinstance(tags, (str, Tag)):
+        tags = [tags]
 
     # Tag a pipeline
     if pipeline is not None and all(
@@ -509,7 +512,6 @@ def add_tags(
             """
         )
 
-    # Create tag resources and add tags
     if resource_id:
         for tag in tags:
             client.attach_tag(
@@ -520,14 +522,14 @@ def add_tags(
 
 @overload
 def remove_tags(
-    tags: List[str],
+    tags: Union[str, List[str]],
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     pipeline: Union[UUID, str],
 ) -> None: ...
 
@@ -535,7 +537,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     run: Union[UUID, str],
 ) -> None: ...
 
@@ -543,7 +545,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     run_template: Union[UUID, str],
 ) -> None: ...
 
@@ -551,7 +553,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     snapshot: Union[UUID, str],
 ) -> None: ...
 
@@ -559,7 +561,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     deployment: Union[UUID, str],
 ) -> None: ...
 
@@ -567,7 +569,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     artifact: Union[UUID, str],
 ) -> None: ...
 
@@ -575,7 +577,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -583,7 +585,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     artifact_name: str,
     artifact_version: str,
 ) -> None: ...
@@ -592,14 +594,14 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: List[str],
+    tags: Union[str, List[str]],
     infer_artifact: bool = False,
     artifact_name: Optional[str] = None,
 ) -> None: ...
 
 
 def remove_tags(
-    tags: List[str],
+    tags: Union[str, List[str]],
     # Pipelines
     pipeline: Optional[Union[UUID, str]] = None,
     # Runs
@@ -644,6 +646,9 @@ def remove_tags(
     client = Client()
     resource_id = None
     resource_type = None
+
+    if isinstance(tags, str):
+        tags = [tags]
 
     # Remove tags from a pipeline
     if pipeline is not None and all(
