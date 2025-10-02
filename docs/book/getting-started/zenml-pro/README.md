@@ -36,7 +36,7 @@ Deploy multiple ZenML servers through [workspaces](workspaces.md) with enterpris
 ### Advanced MLOps Capabilities
 - Enhanced [Model Control Plane](https://docs.zenml.io/user-guides/starter-guide/track-ml-models) for ML asset tracking
 - [Artifact Control Plane](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for improved asset management
-- [Run Snapshots](../../how-to/snapshots/snapshots.md) for quick pipeline iteration
+- [Run Snapshots](https://docs.zenml.io/concepts/snapshots) for quick pipeline iteration
 - Early access to pro-specific features like triggers, filters, and usage reports
 
 {% hint style="info" %}

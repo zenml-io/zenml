@@ -6,7 +6,7 @@ icon: traffic-light-go
 
 # Triggering Pipelines from External Systems
 
-This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Snapshots](../../how-to/snapshots/snapshots.md) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
+This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Snapshots](https://docs.zenml.io/concepts/snapshots) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
 
 ## Introduction: The Pipeline Triggering Challenge
 
@@ -21,7 +21,7 @@ In development environments, you typically run your ZenML pipelines directly fro
 Each scenario requires a reliable way to trigger the right version of your pipeline with the correct parameters, while maintaining security and operational standards.
 
 {% hint style="info" %}
-For our full reference documentation on pipeline triggering, see the [Snapshot docs](../../how-to/snapshots/snapshots.md) page.
+For our full reference documentation on pipeline triggering, see the [Snapshot docs](https://docs.zenml.io/concepts/snapshots) page.
 {% endhint %}
 
 ## Prerequisites
@@ -156,7 +156,7 @@ Production authentication (ZenML Pro)
 For production automation in Pro (running snapshots from CI/CD or external systems), prefer **organization‑level service accounts and API keys** over temporary user tokens. Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your org service account API key. See [Pro Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
 {% endhint %}
 
-[Snapshots](../../how-to/snapshots/snapshots.md) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
+[Snapshots](https://docs.zenml.io/concepts/snapshots) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
 ### Creating a Snapshot
 
@@ -185,7 +185,7 @@ zenml pipeline snapshot create <PIPELINE_SOURCE_PATH> \
 
 ### Running a snapshot
 
-Once you have created a snapshot, there are [multiple ways](../../how-to/snapshots/snapshots.md#running-pipeline-snapshots) to run it, either programmatically with the Python client or via REST API for external systems.
+Once you have created a snapshot, there are [multiple ways](https://docs.zenml.io/concepts/snapshots#running-pipeline-snapshots) to run it, either programmatically with the Python client or via REST API for external systems.
 
 #### Using the Python Client:
 

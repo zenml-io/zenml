@@ -341,7 +341,7 @@ def example_pipeline():
 example_pipeline()
 ```
 
-You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](../snapshots/snapshots.md#advanced-usage-running-snapshots-from-other-pipelines)
+You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](../snapshots/snapshots.md#advanced-usage-running-snapshots-from-other-pipelines).
 
 ## Best Practices
 
