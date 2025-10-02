@@ -1497,19 +1497,19 @@ export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
 
-## Enabling Run Templates Support
+## Enabling Snapshot Support
 
-The ZenML Pro workspace server can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
+The ZenML Pro workspace server can be configured to optionally support running pipeline snapshots straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
 
 {% hint style="warning" %}
-The Run Templates feature is only available from ZenML workspace server version 0.81.0 onwards.
+Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
 {% endhint %}
 
-The Run Templates feature comes with some optional sub-features that can be turned on or off to customize the behavior of the feature:
+Snapshots come with some optional sub-features that can be turned on or off to customize the behavior of the feature:
 
 * **Building runner container images**: Running pipelines from the dashboard relies on Kubernetes jobs (aka "runner" jobs) that are triggered by the ZenML workspace server. These jobs need to use container images that have the correct Python software packages installed on them to be able to launch the pipelines.
 
-    The good news is that run templates are based on pipeline runs that have already run in the past and already have container images built and associated with them. The same container images can be reused by the ZenML workspace server for the "runner jobs". However, for this to work, the Kubernetes cluster itself has to be able to access the container registries where these images are stored. This can be achieved in several ways:
+    The good news is that snapshots are based on pipeline runs that have already run in the past and already have container images built and associated with them. The same container images can be reused by the ZenML workspace server for the "runner jobs". However, for this to work, the Kubernetes cluster itself has to be able to access the container registries where these images are stored. This can be achieved in several ways:
 
     * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
     * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account used by the "runner" jobs
@@ -1523,11 +1523,11 @@ The Run Templates feature comes with some optional sub-features that can be turn
 
     To avoid this, you can configure the ZenML workspace server to store the logs in an external location, like an S3 bucket. This can be achieved by setting the `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` environment variable to `true`.
 
-    This option is only currently available with the AWS implementation of the Run Templates feature and also requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` environment variable to be set to point to the S3 bucket where the logs will be stored.
+    This option is only currently available with the AWS implementation of the snapshots feature and also requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` environment variable to be set to point to the S3 bucket where the logs will be stored.
 
 1. Decide on an implementation.
 
-    There are currently three different implementations of the Run Templates feature:
+    There are currently three different implementations of the snapshots feature:
 
     * **Kubernetes**: runs pipelines in the same Kubernetes cluster as the ZenML Pro workspace server.
     * **AWS**: extends the Kubernetes implementation to be able to build and push container images to AWS ECR and to store run the template logs in AWS S3.
@@ -1535,7 +1535,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
 
     If you're going for a fast, minimalistic setup, you should go for the Kubernetes implementation. If you want a complete cloud provider solution with all features enabled, you should go for the AWS implementation.
 
-2. Prepare Run Templates configuration.
+2. Prepare Snapshots configuration.
     
     You'll need to prepare a list of environment variables that will be added to the Helm chart values used to deploy the ZenML workspace server.
     
@@ -1545,8 +1545,8 @@ The Run Templates feature comes with some optional sub-features that can be turn
         * `zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager`
         * `zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager`
         * `zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager`
-    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` (mandatory): the Kubernetes namespace where the "runner" jobs will be launched. It must exist before the run templates are enabled.
-    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` (mandatory): the Kubernetes service account to use for the "runner" jobs. It must exist before the run templates are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` (mandatory): the Kubernetes namespace where the "runner" jobs will be launched. It must exist before the snapshots are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` (mandatory): the Kubernetes service account to use for the "runner" jobs. It must exist before the snapshots are enabled.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` (optional): whether to build the "runner" container images or not. Defaults to `false`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` (optional): the container registry where the "runner" images will be pushed. Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `true`, ignored otherwise.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` (optional): the "runner" container image to use. Only used if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `false`, ignored otherwise.
@@ -1557,7 +1557,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_JOB_BACKOFF_LIMIT` (optional): the Kubernetes backoff limit to use for the builder and runner jobs.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_FAILURE_POLICY` (optional): the Kubernetes pod failure policy to use for the builder and runner jobs.
-    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
+    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent snapshot runs that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel snapshots that can be *started* at the same time, not the number of parallel pipeline runs.
 
     For the AWS implementation, the following additional variables are supported:
 
@@ -1613,7 +1613,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
             ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
             ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
             ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-run-templates/zenml
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-snapshots/zenml
             ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
             ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
             ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'
