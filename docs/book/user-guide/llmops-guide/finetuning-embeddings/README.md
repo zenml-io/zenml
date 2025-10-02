@@ -2,6 +2,11 @@
 description: Finetune embeddings on custom synthetic data to improve retrieval performance.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 We previously learned [how to use RAG with ZenML](../rag-with-zenml/README.md) to
 build a production-ready RAG pipeline. In this section, we will explore how to
 optimize and maintain your embedding models through synthetic data generation and

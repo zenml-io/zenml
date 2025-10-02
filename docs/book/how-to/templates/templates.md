@@ -3,6 +3,11 @@ description: Create and run pipeline templates in ZenML to standardize execution
 icon: print
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Templates
 
 In ZenML, pipeline templates (also known as "Run Templates") are pre-defined, parameterized configurations for your pipelines that can be easily executed from various interfaces - including the Python SDK, CLI, ZenML dashboard, or REST API. Think of them as blueprints for your pipeline runs, ready to be customized on the fly.
