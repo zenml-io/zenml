@@ -780,4 +780,4 @@ def show(local: bool = False, ngrok_token: Optional[str] = None) -> None:
     try:
         zenml.show(ngrok_token=ngrok_token)
     except RuntimeError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)

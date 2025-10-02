@@ -621,7 +621,7 @@ def delete_pipeline(
             name_id_or_prefix=pipeline_name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline `{pipeline_name_or_id}`.")
 
@@ -681,7 +681,7 @@ def update_schedule(
             cron_expression=cron_expression,
         )
     except Exception as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
 
@@ -713,7 +713,7 @@ def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
     try:
         Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted schedule '{schedule_name_or_id}'.")
 
@@ -736,7 +736,7 @@ def list_pipeline_runs(**kwargs: Any) -> None:
         with console.status("Listing pipeline runs...\n"):
             pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         if not pipeline_runs.items:
             cli_utils.declare("No pipeline runs found for this filter.")
@@ -832,7 +832,7 @@ def delete_pipeline_run(
             name_id_or_prefix=run_name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
 
@@ -862,7 +862,7 @@ def refresh_pipeline_run(
         )
 
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(
             f"Refreshed the status of pipeline run '{run.name}'."
@@ -887,7 +887,7 @@ def list_pipeline_builds(**kwargs: Any) -> None:
         with console.status("Listing pipeline builds...\n"):
             pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         if not pipeline_builds.items:
             cli_utils.declare("No pipeline builds found for this filter.")
@@ -935,7 +935,7 @@ def delete_pipeline_build(
     try:
         Client().delete_build(build_id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
 
@@ -1224,7 +1224,7 @@ def deploy_snapshot(
                 timeout=timeout,
             )
         except KeyError as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
         else:
             cli_utils.declare(
                 f"Provisioned deployment '{deployment_name_or_id}'."
@@ -1245,7 +1245,7 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
         with console.status("Listing pipeline snapshots...\n"):
             pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         if not pipeline_snapshots.items:
             cli_utils.declare("No pipeline snapshots found for this filter.")

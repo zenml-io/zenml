@@ -26,6 +26,7 @@ from zenml.cli.utils import (
     confirmation,
     declare,
     error,
+    exception,
     format_integration_list,
     install_packages,
     print_table,
@@ -89,7 +90,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
             integration_name
         )
     except KeyError as e:
-        error(str(e))
+        exception(e)
     else:
         if requirements:
             title(

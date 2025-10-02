@@ -1133,7 +1133,7 @@ def describe_service_connector(
                 expand_secrets=show_secrets,
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
     with console.status(f"Describing connector '{connector.name}'..."):
         active_stack = client.active_stack_model
@@ -1381,7 +1381,7 @@ def update_service_connector(
             expand_secrets=True,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     if interactive:
         # Fetch the connector type specification if not already embedded
@@ -1677,7 +1677,7 @@ def delete_service_connector(name_id_or_prefix: str) -> None:
                 name_id_or_prefix=name_id_or_prefix,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(f"Deleted service connector: {name_id_or_prefix}")
 
 

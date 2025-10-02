@@ -83,7 +83,7 @@ def list_deployments(**kwargs: Any) -> None:
         with console.status("Listing deployments...\n"):
             deployments = client.list_deployments(**kwargs)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         if not deployments.items:
             cli_utils.declare("No deployments found for this filter.")
@@ -140,7 +140,7 @@ def describe_deployment(
             name_id_or_prefix=deployment_name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.pretty_print_deployment(
             deployment,
@@ -245,7 +245,7 @@ def provision_deployment(
                 timeout=timeout,
             )
         except KeyError as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
         else:
             cli_utils.declare(
                 f"Provisioned deployment '{deployment_name_or_id}'."
@@ -580,7 +580,7 @@ def refresh_deployment(
         )
 
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.pretty_print_deployment(deployment, show_secret=True)
 
@@ -694,7 +694,7 @@ def log_deployment(
             tail=tail,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         for log in logs:
             print(log)

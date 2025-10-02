@@ -105,7 +105,7 @@ def update_artifact(
             remove_tags=remove_tag,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Artifact '{artifact.id}' updated.")
 
@@ -192,7 +192,7 @@ def update_artifact_version(
             remove_tags=remove_tag,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 
