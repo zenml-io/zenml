@@ -43,6 +43,7 @@
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)
   * [Visualizations](how-to/artifacts/visualizations.md)
+* [Pipeline Deployments](how-to/deployment/deployment.md)
 * [Stack & Components](how-to/stack-components/stack_components.md)
 * [Service Connectors](how-to/stack-components/service_connectors.md)
 * [Containerization](how-to/containerization/containerization.md)
