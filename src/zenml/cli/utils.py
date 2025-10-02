@@ -194,6 +194,25 @@ def error(text: str) -> NoReturn:
     raise StyledClickException(message=error_prefix + error_message)
 
 
+def exception(exception: Exception) -> NoReturn:
+    """Echo an exception string on the CLI.
+
+    Args:
+        exception: Input exception.
+    """
+    if exception.__str__ is Exception.__str__:
+        # If the exception class overrides the __str__ method, we expect that
+        # to have a reasonable string representation
+        error_message = str(exception)
+    elif exception.args and isinstance(exception.args[0], str):
+        error_message = exception.args[0]
+    else:
+        # Fallback to the default string representation
+        error_message = str(exception)
+
+    error(error_message)
+
+
 def warning(
     text: str,
     bold: Optional[bool] = None,
