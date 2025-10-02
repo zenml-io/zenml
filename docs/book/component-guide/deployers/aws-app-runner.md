@@ -51,7 +51,6 @@ To use the AWS App Runner deployer, you need:
 * If opting the AWS Secrets Manager to store sensitive information (enabled by default), an IAM role with specific Secrets Manager permissions should also be created and configured as [the App Runner instance role](https://docs.aws.amazon.com/apprunner/latest/dg/security_iam_service-with-iam.html#security_iam_service-with-iam-roles) (see [Required IAM Permissions](#required-iam-permissions) below). If this is not configured, App Runner will attempt to use the default `AWSServiceRoleForAppRunner` service role, which may not have Secrets Manager access permissions.
 * The AWS region in which you want to deploy your pipelines.
 
-
 ### AWS credentials and permissions
 
 You have two different options to provide credentials to the AWS App Runner deployer:
