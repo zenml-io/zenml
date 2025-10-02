@@ -26,6 +26,7 @@ from zenml.cli.utils import (
     confirmation,
     declare,
     error,
+    exception,
     format_integration_list,
     install_packages,
     print_table,
