@@ -22,7 +22,6 @@ The image above shows the hierarchy of concepts in ZenML Pro.
 * [**Teams**](teams.md) are groups of users within an organization. They help in organizing users and managing access to resources at organization, workspace, and project levels.
 * **Users** are single individual accounts on a ZenML Pro instance.
 * [**Roles**](roles.md) exist at organization, workspace, and project levels to control what actions users can perform.
-* [**Templates**](https://docs.zenml.io/how-to/trigger-pipelines) are pipeline runs that can be re-run with a different configuration.
 
 More details about each of these concepts are available in their linked pages below:
 
