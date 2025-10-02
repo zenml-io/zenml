@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base class for all ZenML deployers."""
+"""Base class for all containerized deployers."""
 
 from abc import ABC
 from typing import (
@@ -75,7 +75,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         if self.config.is_local and GlobalConfiguration().uses_sql_store:
             # If we're directly connected to a DB, we need to install the
             # `local` extra in the Docker image to include the DB dependencies.
-            requirements.add(f"'zenml[local]=={zenml.__version__}'")
+            requirements.add(f"zenml[local]=={zenml.__version__}")
 
         return requirements
 

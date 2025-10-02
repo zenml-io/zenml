@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""InMemory materializer that stores all artifacts in serving runtime memory."""
+"""Materializer that stores all artifacts in memory."""
 
 from typing import (
     Any,
@@ -28,30 +28,24 @@ from zenml.metadata.metadata_types import MetadataType
 
 
 class InMemoryMaterializer(BaseMaterializer):
-    """Simple materializer for serving mode - stores everything in memory.
-
-    This materializer works for any data type and stores/loads data
-    to/from the serving runtime's in-memory storage using the original URI as the key.
-    No metadata extraction or visualizations in serving mode.
-    """
+    """Materializer that stores artifacts in memory."""
 
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     SKIP_REGISTRATION: ClassVar[bool] = True
 
     def save(self, data: Any) -> None:
-        """Store data in serving runtime memory using original URI as key.
+        """Store data in memory.
 
         Args:
             data: The data to save.
         """
         from zenml.deployers.server import runtime
 
-        self.validate_save_type_compatibility(type(data))
         runtime.put_in_memory_data(self.uri, data)
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Load data from serving runtime memory using original URI as key.
+        """Load data from memory.
 
         Args:
             data_type: The type of the data to load.
@@ -64,14 +58,15 @@ class InMemoryMaterializer(BaseMaterializer):
         """
         from zenml.deployers.server import runtime
 
-        self.validate_load_type_compatibility(data_type)
-        value = runtime.get_in_memory_data(self.uri)
-        if value is None:
-            raise RuntimeError(f"No data available for URI `{self.uri}`")
-        return value
+        try:
+            return runtime.get_in_memory_data(self.uri)
+        except KeyError:
+            raise RuntimeError(
+                f"No data available for artifactURI `{self.uri}`"
+            )
 
     def extract_full_metadata(self, data: Any) -> Dict[str, MetadataType]:
-        """No metadata extraction in serving mode.
+        """No metadata extraction.
 
         Args:
             data: The data to extract metadata from.
@@ -82,7 +77,7 @@ class InMemoryMaterializer(BaseMaterializer):
         return {}
 
     def save_visualizations(self, data: Any) -> Dict[str, Any]:
-        """No visualizations in serving mode.
+        """No visualizations.
 
         Args:
             data: The data to save visualizations for.

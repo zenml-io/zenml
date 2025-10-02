@@ -200,7 +200,7 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
-from zenml.utils import dict_utils, io_utils, source_utils
+from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
@@ -8490,9 +8490,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
         """
-        self.zen_store.delete_tag(
-            tag_name_or_id=tag_name_or_id,
-        )
+        tag = self.get_tag(tag_name_or_id, allow_name_prefix_match=False)
+        self.zen_store.delete_tag(tag_id=tag.id)
 
     def update_tag(
         self,
@@ -8530,28 +8529,35 @@ class Client(metaclass=ClientMetaClass):
             else:
                 update_model.color = color
 
+        tag = self.get_tag(tag_name_or_id, allow_name_prefix_match=False)
+
         return self.zen_store.update_tag(
-            tag_name_or_id=tag_name_or_id,
+            tag_id=tag.id,
             tag_update_model=update_model,
         )
 
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
-        return self.zen_store.get_tag(
-            tag_name_or_id=tag_name_or_id,
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_tag,
+            list_method=self.list_tags,
+            name_id_or_prefix=tag_name_or_id,
+            allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
         )
 
@@ -8612,22 +8618,45 @@ class Client(metaclass=ClientMetaClass):
 
     def attach_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag: Union[str, tag_utils.Tag],
         resources: List[TagResource],
     ) -> None:
         """Attach a tag to resources.
 
         Args:
-            tag_name_or_id: name or id of the tag to be attached.
+            tag: name of the tag or tag_utils.Tag object to be attached.
             resources: the resources to attach the tag to.
+
+        Raises:
+            ValueError: If the tag is an exclusive tag and is being
+                attached to multiple resources or if the tag is a
+                cascading tag as cascading tags can only be used
+                with the pipeline decorator.
         """
-        if isinstance(tag_name_or_id, str):
-            try:
-                tag_model = self.create_tag(name=tag_name_or_id)
-            except EntityExistsError:
-                tag_model = self.get_tag(tag_name_or_id)
+        if isinstance(tag, str):
+            tag_request = TagRequest(name=tag)
         else:
-            tag_model = self.get_tag(tag_name_or_id)
+            tag_request = tag.to_request()
+
+        try:
+            tag_model = self.create_tag(**tag_request.model_dump())
+        except EntityExistsError:
+            tag_model = self.get_tag(
+                tag_name_or_id=tag_request.name, allow_name_prefix_match=False
+            )
+
+        if isinstance(tag, tag_utils.Tag):
+            if bool(tag.exclusive) != tag_model.exclusive:
+                raise ValueError(
+                    f"The tag `{tag.name}` is "
+                    f"{'an exclusive' if tag_model.exclusive else 'a non-exclusive'} "
+                    "tag. Please update it before attaching it to a resource."
+                )
+            if tag.cascade is not None:
+                raise ValueError(
+                    "Cascading tags can only be used with the "
+                    "pipeline decorator."
+                )
 
         self.zen_store.batch_create_tag_resource(
             tag_resources=[
@@ -8651,7 +8680,9 @@ class Client(metaclass=ClientMetaClass):
             tag_name_or_id: name or id of the tag to be detached.
             resources: the resources to detach the tag from.
         """
-        tag_model = self.get_tag(tag_name_or_id)
+        tag_model = self.get_tag(
+            tag_name_or_id=tag_name_or_id, allow_name_prefix_match=False
+        )
 
         self.zen_store.batch_delete_tag_resource(
             tag_resources=[

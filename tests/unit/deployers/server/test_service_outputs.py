@@ -130,7 +130,7 @@ def test_service_captures_in_memory_outputs(
         mocker.MagicMock(return_value=placeholder_run),
     )
     monkeypatch.setattr(
-        "zenml.orchestrators.utils.deployment_snapshot_request_from_source_snapshot",
+        "zenml.deployers.server.service.deployment_snapshot_request_from_source_snapshot",
         lambda source_snapshot, deployment_parameters: SimpleNamespace(),
     )
 

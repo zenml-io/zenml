@@ -1,6 +1,44 @@
 <!-- markdown-link-check-disable -->
 
-# 0.90.0rc0
+# 0.90.0
+
+This release introduces pipeline snapshots and pipeline deployments, refactors the base package dependencies, and adds runtime environment variable support.
+
+## ⚠️ Breaking Changes
+
+- **Client-Server Compatibility**: Not compatible with previous versions. Client and server must be upgraded simultaneously.
+- **Run Templates**: Existing run templates need to be recreated as they contain previous Client versions in their container images.
+- **Base Package**: The `zenml` package no longer includes local database dependencies. Install `zenml[local]` if you want to use ZenML without a local/remote server.
+
+## Deprecations
+
+- **Run Templates**: Deprecated in favor of pipeline snapshots. Snapshots can be triggered from server/dashboard and deployed as endpoints.
+- **ZenML Pro On-Prem deployments only**: The `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` server environment variable is deprecated. Use `ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS` instead.
+- **Stack Component API**: The `StackComponent.prepare_pipeline_deployment(...)` method has been removed and will not be called anymore. This might be relevant if you've implemented custom stack components that rely on this method being called.
+
+## New Features
+
+### Pipeline Snapshots
+- Capture immutable snapshots of pipeline code, configuration, and container images
+- Execute snapshots from server/dashboard without local code environment
+- Can be deployed
+
+### Pipeline Deployments
+- Add a new `Deployer` stack component and Docker, AWS and GCP implementations
+- Deploy pipelines as HTTP endpoints for online inference or agentic usecases
+- Add pipeline init/cleanup hooks for quicker deployment runs
+
+### Runtime Environment Variables
+- Configure environment variables when running pipelines
+- Environment variables can either be defined directly or from ZenML secrets
+
+### Dependency Management
+- Move local database dependencies to `local` package extra
+- Add support for latest Pydantic and CloudPickle versions
+- Reduce base package dependencies
+
+### Jax Support
+- Add materializer for Jax arrays
 
 ## What's Changed
 * Add 0.85.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3951
@@ -40,10 +78,19 @@
 * Make pytest rerun count configurable in CI workflows and address `bandit` errors by @strickvl in https://github.com/zenml-io/zenml/pull/4001
 * Add filter option for runs linked to model version by @schustmi in https://github.com/zenml-io/zenml/pull/4003
 * Deployed pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/3920
+* Store visualizations for pydantic materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4014
+* Changes to the issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/3991
+* Release testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4020
+* Bug:4021 Unescape zenml[local] installation by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4022
+* Update outdated information in helm chart by @schustmi in https://github.com/zenml-io/zenml/pull/4018
+* Follow up fixes for deployments by @schustmi in https://github.com/zenml-io/zenml/pull/4013
+* Migrate unlisted pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4026
+* Fixing race conditions for tags by @bcdurak in https://github.com/zenml-io/zenml/pull/4002
 
+## New Contributors
+* @Json-Andriopoulos made their first contribution in https://github.com/zenml-io/zenml/pull/4022
 
-**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0rc0
-
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0
 
 # 0.85.0
 

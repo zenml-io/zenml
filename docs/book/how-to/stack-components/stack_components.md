@@ -25,6 +25,7 @@ Each ZenML stack must include these core components:
 Stacks may also include these optional components:
 
 * **Container Registry**: Stores Docker images for your pipeline steps
+* **Deployer**: Deploys pipelines as long-running HTTP services
 * **Step Operator**: Runs specific steps on specialized hardware
 * **Model Deployer**: Deploys models as prediction services
 * **Experiment Tracker**: Tracks metrics and parameters
