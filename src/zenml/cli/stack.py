@@ -197,6 +197,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-D",
+    "--deployer",
+    "deployer",
+    help="Name of the deployer for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -217,6 +225,23 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "--secret",
+    "secrets",
+    help="Secret to attach to the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--env",
+    "environment_variables",
+    help="Environment variables to set when running on this stack. Must be of "
+    "the format 'KEY=VALUE'.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 def register_stack(
     stack_name: str,
     artifact_store: Optional[str] = None,
@@ -231,9 +256,12 @@ def register_stack(
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
+    deployer: Optional[str] = None,
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
+    secrets: List[str] = [],
+    environment_variables: List[str] = [],
 ) -> None:
     """Register a stack.
 
@@ -251,9 +279,13 @@ def register_stack(
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
+        deployer: Name of the deployer for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
+        secrets: List of secrets to attach to the stack.
+        environment_variables: List of environment variables to set when
+            running on this stack. Must be of the format "KEY=VALUE".
     """
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
@@ -292,6 +324,11 @@ def register_stack(
         )
     except KeyError:
         pass
+
+    environment: Dict[str, str] = {}
+    for environment_variable in environment_variables:
+        key, value = environment_variable.split("=", 1)
+        environment[key] = value
 
     labels: Dict[str, str] = {}
     components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
@@ -492,6 +529,7 @@ def register_stack(
             (StackComponentType.STEP_OPERATOR, step_operator),
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
+            (StackComponentType.DEPLOYER, deployer),
         ]:
             if component_name_ and component_type_ not in components:
                 components[component_type_] = [
@@ -509,6 +547,8 @@ def register_stack(
                     if service_connector
                     else [],
                     labels=labels,
+                    secrets=secrets,
+                    environment=environment,
                 )
             )
         except (KeyError, IllegalOperationError) as err:
@@ -659,6 +699,40 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-D",
+    "--deployer",
+    "deployer",
+    help="Name of the deployer for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--secret",
+    "secrets",
+    help="Secrets to attach to the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--remove-secret",
+    "remove_secrets",
+    help="Secrets to remove from the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
+    "--env",
+    "environment_variables",
+    help="Environment variables to set when running on this stack. Must be of "
+    "the format 'KEY=VALUE'. To remove an environment variable from the "
+    "stack, use an empty value, e.g. 'KEY='",
+    type=str,
+    required=False,
+    multiple=True,
+)
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -673,6 +747,10 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
+    deployer: Optional[str] = None,
+    secrets: List[str] = [],
+    remove_secrets: List[str] = [],
+    environment_variables: List[str] = [],
 ) -> None:
     """Update a stack.
 
@@ -691,8 +769,20 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
+        deployer: Name of the new deployer for this stack.
+        secrets: Secrets to attach to the stack.
+        remove_secrets: Secrets to remove from the stack.
+        environment_variables: Environment variables to set when running on this
+            stack. Must be of the format "KEY=VALUE".
     """
     client = Client()
+
+    environment: Dict[str, Any] = {}
+    for environment_variable in environment_variables:
+        key, value = environment_variable.split("=", 1)
+        # Fallback to None if the value is empty so the existing environment
+        # variable is removed
+        environment[key] = value or None
 
     with console.status("Updating stack...\n"):
         updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
@@ -724,11 +814,16 @@ def update_stack(
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
+        if deployer:
+            updates[StackComponentType.DEPLOYER] = [deployer]
 
         try:
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=updates,
+                add_secrets=secrets,
+                remove_secrets=remove_secrets,
+                environment=environment,
             )
 
         except (KeyError, IllegalOperationError) as err:
@@ -826,6 +921,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-D",
+    "--deployer",
+    "deployer_flag",
+    help="Include this to remove the deployer from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -838,6 +941,7 @@ def remove_stack_component(
     data_validator_flag: Optional[bool] = False,
     image_builder_flag: Optional[bool] = False,
     model_registry_flag: Optional[str] = None,
+    deployer_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -855,6 +959,7 @@ def remove_stack_component(
         data_validator_flag: To remove the data validator from this stack.
         image_builder_flag: To remove the image builder from this stack.
         model_registry_flag: To remove the model registry from this stack.
+        deployer_flag: To remove the deployer from this stack.
     """
     client = Client()
 
@@ -890,6 +995,9 @@ def remove_stack_component(
 
         if image_builder_flag:
             stack_component_update[StackComponentType.IMAGE_BUILDER] = []
+
+        if deployer_flag:
+            stack_component_update[StackComponentType.DEPLOYER] = []
 
         try:
             updated_stack = client.update_stack(

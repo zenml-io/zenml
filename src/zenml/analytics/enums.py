@@ -52,6 +52,9 @@ class AnalyticsEvent(str, Enum):
     CREATED_RUN_TEMPLATE = "Run template created"
     EXECUTED_RUN_TEMPLATE = "Run templated executed"
 
+    # Snapshots
+    EXECUTED_SNAPSHOT = "Snapshot executed"
+
     # Model Control Plane
     MODEL_DEPLOYED = "Model deployed"
     CREATED_MODEL = "Model created"
@@ -88,3 +91,9 @@ class AnalyticsEvent(str, Enum):
 
     # Server Settings
     SERVER_SETTINGS_UPDATED = "Server Settings Updated"
+
+    # Deployment
+    DEPLOY_PIPELINE = "Pipeline deployed"
+    CREATE_DEPLOYMENT = "Deployment created"
+    STOP_DEPLOYMENT = "Deployment stopped"
+    DELETE_DEPLOYMENT = "Deployment deleted"

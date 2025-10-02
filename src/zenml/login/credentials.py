@@ -138,6 +138,33 @@ class ServerCredentials(BaseModel):
             return ServerType.LOCAL
         return ServerType.REMOTE
 
+    @property
+    def can_refresh_token(self) -> bool:
+        """Check if the credentials can be used to refresh the API token.
+
+        A token refresh is only possible if long-lived credentials exist that
+        can be used to login and generate a new API token.
+
+        Returns:
+            True if the server credentials can be used to refresh the API token,
+            False otherwise.
+        """
+        return (
+            self.username is not None
+            and self.password is not None
+            or self.api_key is not None
+            or self.type == ServerType.LOCAL
+        )
+
+    @property
+    def has_valid_token(self) -> bool:
+        """Check if the API token is valid.
+
+        Returns:
+            True if the API token is valid, False otherwise.
+        """
+        return self.api_token is not None and not self.api_token.expired
+
     def update_server_info(
         self, server_info: Union[ServerModel, WorkspaceRead]
     ) -> None:

@@ -199,7 +199,7 @@ def status() -> None:
 
     # Write about the current ZenML client
     cli_utils.declare("-----ZenML Client Status-----")
-    if gc.uses_default_store():
+    if gc.uses_local_store:
         cli_utils.declare(
             f"Connected to the local ZenML database: '{store_cfg.url}'"
         )
@@ -217,12 +217,12 @@ def status() -> None:
         if server:
             if server.type == ServerType.PRO:
                 # If connected to a ZenML Pro server, refresh the server info
-                pro_credentials = credentials_store.get_pro_credentials(
-                    pro_api_url=server.pro_api_url or ZENML_PRO_API_URL,
-                    allow_expired=False,
-                )
-                if pro_credentials:
-                    pro_client = ZenMLProClient(pro_credentials.url)
+                if credentials_store.can_login(
+                    server_url=server.pro_api_url or ZENML_PRO_API_URL,
+                ):
+                    pro_client = ZenMLProClient(
+                        server.pro_api_url or ZENML_PRO_API_URL
+                    )
                     pro_servers = pro_client.workspace.list(
                         url=store_cfg.url, member_only=True
                     )
@@ -240,10 +240,6 @@ def status() -> None:
                 cli_utils.declare(
                     f"  ZenML Pro Organization: {server.organization_hyperlink}"
                 )
-                if pro_credentials:
-                    cli_utils.declare(
-                        f"  ZenML Pro authentication: {pro_credentials.auth_status}"
-                    )
             else:
                 cli_utils.declare(
                     f"Connected to a remote ZenML server: `{server.dashboard_hyperlink}`"

@@ -1,5 +1,191 @@
 <!-- markdown-link-check-disable -->
 
+# 0.90.0
+
+This release introduces pipeline snapshots and pipeline deployments, refactors the base package dependencies, and adds runtime environment variable support.
+
+## ⚠️ Breaking Changes
+
+- **Client-Server Compatibility**: Not compatible with previous versions. Client and server must be upgraded simultaneously.
+- **Run Templates**: Existing run templates need to be recreated as they contain previous Client versions in their container images.
+- **Base Package**: The `zenml` package no longer includes local database dependencies. Install `zenml[local]` if you want to use ZenML without a local/remote server.
+
+## Deprecations
+
+- **Run Templates**: Deprecated in favor of pipeline snapshots. Snapshots can be triggered from server/dashboard and deployed as endpoints.
+- **ZenML Pro On-Prem deployments only**: The `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` server environment variable is deprecated. Use `ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS` instead.
+- **Stack Component API**: The `StackComponent.prepare_pipeline_deployment(...)` method has been removed and will not be called anymore. This might be relevant if you've implemented custom stack components that rely on this method being called.
+
+## New Features
+
+### Pipeline Snapshots
+- Capture immutable snapshots of pipeline code, configuration, and container images
+- Execute snapshots from server/dashboard without local code environment
+- Can be deployed
+
+### Pipeline Deployments
+- Add a new `Deployer` stack component and Docker, AWS and GCP implementations
+- Deploy pipelines as HTTP endpoints for online inference or agentic usecases
+- Add pipeline init/cleanup hooks for quicker deployment runs
+
+### Runtime Environment Variables
+- Configure environment variables when running pipelines
+- Environment variables can either be defined directly or from ZenML secrets
+
+### Dependency Management
+- Move local database dependencies to `local` package extra
+- Add support for latest Pydantic and CloudPickle versions
+- Reduce base package dependencies
+
+### Jax Support
+- Add materializer for Jax arrays
+
+## What's Changed
+* Add 0.85.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3951
+* Add version 0.84.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3949
+* Add documentation for timeline view by @strickvl in https://github.com/zenml-io/zenml/pull/3948
+* Add documentation for the `StepContext` object by @strickvl in https://github.com/zenml-io/zenml/pull/3953
+* Runtime environment variables by @schustmi in https://github.com/zenml-io/zenml/pull/3336
+* Fix legacy merge conflict in docs by @schustmi in https://github.com/zenml-io/zenml/pull/3955
+* Docs/documentation for execution modes by @bcdurak in https://github.com/zenml-io/zenml/pull/3956
+* Pipeline snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/3856
+* Upgrade pydantic by @htahir1 in https://github.com/zenml-io/zenml/pull/3944
+* Dedent exception info traceback by @schustmi in https://github.com/zenml-io/zenml/pull/3957
+* Update (broken) metadata logging example for pipeline runs by @strickvl in https://github.com/zenml-io/zenml/pull/3961
+* Fix cache policy docs formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3965
+* Bugfix for duplicated log records for exceptions by @bcdurak in https://github.com/zenml-io/zenml/pull/3964
+* Bugfix for handling old logs with timestamp by @bcdurak in https://github.com/zenml-io/zenml/pull/3968
+* Snapshot UX improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3959
+* Track pipeline output spec and schema by @schustmi in https://github.com/zenml-io/zenml/pull/3972
+* Misc snapshot improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3980
+* Update self-hosted ZenML Pro deployment docs by @stefannica in https://github.com/zenml-io/zenml/pull/3981
+* Slimmer base package by @schustmi in https://github.com/zenml-io/zenml/pull/3916
+* Cleanup base package workflow by @schustmi in https://github.com/zenml-io/zenml/pull/3983
+* Rename some legacy attributes by @schustmi in https://github.com/zenml-io/zenml/pull/3934
+* Add JAX array materializer by @nicholasjng in https://github.com/zenml-io/zenml/pull/3712
+* Fix requirements for local agentic examples tests by @strickvl in https://github.com/zenml-io/zenml/pull/3986
+* Fix setting a snapshot name to None by @schustmi in https://github.com/zenml-io/zenml/pull/3985
+* Improve error message for duplicate pipeline run names by @strickvl in https://github.com/zenml-io/zenml/pull/3701
+* Fix Terraform documentation URLs and improve link checker robustness by @strickvl in https://github.com/zenml-io/zenml/pull/3988
+* Fix formatting errors on embeddings finetuning docs by @strickvl in https://github.com/zenml-io/zenml/pull/3979
+* Remove remaining RBAC check when fetching tags by @schustmi in https://github.com/zenml-io/zenml/pull/3989
+* Remove dependency on pydantic_settings by @schustmi in https://github.com/zenml-io/zenml/pull/3987
+* Migrate pyproject.toml to project structure by @schustmi in https://github.com/zenml-io/zenml/pull/3982
+* Document `ZENML_ACTIVE_PROJECT_ID` environment variable by @strickvl in https://github.com/zenml-io/zenml/pull/3992
+* Disable coderabbit status message by @strickvl in https://github.com/zenml-io/zenml/pull/3998
+* Snapshot response improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3995
+* Document WhyLabs shutdown in whylogs integration by @strickvl in https://github.com/zenml-io/zenml/pull/3997
+* Make pytest rerun count configurable in CI workflows and address `bandit` errors by @strickvl in https://github.com/zenml-io/zenml/pull/4001
+* Add filter option for runs linked to model version by @schustmi in https://github.com/zenml-io/zenml/pull/4003
+* Deployed pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/3920
+* Store visualizations for pydantic materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4014
+* Changes to the issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/3991
+* Release testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4020
+* Bug:4021 Unescape zenml[local] installation by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4022
+* Update outdated information in helm chart by @schustmi in https://github.com/zenml-io/zenml/pull/4018
+* Follow up fixes for deployments by @schustmi in https://github.com/zenml-io/zenml/pull/4013
+* Migrate unlisted pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4026
+* Fixing race conditions for tags by @bcdurak in https://github.com/zenml-io/zenml/pull/4002
+
+## New Contributors
+* @Json-Andriopoulos made their first contribution in https://github.com/zenml-io/zenml/pull/4022
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.85.0...0.90.0
+
+# 0.85.0
+
+The `0.85.0` release delivers powerful **pipeline execution enhancements** and **caching improvements** that provide users with greater control over pipeline behavior.
+
+## ⚠️ Breaking Changes
+
+- **Local Orchestrator Behavior**: The local orchestrator will now continue executing steps after some steps fail (instead of stopping execution immediately)
+- **Docker Package Installer**: Default Python package installer in Docker settings switched from `pip` to `uv` 
+- **Log Endpoint Format**: Log endpoints return a different format - affects manual API access but not regular pipeline operations
+- **Fetching Runs with old Client**: Using a client of a previous release (`<0.85.0`) to fetch pipeline runs created by a client with version `>=0.85.0` can cause an error if the run is in
+the new `provisioning` status.
+
+## 📢 Upcoming Breaking Change
+
+**Important Notice for Future Release**: In the next release, the base `zenml` package will no longer include dependencies for running ZenML connected to a local database.. Users will only be able to connect to deployed ZenML servers with the base package.
+To continue using ZenML locally with a SQLite database, install with the `local` extra: `pip install 'zenml[local]'`. If you're using ZenML with a local server, you're already installing `zenml[server]` and this change will not affect you.
+
+## 🚀 New Features
+
+### Pipeline Execution Modes
+- **Flexible Failure Handling**: Configure what happens to a pipeline run when any step fails, providing fine-grained control over pipeline execution behavior
+
+### Advanced Caching System
+- **Value-Based Caching**: Materializers now support caching artifacts based on their actual content/value rather than just artifact ID, enabling more intelligent cache reuse
+- **Cache Policies**: New cache policy system allows users to specify precisely when a step should be cached, providing granular control over caching behavior
+
+### Airflow 3.0 support
+- **Airflow 3.0 Compatibility**: Support for Apache Airflow 3.0, ensuring compatibility with the latest Airflow features and improvements
+
+
+## What's Changed
+* Add version 0.84.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3910
+* Made connection docs easier to read by @htahir1 in https://github.com/zenml-io/zenml/pull/3896
+* Add Google ADK framework example and `DockerSettings` for all examples by @strickvl in https://github.com/zenml-io/zenml/pull/3912
+* Delete run if model version doesn't exist during creation by @schustmi in https://github.com/zenml-io/zenml/pull/3915
+* Caching by value by @schustmi in https://github.com/zenml-io/zenml/pull/3900
+* Add start time to step node metadata by @schustmi in https://github.com/zenml-io/zenml/pull/3921
+* Prevent stopping runs without orchestrator run id by @schustmi in https://github.com/zenml-io/zenml/pull/3923
+* Airflow 3 support by @schustmi in https://github.com/zenml-io/zenml/pull/3922
+* fix: typo in core-concepts.md by @mhmunem in https://github.com/zenml-io/zenml/pull/3926
+* Run template config improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3918
+* Add provisioning execution status by @schustmi in https://github.com/zenml-io/zenml/pull/3924
+* Fix unnecessary code upload by @schustmi in https://github.com/zenml-io/zenml/pull/3932
+* Allow cloudpickle>3.x by @strickvl in https://github.com/zenml-io/zenml/pull/3914
+* Switch to uv as default package installer by @schustmi in https://github.com/zenml-io/zenml/pull/3935
+* Fix unit test by @schustmi in https://github.com/zenml-io/zenml/pull/3945
+* Efficient queries for execution mode changes by @bcdurak in https://github.com/zenml-io/zenml/pull/3942
+* Different pipeline execution modes by @bcdurak in https://github.com/zenml-io/zenml/pull/3874
+* Changes to the fetch logs endpoints by @bcdurak in https://github.com/zenml-io/zenml/pull/3845
+* Adding verbosity levels to log messages in storage by @bcdurak in https://github.com/zenml-io/zenml/pull/3812
+
+## New Contributors
+* @mhmunem made their first contribution in https://github.com/zenml-io/zenml/pull/3926
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.3...0.85.0
+
+
+# 0.84.3
+
+The `0.84.3` release introduces **ZenML Pro service account authentication** support and includes important **Kubernetes integration fixes**. This release enhances authentication flexibility for automated workflows and improves the reliability of Kubernetes-based orchestration.
+
+## 🚀 New Features
+
+### ZenML Pro Service Account Authentication
+- **CLI Login Support**: Added ability to authenticate with ZenML Pro using service account API keys via `zenml login --api-key`
+- **Programmatic Access**: Service account API keys can now be used for programmatic access to ZenML Pro workspaces
+- **Organization-Level Access**: Service accounts provide access to all workspaces within an organization for automated workflows
+
+## 🛠️ Fixes
+
+### Kubernetes Integration
+- **Name Sanitization**: Fixed Kubernetes resource name sanitization to properly handle special characters and ensure compliance with Kubernetes naming requirements
+
+### Dependencies
+- **Click Version**: Relaxed Click dependency version constraints to improve compatibility with other packages
+
+## What's Changed
+* Add version 0.84.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3885
+* Fix PyPI download stats badge by @strickvl in https://github.com/zenml-io/zenml/pull/3882
+* Don't include decorator code in step cache key computation by @schustmi in https://github.com/zenml-io/zenml/pull/3880
+* Add an agent in production example by @htahir1 in https://github.com/zenml-io/zenml/pull/3890
+* Fix kubernetes name sanitization by @schustmi in https://github.com/zenml-io/zenml/pull/3887
+* Fix SyntaxWarning in `exception_utils` regex pattern by @strickvl in https://github.com/zenml-io/zenml/pull/3892
+* Add agent framework integration examples by @htahir1 in https://github.com/zenml-io/zenml/pull/3898
+* Add weekly agent examples test workflow by @strickvl in https://github.com/zenml-io/zenml/pull/3902
+* Add ability to use a ZenML Pro API key with `zenml login` by @stefannica in https://github.com/zenml-io/zenml/pull/3895
+* Add docs for workload manager env vars by @schustmi in https://github.com/zenml-io/zenml/pull/3907
+* Bump allowed versions of click by @strickvl in https://github.com/zenml-io/zenml/pull/3905
+* Allow workspace service accounts and API keys to be created by @stefannica in https://github.com/zenml-io/zenml/pull/3908
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.84.2...0.84.3
+
+
 # 0.84.2
 
 The `0.84.2` release brings significant **performance improvements** and **reliability enhancements** that strengthen ZenML's orchestration capabilities. This release features a major refactor of the Kubernetes orchestrator with enhanced restart capabilities, faster pipeline compilation for large pipelines, critical security fixes, and improved logging performance.

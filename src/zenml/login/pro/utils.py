@@ -39,9 +39,7 @@ def get_troubleshooting_instructions(url: str) -> str:
     if credentials and credentials.type == ServerType.PRO:
         pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
 
-    if pro_api_url and credentials_store.has_valid_pro_authentication(
-        pro_api_url
-    ):
+    if pro_api_url and credentials_store.can_login(pro_api_url):
         client = ZenMLProClient(pro_api_url)
 
         try:

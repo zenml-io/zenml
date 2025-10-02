@@ -31,10 +31,12 @@ from typing import (
     TypeVar,
     Union,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from zenml.client_lazy_loader import ClientLazyLoader
+from zenml.config.cache_policy import CachePolicyOrString
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source
 from zenml.constants import (
@@ -110,6 +112,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -117,6 +121,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
     ) -> None:
         """Initializes a step.
 
@@ -135,7 +140,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -146,6 +154,7 @@ class BaseStep:
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -200,6 +209,8 @@ class BaseStep:
             step_operator=step_operator,
             output_materializers=output_materializers,
             parameters=parameters,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -207,6 +218,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -609,6 +621,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[Sequence[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -616,6 +630,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -644,7 +659,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -655,6 +673,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -701,12 +720,17 @@ class BaseStep:
         failure_hook_source = None
         if on_failure:
             # string of on_failure hook function to be used for this step
-            failure_hook_source = resolve_and_validate_hook(on_failure)
+            failure_hook_source, _ = resolve_and_validate_hook(
+                on_failure, allow_exception_arg=True
+            )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
-            success_hook_source = resolve_and_validate_hook(on_success)
+            success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + list(secrets)
 
         values = dict_utils.remove_none_values(
             {
@@ -717,6 +741,8 @@ class BaseStep:
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
+                "environment": environment,
+                "secrets": secrets,
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
@@ -725,6 +751,7 @@ class BaseStep:
                 "model": model,
                 "retry": retry,
                 "substitutions": substitutions,
+                "cache_policy": cache_policy,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -743,6 +770,8 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[str, UUID]]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -750,6 +779,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        cache_policy: Optional[CachePolicyOrString] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -768,7 +798,10 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            secrets: Secrets to set as environment variables when running this
+                step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -779,6 +812,7 @@ class BaseStep:
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
+            cache_policy: Cache policy for this step.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -798,6 +832,8 @@ class BaseStep:
             step_operator=step_operator,
             parameters=parameters,
             output_materializers=output_materializers,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -805,6 +841,7 @@ class BaseStep:
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
             merge=merge,
         )
         return step_copy
@@ -852,7 +889,8 @@ class BaseStep:
             config: The configuration update to validate.
             runtime_parameters: Dictionary of parameters passed to a step from runtime
         """
-        settings_utils.validate_setting_keys(list(config.settings))
+        if config.settings:
+            settings_utils.validate_setting_keys(list(config.settings))
         self._validate_function_parameters(
             parameters=config.parameters, runtime_parameters=runtime_parameters
         )
@@ -860,7 +898,7 @@ class BaseStep:
 
     def _validate_function_parameters(
         self,
-        parameters: Dict[str, Any],
+        parameters: Optional[Dict[str, Any]],
         runtime_parameters: Dict[str, Any],
     ) -> None:
         """Validates step function parameters.

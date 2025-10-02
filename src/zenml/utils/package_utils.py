@@ -42,7 +42,7 @@ def is_latest_zenml_version() -> bool:
         True in case the current running zenml code is the latest available version on PYPI, otherwise False.
 
     Raises:
-        RuntimeError: In case something goe wrong
+        RuntimeError: In case something goes wrong
     """
     from zenml import __version__
 

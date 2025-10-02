@@ -16,6 +16,7 @@
 import inspect
 import os
 import re
+import textwrap
 import traceback
 from typing import TYPE_CHECKING, Optional
 
@@ -58,7 +59,9 @@ def collect_exception_information(
             )
             end_line = start_line + len(lines)
 
-            line_pattern = re.compile(f'File "{source_file}", line (\d+),')
+            line_pattern = re.compile(
+                rf'File "{re.escape(source_file)}", line (\d+),'
+            )
 
             for index, line in enumerate(tb):
                 match = line_pattern.search(line)
@@ -79,7 +82,7 @@ def collect_exception_information(
         # part of the traceback that is happening in the ZenML code.
         tb = tb[start_index:]
 
-    tb_bytes = "\n".join(tb).encode()
+    tb_bytes = textwrap.dedent("\n".join(tb)).encode()
     tb_bytes = tb_bytes[:MEDIUMTEXT_MAX_LENGTH]
 
     return ExceptionInfo(

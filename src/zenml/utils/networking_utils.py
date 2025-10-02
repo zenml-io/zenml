@@ -14,7 +14,7 @@
 """Utility functions for networking."""
 
 import socket
-from typing import Optional, cast
+from typing import List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 from zenml.environment import Environment
@@ -67,21 +67,65 @@ def find_available_port() -> int:
     return cast(int, port)
 
 
+def lookup_preferred_or_free_port(
+    preferred_ports: List[int] = [],
+    allocate_port_if_busy: bool = True,
+    range: Tuple[int, int] = SCAN_PORT_RANGE,
+    address: str = "127.0.0.1",
+) -> int:
+    """Find a preferred TCP port that is available or search for a free TCP port.
+
+    If a list of preferred TCP port values is explicitly requested, they
+    will be checked in order.
+
+    Args:
+        preferred_ports: A list of preferred TCP port values.
+        allocate_port_if_busy: If True, allocate a free port if all the
+            preferred ports are busy, otherwise an exception will be raised.
+        range: The range of ports to search for a free port.
+        address: The IP address for which to find a port.
+
+    Returns:
+        An available TCP port number
+
+    Raises:
+        IOError: if the preferred TCP port is busy and `allocate_port_if_busy`
+            is disabled, or if no free TCP port could be otherwise allocated.
+    """
+    # If a port value is explicitly configured, attempt to use it first
+    if preferred_ports:
+        for port in preferred_ports:
+            if port_available(port, address):
+                return port
+        if not allocate_port_if_busy:
+            raise IOError(f"TCP port {preferred_ports} is not available.")
+
+    available_port = scan_for_available_port(
+        start=range[0], stop=range[1], address=address
+    )
+    if available_port:
+        return available_port
+    raise IOError(f"No free TCP ports found in range {range}")
+
+
 def scan_for_available_port(
-    start: int = SCAN_PORT_RANGE[0], stop: int = SCAN_PORT_RANGE[1]
+    start: int = SCAN_PORT_RANGE[0],
+    stop: int = SCAN_PORT_RANGE[1],
+    address: str = "127.0.0.1",
 ) -> Optional[int]:
     """Scan the local network for an available port in the given range.
 
     Args:
         start: the beginning of the port range value to scan
         stop: the (inclusive) end of the port range value to scan
+        address: The IP address for which to find a port.
 
     Returns:
         The first available port in the given range, or None if no available
         port is found.
     """
     for port in range(start, stop + 1):
-        if port_available(port):
+        if port_available(port, address):
             return port
     logger.debug(
         "No free TCP ports found in the range %d - %d",

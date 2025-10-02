@@ -150,6 +150,12 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](
 Run Templates use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need Workspace API credentials (like service accounts), not ZenML Pro API tokens.
 {% endhint %}
 
+{% hint style="success" %}
+Production authentication (ZenML Pro)
+
+For production automation in Pro (triggering run templates from CI/CD or external systems), prefer **organization‑level service accounts and API keys** over temporary user tokens. Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your org service account API key. See [Pro Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
+{% endhint %}
+
 [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
 ### Creating a Run Template
@@ -464,7 +470,6 @@ def evaluate(
 docker_settings = DockerSettings(
     requirements="requirements.txt",
     required_integrations=["sklearn"],
-    python_package_installer="uv",
 )
 
 @pipeline(settings={"docker": docker_settings})

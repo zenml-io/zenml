@@ -1,0 +1,3 @@
+strands-agents[openai]>=1.0.0
+strands-agents-tools>=0.0.1
+zenml[local]

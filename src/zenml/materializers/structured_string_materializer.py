@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of HTMLString materializer."""
 
+import hashlib
 import os
-from typing import Dict, Type, Union
+from typing import Dict, Optional, Type, Union
 
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
@@ -129,3 +130,17 @@ class StructuredStringMaterializer(BaseMaterializer):
             raise ValueError(
                 f"Data type {data_type} is not supported by this materializer."
             )
+
+    def compute_content_hash(self, data: STRUCTURED_STRINGS) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+        hash_.update(data.encode())
+        return hash_.hexdigest()

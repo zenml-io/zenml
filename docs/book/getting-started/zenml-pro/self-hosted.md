@@ -807,12 +807,12 @@ However, this feature is currently supported with helper Python scripts, as desc
     ```bash
     kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
     ```
-2.  Create a `users.yml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
+2.  Create a `users.yaml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
 
     ```yaml
     users:
-    - username: adam@zenml.io
-      password: tu3]4_Xz{5$9
+    - username: user
+      password: password1234
     ```
 3.  Run the `create_users.py` script below. This will create all of the users.
 
@@ -853,7 +853,7 @@ However, this feature is currently supported with helper Python scripts, as desc
         response = requests.post(login_url, headers=headers, data=data)
 
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         else:
             print(f"Login failed. Status code: {response.status_code}")
             print(f"Response: {response.text}")
@@ -916,7 +916,7 @@ However, this feature is currently supported with helper Python scripts, as desc
         main()
     ```
 
-The script will prompt you for the URL of your deployment, the admin account username and password and finally the location of your `users.yml` file.
+The script will prompt you for the URL of your deployment, the admin account username and password and finally the location of your `users.yaml` file.
 
 ![](.gitbook/assets/on-prem-01.png)
 
@@ -944,15 +944,13 @@ Now you can invite your whole team to the org. For this open the drop-down in th
 
 ![](.gitbook/assets/on-prem-05.png)
 
-Here in the members tab, add all the users you created in the previous step.
+Here in the members tab, add all the users you created in the previous step. Make sure to [assign the appropriate role](roles.md#organization-level-roles) to each user.
 
 ![](.gitbook/assets/on-prem-06.png)
 
-For each user, finally head over to the Pending invited screen and copy the invite link for each user.
-
 ![](.gitbook/assets/on-prem-07.png)
 
-Finally, send the invitation link, along with the account's username and initial password over to your team members.
+Finally, send the account's username and initial password over to your team members.
 
 ## Stage 2/2: Enroll and Deploy ZenML Pro workspaces
 
@@ -1469,7 +1467,7 @@ If you use TLS certificates for the ZenML Pro control plane or workspace server 
 
 #### Accessing the Workspace Dashboard
 
-The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. You need to login as an organization member and add yourself as a workspace member first):
+The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. If you're the organization admin, you may also need to add other users as workspace members, if they don't have access to the workspace yet.
 
 ![](.gitbook/assets/on-prem-08.png)
 
@@ -1477,11 +1475,12 @@ The newly enrolled workspace should be accessible in the ZenML Pro workspace das
 
 ![](.gitbook/assets/on-prem-10.png)
 
-Then follow the instructions in the checklist to unlock the full dashboard:
-
 ![](.gitbook/assets/on-prem-11.png)
 
+Then follow the instructions in the "Get Started" checklist to unlock the full dashboard:
+
 ![](.gitbook/assets/on-prem-12.png)
+
 
 #### Accessing the Workspace from the ZenML CLI
 
@@ -1556,6 +1555,8 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` (optional): the Kubernetes node selector to use for the "runner" jobs, in JSON format. Example: `{"node-pool": "zenml-pool"}`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_JOB_BACKOFF_LIMIT` (optional): the Kubernetes backoff limit to use for the builder and runner jobs.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_FAILURE_POLICY` (optional): the Kubernetes pod failure policy to use for the builder and runner jobs.
     * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
 
     For the AWS implementation, the following additional variables are supported:

@@ -254,7 +254,7 @@ def connect_to_server(
             # flow.
             cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
         else:
-            if refresh or not credentials_store.has_valid_authentication(url):
+            if refresh or not credentials_store.has_valid_credentials(url):
                 cli_utils.declare(
                     f"Authenticating to ZenML server '{url}' using the web "
                     "login..."
@@ -331,6 +331,17 @@ def connect_to_pro_server(
 
     server_id, server_url, server_name = None, None, None
     login = False
+    credentials_store = get_credentials_store()
+
+    if api_key and api_key.startswith("ZENPROKEY_"):
+        if not pro_server:
+            raise ValueError(
+                "You must provide the name of the ZenML Pro server when "
+                "connecting with a ZenML Pro API key."
+            )
+        credentials_store.set_api_key(pro_api_url, api_key, is_zenml_pro=True)
+        api_key = None
+
     if not pro_server:
         login = True
         if api_key:
@@ -351,8 +362,7 @@ def connect_to_pro_server(
     else:
         server_url = pro_server
 
-    credentials_store = get_credentials_store()
-    if not credentials_store.has_valid_pro_authentication(pro_api_url):
+    if not credentials_store.has_valid_pro_credentials(pro_api_url):
         # Without valid ZenML Pro credentials, we can only connect to a ZenML
         # Pro server with an API key and we also need to know the URL of the
         # server to connect to.
@@ -375,10 +385,9 @@ def connect_to_pro_server(
 
     if login or refresh:
         # If we reached this point, then we need to start a new login flow.
-        # We also need to remove all existing API tokens associated with the
-        # target ZenML Pro API, otherwise they will continue to be used after
-        # the re-login flow.
-        credentials_store.clear_all_pro_tokens()
+        # We also need to remove all existing credentials, otherwise they will
+        # continue to be used after the re-login flow.
+        credentials_store.clear_all_credentials()
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -858,10 +867,21 @@ def login(
         )
         return
 
+    api_key_value: Optional[str] = None
+    if api_key:
+        # Read the API key from the user
+        api_key_value = click.prompt(
+            "Please enter the API key for the ZenML server",
+            type=str,
+            hide_input=True,
+        )
+        if api_key_value and api_key_value.startswith("ZENPROKEY_"):
+            pro = True
+
     if pro:
         connect_to_pro_server(
             pro_server=server,
-            refresh=True,
+            api_key=api_key_value,
             pro_api_url=pro_api_url,
             verify_ssl=ssl_ca_cert
             if ssl_ca_cert is not None
@@ -876,15 +896,6 @@ def login(
     if store_cfg.type == StoreType.REST:
         if not connected_to_local_server():
             current_non_local_server = store_cfg.url
-
-    api_key_value: Optional[str] = None
-    if api_key:
-        # Read the API key from the user
-        api_key_value = click.prompt(
-            "Please enter the API key for the ZenML server",
-            type=str,
-            hide_input=True,
-        )
 
     verify_ssl: Union[str, bool] = (
         ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
@@ -1126,7 +1137,7 @@ def logout(
 
         pro_api_url = pro_api_url or ZENML_PRO_API_URL
         pro_api_url = pro_api_url.rstrip("/")
-        if credentials_store.has_valid_pro_authentication(pro_api_url):
+        if credentials_store.get_pro_credentials(pro_api_url):
             credentials_store.clear_pro_credentials(pro_api_url)
             cli_utils.declare("Logged out from ZenML Pro.")
         else:
@@ -1141,14 +1152,14 @@ def logout(
             if credentials and credentials.pro_api_url == pro_api_url:
                 gc.set_default_store()
 
-            credentials_store.clear_all_pro_tokens(pro_api_url)
+            credentials_store.clear_all_credentials()
             cli_utils.declare("Logged out from all ZenML Pro servers.")
         return
 
     if server is None:
         # Log out from the current server
 
-        if gc.uses_default_store():
+        if gc.uses_local_store:
             cli_utils.declare(
                 "The client is not currently connected to a ZenML server.\n"
                 "Hint: You can run 'zenml server list' to view the available "

@@ -45,6 +45,9 @@
 
 ---
 
+ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one platform to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
+
+
 ## 🚨 The Problem: MLOps Works for Models, But What About AI?
 
 ![No MLOps for modern AI](docs/book/.gitbook/assets/readme_problem.png)
@@ -137,6 +140,7 @@ if __name__ == "__main__":
 ```
 
 **🚀 [See the complete working example →](examples/agent_comparison/)**
+Prefer a smaller end-to-end template? Check out the [Minimal Agent Production](examples/minimal_agent_production/) example — a lightweight document analysis service with pipelines, evaluation, and a simple web UI.
 
 **The Result:** A clear winner is selected based on data, not opinions. You have full lineage from the test data and agent versions to the final report and deployment decision.
 
@@ -269,6 +273,7 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
+- **[Your First AI Pipeline](https://docs.zenml.io/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
@@ -280,10 +285,11 @@ For visual learners, start with this 11-minute introduction:
 ### 📖 Production Examples
 
 1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
-2. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
-3. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
-4. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
-5. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
+2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
+3. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
+4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
+5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ### 🏢 Deployment Options
 

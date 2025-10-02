@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Analysis Service</title>
+  <style>
+    {CSS_CONTENT}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📄 Document Analysis Service</h1>
+      <p class="subtitle">Upload text documents for AI-powered analysis including summarization, keyword extraction, and sentiment analysis</p>
+    </div>
+    
+    <div class="upload-area" id="uploadArea">
+      <p><strong>📤 Drop files here or click to select</strong></p>
+      <p>Supported formats: TXT, MD, HTML, or paste text directly</p>
+      <input type="file" id="fileInput" style="display: none;" accept=".txt,.md,.html,.csv,.json,.xml">
+    </div>
+    
+    <div id="fileInfo" class="file-info" style="display: none;">
+      <p><strong>📄 File:</strong> <span id="fileName"></span></p>
+      <p><strong>📝 Type:</strong> <span id="fileType"></span> • <strong>📊 Size:</strong> <span id="fileSize"></span></p>
+    </div>
+    
+    <form id="analysisForm">
+      <label for="content">Document Content:</label>
+      <textarea id="content" name="content" placeholder="Paste your document content here, or upload a file using the area above..." required></textarea>
+      
+      <button type="submit" id="analyzeBtn">🔍 Analyze Document</button>
+    </form>
+    
+    <div id="results" class="results">
+      <div class="loading" id="loadingState">
+        <p>⏳ Analyzing document... This may take up to 2 minutes.</p>
+      </div>
+      <div id="analysisResults" style="display: none;">
+        <div class="result-section">
+          <h3>Summary</h3>
+          <div class="summary" id="summaryText"></div>
+        </div>
+        
+        <div class="result-section">
+          <h3>Key Metrics</h3>
+          <div class="metrics">
+            <div class="metric">Words: <span id="wordCount"></span></div>
+            <div class="metric">Sentiment: <span id="sentiment"></span></div>
+            <div class="metric">Readability: <span id="readability"></span>/1.0</div>
+          </div>
+        </div>
+        
+        <div class="result-section">
+          <h3>Keywords</h3>
+          <div class="keywords" id="keywords"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    {JAVASCRIPT_CONTENT}
+  </script>
+</body>
+</html>
