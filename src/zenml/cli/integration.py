@@ -89,7 +89,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
             integration_name
         )
     except KeyError as e:
-        error(str(e))
+        exception(e)
     else:
         if requirements:
             title(
