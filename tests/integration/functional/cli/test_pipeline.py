@@ -46,8 +46,6 @@ def test_pipeline_list(clean_client_with_run):
 def test_pipeline_delete(clean_client_with_run: Client):
     """Test that zenml pipeline delete works as expected."""
     existing_pipelines = clean_client_with_run.list_pipelines()
-    existing_deployments = clean_client_with_run.list_deployments()
-    existing_runs = clean_client_with_run.list_pipeline_runs()
     assert len(existing_pipelines) == 1
     pipeline_name = existing_pipelines[0].name
     runner = CliRunner()
@@ -63,11 +61,11 @@ def test_pipeline_delete(clean_client_with_run: Client):
     updated_pipelines = clean_client_with_run.list_pipelines()
     assert len(updated_pipelines) == 0
 
-    # Ensure pipeline deletion does not cascade pipeline runs or deployments
-    updated_deployments = clean_client_with_run.list_deployments()
-    assert len(updated_deployments) == len(existing_deployments)
+    # Ensure pipeline deletion cascades pipeline runs and snapshots
+    updated_snapshots = clean_client_with_run.list_snapshots(named_only=False)
+    assert len(updated_snapshots) == 0
     updated_runs = clean_client_with_run.list_pipeline_runs()
-    assert len(updated_runs) == len(existing_runs)
+    assert len(updated_runs) == 0
 
 
 def test_pipeline_run_list(clean_client_with_run):
@@ -268,7 +266,7 @@ def test_pipeline_build_with_config_file(
 
     _, call_kwargs = mock_get_docker_builds.call_args
     assert (
-        call_kwargs["deployment"]
+        call_kwargs["snapshot"]
         .pipeline_configuration.settings["docker"]
         .parent_image
         == "custom_parent_image"

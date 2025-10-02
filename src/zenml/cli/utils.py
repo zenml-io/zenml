@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import functools
 import json
 import os
 import platform
@@ -38,6 +39,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
@@ -58,7 +60,17 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
+from zenml.deployers.utils import (
+    get_deployment_input_schema,
+    get_deployment_invocation_example,
+    get_deployment_output_schema,
+)
+from zenml.enums import (
+    DeploymentStatus,
+    GenericFilterOps,
+    ServiceState,
+    StackComponentType,
+)
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     RegisteredModel,
@@ -79,10 +91,11 @@ from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import dict_utils, secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -95,8 +108,10 @@ if TYPE_CHECKING:
     from zenml.models import (
         AuthenticationMethodModel,
         ComponentResponse,
+        DeploymentResponse,
         FlavorResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
@@ -2303,6 +2318,333 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
+def fetch_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+) -> "PipelineSnapshotResponse":
+    """Fetch a snapshot by name or ID.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot.
+        pipeline_name_or_id: The name or ID of the pipeline.
+
+    Returns:
+        The snapshot.
+    """
+    if is_valid_uuid(snapshot_name_or_id):
+        return Client().get_snapshot(snapshot_name_or_id)
+    elif pipeline_name_or_id:
+        try:
+            return Client().get_snapshot(
+                snapshot_name_or_id,
+                pipeline_name_or_id=pipeline_name_or_id,
+            )
+        except KeyError:
+            error(
+                f"There are no snapshots with name `{snapshot_name_or_id}` for "
+                f"pipeline `{pipeline_name_or_id}`."
+            )
+    else:
+        snapshots = Client().list_snapshots(
+            name=snapshot_name_or_id,
+        )
+        if snapshots.total == 0:
+            error(f"There are no snapshots with name `{snapshot_name_or_id}`.")
+        elif snapshots.total == 1:
+            return snapshots.items[0]
+
+        snapshot_index = multi_choice_prompt(
+            object_type="snapshots",
+            choices=[
+                [snapshot.pipeline.name, snapshot.name]
+                for snapshot in snapshots.items
+            ],
+            headers=["Pipeline", "Snapshot"],
+            prompt_text=f"There are multiple snapshots with name "
+            f"`{snapshot_name_or_id}`. Please select the snapshot to run",
+        )
+        assert snapshot_index is not None
+        return snapshots.items[snapshot_index]
+
+
+def get_deployment_status_emoji(
+    status: Optional[str],
+) -> str:
+    """Returns an emoji representing the given deployment status.
+
+    Args:
+        status: The deployment status to get the emoji for.
+
+    Returns:
+        An emoji representing the given deployment status.
+    """
+    if status == DeploymentStatus.PENDING:
+        return ":hourglass_flowing_sand:"
+    if status == DeploymentStatus.ERROR:
+        return ":x:"
+    if status == DeploymentStatus.RUNNING:
+        return ":green_circle:"
+    if status == DeploymentStatus.ABSENT:
+        return ":stop_sign:"
+
+    return ":question:"
+
+
+def format_deployment_status(status: Optional[str]) -> str:
+    """Format deployment status with color.
+
+    Args:
+        status: The deployment status.
+
+    Returns:
+        Formatted status string.
+    """
+    if status == DeploymentStatus.RUNNING:
+        return "[green]RUNNING[/green]"
+    elif status == DeploymentStatus.PENDING:
+        return "[yellow]PENDING[/yellow]"
+    elif status == DeploymentStatus.ERROR:
+        return "[red]ERROR[/red]"
+    elif status == DeploymentStatus.ABSENT:
+        return "[dim]ABSENT[/dim]"
+
+    return "[dim]UNKNOWN[/dim]"
+
+
+def print_deployment_table(
+    deployments: Sequence["DeploymentResponse"],
+) -> None:
+    """Print a prettified list of all deployments supplied to this method.
+
+    Args:
+        deployments: List of deployments
+    """
+    deployment_dicts = []
+    for deployment in deployments:
+        if deployment.user:
+            user_name = deployment.user.name
+        else:
+            user_name = "-"
+
+        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
+            pipeline_name = "unlisted"
+        else:
+            pipeline_name = deployment.snapshot.pipeline.name
+        if deployment.snapshot is None or deployment.snapshot.stack is None:
+            stack_name = "[DELETED]"
+        else:
+            stack_name = deployment.snapshot.stack.name
+        status = deployment.status or DeploymentStatus.UNKNOWN.value
+        status_emoji = get_deployment_status_emoji(status)
+        run_dict = {
+            "ID": deployment.id,
+            "NAME": deployment.name,
+            "PIPELINE": pipeline_name,
+            "SNAPSHOT": deployment.snapshot.name or ""
+            if deployment.snapshot
+            else "N/A",
+            "URL": deployment.url or "N/A",
+            "STATUS": f"{status_emoji} {status.upper()}",
+            "STACK": stack_name,
+            "OWNER": user_name,
+        }
+        deployment_dicts.append(run_dict)
+    print_table(deployment_dicts)
+
+
+def pretty_print_deployment(
+    deployment: "DeploymentResponse",
+    show_secret: bool = False,
+    show_metadata: bool = False,
+    show_schema: bool = False,
+    no_truncate: bool = False,
+) -> None:
+    """Print a prettified deployment with organized sections.
+
+    Args:
+        deployment: The deployment to print.
+        show_secret: Whether to show the auth key or mask it.
+        show_metadata: Whether to show the metadata.
+        show_schema: Whether to show the schema.
+        no_truncate: Whether to truncate the metadata.
+    """
+    # Header section
+    status = format_deployment_status(deployment.status)
+    status_emoji = get_deployment_status_emoji(deployment.status)
+    declare(
+        f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
+    )
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
+        snapshot_name = "N/A"
+    else:
+        pipeline_name = deployment.snapshot.pipeline.name
+        snapshot_name = deployment.snapshot.name or str(deployment.snapshot.id)
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
+        stack_name = "[DELETED]"
+    else:
+        stack_name = deployment.snapshot.stack.name
+    declare(f"\n[bold]Pipeline:[/bold] [bold cyan]{pipeline_name}[/bold cyan]")
+    declare(f"[bold]Snapshot:[/bold] [bold cyan]{snapshot_name}[/bold cyan]")
+    declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
+
+    # Connection section
+    if deployment.url:
+        declare("\n📡 [bold]Connection Information:[/bold]")
+
+        declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
+        declare(
+            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]"
+        )
+
+        # Auth key handling with proper security
+        auth_key = deployment.auth_key
+        if auth_key:
+            if show_secret:
+                declare(f"[bold]Auth Key:[/bold] [yellow]{auth_key}[/yellow]")
+            else:
+                masked_key = (
+                    f"{auth_key[:8]}***" if len(auth_key) > 8 else "***"
+                )
+                declare(
+                    f"[bold]Auth Key:[/bold] [yellow]{masked_key}[/yellow] "
+                    f"[dim](run [green]`zenml deployment describe {deployment.name} "
+                    "--show-secret`[/green] to reveal)[/dim]"
+                )
+
+        example = get_deployment_invocation_example(deployment)
+
+        # CLI invoke command
+        cli_args = " ".join(
+            [
+                f"--{k}="
+                + (
+                    f"'{json.dumps(v)}'"
+                    if isinstance(v, (dict, list))
+                    else json.dumps(v)
+                )
+                for k, v in example.items()
+            ]
+        )
+        cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
+
+        declare("[bold]CLI Command Example:[/bold]")
+        console.print(f"  [green]{cli_command}[/green]")
+
+        # cURL example
+        declare("\n[bold]cURL Example:[/bold]")
+        curl_headers = []
+        if auth_key:
+            if show_secret:
+                curl_headers.append(f'-H "Authorization: Bearer {auth_key}"')
+            else:
+                curl_headers.append(
+                    '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
+                )
+
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n      ")
+
+        curl_headers.append('-H "Content-Type: application/json"')
+        headers_str = " \\\n    ".join(curl_headers)
+
+        curl_command = f"""curl -X POST {deployment.url}/invoke \\
+    {headers_str} \\
+    -d '{{
+      "parameters": {curl_params}
+    }}'"""
+
+        console.print(f"  [green]{curl_command}[/green]")
+
+    if show_schema:
+        input_schema = get_deployment_input_schema(deployment)
+        output_schema = get_deployment_output_schema(deployment)
+        declare("\n📋 [bold]Deployment JSON Schemas:[/bold]")
+        declare("\n[bold]Input Schema:[/bold]")
+        schema_json = json.dumps(input_schema, indent=2)
+        console.print(f"[green]{schema_json}[/green]")
+        declare("\n[bold]Output Schema:[/bold]")
+        schema_json = json.dumps(output_schema, indent=2)
+        console.print(f"[green]{schema_json}[/green]")
+
+    if show_metadata:
+        declare("\n📋 [bold]Deployment Metadata[/bold]")
+
+        # Get the metadata - it could be from deployment_metadata property or metadata
+        metadata = deployment.deployment_metadata
+
+        if metadata:
+            # Recursively format nested dictionaries and lists
+            def format_value(value: Any, indent_level: int = 0) -> str:
+                if isinstance(value, dict):
+                    if not value:
+                        return "[dim]{}[/dim]"
+                    formatted_items = []
+                    for k, v in value.items():
+                        formatted_v = format_value(v, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[bold]{k}[/bold]: {formatted_v}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, list):
+                    if not value:
+                        return "[dim][][/dim]"
+                    formatted_items = []
+                    for i, item in enumerate(value):
+                        formatted_item = format_value(item, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[{i}]: {formatted_item}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, str):
+                    # Handle long strings by truncating if needed
+                    if len(value) > 100 and not no_truncate:
+                        return f"[green]{value[:97]}...[/green]"
+                    return f"[green]{value}[/green]"
+                elif isinstance(value, bool):
+                    return f"[yellow]{value}[/yellow]"
+                elif isinstance(value, (int, float)):
+                    return f"[blue]{value}[/blue]"
+                elif value is None:
+                    return "[dim]null[/dim]"
+                else:
+                    return f"[white]{str(value)}[/white]"
+
+            formatted_metadata = format_value(metadata)
+            console.print(formatted_metadata)
+        else:
+            declare("  [dim]No metadata available[/dim]")
+
+    # Management section
+    declare("\n⚙️  [bold]Management Commands[/bold]")
+
+    mgmt_table = table.Table(
+        box=box.ROUNDED,
+        show_header=False,
+        border_style="dim",
+        padding=(0, 1),
+    )
+    mgmt_table.add_column("Command", style="bold")
+    mgmt_table.add_column("Description")
+
+    mgmt_table.add_row(
+        f"zenml deployment logs {deployment.name} -f",
+        "Follow deployment logs in real-time",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment describe {deployment.name}",
+        "Show detailed deployment information",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment deprovision {deployment.name}",
+        "Deprovision this deployment and keep a record of it",
+    )
+    mgmt_table.add_row(
+        f"zenml deployment delete {deployment.name}",
+        "Deprovision and delete this deployment",
+    )
+    console.print(mgmt_table)
+
+
 def check_zenml_pro_project_availability() -> None:
     """Check if the ZenML Pro project feature is available."""
     client = Client()
@@ -2475,11 +2817,6 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                     create_data_type_help_text(filter_model, k)
                 )
 
-        def wrapper(function: F) -> F:
-            for option in reversed(options):
-                function = option(function)
-            return function
-
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
             f"interpreted as a check for equality. However advanced "
@@ -2500,7 +2837,17 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                 f"{joined_data_type_descriptors}"
             )
 
-        return wrapper(func)
+        for option in reversed(options):
+            func = option(func)
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            nonlocal func
+
+            kwargs = dict_utils.remove_none_values(kwargs)
+            return func(*args, **kwargs)
+
+        return cast(F, wrapper)
 
     return inner_decorator
 

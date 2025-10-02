@@ -1,0 +1,78 @@
+---
+name: Test base package functionality
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: OS
+        type: string
+        required: true
+      python-version:
+        description: Python version
+        type: string
+        required: true
+      git-ref:
+        description: Git branch or ref
+        type: string
+        required: false
+        default: ''
+  workflow_dispatch:
+    inputs:
+      os:
+        description: OS
+        type: choice
+        options: [ubuntu-latest, macos-13, windows-latest]
+        required: false
+        default: ubuntu-latest
+      python-version:
+        description: Python version
+        type: choice
+        options: ['3.9', '3.10', '3.11', '3.12']
+        required: false
+        default: '3.11'
+      git-ref:
+        description: Git branch or ref
+        type: string
+        required: true
+jobs:
+  test-base-package-functionality:
+    name: test-base-package-functionality
+    runs-on: ${{ inputs.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.git-ref || github.event.pull_request.head.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.8.14
+      - name: Build server image
+        run: |
+          docker build -t zenml-server-dev -f docker/zenml-server-dev.Dockerfile .
+      - name: Install base package
+        run: |
+          uv pip install --system .
+      - name: Start local server
+        run: |
+          docker run -d -p 8080:8080 -e ZENML_SERVER_AUTH_SCHEME=NO_AUTH -e ZENML_SERVER_AUTO_ACTIVATE=True zenml-server-dev
+      - name: Test server connection works
+        env:
+          ZENML_STORE_URL: http://localhost:8080
+        run: |-
+          zenml stack list

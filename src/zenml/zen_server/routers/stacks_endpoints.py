@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from pydantic import BaseModel
 
 from zenml.constants import API, STACKS, VERSION_1
 from zenml.models import (
@@ -82,6 +83,8 @@ def create_stack(
     Returns:
         The created stack.
     """
+    rbac_read_checks: List[BaseModel] = []
+
     # Check the service connector creation
     is_connector_create_needed = False
     for connector_id_or_info in stack.service_connectors:
@@ -89,9 +92,7 @@ def create_stack(
             service_connector = zen_store().get_service_connector(
                 connector_id_or_info, hydrate=False
             )
-            verify_permission_for_model(
-                model=service_connector, action=Action.READ
-            )
+            rbac_read_checks.append(service_connector)
         else:
             is_connector_create_needed = True
 
@@ -107,9 +108,7 @@ def create_stack(
                 component = zen_store().get_stack_component(
                     component_id_or_info, hydrate=False
                 )
-                verify_permission_for_model(
-                    model=component, action=Action.READ
-                )
+                rbac_read_checks.append(component)
             else:
                 is_component_create_needed = True
     if is_component_create_needed:
@@ -117,6 +116,16 @@ def create_stack(
             resource_type=ResourceType.STACK_COMPONENT,
             action=Action.CREATE,
         )
+
+    if stack.secrets:
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in stack.secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        stack.secrets = [secret.id for secret in secrets]
+
+    batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
     # Check the stack creation
     verify_permission_for_model(model=stack, action=Action.CREATE)
@@ -207,16 +216,25 @@ def update_stack(
     Returns:
         The updated stack.
     """
+    rbac_read_checks: List[BaseModel] = []
     if stack_update.components:
-        updated_components = [
-            zen_store().get_stack_component(id)
-            for ids in stack_update.components.values()
-            for id in ids
-        ]
-
-        batch_verify_permissions_for_models(
-            updated_components, action=Action.READ
+        rbac_read_checks.extend(
+            [
+                zen_store().get_stack_component(id)
+                for ids in stack_update.components.values()
+                for id in ids
+            ]
         )
+
+    if stack_update.add_secrets:
+        secrets = [
+            zen_store().get_secret_by_name_or_id(secret)
+            for secret in stack_update.add_secrets
+        ]
+        rbac_read_checks.extend(secrets)
+        stack_update.add_secrets = [secret.id for secret in secrets]
+
+    batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
 
     return verify_permissions_and_update_entity(
         id=stack_id,

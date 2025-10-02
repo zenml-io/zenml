@@ -19,58 +19,40 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models import (
     PipelineBuildResponse,
     PipelineBuildResponseBody,
-    RunTemplateResponse,
-    RunTemplateResponseBody,
-    RunTemplateResponseMetadata,
-    RunTemplateResponseResources,
 )
-from zenml.zen_server.template_execution.utils import (
-    deployment_request_from_template,
+from zenml.zen_server.pipeline_execution.utils import (
+    snapshot_request_from_source_snapshot,
 )
 
 
-def test_creating_deployment_request_from_template(
+def test_creating_snapshot_request_from_template(
     clean_client_with_run, mocker
 ):
     mocker.patch(
-        "zenml.zen_server.template_execution.utils.zen_store",
+        "zenml.zen_server.pipeline_execution.utils.zen_store",
         return_value=clean_client_with_run.zen_store,
     )
 
-    deployments = clean_client_with_run.list_deployments(hydrate=True)
-    assert len(deployments) == 1
+    snapshots = clean_client_with_run.list_snapshots(
+        named_only=False, hydrate=True
+    )
+    assert len(snapshots) == 1
 
-    deployment = deployments[0]
+    snapshot = snapshots[0]
 
     build = PipelineBuildResponse(
         id=uuid4(),
         body=PipelineBuildResponseBody(
-            user_id=deployment.user_id,
-            project_id=deployment.project_id,
+            user_id=snapshot.user_id,
+            project_id=snapshot.project_id,
             created=datetime.utcnow(),
             updated=datetime.utcnow(),
         ),
     )
-    deployment.metadata.build = build
-
-    template_response = RunTemplateResponse(
-        id=uuid4(),
-        name="template",
-        body=RunTemplateResponseBody(
-            user_id=deployment.user_id,
-            project_id=deployment.project_id,
-            created=datetime.utcnow(),
-            updated=datetime.utcnow(),
-            runnable=True,
-        ),
-        metadata=RunTemplateResponseMetadata(),
-        resources=RunTemplateResponseResources(
-            source_deployment=deployment, tags=[]
-        ),
-    )
+    snapshot.resources.build = build
 
     with does_not_raise():
-        deployment_request_from_template(
-            template=template_response,
+        snapshot_request_from_source_snapshot(
+            source_snapshot=snapshot,
             config=PipelineRunConfiguration(),
         )

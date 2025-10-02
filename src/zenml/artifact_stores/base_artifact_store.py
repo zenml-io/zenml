@@ -38,6 +38,7 @@ from pydantic import Field, model_validator
 from zenml.constants import (
     ENV_ZENML_SERVER,
     ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS,
+    IN_MEMORY_ARTIFACT_URI_PREFIX,
     handle_bool_env_var,
 )
 from zenml.enums import StackComponentType
@@ -106,6 +107,10 @@ class _sanitize_paths:
             IllegalOperationError: If the path is a local file and the server
                 is not configured to allow local file access.
         """
+        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+            # No need to validate in-memory URIs
+            return
+
         if not self.allow_local_file_access and not io_utils.is_remote(path):
             raise IllegalOperationError(
                 "Files in a local artifact store cannot be accessed from the "
@@ -138,6 +143,9 @@ class _sanitize_paths:
         else:
             # Neither string nor bytes, this is not a path
             return potential_path
+
+        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+            return path
 
         if io_utils.is_remote(path):
             # If we have a remote path, replace windows path separators with

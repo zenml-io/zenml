@@ -38,6 +38,7 @@ from zenml.artifacts.preexisting_data_materializer import (
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_SERVER,
+    IN_MEMORY_ARTIFACT_URI_PREFIX,
     MODEL_METADATA_YAML_FILE_NAME,
 )
 from zenml.enums import (
@@ -54,6 +55,9 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers.in_memory_materializer import (
+    InMemoryMaterializer,
+)
 from zenml.metadata.metadata_types import validate_metadata
 from zenml.models import (
     ArtifactVersionRequest,
@@ -152,7 +156,15 @@ def _store_artifact_data_and_prepare_request(
         Artifact version request for the artifact data that was stored.
     """
     artifact_store = Client().active_stack.artifact_store
-    artifact_store.makedirs(uri)
+
+    uses_in_memory_materializer = issubclass(
+        materializer_class, InMemoryMaterializer
+    )
+
+    if not uses_in_memory_materializer:
+        artifact_store.makedirs(uri)
+    elif not uri.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+        uri = f"{IN_MEMORY_ARTIFACT_URI_PREFIX}{name}/{uuid4()}"
 
     materializer = materializer_class(uri=uri, artifact_store=artifact_store)
     materializer.uri = materializer.uri.replace("\\", "/")
@@ -190,7 +202,9 @@ def _store_artifact_data_and_prepare_request(
         data_type=source_utils.resolve(data_type),
         content_hash=content_hash,
         project=Client().active_project.id,
-        artifact_store_id=artifact_store.id,
+        artifact_store_id=None
+        if uses_in_memory_materializer
+        else artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,

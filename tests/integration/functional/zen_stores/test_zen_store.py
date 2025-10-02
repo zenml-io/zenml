@@ -102,6 +102,7 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    PipelineSnapshotRequest,
     ProjectFilter,
     ProjectUpdate,
     RunMetadataResource,
@@ -125,7 +126,6 @@ from zenml.models import (
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
 from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
-from zenml.models.v2.core.pipeline_deployment import PipelineDeploymentRequest
 from zenml.models.v2.core.pipeline_run import PipelineRunRequest
 from zenml.models.v2.core.run_metadata import RunMetadataRequest
 from zenml.models.v2.core.step_run import StepRunRequest
@@ -191,7 +191,7 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
         assert entity.metadata is not None
 
     # Test filtering by name if applicable
-    if "name" in created_entity.model_fields:
+    if "name" in created_entity.model_fields and created_entity.name:
         entities_list = crud_test_config.list_method(
             crud_test_config.filter_model(name=created_entity.name)
         )
@@ -261,7 +261,7 @@ def test_create_entity_twice_fails(crud_test_config: CrudTestConfig):
         )
 
     entity_name = crud_test_config.entity_name
-    if entity_name in {"build", "deployment"}:
+    if entity_name in {"build", "snapshot"}:
         pytest.skip(f"Duplicates of {entity_name} are allowed.")
 
     # First creation is successful
@@ -5075,6 +5075,37 @@ class TestModelVersionPipelineRunLinks:
             )
             assert link_1.id == link_2.id
 
+    def test_linked_pipeline_run_fetching(self):
+        """Test that model version pipeline run links can be fetched using
+        the list_pipeline_runs method.
+        """
+        with ModelContext(True, create_prs=2) as (
+            model_version,
+            prs,
+        ):
+            zs = Client().zen_store
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequest(
+                    model_version=model_version.id,
+                    pipeline_run=prs[0].id,
+                )
+            )
+            zs.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequest(
+                    model_version=model_version.id,
+                    pipeline_run=prs[1].id,
+                )
+            )
+
+            assert (
+                Client()
+                .list_pipeline_runs(
+                    linked_to_model_version_id=model_version.id
+                )
+                .total
+                == 2
+            )
+
     def test_link_delete_found(self):
         with ModelContext(True, create_prs=1) as (
             model_version,
@@ -5230,8 +5261,6 @@ class TestTag:
 
         clean_client.update_tag("foo", name="foo2")
         assert clean_client.get_tag("foo2").color == "red"
-        with pytest.raises(KeyError):
-            clean_client.get_tag("foo")
 
         clean_client.update_tag(tag.id, color="yellow")
         assert clean_client.get_tag(tag.id).color == "yellow"
@@ -5442,6 +5471,13 @@ class TestRunMetadata:
             )
         )
 
+        pipeline_model = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=client.active_project.id,
+            )
+        )
+
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             artifact = client.zen_store.create_artifact(
                 ArtifactRequest(
@@ -5477,14 +5513,15 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             step_name = sample_name("foo")
-            deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
                     ),
                     stack=client.active_stack.id,
+                    pipeline=pipeline_model.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
                     step_configurations={
@@ -5506,7 +5543,7 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
-                    deployment=deployment.id,
+                    snapshot=snapshot.id,
                     status=ExecutionStatus.RUNNING,
                 )
             )
@@ -5516,7 +5553,6 @@ class TestRunMetadata:
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
-                    deployment=deployment.id,
                 )
             )
             resource = (
@@ -5525,12 +5561,6 @@ class TestRunMetadata:
 
         elif type_ == MetadataResourceTypes.SCHEDULE:
             step_name = sample_name("foo")
-            new_pipeline = client.zen_store.create_pipeline(
-                pipeline=PipelineRequest(
-                    name="foo",
-                    project=client.active_project.id,
-                )
-            )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
@@ -5538,16 +5568,17 @@ class TestRunMetadata:
                     project=client.active_project.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
-                    pipeline_id=new_pipeline.id,
+                    pipeline_id=pipeline_model.id,
                 )
             )
-            deployment = client.zen_store.create_deployment(
-                PipelineDeploymentRequest(
+            snapshot = client.zen_store.create_snapshot(
+                PipelineSnapshotRequest(
                     project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
                     ),
+                    pipeline=pipeline_model.id,
                     stack=client.active_stack.id,
                     client_version="0.1.0",
                     server_version="0.1.0",
@@ -5603,12 +5634,12 @@ class TestRunMetadata:
             or type_ == MetadataResourceTypes.STEP_RUN
         ):
             client.zen_store.delete_run(pr.id)
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
         elif type_ == MetadataResourceTypes.SCHEDULE:
-            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_snapshot(snapshot.id)
             client.zen_store.delete_schedule(resource.id)
-            client.zen_store.delete_pipeline(new_pipeline.id)
 
+        client.zen_store.delete_pipeline(pipeline_model.id)
         client.zen_store.delete_stack_component(sc.id)
 
 

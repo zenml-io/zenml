@@ -16,7 +16,10 @@
 import re
 from typing import TYPE_CHECKING, Dict, Sequence, Type
 
-from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.constants import (
+    DOCKER_SETTINGS_KEY,
+    RESOURCE_SETTINGS_KEY,
+)
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:

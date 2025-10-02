@@ -1,2 +1,2 @@
 pydantic-ai>=0.4.3
-zenml
+zenml[local]

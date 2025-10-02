@@ -464,11 +464,13 @@ def run_logs(
     )
 
     # Handle runner logs from workload manager
-    if run.deployment_id and source == "runner":
-        deployment = store.get_deployment(run.deployment_id)
-        if deployment.template_id and server_config().workload_manager_enabled:
+    if run.snapshot and source == "runner":
+        snapshot = run.snapshot
+        if (
+            snapshot.template_id or snapshot.source_snapshot_id
+        ) and server_config().workload_manager_enabled:
             workload_logs = workload_manager().get_logs(
-                workload_id=deployment.id
+                workload_id=snapshot.id
             )
 
             log_entries = []
