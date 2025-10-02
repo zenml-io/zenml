@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Quickstart Release Flow Runner
-# Orchestrates deployment, training, update, and evaluation for the Quickstart example during release prep.
+# Orchestrates lightweight Quickstart release validation: local agent batch run and cloud training.
 
 set -euo pipefail
 
@@ -14,15 +14,11 @@ Usage:
     [--branch-ref <git ref, e.g. refs/heads/misc/prepare-release-X.Y.Z>]
 
 Description:
-  Runs the Quickstart release validation flow end-to-end:
-  - Validates Docker availability
+  Runs the Quickstart release validation flow:
   - Patches the example config's parent_image and requirements to use the branch ref
   - Installs dependencies
-  - Prepares a temporary stack with a Docker deployer
-  - Deploys the agent (LLM-only), invokes it
-  - Trains on the cloud stack via python run.py --train --config
-  - Updates the deployment (hybrid) and invokes it
-  - Evaluates on the cloud stack via python run.py --evaluate --config
+  - Phase 1: Runs the agent locally in batch mode
+  - Phase 2: Trains on the cloud stack
 
 Notes:
   --branch-ref is optional. If not provided, the script falls back to $GITHUB_REF.
@@ -78,24 +74,9 @@ echo "New version:          ${NEW_VERSION}"
 echo "Git branch ref:       ${BRANCH_REF}"
 echo "================================"
 
-# Verify Docker availability
-echo "=== Checking Docker availability ==="
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Error: Docker CLI not found on PATH. Please ensure Docker is installed." >&2
-  exit 1
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "Error: Docker daemon is not reachable. Please ensure Docker is running." >&2
-  exit 1
-fi
-echo "Docker is available."
-
-# Prepare directories and variables
+# Minimal variables needed for the simplified flow
 DIR_PUSHED=0
 CLOUD_STACK="${CLOUD}"
-TEMP_STACK="temp-qs-${CLOUD}"
-DOCKER_DEPLOYER="gh-release-docker"
-DEPLOYMENT_NAME="support_agent"
 CONFIG="configs/training_${CLOUD}.yaml"
 REQS="requirements_${CLOUD}.txt"
 PARENT_IMAGE="${PARENT_PREFIX}-${NEW_VERSION}"
@@ -108,19 +89,7 @@ _cleanup() {
   trap - EXIT
   set +e
 
-  echo "=== Cleanup: tearing down temp resources (exit code: ${exit_code}) ==="
-  # Attempt to switch to the temp stack and delete deployment
-  zenml stack set "${TEMP_STACK}" >/dev/null 2>&1
-  zenml deployment delete "${DEPLOYMENT_NAME}" -y >/dev/null 2>&1
-
-  # Switch back to cloud stack before deleting the temp stack
-  zenml stack set "${CLOUD_STACK}" >/dev/null 2>&1
-  zenml stack delete "${TEMP_STACK}" -y >/dev/null 2>&1
-
-  # Delete the docker deployer component (best-effort)
-  zenml deployer delete "${DOCKER_DEPLOYER}" -y >/dev/null 2>&1
-
-  # Restore original directory if we changed it
+  # Only restore original directory if we changed it. Nothing else is provisioned in this flow.
   if [[ "${DIR_PUSHED}" -eq 1 ]]; then
     popd >/dev/null 2>&1
     DIR_PUSHED=0
@@ -154,57 +123,20 @@ sed -i -E "s|^([[:space:]]*parent_image:).*|\1 \"${PARENT_IMAGE}\"|g" "${CONFIG}
 
 # Patch requirements to install zenml from the provided branch ref
 echo "=== Updating ${REQS}: pinning zenml to branch ref ${BRANCH_REF} ==="
-sed -i -E "s|zenml\\[server\\]==[^[:space:]]*|${ZENML_GIT_SPEC}|g" "${REQS}"
+# Replace any line that starts with 'zenml[server]' to make the pin robust to different version operators.
+sed -i -E "s|^zenml\\[server\\].*|${ZENML_GIT_SPEC}|g" "${REQS}"
 
 # Install dependencies
 echo "=== Installing dependencies from ${REQS} ==="
 pip install -r "${REQS}"
 
-# Prepare stacks and deployer
-echo "=== Preparing stacks and deployer ==="
-echo "Setting active stack to cloud: ${CLOUD_STACK}"
+# Phase 1: Run the agent locally in batch mode
+echo "=== Phase 1: Run agent in batch mode ==="
+python run.py --agent --text "I want to open a savings account"
+
+# Phase 2: Train on the cloud stack
+echo "=== Phase 2: Train classifier on cloud stack ==="
 zenml stack set "${CLOUD_STACK}"
-
-echo "Registering docker deployer component: ${DOCKER_DEPLOYER} (idempotent)"
-zenml deployer register "${DOCKER_DEPLOYER}" -f docker || true
-
-echo "Copying cloud stack to temp stack: ${TEMP_STACK} (idempotent)"
-zenml stack copy "${CLOUD_STACK}" "${TEMP_STACK}" || true
-
-echo "Updating temp stack to use docker deployer"
-zenml stack update "${TEMP_STACK}" -D "${DOCKER_DEPLOYER}"
-
-# Phase 1: Deploy LLM-only agent and invoke
-echo "=== Phase 1: Deploy agent (LLM-only) and invoke ==="
-zenml stack set "${TEMP_STACK}"
-zenml pipeline deploy pipelines.support_agent.support_agent -n "${DEPLOYMENT_NAME}" -c configs/agent.yaml
-
-echo "Waiting briefly for deployment readiness..."
-sleep 20
-
-echo "Invoking deployed agent (LLM-only)"
-zenml deployment invoke "${DEPLOYMENT_NAME}" --text="my card is lost and i need a replacement"
-
-# Phase 2: Train classifier on cloud orchestrator
-echo "=== Phase 2: Train classifier on cloud orchestrator ==="
-zenml stack set "${CLOUD_STACK}"
-python run.py --train --config "${CONFIG}"
-
-# Phase 3: Update deployment to hybrid mode and invoke
-echo "=== Phase 3: Update deployment (hybrid) and invoke ==="
-zenml stack set "${TEMP_STACK}"
-zenml pipeline deploy pipelines.support_agent.support_agent -n "${DEPLOYMENT_NAME}" -c configs/agent.yaml -u
-
-echo "Waiting briefly for updated deployment readiness..."
-sleep 20
-
-echo "Invoking updated agent (hybrid)"
-zenml deployment invoke "${DEPLOYMENT_NAME}" --text="my card is lost and i need a replacement"
-
-# Phase 4: Evaluate on cloud orchestrator
-echo "=== Phase 4: Evaluate on cloud orchestrator ==="
-zenml stack set "${CLOUD_STACK}"
-python run.py --evaluate --config "${CONFIG}"
+python run.py --train
 
 echo "=== Quickstart release flow completed ==="
-# Normal exit will trigger cleanup via trap, which preserves the 0 exit code

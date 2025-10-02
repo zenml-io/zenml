@@ -122,10 +122,6 @@ jobs:
       - name: Install ZenML
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
-      - name: Check Docker
-        run: |
-          docker --version
-          docker info
       - name: Run Quickstart release flow on ${{ matrix.cloud }}
         run: |-
           scripts/qs_run_release_flow.sh \
