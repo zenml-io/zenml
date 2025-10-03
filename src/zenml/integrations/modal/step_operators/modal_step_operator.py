@@ -144,9 +144,7 @@ class ModalStepOperator(BaseStepOperator):
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
         )
 
-        async def run_sandbox() -> asyncio.Future[None]:
-            loop = asyncio.get_event_loop()
-            future = loop.create_future()
+        async def run_sandbox() -> None:
             with modal.enable_output():
                 async with app.run():
                     memory_mb = resource_settings.get_memory(ByteUnit.MB)
@@ -168,8 +166,5 @@ class ModalStepOperator(BaseStepOperator):
                     )
 
                     await sb.wait.aio()
-
-            future.set_result(None)
-            return future
 
         asyncio.run(run_sandbox())
