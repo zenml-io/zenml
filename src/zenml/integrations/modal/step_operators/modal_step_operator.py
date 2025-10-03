@@ -126,12 +126,10 @@ class ModalStepOperator(BaseStepOperator):
             environment=self.config.modal_environment,
         )
 
-        # Build Modal image using shared utility
         zenml_image = build_modal_image(image_name, stack, environment)
 
         resource_settings = info.config.resource_settings
 
-        # Determine GPU configuration from settings and resource settings
         gpu_values = None
         if settings.gpu:
             gpu_count = resource_settings.gpu_count

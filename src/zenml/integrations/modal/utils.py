@@ -40,7 +40,6 @@ def setup_modal_client(
         environment: Modal environment name.
     """
     if token_id and token_secret:
-        # Validate token format
         if not token_id.startswith("ak-"):
             logger.warning(
                 f"Token ID format may be invalid. Expected format: ak-xxxxx, "
@@ -53,7 +52,6 @@ def setup_modal_client(
                 f"got: {token_secret[:10]}... (truncated for security)"
             )
 
-        # Set both token ID and secret
         os.environ["MODAL_TOKEN_ID"] = token_id
         os.environ["MODAL_TOKEN_SECRET"] = token_secret
         logger.debug("Using platform token ID and secret from config")
@@ -61,14 +59,12 @@ def setup_modal_client(
         logger.debug(f"Token secret starts with: {token_secret[:5]}...")
 
     elif token_id:
-        # Validate token format
         if not token_id.startswith("ak-"):
             logger.warning(
                 f"Token ID format may be invalid. Expected format: ak-xxxxx, "
                 f"got: {token_id[:10]}... (truncated for security)"
             )
 
-        # Only token ID provided
         os.environ["MODAL_TOKEN_ID"] = token_id
         logger.debug("Using platform token ID from config")
         logger.warning(
@@ -78,7 +74,6 @@ def setup_modal_client(
         logger.debug(f"Token ID starts with: {token_id[:5]}...")
 
     elif token_secret:
-        # Validate token format
         if not token_secret.startswith("as-"):
             logger.warning(
                 f"Token secret format may be invalid. Expected format: as-xxxxx, "
@@ -95,7 +90,6 @@ def setup_modal_client(
 
     else:
         logger.debug("Using default platform authentication (~/.modal.toml)")
-        # Check if default auth exists
         modal_toml_path = os.path.expanduser("~/.modal.toml")
         if os.path.exists(modal_toml_path):
             logger.debug(f"Found platform config at {modal_toml_path}")
@@ -105,7 +99,6 @@ def setup_modal_client(
                 "Run 'modal token new' to set up authentication."
             )
 
-    # Set workspace/environment if provided
     if workspace:
         os.environ["MODAL_WORKSPACE"] = workspace
     if environment:
