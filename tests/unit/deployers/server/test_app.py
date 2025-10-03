@@ -27,9 +27,12 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
+import zenml.deployers.server.app as deployment_app
 from zenml.deployers.server.app import (
+    DeploymentAppConfig,
     _build_invoke_router,
     app,
+    create_app,
     get_pipeline_service,
     lifespan,
     runtime_error_handler,
@@ -233,7 +236,30 @@ class TestDeploymentAppRoutes:
         monkeypatch.setattr(
             "zenml.deployers.server.app._service", mock_service
         )
-        assert get_pipeline_service() is mock_service
+
+        # Build a minimal Request carrying an app.state.service reference; this mimics
+        # FastAPI's injection so the dependency can resolve without relying on globals.
+        class _State:
+            pass
+
+        state = _State()
+        state.service = mock_service
+
+        class _App:
+            pass
+
+        app_like = _App()
+        app_like.state = state
+
+        request = Request(
+            {
+                "type": "http",
+                "method": "GET",
+                "url": "http://test",
+                "app": app_like,
+            }
+        )
+        assert get_pipeline_service(request) is mock_service
 
 
 class TestDeploymentAppInvoke:
@@ -398,3 +424,234 @@ class TestBuildInvokeRouter:
         assert router is not None
         routes = [route.path for route in router.routes]
         assert "/invoke" in routes
+
+
+class TestCreateAppFactory:
+    """Tests for the create_app() factory ensuring per-instance isolation and behavior."""
+
+    def test_create_app_test_mode_no_init_no_global_touch(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test mode doesn't initialize service or touch module-level _service."""
+        # Ensure env does not force test mode or auth behavior unexpectedly
+        monkeypatch.delenv("ZENML_DEPLOYMENT_TEST_MODE", raising=False)
+        monkeypatch.delenv("ZENML_DEPLOYMENT_AUTH_KEY", raising=False)
+
+        # Prepare a sentinel for the legacy global and assert it remains unchanged
+        sentinel = object()
+        monkeypatch.setattr(
+            deployment_app, "_service", sentinel, raising=False
+        )
+
+        # A service factory that should NOT be called in test mode
+        sf = mocker.MagicMock(name="service_factory")
+
+        cfg = DeploymentAppConfig(
+            test_mode=True,
+            deployment_id="dep-ignored",
+            auth_key="alpha",
+        )
+        app_instance = create_app(config=cfg, service_factory=sf)
+
+        # Startup and shutdown via TestClient should not initialize or attach service / invoke router
+        with TestClient(app_instance) as client:
+            schema = client.get("/openapi.json").json()
+            # In test mode, the invoke router is not included
+            assert "/invoke" not in schema.get("paths", {})
+
+        sf.assert_not_called()
+        assert getattr(app_instance.state, "service", None) is None
+        # Global legacy _service must remain untouched
+        assert deployment_app._service is sentinel
+
+    def test_create_app_initializes_and_sets_state(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """Normal mode initializes service and stores it on app.state; includes /invoke."""
+        # Ensure env does not force test mode
+        monkeypatch.delenv("ZENML_DEPLOYMENT_TEST_MODE", raising=False)
+
+        # Keep legacy global isolated and verify it's never changed
+        sentinel = object()
+        monkeypatch.setattr(
+            deployment_app, "_service", sentinel, raising=False
+        )
+
+        # Mock service implementing the minimal interface required
+        svc = mocker.MagicMock(spec=PipelineDeploymentService)
+        # Required for _build_invoke_router to construct request/response models
+        svc.input_model = MockWeatherRequest
+        svc.initialize = mocker.MagicMock()
+        svc.cleanup = mocker.MagicMock()
+
+        sf = mocker.MagicMock(return_value=svc)
+
+        cfg = DeploymentAppConfig(deployment_id="dep-1", test_mode=False)
+        app_instance = create_app(config=cfg, service_factory=sf)
+
+        with TestClient(app_instance) as client:
+            # Service should be constructed and initialized once with the provided deployment_id
+            sf.assert_called_once_with("dep-1")
+            svc.initialize.assert_called_once()
+            # Service should be stored on app.state
+            assert app_instance.state.service is svc
+
+            # The invoke route should be available in the OpenAPI schema
+            schema = client.get("/openapi.json").json()
+            assert "/invoke" in schema.get("paths", {})
+
+        # Service cleanup should be called on shutdown
+        svc.cleanup.assert_called_once()
+        # Legacy global must remain unchanged
+        assert deployment_app._service is sentinel
+
+    def test_per_app_auth_isolation(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """Two apps with different auth keys enforce independent auth policies."""
+        # Ensure no module-level auth env interferes
+        monkeypatch.delenv("ZENML_DEPLOYMENT_AUTH_KEY", raising=False)
+
+        def _success_response() -> BaseDeploymentInvocationResponse:
+            # Response structure matching what's expected by response_model
+            return BaseDeploymentInvocationResponse(
+                success=True,
+                outputs={"result": "ok"},
+                execution_time=0.1,
+                metadata=DeploymentInvocationResponseMetadata(
+                    deployment_id=uuid4(),
+                    deployment_name="deployment",
+                    pipeline_name="pipeline",
+                    run_id=None,
+                    run_name=None,
+                    parameters_used={"city": "Paris", "temperature": 25},
+                    snapshot_id=uuid4(),
+                    snapshot_name="snapshot",
+                ),
+                error=None,
+            )
+
+        # App 1 uses key 'alpha'
+        svc1 = mocker.MagicMock(spec=PipelineDeploymentService)
+        svc1.input_model = MockWeatherRequest
+        svc1.execute_pipeline.return_value = _success_response()
+
+        # App 2 uses key 'beta'
+        svc2 = mocker.MagicMock(spec=PipelineDeploymentService)
+        svc2.input_model = MockWeatherRequest
+        svc2.execute_pipeline.return_value = _success_response()
+
+        app1 = create_app(
+            config=DeploymentAppConfig(
+                deployment_id="dep-a", test_mode=False, auth_key="alpha"
+            ),
+            service_factory=lambda _: svc1,
+        )
+        app2 = create_app(
+            config=DeploymentAppConfig(
+                deployment_id="dep-b", test_mode=False, auth_key="beta"
+            ),
+            service_factory=lambda _: svc2,
+        )
+
+        payload = {"parameters": {"city": "Paris", "temperature": 25}}
+        with TestClient(app1) as c1, TestClient(app2) as c2:
+            # App1 should accept 'alpha' and reject 'beta'
+            r = c1.post(
+                "/invoke",
+                headers={"Authorization": "Bearer alpha"},
+                json=payload,
+            )
+            assert r.status_code == 200
+            r = c1.post(
+                "/invoke",
+                headers={"Authorization": "Bearer beta"},
+                json=payload,
+            )
+            assert r.status_code == 401
+
+            # App2 should accept 'beta' and reject 'alpha'
+            r = c2.post(
+                "/invoke",
+                headers={"Authorization": "Bearer beta"},
+                json=payload,
+            )
+            assert r.status_code == 200
+            r = c2.post(
+                "/invoke",
+                headers={"Authorization": "Bearer alpha"},
+                json=payload,
+            )
+            assert r.status_code == 401
+
+        # Only successful, authorized requests should have triggered execution
+        assert svc1.execute_pipeline.call_count == 1
+        assert svc2.execute_pipeline.call_count == 1
+
+    def test_factory_never_modifies_module_global_service(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """create_app must never modify the module-level _service global."""
+        sentinel = object()
+        monkeypatch.setattr(
+            deployment_app, "_service", sentinel, raising=False
+        )
+
+        svc1 = mocker.MagicMock(spec=PipelineDeploymentService)
+        svc1.input_model = MockWeatherRequest
+
+        svc2 = mocker.MagicMock(spec=PipelineDeploymentService)
+        svc2.input_model = MockWeatherRequest
+
+        app1 = create_app(
+            config=DeploymentAppConfig(deployment_id="dep-1", test_mode=False),
+            service_factory=lambda _: svc1,
+        )
+        app2 = create_app(
+            config=DeploymentAppConfig(deployment_id="dep-2", test_mode=False),
+            service_factory=lambda _: svc2,
+        )
+
+        # Spin both apps up and down to ensure no global state is mutated
+        with TestClient(app1), TestClient(app2):
+            pass
+
+        assert deployment_app._service is sentinel
+
+    def test_get_pipeline_service_prefers_app_state(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        mocker: MockerFixture,
+    ) -> None:
+        """get_pipeline_service prefers app.state.service over legacy _service within factory apps."""
+        # Prepare a legacy global service that should NOT be used
+        legacy_service = mocker.MagicMock(spec=PipelineDeploymentService)
+        monkeypatch.setattr(
+            deployment_app, "_service", legacy_service, raising=False
+        )
+
+        # The per-app service should be resolved by the dependency during requests
+        svc = mocker.MagicMock(spec=PipelineDeploymentService)
+        svc.input_model = MockWeatherRequest
+        svc.is_healthy = mocker.MagicMock(return_value=True)
+
+        app_instance = create_app(
+            config=DeploymentAppConfig(deployment_id="dep-x", test_mode=False),
+            service_factory=lambda _: svc,
+        )
+
+        with TestClient(app_instance) as client:
+            resp = client.get("/health")
+            assert resp.status_code == 200
+
+        # Ensure per-app service was called and the legacy global was not
+        svc.is_healthy.assert_called_once()
+        legacy_service.is_healthy.assert_not_called()
