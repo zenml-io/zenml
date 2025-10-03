@@ -201,7 +201,8 @@ class ModalStepOperator(BaseStepOperator):
             token_id=self.config.token_id,
             token_secret=self.config.token_secret,
             workspace=self.config.workspace,
-            environment=self.config.modal_environment,
+            environment=settings.modal_environment
+            or self.config.modal_environment,
         )
 
         zenml_image = build_modal_image(image_name, stack, environment)
