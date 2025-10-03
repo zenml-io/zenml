@@ -25,6 +25,8 @@ from zenml.utils.secret_utils import SecretField
 if TYPE_CHECKING:
     from zenml.integrations.modal.step_operators import ModalStepOperator
 
+DEFAULT_TIMEOUT_SECONDS = 86400  # 24 hours
+
 
 class ModalStepOperatorSettings(BaseSettings):
     """Settings for the Modal step operator.
@@ -72,9 +74,9 @@ class ModalStepOperatorSettings(BaseSettings):
         "If not specified, uses the default environment for the workspace",
     )
     timeout: int = Field(
-        86400,
-        description="Maximum execution time in seconds for step completion. Must be between 1 and 86400 seconds. "
-        "Examples: 3600 (1 hour), 7200 (2 hours), 86400 (24 hours maximum). "
+        DEFAULT_TIMEOUT_SECONDS,
+        description=f"Maximum execution time in seconds for step completion. Must be between 1 and {DEFAULT_TIMEOUT_SECONDS} seconds. "
+        f"Examples: 3600 (1 hour), 7200 (2 hours), {DEFAULT_TIMEOUT_SECONDS} (24 hours maximum). "
         "Step execution will be terminated if it exceeds this timeout",
     )
 
