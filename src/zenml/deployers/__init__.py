@@ -40,7 +40,9 @@ from zenml.deployers.containerized_deployer import (
 )
 from zenml.deployers.docker.docker_deployer import (
     DockerDeployer,
+    DockerDeployerConfig,
     DockerDeployerFlavor,
+    DockerDeployerSettings,
 )
 
 __all__ = [
@@ -49,5 +51,7 @@ __all__ = [
     "BaseDeployerConfig",
     "ContainerizedDeployer",
     "DockerDeployer",
+    "DockerDeployerConfig",
     "DockerDeployerFlavor",
+    "DockerDeployerSettings",
 ]

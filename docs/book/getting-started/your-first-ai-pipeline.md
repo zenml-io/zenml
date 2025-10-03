@@ -5,22 +5,22 @@ icon: rocket
 
 ## Your First AI Pipeline
 
-Build and evaluate a real AI service powered by a ZenML pipeline. This quickstart works out of the box with a deterministic fallback and upgrades seamlessly to LLMs when you add a provider API key.
+Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or `curl`, optionally use a Streamlit web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
 
 {% hint style="info" %}
 Why pipelines?
 - **Reproducible & portable**: Run the same code locally or on the cloud by switching stacks.
 - **One approach for models and agents**: Steps, pipelines, and artifacts work for sklearn and LLMs alike.
-- **Evaluate & observe by default**: Quality reports, lineage, and step metadata (tokens, latency) out of the box.
+- **Observe by default**: Lineage and step metadata (e.g., tokens, latency) are tracked and visible in the dashboard.
 {% endhint %}
 
-Modeling agents as pipelines makes non-deterministic workflows debuggable and shippable: prompts, tools, and routing become explicit steps; runs produce versioned artifacts (including traces and metrics) you can compare and evaluate. This is the same pattern you use for classical ML, so agents and models share the lifecycle and tooling.
+Modeling agents as pipelines makes non-deterministic workflows debuggable and shippable: prompts, tools, and routing become explicit steps; runs produce versioned artifacts (including traces and metrics) you can compare and inspect. This is the same pattern you use for classical ML, so agents and models share the lifecycle and tooling.
 
 ### What you'll build
-- **Document analysis service**: A FastAPI app that triggers a ZenML pipeline
-- **LLM-first with fallback**: Uses [LiteLLM](https://github.com/BerriAI/litellm) if an API key is set, otherwise runs a deterministic analysis that doesn't require making an API request to an LLM service
-- **Tracked artifacts**: Summary, keywords, sentiment, readability, and rich metadata
-- **Quality evaluation**: A separate pipeline that annotates runs and generates an HTML report
+- **Document analysis pipeline deployed as an HTTP endpoint** managed by ZenML
+- **OpenAI SDK with deterministic fallback**: Uses OpenAI when a key is set, otherwise runs offline via a rule-based analyzer
+- **Tracked artifacts and metadata**: Summary, keywords, sentiment, readability score, plus latency and token usage
+- **Optional Streamlit UI client** to call the deployment from your browser
 
 ### Architecture (at a glance)
 
@@ -31,32 +31,29 @@ config:
   theme: mc
 ---
 flowchart TB
- subgraph Evaluation["Evaluation Pipeline"]
-        R1["load recent analyses"]
-        R2["annotate and score"]
-        R3["render evaluation HTML"]
+  U["CLI / curl / code"] --> D["ZenML Deployment Endpoint (doc_analyzer)"]
+  S["Streamlit UI (optional)"] --> D
+
+  subgraph DEPLOY["Managed Deployment"]
+    D --> T["Triggers pipeline run"]
   end
- subgraph s1["Document Analysis Pipeline"]
-        S1["ingest_document_step"]
-        S2["analyze_document_step LLM or fallback"]
-        S3["render_report_step"]
+
+  subgraph PIPE["Pipeline: pipelines.doc_analyzer.doc_analyzer"]
+    I["ingest_document_step"]
+    A["analyze_document_step (OpenAI or deterministic)"]
+    R["render_analysis_report_step"]
+    I --> A --> R
   end
- subgraph s2["Stack"]
-        O[("Orchestrator - local or remote")]
-        AR["Artifact Store"]
+
+  T --> PIPE
+
+  subgraph STACK["Stack"]
+    O[("Orchestrator")]
+    AR[("Artifact Store")]
   end
-    U["User / Client"] --> A["FastAPI app"]
-    A -- Triggers on document upload --> s1
-    S1 --> S2
-    S2 --> S3
-    S3 -- DocumentAnalysisResult --> AR
-    R1 --> R2
-    R2 --> R3
-    U -- Triggers to evaluate app --> Evaluation
-    Evaluation -- Executes on --> O
-    s1 -- Executes on --> O
-    style s1 fill:#E1BEE7,stroke:#AA00FF
-    style Evaluation fill:#E1BEE7,stroke:#AA00FF
+
+  PIPE --> AR
+  DEPLOY --> O
 ```
 
 ### Prerequisites
@@ -66,7 +63,7 @@ pip install "zenml[server]"
 zenml init
 ```
 
-Optional (for LLM mode via LiteLLM, OpenAI shown):
+Optional (for LLM mode with the OpenAI Python SDK):
 ```bash
 export OPENAI_API_KEY="your-key"
 ```
@@ -82,30 +79,80 @@ pip install -r requirements.txt
 Already have the repo? Just `cd examples/minimal_agent_production` and continue.
 {% endhint %}
 
-### Run the service
+### Deploy the pipeline
+
+Deploy the pipeline as a managed HTTP endpoint and get its URL:
 
 ```bash
-uvicorn app.main:app --reload --port 8010
+zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer
+zenml deployment describe doc_analyzer
 ```
 
-Open `http://localhost:8010` to use the UI, or call it programmatically:
+### Analyze a document
+
+Use the ZenML CLI to invoke your deployment:
+
 ```bash
-curl -X POST http://localhost:8010/analyze \
-  -H 'Content-Type: application/json' \
+zenml deployment invoke doc_analyzer \
+  --content="Artificial Intelligence is transforming how we work..." \
+  --filename="ai-overview.txt" \
+  --document_type="text"
+```
+
+Or call the HTTP endpoint directly with curl. Send a JSON body that wraps inputs under parameters:
+
+```bash
+ENDPOINT=http://localhost:8000   # replace with your deployment URL
+curl -X POST "$ENDPOINT/invoke" \
+  -H "Content-Type: application/json" \
   -d '{
-        "filename": "sample-report.txt",
-        "content": "This is a sample document for analysis...",
-        "document_type": "report",
-        "analysis_type": "full"
-      }'
+    "parameters": {
+      "content": "Your text here...",
+      "filename": "document.txt",
+      "document_type": "text"
+    }
+  }'
 ```
 
-The endpoint triggers a ZenML pipeline run that stores detailed results and metadata you can inspect in the dashboard.
+If your deployment requires auth, include an Authorization header:
 
-<figure>
-  <img src="../.gitbook/assets/your_first_pipeline_ui.png" alt="FastAPI document analysis UI">
-  <figcaption>The web UI served by uvicorn at <code>http://localhost:8010</code>.</figcaption>
-</figure>
+```bash
+-H "Authorization: Bearer <YOUR_KEY>"
+```
+
+Endpoint contract (summary):
+- Method and path: POST {ENDPOINT}/invoke
+- Parameters (any combination):
+  - content: string
+  - url: string
+  - path: string
+  - filename: string
+  - document_type: string (e.g., text, markdown, report, article)
+- Response: JSON with outputs.{document_analysis*} containing a DocumentAnalysis object with:
+  - summary: string
+  - keywords: string[]
+  - sentiment: "positive" | "negative" | "neutral"
+  - readability_score: number
+  - word_count: number
+  - model: string
+  - latency_ms: number
+  - tokens_prompt: number
+  - tokens_completion: number
+  - metadata: { analysis_method: "llm" | "deterministic_fallback", document_type: string, ... }
+  - document: { filename: string, document_type: string, created_at: ISO8601, ... }
+  - Note: The exact output key may be namespaced; look for a key containing "document_analysis".
+
+### Use the web interface (optional)
+
+![Streamlit app interface](../.gitbook/assets/minimal_agent_production_streamlit.png)
+
+Launch the Streamlit frontend:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Enter your deployment URL (defaults from the `DOCUMENT_ANALYSIS_ENDPOINT` environment variable) and optionally an auth key in the sidebar. The app wraps requests under parameters and POSTs to the `/invoke` endpoint.
 
 ### Inspect your pipeline runs
 
@@ -114,52 +161,91 @@ zenml login --local
 ```
 
 In the dashboard, open the latest run to explore:
-* **Steps** like `ingest_document_step`, `analyze_document_step`, `render_report_step`
-* **Artifacts** like `DocumentAnalysis` with summary, keywords, sentiment, readability score
-* **Metadata** such as latency, token usage, and model name (when in LLM mode)
+* **Steps** like `ingest_document_step`, `analyze_document_step`, `render_analysis_report_step`
+* **Artifacts** including `document_analysis` (structured JSON result) and `document_analysis_report` (HTML report)
+* **Metadata** such as `latency_ms`, `tokens_prompt`, `tokens_completion`, the model label, and the `analysis_method` used
 
 Tip: Switch to the [Timeline view](../how-to/dashboard/dashboard-features.md#timeline-view) to compare step durations, spot bottlenecks, and understand parallel execution at a glance.
 
 <figure>
   <img src="../.gitbook/assets/your_first_pipeline_analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
-  <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata.</figcaption>
-</figure>
-
-### Evaluate quality
-
-Generate a quality report across recent analyses:
-```bash
-python run_evaluation.py
-```
-
-Open the run in the dashboard and locate the HTML report artifact with per-item annotations (summary quality, keyword relevance, sentiment accuracy, completeness) and aggregated scores.
-
-<figure>
-  <img src="../.gitbook/assets/your_first_pipeline_pipeline_evaluation.png" alt="Evaluation pipeline DAG in ZenML dashboard">
-  <figcaption>Evaluation pipeline producing an HTML report artifact with aggregated metrics.</figcaption>
+  <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata in the ZenML dashboard.</figcaption>
 </figure>
 
 ### How it works (at a glance)
 
-- The FastAPI app forwards requests to the `document_analysis_pipeline` in `pipelines/production.py`
-- The `analyze` step uses LiteLLM if an API key is configured, otherwise a deterministic analyzer
-- Artifacts are versioned and traceable; evaluation runs read past analyses and render a report
+- The `doc_analyzer` pipeline orchestrates three steps: ingestion → analysis → report.
+- The `analyze_document_step` uses the OpenAI Python SDK when `OPENAI_API_KEY` is set, and falls back to a deterministic analyzer when no key is available or if the API call fails. It records latency and token usage where available.
+- The `render_analysis_report_step` produces an HTML report artifact you can view in the ZenML dashboard.
 
-Key files to explore:
-- `examples/minimal_agent_production/pipelines/production.py`
-- `examples/minimal_agent_production/steps/analyze.py`
-- `examples/minimal_agent_production/run_evaluation.py`
+The pipeline is configured to inject your OpenAI key at build/deploy time:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    requirements="requirements.txt",
+    environment={
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+    },
+)
+```
+
+And the pipeline definition wires together the three steps and returns the main analysis artifact:
+
+```python
+from typing import Annotated, Optional
+from zenml import ArtifactConfig, pipeline
+
+@pipeline(
+    settings={"docker": docker_settings},
+    enable_cache=False,
+)
+def doc_analyzer(
+    content: Optional[str] = None,
+    url: Optional[str] = None,
+    path: Optional[str] = None,
+    filename: Optional[str] = None,
+    document_type: str = "text",
+) -> Annotated[
+    DocumentAnalysis,
+    ArtifactConfig(name="document_analysis", tags=["analysis", "serving"]),
+]:
+    document = ingest_document_step(
+        content=content,
+        url=url,
+        path=path,
+        filename=filename,
+        document_type=document_type,
+    )
+    analysis = analyze_document_step(document)
+    render_analysis_report_step(analysis)
+    return analysis
+```
 
 ### Production next steps
-- **Run remotely**: Configure a remote stack/orchestrator and run the same pipeline on managed compute. See [Deploy](deploying-zenml/README.md)
-- **Automate triggering**: [Create a run template](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) (ZenML Pro) and trigger via API/webhooks from your app
-- **Operationalize**: Add caching, retries, schedules, and CI/CD using concepts in the docs
+- **Run remotely**: Configure a remote stack/orchestrator and deploy the same pipeline as a managed endpoint. See [Deploy](deploying-zenml/README.md).
+- **Configure deployment settings**: Enable authentication and other deployer options via config:
+  ```yaml
+  # my_config.yaml
+  settings:
+    deployer:
+      generate_auth_key: true
+  ```
+  Deploy with:
+  ```bash
+  zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config my_config.yaml
+  ```
+- **Automate triggering**: [Create a run template](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) (ZenML Pro) and trigger via API/webhooks from your app.
+- **Future enhancement**: Add an evaluation pipeline to score outputs and render reports if you need automated quality checks.
 
 ### Extend it
 
-- Swap LLMs/providers through LiteLLM without code changes
-- Add guardrails/structured outputs via Pydantic models
-- Add retrieval or additional steps for more advanced analysis
+- **Switch models** via the `DOC_ANALYSIS_LLM_MODEL` environment variable (see `constants.py`).
+- **Adapt the LLM integration** by extending `perform_llm_analysis` to use other providers.
+- **Add ingestion modes** (e.g., richer URL handling or PDF parsing) as new steps before analysis.
+- **Add guardrails/validation** steps or enrich metadata captured during analysis.
+- **Introduce retrieval/tooling** steps ahead of analysis for more advanced workflows.
 
 Looking for the code? Browse the complete example at
-`examples/minimal_agent_production`.
+[`examples/minimal_agent_production`](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production).

@@ -331,6 +331,7 @@ module = [
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
+    "seaborn.*",
     "deepchecks.*",
     "boto3.*",
     "botocore.*",

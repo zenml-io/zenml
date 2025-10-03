@@ -69,14 +69,51 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb
   publish-python-package:
+    # This previously used the publish_to_pypi.yml workflow, but PyPI
+    # doesn't support trusted publishing with reusable workflows yet.
+    # See https://github.com/pypi/warehouse/issues/11096
     if: github.repository == 'zenml-io/zenml'
+    name: Publish Python 🐍 package 📦 to PyPI
     needs:
       - setup-and-test
       - sqlite-db-migration-testing
       - mysql-db-migration-testing
       - mariadb-db-migration-testing
-    uses: ./.github/workflows/publish_to_pypi.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      # This permission is required for trusted publishing.
+      id-token: write
+      contents: read
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Get the version from the github tag ref
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.9'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.8.14
+      - name: Include latest dashboard
+        run: bash scripts/install-dashboard.sh
+      - name: Verify version
+        run: |-
+          if [ "$(cat src/zenml/VERSION)" != "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then
+            echo "Version mismatch between src/zenml/VERSION and git tag"
+            exit 1
+          fi
+      - name: Build package
+        run: uv build
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
   wait-for-package-release:
     runs-on: ubuntu-latest
     needs: publish-python-package

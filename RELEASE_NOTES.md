@@ -2,6 +2,44 @@
 
 # 0.90.0
 
+This release introduces pipeline snapshots and pipeline deployments, refactors the base package dependencies, and adds runtime environment variable support.
+
+## ⚠️ Breaking Changes
+
+- **Client-Server Compatibility**: Not compatible with previous versions. Client and server must be upgraded simultaneously.
+- **Run Templates**: Existing run templates need to be recreated as they contain previous Client versions in their container images.
+- **Base Package**: The `zenml` package no longer includes local database dependencies. Install `zenml[local]` if you want to use ZenML without a local/remote server.
+
+## Deprecations
+
+- **Run Templates**: Deprecated in favor of pipeline snapshots. Snapshots can be triggered from server/dashboard and deployed as endpoints.
+- **ZenML Pro On-Prem deployments only**: The `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` server environment variable is deprecated. Use `ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS` instead.
+- **Stack Component API**: The `StackComponent.prepare_pipeline_deployment(...)` method has been removed and will not be called anymore. This might be relevant if you've implemented custom stack components that rely on this method being called.
+
+## New Features
+
+### Pipeline Snapshots
+- Capture immutable snapshots of pipeline code, configuration, and container images
+- Execute snapshots from server/dashboard without local code environment
+- Can be deployed
+
+### Pipeline Deployments
+- Add a new `Deployer` stack component and Docker, AWS and GCP implementations
+- Deploy pipelines as HTTP endpoints for online inference or agentic usecases
+- Add pipeline init/cleanup hooks for quicker deployment runs
+
+### Runtime Environment Variables
+- Configure environment variables when running pipelines
+- Environment variables can either be defined directly or from ZenML secrets
+
+### Dependency Management
+- Move local database dependencies to `local` package extra
+- Add support for latest Pydantic and CloudPickle versions
+- Reduce base package dependencies
+
+### Jax Support
+- Add materializer for Jax arrays
+
 ## What's Changed
 * Add 0.85.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3951
 * Add version 0.84.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/3949

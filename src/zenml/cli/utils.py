@@ -2529,7 +2529,7 @@ def pretty_print_deployment(
         cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
 
         declare("[bold]CLI Command Example:[/bold]")
-        console.print(f"  [green]{cli_command}[/green]")
+        console.print(f"[green]{cli_command}[/green]")
 
         # cURL example
         declare("\n[bold]cURL Example:[/bold]")
@@ -2542,18 +2542,18 @@ def pretty_print_deployment(
                     '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
                 )
 
-        curl_params = json.dumps(example, indent=2).replace("\n", "\n      ")
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
 
         curl_headers.append('-H "Content-Type: application/json"')
-        headers_str = " \\\n    ".join(curl_headers)
+        headers_str = "\\\n  ".join(curl_headers)
 
         curl_command = f"""curl -X POST {deployment.url}/invoke \\
-    {headers_str} \\
-    -d '{{
-      "parameters": {curl_params}
-    }}'"""
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
 
-        console.print(f"  [green]{curl_command}[/green]")
+        console.print(f"[green]{curl_command}[/green]")
 
     if show_schema:
         input_schema = get_deployment_input_schema(deployment)

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    {css_styles}
+    </style>
+</head>
+<body>
+<div class="evaluation-container">
+    <div class="evaluation-header">
+        <h2 class="evaluation-title">
+            🤖 Agent Performance Comparison
+        </h2>
+        <p class="evaluation-subtitle">
+            Confusion Matrices: Model Prediction Accuracy Analysis
+        </p>
+    </div>
+
+    <div class="confusion-matrix-container">
+        <img src="data:image/png;base64,{img_base64}"
+             class="confusion-matrix-image"
+             alt="Agent Performance Comparison - Confusion Matrices" />
+    </div>
+
+    <!-- Performance Comparison Section -->
+    <div class="performance-comparison">
+        <h3 class="performance-title">
+            📊 Performance Metrics Comparison
+        </h3>
+
+        <div class="metrics-container">
+            <!-- Accuracy Comparison -->
+            <div class="metric-section">
+                <h4 class="metric-header">
+                    🎯 Accuracy {accuracy_winner_badge}
+                </h4>
+                <div class="metric-bar-container">
+                    <span class="metric-bar-label">LLM-Only:</span>
+                    <div class="metric-bar-track">
+                        <div class="metric-bar-fill {llm_accuracy_class}"
+                             style="width: {llm_accuracy_percent}%;">
+                            {llm_accuracy_display}
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-bar-container">
+                    <span class="metric-bar-label">Classifier:</span>
+                    <div class="metric-bar-track">
+                        <div class="metric-bar-fill {classifier_accuracy_class}"
+                             style="width: {classifier_accuracy_percent}%;">
+                            {classifier_accuracy_display}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F1 Score Comparison -->
+            <div class="metric-section">
+                <h4 class="metric-header">
+                    ⚖️ F1 Score {f1_winner_badge}
+                </h4>
+                <div class="metric-bar-container">
+                    <span class="metric-bar-label">LLM-Only:</span>
+                    <div class="metric-bar-track">
+                        <div class="metric-bar-fill {llm_f1_class}"
+                             style="width: {llm_f1_percent}%;">
+                            {llm_f1_display}
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-bar-container">
+                    <span class="metric-bar-label">Classifier:</span>
+                    <div class="metric-bar-track">
+                        <div class="metric-bar-fill {classifier_f1_class}"
+                             style="width: {classifier_f1_percent}%;">
+                            {classifier_f1_display}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Winner -->
+        <div class="winner-announcement {winner_class}">
+            <p class="winner-text {winner_text_class}">
+                {winner_message}
+            </p>
+        </div>
+    </div>
+
+    <div class="approach-comparison">
+        <div class="approach-card">
+            <div class="approach-badge llm-only">
+                LLM-Only Mode
+            </div>
+            <p class="approach-description">
+                Generic banking responses<br/>
+                No intent classification, general advice
+            </p>
+        </div>
+
+        <div class="approach-card">
+            <div class="approach-badge with-classifier">
+                With Intent Classifier
+            </div>
+            <p class="approach-description">
+                Structured responses by intent<br/>
+                Targeted support, domain-specific help
+            </p>
+        </div>
+    </div>
+
+    <div class="interpretation-note">
+        <p class="interpretation-text">
+            💡 <strong>Interpretation:</strong> Darker colors indicate higher prediction counts.
+            Diagonal values represent correct predictions.
+        </p>
+    </div>
+</div>
+</body>
+</html>
