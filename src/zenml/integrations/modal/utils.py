@@ -172,19 +172,12 @@ def build_modal_image(
             "No Docker credentials found for the container registry."
         )
 
-    try:
-        registry_secret = modal.Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
-        )
-    except Exception as e:
-        raise RuntimeError(
-            "Failed to create Modal secret for container registry credentials. "
-            "Action required: verify your container registry credentials in the active ZenML stack and "
-            "ensure your Modal account has permission to create secrets."
-        ) from e
+    registry_secret = modal.Secret.from_dict(
+        {
+            "REGISTRY_USERNAME": docker_username,
+            "REGISTRY_PASSWORD": docker_password,
+        }
+    )
 
     try:
         modal_image = modal.Image.from_registry(
