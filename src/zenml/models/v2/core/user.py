@@ -81,6 +81,10 @@ class UserBase(BaseModel):
         default=None,
         title="The metadata associated with the user.",
     )
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -156,8 +160,7 @@ class UserRequest(UserBase, BaseRequest):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     is_admin: bool = Field(
@@ -186,8 +189,7 @@ class UserUpdate(UserBase, BaseUpdate):
     )
     full_name: Optional[str] = Field(
         default=None,
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     is_admin: Optional[bool] = Field(
@@ -266,8 +268,7 @@ class UserResponseBody(BaseDatedResponseBody):
     )
     full_name: str = Field(
         default="",
-        title="The full name for the account owner. Only relevant for user "
-        "accounts.",
+        title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
     email_opted_in: Optional[bool] = Field(
@@ -286,6 +287,10 @@ class UserResponseBody(BaseDatedResponseBody):
     default_project_id: Optional[UUID] = Field(
         default=None,
         title="The default project ID for the user.",
+    )
+    avatar_url: Optional[str] = Field(
+        default=None,
+        title="The avatar URL for the account.",
     )
 
 
@@ -438,6 +443,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_body().default_project_id
+
+    @property
+    def avatar_url(self) -> Optional[str]:
+        """The `avatar_url` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().avatar_url
 
     # Helper methods
     @classmethod

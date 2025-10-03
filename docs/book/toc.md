@@ -5,6 +5,7 @@
 * [Welcome to ZenML](introduction.md)
 * [Installation](getting-started/installation.md)
 * [Hello World](getting-started/hello-world.md)
+* [Your First AI Pipeline](getting-started/your-first-ai-pipeline.md)
 * [Core Concepts](getting-started/core-concepts.md)
 * [System Architecture](getting-started/system-architectures.md)
 
@@ -44,14 +45,17 @@
   * [Visualizations](how-to/artifacts/visualizations.md)
 * [Stack & Components](how-to/stack-components/stack_components.md)
 * [Service Connectors](how-to/stack-components/service_connectors.md)
+* [Pipeline Snapshots](how-to/snapshots/snapshots.md)
+* [Pipeline Deployments](how-to/deployment/deployment.md)
 * [Containerization](how-to/containerization/containerization.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)
 * [Secrets](how-to/secrets/secrets.md)
+* [Environment Variables](how-to/environment-variables/environment-variables.md)
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)
-* [Templates](how-to/templates/templates.md)
 * [Dashboard](how-to/dashboard/dashboard-features.md)
+* [Templates](how-to/templates/templates.md)
 
 ## Reference
 

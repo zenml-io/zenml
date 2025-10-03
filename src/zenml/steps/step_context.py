@@ -27,7 +27,7 @@ from typing import (
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.utils.callback_registry import CallbackRegistry
-from zenml.utils.singleton import SingletonMetaClass
+from zenml.utils.singleton import SingletonMetaClass, ThreadLocalSingleton
 
 if TYPE_CHECKING:
     from zenml.artifacts.artifact_config import ArtifactConfig
@@ -61,7 +61,56 @@ def get_step_context() -> "StepContext":
     )
 
 
-class StepContext(metaclass=SingletonMetaClass):
+def get_or_create_run_context() -> "RunContext":
+    """Get or create the context of the currently running pipeline.
+
+    Returns:
+        The context of the currently running pipeline.
+    """
+    return RunContext()
+
+
+class RunContext(metaclass=SingletonMetaClass):
+    """Provides context shared between all steps in a pipeline run."""
+
+    def __init__(self) -> None:
+        """Create the run context."""
+        self.initialized = False
+        self._state: Optional[Any] = None
+
+    @property
+    def state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+
+        Raises:
+            RuntimeError: If the run context is not initialized.
+        """
+        if not self.initialized:
+            raise RuntimeError(
+                "Run context not initialized. The run state is only available "
+                "in the context of a running pipeline."
+            )
+        return self._state
+
+    def initialize(self, state: Optional[Any]) -> None:
+        """Initialize the run context.
+
+        Args:
+            state: Optional state for the pipeline run
+
+        Raises:
+            RuntimeError: If the run context is already initialized.
+        """
+        if self.initialized:
+            raise RuntimeError("Run context already initialized.")
+        self._state = state
+        self.initialized = True
+
+
+class StepContext(metaclass=ThreadLocalSingleton):
     """Provides additional context inside a step function.
 
     This singleton class is used to access information about the current run,
@@ -166,6 +215,15 @@ class StepContext(metaclass=SingletonMetaClass):
             f"run '{self.pipeline_run.id}': This pipeline run does not have "
             f"a pipeline associated with it."
         )
+
+    @property
+    def pipeline_state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+        """
+        return get_or_create_run_context().state
 
     @property
     def model(self) -> "Model":

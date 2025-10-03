@@ -1490,7 +1490,8 @@ class AzureServiceConnector(ServiceConnector):
                 aks_clusters = [
                     cluster
                     for cluster in aks_clusters
-                    if self._get_resource_group(cluster.id)
+                    if cluster.id
+                    and self._get_resource_group(cluster.id)
                     == self.config.resource_group
                 ]
 
@@ -1507,7 +1508,8 @@ class AzureServiceConnector(ServiceConnector):
             clusters = [
                 (cluster.name, self._get_resource_group(cluster.id))
                 for cluster in aks_clusters
-                if cluster.name
+                if cluster.id
+                and cluster.name
                 and (not cluster_name or cluster.name == cluster_name)
             ]
 
@@ -1809,16 +1811,25 @@ class AzureServiceConnector(ServiceConnector):
             cluster_name, resource_group = clusters[0]
 
             try:
-                client = ContainerServiceClient(credential, subscription_id)
+                cs_client = ContainerServiceClient(credential, subscription_id)
 
-                creds = client.managed_clusters.list_cluster_admin_credentials(
-                    resource_group_name=resource_group,
-                    resource_name=cluster_name,
+                creds = (
+                    cs_client.managed_clusters.list_cluster_admin_credentials(
+                        resource_group_name=resource_group,
+                        resource_name=cluster_name,
+                    )
                 )
 
-                kubeconfig_yaml = creds.kubeconfigs[0].value.decode(
-                    encoding="UTF-8"
-                )
+                if creds.kubeconfigs and creds.kubeconfigs[0].value:
+                    kubeconfig_yaml = creds.kubeconfigs[0].value.decode(
+                        encoding="UTF-8"
+                    )
+                else:
+                    raise AuthorizationException(
+                        f"failed to list credentials for Azure Kubernetes "
+                        f"Service cluster '{cluster_name}' in resource group "
+                        f"'{resource_group}': no kubeconfig found"
+                    )
             except AzureError as e:
                 raise AuthorizationException(
                     f"failed to list credentials for Azure Kubernetes "

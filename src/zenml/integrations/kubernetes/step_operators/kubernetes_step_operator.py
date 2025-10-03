@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator implementation."""
 
+import random
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
@@ -20,13 +21,21 @@ from kubernetes import client as k8s_client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
+from zenml.integrations.kubernetes.constants import (
+    STEP_NAME_ANNOTATION_KEY,
+    STEP_OPERATOR_ANNOTATION_KEY,
+)
 from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
     KubernetesStepOperatorSettings,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators import (
+    kube_utils,
+)
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_job_manifest,
     build_pod_manifest,
+    pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
@@ -34,7 +43,7 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineDeploymentBase
+    from zenml.models import PipelineSnapshotBase
 
 logger = get_logger(__name__)
 
@@ -108,18 +117,18 @@ class KubernetesStepOperator(BaseStepOperator):
         )
 
     def get_docker_builds(
-        self, deployment: "PipelineDeploymentBase"
+        self, snapshot: "PipelineSnapshotBase"
     ) -> List["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
-            deployment: The pipeline deployment for which to get the builds.
+            snapshot: The pipeline snapshot for which to get the builds.
 
         Returns:
             The required Docker builds.
         """
         builds = []
-        for step_name, step in deployment.step_configurations.items():
+        for step_name, step in snapshot.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
                     key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY,
@@ -174,6 +183,15 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         return k8s_client.CoreV1Api(self.get_kube_client())
 
+    @property
+    def _k8s_batch_api(self) -> k8s_client.BatchV1Api:
+        """Getter for the Kubernetes Batch API client.
+
+        Returns:
+            The Kubernetes Batch API client.
+        """
+        return k8s_client.BatchV1Api(self.get_kube_client())
+
     def launch(
         self,
         info: "StepRunInfo",
@@ -194,53 +212,77 @@ class KubernetesStepOperator(BaseStepOperator):
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
         )
-
-        pod_name = f"{info.run_name}_{info.pipeline_step_name}"
-        pod_name = kube_utils.sanitize_pod_name(
-            pod_name, namespace=self.config.kubernetes_namespace
-        )
-
         command = entrypoint_command[:3]
         args = entrypoint_command[3:]
 
-        # Create and run the orchestrator pod.
+        step_labels = {
+            "run_id": kube_utils.sanitize_label(str(info.run_id)),
+            "run_name": kube_utils.sanitize_label(str(info.run_name)),
+            "pipeline": kube_utils.sanitize_label(info.pipeline.name),
+            "step_name": kube_utils.sanitize_label(info.pipeline_step_name),
+        }
+        step_annotations = {
+            STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
+            STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
+        }
+
+        # We set some default minimum memory resource requests for the step pod
+        # here if the user has not specified any, because the step pod takes up
+        # some memory resources itself and, if not specified, the pod will be
+        # scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = kube_utils.apply_default_resource_requests(
+            memory="400Mi",
+            pod_settings=settings.pod_settings,
+        )
+
         pod_manifest = build_pod_manifest(
-            pod_name=pod_name,
+            pod_name=None,
             image_name=image_name,
             command=command,
             args=args,
-            privileged=settings.privileged,
-            service_account_name=settings.service_account_name,
-            pod_settings=settings.pod_settings,
             env=environment,
-            mount_local_stores=False,
-            labels={
-                "run_id": kube_utils.sanitize_label(str(info.run_id)),
-                "pipeline": kube_utils.sanitize_label(info.pipeline.name),
-            },
+            privileged=settings.privileged,
+            pod_settings=pod_settings,
+            service_account_name=settings.service_account_name,
+            labels=step_labels,
         )
 
-        kube_utils.create_and_wait_for_pod_to_start(
-            core_api=self._k8s_core_api,
-            pod_display_name=f"pod of step `{info.pipeline_step_name}`",
-            pod_name=pod_name,
-            pod_manifest=pod_manifest,
+        job_name = settings.job_name_prefix or ""
+        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        job_manifest = build_job_manifest(
+            job_name=job_name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            # The orchestrator already handles retries, so we don't need to
+            # retry the step operator job.
+            backoff_limit=0,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            labels=step_labels,
+            annotations=step_annotations,
+        )
+
+        kube_utils.create_job(
+            batch_api=self._k8s_batch_api,
             namespace=self.config.kubernetes_namespace,
-            startup_max_retries=settings.pod_failure_max_retries,
-            startup_failure_delay=settings.pod_failure_retry_delay,
-            startup_failure_backoff=settings.pod_failure_backoff,
-            startup_timeout=settings.pod_startup_timeout,
+            job_manifest=job_manifest,
         )
 
         logger.info(
-            "Waiting for pod of step `%s` to finish...",
-            info.pipeline_step_name,
+            "Waiting for step operator job `%s` to finish...",
+            job_name,
         )
-        kube_utils.wait_pod(
-            kube_client_fn=self.get_kube_client,
-            pod_name=pod_name,
+        kube_utils.wait_for_job_to_finish(
+            batch_api=self._k8s_batch_api,
+            core_api=self._k8s_core_api,
             namespace=self.config.kubernetes_namespace,
-            exit_condition_lambda=kube_utils.pod_is_done,
+            job_name=job_name,
+            fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
             stream_logs=True,
         )
-        logger.info("Pod of step `%s` completed.", info.pipeline_step_name)
+        logger.info("Step operator job completed.")

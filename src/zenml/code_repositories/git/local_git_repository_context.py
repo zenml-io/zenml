@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Local git repository context."""
 
-from typing import TYPE_CHECKING, Callable, Optional, cast
+from typing import TYPE_CHECKING, Callable, Optional
 
 from zenml.code_repositories import (
     LocalRepositoryContext,
@@ -25,7 +25,6 @@ from zenml.constants import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from git.objects import Commit
     from git.remote import Remote
     from git.repo.base import Repo
 
@@ -180,7 +179,7 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
             # Branch doesn't exist on remote
             return True
 
-        return cast("Commit", remote_commit_object) != local_commit_object
+        return remote_commit_object != local_commit_object
 
     @property
     def current_commit(self) -> str:
@@ -189,4 +188,4 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
         Returns:
             The current commit sha.
         """
-        return cast(str, self.git_repo.head.object.hexsha)
+        return self.git_repo.head.object.hexsha

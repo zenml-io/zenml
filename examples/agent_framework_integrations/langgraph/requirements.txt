@@ -1,0 +1,4 @@
+langgraph>=0.5.3
+langchain>=0.2.0
+langchain-openai>=0.2.0
+zenml[local]

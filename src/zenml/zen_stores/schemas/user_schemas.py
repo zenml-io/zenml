@@ -14,13 +14,14 @@
 """SQLModel implementation of user tables."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
+    ServiceAccountInternalRequest,
     ServiceAccountRequest,
     ServiceAccountResponse,
     ServiceAccountResponseBody,
@@ -43,15 +44,16 @@ if TYPE_CHECKING:
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
-        PipelineDeploymentSchema,
         PipelineRunSchema,
         PipelineSchema,
+        PipelineSnapshotSchema,
         RunMetadataSchema,
         RunTemplateSchema,
         ScheduleSchema,
@@ -76,6 +78,7 @@ class UserSchema(NamedSchema, table=True):
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
+    avatar_url: Optional[str] = Field(default=None, nullable=True)
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
@@ -143,7 +146,7 @@ class UserSchema(NamedSchema, table=True):
             "primaryjoin": "UserSchema.id==ActionSchema.service_account_id",
         },
     )
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="user",
     )
     code_repositories: List["CodeRepositorySchema"] = Relationship(
@@ -167,6 +170,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    deployments: List["DeploymentSchema"] = Relationship(
+        back_populates="user",
+    )
     tags: List["TagSchema"] = Relationship(
         back_populates="user",
     )
@@ -184,6 +190,7 @@ class UserSchema(NamedSchema, table=True):
         return cls(
             name=model.name,
             full_name=model.full_name,
+            avatar_url=model.avatar_url,
             active=model.active,
             password=model.create_hashed_password(),
             activation_token=model.create_hashed_activation_token(),
@@ -199,25 +206,29 @@ class UserSchema(NamedSchema, table=True):
 
     @classmethod
     def from_service_account_request(
-        cls, model: ServiceAccountRequest
+        cls, model: Union[ServiceAccountRequest, ServiceAccountInternalRequest]
     ) -> "UserSchema":
         """Create a `UserSchema` from a Service Account request.
 
         Args:
-            model: The `ServiceAccountRequest` from which to create the
-                schema.
+            model: The `ServiceAccountRequest` or `ServiceAccountInternalRequest`
+                from which to create the schema.
 
         Returns:
             The created `UserSchema`.
         """
         return cls(
             name=model.name,
+            full_name=model.full_name,
             description=model.description or "",
+            external_user_id=model.external_user_id
+            if isinstance(model, ServiceAccountInternalRequest)
+            else None,
             active=model.active,
             is_service_account=True,
             email_opted_in=False,
-            full_name="",
             is_admin=False,
+            avatar_url=model.avatar_url,
         )
 
     def update_user(self, user_update: UserUpdate) -> "UserSchema":
@@ -310,6 +321,7 @@ class UserSchema(NamedSchema, table=True):
                 updated=self.updated,
                 is_admin=self.is_admin,
                 default_project_id=self.default_project_id,
+                avatar_url=self.avatar_url,
             ),
             metadata=metadata,
         )
@@ -330,12 +342,15 @@ class UserSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ServiceAccountResponseMetadata(
                 description=self.description or "",
+                external_user_id=self.external_user_id,
             )
 
         body = ServiceAccountResponseBody(
+            full_name=self.full_name,
             created=self.created,
             updated=self.updated,
             active=self.active,
+            avatar_url=self.avatar_url,
         )
 
         return ServiceAccountResponse(

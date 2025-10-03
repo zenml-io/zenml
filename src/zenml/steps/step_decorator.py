@@ -18,6 +18,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -26,11 +27,13 @@ from typing import (
     Union,
     overload,
 )
+from uuid import UUID
 
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
+    from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
@@ -64,9 +67,11 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[Union[bool, str]] = None,
+    step_operator: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -74,6 +79,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -85,9 +91,11 @@ def step(
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[str] = None,
-    step_operator: Optional[str] = None,
+    experiment_tracker: Optional[Union[bool, str]] = None,
+    step_operator: Optional[Union[bool, str]] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -95,6 +103,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -116,6 +125,8 @@ def step(
             given as a dict, the keys must be a subset of the output names
             of this step. If a single value (type or string) is given, the
             materializer will be used for all outputs.
+        environment: Environment variables to set when running this step.
+        secrets: Secrets to set as environment variables when running this step.
         settings: Settings for this step.
         extra: Extra configurations for this step.
         on_failure: Callback function in event of failure of the step. Can be a
@@ -127,6 +138,7 @@ def step(
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
         substitutions: Extra placeholders for the step name.
+        cache_policy: Cache policy for this step.
 
     Returns:
         The step instance.
@@ -154,6 +166,8 @@ def step(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -161,6 +175,7 @@ def step(
             model=model,
             retry=retry,
             substitutions=substitutions,
+            cache_policy=cache_policy,
         )
 
         return step_instance

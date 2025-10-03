@@ -15,42 +15,52 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from uuid import UUID
 
 from pydantic import SerializeAsAny, field_validator
 
-from zenml.config.constants import DOCKER_SETTINGS_KEY
+from zenml.config.cache_policy import CachePolicyWithValidator
+from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
-from zenml.config.strict_base_model import StrictBaseModel
+from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.config import DockerSettings
+    from zenml.config import DockerSettings, ResourceSettings
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 
 DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 
 
-class PipelineConfigurationUpdate(StrictBaseModel):
+class PipelineConfigurationUpdate(FrozenBaseModel):
     """Class for pipeline configuration updates."""
 
     enable_cache: Optional[bool] = None
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    environment: Dict[str, Any] = {}
+    secrets: List[Union[str, UUID]] = []
     enable_pipeline_logs: Optional[bool] = None
+    execution_mode: Optional[ExecutionMode] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
+    init_hook_source: Optional[SourceWithValidator] = None
+    init_hook_kwargs: Optional[Dict[str, Any]] = None
+    cleanup_hook_source: Optional[SourceWithValidator] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
+    cache_policy: Optional[CachePolicyWithValidator] = None
 
     def finalize_substitutions(
         self, start_time: Optional[datetime] = None, inplace: bool = False
@@ -82,6 +92,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
     name: str
+    execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
 
     @field_validator("name")
     @classmethod
@@ -117,3 +128,20 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
             DOCKER_SETTINGS_KEY, {}
         )
         return DockerSettings.model_validate(model_or_dict)
+
+    @property
+    def resource_settings(self) -> "ResourceSettings":
+        """Resource settings of this step configuration.
+
+        Returns:
+            The resource settings of this step configuration.
+        """
+        from zenml.config import ResourceSettings
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            RESOURCE_SETTINGS_KEY, {}
+        )
+
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
+        return ResourceSettings.model_validate(model_or_dict)

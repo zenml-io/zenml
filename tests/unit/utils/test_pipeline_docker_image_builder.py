@@ -209,7 +209,7 @@ def test_python_package_installer_args():
     )
 
     assert (
-        "RUN pip install --no-cache-dir --default-timeout=99 --other-arg=value --option"
+        "RUN uv pip install --no-cache-dir --default-timeout=99 --other-arg=value --option"
         in generated_dockerfile
     )
 

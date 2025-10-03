@@ -740,7 +740,7 @@ You may access the ZenML Pro server at: https://zenml-pro.my.domain
 
 Use the following credentials:
 
-  Username: admin@zenml.pro
+  Username: admin
   Password: fetch the password by running:
 
     kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
@@ -807,12 +807,12 @@ However, this feature is currently supported with helper Python scripts, as desc
     ```bash
     kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
     ```
-2.  Create a `users.yml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
+2.  Create a `users.yaml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
 
     ```yaml
     users:
-    - email: adam@zenml.io
-        password: tu3]4_Xz{5$9
+    - username: user
+      password: password1234
     ```
 3.  Run the `create_users.py` script below. This will create all of the users.
 
@@ -853,17 +853,17 @@ However, this feature is currently supported with helper Python scripts, as desc
         response = requests.post(login_url, headers=headers, data=data)
 
         if response.status_code == 200:
-            return response.json().get("token")
+            return response.json().get("access_token")
         else:
             print(f"Login failed. Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
 
-    def create_user(token: str, base_url: str, email: str, password: Optional[str]):
-        """Create a user with the given email."""
+    def create_user(token: str, base_url: str, username: str, password: Optional[str]):
+        """Create a user with the given username."""
         users_url = f"{base_url}{USERS_ENDPOINT}"
         params = {
-            'email': email,
+            'username': username,
             'password': password
         }
 
@@ -877,19 +877,19 @@ However, this feature is currently supported with helper Python scripts, as desc
         response = requests.post(users_url, params=params, headers=headers, data='')
 
         if response.status_code == 200:
-            print(f"User created successfully: {email}")
+            print(f"User created successfully: {username}")
         else:
-            print(f"Failed to create user: {email}")
+            print(f"Failed to create user: {username}")
             print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
 
     def main():
         # Get login credentials
         base_url = input("ZenML URL: ")
-        username = input("Enter username: ")
-        password = getpass.getpass("Enter password: ")
+        username = input("Enter admin username: ")
+        password = getpass.getpass("Enter admin password: ")
         # Get the YAML file path
-        yaml_file = input("Enter the path to the YAML file containing email addresses: ")
+        yaml_file = input("Enter the path to the YAML file containing user account details: ")
 
         # Login and get token
         token = login(base_url, username, password)
@@ -908,15 +908,15 @@ However, this feature is currently supported with helper Python scripts, as desc
         # Create users
         if isinstance(users, list):
             for user in users:
-                create_user(token, base_url, user["email"], user["password"])
+                create_user(token, base_url, user["username"], user["password"])
         else:
-            print("Invalid YAML format. Expected a list of email addresses.")
+            print("Invalid YAML format. Expected a list of user account details.")
 
     if __name__ == "__main__":
         main()
     ```
 
-The script will prompt you for the URL of your deployment, the admin account email and admin account password and finally the location of your `users.yml` file.
+The script will prompt you for the URL of your deployment, the admin account username and password and finally the location of your `users.yaml` file.
 
 ![](.gitbook/assets/on-prem-01.png)
 
@@ -944,15 +944,13 @@ Now you can invite your whole team to the org. For this open the drop-down in th
 
 ![](.gitbook/assets/on-prem-05.png)
 
-Here in the members tab, add all the users you created in the previous step.
+Here in the members tab, add all the users you created in the previous step. Make sure to [assign the appropriate role](roles.md#organization-level-roles) to each user.
 
 ![](.gitbook/assets/on-prem-06.png)
 
-For each user, finally head over to the Pending invited screen and copy the invite link for each user.
-
 ![](.gitbook/assets/on-prem-07.png)
 
-Finally, send the invitation link, along with the account's email and initial password over to your team members.
+Finally, send the account's username and initial password over to your team members.
 
 ## Stage 2/2: Enroll and Deploy ZenML Pro workspaces
 
@@ -1238,7 +1236,7 @@ Installing and updating on-prem ZenML Pro workspace servers is not automated, as
         )
         username = prompt(
             "Enter the ZenML Pro admin account username",
-            default_value="admin@zenml.pro",
+            default_value="admin",
         )
         password = prompt(
             "Enter the ZenML Pro admin account password", password=True
@@ -1469,7 +1467,7 @@ If you use TLS certificates for the ZenML Pro control plane or workspace server 
 
 #### Accessing the Workspace Dashboard
 
-The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. You need to login as an organization member and add yourself as a workspace member first):
+The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. If you're the organization admin, you may also need to add other users as workspace members, if they don't have access to the workspace yet.
 
 ![](.gitbook/assets/on-prem-08.png)
 
@@ -1477,11 +1475,12 @@ The newly enrolled workspace should be accessible in the ZenML Pro workspace das
 
 ![](.gitbook/assets/on-prem-10.png)
 
-Then follow the instructions in the checklist to unlock the full dashboard:
-
 ![](.gitbook/assets/on-prem-11.png)
 
+Then follow the instructions in the "Get Started" checklist to unlock the full dashboard:
+
 ![](.gitbook/assets/on-prem-12.png)
+
 
 #### Accessing the Workspace from the ZenML CLI
 
@@ -1498,19 +1497,19 @@ export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
 
-## Enabling Run Templates Support
+## Enabling Snapshot Support
 
-The ZenML Pro workspace server can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
+The ZenML Pro workspace server can be configured to optionally support running pipeline snapshots straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
 
 {% hint style="warning" %}
-The Run Templates feature is only available from ZenML workspace server version 0.81.0 onwards.
+Snapshots are only available from ZenML workspace server version 0.90.0 onwards.
 {% endhint %}
 
-The Run Templates feature comes with some optional sub-features that can be turned on or off to customize the behavior of the feature:
+Snapshots come with some optional sub-features that can be turned on or off to customize the behavior of the feature:
 
 * **Building runner container images**: Running pipelines from the dashboard relies on Kubernetes jobs (aka "runner" jobs) that are triggered by the ZenML workspace server. These jobs need to use container images that have the correct Python software packages installed on them to be able to launch the pipelines.
 
-    The good news is that run templates are based on pipeline runs that have already run in the past and already have container images built and associated with them. The same container images can be reused by the ZenML workspace server for the "runner jobs". However, for this to work, the Kubernetes cluster itself has to be able to access the container registries where these images are stored. This can be achieved in several ways:
+    The good news is that snapshots are based on pipeline runs that have already run in the past and already have container images built and associated with them. The same container images can be reused by the ZenML workspace server for the "runner jobs". However, for this to work, the Kubernetes cluster itself has to be able to access the container registries where these images are stored. This can be achieved in several ways:
 
     * use implicit workload identity access to the container registry - available in most cloud providers by granting the Kubernetes service account access to the container registry
     * configure a service account with implicit access to the container registry - associating some cloud service identity (e.g. a GCP service account, an AWS IAM role, etc.) with the Kubernetes service account used by the "runner" jobs
@@ -1524,11 +1523,11 @@ The Run Templates feature comes with some optional sub-features that can be turn
 
     To avoid this, you can configure the ZenML workspace server to store the logs in an external location, like an S3 bucket. This can be achieved by setting the `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` environment variable to `true`.
 
-    This option is only currently available with the AWS implementation of the Run Templates feature and also requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` environment variable to be set to point to the S3 bucket where the logs will be stored.
+    This option is only currently available with the AWS implementation of the snapshots feature and also requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` environment variable to be set to point to the S3 bucket where the logs will be stored.
 
 1. Decide on an implementation.
 
-    There are currently three different implementations of the Run Templates feature:
+    There are currently three different implementations of the snapshots feature:
 
     * **Kubernetes**: runs pipelines in the same Kubernetes cluster as the ZenML Pro workspace server.
     * **AWS**: extends the Kubernetes implementation to be able to build and push container images to AWS ECR and to store run the template logs in AWS S3.
@@ -1536,7 +1535,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
 
     If you're going for a fast, minimalistic setup, you should go for the Kubernetes implementation. If you want a complete cloud provider solution with all features enabled, you should go for the AWS implementation.
 
-2. Prepare Run Templates configuration.
+2. Prepare Snapshots configuration.
     
     You'll need to prepare a list of environment variables that will be added to the Helm chart values used to deploy the ZenML workspace server.
     
@@ -1546,8 +1545,8 @@ The Run Templates feature comes with some optional sub-features that can be turn
         * `zenml_cloud_plugins.kubernetes_workload_manager.KubernetesWorkloadManager`
         * `zenml_cloud_plugins.aws_kubernetes_workload_manager.AWSKubernetesWorkloadManager`
         * `zenml_cloud_plugins.gcp_kubernetes_workload_manager.GCPKubernetesWorkloadManager`
-    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` (mandatory): the Kubernetes namespace where the "runner" jobs will be launched. It must exist before the run templates are enabled.
-    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` (mandatory): the Kubernetes service account to use for the "runner" jobs. It must exist before the run templates are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE` (mandatory): the Kubernetes namespace where the "runner" jobs will be launched. It must exist before the snapshots are enabled.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` (mandatory): the Kubernetes service account to use for the "runner" jobs. It must exist before the snapshots are enabled.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` (optional): whether to build the "runner" container images or not. Defaults to `false`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY` (optional): the container registry where the "runner" images will be pushed. Mandatory if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `true`, ignored otherwise.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` (optional): the "runner" container image to use. Only used if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `false`, ignored otherwise.
@@ -1556,7 +1555,9 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR` (optional): the Kubernetes node selector to use for the "runner" jobs, in JSON format. Example: `{"node-pool": "zenml-pool"}`.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS` (optional): the Kubernetes tolerations to use for the "runner" jobs, in JSON format. Example: `[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]`.
-    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent run templates that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel run templates that can be *started* at the same time, not the number of parallel pipeline runs.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_JOB_BACKOFF_LIMIT` (optional): the Kubernetes backoff limit to use for the builder and runner jobs.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_FAILURE_POLICY` (optional): the Kubernetes pod failure policy to use for the builder and runner jobs.
+    * `ZENML_SERVER_MAX_CONCURRENT_TEMPLATE_RUNS` (optional): the maximum number of concurrent snapshot runs that can be started at the same time by each server container or pod. Defaults to 2. If a client exceeds this number, the request will be rejected with a 429 Too Many Requests HTTP error. Note that this only limits the number of parallel snapshots that can be *started* at the same time, not the number of parallel pipeline runs.
 
     For the AWS implementation, the following additional variables are supported:
 
@@ -1612,7 +1613,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
             ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE: zenml-workspace-namespace
             ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT: zenml-workspace-service-account
             ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE: "true"
-            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-run-templates/zenml
+            ZENML_KUBERNETES_WORKLOAD_MANAGER_DOCKER_REGISTRY: europe-west3-docker.pkg.dev/zenml-project/zenml-snapshots/zenml
             ZENML_KUBERNETES_WORKLOAD_MANAGER_POD_RESOURCES: '{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}'
             ZENML_KUBERNETES_WORKLOAD_MANAGER_NODE_SELECTOR: '{"node-pool": "zenml-pool"}'
             ZENML_KUBERNETES_WORKLOAD_MANAGER_TOLERATIONS: '[{"key": "node-pool", "operator": "Equal", "value": "zenml-pool", "effect": "NoSchedule"}]'

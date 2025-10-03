@@ -52,8 +52,6 @@ from zenml.models import (
     ServerModel,
     StackFilter,
     StackResponse,
-    UserFilter,
-    UserResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
@@ -206,14 +204,19 @@ class BaseZenStore(
             TypeError: If no store type was found to support the supplied URL.
         """
         from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+
+        if RestZenStoreConfiguration.supports_url_scheme(url):
+            return StoreType.REST
+
+        # Only import this once we've made sure it's not a REST URL, as the
+        # zenml package without the local extra will fail this import due to
+        # missing database dependencies.
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
         if SqlZenStoreConfiguration.supports_url_scheme(url):
             return StoreType.SQL
-        elif RestZenStoreConfiguration.supports_url_scheme(url):
-            return StoreType.REST
-        else:
-            raise TypeError(f"No store implementation found for URL: {url}.")
+
+        raise TypeError(f"No store implementation found for URL: {url}.")
 
     @staticmethod
     def create_store(
@@ -388,14 +391,12 @@ class BaseZenStore(
         Returns:
             Information about the store.
         """
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
-
         server_config = ServerConfiguration.get_server_config()
         deployment_type = server_config.deployment_type
         auth_scheme = server_config.auth_scheme
         metadata = server_config.metadata
         secrets_store_type = SecretsStoreType.NONE
-        if isinstance(self, SqlZenStore) and self.config.secrets_store:
+        if self.config.type == StoreType.SQL and self.config.secrets_store:
             secrets_store_type = self.config.secrets_store.type
         store_info = ServerModel(
             id=GlobalConfiguration().user_id,
@@ -469,23 +470,6 @@ class BaseZenStore(
         if default_stacks.total == 0:
             raise KeyError("No default stack found.")
         return default_stacks.items[0]
-
-    def get_external_user(self, user_id: UUID) -> UserResponse:
-        """Get a user by external ID.
-
-        Args:
-            user_id: The external ID of the user.
-
-        Returns:
-            The user with the supplied external ID.
-
-        Raises:
-            KeyError: If the user doesn't exist.
-        """
-        users = self.list_users(UserFilter(external_user_id=user_id))
-        if users.total == 0:
-            raise KeyError(f"User with external ID '{user_id}' not found.")
-        return users.items[0]
 
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order

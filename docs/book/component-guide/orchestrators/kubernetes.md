@@ -153,6 +153,9 @@ doesn't actually get to the point of running the step. That means the server wil
 which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
 backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases
 the chance of the server receiving the maximum amount of retry requests.
+- **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any
+`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
+- **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.

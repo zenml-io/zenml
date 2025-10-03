@@ -15,7 +15,7 @@
 
 import os
 import random
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -105,7 +105,8 @@ def is_setting_enabled(
 def get_config_environment_vars(
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
-) -> Dict[str, str]:
+    deployment_id: Optional[UUID] = None,
+) -> Tuple[Dict[str, str], Dict[str, str]]:
     """Gets environment variables to set for mirroring the active config.
 
     If a schedule ID, pipeline run ID or step run ID is given, and the current
@@ -118,27 +119,30 @@ def get_config_environment_vars(
         schedule_id: Optional schedule ID to use to generate a new API token.
         pipeline_run_id: Optional pipeline run ID to use to generate a new API
             token.
+        deployment_id: Optional deployment ID to use to generate a new API
+            token.
 
     Returns:
-        Environment variable dict.
+        Environment variable dict and secrets dict.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.rest_zen_store import RestZenStore
 
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
+    secrets: Dict[str, str] = {}
 
     if (
         global_config.store_configuration.type == StoreType.REST
         and global_config.zen_store.get_store_info().auth_scheme
         != AuthScheme.NO_AUTH
     ):
+        assert isinstance(global_config.zen_store, RestZenStore)
+
         credentials_store = get_credentials_store()
         url = global_config.store_configuration.url
         api_token = credentials_store.get_token(url, allow_expired=False)
         if schedule_id or pipeline_run_id:
-            assert isinstance(global_config.zen_store, RestZenStore)
-
             # The user has the option to manually set an expiration for the API
             # token generated for a pipeline run. In this case, we generate a new
             # generic API token that will be valid for the indicated duration.
@@ -194,13 +198,17 @@ def get_config_environment_vars(
                     pipeline_run_id=pipeline_run_id,
                 )
 
-            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
-                new_api_token
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = new_api_token
+        elif deployment_id:
+            new_api_token = global_config.zen_store.get_api_token(
+                token_type=APITokenType.WORKLOAD,
+                deployment_id=deployment_id,
             )
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = new_api_token
         elif api_token:
             # For all other cases, the pipeline run environment is configured
             # with the current access token.
-            environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
+            secrets[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (
                 api_token.access_token
             )
 
@@ -217,7 +225,7 @@ def get_config_environment_vars(
         Client().active_project.id
     )
 
-    return environment_vars
+    return environment_vars, secrets
 
 
 class register_artifact_store_filesystem:

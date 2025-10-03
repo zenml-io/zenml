@@ -45,6 +45,12 @@ This command sets the "default" project as your active project. All subsequent Z
 Best practice is to set your active project right after running `zenml init`, just like you would set an active stack. This ensures all your resources are properly organized within the project.
 {% endhint %}
 
+You can also set the project to be used by your client via an environment variable:
+
+```bash
+export ZENML_ACTIVE_PROJECT_ID=<PROJECT_ID>
+```
+
 ### Setting a default project
 
 The default project is something that each user can configure. This project will be automatically set as the active project when you connect your local Python client to a ZenML Pro workspace.
@@ -99,7 +105,7 @@ Projects provide isolation for various MLOps resources:
 
 * Pipelines created within a project are only visible to project members
 * Pipeline runs and their artifacts are scoped to the project
-* Pipeline configurations and templates are project-specific
+* Pipeline configurations and snapshots are project-specific
 
 ### Artifacts and Models
 

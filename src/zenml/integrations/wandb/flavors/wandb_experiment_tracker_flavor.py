@@ -43,20 +43,19 @@ class WandbExperimentTrackerSettings(BaseSettings):
     """Settings for the Wandb experiment tracker."""
 
     run_name: Optional[str] = Field(
-        None,
-        description="The Wandb run name to use for tracking experiments."
+        None, description="The Wandb run name to use for tracking experiments."
     )
     tags: List[str] = Field(
         default_factory=list,
-        description="Tags to attach to the Wandb run for categorization and filtering."
+        description="Tags to attach to the Wandb run for categorization and filtering.",
     )
     settings: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Additional settings for the Wandb run configuration."
+        description="Additional settings for the Wandb run configuration.",
     )
     enable_weave: bool = Field(
         False,
-        description="Whether to enable Weave integration for enhanced experiment tracking."
+        description="Whether to enable Weave integration for enhanced experiment tracking.",
     )
 
     @field_validator("settings", mode="before")
@@ -73,7 +72,10 @@ class WandbExperimentTrackerSettings(BaseSettings):
         Returns:
             Dict representation of the settings.
         """
-        import wandb
+        try:
+            import wandb
+        except ImportError:
+            return value
 
         if isinstance(value, wandb.Settings):
             # Depending on the wandb version, either `model_dump`,
@@ -103,12 +105,12 @@ class WandbExperimentTrackerConfig(
     entity: Optional[str] = Field(
         None,
         description="Name of an existing Wandb entity (team or user account) "
-        "to log experiments to."
+        "to log experiments to.",
     )
     project_name: Optional[str] = Field(
         None,
         description="Name of an existing Wandb project to log experiments to. "
-        "If not specified, a default project will be used."
+        "If not specified, a default project will be used.",
     )
 
 

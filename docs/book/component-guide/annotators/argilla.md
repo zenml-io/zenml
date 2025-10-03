@@ -14,7 +14,7 @@ Argilla distinguishes itself for its focus on specific use cases and human-in-th
 
 If you need to label textual data as part of your ML workflow, that is the point at which you could consider adding the Argilla annotator stack component as part of your ZenML stack.
 
-We currently support the use of annotation at the various stages described in[the main annotators docs page](./). The Argilla integration currently is built to support annotation using a local (Docker-backed) instance of Argilla as well as a deployed instance of Argilla. There is an easy way to deploy Argilla as a [Hugging Face Space](https://huggingface.co/docs/hub/spaces-sdks-docker-argilla), for instance, which is documented in the [Argilla documentation](https://docs.argilla.io/latest/getting_started/quickstart/).
+We currently support the use of annotation at the various stages described in[the main annotators docs page](./). The Argilla integration currently is built to support annotation using a local (Docker-backed) instance of Argilla as well as a deployed instance of Argilla. There is an easy way to deploy Argilla as a [Hugging Face Space](https://huggingface.co/docs/hub/spaces-sdks-docker-argilla), for instance, which is documented in the [Argilla documentation](https://argilla.io/).
 
 ### How to deploy it?
 
@@ -89,6 +89,6 @@ dataset = annotator.get_dataset("dataset_name")
 annotations = annotator.get_labeled_data(dataset_name="dataset_name")
 ```
 
-For more detailed information on how to use the Argilla annotator and the functionality it provides, visit the [Argilla documentation](https://docs.argilla.io/latest/).
+For more detailed information on how to use the Argilla annotator and the functionality it provides, visit the [Argilla documentation](https://argilla.io/).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

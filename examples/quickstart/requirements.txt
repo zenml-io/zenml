@@ -1,9 +1,6 @@
-zenml[server]==0.84.0
-notebook
-pyarrow
-datasets<4.0.0
-transformers
-transformers[torch]
-torch
-sentencepiece
-protobuf
+zenml[server]>=0.90.0
+scikit-learn
+openai>=1.0.0
+matplotlib
+seaborn
+numpy

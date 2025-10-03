@@ -60,7 +60,7 @@ As seen in the image, a step might use the outputs from a previous step and thus
 
 Pipelines and steps are defined in code using Python _decorators_ or _classes_. This is where the core business logic and value of your work live, and you will spend most of your time defining these two things.
 
-Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly (as long as they're JSON-serializable).
+Even though pipelines are simple Python functions, you are only allowed to call steps within this function. The inputs for steps called within a pipeline can either be the outputs of previous steps or alternatively, you can pass in values directly or map them onto pipeline parameters (as long as they're JSON-serializable). Similarly, you can return values from a pipeline that are step outputs as long as they are JSON-serializable.
 
 ```python
 from zenml import pipeline
@@ -71,11 +71,11 @@ def my_pipeline():
     step_2(input_one="hello", input_two=output_step_one)
 
 @pipeline
-def agent_evaluation_pipeline():
+def agent_evaluation_pipeline(query: str = "What is machine learning?") -> str:
     """An AI agent evaluation pipeline."""
     prompt = "You are a helpful assistant. Please answer: {query}"
-    test_query = "What is machine learning?"
-    evaluation_result = evaluate_agent_response(prompt, test_query)
+    evaluation_result = evaluate_agent_response(prompt, query)
+    return evaluation_result
 ```
 
 Executing the Pipeline is as easy as calling the function that you decorated with the `@pipeline` decorator.
@@ -83,7 +83,7 @@ Executing the Pipeline is as easy as calling the function that you decorated wit
 ```python
 if __name__ == "__main__":
     my_pipeline()
-    agent_evaluation_pipeline()
+    agent_evaluation_pipeline(query="What is an LLM?")
 ```
 
 #### Artifacts
@@ -118,9 +118,11 @@ Once you have implemented your workflow by using the concepts described above, y
 
 #### Stacks & Components
 
-When you want to execute a pipeline run with ZenML, **Stacks** come into play. A **Stack** is a collection of **stack components**, where each component represents the respective configuration regarding a particular function in your MLOps pipeline, such as orchestration systems, artifact repositories, and model deployment platforms.
+When you want to execute a pipeline run with ZenML, **Stacks** come into play. A **Stack** is a collection of **stack components**, where each component represents the respective configuration regarding a particular function in your MLOps pipeline, such as pipeline orchestration or deployment systems, artifact repositories and container registries.
 
-For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
+Pipelines can be executed in two ways: in **batch mode** (traditional execution through an orchestrator) or in **online mode** (long-running HTTP servers that can be invoked via REST API calls). Deploying pipelines for online mode execution allows you to serve your ML workflows as real-time endpoints, making them accessible for live inference and interactive use cases.
+
+For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_. Additional components like _deployers_ can be added to enable specific functionality such as deploying pipelines as HTTP endpoints.
 
 ![ZenML running code on the Local Stack.](../.gitbook/assets/02_pipeline_local_stack.png)
 
@@ -130,15 +132,33 @@ Keep in mind that each one of these components is built on top of base abstracti
 
 #### Orchestrator
 
-An **Orchestrator** is a workhorse that coordinates all the steps to run in a pipeline. Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the orchestrator acts as the component that decides what steps to run and when to run them.
+An **Orchestrator** is a workhorse that coordinates all the steps to run in a pipeline in batch mode. Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the orchestrator acts as the component that decides what steps to run and when to run them.
 
 ZenML comes with a default _local orchestrator_ designed to run on your local machine. This is useful, especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out basic things.
+
+#### Deployer
+
+A **Deployer** is a stack component that manages the deployment of pipelines as long-running HTTP servers useful for online mode execution. Unlike orchestrators that execute pipelines in batch mode, deployers can create and manage persistent services that wrap your pipeline in a web application, usually containerized, allowing it to be invoked through HTTP requests.
+
+ZenML comes with a _Docker deployer_ that can run deployments on your local machine as Docker containers, making it easy to test and develop real-time pipeline endpoints before moving to production infrastructure.
+
+#### Pipeline Run
+
+A **Pipeline Run** is a record of a pipeline execution. When you run a pipeline using an orchestrator, a pipeline run is created tracking information about the execution such as the status, the artifacts and metadata produced by the pipeline and all its steps. When a pipeline is deployed for online mode execution, a pipeline run is similarly created for every HTTP request made to it.
+
+#### Pipeline Snapshot
+
+A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the server or dashboard, and can also be [deployed](#deployment).
 
 #### Artifact Store
 
 An **Artifact Store** is a component that houses all data that passes through the pipeline as inputs and outputs. Each artifact that gets stored in the artifact store is tracked and versioned and this allows for extremely useful features like data caching, which speeds up your workflows.
 
 Similar to the orchestrator, ZenML comes with a default _local artifact store_ designed to run on your local machine. This is useful, especially during the exploration phase of your project. You don't have to set up a cloud storage system to try out basic things.
+
+#### Deployment
+
+A **Deployment** is a running instance of a pipeline deployed as an HTTP endpoint. When you deploy a pipeline using a deployer, it becomes a long-running service that can be invoked through REST API calls. Each HTTP request to a deployment triggers a new pipeline run, creating the same artifacts and metadata tracking as traditional batch pipeline executions. This enables real-time inference, interactive ML workflows, and seamless integration with web applications and external services.
 
 #### Flavor
 
@@ -162,7 +182,7 @@ To use _stack components_ that are running remotely on a cloud infrastructure, y
 
 #### Server Deployment
 
-,,In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](https://docs.zenml.io/pro)**,** which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](https://docs.zenml.io/pro)**,** which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/).
 
 #### Metadata Tracking
 

@@ -48,6 +48,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -143,6 +144,10 @@ class StepRunRequest(ProjectScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -168,6 +173,10 @@ class StepRunUpdate(BaseUpdate):
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
         default=None,
+    )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -237,14 +246,18 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    exception_info: Optional[ExceptionInfo] = Field(
+        default=None,
+        title="The exception information of the step run.",
+    )
 
     # References
     logs: Optional["LogsResponse"] = Field(
         title="Logs associated with this step run.",
         default=None,
     )
-    deployment_id: UUID = Field(
-        title="The deployment associated with the step run."
+    snapshot_id: UUID = Field(
+        title="The snapshot associated with the step run."
     )
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
@@ -562,13 +575,13 @@ class StepRunResponse(
         return self.get_metadata().logs
 
     @property
-    def deployment_id(self) -> UUID:
-        """The `deployment_id` property.
+    def snapshot_id(self) -> UUID:
+        """The `snapshot_id` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().deployment_id
+        return self.get_metadata().snapshot_id
 
     @property
     def pipeline_run_id(self) -> UUID:
@@ -672,9 +685,9 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    deployment_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Deployment of this step run",
+        description="Snapshot of this step run",
         union_mode="left_to_right",
     )
     original_step_run_id: Optional[Union[UUID, str]] = Field(

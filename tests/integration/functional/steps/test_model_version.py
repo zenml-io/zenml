@@ -22,7 +22,7 @@ from typing_extensions import Annotated
 from zenml import get_pipeline_context, get_step_context, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, ModelStages
+from zenml.enums import ExecutionMode, ExecutionStatus, ModelStages
 from zenml.model.model import Model
 
 
@@ -239,13 +239,19 @@ def test_recovery_of_steps(clean_client: "Client", model: Model):
         )
 
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(1)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(1)
     if model.version is None:
         model.version = "1"
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(2)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(2)
     with pytest.raises(Exception, match="make pipeline fail"):
-        _this_pipeline_will_recover.with_options(model=model)(3)
+        _this_pipeline_will_recover.with_options(
+            model=model, execution_mode=ExecutionMode.FAIL_FAST
+        )(3)
 
     mv = clean_client.get_model_version(
         model_name_or_id="foo",
@@ -670,7 +676,6 @@ def test_that_artifact_is_removed_on_deletion(
         run.steps["_this_step_produces_output"].outputs["data"][0].id
     )
     clean_client.delete_pipeline(pipeline_id)
-    clean_client.delete_pipeline_run(run.id)
     clean_client.delete_artifact_version(artifact_version_id)
     model = clean_client.get_model(model_name_or_id="step")
     mvs = model.versions
@@ -842,14 +847,14 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 1
     custom_version = custom_versions[-1]
 
-    assert run_1.model_version_id == implicit_version.id
+    assert run_1.model_version.id == implicit_version.id
     for name, step_ in run_1.steps.items():
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_1.id
     )
@@ -865,14 +870,14 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 2
     custom_version = custom_versions[-1]
 
-    assert run_2.model_version_id == implicit_version.id
+    assert run_2.model_version.id == implicit_version.id
     for name, step_ in run_2.steps.items():
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_2.id
     )
@@ -889,16 +894,16 @@ def test_model_version_creation(clean_client: "Client"):
     assert len(custom_versions) == 3
     custom_version = custom_versions[-1]
 
-    assert run_3.model_version_id == implicit_version.id
+    assert run_3.model_version.id == implicit_version.id
     for name, step_ in run_3.steps.items():
         assert step_.status == ExecutionStatus.CACHED
 
         if name == "shared":
-            assert step_.model_version_id == implicit_version.id
+            assert step_.model_version.id == implicit_version.id
         elif name == "custom_version":
-            assert step_.model_version_id == explicit_version.id
+            assert step_.model_version.id == explicit_version.id
         else:
-            assert step_.model_version_id == custom_version.id
+            assert step_.model_version.id == custom_version.id
     links = clean_client.list_model_version_pipeline_run_links(
         pipeline_run_id=run_3.id
     )
@@ -947,10 +952,10 @@ def test_model_version_fetching_by_stage(clean_client: "Client"):
     mv_1.set_stage("production")
 
     run = _fetch_by_version_number_pipeline()
-    assert run.model_version_id == mv_1.id
+    assert run.model_version.id == mv_1.id
 
     run = _fetch_latest_version_pipeline()
-    assert run.model_version_id == mv_2.id
+    assert run.model_version.id == mv_2.id
 
     run = _fetch_prod_version_pipeline()
-    assert run.model_version_id == mv_1.id
+    assert run.model_version.id == mv_1.id

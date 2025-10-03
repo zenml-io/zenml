@@ -13,9 +13,15 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from pydantic import Field, NonNegativeInt, PositiveInt, field_validator
+from pydantic import (
+    Field,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    field_validator,
+)
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
@@ -23,6 +29,7 @@ from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
+from zenml.utils import deprecation_utils
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
@@ -41,16 +48,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=True,
         description="Whether to wait for all pipeline steps to complete. "
         "When `False`, the client returns immediately and execution continues asynchronously.",
-    )
-    timeout: int = Field(
-        default=0,
-        description="Maximum seconds to wait for synchronous runs. Set to `0` for unlimited duration.",
-    )
-    stream_step_logs: bool = Field(
-        default=True,
-        description="If `True`, the orchestrator pod will stream the logs "
-        "of the step pods. This only has an effect if specified on the "
-        "pipeline, not on individual steps.",
     )
     service_account_name: Optional[str] = Field(
         default=None,
@@ -74,25 +71,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=None,
         description="Pod configuration for the orchestrator container that launches step pods.",
     )
-    pod_name_prefix: Optional[str] = Field(
+    job_name_prefix: Optional[str] = Field(
         default=None,
-        description="Custom prefix for generated pod names. Helps identify pods in the cluster.",
-    )
-    pod_startup_timeout: int = Field(
-        default=600,
-        description="Maximum seconds to wait for step pods to start. Default is 10 minutes.",
-    )
-    pod_failure_max_retries: int = Field(
-        default=3,
-        description="Maximum retry attempts when step pods fail to start.",
-    )
-    pod_failure_retry_delay: int = Field(
-        default=10,
-        description="Delay in seconds between pod failure retry attempts.",
-    )
-    pod_failure_backoff: float = Field(
-        default=1.0,
-        description="Exponential backoff factor for retry delays. Values > 1.0 increase delay with each retry.",
+        description="Prefix for the job name.",
     )
     max_parallelism: Optional[PositiveInt] = Field(
         default=None,
@@ -100,19 +81,20 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
     successful_jobs_history_limit: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Number of successful scheduled jobs to retain in cluster history.",
+        description="Number of successful scheduled jobs to retain in history.",
     )
     failed_jobs_history_limit: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Number of failed scheduled jobs to retain in cluster history.",
+        description="Number of failed scheduled jobs to retain in history.",
     )
     ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Seconds to keep finished scheduled jobs before automatic cleanup.",
+        description="Seconds to keep finished jobs before automatic cleanup.",
     )
     active_deadline_seconds: Optional[NonNegativeInt] = Field(
         default=None,
-        description="Deadline in seconds for the active pod. If the pod is inactive for this many seconds, it will be terminated.",
+        description="Job deadline in seconds. If the job doesn't finish "
+        "within this time, it will be terminated.",
     )
     backoff_limit_margin: NonNegativeInt = Field(
         default=0,
@@ -131,6 +113,39 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "the chance of the server receiving the maximum amount of retry "
         "requests.",
     )
+    orchestrator_job_backoff_limit: NonNegativeInt = Field(
+        default=3,
+        description="The backoff limit for the orchestrator job.",
+    )
+    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+        default=[
+            "InvalidImageName",
+            "ErrImagePull",
+            "ImagePullBackOff",
+            "CreateContainerConfigError",
+        ],
+        description="List of container waiting reasons that should cause the "
+        "job to fail immediately. This should be set to a list of "
+        "nonrecoverable reasons, which if found in any "
+        "`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, "
+        "should cause the job to fail immediately.",
+    )
+    job_monitoring_interval: PositiveFloat = Field(
+        default=3,
+        description="The interval in seconds to monitor the job. Each interval "
+        "is used to check for container issues for the job pods.",
+    )
+    job_monitoring_delay: PositiveFloat = Field(
+        default=0.0,
+        description="The delay in seconds to wait between monitoring active "
+        "step jobs. This can be used to reduce load on the Kubernetes API "
+        "server.",
+    )
+    interrupt_check_interval: PositiveFloat = Field(
+        default=1.0,
+        description="The interval in seconds to check for run interruptions.",
+        ge=0.5,
+    )
     pod_failure_policy: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The pod failure policy to use for the job that is "
@@ -148,6 +163,53 @@ class KubernetesOrchestratorSettings(BaseSettings):
     pod_stop_grace_period: PositiveInt = Field(
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
+    )
+
+    # Deprecated fields
+    timeout: Optional[int] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    stream_step_logs: Optional[bool] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+    pod_startup_timeout: Optional[int] = Field(
+        default=None,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_max_retries: Optional[int] = Field(
+        default=None,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_retry_delay: Optional[int] = Field(
+        default=None,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_failure_backoff: Optional[float] = Field(
+        default=None,
+        description="DEPRECATED/UNUSED.",
+        deprecated=True,
+    )
+    pod_name_prefix: Optional[str] = Field(
+        default=None,
+        deprecated=True,
+        description="DEPRECATED/UNUSED.",
+    )
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        "timeout",
+        "stream_step_logs",
+        "pod_startup_timeout",
+        "pod_failure_max_retries",
+        "pod_failure_retry_delay",
+        "pod_failure_backoff",
+        ("pod_name_prefix", "job_name_prefix"),
     )
 
     @field_validator("pod_failure_policy", mode="before")

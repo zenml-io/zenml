@@ -54,7 +54,7 @@ class HuggingfaceIntegration(Integration):
             "accelerate",
             "bitsandbytes>=0.41.3",
             "peft",
-            "transformers",
+            "transformers<4.55.0",
         ]
 
         # Add the pandas integration requirements

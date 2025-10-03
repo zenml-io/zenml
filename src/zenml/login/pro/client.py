@@ -34,6 +34,7 @@ from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
 from zenml.login.pro.models import BaseRestAPIModel
+from zenml.models.v2.misc.auth_models import OAuthTokenResponse
 from zenml.utils.singleton import SingletonMetaClass
 from zenml.zen_server.exceptions import exception_from_response
 
@@ -54,39 +55,54 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     """ZenML Pro client."""
 
     _url: str
-    _api_token: APIToken
+    _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
     _workspace: Optional["WorkspaceClient"] = None
     _organization: Optional["OrganizationClient"] = None
 
-    def __init__(self, url: str, api_token: Optional[APIToken] = None) -> None:
+    def __init__(self, url: str) -> None:
         """Initialize the ZenML Pro client.
 
         Args:
             url: The URL of the ZenML Pro API server.
-            api_token: The API token to use for authentication. If not provided,
-                the token is fetched from the credentials store.
-
-        Raises:
-            AuthorizationException: If no API token is provided and no token
-                is found in the credentials store.
         """
         self._url = url
-        if api_token is None:
-            logger.debug(
-                "No ZenML Pro API token provided. Fetching from credentials "
-                "store."
-            )
-            api_token = get_credentials_store().get_token(
-                server_url=self._url, allow_expired=True
-            )
-            if api_token is None:
-                raise AuthorizationException(
-                    "No ZenML Pro API token found. Please run 'zenml login' to "
-                    "login to ZenML Pro."
-                )
 
-        self._api_token = api_token
+    def authenticate(self) -> APIToken:
+        """Authenticate to ZenML Pro and return the API token.
+
+        Returns:
+            The API token.
+
+        Raises:
+            AuthorizationException: If the login fails.
+        """
+        credentials_store = get_credentials_store()
+        pro_credentials = credentials_store.get_pro_credentials(self._url)
+        if pro_credentials is None:
+            raise AuthorizationException(
+                "No ZenML Pro credentials found. Please run 'zenml login' to "
+                "login to ZenML Pro."
+            )
+        if pro_credentials.has_valid_token:
+            assert pro_credentials.api_token is not None
+            return pro_credentials.api_token
+
+        if pro_credentials.can_refresh_token:
+            assert pro_credentials.api_key is not None
+            api_token = self.fetch_api_token(
+                self._url, pro_credentials.api_key
+            )
+            return credentials_store.set_token(
+                self._url,
+                api_token,
+                is_zenml_pro=True,
+            )
+        else:
+            raise AuthorizationException(
+                "Your ZenML Pro authentication has expired. Please run "
+                "'zenml login' to login again."
+            )
 
     @property
     def workspace(self) -> "WorkspaceClient":
@@ -121,19 +137,9 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         Returns:
             The API token.
         """
+        if self._api_token is None or self._api_token.expired:
+            self._api_token = self.authenticate()
         return self._api_token.access_token
-
-    def raise_on_expired_api_token(self) -> None:
-        """Raise an exception if the API token has expired.
-
-        Raises:
-            AuthorizationException: If the API token has expired.
-        """
-        if self._api_token and self._api_token.expired:
-            raise AuthorizationException(
-                "Your ZenML Pro authentication has expired. Please run "
-                "'zenml login' to login again."
-            )
 
     @property
     def session(self) -> requests.Session:
@@ -142,10 +148,6 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         Returns:
             A requests session with the authentication token.
         """
-        # Check if the API token has expired before every call to the server.
-        # This prevents unwanted authorization errors from being raised during
-        # the call itself.
-        self.raise_on_expired_api_token()
         if self._session is None:
             self._session = requests.Session()
             retries = Retry(backoff_factor=0.1, connect=5)
@@ -156,6 +158,35 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             )
             logger.debug("Authenticated to ZenML Pro server.")
         return self._session
+
+    @classmethod
+    def fetch_api_token(cls, url: str, api_key: str) -> OAuthTokenResponse:
+        """Fetch the API token for a given ZenML Pro server URL.
+
+        Args:
+            url: ZenML Pro server URL
+            api_key: API key
+
+        Returns:
+            The API token.
+
+        Raises:
+            ValueError: if the response is not in the right format.
+        """
+        headers = {"Authorization": "Bearer " + api_key}
+        response = requests.post(
+            url + "/auth/login",
+            data={"password": api_key},
+            headers=headers,
+            timeout=10,
+        )
+        json_response = cls._handle_response(response)
+        if not isinstance(json_response, dict):
+            raise ValueError(
+                f"Bad response from API. Expected dict, got\n{json_response}"
+            )
+
+        return OAuthTokenResponse.model_validate(json_response)
 
     @staticmethod
     def _handle_response(response: requests.Response) -> Json:
@@ -215,10 +246,6 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
         Returns:
             The parsed response.
-
-        Raises:
-            AuthorizationException: if the request fails due to an expired
-                authentication token.
         """
         params = {k: str(v) for k, v in params.items()} if params else {}
 
@@ -226,21 +253,14 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
             {source_context.name: source_context.get().value}
         )
 
-        try:
-            return self._handle_response(
-                self.session.request(
-                    method,
-                    url,
-                    params=params,
-                    **kwargs,
-                )
+        return self._handle_response(
+            self.session.request(
+                method,
+                url,
+                params=params,
+                **kwargs,
             )
-        except AuthorizationException:
-            # Check if this is caused by an expired API token.
-            self.raise_on_expired_api_token()
-
-            # If not, raise the exception.
-            raise
+        )
 
     def get(
         self,

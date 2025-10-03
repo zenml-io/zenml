@@ -154,6 +154,16 @@ from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponseMetadata,
     EventSourceFlavorResponseResources,
 )
+from zenml.models.v2.core.deployment import (
+    DeploymentRequest,
+    DeploymentUpdate,
+    DeploymentFilter,
+    DeploymentOperationalState,
+    DeploymentResponse,
+    DeploymentResponseBody,
+    DeploymentResponseMetadata,
+    DeploymentResponseResources,
+)
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
     OAuthDeviceFilter,
@@ -228,14 +238,16 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponseMetadata,
     PipelineBuildResponseResources,
 )
-from zenml.models.v2.core.pipeline_deployment import (
-    PipelineDeploymentBase,
-    PipelineDeploymentRequest,
-    PipelineDeploymentFilter,
-    PipelineDeploymentResponse,
-    PipelineDeploymentResponseBody,
-    PipelineDeploymentResponseMetadata,
-    PipelineDeploymentResponseResources,
+from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotBase,
+    PipelineSnapshotRequest,
+    PipelineSnapshotUpdate,
+    PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
+    PipelineSnapshotRunRequest,
 )
 from zenml.models.v2.core.pipeline_run import (
     PipelineRunRequest,
@@ -244,7 +256,8 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
-    PipelineRunResponseResources
+    PipelineRunResponseResources,
+    PipelineRunTriggerInfo,
 )
 from zenml.models.v2.core.run_template import (
     RunTemplateRequest,
@@ -283,6 +296,8 @@ from zenml.models.v2.core.service_account import (
     ServiceAccountResponseMetadata,
     ServiceAccountUpdate,
     ServiceAccountRequest,
+    ServiceAccountInternalRequest,
+    ServiceAccountInternalUpdate,
     ServiceAccountResponse,
 )
 from zenml.models.v2.core.service_connector import (
@@ -435,6 +450,7 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
     ResourcesInfo,
 )
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 # ----------------------------- Forward References -----------------------------
 
@@ -458,6 +474,10 @@ CodeRepositoryResponseResources.model_rebuild()
 ComponentResponseBody.model_rebuild()
 ComponentResponseMetadata.model_rebuild()
 ComponentResponseResources.model_rebuild()
+DeploymentRequest.model_rebuild()
+DeploymentResponseBody.model_rebuild()
+DeploymentResponseMetadata.model_rebuild()
+DeploymentResponseResources.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
@@ -481,10 +501,10 @@ PipelineBuildBase.model_rebuild()
 PipelineBuildResponseBody.model_rebuild()
 PipelineBuildResponseMetadata.model_rebuild()
 PipelineBuildResponseResources.model_rebuild()
-PipelineDeploymentRequest.model_rebuild()
-PipelineDeploymentResponseBody.model_rebuild()
-PipelineDeploymentResponseMetadata.model_rebuild()
-PipelineDeploymentResponseResources.model_rebuild()
+PipelineSnapshotRequest.model_rebuild()
+PipelineSnapshotResponseBody.model_rebuild()
+PipelineSnapshotResponseMetadata.model_rebuild()
+PipelineSnapshotResponseResources.model_rebuild()
 PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
@@ -625,6 +645,14 @@ __all__ = [
     "ComponentResponseResources",
     "DefaultComponentRequest",
     "DefaultStackRequest",
+    "DeploymentRequest",
+    "DeploymentUpdate",
+    "DeploymentFilter",
+    "DeploymentOperationalState",
+    "DeploymentResponse",
+    "DeploymentResponseBody",
+    "DeploymentResponseMetadata",
+    "DeploymentResponseResources",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -685,13 +713,15 @@ __all__ = [
     "PipelineBuildResponseBody",
     "PipelineBuildResponseMetadata",
     "PipelineBuildResponseResources",
-    "PipelineDeploymentBase",
-    "PipelineDeploymentRequest",
-    "PipelineDeploymentFilter",
-    "PipelineDeploymentResponse",
-    "PipelineDeploymentResponseBody",
-    "PipelineDeploymentResponseMetadata",
-    "PipelineDeploymentResponseResources",
+    "PipelineSnapshotBase",
+    "PipelineSnapshotRequest",
+    "PipelineSnapshotUpdate",
+    "PipelineSnapshotFilter",
+    "PipelineSnapshotResponse",
+    "PipelineSnapshotResponseBody",
+    "PipelineSnapshotResponseMetadata",
+    "PipelineSnapshotResponseResources",
+    "PipelineSnapshotRunRequest",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",
@@ -699,6 +729,7 @@ __all__ = [
     "PipelineRunResponseBody",
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
+    "PipelineRunTriggerInfo",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",
@@ -739,6 +770,8 @@ __all__ = [
     "ServiceAccountResponseMetadata",
     "ServiceAccountUpdate",
     "ServiceAccountRequest",
+    "ServiceAccountInternalRequest",
+    "ServiceAccountInternalUpdate",
     "ServiceAccountResponse",
     "ServiceConnectorConfiguration",
     "ServiceConnectorRequest",
@@ -840,4 +873,5 @@ __all__ = [
     "RunMetadataResource",
     "ProjectStatistics",
     "PipelineRunDAG",
+    "ExceptionInfo",
 ]

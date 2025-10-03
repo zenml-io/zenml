@@ -19,11 +19,13 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, select
 
+from zenml.enums import SecretResourceTypes, StackComponentType
 from zenml.models import (
+    StackRequest,
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
@@ -43,9 +45,10 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
         PipelineBuildSchema,
     )
-    from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
-        PipelineDeploymentSchema,
+    from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
+        PipelineSnapshotSchema,
     )
+    from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -90,6 +93,7 @@ class StackSchema(NamedSchema, table=True):
     description: Optional[str] = Field(default=None)
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
+    environment: Optional[bytes] = Field(default=None)
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -106,9 +110,82 @@ class StackSchema(NamedSchema, table=True):
         link_model=StackCompositionSchema,
     )
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
-    deployments: List["PipelineDeploymentSchema"] = Relationship(
+    snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="stack",
     )
+    secrets: List["SecretSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK.value}', foreign(SecretResourceSchema.resource_id)==StackSchema.id)",
+            secondary="secret_resource",
+            secondaryjoin="SecretSchema.id == foreign(SecretResourceSchema.secret_id)",
+            order_by="SecretSchema.name",
+            overlaps="secrets",
+        ),
+    )
+
+    @property
+    def has_deployer(self) -> bool:
+        """If the stack has a deployer component.
+
+        Returns:
+            If the stack has a deployer component.
+
+        Raises:
+            RuntimeError: if the stack has no DB session.
+        """
+        from zenml.zen_stores.schemas import (
+            StackComponentSchema,
+            StackCompositionSchema,
+        )
+
+        if session := object_session(self):
+            query = (
+                select(StackComponentSchema.id)
+                .where(
+                    StackComponentSchema.type
+                    == StackComponentType.DEPLOYER.value
+                )
+                .where(
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id
+                )
+                .where(StackCompositionSchema.stack_id == self.id)
+            )
+
+            return session.execute(query).first() is not None
+        else:
+            raise RuntimeError(
+                "Missing DB session to check if stack has a deployer component."
+            )
+
+    @classmethod
+    def from_request(
+        cls,
+        request: "StackRequest",
+        components: Sequence["StackComponentSchema"],
+    ) -> "StackSchema":
+        """Create a stack schema from a request.
+
+        Args:
+            request: The request from which to create the stack.
+            components: List of components to link to the stack.
+
+        Returns:
+            The stack schema.
+        """
+        return cls(
+            user_id=request.user,
+            stack_spec_path=request.stack_spec_path,
+            name=request.name,
+            description=request.description,
+            components=components,
+            labels=base64.b64encode(
+                json.dumps(request.labels).encode("utf-8")
+            ),
+            environment=base64.b64encode(
+                json.dumps(request.environment).encode("utf-8")
+            ),
+        )
 
     @classmethod
     def get_query_options(
@@ -160,13 +237,18 @@ class StackSchema(NamedSchema, table=True):
             The updated StackSchema.
         """
         for field, value in stack_update.model_dump(
-            exclude_unset=True, exclude={"user"}
+            exclude_unset=True,
+            exclude={"user", "add_secrets", "remove_secrets"},
         ).items():
             if field == "components":
                 self.components = components
             elif field == "labels":
                 self.labels = base64.b64encode(
                     json.dumps(stack_update.labels).encode("utf-8")
+                )
+            elif field == "environment":
+                self.environment = base64.b64encode(
+                    json.dumps(stack_update.environment).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -197,6 +279,11 @@ class StackSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            environment = None
+            if self.environment:
+                environment = json.loads(
+                    base64.b64decode(self.environment).decode()
+                )
             metadata = StackResponseMetadata(
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
@@ -204,6 +291,8 @@ class StackSchema(NamedSchema, table=True):
                 if self.labels
                 else None,
                 description=self.description,
+                environment=environment or {},
+                secrets=[secret.id for secret in self.secrets],
             )
         resources = None
         if include_resources:

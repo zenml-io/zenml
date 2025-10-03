@@ -16,10 +16,12 @@ This guide will help you build and deploy your first ZenML pipeline, starting lo
 Start by installing ZenML in a fresh Python environment:
 
 ```bash
-pip install zenml
+pip install 'zenml[server]'
+zenml login
 ```
 
-This gives you access to both the ZenML Python SDK and CLI tools.
+This gives you access to both the ZenML Python SDK and CLI tools. It also surfaces the
+ZenML dashboard + connects it to your local client.
 {% endstep %}
 
 {% step %}
@@ -80,7 +82,7 @@ The fastest way to create a cloud stack is through the **Infrastructure-as-Code*
 
 You'll need:
 
-* [Terraform](https://www.terraform.io/downloads.html) version 1.9+ installed locally
+* [Terraform](https://developer.hashicorp.com/terraform/install) version 1.9+ installed locally
 * Authentication configured for your preferred cloud provider (AWS, GCP, or Azure)
 * Appropriate permissions to create resources in your cloud account
 
@@ -128,14 +130,14 @@ To continue your ZenML journey, explore these key topics:
 * **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your AI projects structured
 
 **For LLMs and AI Agents:**
-* **LLMOps Guide**: Follow our comprehensive [LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide) for agent development patterns
-* **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) and compare different agent architectures
+* **LLMOps Guide**: Write your [first AI pipeline](your-first-ai-pipeline.md) for agent development patterns
+* **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison) and compare different agent architectures
 * **Prompt Management**: Version and track prompts, tools, and agent configurations as [artifacts](../how-to/artifacts/artifacts.md)
 
 **Infrastructure & Deployment:**
 * **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerization.md) for reproducible execution
 * **Stacks & Infrastructure**: Explore the concepts behind [stacks](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
 * **Secrets Management**: Learn how to [handle sensitive information](../how-to/secrets/secrets.md) securely
-* **Templates**: Create [reusable pipeline templates](../how-to/templates/templates.md) for standardized workflows
+* **Snapshots**: Create [reusable snapshots](../how-to/snapshots/snapshots.md) for standardized workflows
 {% endstep %}
 {% endstepper %}

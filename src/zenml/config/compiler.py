@@ -14,6 +14,7 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 
 import copy
+import os
 import string
 from typing import (
     TYPE_CHECKING,
@@ -29,7 +30,7 @@ from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     InputSpec,
@@ -39,9 +40,9 @@ from zenml.config.step_configurations import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
-from zenml.models import PipelineDeploymentBase
+from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
-from zenml.utils import pydantic_utils, settings_utils
+from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -49,6 +50,8 @@ if TYPE_CHECKING:
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
+
+ENVIRONMENT_VARIABLE_PREFIX = "__ZENML__"
 
 logger = get_logger(__file__)
 
@@ -75,7 +78,7 @@ class Compiler:
         pipeline: "Pipeline",
         stack: "Stack",
         run_configuration: PipelineRunConfiguration,
-    ) -> PipelineDeploymentBase:
+    ) -> PipelineSnapshotBase:
         """Compiles a ZenML pipeline to a serializable representation.
 
         Args:
@@ -84,7 +87,7 @@ class Compiler:
             run_configuration: The run configuration for this pipeline.
 
         Returns:
-            The compiled pipeline deployment.
+            The compiled pipeline snapshot.
         """
         logger.debug("Compiling pipeline `%s`.", pipeline.name)
         # Copy the pipeline before we apply any run-level configurations, so
@@ -104,19 +107,30 @@ class Compiler:
                 pipeline.configuration.substitutions,
             )
 
+        pipeline_environment = finalize_environment_variables(
+            pipeline.configuration.environment
+        )
+        pipeline_secrets = secret_utils.resolve_and_verify_secrets(
+            pipeline.configuration.secrets
+        )
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
         with pipeline.__suppress_configure_warnings__():
-            pipeline.configure(settings=pipeline_settings, merge=False)
+            pipeline.configure(
+                environment=pipeline_environment,
+                secrets=pipeline_secrets,
+                settings=pipeline_settings,
+                merge=False,
+            )
 
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
                 stack=stack,
-                step_config=run_configuration.steps.get(invocation_id),
+                step_config=(run_configuration.steps or {}).get(invocation_id),
                 pipeline_configuration=pipeline.configuration,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
@@ -137,7 +151,7 @@ class Compiler:
             pipeline=pipeline, step_specs=step_specs
         )
 
-        deployment = PipelineDeploymentBase(
+        snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
@@ -150,15 +164,15 @@ class Compiler:
             pipeline_spec=pipeline_spec,
         )
 
-        logger.debug("Compiled pipeline deployment: %s", deployment)
+        logger.debug("Compiled pipeline snapshot: %s", snapshot)
 
-        return deployment
+        return snapshot
 
     def compile_spec(self, pipeline: "Pipeline") -> PipelineSpec:
         """Compiles a ZenML pipeline to a pipeline spec.
 
         This method can be used when a pipeline spec is needed but the full
-        deployment including stack information is not required.
+        snapshot including stack information is not required.
 
         Args:
             pipeline: The pipeline to compile.
@@ -201,6 +215,8 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                environment=config.environment,
+                secrets=config.secrets,
                 enable_pipeline_logs=config.enable_pipeline_logs,
                 settings=config.settings,
                 tags=config.tags,
@@ -208,9 +224,14 @@ class Compiler:
                 model=config.model,
                 retry=config.retry,
                 parameters=config.parameters,
+                cache_policy=config.cache_policy,
+                execution_mode=config.execution_mode,
             )
 
-        invalid_step_configs = set(config.steps) - set(pipeline.invocations)
+        configured_step_configs = config.steps or {}
+        invalid_step_configs = set(configured_step_configs) - set(
+            pipeline.invocations
+        )
         if invalid_step_configs:
             logger.warning(
                 f"Configuration for step invocations {invalid_step_configs} "
@@ -219,7 +240,7 @@ class Compiler:
             )
 
         for key in invalid_step_configs:
-            config.steps.pop(key)
+            configured_step_configs.pop(key)
 
         # Override `enable_cache` of all steps if set at run level
         if config.enable_cache is not None:
@@ -403,7 +424,7 @@ class Compiler:
 
             if not settings_instance.model_fields_set:
                 # There are no values defined on the settings instance, don't
-                # include them in the deployment
+                # include them in the snapshot
                 continue
 
             validated_settings[key] = settings_instance
@@ -433,7 +454,7 @@ class Compiler:
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
-            pipeline_parameter_name=invocation.id,
+            invocation_id=invocation.id,
         )
 
     def _compile_step_invocation(
@@ -454,9 +475,9 @@ class Compiler:
         Returns:
             The compiled step.
         """
-        # Copy the invocation (including its referenced step) before we apply
-        # the step configuration which is exclusive to this invocation.
-        invocation = copy.deepcopy(invocation)
+        # Copy the step before we apply the step configuration which is
+        # exclusive to this invocation.
+        invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
         if step_config:
@@ -468,18 +489,22 @@ class Compiler:
             step.configuration.settings, stack=stack
         )
         step_spec = self._get_step_spec(invocation=invocation)
+        step_secrets = secret_utils.resolve_and_verify_secrets(
+            step.configuration.secrets
+        )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
         step.configure(
+            secrets=step_secrets,
             settings=step_settings,
             merge=False,
         )
 
         parameters_to_ignore = (
-            set(step_config.parameters) if step_config else set()
+            set(step_config.parameters or {}) if step_config else set()
         )
         step_configuration_overrides = invocation.finalize(
             parameters_to_ignore=parameters_to_ignore
@@ -618,12 +643,24 @@ class Compiler:
                 "https://docs.zenml.io/user-guides/starter-guide"
             )
 
-        additional_spec_args: Dict[str, Any] = {
-            "source": pipeline.resolve(),
-            "parameters": pipeline._parameters,
-        }
+        output_specs = [
+            OutputSpec(
+                step_name=output_artifact.invocation_id,
+                output_name=output_artifact.output_name,
+            )
+            for output_artifact in pipeline._output_artifacts
+        ]
+        input_schema = pipeline._compute_input_schema()
+        output_schema = pipeline._compute_output_schema()
 
-        return PipelineSpec(steps=step_specs, **additional_spec_args)
+        return PipelineSpec(
+            steps=step_specs,
+            outputs=output_specs,
+            output_schema=output_schema,
+            source=pipeline.resolve(),
+            parameters=pipeline._parameters,
+            input_schema=input_schema,
+        )
 
 
 def convert_component_shortcut_settings_keys(
@@ -651,3 +688,37 @@ def convert_component_shortcut_settings_keys(
                 )
 
             settings[key] = component_settings
+
+
+def finalize_environment_variables(
+    environment: Dict[str, Any],
+) -> Dict[str, str]:
+    """Finalize the user environment variables.
+
+    This function adds all __ZENML__ prefixed environment variables from the
+    local client environment to the explicit user-defined variables.
+
+    Args:
+        environment: The explicit user-defined environment variables.
+
+    Returns:
+        The finalized user environment variables.
+    """
+    environment = {key: str(value) for key, value in environment.items()}
+
+    for key, value in os.environ.items():
+        if key.startswith(ENVIRONMENT_VARIABLE_PREFIX):
+            key_without_prefix = key[len(ENVIRONMENT_VARIABLE_PREFIX) :]
+
+            if (
+                key_without_prefix in environment
+                and value != environment[key_without_prefix]
+            ):
+                logger.warning(
+                    "Got multiple values for environment variable `%s`.",
+                    key_without_prefix,
+                )
+            else:
+                environment[key_without_prefix] = value
+
+    return environment

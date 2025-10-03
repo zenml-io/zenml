@@ -293,7 +293,7 @@ This allows you to easily adapt your pipelines to different environments without
 
 ## Advanced Pipeline Triggering
 
-For triggering pipelines from a client or another pipeline, you can use a `PipelineRunConfiguration` object. This approach is covered in the [advanced template usage documentation](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
+For triggering pipelines from a client or another pipeline, you can use a `PipelineRunConfiguration` object. This approach is covered  [here](../snapshots/snapshots.md#running-pipeline-snapshots).
 
 ## Autogenerate a template yaml file
 

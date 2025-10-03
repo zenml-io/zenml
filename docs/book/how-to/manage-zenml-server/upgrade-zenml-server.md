@@ -81,6 +81,6 @@ the `zenml.image.tag` value in your `custom-values.yaml` file to the desired Zen
 
 - **Downgrading is not supported**: Downgrading the server to an older version is not supported and can lead to unexpected behavior.
 - **Client-server version alignment**: The version of the Python client that connects to the server should be kept at the same version as the server.
-- **Recreate run templates**: After upgrading your ZenML server, you need to recreate any [run templates](../templates/templates.md) that you were using. Templates are tied to specific server versions and will not work correctly after an upgrade.
+- **Recreate snapshots**: After upgrading your ZenML server, you need to recreate any [snapshots](../snapshots/snapshots.md) that you were using. Snapshots are tied to specific server versions and will often not work correctly after an upgrade.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

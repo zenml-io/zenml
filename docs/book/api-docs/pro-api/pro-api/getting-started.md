@@ -16,13 +16,12 @@ Whether you're using the [SaaS version](https://zenml.io/pro) or a self-hosted Z
 
 ZenML Pro includes two distinct APIs:
 
-1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/) but includes additional endpoints like Run Templates. Each workspace in ZenML Pro has its own API.
+1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/) but includes additional endpoints (for example to run snapshots). Each workspace in ZenML Pro has its own API.
 2. **ZenML Pro API**: This is the management API for ZenML Pro and handles organization-level resources like workspaces, users, and roles.
 
-### Server URLs
+### Server URL
 
-* **For OSS users**: The `server_url` is the root URL of your ZenML server deployment.
-* **For Pro users**: The `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
+For Pro users, the `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
 
 **Note:** The workspace URL can be found in the ZenML Pro dashboard and typically looks like `https://1bfe8d94-zenml.cloudinfra.zenml.io`.
 
@@ -36,6 +35,7 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 * Workspace management
 * Organization management
+* Project management
 * User management
 * Role-based access control (RBAC)
 * Authentication and authorization
@@ -46,7 +46,7 @@ To use the ZenML Pro API, you need to authenticate your requests. If you are log
 
 For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). 
 
-### Programmatic access with API tokens
+### Programmatic access with short-lived API tokens
 
 Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-api/#using-a-short-lived-api-token), API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
 
@@ -87,29 +87,51 @@ To generate a new API token for the ZenML Pro API:
 
 * API tokens expire after 1 hour and cannot be retrieved after initial generation
 * Tokens are scoped to your user account and inherit your permissions
-* Currently, there is no "service account" concept for the ZenML Pro API (cloudapi.zenml.io)
+* As an alternative to API tokens, you can use [service accounts and API keys](./#programmatic-access-with-service-accounts-and-api-keys) for long-term access.
+{% endhint %}
+
+### Programmatic access with service accounts and API keys
+
+{% hint style="warning" %}
+**Deprecation of workspace level service accounts and API keys**
+
+* ZenML Pro workspace level service accounts and API keys are deprecated and will be removed in a future version.
+* Please use ZenML Pro organization level service accounts and API keys instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts))
+* Follow the migration guide in [Migration of workspace level service accounts](https://docs.zenml.io/pro/core-concepts/service-accounts#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
+{% endhint %}
+
+Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and to obtain short‑lived tokens for the Workspace API across all workspaces. See [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts) for setup and examples.
+
+{% hint style="warning" %}
+Which credentials should you use?
+
+- For organization/workspace/user management on the Pro management API (`cloudapi.zenml.io`), use short‑lived Pro API tokens (no service accounts).
+- For pipeline/run‑template operations on your Workspace API (your workspace URL), use temporary user tokens or—recommended for automation—service accounts + API keys.
+
+See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
 {% endhint %}
 
 ## Workspace API Authentication
 
-The **Workspace API** is different from the ZenML Pro API and supports additional authentication methods including service accounts. This is the API you'll use for triggering run templates and other pipeline operations.
+The **Workspace API** is different from the ZenML Pro API and supports different authentication methods. This is the API you'll use for running snapshots and other pipeline operations.
 
 ### When to Use Which API
 
 | Task | Use This API | Authentication Method |
 |------|-------------|----------------------|
 | Managing organizations, workspaces, users | **ZenML Pro API** (cloudapi.zenml.io) | Short-lived API tokens from organization settings |
-| Triggering run templates, pipeline operations | **Workspace API** (your workspace URL) | Service accounts + API keys (recommended for automation) |
+| Accessing the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service accounts + API keys (recommended for automation) |
+| Running snapshots, pipeline operations | **Workspace API** (your workspace URL) | Service accounts + API keys (recommended for automation) |
 | Pipeline development, artifact management | **Workspace API** (your workspace URL) | Temporary API tokens or service accounts |
 
 ### Workspace API Authentication Methods
 
-Programmatic access to the ZenML Pro workspace API is achieved essentially the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints like Run Templates.
+Programmatic access to the ZenML Pro workspace API is achieved mostly the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints. The only exception is that workspace level service accounts and API keys are disabled and organization level service accounts and API keys are used instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts)).
 
 You can use one of these two methods to authenticate with your workspace API:
 
 * [Generate and use temporary API tokens](../../oss-api/oss-api/#using-a-short-lived-api-token) (good for development and short-term tasks)
-* [Create a service account and use its API key](../../oss-api/oss-api/#using-a-service-account-and-an-api-key) (recommended for production automation and run template triggering)
+* [Create a ZenML Pro service account and use its API key](https://docs.zenml.io/pro/core-concepts/service-accounts) (recommended for production automation and run template triggering)
 
 When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
 
@@ -155,20 +177,19 @@ Remember to refer to the complete API documentation available at [https://clouda
 
 The Workspace API includes all OSS API endpoints plus some additional Pro-specific endpoints. These are available at your workspace URL at the `/docs` path (e.g., https://1bfe8d94-zenml.cloudinfra.zenml.io/docs):
 
-#### Run Templates (Pro-specific)
+#### Running snapshots (Pro-specific)
 
-Run Templates allow you to trigger pipeline runs from external systems using HTTP requests.
+Snapshots allow you to start pipeline runs from external systems using HTTP requests.
 
-* List run templates: `GET /run_templates`
-* Create a run template: `POST /run_templates`
-* Get run template details: `GET /run_templates/{template_id}`
-* Update a run template: `PATCH /run_templates/{template_id}`
-* **Trigger a run template: `POST /run_templates/{template_id}/runs`**
+* List snapshots: `GET /pipeline_snapshots`
+* Get snapshot details: `GET /pipeline_snapshots/<SNAPSHOT-ID>`
+* Update a snapshot: `PATCH /pipeline_snapshots/<SNAPSHOT-ID>`
+* **Run a snapshot: `POST /pipeline_snapshots/<SNAPSHOT-ID>/runs`**
 
 {% hint style="success" %}
-**For Run Template Automation**
+**For Snapshot Automation**
 
-When triggering run templates from external systems or CI/CD pipelines, we strongly recommend using **service accounts with API keys** rather than temporary tokens. Service accounts provide:
+When running snapshots from external systems or CI/CD pipelines, we strongly recommend using **service accounts with API keys** rather than temporary tokens. Service accounts provide:
 
 * Long-term credentials that don't expire hourly
 * Dedicated authentication for automation (not tied to individual users)
@@ -195,8 +216,9 @@ Use this decision tree to determine the right approach:
 
 | **What do you want to do?** | **Which API?** | **Authentication Method** | **Why?** |
 |------------------------------|----------------|---------------------------|----------|
-| Trigger run templates from CI/CD or external systems | **Workspace API** (your workspace URL) | Service account + API key | Long-lived, automation-friendly, not tied to users |
+| Run snapshots from CI/CD or external systems | **Workspace API** (your workspace URL) | Service account + API key | Long-lived, automation-friendly, not tied to users |
 | Manage organizations, create workspaces, invite users | **ZenML Pro API** (cloudapi.zenml.io) | Short-lived API tokens from org settings | Administrative operations need user-level permissions |
+| Access the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service accounts + API keys (recommended for automation) | Long-lived, automation-friendly, not tied to users |
 | Develop pipelines, explore artifacts | **Workspace API** (your workspace URL) | Temporary API tokens or service accounts | Flexible for development needs |
 | One-off pipeline operations | **Workspace API** (your workspace URL) | Temporary API tokens | Quick and easy for manual tasks |
 
@@ -211,6 +233,6 @@ Use this decision tree to determine the right approach:
 - ✅ Switch from temporary API tokens to service account API keys
 - ✅ Service account tokens don't expire automatically like user tokens
 
-**"I can't find the run template endpoints"**
-- ✅ Run templates are only available on the **Workspace API**, not the ZenML Pro API
+**"I can't find the endpoint to run a snapshot"**
+- ✅ Running snapshots is only possible using the **Workspace API**, not the ZenML Pro API
 - ✅ Use your workspace URL + `/docs` to see the full API documentation

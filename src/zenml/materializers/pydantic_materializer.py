@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's pydantic materializer."""
 
+import hashlib
+import json
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Type
 
 from pydantic import BaseModel
 
-from zenml.enums import ArtifactType
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 
@@ -66,3 +68,31 @@ class PydanticMaterializer(BaseMaterializer):
             The extracted metadata as a dictionary.
         """
         return {"schema": data.schema()}
+
+    def compute_content_hash(self, data: BaseModel) -> Optional[str]:
+        """Compute the content hash of the given data.
+
+        Args:
+            data: The data to compute the content hash of.
+
+        Returns:
+            The content hash of the given data.
+        """
+        hash_ = hashlib.md5(usedforsecurity=False)
+        hash_.update(self.__class__.__name__.encode())
+
+        json_data = data.model_dump(mode="json")
+        hash_.update(json.dumps(json_data, sort_keys=True).encode())
+        return hash_.hexdigest()
+
+    def save_visualizations(self, data: Any) -> Dict[str, "VisualizationType"]:
+        """Save visualizations for the given data.
+
+        Args:
+            data: The data to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        data_path = os.path.join(self.uri, DEFAULT_FILENAME)
+        return {data_path.replace("\\", "/"): VisualizationType.JSON}

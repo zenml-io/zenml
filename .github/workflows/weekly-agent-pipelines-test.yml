@@ -1,0 +1,104 @@
+---
+name: Agent Examples Test
+on:
+  schedule:
+    # Run weekly on Mondays at 8:30 AM CET (7:30 AM UTC in winter, 6:30 AM UTC in summer)
+    # Using 7:30 AM UTC as base time - will be 8:30 AM CET / 9:30 AM CEST
+    - cron: 30 7 * * 1
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+jobs:
+  test-agent-examples:
+    runs-on: ubuntu-latest
+    env:
+      # Ensure examples run with OpenAI credentials and consistent env behaviour
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ZENML_DEBUG: true
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_LOGGING_VERBOSITY: INFO
+      AUTO_OPEN_DASHBOARD: false
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      # Force uv venv to use Python 3.11 inside each example
+      PYTHON_VERSION: '3.11'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'develop' || github.ref }}
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.cargo/env
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Run all agent examples
+        id: run_examples
+        shell: bash
+        run: |
+          bash scripts/run-agent-examples.sh
+      - name: Publish step summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f agent-examples.summary.md ]; then
+            cat agent-examples.summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No summary generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-examples-results
+          path: |
+            agent-examples.failures.txt
+            agent-examples.summary.md
+            agent-examples.discord.md
+            agent-examples-logs
+          if-no-files-found: warn
+      - name: Fail if any example failed
+        if: ${{ fromJSON(steps.run_examples.outputs.fail_count) > 0 }}
+        run: |
+          echo "One or more agent examples failed: ${{ steps.run_examples.outputs.fail_list }}"
+          exit 1
+  notify-discord:
+    needs: test-agent-examples
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download results artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: agent-examples-results
+          path: ./agent-examples-results
+      - name: Build Discord message
+        id: build_message
+        shell: bash
+        run: |
+          # Use a unique delimiter that won't appear in the content
+          DELIMITER="GH_OUTPUT_DELIMITER_$$"
+          {
+            echo "message<<${DELIMITER}"
+            echo "**Agent Examples Failure Alert**"
+            echo
+            if [ -f ./agent-examples-results/agent-examples.discord.md ]; then
+              sed -e 's/\r$//' ./agent-examples-results/agent-examples.discord.md
+            else
+              echo "Failed to generate failure summary."
+            fi
+            echo
+            echo "**Details:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "${DELIMITER}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Send Discord notification on failure
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_SRE }}
+        with:
+          args: ${{ steps.build_message.outputs.message }}

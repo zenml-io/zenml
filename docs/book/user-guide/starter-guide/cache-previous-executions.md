@@ -36,7 +36,7 @@ def load_data_from_external_system(...) -> ...:
 ```
 {% endhint %}
 
-## Configuring the caching behavior of your pipelines
+## Enabling and disabling the caching behavior of your pipelines
 
 With caching as the default behavior, there will be times when you need to disable it.
 
@@ -100,6 +100,65 @@ import_data_from_api = import_data_from_api.with_options(enable_cache=False)
 
 # use in your pipeline directly
 ```
+
+## Fine-tuning caching with cache policies
+
+ZenML offers fine-grained control over caching behavior through **cache policies**. A cache policy determines what factors are considered when generating the cache key for a step. By default, ZenML uses all available information, but you can customize this to optimize caching for your specific use case.
+
+### Understanding cache keys
+
+ZenML generates a unique cache key for each step execution based on various factors:
+
+- **Step code**: The actual implementation of your step function
+- **Step parameters**: Configuration parameters passed to the step
+- **Input artifact values or IDs**: The content/data of input artifacts or their IDs
+
+When any of these factors change, the cache key changes, and the step will be re-executed.
+
+### Configuring cache policies
+
+You can configure cache policies at both the step and pipeline level using the `CachePolicy` class.
+Similar to enabling and disabling the cache above, you can define this cache policy
+on both pipeline and step either via the decorator or the `with_options(...)` method. Configuring
+a cache policy for a pipeline will configure it for all its steps.
+
+
+```python
+from zenml import step, pipeline
+from zenml.config import CachePolicy
+
+custom_cache_policy = CachePolicy(include_step_code=False)
+
+@step(cache_policy=custom_cache_policy)
+def my_step():
+    ...
+
+# or
+my_step = my_step.with_options(cache_policy=custom_cache_policy)
+
+
+@pipeline(cache_policy=custom_cache_policy)
+def my_pipeline():
+    ...
+
+# or
+my_pipeline = my_pipeline.with_options(cache_policy=custom_cache_policy)
+```
+
+### Cache policy options
+
+Each cache policy option controls a different aspect of caching:
+* `include_step_code` (default: `True`): Controls whether changes to your step implementation invalidate the cache. 
+
+{% hint style="warning" %}
+Setting `include_step_code=False` can lead to unexpected behavior if you modify your step logic but expect the changes to take effect.
+{% endhint %}
+
+* `include_step_parameters` (default: `True`): Controls whether step parameter changes invalidate the cache.
+* `include_artifact_values` (default: `True`): Whether to include the artifact values in the cache key. If the materializer for an
+artifact doesn't support generating a content hash, the artifact ID will be used as a fallback if enabled.
+* `include_artifact_ids` (default: `True`): Whether to include the artifact IDs in the cache key.
+* `ignored_inputs`: Allows you to exclude specific step inputs from cache key calculation.
 
 ## Code Example
 

@@ -100,6 +100,56 @@ def my_pipeline():
 
 This is particularly useful for steps with side effects (like data loading or model deployment) where the data dependency is not explicit.
 
+### Execution Modes
+
+ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes are:
+
+- `CONTINUE_ON_FAILURE`: The orchestrator continues executing steps that don't depend on any of the failed steps.
+- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
+- `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
+
+You can configure the execution mode of your pipeline in several ways:
+
+```python
+from zenml import pipeline
+from zenml.enums import ExecutionMode
+
+# Use the decorator
+@pipeline(execution_mode=ExecutionMode.CONTINUE_ON_ERROR)
+def my_pipeline():
+    ...
+
+# Use the `with_options` method
+my_pipeline_with_fail_fast = my_pipeline.with_options(
+    execution_mode=ExecutionMode.FAIL_FAST
+)
+
+# Use the `configure` method
+my_pipeline.configure(execution_mode=ExecutionMode.STOP_ON_FAILURE)
+```
+
+{% hint style="warning" %}
+In the current implementation, if you use the execution mode `STOP_ON_FAILURE`, the token that is associated with your pipeline run stays valid until its leeway runs out (defaults to 1 hour).
+{% endhint %}
+
+As an example, you can consider a pipeline with this dependency structure:
+
+```
+         ┌─► Step 2 ──► Step 5 ─┐
+Step 1 ──┼─► Step 3 ──► Step 6 ─┼──► Step 8
+         └─► Step 4 ──► Step 7 ─┘
+```
+
+If steps 2, 3, and 4 execute in parallel and step 2 fails:
+
+- With `FAIL_FAST`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails → Steps 3, 4 are stopped → No other steps get launched
+- With `STOP_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails but Steps 3, 4 complete → Steps 5, 6, 7 are skipped
+- With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skipped as well.
+
+{% hint style="info" %}
+All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
+{% endhint %}
+
 ## Data & Output Management
 
 ## Type annotations
@@ -303,9 +353,9 @@ The fan-in, fan-out method has the following limitations:
 2. The number of steps need to be known ahead-of-time, and ZenML does not yet support the ability to dynamically create steps on the fly.
 {% endhint %}
 
-### Dynamic Fan-out/Fan-in with Run Templates
+### Dynamic Fan-out/Fan-in with Snapshots
 
-For scenarios where you need to determine the number of parallel operations at runtime (e.g., based on database queries or dynamic data), you can use [run templates](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) to create a more flexible fan-out/fan-in pattern. This approach allows you to trigger multiple pipeline runs dynamically and then aggregate their results.
+For scenarios where you need to determine the number of parallel operations at runtime (e.g., based on database queries or dynamic data), you can use [snapshots](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) to create a more flexible fan-out/fan-in pattern. This approach allows you to trigger multiple pipeline runs dynamically and then aggregate their results.
 
 ```python
 from typing import List, Optional
@@ -327,16 +377,15 @@ def load_relevant_chunks() -> List[str]:
 @step
 def trigger_chunk_processing(
     chunks: List[str], 
-    template_id: Optional[UUID] = None
+    snapshot_id: Optional[UUID] = None
 ) -> List[UUID]:
     """Trigger multiple pipeline runs for each chunk and wait for completion."""
     client = Client()
     
-    # Use template ID if provided, otherwise give the pipeline name 
-    #  of the pipeline you want triggered. Giving the pipeline name
-    #  will automatically find the latest template associated with
-    #  that pipeline.
-    pipeline_name = None if template_id else "chunk_processing_pipeline"
+    # Use snapshot ID if provided, otherwise give the pipeline name 
+    # of the pipeline you want triggered. Giving the pipeline name
+    # will automatically find the latest snapshot of that pipeline.
+    pipeline_name = None if snapshot_id else "chunk_processing_pipeline"
     
     # Trigger all chunk processing runs
     run_ids = []
@@ -352,7 +401,7 @@ def trigger_chunk_processing(
         }
         
         run = client.trigger_pipeline(
-            template_id=template_id,
+            snapshot_name_or_id=snapshot_id,
             pipeline_name_or_id=pipeline_name,
             run_configuration=run_config,
             synchronous=False  # Run asynchronously
@@ -427,13 +476,13 @@ def aggregate_results(run_ids: List[UUID]) -> dict:
 
 
 @pipeline(enable_cache=False)
-def fan_out_fan_in_pipeline(template_id: Optional[UUID] = None):
+def fan_out_fan_in_pipeline(snapshot_id: Optional[UUID] = None):
     """Fan-out/fan-in pipeline that orchestrates dynamic chunk processing."""
     # Load chunks dynamically at runtime
     chunks = load_relevant_chunks()
     
     # Trigger chunk processing runs and wait for completion
-    run_ids = trigger_chunk_processing(chunks, template_id)
+    run_ids = trigger_chunk_processing(chunks, snapshot_id)
     
     # Aggregate results from all runs
     results = aggregate_results(run_ids)
@@ -463,17 +512,17 @@ def chunk_processing_pipeline():
 
 # Usage example
 if __name__ == "__main__":
-    # First, create a run template for the chunk processing pipeline
+    # First, create a snapshot for the chunk processing pipeline
     #  This would typically be done once during setup.
     #  Make sure a remote stack is set before running this
-    template = chunk_processing_pipeline.create_run_template(
-        name="chunk_processing_template",
-        description="Template for processing individual chunks"
+    snapshot = chunk_processing_pipeline.create_snapshot(
+        name="chunk_processing",
+        description="Snapshot for processing individual chunks"
     )
 
-    # Run the fan-out/fan-in pipeline with the template
-    #  You can also get the template ID from the dashboard
-    fan_out_fan_in_pipeline(template_id=template.id)
+    # Run the fan-out/fan-in pipeline with the snapshot
+    #  You can also get the snapshot ID from the dashboard
+    fan_out_fan_in_pipeline(snapshot_id=snapshot.id)
 ```
 
 This pattern enables dynamic scaling, true parallelism, and database-driven workflows. Key advantages include fault tolerance and separate monitoring for each chunk. Consider resource management and proper error handling when implementing.
@@ -578,8 +627,8 @@ This is particularly useful for steps that interact with external services or re
 Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
 
 ```python
-def success_hook(step_name, step_output):
-    print(f"Step {step_name} completed successfully with output: {step_output}")
+def success_hook():
+    print(f"Step completed successfully")
 
 def failure_hook(exception: BaseException):
     print(f"Step failed with error: {str(exception)}")
@@ -588,6 +637,11 @@ def failure_hook(exception: BaseException):
 def my_step():
     return 42
 ```
+
+The following conventions apply to hooks:
+
+* the success hook takes no arguments
+* the failure hook optionally takes a single `BaseException` typed argument
 
 You can also define hooks at the pipeline level to apply to all steps:
 

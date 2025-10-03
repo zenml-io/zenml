@@ -1,0 +1,57 @@
+---
+name: General Issue
+description: I have a general issue I would like to write about
+type: Task
+labels: [backend]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a general issue! This helps us improve ZenML.
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details [Optional]
+      description: How can we get in touch with you if we need more info?
+      placeholder: youre@awesome.com
+    validations:
+      required: false
+  - type: textarea
+    id: system-information
+    attributes:
+      label: System Information
+      description: zenml info -a -s
+      placeholder: Copy paste the output of the above command here.
+    validations:
+      required: false
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue Description
+      description: What is the general issue you'd like to report?
+      placeholder: A clear and concise description of your issue.
+    validations:
+      required: true
+  - type: textarea
+    id: code-snippet
+    attributes:
+      label: Code Snippet [Optional]
+      description: Where possible please include a self-contained code snippet that
+        exemplifies your issue
+      value: |
+        ```python
+        import zenml
+
+        # Your code here
+        ```
+      render: markdown
+    validations:
+      required: false
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](CODE-OF-CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

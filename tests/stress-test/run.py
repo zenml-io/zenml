@@ -43,7 +43,6 @@ def get_kubernetes_settings(
     """
     return KubernetesOrchestratorSettings(
         service_account_name="zenml-service-account",
-        pod_startup_timeout=600,
         max_parallelism=max_parallelism,
         backoff_limit_margin=3,
         pod_settings=KubernetesPodSettings(

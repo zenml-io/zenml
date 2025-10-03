@@ -1,4 +1,4 @@
-zenml
+zenml[server]
 torch>=2.2.0
 datasets>=2.15,<4.0
 transformers

@@ -17,6 +17,7 @@ from uuid import UUID
 import pytest
 
 from zenml.enums import ServiceState
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     BaseService,
     ServiceConfig,
@@ -29,11 +30,11 @@ from zenml.services.service import ZENM_ENDPOINT_PREFIX
 class TestService(BaseService):
     """Test service class for testing BaseService."""
 
-    SERVICE_TYPE = {
-        "type": "model-serving",
-        "flavor": "test_flavor",
-        "name": "test_name",
-    }
+    SERVICE_TYPE = ServiceType(
+        type="model-serving",
+        flavor="test_flavor",
+        name="test_name",
+    )
 
     @property
     def is_running(self):
@@ -80,10 +81,8 @@ def test_from_model(service_response):
     assert service.admin_state == service_response.admin_state
     assert dict(service.config) == service_response.config
     assert dict(service.status) == service_response.status
-    assert service.SERVICE_TYPE["type"] == service_response.service_type.type
-    assert (
-        service.SERVICE_TYPE["flavor"] == service_response.service_type.flavor
-    )
+    assert service.SERVICE_TYPE.type == service_response.service_type.type
+    assert service.SERVICE_TYPE.flavor == service_response.service_type.flavor
     assert service.endpoint == service_response.endpoint
 
 

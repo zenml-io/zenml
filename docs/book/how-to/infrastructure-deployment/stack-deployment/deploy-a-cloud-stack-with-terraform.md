@@ -47,7 +47,7 @@ ZENKEY_...
 Finally, you will need the following on the machine where you will be running\
 Terraform:
 
-* [Terraform](https://www.terraform.io/downloads.html) installed on your machine (version at least 1.9).
+* [Terraform](https://developer.hashicorp.com/terraform/install) installed on your machine (version at least 1.9).
 * the ZenML Terraform stack modules assume you are already locally authenticated with your cloud provider through the provider's CLI or SDK tool and have permissions to create the resources that the modules will provision. This is different depending on the cloud provider you are using and is covered in the following sections.
 
 ## How to use the Terraform stack deployment modules
@@ -201,8 +201,9 @@ following components:
 4. A local Orchestrator, if `orchestrator` is set to `local`. This can be used in combination with the SageMaker Step Operator to selectively run some steps locally and some on SageMaker.
 5. If `orchestrator` is set to `sagemaker` (default): a SageMaker Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
 6. If `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
-7. An AWS CodeBuild Image Builder linked to the AWS account via an AWS Service Connector configured with IAM role credentials
-8. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+7. An AWS App Runner Deployer linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+8. An AWS CodeBuild Image Builder linked to the AWS account via an AWS Service Connector configured with IAM role credentials
+9. a SageMaker Step Operator linked to the AWS account via an AWS Service Connector configured with IAM role credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 
@@ -281,8 +282,9 @@ following components:
 5. If `orchestrator` is set to `vertex` (default): a Vertex AI Orchestrator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
 6. If `orchestrator` is set to `skypilot`: a SkyPilot Orchestrator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
 7. If `orchestrator` is set to `airflow`: an Airflow Orchestrator linked to the Cloud Composer environment
-8. A Google Cloud Build Image Builder linked to your GCP project via a GCP Service Connector configured with the GCP service account credentials
-9. A Vertex AI Step Operator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
+8. A GCP Cloud Run Deployer linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
+9. A Google Cloud Build Image Builder linked to your GCP project via a GCP Service Connector configured with the GCP service account credentials
+10. A Vertex AI Step Operator linked to the GCP project via a GCP Service Connector configured with the GCP service account credentials
 
 To use the ZenML stack, you will need to install the required integrations:
 
