@@ -129,7 +129,6 @@ def setup_modal_client(
                 "Run 'modal token new' to set up authentication."
             )
 
-    # Configure Modal workspace/environment context if provided.
     if workspace:
         _set_env_if_present(MODAL_WORKSPACE_ENV, workspace)
     if environment:
