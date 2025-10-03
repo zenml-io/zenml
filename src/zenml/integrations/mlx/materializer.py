@@ -48,7 +48,8 @@ class MLXArrayMaterializer(BaseMaterializer):
 
         with self.artifact_store.open(numpy_file, "rb") as f:
             # loading an .npy file always results in a single array.
-            arr: mx.array = mx.load(f)
+            arr = mx.load(f)
+            assert isinstance(arr, mx.array)
             return arr
 
     def save(self, data: mx.array) -> None:
