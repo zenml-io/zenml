@@ -14,7 +14,7 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import modal
 
