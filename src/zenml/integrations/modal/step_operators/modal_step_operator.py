@@ -27,7 +27,6 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.integrations.modal.utils import (
     build_modal_image,
-    get_gpu_values,
     get_modal_stack_validator,
     setup_modal_client,
 )
@@ -131,7 +130,17 @@ class ModalStepOperator(BaseStepOperator):
         zenml_image = build_modal_image(image_name, stack, environment)
 
         resource_settings = info.config.resource_settings
-        gpu_values = get_gpu_values(settings.gpu, resource_settings)
+
+        # Determine GPU configuration from settings and resource settings
+        gpu_values = None
+        if settings.gpu:
+            gpu_count = resource_settings.gpu_count
+            if gpu_count == 0:
+                gpu_values = None
+            elif gpu_count is None:
+                gpu_values = settings.gpu
+            else:
+                gpu_values = f"{settings.gpu}:{gpu_count}"
 
         app = modal.App(
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"

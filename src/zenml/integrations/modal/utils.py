@@ -14,22 +14,15 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
-from uuid import UUID
+from typing import Dict, Optional, Tuple
 
 import modal
 
-from zenml.config import ResourceSettings
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 
-if TYPE_CHECKING:
-    from zenml.models import BuildItem
-
 logger = get_logger(__name__)
-
-ENV_ZENML_MODAL_ORCHESTRATOR_RUN_ID = "ZENML_MODAL_ORCHESTRATOR_RUN_ID"
 
 
 def setup_modal_client(
@@ -117,31 +110,6 @@ def setup_modal_client(
         os.environ["MODAL_WORKSPACE"] = workspace
     if environment:
         os.environ["MODAL_ENVIRONMENT"] = environment
-
-
-# TODO: refactor step operator and remove this
-def get_gpu_values(
-    gpu_type: Optional[str], resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Get the GPU values for Modal components.
-
-    Args:
-        gpu_type: The GPU type from Modal settings (e.g., "T4", "A100").
-        resource_settings: The resource settings containing GPU configuration.
-
-    Returns:
-        The GPU string for Modal API, or None if no GPU requested.
-    """
-    if not gpu_type:
-        return None
-
-    gpu_count = resource_settings.gpu_count
-    if gpu_count == 0:
-        return None
-    elif gpu_count is None:
-        return gpu_type
-    else:
-        return f"{gpu_type}:{gpu_count}"
 
 
 def build_modal_image(
