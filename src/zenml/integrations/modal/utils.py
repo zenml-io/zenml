@@ -24,6 +24,37 @@ from zenml.stack import Stack, StackValidator
 
 logger = get_logger(__name__)
 
+MODAL_TOKEN_ID_ENV = "MODAL_TOKEN_ID"
+MODAL_TOKEN_SECRET_ENV = "MODAL_TOKEN_SECRET"
+MODAL_WORKSPACE_ENV = "MODAL_WORKSPACE"
+MODAL_ENVIRONMENT_ENV = "MODAL_ENVIRONMENT"
+MODAL_CONFIG_PATH = os.path.expanduser("~/.modal.toml")
+
+
+def _validate_token_prefix(
+    value: str, expected_prefix: str, label: str
+) -> None:
+    """Warn if a credential doesn't match Modal's expected prefix.
+
+    This helps catch misconfigurations early without logging secret content.
+    """
+    if not value.startswith(expected_prefix):
+        logger.warning(
+            f"{label} format may be invalid. Expected prefix: {expected_prefix}"
+        )
+
+
+def _set_env_if_present(var_name: str, value: Optional[str]) -> bool:
+    """Set an environment variable only if a non-empty value is provided.
+
+    Returns:
+        True if the environment variable was set, False otherwise.
+    """
+    if value is None or value == "":
+        return False
+    os.environ[var_name] = value
+    return True
+
 
 def setup_modal_client(
     token_id: Optional[str] = None,
@@ -31,7 +62,17 @@ def setup_modal_client(
     workspace: Optional[str] = None,
     environment: Optional[str] = None,
 ) -> None:
-    """Setup Modal client with authentication.
+    """Setup Modal client authentication and context.
+
+    Precedence for credentials:
+      1) Explicit arguments (token_id, token_secret)
+      2) Existing environment variables (MODAL_TOKEN_ID, MODAL_TOKEN_SECRET)
+      3) Default Modal configuration (~/.modal.toml)
+
+    Notes:
+    - The 'environment' parameter refers to the Modal environment name (e.g., 'main'),
+      not a dict of process environment variables.
+    - This function avoids logging secret values. Validation only checks known prefixes.
 
     Args:
         token_id: Modal API token ID (ak-xxxxx format).
@@ -39,70 +80,60 @@ def setup_modal_client(
         workspace: Modal workspace name.
         environment: Modal environment name.
     """
-    if token_id and token_secret:
-        if not token_id.startswith("ak-"):
+    # Remember whether values came from args vs. env to improve diagnostics without leaking secrets.
+    arg_token_id = token_id
+    arg_token_secret = token_secret
+
+    # Coalesce from env if not explicitly provided. This reduces friction if users
+    # supply one value via configuration and the other via environment.
+    token_id = token_id or os.environ.get(MODAL_TOKEN_ID_ENV)
+    token_secret = token_secret or os.environ.get(MODAL_TOKEN_SECRET_ENV)
+
+    tokens_provided = []
+    token_sources: Dict[str, str] = {}
+
+    if token_id:
+        _validate_token_prefix(token_id, "ak-", "Token ID")
+        _set_env_if_present(MODAL_TOKEN_ID_ENV, token_id)
+        tokens_provided.append("ID")
+        token_sources["ID"] = "args" if arg_token_id else "env"
+
+    if token_secret:
+        _validate_token_prefix(token_secret, "as-", "Token secret")
+        _set_env_if_present(MODAL_TOKEN_SECRET_ENV, token_secret)
+        tokens_provided.append("secret")
+        token_sources["secret"] = "args" if arg_token_secret else "env"
+
+    if tokens_provided:
+        if len(tokens_provided) == 1:
             logger.warning(
-                f"Token ID format may be invalid. Expected format: ak-xxxxx, "
-                f"got: {token_id[:10]}... (truncated for security)"
+                f"Only token {tokens_provided[0]} provided. Ensure both are set."
             )
-
-        if not token_secret.startswith("as-"):
-            logger.warning(
-                f"Token secret format may be invalid. Expected format: as-xxxxx, "
-                f"got: {token_secret[:10]}... (truncated for security)"
-            )
-
-        os.environ["MODAL_TOKEN_ID"] = token_id
-        os.environ["MODAL_TOKEN_SECRET"] = token_secret
-        logger.debug("Using platform token ID and secret from config")
-        logger.debug(f"Token ID starts with: {token_id[:5]}...")
-        logger.debug(f"Token secret starts with: {token_secret[:5]}...")
-
-    elif token_id:
-        if not token_id.startswith("ak-"):
-            logger.warning(
-                f"Token ID format may be invalid. Expected format: ak-xxxxx, "
-                f"got: {token_id[:10]}... (truncated for security)"
-            )
-
-        os.environ["MODAL_TOKEN_ID"] = token_id
-        logger.debug("Using platform token ID from config")
-        logger.warning(
-            "Only token ID provided. Make sure MODAL_TOKEN_SECRET is set "
-            "or platform authentication may fail."
+        source_parts: List[str] = []
+        if "ID" in token_sources:
+            source_parts.append(f"ID from {token_sources['ID']}")
+        if "secret" in token_sources:
+            source_parts.append(f"secret from {token_sources['secret']}")
+        source_summary = (
+            " and ".join(source_parts) if source_parts else "args/env"
         )
-        logger.debug(f"Token ID starts with: {token_id[:5]}...")
-
-    elif token_secret:
-        if not token_secret.startswith("as-"):
-            logger.warning(
-                f"Token secret format may be invalid. Expected format: as-xxxxx, "
-                f"got: {token_secret[:10]}... (truncated for security)"
-            )
-
-        # Only token secret provided (unusual)
-        os.environ["MODAL_TOKEN_SECRET"] = token_secret
-        logger.warning(
-            "Only token secret provided. Make sure MODAL_TOKEN_ID is set "
-            "or platform authentication may fail."
-        )
-        logger.debug(f"Token secret starts with: {token_secret[:5]}...")
-
+        logger.debug(f"Using Modal API tokens ({source_summary}).")
     else:
+        # Fall back to default Modal CLI auth configuration.
         logger.debug("Using default platform authentication (~/.modal.toml)")
-        modal_toml_path = os.path.expanduser("~/.modal.toml")
-        if os.path.exists(modal_toml_path):
-            logger.debug(f"Found platform config at {modal_toml_path}")
+        if os.path.exists(MODAL_CONFIG_PATH):
+            logger.debug(f"Found platform config at {MODAL_CONFIG_PATH}")
         else:
             logger.warning(
-                f"No platform config found at {modal_toml_path}. "
+                f"No platform config found at {MODAL_CONFIG_PATH}. "
                 "Run 'modal token new' to set up authentication."
             )
 
+    # Configure Modal workspace/environment context if provided.
     if workspace:
-        os.environ["MODAL_WORKSPACE"] = workspace
+        _set_env_if_present(MODAL_WORKSPACE_ENV, workspace)
     if environment:
-        os.environ["MODAL_ENVIRONMENT"] = environment
+        _set_env_if_present(MODAL_ENVIRONMENT_ENV, environment)
 
 
 def build_modal_image(
