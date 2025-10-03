@@ -14,6 +14,7 @@
 """Modal step operator implementation."""
 
 import asyncio
+import shlex
 from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 import modal
@@ -238,19 +239,47 @@ class ModalStepOperator(BaseStepOperator):
                         )
 
                         try:
-                            sb = await modal.Sandbox.create.aio(
-                                "bash",
-                                "-c",
-                                " ".join(entrypoint_command),
-                                image=zenml_image,
-                                gpu=gpu_values,
-                                cpu=resource_settings.cpu_count,
-                                memory=memory_int,
-                                cloud=settings.cloud,
-                                region=settings.region,
-                                app=app,
-                                timeout=settings.timeout,
-                            )
+                            # Prefer direct execution of the command vector to avoid shell-quoting pitfalls
+                            # and the implicit requirement that the image contains bash. This makes argument
+                            # handling robust when values include spaces or shell metacharacters.
+                            if (
+                                not entrypoint_command
+                                or not entrypoint_command[0]
+                            ):
+                                raise ValueError(
+                                    "Empty step entrypoint command is not allowed."
+                                )
+
+                            try:
+                                sb = await modal.Sandbox.create.aio(
+                                    *entrypoint_command,
+                                    image=zenml_image,
+                                    gpu=gpu_values,
+                                    cpu=resource_settings.cpu_count,
+                                    memory=memory_int,
+                                    cloud=settings.cloud,
+                                    region=settings.region,
+                                    app=app,
+                                    timeout=settings.timeout,
+                                )
+                            except TypeError:
+                                # Some Modal client versions may not accept varargs for the command.
+                                # Fall back to a shell-quoted invocation to preserve compatibility while
+                                # still quoting arguments safely.
+                                quoted = shlex.join(entrypoint_command)
+                                sb = await modal.Sandbox.create.aio(
+                                    "bash",
+                                    "-c",
+                                    quoted,
+                                    image=zenml_image,
+                                    gpu=gpu_values,
+                                    cpu=resource_settings.cpu_count,
+                                    memory=memory_int,
+                                    cloud=settings.cloud,
+                                    region=settings.region,
+                                    app=app,
+                                    timeout=settings.timeout,
+                                )
                         except Exception as e:
                             raise RuntimeError(
                                 "Failed to create a Modal sandbox. "
