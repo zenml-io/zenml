@@ -14,21 +14,25 @@
 """Modal step operator implementation."""
 
 import asyncio
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 import modal
-from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.resource_settings import ByteUnit, ResourceSettings
-from zenml.enums import StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
+from zenml.integrations.modal.utils import (
+    build_modal_image,
+    get_modal_stack_validator,
+    setup_modal_client,
+)
 from zenml.logger import get_logger
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
@@ -39,24 +43,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
-
-
-def get_gpu_values(
-    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Get the GPU values for the Modal step operator.
-
-    Args:
-        settings: The Modal step operator settings.
-        resource_settings: The resource settings.
-
-    Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
-    """
-    if not settings.gpu:
-        return None
-    gpu_count = resource_settings.gpu_count
-    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -91,40 +77,7 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
-
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
-            if stack.artifact_store.config.is_local:
-                return False, (
-                    "The Modal step operator runs code remotely and "
-                    "needs to write files into the artifact store, but the "
-                    f"artifact store `{stack.artifact_store.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Modal "
-                    "step operator."
-                )
-
-            container_registry = stack.container_registry
-            assert container_registry is not None
-
-            if container_registry.config.is_local:
-                return False, (
-                    "The Modal step operator runs code remotely and "
-                    "needs to push/pull Docker images, but the "
-                    f"container registry `{container_registry.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote container registry when using the "
-                    "Modal step operator."
-                )
-
-            return True, ""
-
-        return StackValidator(
-            required_components={
-                StackComponentType.CONTAINER_REGISTRY,
-                StackComponentType.IMAGE_BUILDER,
-            },
-            custom_validation_function=_validate_remote_components,
-        )
+        return get_modal_stack_validator()
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
@@ -149,11 +102,88 @@ class ModalStepOperator(BaseStepOperator):
 
         return builds
 
+    def _compute_modal_gpu_arg(
+        self,
+        settings: ModalStepOperatorSettings,
+        resource_settings: ResourceSettings,
+    ) -> Optional[str]:
+        """Compute and validate the Modal 'gpu' argument.
+
+        Why this exists:
+        - Modal expects GPU resources as a string (e.g., 'T4' or 'A100:2').
+        - ZenML splits GPU intent between a 'type' (settings.gpu) and a 'count'
+          (resource_settings.gpu_count). This helper reconciles the two and
+          enforces rules that prevent silent CPU fallbacks or ambiguous configs.
+
+        Rules enforced:
+        - If a positive gpu_count is requested without specifying a GPU type,
+          raise a StackComponentInterfaceError to make the mismatch explicit.
+        - If a GPU type is specified but gpu_count == 0, we interpret this as
+          requesting 1 GPU (Modal semantics for a bare type string) and log a
+          warning to explain the behavior and how to request CPU-only runs.
+        - If neither a type nor a positive count is requested, return None for
+          CPU-only execution.
+        - Otherwise, format the string as '<TYPE>' for one GPU or '<TYPE>:<COUNT>'
+          for multiple GPUs.
+        """
+        # Normalize GPU type: treat empty or whitespace-only strings as None to avoid
+        # surprising behavior when user-provided values are malformed (e.g., "  ").
+        gpu_type_raw = settings.gpu
+        gpu_type = gpu_type_raw.strip() if gpu_type_raw is not None else None
+        if gpu_type == "":
+            gpu_type = None
+
+        # Coerce and validate gpu_count to ensure it's a non-negative integer if provided.
+        gpu_count = resource_settings.gpu_count
+        if gpu_count is not None:
+            try:
+                gpu_count = int(gpu_count)
+            except (TypeError, ValueError):
+                raise StackComponentInterfaceError(
+                    f"Invalid GPU count '{gpu_count}'. Must be a non-negative integer."
+                )
+            if gpu_count < 0:
+                raise StackComponentInterfaceError(
+                    f"Invalid GPU count '{gpu_count}'. Must be >= 0."
+                )
+
+        # Scenario 1: Count requested but type missing -> invalid configuration.
+        if gpu_type is None:
+            if gpu_count is not None and gpu_count > 0:
+                raise StackComponentInterfaceError(
+                    "GPU resources requested (gpu_count > 0) but no GPU type was specified "
+                    "in Modal settings. Please set a GPU type (e.g., 'T4', 'A100') via "
+                    "ModalStepOperatorSettings.gpu or @step(settings={'modal': {'gpu': '<TYPE>'}}), "
+                    "or set gpu_count=0 to run on CPU."
+                )
+            # CPU-only scenarios (no type, count is None or 0).
+            return None
+
+        # Scenario 2: Type set but count == 0 -> warn and default to 1 GPU.
+        if gpu_count == 0:
+            logger.warning(
+                "Modal GPU type '%s' is configured but ResourceSettings.gpu_count is 0. "
+                "Defaulting to 1 GPU. To run on CPU only, remove the GPU type or ensure "
+                "gpu_count=0 with no GPU type configured.",
+                gpu_type,
+            )
+            return gpu_type  # Implicitly 1 GPU for Modal
+
+        # Valid configurations
+        if gpu_count is None:
+            return gpu_type  # Implicitly 1 GPU for Modal
+
+        if gpu_count > 0:
+            return f"{gpu_type}:{gpu_count}"
+
+        # Defensive fallback shouldn't be reachable due to validation above; return CPU-only None if hit.
+        return None
+
     def launch(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
-        environment: Dict[str, str],
+        environment: Optional[Dict[str, str]],
     ) -> None:
         """Launch a step run on Modal.
 
@@ -161,82 +191,98 @@ class ModalStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
-
-        Raises:
-            RuntimeError: If no Docker credentials are found for the container registry.
-            ValueError: If no container registry is found in the stack.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
         zc = Client()
         stack = zc.active_stack
 
-        if not stack.container_registry:
-            raise ValueError(
-                "No Container registry found in the stack. "
-                "Please add a container registry and ensure "
-                "it is correctly configured."
-            )
+        setup_modal_client(
+            token_id=self.config.token_id,
+            token_secret=self.config.token_secret,
+            workspace=self.config.workspace,
+            environment=settings.modal_environment
+            or self.config.modal_environment,
+        )
 
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-        else:
+        try:
+            zenml_image = build_modal_image(image_name, stack, environment)
+        except Exception as e:
             raise RuntimeError(
-                "No Docker credentials found for the container registry."
-            )
-
-        my_secret = modal.secret._Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
-        )
-
-        spec = modal.image.DockerfileSpec(
-            commands=[f"FROM {image_name}"], context_files={}
-        )
-
-        zenml_image = modal.Image._from_args(
-            dockerfile_function=lambda *_, **__: spec,
-            force_build=False,
-            image_registry_config=modal.image._ImageRegistryConfig(
-                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-            ),
-        ).env(environment)
+                "Failed to construct the Modal image from your Docker registry. "
+                "Action required: ensure your ZenML stack's container registry is configured with valid credentials "
+                "and that the base image exists and is accessible. "
+                f"Context: image='{image_name}'."
+            ) from e
 
         resource_settings = info.config.resource_settings
-        gpu_values = get_gpu_values(settings, resource_settings)
+
+        gpu_values = self._compute_modal_gpu_arg(settings, resource_settings)
 
         app = modal.App(
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
         )
 
-        async def run_sandbox() -> asyncio.Future[None]:
-            loop = asyncio.get_event_loop()
-            future = loop.create_future()
+        async def run_sandbox() -> None:
             with modal.enable_output():
-                async with app.run():
-                    memory_mb = resource_settings.get_memory(ByteUnit.MB)
-                    memory_int = (
-                        int(memory_mb) if memory_mb is not None else None
-                    )
-                    sb = await modal.Sandbox.create.aio(
-                        "bash",
-                        "-c",
-                        " ".join(entrypoint_command),
-                        image=zenml_image,
-                        gpu=gpu_values,
-                        cpu=resource_settings.cpu_count,
-                        memory=memory_int,
-                        cloud=settings.cloud,
-                        region=settings.region,
-                        app=app,
-                        timeout=86400,  # 24h, the max Modal allows
-                    )
+                try:
+                    async with app.run():
+                        # Compute memory lazily to preserve original semantics and avoid
+                        # accidental integer conversion if value is missing.
+                        memory_int = (
+                            int(mb)
+                            if (
+                                mb := resource_settings.get_memory(ByteUnit.MB)
+                            )
+                            else None
+                        )
 
-                    await sb.wait.aio()
+                        try:
+                            # Prefer direct execution of the command vector to avoid shell-quoting pitfalls
+                            # and the implicit requirement that the image contains bash. This makes argument
+                            # handling robust when values include spaces or shell metacharacters.
+                            if (
+                                not entrypoint_command
+                                or not entrypoint_command[0]
+                            ):
+                                raise ValueError(
+                                    "Empty step entrypoint command is not allowed."
+                                )
 
-            future.set_result(None)
-            return future
+                            sb = await modal.Sandbox.create.aio(
+                                *entrypoint_command,
+                                image=zenml_image,
+                                gpu=gpu_values,
+                                cpu=resource_settings.cpu_count,
+                                memory=memory_int,
+                                cloud=settings.cloud,
+                                region=settings.region,
+                                app=app,
+                                timeout=settings.timeout,
+                            )
+                        except Exception as e:
+                            raise RuntimeError(
+                                "Failed to create a Modal sandbox. "
+                                "Action required: verify that the referenced Docker image exists and is accessible, "
+                                "the requested resources are available (gpu/region/cloud), and your Modal workspace "
+                                "permissions allow sandbox creation. "
+                                f"Context: image='{image_name}', gpu='{gpu_values}', region='{settings.region}', cloud='{settings.cloud}'."
+                            ) from e
+
+                        try:
+                            await sb.wait.aio()
+                        except Exception as e:
+                            raise RuntimeError(
+                                "Modal sandbox execution failed. "
+                                "Action required: inspect the step logs in Modal, validate your entrypoint command, "
+                                "and confirm that dependencies are available in the image/environment."
+                            ) from e
+                except Exception as e:
+                    raise RuntimeError(
+                        "Failed to initialize Modal application context (authentication / workspace / environment). "
+                        "Action required: make sure you're authenticated with Modal (run 'modal token new' or set "
+                        "MODAL_TOKEN_ID and MODAL_TOKEN_SECRET), and that the configured workspace/environment exist "
+                        "and you have access to them."
+                    ) from e
 
         asyncio.run(run_sandbox())
