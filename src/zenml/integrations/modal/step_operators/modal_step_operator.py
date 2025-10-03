@@ -147,9 +147,11 @@ class ModalStepOperator(BaseStepOperator):
         async def run_sandbox() -> None:
             with modal.enable_output():
                 async with app.run():
-                    memory_mb = resource_settings.get_memory(ByteUnit.MB)
                     memory_int = (
-                        int(memory_mb) if memory_mb is not None else None
+                        int(mb)
+                        if (mb := resource_settings.get_memory(ByteUnit.MB))
+                        is not None
+                        else None
                     )
                     sb = await modal.Sandbox.create.aio(
                         "bash",
