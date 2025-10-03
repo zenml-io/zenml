@@ -15,7 +15,7 @@
 
 import os
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Literal, Optional
+from typing import AsyncGenerator, Callable, List, Literal, Optional
 
 from fastapi import (
     APIRouter,
@@ -27,6 +27,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field
 
 from zenml.deployers.server.models import (
     ExecutionMetrics,
@@ -37,6 +38,225 @@ from zenml.deployers.server.service import PipelineDeploymentService
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Callables that construct a PipelineDeploymentService given a deployment ID.
+ServiceFactory = Callable[[str], PipelineDeploymentService]
+
+
+class DeploymentAppConfig(BaseModel):
+    """Configuration for a single FastAPI deployment app instance.
+
+    This is intentionally a Pydantic model to make it easy to validate and
+    serialize configuration in deployment scenarios and tests.
+    """
+
+    # Deployment identity and docs metadata
+    deployment_id: Optional[str] = None
+    title: str = Field(
+        default_factory=lambda: f"ZenML Pipeline Deployment {os.getenv('ZENML_DEPLOYMENT_ID', '')}".strip()
+        or "ZenML Pipeline Deployment"
+    )
+    description: str = "deploy ZenML pipelines as FastAPI endpoints"
+    version: str = "0.2.0"
+    docs_url: Optional[str] = "/docs"
+    redoc_url: Optional[str] = "/redoc"
+
+    # CORS and runtime flags
+    cors_origins: Optional[List[str]] = None  # Defaults to ['*'] if None
+    test_mode: Optional[bool] = None
+
+    # Authentication
+    auth_key: Optional[str] = None
+
+
+def _build_auth_dependency(
+    auth_key: Optional[str],
+) -> tuple[HTTPBearer, Callable[..., None]]:
+    """Build a per-instance auth dependency and HTTPBearer security scheme.
+
+    The explicit `auth_key` parameter takes precedence over the
+    ZENML_DEPLOYMENT_AUTH_KEY environment variable. When the resolved key is
+    empty, authentication is effectively disabled and the dependency no-ops.
+
+    Args:
+        auth_key: Optional explicit key to enforce for bearer auth.
+
+    Returns:
+        A tuple containing:
+        - HTTPBearer security object with auto_error=False
+        - A verify_token dependency closure that enforces the key when present
+    """
+    effective_key = (
+        auth_key or os.getenv("ZENML_DEPLOYMENT_AUTH_KEY", "")
+    ).strip()
+
+    security = HTTPBearer(
+        scheme_name="Bearer Token",
+        description="Enter your API key as a Bearer token",
+        auto_error=False,  # Manual error handling to reuse headers and messages
+    )
+
+    def verify_token_dep(
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+            security
+        ),
+    ) -> None:
+        # When no key is configured, auth is disabled and all requests are allowed.
+        if not effective_key:
+            return
+
+        # Require Authorization header when a key is configured.
+        if not credentials:
+            raise HTTPException(
+                status_code=401,
+                detail="Authorization header required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Enforce exact match with configured key.
+        if credentials.credentials != effective_key:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return
+
+    return security, verify_token_dep
+
+
+def create_app(
+    *,
+    config: Optional[DeploymentAppConfig] = None,
+    service_factory: Optional[ServiceFactory] = None,
+) -> FastAPI:
+    """Create a fresh FastAPI application instance for a deployment.
+
+    This factory:
+    - Resolves test mode and deployment ID (config overrides env),
+    - Instantiates a PipelineDeploymentService via the provided factory or default,
+    - Wires a per-instance authentication dependency into the /invoke router,
+    - Registers CORS, routes, and exception handlers, and
+    - Stores the service and verify_token closure on app.state.
+
+    Args:
+        config: Optional DeploymentAppConfig; if omitted, sensible defaults are used.
+        service_factory: Optional factory to construct the service; defaults to
+            PipelineDeploymentService.
+
+    Returns:
+        A configured FastAPI application instance.
+    """
+    cfg = config or DeploymentAppConfig()
+
+    # Resolve test mode with config taking precedence over the environment variable.
+    env_test_mode = (
+        os.getenv("ZENML_DEPLOYMENT_TEST_MODE", "false").lower() == "true"
+    )
+    test_mode = cfg.test_mode if cfg.test_mode is not None else env_test_mode
+
+    # Resolve deployment ID with config taking precedence.
+    resolved_deployment_id = cfg.deployment_id or os.getenv(
+        "ZENML_DEPLOYMENT_ID"
+    )
+
+    # Create per-app security + dependency
+    instance_security, instance_verify_token = _build_auth_dependency(
+        cfg.auth_key
+    )
+
+    @asynccontextmanager
+    async def _instance_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+        # Short-circuit startup / shutdown for isolated tests
+        if test_mode:
+            logger.info("🧪 Running in test mode - skipping initialization")
+            app.state.service = None
+            app.state.verify_token = instance_verify_token
+            yield
+            return
+
+        # Startup
+        logger.info("🚀 Starting ZenML Pipeline Serving service...")
+
+        if not resolved_deployment_id:
+            raise ValueError(
+                "ZENML_DEPLOYMENT_ID environment variable is required"
+            )
+
+        # Initialize service and register invoke router
+        factory = service_factory or PipelineDeploymentService
+        service = factory(resolved_deployment_id)
+        try:
+            service.initialize()
+            app.state.service = service
+            app.state.verify_token = instance_verify_token
+            router = _build_invoke_router(
+                service, auth_dep=instance_verify_token
+            )
+            app.include_router(router)
+            logger.info(
+                "✅ Pipeline deployment service initialized successfully"
+            )
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize: {e}")
+            # Ensure partial state does not leak across lifespan cycles
+            app.state.service = None
+            app.state.verify_token = instance_verify_token
+            raise
+
+        yield
+
+        # Shutdown
+        logger.info("🛑 Shutting down ZenML Pipeline Deployment service...")
+        try:
+            if getattr(app.state, "service", None):
+                app.state.service.cleanup()
+                logger.info(
+                    "✅ Pipeline deployment service cleaned up successfully"
+                )
+        except Exception as e:
+            logger.error(f"❌ Error during service cleanup: {e}")
+        finally:
+            # Avoid stale references across reloads
+            app.state.service = None
+
+    # Build the FastAPI instance
+    fastapi_app = FastAPI(
+        title=cfg.title,
+        description=cfg.description,
+        version=cfg.version,
+        lifespan=_instance_lifespan,
+        docs_url=cfg.docs_url,
+        redoc_url=cfg.redoc_url,
+    )
+
+    # CORS middleware mirrors module-level configuration, using per-config origins.
+    allow_origins = cfg.cors_origins or ["*"]
+    fastapi_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allow_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+    # Reuse existing route callables to avoid duplicating logic.
+    fastapi_app.add_api_route("/", root, response_class=HTMLResponse)
+    fastapi_app.add_api_route("/health", health_check)
+    fastapi_app.add_api_route("/info", info)
+    fastapi_app.add_api_route("/metrics", execution_metrics)
+
+    # Exception handlers mirroring module-level registrations.
+    fastapi_app.add_exception_handler(ValueError, value_error_handler)
+    fastapi_app.add_exception_handler(RuntimeError, runtime_error_handler)
+
+    # Expose for debugging / tests
+    fastapi_app.state.verify_token = instance_verify_token
+    fastapi_app.state.security = instance_security
+
+    return fastapi_app
+
 
 _service: Optional[PipelineDeploymentService] = None
 
@@ -113,13 +333,19 @@ security = HTTPBearer(
     description="Enter your API key as a Bearer token",
     auto_error=False,  # We handle errors in our dependency
 )
+app.state.security = security  # Keep module-level app parity with create_app by exposing security on state
 
 
-def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
+def _build_invoke_router(
+    service: PipelineDeploymentService,
+    auth_dep: Optional[Callable[..., None]] = None,
+) -> APIRouter:
     """Create an idiomatic APIRouter that exposes /invoke.
 
     Args:
         service: The deployment service used to execute pipeline runs.
+        auth_dep: Optional dependency to verify authentication. Falls back to
+            the module-level verify_token when not provided, to preserve legacy behavior.
 
     Returns:
         A router exposing the `/invoke` endpoint wired to the service.
@@ -129,6 +355,7 @@ def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
     PipelineInvokeRequest, PipelineInvokeResponse = get_pipeline_invoke_models(
         service
     )
+    verify_dependency = auth_dep or verify_token
 
     @router.post(
         "/invoke",
@@ -138,19 +365,34 @@ def _build_invoke_router(service: PipelineDeploymentService) -> APIRouter:
     )
     def _(
         request: PipelineInvokeRequest,  # type: ignore[valid-type]
-        _: None = Depends(verify_token),
+        _: None = Depends(verify_dependency),
     ) -> PipelineInvokeResponse:  # type: ignore[valid-type]
         return service.execute_pipeline(request)
 
     return router
 
 
-def get_pipeline_service() -> PipelineDeploymentService:
-    """Get the pipeline deployment service.
+def get_pipeline_service(request: Request) -> PipelineDeploymentService:
+    """Resolve the active PipelineDeploymentService instance.
+
+    This is designed to be used as a FastAPI dependency. It expects the
+    Request object to be provided by FastAPI, and it prefers resolving the
+    service from the current application's state (request.app.state.service).
+    If no per-app service is available, it falls back to the legacy module-
+    level singleton service for backward compatibility.
+
+    Args:
+        request: The current HTTP request (injected by FastAPI).
 
     Returns:
         The initialized pipeline deployment service instance.
     """
+    app_obj = getattr(request, "app", None)
+    state = getattr(app_obj, "state", None)
+    if state is not None and getattr(state, "service", None) is not None:
+        return state.service  # type: ignore[return-value]
+
+    # Legacy path: use module-level singleton service.
     assert _service is not None
     return _service
 
@@ -160,8 +402,10 @@ def verify_token(
 ) -> None:
     """Verify the provided Bearer token for authentication.
 
-    This dependency function integrates with FastAPI's security system
-    to provide proper OpenAPI documentation and authentication UI.
+    NOTE: This dependency is used by the module-level singleton app defined in
+    this module. For new, programmatic instances, prefer using
+    `_build_auth_dependency(...)/create_app(...)` to construct a per-app
+    dependency and security scheme.
 
     Args:
         credentials: HTTP Bearer credentials from the request
@@ -193,6 +437,10 @@ def verify_token(
 
     # Token is valid, authentication successful
     return
+
+
+# Make the authentication dependency available on the module-level app state
+app.state.verify_token = verify_token
 
 
 # Add CORS middleware to allow frontend access
@@ -329,6 +577,18 @@ def runtime_error_handler(request: Request, exc: RuntimeError) -> JSONResponse:
     """
     logger.error("RuntimeError in request: %s", exc)
     return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+# Explicit public API surface for importers
+__all__ = [
+    "app",
+    "create_app",
+    "DeploymentAppConfig",
+    "_build_invoke_router",
+    "get_pipeline_service",
+    "verify_token",
+    "lifespan",
+]
 
 
 if __name__ == "__main__":
