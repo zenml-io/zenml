@@ -75,6 +75,8 @@ class ModalStepOperatorSettings(BaseSettings):
     )
     timeout: int = Field(
         DEFAULT_TIMEOUT_SECONDS,
+        ge=1,
+        le=DEFAULT_TIMEOUT_SECONDS,
         description=f"Maximum execution time in seconds for step completion. Must be between 1 and {DEFAULT_TIMEOUT_SECONDS} seconds. "
         f"Examples: 3600 (1 hour), 7200 (2 hours), {DEFAULT_TIMEOUT_SECONDS} (24 hours maximum). "
         "Step execution will be terminated if it exceeds this timeout",
