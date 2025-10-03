@@ -15,9 +15,12 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.step_operators import ModalStepOperator
@@ -36,20 +39,80 @@ class ModalStepOperatorSettings(BaseSettings):
     incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
 
     Attributes:
-        gpu: The type of GPU to use for the step execution.
+        gpu: The type of GPU to use for the step execution (e.g., "T4", "A100").
+            Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
+        modal_environment: The Modal environment to use for the step execution.
+        timeout: Maximum execution time in seconds (default 24h).
     """
 
-    gpu: Optional[str] = None
-    region: Optional[str] = None
-    cloud: Optional[str] = None
+    gpu: Optional[str] = Field(
+        None,
+        description="GPU type for step execution. Must be a valid Modal GPU type. "
+        "Examples: 'T4' (cost-effective), 'A100' (high-performance), 'V100' (training workloads). "
+        "Use ResourceSettings.gpu_count to specify number of GPUs. If not specified, uses CPU-only execution",
+    )
+    region: Optional[str] = Field(
+        None,
+        description="Cloud region for step execution. Must be a valid region for the selected cloud provider. "
+        "Examples: 'us-east-1', 'us-west-2', 'eu-west-1'. If not specified, Modal uses default region "
+        "based on cloud provider and availability",
+    )
+    cloud: Optional[str] = Field(
+        None,
+        description="Cloud provider for step execution. Must be a valid Modal-supported cloud provider. "
+        "Examples: 'aws', 'gcp'. If not specified, Modal uses default cloud provider "
+        "based on workspace configuration",
+    )
+    modal_environment: Optional[str] = Field(
+        None,
+        description="Modal environment name for step execution. Must be a valid environment "
+        "configured in your Modal workspace. Examples: 'main', 'staging', 'production'. "
+        "If not specified, uses the default environment for the workspace",
+    )
+    timeout: int = Field(
+        86400,
+        description="Maximum execution time in seconds for step completion. Must be between 1 and 86400 seconds. "
+        "Examples: 3600 (1 hour), 7200 (2 hours), 86400 (24 hours maximum). "
+        "Step execution will be terminated if it exceeds this timeout",
+    )
 
 
 class ModalStepOperatorConfig(
     BaseStepOperatorConfig, ModalStepOperatorSettings
 ):
-    """Configuration for the Modal step operator."""
+    """Configuration for the Modal step operator.
+
+    Attributes:
+        token_id: Modal API token ID (ak-xxxxx format) for authentication.
+        token_secret: Modal API token secret (as-xxxxx format) for authentication.
+        workspace: Modal workspace name (optional).
+
+    Note: If token_id and token_secret are not provided, falls back to
+    Modal's default authentication (~/.modal.toml).
+    All other configuration options (modal_environment, gpu, region, etc.)
+    are inherited from ModalStepOperatorSettings.
+    """
+
+    token_id: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token ID for authentication. Must be in format 'ak-xxxxx' as provided by Modal. "
+        "Example: 'ak-1234567890abcdef'. If not provided, falls back to Modal's default authentication "
+        "from ~/.modal.toml file. Required for programmatic access to Modal API",
+    )
+    token_secret: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token secret for authentication. Must be in format 'as-xxxxx' as provided by Modal. "
+        "Example: 'as-abcdef1234567890'. Used together with token_id for API authentication. "
+        "If not provided, falls back to Modal's default authentication from ~/.modal.toml file",
+    )
+    workspace: Optional[str] = Field(
+        None,
+        description="Modal workspace name for step execution. Must be a valid workspace name "
+        "you have access to. Examples: 'my-company', 'ml-team', 'personal-workspace'. "
+        "If not specified, uses the default workspace from Modal configuration",
+    )
 
     @property
     def is_remote(self) -> bool:
