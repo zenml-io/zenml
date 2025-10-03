@@ -150,7 +150,6 @@ class ModalStepOperator(BaseStepOperator):
                     memory_int = (
                         int(mb)
                         if (mb := resource_settings.get_memory(ByteUnit.MB))
-                        is not None
                         else None
                     )
                     sb = await modal.Sandbox.create.aio(
