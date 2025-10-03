@@ -1,0 +1,20 @@
+# ZenML
+zenml[server]
+
+# Core dependencies with version constraints for compatibility
+pandas>=2.0.0,<3.0.0
+numpy>=1.24.0,<2.0.0
+duckdb>=1.0.0,<2.0.0
+
+# Pydantic compatibility
+pydantic>=2.6,<3
+
+# AI/ML frameworks
+pydantic-ai[logfire]>=0.4.0
+openai>=1.0.0,<2.0.0
+anthropic>=0.30.0  # Alternative LLM provider
+
+# Data source connectors
+datasets>=2.14.0,<3.0.0  # HuggingFace datasets (optional for local files)
+
+# Utility libraries
