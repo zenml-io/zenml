@@ -172,19 +172,40 @@ def build_modal_image(
             "No Docker credentials found for the container registry."
         )
 
-    registry_secret = modal.Secret.from_dict(
-        {
-            "REGISTRY_USERNAME": docker_username,
-            "REGISTRY_PASSWORD": docker_password,
-        }
-    )
+    try:
+        registry_secret = modal.Secret.from_dict(
+            {
+                "REGISTRY_USERNAME": docker_username,
+                "REGISTRY_PASSWORD": docker_password,
+            }
+        )
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to create Modal secret for container registry credentials. "
+            "Action required: verify your container registry credentials in the active ZenML stack and "
+            "ensure your Modal account has permission to create secrets."
+        ) from e
 
-    modal_image = modal.Image.from_registry(
-        image_name, secret=registry_secret
-    ).pip_install("modal")
+    try:
+        modal_image = modal.Image.from_registry(
+            image_name, secret=registry_secret
+        ).pip_install("modal")
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to construct a Modal image from the specified Docker base image. "
+            "Action required: ensure the image exists and is accessible from your container registry, "
+            "and that the provided credentials are correct."
+        ) from e
 
     if environment:
-        modal_image = modal_image.env(environment)
+        try:
+            modal_image = modal_image.env(environment)
+        except Exception as e:
+            # This is a defensive guard; env composition is local, but we still provide guidance.
+            raise RuntimeError(
+                "Failed to apply environment variables to the Modal image. "
+                "Action required: verify that environment variable keys and values are valid strings."
+            ) from e
 
     return modal_image
 

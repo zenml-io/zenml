@@ -205,11 +205,18 @@ class ModalStepOperator(BaseStepOperator):
             or self.config.modal_environment,
         )
 
-        zenml_image = build_modal_image(image_name, stack, environment)
+        try:
+            zenml_image = build_modal_image(image_name, stack, environment)
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to construct the Modal image from your Docker registry. "
+                "Action required: ensure your ZenML stack's container registry is configured with valid credentials "
+                "and that the base image exists and is accessible. "
+                f"Context: image='{image_name}'."
+            ) from e
 
         resource_settings = info.config.resource_settings
 
-        # Compute and validate the GPU argument via the helper.
         gpu_values = self._compute_modal_gpu_arg(settings, resource_settings)
 
         app = modal.App(
@@ -218,26 +225,55 @@ class ModalStepOperator(BaseStepOperator):
 
         async def run_sandbox() -> None:
             with modal.enable_output():
-                async with app.run():
-                    memory_int = (
-                        int(mb)
-                        if (mb := resource_settings.get_memory(ByteUnit.MB))
-                        else None
-                    )
-                    sb = await modal.Sandbox.create.aio(
-                        "bash",
-                        "-c",
-                        " ".join(entrypoint_command),
-                        image=zenml_image,
-                        gpu=gpu_values,
-                        cpu=resource_settings.cpu_count,
-                        memory=memory_int,
-                        cloud=settings.cloud,
-                        region=settings.region,
-                        app=app,
-                        timeout=settings.timeout,
-                    )
+                try:
+                    async with app.run():
+                        # Compute memory lazily to preserve original semantics and avoid
+                        # accidental integer conversion if value is missing.
+                        memory_int = (
+                            int(mb)
+                            if (
+                                mb := resource_settings.get_memory(ByteUnit.MB)
+                            )
+                            else None
+                        )
 
-                    await sb.wait.aio()
+                        try:
+                            sb = await modal.Sandbox.create.aio(
+                                "bash",
+                                "-c",
+                                " ".join(entrypoint_command),
+                                image=zenml_image,
+                                gpu=gpu_values,
+                                cpu=resource_settings.cpu_count,
+                                memory=memory_int,
+                                cloud=settings.cloud,
+                                region=settings.region,
+                                app=app,
+                                timeout=settings.timeout,
+                            )
+                        except Exception as e:
+                            raise RuntimeError(
+                                "Failed to create a Modal sandbox. "
+                                "Action required: verify that the referenced Docker image exists and is accessible, "
+                                "the requested resources are available (gpu/region/cloud), and your Modal workspace "
+                                "permissions allow sandbox creation. "
+                                f"Context: image='{image_name}', gpu='{gpu_values}', region='{settings.region}', cloud='{settings.cloud}'."
+                            ) from e
+
+                        try:
+                            await sb.wait.aio()
+                        except Exception as e:
+                            raise RuntimeError(
+                                "Modal sandbox execution failed. "
+                                "Action required: inspect the step logs in Modal, validate your entrypoint command, "
+                                "and confirm that dependencies are available in the image/environment."
+                            ) from e
+                except Exception as e:
+                    raise RuntimeError(
+                        "Failed to initialize Modal application context (authentication / workspace / environment). "
+                        "Action required: make sure you're authenticated with Modal (run 'modal token new' or set "
+                        "MODAL_TOKEN_ID and MODAL_TOKEN_SECRET), and that the configured workspace/environment exist "
+                        "and you have access to them."
+                    ) from e
 
         asyncio.run(run_sandbox())
