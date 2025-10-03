@@ -14,21 +14,25 @@
 """Modal step operator implementation."""
 
 import asyncio
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 import modal
-from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit, ResourceSettings
-from zenml.enums import StackComponentType
+from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
+from zenml.integrations.modal.utils import (
+    build_modal_image,
+    get_gpu_values,
+    get_modal_stack_validator,
+    setup_modal_client,
+)
 from zenml.logger import get_logger
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
@@ -39,24 +43,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
-
-
-def get_gpu_values(
-    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Get the GPU values for the Modal step operator.
-
-    Args:
-        settings: The Modal step operator settings.
-        resource_settings: The resource settings.
-
-    Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
-    """
-    if not settings.gpu:
-        return None
-    gpu_count = resource_settings.gpu_count
-    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -91,40 +77,7 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
-
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
-            if stack.artifact_store.config.is_local:
-                return False, (
-                    "The Modal step operator runs code remotely and "
-                    "needs to write files into the artifact store, but the "
-                    f"artifact store `{stack.artifact_store.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Modal "
-                    "step operator."
-                )
-
-            container_registry = stack.container_registry
-            assert container_registry is not None
-
-            if container_registry.config.is_local:
-                return False, (
-                    "The Modal step operator runs code remotely and "
-                    "needs to push/pull Docker images, but the "
-                    f"container registry `{container_registry.name}` of the "
-                    "active stack is local. Please ensure that your stack "
-                    "contains a remote container registry when using the "
-                    "Modal step operator."
-                )
-
-            return True, ""
-
-        return StackValidator(
-            required_components={
-                StackComponentType.CONTAINER_REGISTRY,
-                StackComponentType.IMAGE_BUILDER,
-            },
-            custom_validation_function=_validate_remote_components,
-        )
+        return get_modal_stack_validator()
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
@@ -161,51 +114,24 @@ class ModalStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
-
-        Raises:
-            RuntimeError: If no Docker credentials are found for the container registry.
-            ValueError: If no container registry is found in the stack.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
         zc = Client()
         stack = zc.active_stack
 
-        if not stack.container_registry:
-            raise ValueError(
-                "No Container registry found in the stack. "
-                "Please add a container registry and ensure "
-                "it is correctly configured."
-            )
-
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-        else:
-            raise RuntimeError(
-                "No Docker credentials found for the container registry."
-            )
-
-        my_secret = modal.secret._Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
+        setup_modal_client(
+            token_id=self.config.token_id,
+            token_secret=self.config.token_secret,
+            workspace=self.config.workspace,
+            environment=self.config.modal_environment,
         )
 
-        spec = modal.image.DockerfileSpec(
-            commands=[f"FROM {image_name}"], context_files={}
-        )
-
-        zenml_image = modal.Image._from_args(
-            dockerfile_function=lambda *_, **__: spec,
-            force_build=False,
-            image_registry_config=modal.image._ImageRegistryConfig(
-                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-            ),
-        ).env(environment)
+        # Build Modal image using shared utility
+        zenml_image = build_modal_image(image_name, stack, environment)
 
         resource_settings = info.config.resource_settings
-        gpu_values = get_gpu_values(settings, resource_settings)
+        gpu_values = get_gpu_values(settings.gpu, resource_settings)
 
         app = modal.App(
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
@@ -231,7 +157,7 @@ class ModalStepOperator(BaseStepOperator):
                         cloud=settings.cloud,
                         region=settings.region,
                         app=app,
-                        timeout=86400,  # 24h, the max Modal allows
+                        timeout=settings.timeout,
                     )
 
                     await sb.wait.aio()
