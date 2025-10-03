@@ -5,7 +5,9 @@ description: Building container images with Kaniko.
 # Kaniko Image Builder
 
 {% hint style="warning" %}
-The Kaniko project has been archived as of early June 2025. While existing installations will continue to work, the project is no longer actively maintained. Consider using alternative image builders such as the [Local](local.md), [GCP](gcp.md), or [AWS](aws.md) image builders for your containerization needs.
+The Kaniko project has been archived by Google as of early June 2025. However, [Chain Guard](https://www.chainguard.dev/unchained/fork-yeah-were-bringing-kaniko-back) have subsequently [forked Kaniko](https://github.com/chainguard-dev/kaniko) to provide bug-fixes and other minor contributions to maintain the project.
+
+Consider using alternative image builders such as the [Local](local.md), [GCP](gcp.md), or [AWS](aws.md) image builders for your containerization needs.
 {% endhint %}
 
 The Kaniko image builder is an [image builder](./) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
