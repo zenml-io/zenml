@@ -20,7 +20,7 @@ import modal
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit
+from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
@@ -105,7 +105,7 @@ class ModalStepOperator(BaseStepOperator):
     def _compute_modal_gpu_arg(
         self,
         settings: ModalStepOperatorSettings,
-        resource_settings,
+        resource_settings: ResourceSettings,
     ) -> Optional[str]:
         """Compute and validate the Modal 'gpu' argument.
 
