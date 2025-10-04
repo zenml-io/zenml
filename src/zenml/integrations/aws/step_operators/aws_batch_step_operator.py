@@ -25,25 +25,19 @@ from typing import (
     Literal,
     cast,
 )
+import re
 from pydantic import BaseModel, PositiveInt, field_validator
 from boto3 import Session
 
-from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors.aws_batch_step_operator_flavor import (
     AWSBatchStepOperatorConfig,
     AWSBatchStepOperatorSettings,
 )
-from zenml.integrations.aws.step_operators.aws_batch_step_operator_entrypoint_config import (
-    AWSBatchEntrypointConfiguration,
-)
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
-from zenml.step_operators.step_operator_entrypoint_configuration import (
-    StepOperatorEntrypointConfiguration,
-)
 from zenml.utils.string_utils import random_str
 from botocore.exceptions import ClientError
 
@@ -310,9 +304,14 @@ class AWSBatchStepOperator(BaseStepOperator):
             )
 
         return mapped_resource_settings
-    
+
     @staticmethod
-    def generate_unique_batch_job_name(info: "StepRunInfo") -> str:
+    def is_name_valid(name: str) -> bool:
+        pattern = re.compile(r"[A-Za-z0-9_-]+$")
+
+        return bool(pattern.fullmatch(name))
+    
+    def generate_unique_batch_job_name(self, info: "StepRunInfo") -> str:
         """Utility to generate a unique AWS Batch job name.
 
         Args:
@@ -325,6 +324,21 @@ class AWSBatchStepOperator(BaseStepOperator):
         # Batch allows 128 alphanumeric characters at maximum for job name - ZenML uses 60 for safety margin.
         # AWS Batch job description names are more permissive than ZenML pipeline and step naming rules,
         # so no sanitation needed besides trimming
+
+        assert (
+            self.is_name_valid(info.pipeline.name),  
+            f"Invalid pipeline name {info.pipeline.name}: A pipeline containing"
+            "an AWS Batch step must contain only upper and lower case "
+            "characters [a-zA-Z], digits [0-9], hyphens and underscores [-_]"
+        )
+
+        assert (
+            self.is_name_valid(info.pipeline_step_name),  
+            f"Invalid step name {info.pipeline_step_name}: An AWS Batch step "
+            "name must contain only upper and lower case characters [a-zA-Z], "
+            "digits [0-9], hyphens and underscores [-_]"
+        )
+
         job_name = f"{info.pipeline.name}-{info.pipeline_step_name}"[:115]
         suffix = random_str(6)
         return f"{job_name}-{suffix}"

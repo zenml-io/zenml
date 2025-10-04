@@ -67,6 +67,17 @@ def test_aws_batch_step_operator_map_resource_settings(test_resource_settings,ex
 
     assert AWSBatchStepOperator.map_resource_settings(test_resource_settings) == expected
 
+@pytest.mark.parametrize(
+        "test_name,expected",
+        [
+            ('valid-name-123abcABC_', True),
+            ('invalid$name!',False)
+        ]
+)
+def test_aws_batch_step_operator_is_name_valid(test_name, expected):
+    
+    assert AWSBatchStepOperator.is_name_valid(test_name) == expected
+
 def test_aws_batch_job_ec2_definition():
     AWSBatchJobEC2Definition(
         jobDefinitionName="test",
