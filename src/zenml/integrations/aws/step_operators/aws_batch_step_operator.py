@@ -40,6 +40,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.string_utils import random_str
 from botocore.exceptions import ClientError
+from string import ascii_letters, digits
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -306,10 +307,13 @@ class AWSBatchStepOperator(BaseStepOperator):
         return mapped_resource_settings
 
     @staticmethod
-    def is_name_valid(name: str) -> bool:
-        pattern = re.compile(r"[A-Za-z0-9_-]+$")
+    def sanitize_name(name: str) -> bool:
+        valid_characters = ascii_letters + digits + '-_'
+        sanitized_name = ''
+        for char in name:
+            sanitized_name += char if char in valid_characters else '-'
 
-        return bool(pattern.fullmatch(name))
+        return sanitized_name
     
     def generate_unique_batch_job_name(self, info: "StepRunInfo") -> str:
         """Utility to generate a unique AWS Batch job name.
@@ -321,25 +325,15 @@ class AWSBatchStepOperator(BaseStepOperator):
             A unique name for the step's AWS Batch job definition
         """
 
-        # Batch allows 128 alphanumeric characters at maximum for job name - ZenML uses 60 for safety margin.
-        # AWS Batch job description names are more permissive than ZenML pipeline and step naming rules,
-        # so no sanitation needed besides trimming
+        # Batch allows 128 alphanumeric characters at maximum for job name.
+        # We sanitize the pipeline and step names before concatenating,
+        # capping at 115 chars and finally suffixing with a 6 character random
+        # string
 
-        assert (
-            self.is_name_valid(info.pipeline.name),  
-            f"Invalid pipeline name {info.pipeline.name}: A pipeline containing"
-            "an AWS Batch step must contain only upper and lower case "
-            "characters [a-zA-Z], digits [0-9], hyphens and underscores [-_]"
-        )
+        sanitized_pipeline_name = self.sanitize_name(info.pipeline.name)
+        sanitized_step_name = self.sanitize_name(sanitized_pipeline_name)
 
-        assert (
-            self.is_name_valid(info.pipeline_step_name),  
-            f"Invalid step name {info.pipeline_step_name}: An AWS Batch step "
-            "name must contain only upper and lower case characters [a-zA-Z], "
-            "digits [0-9], hyphens and underscores [-_]"
-        )
-
-        job_name = f"{info.pipeline.name}-{info.pipeline_step_name}"[:115]
+        job_name = f"{sanitized_pipeline_name}-{sanitized_step_name}"[:115]
         suffix = random_str(6)
         return f"{job_name}-{suffix}"
 
