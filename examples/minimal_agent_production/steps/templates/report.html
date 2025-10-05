@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Analysis Report - {filename}</title>
+    <style>
+      {css_content}
+      .sentiment {{ color: {sentiment_color}; }}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📄 Document Analysis Report</h1>
+        <p>Comprehensive analysis of <strong>{filename}</strong></p>
+        <p>Generated on {timestamp}</p>
+      </div>
+      
+      <div class="content">
+        <div class="section">
+          <h2>📊 Key Metrics</h2>
+          <div class="metrics-grid">
+            <div class="metric">
+              <span class="metric-value">{word_count}</span>
+              <div class="metric-label">Words</div>
+            </div>
+            <div class="metric">
+              <span class="metric-value sentiment">{sentiment}</span>
+              <div class="metric-label">Sentiment</div>
+            </div>
+            <div class="metric">
+              <span class="metric-value">{readability}</span>
+              <div class="metric-label">Readability</div>
+            </div>
+            <div class="metric">
+              <span class="metric-value processing-time">{latency}ms</span>
+              <div class="metric-label">Processing Time</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>📝 Summary</h2>
+          <div class="summary-box">
+            {summary}
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>🏷️ Keywords</h2>
+          <div class="keywords-container">
+            <div class="keywords">{keywords}</div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>⚙️ Processing Details</h2>
+          <div class="metadata-grid">
+            <div class="metadata-item">
+              <span class="metadata-label">Analysis Method:</span>
+              <span class="metadata-value">{method_display}</span>
+            </div>
+            <div class="metadata-item">
+              <span class="metadata-label">Model:</span>
+              <span class="metadata-value">{model}</span>
+            </div>
+            <div class="metadata-item">
+              <span class="metadata-label">Document Type:</span>
+              <span class="metadata-value">{document_type}</span>
+            </div>
+            <div class="metadata-item">
+              <span class="metadata-label">Prompt Tokens:</span>
+              <span class="metadata-value">{tokens_prompt}</span>
+            </div>
+            <div class="metadata-item">
+              <span class="metadata-label">Completion Tokens:</span>
+              <span class="metadata-value">{tokens_completion}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <span class="badge">ZenML Document Analysis Pipeline</span>
+        <br>
+        Generated with ❤️ by ZenML • Processing completed in {latency}ms
+      </div>
+    </div>
+  </body>
+</html>

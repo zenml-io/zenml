@@ -105,7 +105,7 @@ Projects provide isolation for various MLOps resources:
 
 * Pipelines created within a project are only visible to project members
 * Pipeline runs and their artifacts are scoped to the project
-* Pipeline configurations and templates are project-specific
+* Pipeline configurations and snapshots are project-specific
 
 ### Artifacts and Models
 

@@ -3226,12 +3226,12 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
     ) -> None:
         """Deletes a tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to delete.
+            tag_id: id of the tag to delete.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -3240,13 +3240,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be retrieved.
+            tag_id: id of the tag to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3277,13 +3277,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         tag_update_model: TagUpdate,
     ) -> TagResponse:
         """Update tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be updated.
+            tag_id: id of the tag to be updated.
             tag_update_model: Tag to use for the update.
 
         Returns:

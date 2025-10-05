@@ -173,14 +173,14 @@ zenml model update iris_logistic_regression --tag "classification"
 zenml model version update iris_logistic_regression 2 --tag "experiment3"
 ```
 
-### Assigning tags to run templates
+### Assigning tags to snapshots
 
-Assigning tags to run templates is only possible through the Python SDK and you can use the `add_tags` utility function:
+Assigning tags to snapshots is only possible through the Python SDK and you can use the `add_tags` utility function:
 
 ```python
 from zenml import add_tags
 
-add_tags(tags=["my_tag"], run_template="run_template_name_or_id")
+add_tags(tags=["my_tag"], snapshot=<SNAPSHOT-ID>)
 ```
 
 ## Advanced Usage
@@ -192,7 +192,7 @@ ZenML provides several advanced tagging features to help you better organize and
 Exclusive tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply an exclusive tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Exclusive tags can be used with:
 
 * One pipeline run per pipeline
-* One run template per pipeline
+* One snapshot per pipeline
 * One artifact version per artifact
 
 The recommended way to create exclusive tags is using the `Tag` object:

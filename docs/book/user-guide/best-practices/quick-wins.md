@@ -465,7 +465,7 @@ def experiment_pipeline():
 * **Exclusive tags** - Create tags where only one entity can have the tag at a time (perfect for "production" status)
 * **Cascade tags** - Apply pipeline tags automatically to all artifacts created during execution
 * **Flexible organization** - Create any tagging system that makes sense for your projects
-* **Multiple entity types** - Tag pipelines, runs, artifacts, models, and run templates
+* **Multiple entity types** - Tag pipelines, runs, artifacts, models, snapshots and deployments
 
 ![Filtering by tags](../.gitbook/assets/filtering-by-tags.png)
 

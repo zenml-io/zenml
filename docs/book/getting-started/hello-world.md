@@ -138,6 +138,6 @@ To continue your ZenML journey, explore these key topics:
 * **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerization.md) for reproducible execution
 * **Stacks & Infrastructure**: Explore the concepts behind [stacks](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
 * **Secrets Management**: Learn how to [handle sensitive information](../how-to/secrets/secrets.md) securely
-* **Templates**: Create [reusable pipeline templates](../how-to/templates/templates.md) for standardized workflows
+* **Snapshots**: Create [reusable snapshots](../how-to/snapshots/snapshots.md) for standardized workflows
 {% endstep %}
 {% endstepper %}
