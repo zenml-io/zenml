@@ -239,8 +239,8 @@ class DeploymentSchema(NamedSchema, table=True):
                 else None,
                 visualizations=[
                     visualization.to_model(
-                        include_metadata=include_metadata,
-                        include_resources=include_resources,
+                        include_metadata=False,
+                        include_resources=False,
                         include_deployment=False,
                     )
                     for visualization in (self.visualizations or [])
