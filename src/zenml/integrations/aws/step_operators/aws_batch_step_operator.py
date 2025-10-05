@@ -53,6 +53,18 @@ logger = get_logger(__name__)
 BATCH_DOCKER_IMAGE_KEY = "aws_batch_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 
+
+VALID_FARGATE_VCPU = ('0.25', '0.5', '1', '2', '4', '8', '16')
+VALID_FARGATE_MEMORY = {
+    '0.25': ('512', '1024', '2048'),
+    '0.5': ('1024', '2048', '3072', '4096'),
+    '1': ('2048', '3072', '4096', '5120', '6144', '7168', '8192'),
+    '2': tuple(str(m) for m in range(4096, 16385, 1024)),
+    '4': tuple(str(m) for m in range(8192, 30721, 1024)),
+    '8': tuple(str(m) for m in range(16384, 61441, 4096)),
+    '16': tuple(str(m) for m in range(32768, 122880, 8192))
+}
+    
 class ResourceRequirement(BaseModel):
     type: Literal["MEMORY","VCPU","GPU"]
     value: str
@@ -67,24 +79,67 @@ class AWSBatchJobDefinitionContainerProperties(BaseModel):
     resourceRequirements: List[ResourceRequirement] = [] # keys: 'value','type', with type one of 'GPU','VCPU','MEMORY'
     secrets: List[Dict[str,str]] = [] # keys: 'name','value'
 
-
+    
 class AWSBatchJobDefinitionEC2ContainerProperties(AWSBatchJobDefinitionContainerProperties):
     logConfiguration: dict[Literal["logDriver"],Literal["awsfirelens", "awslogs", "fluentd", "gelf", "json-file", "journald", "logentries", "syslog", "splunk"]] = {"logDriver":"awslogs"}
+
+    @field_validator("resourceRequirements")
+    def check_resource_requirements(cls,resource_requirements: List[ResourceRequirement]) -> List[ResourceRequirement]:
+        
+        gpu_requirement = [req for req in resource_requirements if req.type == "GPU"]
+        cpu_requirement = [req for req in resource_requirements if req.type == "VCPU"][0]
+        memory_requirement = [req for req in resource_requirements if req.type == "MEMORY"][0]
+        
+        cpu_float = float(cpu_requirement.value)
+        cpu_rounded_int = math.ceil(cpu_float)
+
+        if cpu_float != cpu_rounded_int:
+            logger.info(
+                f"Rounded fractional EC2 resource VCPU vale from {cpu_float} to {cpu_rounded_int} "
+                "since AWS Batch on EC2 requires whole integer VCPU count value."
+            )
+            resource_requirements = [
+                ResourceRequirement(
+                    type="VCPU",
+                    value=str(cpu_rounded_int)
+                ),
+                memory_requirement
+            ]
+            resource_requirements.extend(gpu_requirement)
+            
+        return resource_requirements
 
 class AWSBatchJobDefinitionFargateContainerProperties(AWSBatchJobDefinitionContainerProperties):
     logConfiguration: dict[Literal["logDriver"],Literal["awslogs","splunk"]] = {"logDriver":"awslogs"}
     networkConfiguration: dict[Literal['assignPublicIp'],Literal['ENABLED','DISABLED']] = {"assignPublicIp": "ENABLED"}
 
     @field_validator("resourceRequirements")
-    def check_resource_requirements(cls,value: List[ResourceRequirement]):
-        for resource_requirement in value:
-            if resource_requirement.type == "GPU":
-                raise ValueError(
-                    f"Invalid fargate resource requirement: GPU.Use EC2 "
-                    "platform capability if you need custom devices."
-                )
+    def check_resource_requirements(cls,resource_requirements: List[ResourceRequirement]) -> List[ResourceRequirement]:
+
+        gpu_requirement = [req for req in resource_requirements if req.type == "GPU"]
+
+        if gpu_requirement:
+            raise ValueError(
+                f"Invalid fargate resource requirement: GPU. Use EC2 "
+                "platform capability if you need custom devices."
+            )
+        
+        cpu_requirement = [req for req in resource_requirements if req.type == "VCPU"][0]
+        memory_requirement = [req for req in resource_requirements if req.type == "MEMORY"][0]
+        
+        if cpu_requirement.value not in VALID_FARGATE_VCPU:
+            raise ValueError(
+                f"Invalid fargate resource requirement VCPU value {cpu_requirement.value}."
+                f"Must be one of {VALID_FARGATE_VCPU}"
+            )
+                
+        if memory_requirement.value not in VALID_FARGATE_MEMORY[cpu_requirement.value]:
+            raise ValueError(
+                f"Invalid fargate resource requirement MEMORY value {memory_requirement.value}."
+                f"For VCPU={cpu_requirement.value}, MEMORY must be one of {VALID_FARGATE_MEMORY[cpu_requirement.value]}"
+            )
             
-        return value
+        return resource_requirements
 
 class AWSBatchJobDefinitionRetryStrategy(BaseModel):
     """An AWS Batch job subconfiguration model for retry specifications."""
@@ -268,25 +323,15 @@ class AWSBatchStepOperator(BaseStepOperator):
 
         # handle cpu requirements
         if resource_settings.cpu_count is not None:
-
-            cpu_count_int = math.ceil(resource_settings.cpu_count)
-
-            if cpu_count_int != resource_settings.cpu_count:
-                logger.info(
-                    "AWS Batch only accepts int type cpu resource "
-                    f"requirements. Converted {resource_settings.cpu_count}"
-                    f" to {cpu_count_int}."
-                )
-            cpu_requirement = ResourceRequirement(value=str(cpu_count_int),type="VCPU")
+            cpu_requirement = ResourceRequirement(value=str(resource_settings.cpu_count),type="VCPU")
         else:
             cpu_requirement = ResourceRequirement(value="1",type="VCPU")
 
         mapped_resource_settings.append(cpu_requirement)
 
         # handle memory requirements
-        memory  = resource_settings.get_memory(unit="MiB")
+        memory = resource_settings.get_memory(unit="MiB")
         if memory:
-
             memory_requirement = ResourceRequirement(
                 value=str(int(memory)),
                 type="MEMORY"
@@ -296,7 +341,7 @@ class AWSBatchStepOperator(BaseStepOperator):
         mapped_resource_settings.append(memory_requirement)
 
         # handle gpu requirements
-        if resource_settings.gpu_count is not None:
+        if resource_settings.gpu_count is not None and resource_settings.gpu_count != 0:
             mapped_resource_settings.append(
                 ResourceRequirement(
                     value=str(resource_settings.gpu_count),
