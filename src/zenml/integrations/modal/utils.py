@@ -14,15 +14,20 @@
 """Shared utilities for Modal integration components."""
 
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import modal
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.enums import StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackValidator
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.integrations.modal.flavors import ModalStepOperatorSettings
 
 MODAL_TOKEN_ID_ENV = "MODAL_TOKEN_ID"
 MODAL_TOKEN_SECRET_ENV = "MODAL_TOKEN_SECRET"
@@ -200,6 +205,76 @@ def build_modal_image(
             ) from e
 
     return modal_image
+
+
+def get_gpu_values(
+    settings: "ModalStepOperatorSettings",
+    resource_settings: "ResourceSettings",
+) -> Optional[str]:
+    """Compute and validate the Modal ``gpu`` argument string.
+
+    Modal expects GPU resources as either ``None`` (CPU only), a GPU type string
+    like ``"A100"`` (implicitly a single GPU), or ``"A100:2"`` when multiple
+    GPUs of the same type are requested. Within ZenML, the GPU type is captured
+    in :class:`ModalStepOperatorSettings` while the count lives in
+    :class:`~zenml.config.resource_settings.ResourceSettings`. This helper
+    reconciles both sources so other Modal components can reuse the same
+    validation rules.
+
+    Args:
+        settings: The Modal step operator settings describing the GPU type.
+        resource_settings: Resource constraints for the step, providing the GPU count.
+
+    Returns:
+        A Modal-compatible GPU specification string or ``None`` when running on CPU.
+
+    Raises:
+        StackComponentInterfaceError: If the configuration is inconsistent or invalid.
+    """
+    gpu_type_raw = settings.gpu
+    gpu_type = gpu_type_raw.strip() if gpu_type_raw is not None else None
+    if gpu_type == "":
+        gpu_type = None
+
+    gpu_count = resource_settings.gpu_count
+    if gpu_count is not None:
+        try:
+            gpu_count = int(gpu_count)
+        except (TypeError, ValueError):
+            raise StackComponentInterfaceError(
+                f"Invalid GPU count '{gpu_count}'. Must be a non-negative integer."
+            )
+        if gpu_count < 0:
+            raise StackComponentInterfaceError(
+                f"Invalid GPU count '{gpu_count}'. Must be >= 0."
+            )
+
+    if gpu_type is None:
+        if gpu_count is not None and gpu_count > 0:
+            raise StackComponentInterfaceError(
+                "GPU resources requested (gpu_count > 0) but no GPU type was specified "
+                "in Modal settings. Please set a GPU type (e.g., 'T4', 'A100') via "
+                "ModalStepOperatorSettings.gpu or @step(settings={'modal': {'gpu': '<TYPE>'}}), "
+                "or set gpu_count=0 to run on CPU."
+            )
+        return None
+
+    if gpu_count == 0:
+        logger.warning(
+            "Modal GPU type '%s' is configured but ResourceSettings.gpu_count is 0. "
+            "Defaulting to 1 GPU. To run on CPU only, remove the GPU type or ensure "
+            "gpu_count=0 with no GPU type configured.",
+            gpu_type,
+        )
+        return gpu_type
+
+    if gpu_count is None:
+        return gpu_type
+
+    if gpu_count > 0:
+        return f"{gpu_type}:{gpu_count}"
+
+    return None
 
 
 def get_modal_stack_validator() -> StackValidator:
