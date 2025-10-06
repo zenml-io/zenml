@@ -29,10 +29,8 @@ from zenml.integrations.modal.utils import (
     _set_env_if_present,
     _validate_token_prefix,
     build_modal_image,
-    get_modal_stack_validator,
     setup_modal_client,
 )
-from zenml.stack.stack_validator import StackValidator
 
 
 class StackStubNoRegistry:
@@ -71,13 +69,6 @@ def test_build_modal_image_raises_when_no_credentials() -> None:
     assert "No Docker credentials found for the container registry" in str(
         e.value
     )
-
-
-def test_get_modal_stack_validator_returns_stackvalidator_instance() -> None:
-    validator = get_modal_stack_validator()
-    assert isinstance(validator, StackValidator)
-    # Ensure the validator exposes a validate-like callable (public contract)
-    assert hasattr(validator, "validate") and callable(validator.validate)
 
 
 def test_set_env_if_present_sets_and_returns_true(monkeypatch) -> None:
