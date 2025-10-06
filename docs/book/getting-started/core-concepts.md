@@ -136,29 +136,17 @@ An **Orchestrator** is a workhorse that coordinates all the steps to run in a pi
 
 ZenML comes with a default _local orchestrator_ designed to run on your local machine. This is useful, especially during the exploration phase of your project. You don't have to rent a cloud instance just to try out basic things.
 
-#### Deployer
-
-A **Deployer** is a stack component that manages the deployment of pipelines as long-running HTTP servers useful for online mode execution. Unlike orchestrators that execute pipelines in batch mode, deployers can create and manage persistent services that wrap your pipeline in a web application, usually containerized, allowing it to be invoked through HTTP requests.
-
-ZenML comes with a _Docker deployer_ that can run deployments on your local machine as Docker containers, making it easy to test and develop real-time pipeline endpoints before moving to production infrastructure.
-
-#### Pipeline Run
-
-A **Pipeline Run** is a record of a pipeline execution. When you run a pipeline using an orchestrator, a pipeline run is created tracking information about the execution such as the status, the artifacts and metadata produced by the pipeline and all its steps. When a pipeline is deployed for online mode execution, a pipeline run is similarly created for every HTTP request made to it.
-
-#### Pipeline Snapshot
-
-A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the server or dashboard, and can also be [deployed](#deployment).
-
 #### Artifact Store
 
 An **Artifact Store** is a component that houses all data that passes through the pipeline as inputs and outputs. Each artifact that gets stored in the artifact store is tracked and versioned and this allows for extremely useful features like data caching, which speeds up your workflows.
 
 Similar to the orchestrator, ZenML comes with a default _local artifact store_ designed to run on your local machine. This is useful, especially during the exploration phase of your project. You don't have to set up a cloud storage system to try out basic things.
 
-#### Deployment
+#### Deployer
 
-A **Deployment** is a running instance of a pipeline deployed as an HTTP endpoint. When you deploy a pipeline using a deployer, it becomes a long-running service that can be invoked through REST API calls. Each HTTP request to a deployment triggers a new pipeline run, creating the same artifacts and metadata tracking as traditional batch pipeline executions. This enables real-time inference, interactive ML workflows, and seamless integration with web applications and external services.
+A **Deployer** is a stack component that manages the deployment of pipelines as long-running HTTP servers useful for online mode execution. Unlike orchestrators that execute pipelines in batch mode, deployers can create and manage persistent services that wrap your pipeline in a web application, usually containerized, allowing it to be invoked through HTTP requests.
+
+ZenML comes with a _Docker deployer_ that can run deployments on your local machine as Docker containers, making it easy to test and develop real-time pipeline endpoints before moving to production infrastructure.
 
 #### Flavor
 
@@ -169,6 +157,19 @@ ZenML provides a dedicated base abstraction for each stack component type. These
 When it comes to production-grade solutions, it is rarely enough to just run your workflow locally without including any cloud infrastructure.
 
 Thanks to the separation between the pipeline code and the stack in ZenML, you can easily switch your stack independently from your code. For instance, all it would take you to switch from an experimental local stack running on your machine to a remote stack that employs a full-fledged cloud infrastructure is a single CLI command.
+
+#### Pipeline Snapshot
+
+A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the server or dashboard, and can also be [deployed](#deployment).
+
+#### Pipeline Run
+
+A **Pipeline Run** is a record of a pipeline execution. When you run a pipeline using an orchestrator, a pipeline run is created tracking information about the execution such as the status, the artifacts and metadata produced by the pipeline and all its steps. When a pipeline is deployed for online mode execution, a pipeline run is similarly created for every HTTP request made to it.
+
+#### Deployment
+
+A **Deployment** is a running instance of a pipeline deployed as an HTTP endpoint. When you deploy a pipeline using a deployer, it becomes a long-running service that can be invoked through REST API calls. Each HTTP request to a deployment triggers a new pipeline run, creating the same artifacts and metadata tracking as traditional batch pipeline executions. This enables real-time inference, interactive ML workflows, and seamless integration with web applications and external services.
+
 
 ## 3. Management
 
