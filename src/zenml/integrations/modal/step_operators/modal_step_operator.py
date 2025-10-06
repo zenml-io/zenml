@@ -136,7 +136,7 @@ class ModalStepOperator(BaseStepOperator):
             zenml_image = build_modal_image(image_name, stack, environment)
         except Exception as e:
             raise RuntimeError(
-                "Failed to construct the Modal image from your Docker registry. "
+                "Failed to build the Modal image from your Docker registry. "
                 "Action required: ensure your ZenML stack's container registry is configured with valid credentials "
                 "and that the base image exists and is accessible. "
                 f"Context: image='{image_name}'."
@@ -154,8 +154,6 @@ class ModalStepOperator(BaseStepOperator):
             with modal.enable_output():
                 try:
                     async with app.run():
-                        # Compute memory lazily to preserve original semantics and avoid
-                        # accidental integer conversion if value is missing.
                         memory_int = (
                             int(mb)
                             if (
@@ -165,9 +163,6 @@ class ModalStepOperator(BaseStepOperator):
                         )
 
                         try:
-                            # Prefer direct execution of the command vector to avoid shell-quoting pitfalls
-                            # and the implicit requirement that the image contains bash. This makes argument
-                            # handling robust when values include spaces or shell metacharacters.
                             if (
                                 not entrypoint_command
                                 or not entrypoint_command[0]
