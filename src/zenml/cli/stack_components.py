@@ -112,7 +112,7 @@ def generate_stack_component_describe_command(
                 component_type=component_type,
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         with console.status(f"Describing component '{component_.name}'..."):
             active_component_id = None
@@ -432,7 +432,7 @@ def generate_stack_component_update_command(
                     environment=environment,
                 )
             except KeyError as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             cli_utils.declare(
                 f"Successfully updated {display_name} "
@@ -495,7 +495,7 @@ def generate_stack_component_remove_attribute_command(
                     labels={k: None for k in labels} if labels else None,
                 )
             except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             cli_utils.declare(
                 f"Successfully updated {display_name} `{name_id_or_prefix}`."
@@ -549,7 +549,7 @@ def generate_stack_component_rename_command(
                     name=new_name,
                 )
             except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             cli_utils.declare(
                 f"Successfully renamed {display_name} `{name_id_or_prefix}` to"
@@ -591,7 +591,7 @@ def generate_stack_component_delete_command(
                     component_type=component_type,
                 )
             except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
             cli_utils.declare(f"Deleted {display_name}: {name_id_or_prefix}")
 
     return delete_stack_component_command
@@ -637,7 +637,7 @@ def generate_stack_component_copy_command(
                     component_type=component_type,
                 )
             except KeyError as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             copied_component = client.create_stack_component(
                 name=target_component,
@@ -694,7 +694,7 @@ def generate_stack_component_logs_command(
                     component_type=component_type,
                 )
             except KeyError as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             from zenml.stack import StackComponent
 
@@ -1209,7 +1209,7 @@ def generate_stack_component_disconnect_command(
                     disconnect=True,
                 )
             except (KeyError, IllegalOperationError) as err:
-                cli_utils.error(str(err))
+                cli_utils.exception(err)
 
             cli_utils.declare(
                 f"Successfully disconnected the service-connector from {display_name} `{name_id_or_prefix}`."
@@ -1432,7 +1432,7 @@ def connect_stack_component_with_service_connector(
             component_type=component_type,
         )
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     requirements = component_model.flavor.connector_requirements
 
@@ -1588,7 +1588,7 @@ def connect_stack_component_with_service_connector(
                 connector_resource_id=resource_id,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
     if connector_resources is not None:
         cli_utils.declare(
