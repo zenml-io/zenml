@@ -10,7 +10,7 @@ This guide covers advanced features and capabilities of ZenML pipelines and step
 
 ### Caching
 
-Steps are automatically cached based on their inputs. When a step runs, ZenML computes a hash of the inputs and checks if a previous run with the same inputs exists. If found, ZenML reuses the outputs instead of re-executing the step.
+Steps are automatically cached based on their code, inputs and other factors. When a step runs, ZenML computes a hash of the inputs and checks if a previous run with the same inputs exists. If found, ZenML reuses the outputs instead of re-executing the step.
 
 You can control caching behavior at the step level:
 
@@ -35,10 +35,7 @@ my_step.configure(enable_cache=False)
 my_pipeline.configure(enable_cache=False)
 ```
 
-Cache invalidation happens automatically when:
-- Step inputs change
-- Step code changes
-- Step configuration changes (parameters, settings, etc.)
+For more information, check out [this page](https://docs.zenml.io/user-guides/starter-guide/cache-previous-executions).
 
 ### Running Individual Steps
 
