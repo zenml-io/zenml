@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for manipulating ZenML local and global config file."""
+"""Stack CLI."""
 
 import getpass
 import re
@@ -85,13 +85,12 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-# Stacks
 @cli.group(
     cls=TagGroup,
     tag=CliCategories.MANAGEMENT_TOOLS,
 )
 def stack() -> None:
-    """Stacks to define various environments."""
+    """Manage stacks."""
 
 
 @stack.command(
@@ -552,7 +551,7 @@ def register_stack(
                 )
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
@@ -827,7 +826,7 @@ def update_stack(
             )
 
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
@@ -1005,7 +1004,7 @@ def remove_stack_component(
                 component_updates=stack_component_update,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
         )
@@ -1033,7 +1032,7 @@ def rename_stack(
                 name=new_stack_name,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(
             f"Stack `{stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -1089,7 +1088,7 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
                 name_id_or_prefix=stack_name_or_id
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.print_stack_configuration(
             stack=stack_,
@@ -1155,7 +1154,7 @@ def delete_stack(
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
 
 
@@ -1176,7 +1175,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         try:
             client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Active {scope} stack set to: '{client.active_stack_model.name}'"
@@ -1195,7 +1194,7 @@ def get_active_stack() -> None:
                 f"The {scope} active stack is: '{client.active_stack_model.name}'"
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
@@ -1216,7 +1215,7 @@ def export_stack(
     try:
         stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     # write zenml version and stack dict to YAML
     yaml_data = stack_to_export.to_yaml()
@@ -1384,7 +1383,7 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
                 name_id_or_prefix=source_stack_name_or_id
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
 
@@ -2091,7 +2090,7 @@ def export_requirements(
             name_id_or_prefix=stack_name_or_id
         )
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     requirements, _ = requirements_utils.get_requirements_for_stack(
         stack_model
