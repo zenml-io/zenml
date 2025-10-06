@@ -236,7 +236,7 @@ def doc_analyzer(
   ```bash
   zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config my_config.yaml
   ```
-- **Automate triggering**: [Create a run template](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) (ZenML Pro) and trigger via API/webhooks from your app.
+- **Automate triggering**: [Create a snapshot](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) and trigger via API/webhooks from your app (ZenML Pro only).
 - **Future enhancement**: Add an evaluation pipeline to score outputs and render reports if you need automated quality checks.
 
 ### Extend it
