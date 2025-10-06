@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Initialization of the MLX integration."""
 
+import platform
 import sys
 from typing import List, Optional
 
@@ -21,7 +22,27 @@ from zenml.integrations.integration import Integration
 
 # MLX can run on Linux, but only with CPU or Cuda devices,
 # see https://ml-explore.github.io/mlx/build/html/install.html#cuda ff.
+# On macOS, MLX only supports Apple Silicon (ARM64), not Intel (x86_64).
 SUPPORTED_PLATFORMS = ("darwin", "linux")
+
+
+def _is_supported_platform() -> bool:
+    """Check if the current platform supports MLX.
+    
+    MLX requires:
+    - macOS with ARM64 (Apple Silicon)
+    - Linux (any architecture)
+    
+    Returns:
+        True if platform is supported, False otherwise.
+    """
+    if sys.platform == "linux":
+        return True
+    elif sys.platform == "darwin":
+        # MLX only supports Apple Silicon Macs, not Intel
+        machine = platform.machine().lower()
+        return machine in ("arm64", "aarch64")
+    return False
 
 
 class MLXIntegration(Integration):
@@ -31,9 +52,7 @@ class MLXIntegration(Integration):
 
     @classmethod
     def check_installation(cls) -> bool:
-        if sys.platform not in SUPPORTED_PLATFORMS:
-            return False
-        return super().check_installation()
+        return False if not _is_supported_platform() else super().check_installation()
 
     @classmethod
     def get_requirements(
@@ -45,7 +64,9 @@ class MLXIntegration(Integration):
         # similarly on Linux.
         target_os = (target_os or sys.platform).lower()
         if target_os == "darwin":
-            return ["mlx"]
+            # Only return requirements if on Apple Silicon
+            machine = platform.machine().lower()
+            return ["mlx"] if machine in ("arm64", "aarch64") else []
         elif target_os == "linux":
             return ["mlx[cpu]"]
         else:
