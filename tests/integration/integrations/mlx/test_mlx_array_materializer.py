@@ -12,22 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
-
-import mlx.core as mx
 import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.mlx import SUPPORTED_PLATFORMS
-from zenml.integrations.mlx.materializer import MLXArrayMaterializer
+from zenml.integrations.mlx import _is_supported_platform
 
 
 @pytest.mark.skipif(
-    sys.platform not in SUPPORTED_PLATFORMS,
-    reason="MLX only runs on Apple and Linux",
+    not _is_supported_platform(),
+    reason="MLX only runs on Apple Silicon and Linux (not Intel Macs)",
 )
 def test_mlx_array_materializer():
     """Test the MLX array materializer."""
+    import mlx.core as mx
+
+    from zenml.integrations.mlx.materializer import MLXArrayMaterializer
+
     arr = mx.ones(5)
 
     result = _test_materializer(
