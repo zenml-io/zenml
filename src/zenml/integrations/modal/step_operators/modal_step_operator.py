@@ -114,6 +114,10 @@ class ModalStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
+
+        Raises:
+            RuntimeError: If Modal image construction fails, sandbox creation fails,
+                sandbox execution fails, or Modal application initialization fails.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)

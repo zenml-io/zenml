@@ -42,6 +42,11 @@ def _validate_token_prefix(
     """Warn if a credential doesn't match Modal's expected prefix.
 
     This helps catch misconfigurations early without logging secret content.
+
+    Args:
+        value: The credential value to validate.
+        expected_prefix: The prefix that the credential should start with.
+        label: Human-readable label for the credential (used in warning messages).
     """
     if not value.startswith(expected_prefix):
         logger.warning(
@@ -51,6 +56,10 @@ def _validate_token_prefix(
 
 def _set_env_if_present(var_name: str, value: Optional[str]) -> bool:
     """Set an environment variable only if a non-empty value is provided.
+
+    Args:
+        var_name: The name of the environment variable to set.
+        value: The value to set for the environment variable, or None.
 
     Returns:
         True if the environment variable was set, False otherwise.
