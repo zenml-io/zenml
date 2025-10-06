@@ -370,6 +370,8 @@ module = [
     "numba.*",
     "uvloop.*",
     "litellm",
+    "mlx",
+    "mlx.*",
     "jsonref",
 ]
 ignore_missing_imports = true
