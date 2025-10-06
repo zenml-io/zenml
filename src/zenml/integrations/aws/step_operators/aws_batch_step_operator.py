@@ -62,7 +62,7 @@ VALID_FARGATE_MEMORY = {
     '2': tuple(str(m) for m in range(4096, 16385, 1024)),
     '4': tuple(str(m) for m in range(8192, 30721, 1024)),
     '8': tuple(str(m) for m in range(16384, 61441, 4096)),
-    '16': tuple(str(m) for m in range(32768, 122880, 8192))
+    '16': tuple(str(m) for m in range(32768, 122881, 8192))
 }
     
 class ResourceRequirement(BaseModel):
