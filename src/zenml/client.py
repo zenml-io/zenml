@@ -4803,6 +4803,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         cache_key: Optional[str] = None,
+        cache_expires_at: Optional[Union[datetime, str]] = None,
+        cache_expired: Optional[bool] = None,
         code_hash: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -4839,6 +4841,10 @@ class Client(metaclass=ClientMetaClass):
             model: Filter by model name/ID.
             name: The name of the step run to filter by.
             cache_key: The cache key of the step run to filter by.
+            cache_expires_at: The cache expiration time of the step run to
+                filter by.
+            cache_expired: Whether the cache expiration time of the step run
+                has passed.
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
@@ -4856,6 +4862,8 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             id=id,
             cache_key=cache_key,
+            cache_expires_at=cache_expires_at,
+            cache_expired=cache_expired,
             code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
             snapshot_id=snapshot_id,

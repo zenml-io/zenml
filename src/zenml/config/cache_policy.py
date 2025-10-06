@@ -65,6 +65,12 @@ class CachePolicy(BaseModel):
         description="Function without arguments that returns a string. The "
         "returned value will be included in the cache key.",
     )
+    expires_after: Optional[int] = Field(
+        default=None,
+        description="The number of seconds after which the cached result by a "
+        "step with this cache policy will expire. If not set, the result "
+        "will never expire.",
+    )
 
     @field_validator("source_dependencies", mode="before")
     def _validate_source_dependencies(
