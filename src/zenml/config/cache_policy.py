@@ -75,7 +75,7 @@ class CachePolicy(BaseModel):
     @field_validator("source_dependencies", mode="before")
     def _validate_source_dependencies(
         cls, v: Optional[List[Any]]
-    ) -> Optional[List[Source]]:
+    ) -> Optional[List[Any]]:
         from zenml.utils import source_utils
 
         if v is None:
@@ -90,7 +90,7 @@ class CachePolicy(BaseModel):
         return result
 
     @field_validator("cache_func", mode="before")
-    def _validate_cache_func(cls, v: Optional[Any]) -> Optional[Source]:
+    def _validate_cache_func(cls, v: Optional[Any]) -> Optional[Any]:
         from zenml.utils import source_utils
 
         if v is None or isinstance(v, (str, Source, dict)):

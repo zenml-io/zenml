@@ -70,6 +70,11 @@ def generate_cache_key(
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 
+    Raises:
+        ValueError: If some file dependencies are outside the source root or
+            missing.
+        ValueError: If the cache function is invalid.
+
     Returns:
         A cache key.
     """
@@ -146,9 +151,9 @@ def generate_cache_key(
             if os.path.isabs(file_path):
                 if not os.path.relpath(file_path, source_root):
                     raise ValueError(
-                        f"Cache policy file `{file_path}` is not within your "
-                        f"source root `{source_root}`. Only files within your "
-                        "source root are allowed."
+                        f"Cache policy file dependency `{file_path}` is not "
+                        f"within your source root `{source_root}`. Only files "
+                        "within your source root are allowed."
                     )
             else:
                 file_path = os.path.abspath(
@@ -176,9 +181,12 @@ def generate_cache_key(
             hash_.update(file_content.encode())
 
     if cache_policy.source_dependencies:
-        for source in sorted(cache_policy.source_dependencies):
-            hash_.update(source.import_path.encode())
-            object_ = source_utils.load(source)
+        source_dependencies = [
+            source.import_path for source in cache_policy.source_dependencies
+        ]
+        for source_path in sorted(source_dependencies):
+            hash_.update(source_path.encode())
+            object_ = source_utils.load(source_path)
             source_code = source_code_utils.get_source_code(object_)
             hash_.update(source_code.encode())
 
@@ -186,12 +194,18 @@ def generate_cache_key(
         cache_func = source_utils.load(cache_policy.cache_func)
 
         if not callable(cache_func):
-            raise ValueError("Cache function must be callable.")
+            raise ValueError(
+                f"The cache function {cache_policy.cache_func.import_path} is "
+                "not callable."
+            )
 
         result = cache_func()
 
         if not isinstance(result, str):
-            raise ValueError("Cache function must return a string.")
+            raise ValueError(
+                f"The cache function {cache_policy.cache_func.import_path} "
+                "must return a string."
+            )
 
         hash_.update(result.encode())
 
