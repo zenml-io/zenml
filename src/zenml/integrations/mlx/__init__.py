@@ -20,12 +20,6 @@ from typing import List, Optional
 from zenml.integrations.constants import MLX
 from zenml.integrations.integration import Integration
 
-# MLX can run on Linux, but only with CPU or Cuda devices,
-# see https://ml-explore.github.io/mlx/build/html/install.html#cuda ff.
-# On macOS, MLX only supports Apple Silicon (ARM64), not Intel (x86_64).
-SUPPORTED_PLATFORMS = ("darwin", "linux")
-
-
 def _is_supported_platform() -> bool:
     """Check if the current platform supports MLX.
     
