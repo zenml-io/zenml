@@ -289,6 +289,7 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps.assert_called_with(
         project=ANY,
         cache_key="cache_key",
+        cache_expired=False,
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
