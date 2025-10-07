@@ -195,7 +195,7 @@ def build_modal_image(
     try:
         modal_image = modal.Image.from_registry(
             image_name, secret=registry_secret
-        ).pip_install("modal")
+        )
     except Exception as e:
         raise RuntimeError(
             "Failed to construct a Modal image from the specified Docker base image. "
