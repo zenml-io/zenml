@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import inspect
 from contextlib import contextmanager
 from typing import Generator, Optional, Tuple
+
+from click.testing import CliRunner
 
 from tests.harness.harness import TestHarness
 from zenml.cli import cli
@@ -33,6 +36,16 @@ SAMPLE_CUSTOM_ARGUMENTS = [
     "axl",
     '--best_cat="aria"',
 ]
+
+
+def cli_runner(**kwargs) -> CliRunner:
+    """Return a Click runner that stays compatible across Click releases."""
+    runner_kwargs = dict(kwargs)
+    if "mix_stderr" not in runner_kwargs:
+        params = inspect.signature(CliRunner.__init__).parameters
+        if "mix_stderr" in params:
+            runner_kwargs["mix_stderr"] = False
+    return CliRunner(**runner_kwargs)
 
 
 # ----- #
