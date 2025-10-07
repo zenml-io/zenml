@@ -146,6 +146,12 @@ class ModalStepOperator(BaseStepOperator):
 
         gpu_values = get_gpu_values(settings, resource_settings)
 
+        memory_int = (
+            int(mb)
+            if (mb := resource_settings.get_memory(ByteUnit.MB))
+            else None
+        )
+
         app = modal.App(
             f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
         )
@@ -154,14 +160,6 @@ class ModalStepOperator(BaseStepOperator):
             with modal.enable_output():
                 try:
                     async with app.run():
-                        memory_int = (
-                            int(mb)
-                            if (
-                                mb := resource_settings.get_memory(ByteUnit.MB)
-                            )
-                            else None
-                        )
-
                         try:
                             if (
                                 not entrypoint_command
