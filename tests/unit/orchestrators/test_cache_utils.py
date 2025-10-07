@@ -207,7 +207,6 @@ def test_generate_cache_key_considers_source_dependencies(
     del sys.modules[module_name]
 
 
-
 def test_generate_cache_key_considers_cache_func(
     generate_cache_key_kwargs,
     clean_client_with_repo,
@@ -218,7 +217,9 @@ def test_generate_cache_key_considers_cache_func(
         f.write("def f():\n  return 'before'")
     generate_cache_key_kwargs[
         "step"
-    ].config.cache_policy.cache_func = Source.from_import_path(f"{module_name}.f")
+    ].config.cache_policy.cache_func = Source.from_import_path(
+        f"{module_name}.f"
+    )
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
 
     del sys.modules[module_name]
