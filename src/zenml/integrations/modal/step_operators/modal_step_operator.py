@@ -161,14 +161,6 @@ class ModalStepOperator(BaseStepOperator):
                 try:
                     async with app.run():
                         try:
-                            if (
-                                not entrypoint_command
-                                or not entrypoint_command[0]
-                            ):
-                                raise ValueError(
-                                    "Empty step entrypoint command is not allowed."
-                                )
-
                             sb = await modal.Sandbox.create.aio(
                                 *entrypoint_command,
                                 image=modal_image,
