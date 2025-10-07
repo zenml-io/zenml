@@ -133,12 +133,12 @@ class ModalStepOperator(BaseStepOperator):
         )
 
         try:
-            zenml_image = build_modal_image(image_name, stack, environment)
+            modal_image = build_modal_image(image_name, stack, environment)
         except Exception as e:
             raise RuntimeError(
-                "Failed to build the Modal image from your Docker registry. "
-                "Action required: ensure your ZenML stack's container registry is configured with valid credentials "
-                "and that the base image exists and is accessible. "
+                "Failed to construct Modal execution environment from your Docker image. "
+                "Action required: verify that Modal can access your container registry (check network connectivity "
+                "and registry permissions), and that the Docker image can be pulled and extended with additional dependencies. "
                 f"Context: image='{image_name}'."
             ) from e
 
@@ -173,7 +173,7 @@ class ModalStepOperator(BaseStepOperator):
 
                             sb = await modal.Sandbox.create.aio(
                                 *entrypoint_command,
-                                image=zenml_image,
+                                image=modal_image,
                                 gpu=gpu_values,
                                 cpu=resource_settings.cpu_count,
                                 memory=memory_int,
