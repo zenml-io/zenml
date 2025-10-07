@@ -165,13 +165,27 @@ artifact doesn't support generating a content hash, the artifact ID will be used
 which means changes to any of the files will lead to a new cache key and therefore not cache from previous step executions.
 
 {% hint style="info" %}
-Files specified in this list must be relative to your [source root](...) TODO
+Files specified in this list must be relative to your [source root](https://docs.zenml.io/concepts/source-imports#source-root)
 {% endhint %}
 
 * `source_dependencies`: Allows you to specify a list of Python objects (modules, classes, functions) that your step depends on. The source code of these objects
 will be read and included in the cache key, which means changes to any of the objects will lead to a new cache key and therefore not cache from previous step executions.
 * `cache_func`: Allows you to specify a function (without arguments) that returns a string. This function will be called as part of the cache key computation, and the
 return value will be included in the cache key.
+
+Both source dependencies as well as the cache function can be passed directly directly in code or as a [source](https://docs.zenml.io/concepts/source-imports#source) string:
+```python
+from zenml.config import CachePolicy
+
+def my_helper_function():
+    ...
+
+# pass function directly..
+cache_policy = CachePolicy(source_dependencies=[my_helper_function])
+# ..or pass the function source. This also works when
+# configuring the cache policy with a config file
+cache_policy = CachePolicy(source_dependencies=["run.my_helper_function"]) 
+```
 
 #### Cache expiration
 
