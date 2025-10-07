@@ -175,7 +175,7 @@ class ModalStepOperator(BaseStepOperator):
                         except Exception as e:
                             raise RuntimeError(
                                 "Failed to create a Modal sandbox. "
-                                "Action required: verify that the referenced Docker image exists and is accessible, "
+                                "Action required: verify that the referenced Docker image is accessible, "
                                 "the requested resources are available (gpu/region/cloud), and your Modal workspace "
                                 "permissions allow sandbox creation. "
                                 f"Context: image='{image_name}', gpu='{gpu_values}', region='{settings.region}', cloud='{settings.cloud}'."
@@ -186,8 +186,8 @@ class ModalStepOperator(BaseStepOperator):
                         except Exception as e:
                             raise RuntimeError(
                                 "Modal sandbox execution failed. "
-                                "Action required: inspect the step logs in Modal, validate your entrypoint command, "
-                                "and confirm that dependencies are available in the image/environment."
+                                "Action required: inspect the step logs in Modal, and confirm that "
+                                "dependencies are available in the image/environment."
                             ) from e
                 except Exception as e:
                     raise RuntimeError(
