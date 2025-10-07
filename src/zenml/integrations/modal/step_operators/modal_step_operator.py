@@ -106,7 +106,7 @@ class ModalStepOperator(BaseStepOperator):
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
-        environment: Optional[Dict[str, str]],
+        environment: Dict[str, str],
     ) -> None:
         """Launch a step run on Modal.
 
