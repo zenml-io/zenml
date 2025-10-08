@@ -246,14 +246,6 @@ function test_upgrade_to_version() {
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    # Check if the Python version is 3.9 and VERSION is > 0.44.0 and < 0.53.0
-    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        if [ "$(version_compare "$VERSION" "0.44.0")" == ">" ] && [ "$(version_compare "$VERSION" "0.53.0")" == "<" ]; then
-            # Install importlib_metadata for Python 3.9 and versions > 0.44.0 and < 0.53.0
-            uv pip install importlib_metadata
-        fi
-    fi
-
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 
         if [ "$(version_compare "$VERSION" "0.68.1")" == ">" ]; then
