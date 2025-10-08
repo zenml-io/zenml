@@ -243,7 +243,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             # to run the deploy the model on the local running environment
             if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
-            backend = PyFuncBackend(  # type: ignore[no-untyped-call]
+            backend = PyFuncBackend(  # type: ignore[no-untyped-call, unused-ignore]
                 config={},
                 no_conda=True,
                 workers=self.config.workers,
@@ -258,7 +258,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                     "stack."
                 )
             experiment_tracker.configure_mlflow()
-            backend.serve(  # type: ignore[no-untyped-call]
+            backend.serve(  # type: ignore[no-untyped-call, unused-ignore]
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",
