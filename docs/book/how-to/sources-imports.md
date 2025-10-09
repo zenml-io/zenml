@@ -10,7 +10,7 @@ icon:
 The **source root** is the directory which all your local imports should be relative to.
 
 Whenever you're using ZenML, the source root will be computed as follows:
-- If you're in a child directory of a [ZenML repository](https://docs.zenml.io/user-guides/best-practices/set-up-your-repository) (which you can initialize by running `zenml init`), the repository directory will be the source root. In general, we recommend also making the source root explicit by intializing a ZenML repository before running any pipelines.
+- If you're in a child directory of a [ZenML repository](https://docs.zenml.io/user-guides/best-practices/set-up-your-repository) (which you can initialize by running `zenml init`), the repository directory will be the source root. In general, we recommend also making the source root explicit by initializing a ZenML repository before running any pipelines.
 - If no ZenML repository exists in your current working directory or any of the parent directories, ZenML falls back to the parent directory of the python file that you're currently executing. For example, if you're running the file `/a/b/run.py`, the source root will be `/a/b`.
 
 {% hint style="warning" %}
