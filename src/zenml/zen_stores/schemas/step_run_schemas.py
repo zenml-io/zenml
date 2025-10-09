@@ -488,6 +488,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.end_time = value
             if key == "exception_info":
                 self.exception_info = json.dumps(value)
+            if key == "cache_expires_at":
+                self.cache_expires_at = value
 
         self.updated = utc_now()
 

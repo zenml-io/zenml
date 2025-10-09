@@ -184,6 +184,11 @@ class StepRunUpdate(BaseUpdate):
         default=None,
         title="The exception information of the step run.",
     )
+    cache_expires_at: Optional[datetime] = Field(
+        title="The time at which this step run should not be used for cached "
+        "results anymore.",
+        default=None,
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
