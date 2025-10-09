@@ -446,7 +446,7 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
                 PipelineSchema,
                 PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
             )
-            column = PipelineSchema.name
+            column: Any = PipelineSchema.name
         elif sort_by == "snapshot":
             query = query.outerjoin(
                 PipelineSnapshotSchema,
