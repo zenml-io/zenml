@@ -194,6 +194,31 @@ def error(text: str) -> NoReturn:
     raise StyledClickException(message=error_prefix + error_message)
 
 
+def exception(exception: Exception) -> NoReturn:
+    """Echo an exception string on the CLI.
+
+    Args:
+        exception: Input exception.
+    """
+    # KeyError add quotes around their error message to handle the case when
+    # someone tried to fetch something with the key '' (empty string). In all
+    # other cases where the key is not empty however, this adds unnecessary
+    # quotes around the error message, which this function removes.
+    if (
+        isinstance(exception, KeyError)
+        and len(exception.args) == 1
+        # If the exception is a KeyError with an empty string as the argument,
+        # we use the default string representation which will print ''
+        and exception.args[0]
+        and isinstance(exception.args[0], str)
+    ):
+        error_message = exception.args[0]
+    else:
+        error_message = str(exception)
+
+    error(error_message)
+
+
 def warning(
     text: str,
     bold: Optional[bool] = None,
