@@ -1630,7 +1630,9 @@ class AWSDeployer(ContainerizedDeployer):
                 )
 
             # App Runner automatically creates CloudWatch log groups
-            log_group_name = f"/aws/apprunner/{service_name}/{service_id}/application"
+            log_group_name = (
+                f"/aws/apprunner/{service_name}/{service_id}/application"
+            )
 
             try:
                 streams_response = self.logs_client.describe_log_streams(
