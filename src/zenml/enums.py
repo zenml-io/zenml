@@ -418,6 +418,34 @@ class MetadataResourceTypes(StrEnum):
     SCHEDULE = "schedule"
 
 
+class VisualizationResourceTypes(StrEnum):
+    """Resource types that support curated visualizations.
+
+    Curated visualizations can be attached to these ZenML resources to provide
+    contextual dashboards and visual insights throughout the ML lifecycle:
+
+    - **DEPLOYMENT**: Server-side pipeline deployments - surface visualizations
+      on deployment monitoring dashboards and status pages
+    - **MODEL**: ZenML model entities - surface model evaluation dashboards and
+      performance summaries directly on the model detail pages
+    - **PIPELINE**: Pipeline definitions - associate visualizations with pipeline
+      configurations for reusable visual documentation
+    - **PIPELINE_RUN**: Pipeline execution runs - attach visualizations to specific
+      run results for detailed analysis and debugging
+    - **PIPELINE_SNAPSHOT**: Pipeline snapshots - link visualizations to captured
+      pipeline configurations for version comparison and historical analysis
+    - **PROJECT**: Project-level overviews - provide high-level project dashboards
+      and KPI visualizations for cross-pipeline insights
+    """
+
+    DEPLOYMENT = "deployment"  # Server-side pipeline deployments
+    MODEL = "model"  # ZenML models
+    PIPELINE = "pipeline"  # Pipeline definitions
+    PIPELINE_RUN = "pipeline_run"  # Execution runs
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"  # Snapshot configurations
+    PROJECT = "project"  # Project-level dashboards
+
+
 class SecretResourceTypes(StrEnum):
     """All possible resource types for adding secrets."""
 

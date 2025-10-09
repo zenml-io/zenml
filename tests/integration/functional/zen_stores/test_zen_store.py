@@ -74,6 +74,8 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
+    VisualizationType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -90,8 +92,14 @@ from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
+    ArtifactVisualizationRequest,
     ComponentFilter,
     ComponentUpdate,
+    CuratedVisualizationFilter,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResource,
+    CuratedVisualizationUpdate,
+    DeploymentRequest,
     ModelVersionArtifactFilter,
     ModelVersionArtifactRequest,
     ModelVersionFilter,
@@ -5714,3 +5722,302 @@ def test_tag_filter_with_resource_type(clean_client: "Client"):
     # Test filtering for a resource type that doesn't have tags
     tags = clean_client.list_tags(resource_type=TaggableResourceTypes.MODEL)
     assert len(tags) == 0
+
+
+class TestCuratedVisualizations:
+    def test_curated_visualizations_across_resources(self):
+        """Test creating, listing, updating, and deleting curated visualizations."""
+
+        client = Client()
+        project_id = client.active_project.id
+
+        artifact = client.zen_store.create_artifact(
+            ArtifactRequest(
+                name=sample_name("artifact"),
+                project=project_id,
+                has_custom_name=True,
+            )
+        )
+        artifact_version = client.zen_store.create_artifact_version(
+            ArtifactVersionRequest(
+                artifact_id=artifact.id,
+                project=project_id,
+                version="1",
+                type=ArtifactType.DATA,
+                uri=sample_name("artifact_uri"),
+                materializer=Source(
+                    module="acme.foo", type=SourceType.INTERNAL
+                ),
+                data_type=Source(module="acme.foo", type=SourceType.INTERNAL),
+                save_type=ArtifactSaveType.STEP_OUTPUT,
+                visualizations=[
+                    ArtifactVisualizationRequest(
+                        type=VisualizationType.HTML,
+                        uri="s3://visualizations/example.html",
+                    )
+                ],
+            )
+        )
+
+        pipeline_model = client.zen_store.create_pipeline(
+            PipelineRequest(
+                name=sample_name("pipeline"),
+                project=project_id,
+            )
+        )
+
+        step_name = sample_name("step")
+        snapshot = client.zen_store.create_snapshot(
+            PipelineSnapshotRequest(
+                project=project_id,
+                run_name_template=sample_name("run"),
+                pipeline_configuration=PipelineConfiguration(
+                    name=sample_name("pipeline-config")
+                ),
+                pipeline=pipeline_model.id,
+                stack=client.active_stack.id,
+                client_version="0.1.0",
+                server_version="0.1.0",
+                step_configurations={
+                    step_name: Step(
+                        spec=StepSpec(
+                            source=Source(
+                                module="acme.step", type=SourceType.INTERNAL
+                            ),
+                            upstream_steps=[],
+                        ),
+                        config=StepConfiguration(name=step_name),
+                    )
+                },
+            )
+        )
+
+        pipeline_run, _ = client.zen_store.get_or_create_run(
+            PipelineRunRequest(
+                project=project_id,
+                id=uuid4(),
+                name=sample_name("run"),
+                snapshot=snapshot.id,
+                status=ExecutionStatus.RUNNING,
+            )
+        )
+        model = client.zen_store.create_model(
+            ModelRequest(
+                project=project_id,
+                name=sample_name("model"),
+            )
+        )
+
+        # Try to find a deployer component from active stack first
+        deployer_id = None
+        active_stack_model = client.active_stack_model
+        if StackComponentType.MODEL_DEPLOYER in active_stack_model.components:
+            deployer_components = active_stack_model.components[StackComponentType.MODEL_DEPLOYER]
+            if deployer_components:
+                deployer_id = deployer_components[0].id
+
+        if deployer_id is None:
+            # Fall back to listing all MODEL_DEPLOYER components
+            deployers = client.zen_store.list_stack_components(
+                ComponentFilter(type=StackComponentType.MODEL_DEPLOYER)
+            )
+            if deployers.total > 0:
+                deployer_id = deployers.items[0].id
+
+        if deployer_id is None:
+            pytest.skip(
+                "No deployer component available in the active stack or registered components. "
+                "Skipping deployment curated visualization test."
+            )
+
+        # Create a deployment
+        deployment = client.zen_store.create_deployment(
+            DeploymentRequest(
+                project=project_id,
+                name=sample_name("deployment"),
+                snapshot_id=snapshot.id,
+                deployer_id=deployer_id,
+            )
+        )
+
+        try:
+            request = CuratedVisualizationRequest(
+                project=project_id,
+                artifact_version_id=artifact_version.id,
+                visualization_index=0,
+                resources=[
+                    CuratedVisualizationResource(
+                        id=pipeline_model.id,
+                        type=VisualizationResourceTypes.PIPELINE,
+                    ),
+                    CuratedVisualizationResource(
+                        id=model.id,
+                        type=VisualizationResourceTypes.MODEL,
+                    ),
+                    CuratedVisualizationResource(
+                        id=pipeline_run.id,
+                        type=VisualizationResourceTypes.PIPELINE_RUN,
+                    ),
+                    CuratedVisualizationResource(
+                        id=snapshot.id,
+                        type=VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+                    ),
+                    CuratedVisualizationResource(
+                        id=deployment.id,
+                        type=VisualizationResourceTypes.DEPLOYMENT,
+                    ),
+                    CuratedVisualizationResource(
+                        id=project_id,
+                        type=VisualizationResourceTypes.PROJECT,
+                    ),
+                ],
+                display_name="Initial visualization",
+            )
+
+            visualization = client.zen_store.create_curated_visualization(request)
+
+            # Verify via zen_store filtering
+            for resource_type, resource_id in [
+                (VisualizationResourceTypes.PIPELINE, pipeline_model.id),
+                (VisualizationResourceTypes.MODEL, model.id),
+                (VisualizationResourceTypes.PIPELINE_RUN, pipeline_run.id),
+                (VisualizationResourceTypes.PIPELINE_SNAPSHOT, snapshot.id),
+                (VisualizationResourceTypes.DEPLOYMENT, deployment.id),
+                (VisualizationResourceTypes.PROJECT, project_id),
+            ]:
+                result = client.zen_store.list_curated_visualizations(
+                    CuratedVisualizationFilter(
+                        project=project_id,
+                        resource_type=resource_type,
+                        resource_id=resource_id,
+                    )
+                )
+                assert result.total == 1
+                assert result.items[0].id == visualization.id
+
+            # Verify via client convenience parameters
+            for param_name, param_value in [
+                ("pipeline_id", pipeline_model.id),
+                ("model_id", model.id),
+                ("pipeline_run_id", pipeline_run.id),
+                ("pipeline_snapshot_id", snapshot.id),
+                ("deployment_id", deployment.id),
+                ("project_id", project_id),
+            ]:
+                result = client.list_curated_visualizations(**{param_name: param_value})
+                assert result.total == 1, f"Failed for {param_name}"
+                assert result.items[0].id == visualization.id
+
+            loaded = client.zen_store.get_curated_visualization(
+                visualization.id, hydrate=True
+            )
+            assert loaded.display_name == "Initial visualization"
+            assert {resource.type for resource in loaded.resources} == {
+                VisualizationResourceTypes.PIPELINE,
+                VisualizationResourceTypes.MODEL,
+                VisualizationResourceTypes.PIPELINE_RUN,
+                VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+                VisualizationResourceTypes.DEPLOYMENT,
+                VisualizationResourceTypes.PROJECT,
+            }
+
+            with pytest.raises(EntityExistsError):
+                client.zen_store.create_curated_visualization(
+                    CuratedVisualizationRequest(
+                        project=project_id,
+                        artifact_version_id=artifact_version.id,
+                        visualization_index=0,
+                        resources=[
+                            CuratedVisualizationResource(
+                                id=pipeline_model.id,
+                                type=VisualizationResourceTypes.PIPELINE,
+                            )
+                        ],
+                    )
+                )
+
+            updated = client.zen_store.update_curated_visualization(
+                visualization_id=visualization.id,
+                visualization_update=CuratedVisualizationUpdate(
+                    display_name="Updated", display_order=5
+                ),
+            )
+            assert updated.display_name == "Updated"
+            assert updated.display_order == 5
+
+            client.zen_store.delete_curated_visualization(visualization.id)
+            result = client.zen_store.list_curated_visualizations(
+                CuratedVisualizationFilter(
+                    project=project_id,
+                    resource_type=VisualizationResourceTypes.PIPELINE,
+                    resource_id=pipeline_model.id,
+                )
+            )
+            assert result.total == 0
+        finally:
+            # Clean up deployment
+            client.zen_store.delete_deployment(deployment.id)
+
+    def test_curated_visualizations_project_only(self):
+        """Test project-level curated visualizations."""
+
+        client = Client()
+        project = client.active_project
+
+        artifact = client.zen_store.create_artifact(
+            ArtifactRequest(
+                name=sample_name("artifact"),
+                project=project.id,
+                has_custom_name=True,
+            )
+        )
+        artifact_version = client.zen_store.create_artifact_version(
+            ArtifactVersionRequest(
+                artifact_id=artifact.id,
+                project=project.id,
+                version="1",
+                type=ArtifactType.DATA,
+                uri=sample_name("artifact_uri"),
+                materializer=Source(
+                    module="acme.foo", type=SourceType.INTERNAL
+                ),
+                data_type=Source(module="acme.foo", type=SourceType.INTERNAL),
+                save_type=ArtifactSaveType.STEP_OUTPUT,
+                visualizations=[
+                    ArtifactVisualizationRequest(
+                        type=VisualizationType.HTML,
+                        uri="s3://visualizations/project.html",
+                    )
+                ],
+            )
+        )
+
+        visualization = client.create_curated_visualization(
+            artifact_version_id=artifact_version.id,
+            visualization_index=0,
+            resources=[
+                CuratedVisualizationResource(
+                    id=project.id,
+                    type=VisualizationResourceTypes.PROJECT,
+                )
+            ],
+            display_name="Project visualization",
+        )
+
+        result = client.zen_store.list_curated_visualizations(
+            CuratedVisualizationFilter(
+                project=project.id,
+                resource_type=VisualizationResourceTypes.PROJECT,
+                resource_id=project.id,
+            )
+        )
+        assert result.total == 1
+        assert result.items[0].id == visualization.id
+
+        result = client.list_curated_visualizations(project_id=project.id)
+        assert result.total == 1
+        assert result.items[0].id == visualization.id
+
+        client.delete_curated_visualization(visualization.id)
+        client.delete_artifact_version(artifact_version.id)
+        client.delete_artifact(artifact.id)

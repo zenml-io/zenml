@@ -65,10 +65,10 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
+    CURATED_VISUALIZATIONS,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
-    DEPLOYMENT_VISUALIZATIONS,
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
@@ -166,15 +166,15 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationFilter,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
     DeploymentFilter,
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    DeploymentVisualizationFilter,
-    DeploymentVisualizationRequest,
-    DeploymentVisualizationResponse,
-    DeploymentVisualizationUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -1861,50 +1861,50 @@ class RestZenStore(BaseZenStore):
             route=DEPLOYMENTS,
         )
 
-    def create_deployment_visualization(
-        self, visualization: DeploymentVisualizationRequest
-    ) -> DeploymentVisualizationResponse:
-        """Create a deployment visualization via REST API.
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization via REST API.
 
         Args:
-            visualization: The visualization to create.
+            visualization: The curated visualization to create.
 
         Returns:
-            The created visualization.
+            The created curated visualization.
         """
         return self._create_resource(
             resource=visualization,
-            response_model=DeploymentVisualizationResponse,
-            route=f"{DEPLOYMENTS}/{visualization.deployment_id}/visualizations",
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
             params={"hydrate": True},
         )
 
-    def get_deployment_visualization(
-        self, deployment_visualization_id: UUID, hydrate: bool = True
-    ) -> DeploymentVisualizationResponse:
-        """Get a deployment visualization by ID.
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID.
 
         Args:
-            deployment_visualization_id: The ID of the visualization to get.
+            visualization_id: The ID of the curated visualization to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The deployment visualization.
+            The curated visualization with the given ID.
         """
         return self._get_resource(
-            resource_id=deployment_visualization_id,
-            route=DEPLOYMENT_VISUALIZATIONS,
-            response_model=DeploymentVisualizationResponse,
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
             params={"hydrate": hydrate},
         )
 
-    def list_deployment_visualizations(
+    def list_curated_visualizations(
         self,
-        filter_model: DeploymentVisualizationFilter,
+        filter_model: CuratedVisualizationFilter,
         hydrate: bool = False,
-    ) -> Page[DeploymentVisualizationResponse]:
-        """List deployment visualizations via REST API.
+    ) -> Page[CuratedVisualizationResponse]:
+        """List curated visualizations via REST API.
 
         Args:
             filter_model: The filter model to use.
@@ -1912,59 +1912,46 @@ class RestZenStore(BaseZenStore):
                 by including metadata fields in the response.
 
         Returns:
-            A list of all deployment visualizations matching the filter criteria.
-
-        Raises:
-            ValueError: If no deployment ID is provided in the filter model.
+            A page of curated visualizations.
         """
-        if not filter_model.deployment:
-            raise ValueError(
-                "A deployment ID is required to list deployment visualizations."
-            )
-
-        # Build the route with the deployment ID
-        route = f"{DEPLOYMENTS}/{str(filter_model.deployment)}/visualizations"
-
         return self._list_paginated_resources(
-            route=route,
-            response_model=DeploymentVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
             filter_model=filter_model,
             params={"hydrate": hydrate},
         )
 
-    def update_deployment_visualization(
+    def update_curated_visualization(
         self,
-        deployment_visualization_id: UUID,
-        update: DeploymentVisualizationUpdate,
-    ) -> DeploymentVisualizationResponse:
-        """Update a deployment visualization via REST API.
+        visualization_id: UUID,
+        update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization via REST API.
 
         Args:
-            deployment_visualization_id: The ID of the visualization to update.
-            update: The update to apply.
+            visualization_id: The ID of the curated visualization to update.
+            update: The update to apply to the curated visualization.
 
         Returns:
-            The updated deployment visualization.
+            The updated curated visualization.
         """
         return self._update_resource(
-            resource_id=deployment_visualization_id,
+            resource_id=visualization_id,
             resource_update=update,
-            response_model=DeploymentVisualizationResponse,
-            route=DEPLOYMENT_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
             params={"hydrate": True},
         )
 
-    def delete_deployment_visualization(
-        self, deployment_visualization_id: UUID
-    ) -> None:
-        """Delete a deployment visualization via REST API.
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization via REST API.
 
         Args:
-            deployment_visualization_id: The ID of the visualization to delete.
+            visualization_id: The ID of the curated visualization to delete.
         """
         self._delete_resource(
-            resource_id=deployment_visualization_id,
-            route=DEPLOYMENT_VISUALIZATIONS,
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
         )
 
     # -------------------- Run templates --------------------

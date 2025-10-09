@@ -45,6 +45,9 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.models.v2.core.tag import TagResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -185,6 +188,10 @@ class ModelResponseResources(ProjectScopedResponseResources):
     )
     latest_version_name: Optional[str] = None
     latest_version_id: Optional[UUID] = None
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default_factory=list,
+        title="Curated visualizations associated with the model.",
+    )
 
 
 class ModelResponse(
@@ -198,6 +205,14 @@ class ModelResponse(
         title="The name of the model",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+
+    def visualizations(self) -> List["CuratedVisualizationResponse"]:
+        """Return curated visualizations linked to the model.
+
+        Returns:
+            A list of curated visualization responses.
+        """
+        return self.get_resources().visualizations
 
     def get_hydrated_version(self) -> "ModelResponse":
         """Get the hydrated version of this model.

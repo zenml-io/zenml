@@ -13,17 +13,13 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
+from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    Security,
-)
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    DEPLOYMENT_VISUALIZATIONS,
     DEPLOYMENTS,
     VERSION_1,
 )
@@ -32,12 +28,8 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    DeploymentVisualizationFilter,
-    DeploymentVisualizationRequest,
-    DeploymentVisualizationResponse,
-    DeploymentVisualizationUpdate,
+    Page,
 )
-from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -48,6 +40,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -60,30 +53,39 @@ router = APIRouter(
     responses={401: error_response, 403: error_response},
 )
 
-deployment_visualization_router = APIRouter(
-    prefix=API + VERSION_1 + DEPLOYMENT_VISUALIZATIONS,
-    tags=["deployment_visualizations"],
-    responses={401: error_response, 403: error_response},
-)
-
 
 @router.post(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + DEPLOYMENTS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
+)
 @async_fastapi_endpoint_wrapper
 def create_deployment(
     deployment: DeploymentRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Creates a deployment.
+    """Create a deployment.
 
     Args:
         deployment: Deployment to create.
+        project_name_or_id: Optional project name or ID for backwards
+            compatibility.
 
     Returns:
         The created deployment.
     """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        deployment.project = project.id
+
     return verify_permissions_and_create_entity(
         request_model=deployment,
         create_method=zen_store().create_deployment,
@@ -94,25 +96,38 @@ def create_deployment(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + DEPLOYMENTS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
+)
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     deployment_filter_model: DeploymentFilter = Depends(
         make_dependable(DeploymentFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[DeploymentResponse]:
-    """Gets a list of deployments.
+    """List deployments.
 
     Args:
-        deployment_filter_model: Filter model used for pagination, sorting,
+        deployment_filter_model: Filter model used for pagination, sorting, and
             filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
+        project_name_or_id: Optional project name or ID for backwards
+            compatibility.
+        hydrate: Whether to hydrate the returned models.
 
     Returns:
-        List of deployment objects matching the filter criteria.
+        A page of deployments matching the filter.
     """
+    if project_name_or_id:
+        deployment_filter_model.project = project_name_or_id
+
     return verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
         resource_type=ResourceType.DEPLOYMENT,
@@ -131,15 +146,14 @@ def get_deployment(
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Gets a specific deployment using its unique id.
+    """Get a deployment by ID.
 
     Args:
-        deployment_id: ID of the deployment to get.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
+        deployment_id: The deployment ID.
+        hydrate: Whether to hydrate the returned model.
 
     Returns:
-        A specific deployment object.
+        The requested deployment.
     """
     return verify_permissions_and_get_entity(
         id=deployment_id,
@@ -158,11 +172,11 @@ def update_deployment(
     deployment_update: DeploymentUpdate,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Updates a specific deployment.
+    """Update a deployment.
 
     Args:
-        deployment_id: ID of the deployment to update.
-        deployment_update: Update model for the deployment.
+        deployment_id: The deployment ID.
+        deployment_update: The updates to apply.
 
     Returns:
         The updated deployment.
@@ -184,157 +198,13 @@ def delete_deployment(
     deployment_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Deletes a specific deployment.
+    """Delete a deployment.
 
     Args:
-        deployment_id: ID of the deployment to delete.
+        deployment_id: The deployment ID.
     """
     verify_permissions_and_delete_entity(
         id=deployment_id,
         get_method=zen_store().get_deployment,
         delete_method=zen_store().delete_deployment,
-    )
-
-
-@router.post(
-    "/{deployment_id}/visualizations",
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def create_deployment_visualization(
-    deployment_id: UUID,
-    visualization: DeploymentVisualizationRequest,
-    _: AuthContext = Security(authorize),
-) -> DeploymentVisualizationResponse:
-    """Creates a curated deployment visualization.
-
-    Args:
-        deployment_id: ID of the deployment to add visualization to.
-        visualization: Deployment visualization to create.
-
-    Returns:
-        The created deployment visualization.
-
-    Raises:
-        KeyError: If the deployment ID in the request does not match the path parameter.
-    """
-    if (
-        visualization.deployment_id
-        and visualization.deployment_id != deployment_id
-    ):
-        raise KeyError(
-            "Deployment ID in request does not match path parameter"
-        )
-    return verify_permissions_and_create_entity(
-        request_model=visualization,
-        create_method=zen_store().create_deployment_visualization,
-    )
-
-
-@router.get(
-    "/{deployment_id}/visualizations",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def list_deployment_visualizations(
-    deployment_id: UUID,
-    visualization_filter_model: DeploymentVisualizationFilter = Depends(
-        make_dependable(DeploymentVisualizationFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize),
-) -> Page[DeploymentVisualizationResponse]:
-    """Gets a list of visualizations for a specific deployment.
-
-    Args:
-        deployment_id: ID of the deployment to list visualizations for.
-        visualization_filter_model: Filter model used for pagination, sorting,
-            filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        List of deployment visualization objects for the deployment.
-    """
-    visualization_filter_model.deployment = deployment_id
-    return verify_permissions_and_list_entities(
-        filter_model=visualization_filter_model,
-        resource_type=ResourceType.DEPLOYMENT,
-        list_method=zen_store().list_deployment_visualizations,
-        hydrate=hydrate,
-    )
-
-
-@deployment_visualization_router.get(
-    "/{deployment_visualization_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def get_deployment_visualization(
-    deployment_visualization_id: UUID,
-    hydrate: bool = True,
-    _: AuthContext = Security(authorize),
-) -> DeploymentVisualizationResponse:
-    """Gets a specific deployment visualization using its unique id.
-
-    Args:
-        deployment_visualization_id: ID of the deployment visualization to get.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        A specific deployment visualization object.
-    """
-    return verify_permissions_and_get_entity(
-        id=deployment_visualization_id,
-        get_method=zen_store().get_deployment_visualization,
-        hydrate=hydrate,
-    )
-
-
-@deployment_visualization_router.patch(
-    "/{deployment_visualization_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def update_deployment_visualization(
-    deployment_visualization_id: UUID,
-    visualization_update: DeploymentVisualizationUpdate,
-    _: AuthContext = Security(authorize),
-) -> DeploymentVisualizationResponse:
-    """Updates a specific deployment visualization.
-
-    Args:
-        deployment_visualization_id: ID of the deployment visualization to update.
-        visualization_update: Update model for the deployment visualization.
-
-    Returns:
-        The updated deployment visualization.
-    """
-    return verify_permissions_and_update_entity(
-        id=deployment_visualization_id,
-        update_model=visualization_update,
-        get_method=zen_store().get_deployment_visualization,
-        update_method=zen_store().update_deployment_visualization,
-    )
-
-
-@deployment_visualization_router.delete(
-    "/{deployment_visualization_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def delete_deployment_visualization(
-    deployment_visualization_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Deletes a specific deployment visualization.
-
-    Args:
-        deployment_visualization_id: ID of the deployment visualization to delete.
-    """
-    verify_permissions_and_delete_entity(
-        id=deployment_visualization_id,
-        get_method=zen_store().get_deployment_visualization,
-        delete_method=zen_store().delete_deployment_visualization,
     )

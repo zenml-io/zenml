@@ -164,14 +164,14 @@ from zenml.models.v2.core.deployment import (
     DeploymentResponseMetadata,
     DeploymentResponseResources,
 )
-from zenml.models.v2.core.deployment_visualization import (
-    DeploymentVisualizationFilter,
-    DeploymentVisualizationRequest,
-    DeploymentVisualizationResponse,
-    DeploymentVisualizationResponseBody,
-    DeploymentVisualizationResponseMetadata,
-    DeploymentVisualizationResponseResources,
-    DeploymentVisualizationUpdate,
+from zenml.models.v2.core.curated_visualization import (
+    CuratedVisualizationFilter,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationResponseBody,
+    CuratedVisualizationResponseMetadata,
+    CuratedVisualizationResponseResources,
+    CuratedVisualizationUpdate,
 )
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
@@ -431,6 +431,9 @@ from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
 )
+from zenml.models.v2.misc.curated_visualization import (
+    CuratedVisualizationResource,
+)
 from zenml.models.v2.misc.server_models import (
     ServerModel,
     ServerDatabaseType,
@@ -662,13 +665,13 @@ __all__ = [
     "DeploymentResponseBody",
     "DeploymentResponseMetadata",
     "DeploymentResponseResources",
-    "DeploymentVisualizationFilter",
-    "DeploymentVisualizationRequest",
-    "DeploymentVisualizationResponse",
-    "DeploymentVisualizationResponseBody",
-    "DeploymentVisualizationResponseMetadata",
-    "DeploymentVisualizationResponseResources",
-    "DeploymentVisualizationUpdate",
+    "CuratedVisualizationFilter",
+    "CuratedVisualizationRequest",
+    "CuratedVisualizationResponse",
+    "CuratedVisualizationResponseBody",
+    "CuratedVisualizationResponseMetadata",
+    "CuratedVisualizationResponseResources",
+    "CuratedVisualizationUpdate",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -887,6 +890,7 @@ __all__ = [
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
+    "CuratedVisualizationResource",
     "ProjectStatistics",
     "PipelineRunDAG",
     "ExceptionInfo",

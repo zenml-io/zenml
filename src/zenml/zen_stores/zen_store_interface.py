@@ -48,15 +48,15 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationFilter,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
     DeploymentFilter,
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    DeploymentVisualizationFilter,
-    DeploymentVisualizationRequest,
-    DeploymentVisualizationResponse,
-    DeploymentVisualizationUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -1475,96 +1475,39 @@ class ZenStoreInterface(ABC):
             KeyError: If the deployment does not exist.
         """
 
-    # -------------------- Deployment visualizations --------------------
+    # -------------------- Curated visualizations --------------------
 
     @abstractmethod
-    def create_deployment_visualization(
-        self, visualization: DeploymentVisualizationRequest
-    ) -> DeploymentVisualizationResponse:
-        """Create a new deployment visualization.
-
-        Args:
-            visualization: The deployment visualization to create.
-
-        Returns:
-            The newly created deployment visualization.
-
-        Raises:
-            EntityExistsError: If a deployment visualization with the same
-                deployment, artifact version, and visualization index already
-                exists.
-        """
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a new curated visualization."""
 
     @abstractmethod
-    def get_deployment_visualization(
-        self, deployment_visualization_id: UUID, hydrate: bool = True
-    ) -> DeploymentVisualizationResponse:
-        """Get a deployment visualization by ID.
-
-        Args:
-            deployment_visualization_id: The ID of the deployment visualization
-                to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The deployment visualization.
-
-        Raises:
-            KeyError: If the deployment visualization does not exist.
-        """
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID."""
 
     @abstractmethod
-    def list_deployment_visualizations(
+    def list_curated_visualizations(
         self,
-        filter_model: DeploymentVisualizationFilter,
+        filter_model: CuratedVisualizationFilter,
         hydrate: bool = False,
-    ) -> Page[DeploymentVisualizationResponse]:
-        """List all deployment visualizations matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all deployment visualizations matching the filter criteria.
-        """
+    ) -> Page[CuratedVisualizationResponse]:
+        """List curated visualizations matching the given filter criteria."""
 
     @abstractmethod
-    def update_deployment_visualization(
+    def update_curated_visualization(
         self,
-        deployment_visualization_id: UUID,
-        visualization_update: DeploymentVisualizationUpdate,
-    ) -> DeploymentVisualizationResponse:
-        """Update a deployment visualization.
-
-        Args:
-            deployment_visualization_id: The ID of the deployment visualization
-                to update.
-            visualization_update: The update to apply.
-
-        Returns:
-            The updated deployment visualization.
-
-        Raises:
-            KeyError: If the deployment visualization does not exist.
-        """
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization."""
 
     @abstractmethod
-    def delete_deployment_visualization(
-        self, deployment_visualization_id: UUID
-    ) -> None:
-        """Delete a deployment visualization.
-
-        Args:
-            deployment_visualization_id: The ID of the deployment visualization
-                to delete.
-
-        Raises:
-            KeyError: If the deployment visualization does not exist.
-        """
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization."""
 
     # -------------------- Run templates --------------------
 

@@ -24,7 +24,11 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, String
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import DeploymentStatus, TaggableResourceTypes
+from zenml.enums import (
+    DeploymentStatus,
+    TaggableResourceTypes,
+    VisualizationResourceTypes,
+)
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
@@ -46,10 +50,14 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.deployment_visualization_schemas import (
-        DeploymentVisualizationSchema,
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
     )
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+
+from zenml.zen_stores.schemas.curated_visualization_schemas import (
+    curated_visualization_relationship_kwargs,
+)
 
 logger = get_logger(__name__)
 
@@ -136,9 +144,11 @@ class DeploymentSchema(NamedSchema, table=True):
         ),
     )
 
-    visualizations: List["DeploymentVisualizationSchema"] = Relationship(
-        back_populates="deployment",
-        sa_relationship_kwargs=dict(lazy="selectin"),
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=curated_visualization_relationship_kwargs(
+            parent_column_factory=lambda: DeploymentSchema.id,
+            resource_type=VisualizationResourceTypes.DEPLOYMENT,
+        ),
     )
 
     @classmethod
@@ -163,8 +173,8 @@ class DeploymentSchema(NamedSchema, table=True):
         options = []
 
         if include_resources:
-            from zenml.zen_stores.schemas.deployment_visualization_schemas import (
-                DeploymentVisualizationSchema,
+            from zenml.zen_stores.schemas.curated_visualization_schemas import (
+                CuratedVisualizationSchema,
             )
 
             options.extend(
@@ -177,7 +187,7 @@ class DeploymentSchema(NamedSchema, table=True):
                     selectinload(
                         jl_arg(DeploymentSchema.visualizations)
                     ).selectinload(
-                        jl_arg(DeploymentVisualizationSchema.artifact_version)
+                        jl_arg(CuratedVisualizationSchema.artifact_version)
                     ),
                 ]
             )
@@ -241,7 +251,6 @@ class DeploymentSchema(NamedSchema, table=True):
                     visualization.to_model(
                         include_metadata=False,
                         include_resources=False,
-                        include_deployment=False,
                     )
                     for visualization in (self.visualizations or [])
                 ],

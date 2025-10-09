@@ -46,8 +46,8 @@ if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.component import ComponentResponse
-    from zenml.models.v2.core.deployment_visualization import (
-        DeploymentVisualizationResponse,
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_snapshot import (
@@ -207,7 +207,7 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
     tags: List["TagResponse"] = Field(
         title="Tags associated with the deployment.",
     )
-    visualizations: List["DeploymentVisualizationResponse"] = Field(
+    visualizations: List["CuratedVisualizationResponse"] = Field(
         default_factory=list,
         title="Curated deployment visualizations.",
     )
@@ -312,7 +312,7 @@ class DeploymentResponse(
         return self.get_resources().tags
 
     @property
-    def visualizations(self) -> List["DeploymentVisualizationResponse"]:
+    def visualizations(self) -> List["CuratedVisualizationResponse"]:
         """The visualizations of the deployment.
 
         Returns:

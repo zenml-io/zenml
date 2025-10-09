@@ -65,6 +65,122 @@ There are three ways how you can add custom visualizations to the dashboard:
 * If you are already handling HTML, Markdown, CSV or JSON data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
 * If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
 
+### Curated Visualizations Across Resources
+
+Curated visualizations let you surface a specific artifact visualization across multiple ZenML resources. This is useful when you want to highlight the same dashboard in several places—for example, a model performance report that should be visible from the project overview, the training run, and the production deployment.
+
+Curated visualizations currently support the following resources:
+
+- **Projects** – high-level dashboards and KPIs that summarize the state of a project.
+- **Deployments** – monitoring pages for deployed pipelines.
+- **Models** – evaluation dashboards and health views for registered models.
+- **Pipelines** – reusable visual documentation attached to pipeline definitions.
+- **Pipeline Runs** – detailed diagnostics for specific executions.
+- **Pipeline Snapshots** – configuration/version comparisons for snapshot history.
+
+You can create a curated visualization programmatically by linking an artifact visualization to one or more resources. The example below attaches a single visualization to multiple resource types, including a project:
+
+```python
+from uuid import UUID
+
+from zenml.client import Client
+from zenml.enums import VisualizationResourceTypes
+from zenml.models import CuratedVisualizationResource
+
+client = Client()
+artifact_version_id = UUID("<ARTIFACT_VERSION_ID>")
+project = client.active_project
+pipeline = client.list_pipelines().items[0]
+pipeline_run = pipeline.runs()[0]
+snapshot = pipeline_run.snapshot()
+deployment = client.list_deployments().items[0]
+model = client.list_models().items[0]
+
+visualization = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=0,
+    resources=[
+        CuratedVisualizationResource(id=model.id, type=VisualizationResourceTypes.MODEL),
+        CuratedVisualizationResource(id=project.id, type=VisualizationResourceTypes.PROJECT),
+        CuratedVisualizationResource(id=deployment.id, type=VisualizationResourceTypes.DEPLOYMENT),
+        CuratedVisualizationResource(id=pipeline.id, type=VisualizationResourceTypes.PIPELINE),
+        CuratedVisualizationResource(id=pipeline_run.id, type=VisualizationResourceTypes.PIPELINE_RUN),
+        CuratedVisualizationResource(id=snapshot.id, type=VisualizationResourceTypes.PIPELINE_SNAPSHOT),
+    ],
+    display_name="Project performance dashboard",
+)
+```
+
+To list curated visualizations for a specific resource, you can use the `Client.list_curated_visualizations` convenience parameters:
+
+```python
+client.list_curated_visualizations(project_id=project.id)
+client.list_curated_visualizations(deployment_id=deployment.id)
+client.list_curated_visualizations(model_id=model.id)
+client.list_curated_visualizations(pipeline_id=pipeline.id)
+client.list_curated_visualizations(pipeline_run_id=pipeline_run.id)
+client.list_curated_visualizations(pipeline_snapshot_id=snapshot.id)
+```
+
+Each call returns a `Page[CuratedVisualizationResponse]` object so you can iterate through the visualizations or fetch the hydrated version for additional metadata.
+
+#### Updating curated visualizations
+
+Once you've created a curated visualization, you can update its display name or order using `Client.update_curated_visualization`:
+
+```python
+from uuid import UUID
+
+client.update_curated_visualization(
+    visualization_id=UUID("<CURATED_VISUALIZATION_ID>"),
+    display_name="Updated Dashboard Title",
+    display_order=10,
+)
+```
+
+When a visualization is no longer relevant, you can remove it entirely:
+
+```python
+client.delete_curated_visualization(visualization_id=UUID("<CURATED_VISUALIZATION_ID>"))
+```
+
+#### Controlling display order
+
+The optional `display_order` field determines how visualizations are sorted when displayed. Visualizations with lower order values appear first, while those with `None` (the default) appear at the end in creation order.
+
+When setting display orders, consider leaving gaps between values (e.g., 10, 20, 30 instead of 1, 2, 3) to make it easier to insert new visualizations later without renumbering everything:
+
+```python
+# Leave gaps for future insertions
+visualization_a = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=0,
+    resources=[...],
+    display_order=10,  # Primary dashboard
+)
+
+visualization_b = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=1,
+    resources=[...],
+    display_order=20,  # Secondary metrics
+)
+
+# Later, easily insert between them
+visualization_c = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=2,
+    resources=[...],
+    display_order=15,  # Now appears between A and B
+)
+```
+
+#### RBAC visibility
+
+Curated visualizations respect the access permissions of every resource they're linked to. A user can only see a curated visualization if they have read access to **all** the resources it targets. If a user lacks permission for any linked resource, the visualization will be hidden from their view.
+
+For example, if you create a visualization linked to both a project and a deployment, users must have read access to both the project and that specific deployment to see the visualization. This ensures that curated visualizations never inadvertently expose information from resources a user shouldn't access.
+
 ### Visualization via Special Return Types
 
 If you already have HTML, Markdown, CSV or JSON data available as a string inside your step, you can simply cast them to one of the following types and return them from your step:

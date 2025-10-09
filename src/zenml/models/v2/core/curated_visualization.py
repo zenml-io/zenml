@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models representing deployment visualizations."""
+"""Models representing curated visualizations."""
 
 from typing import (
     TYPE_CHECKING,
@@ -24,9 +24,9 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
-from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import VisualizationResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
@@ -37,12 +37,14 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
+from zenml.models.v2.misc.curated_visualization import (
+    CuratedVisualizationResource,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
-    from zenml.models.v2.core.deployment import DeploymentResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -51,43 +53,79 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class DeploymentVisualizationRequest(ProjectScopedRequest):
-    """Request model for deployment visualizations."""
+class CuratedVisualizationRequest(ProjectScopedRequest):
+    """Request model for curated visualizations.
 
-    deployment_id: UUID = Field(
-        title="The deployment ID.",
-        description="The ID of the deployment associated with the visualization.",
-    )
+    Curated visualizations can be attached to any combination of the following
+    resource types:
+    - **Deployments**: Surface visualizations on deployment dashboards
+    - **Models**: Highlight evaluation dashboards and monitoring views next to
+      registered models
+    - **Pipelines**: Associate visualizations with pipeline definitions
+    - **Pipeline Runs**: Attach visualizations to specific execution runs
+    - **Pipeline Snapshots**: Link visualizations to snapshot configurations
+    - **Projects**: Provide high-level project dashboards and KPI overviews
+
+    A single visualization can be linked to multiple resources of different types,
+    enabling reuse across the ML workflow. For example, a model performance
+    dashboard could be attached to both a deployment and the pipeline run that
+    produced the deployed model.
+    """
+
     artifact_version_id: UUID = Field(
         title="The artifact version ID.",
-        description="The ID of the artifact version associated with the visualization.",
+        description="Identifier of the artifact version providing the visualization.",
     )
     visualization_index: int = Field(
         ge=0,
         title="The visualization index.",
-        description="The index of the visualization within the artifact version.",
+        description="Index of the visualization within the artifact version payload.",
     )
     display_name: Optional[str] = Field(
         default=None,
         title="The display name of the visualization.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     display_order: Optional[int] = Field(
         default=None,
         title="The display order of the visualization.",
     )
+    resources: List[CuratedVisualizationResource] = Field(
+        title="Resources associated with this visualization.",
+        description=(
+            "List of resources (deployments, models, pipelines, pipeline runs, "
+            "pipeline snapshots, projects) that should surface this visualization. "
+            "Must include at least one resource. Multiple resources of "
+            "different types can be specified to reuse visualizations "
+            "across the ML workflow."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_resources(self) -> "CuratedVisualizationRequest":
+        """Ensure that at least one resource is associated with the visualization.
+
+        Returns:
+            The validated request instance.
+
+        Raises:
+            ValueError: If no resources are provided.
+        """
+        if not self.resources:
+            raise ValueError(
+                "Curated visualizations must be associated with at least one resource."
+            )
+        return self
 
 
 # ------------------ Update Model ------------------
 
 
-class DeploymentVisualizationUpdate(BaseUpdate):
-    """Update model for deployment visualizations."""
+class CuratedVisualizationUpdate(BaseUpdate):
+    """Update model for curated visualizations."""
 
     display_name: Optional[str] = Field(
         default=None,
         title="The new display name of the visualization.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     display_order: Optional[int] = Field(
         default=None,
@@ -98,20 +136,16 @@ class DeploymentVisualizationUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class DeploymentVisualizationResponseBody(ProjectScopedResponseBody):
-    """Response body for deployment visualizations."""
+class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
+    """Response body for curated visualizations."""
 
-    deployment_id: UUID = Field(
-        title="The deployment ID.",
-        description="The ID of the deployment associated with the visualization.",
-    )
     artifact_version_id: UUID = Field(
         title="The artifact version ID.",
-        description="The ID of the artifact version associated with the visualization.",
+        description="Identifier of the artifact version providing the visualization.",
     )
     visualization_index: int = Field(
         title="The visualization index.",
-        description="The index of the visualization within the artifact version.",
+        description="Index of the visualization within the artifact version payload.",
     )
     display_name: Optional[str] = Field(
         default=None,
@@ -121,58 +155,47 @@ class DeploymentVisualizationResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The display order of the visualization.",
     )
-
-
-class DeploymentVisualizationResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for deployment visualizations."""
-
-
-class DeploymentVisualizationResponseResources(ProjectScopedResponseResources):
-    """Response resources for deployment visualizations."""
-
-    deployment: Optional["DeploymentResponse"] = Field(
-        default=None,
-        title="The deployment.",
-        description="The deployment associated with the visualization.",
+    resources: List[CuratedVisualizationResource] = Field(
+        default_factory=list,
+        title="Resources exposing the visualization.",
     )
+
+
+class CuratedVisualizationResponseMetadata(ProjectScopedResponseMetadata):
+    """Response metadata for curated visualizations."""
+
+
+class CuratedVisualizationResponseResources(ProjectScopedResponseResources):
+    """Response resources for curated visualizations."""
+
     artifact_version: Optional["ArtifactVersionResponse"] = Field(
         default=None,
         title="The artifact version.",
-        description="The artifact version associated with the visualization.",
+        description="Artifact version from which the visualization originates.",
     )
 
 
-class DeploymentVisualizationResponse(
+class CuratedVisualizationResponse(
     ProjectScopedResponse[
-        DeploymentVisualizationResponseBody,
-        DeploymentVisualizationResponseMetadata,
-        DeploymentVisualizationResponseResources,
+        CuratedVisualizationResponseBody,
+        CuratedVisualizationResponseMetadata,
+        CuratedVisualizationResponseResources,
     ]
 ):
-    """Response model for deployment visualizations."""
+    """Response model for curated visualizations."""
 
-    def get_hydrated_version(self) -> "DeploymentVisualizationResponse":
-        """Get the hydrated version of this deployment visualization.
+    def get_hydrated_version(self) -> "CuratedVisualizationResponse":
+        """Get the hydrated version of this curated visualization.
 
         Returns:
-            an instance of the same entity with the metadata and resources fields
-            attached.
+            A hydrated instance of the same entity.
         """
         from zenml.client import Client
 
         client = Client()
-        return client.zen_store.get_deployment_visualization(self.id)
+        return client.zen_store.get_curated_visualization(self.id)
 
     # Helper properties
-    @property
-    def deployment_id(self) -> UUID:
-        """The deployment ID.
-
-        Returns:
-            The deployment ID.
-        """
-        return self.get_body().deployment_id
-
     @property
     def artifact_version_id(self) -> UUID:
         """The artifact version ID.
@@ -210,34 +233,33 @@ class DeploymentVisualizationResponse(
         return self.get_body().display_order
 
     @property
-    def deployment(self) -> Optional["DeploymentResponse"]:
-        """The deployment.
-
-        Returns:
-            The deployment.
-        """
-        return self.get_resources().deployment
-
-    @property
     def artifact_version(self) -> Optional["ArtifactVersionResponse"]:
-        """The artifact version.
+        """The artifact version resource.
 
         Returns:
-            The artifact version.
+            The artifact version resource if included.
         """
         return self.get_resources().artifact_version
+
+    def visualization_resources(self) -> List[CuratedVisualizationResource]:
+        """Return the resources exposing this visualization.
+
+        Returns:
+            List of associated resources.
+        """
+        return self.get_body().resources
 
 
 # ------------------ Filter Model ------------------
 
 
-class DeploymentVisualizationFilter(ProjectScopedFilter):
-    """Model to enable advanced filtering of deployment visualizations."""
+class CuratedVisualizationFilter(ProjectScopedFilter):
+    """Model to enable advanced filtering of curated visualizations."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "deployment",
-        "artifact_version",
+        "resource_id",
+        "resource_type",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -246,31 +268,31 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         "updated",
         "visualization_index",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
-    ]
 
-    # Set default sort_by to display_order
     sort_by: str = Field(
         default="display_order",
         description="Which column to sort by.",
     )
 
-    deployment: Optional[UUID] = Field(
-        default=None,
-        description="ID of the deployment associated with the visualization.",
-    )
     artifact_version: Optional[UUID] = Field(
         default=None,
         description="ID of the artifact version associated with the visualization.",
     )
     visualization_index: Optional[int] = Field(
         default=None,
-        description="Index of the visualization within the artifact version.",
+        description="Index of the visualization within the artifact version payload.",
     )
     display_order: Optional[int] = Field(
         default=None,
         description="Display order of the visualization.",
+    )
+    resource_type: Optional[VisualizationResourceTypes] = Field(
+        default=None,
+        description="Type of the resource exposing the visualization.",
+    )
+    resource_id: Optional[UUID] = Field(
+        default=None,
+        description="ID of the resource exposing the visualization.",
     )
 
     def apply_sorting(
@@ -278,7 +300,7 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         query: AnyQuery,
         table: Type["AnySchema"],
     ) -> AnyQuery:
-        """Apply sorting to the deployment visualization query.
+        """Apply sorting to the curated visualization query.
 
         Args:
             query: The query to which to apply the sorting.
@@ -293,7 +315,6 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
 
         sort_by, operand = self.sorting_params
 
-        # Special handling for display_order with nulls first/last
         if sort_by == "display_order":
             column = getattr(table, "display_order")
             if operand == SorterOps.DESCENDING:
@@ -306,16 +327,15 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
                 query.order_by(asc(column).nulls_first(), asc(table.id)),
             )
 
-        # Direct sorting for other custom columns
         if sort_by in {"created", "updated", "visualization_index"}:
             column = getattr(table, sort_by)
             if operand == SorterOps.DESCENDING:
                 return cast(
-                    AnyQuery, query.order_by(desc(column), asc(table.id))
+                    AnyQuery,
+                    query.order_by(desc(column), asc(table.id)),
                 )
             return cast(AnyQuery, query.order_by(asc(column), asc(table.id)))
 
-        # Delegate to parent for other columns
         return super().apply_sorting(query=query, table=table)
 
     def get_custom_filters(
@@ -331,16 +351,19 @@ class DeploymentVisualizationFilter(ProjectScopedFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.deployment:
-            deployment_filter = (
-                getattr(table, "deployment_id") == self.deployment
-            )
-            custom_filters.append(deployment_filter)
-
         if self.artifact_version:
-            artifact_version_filter = (
+            custom_filters.append(
                 getattr(table, "artifact_version_id") == self.artifact_version
             )
-            custom_filters.append(artifact_version_filter)
+        if self.visualization_index is not None:
+            custom_filters.append(
+                getattr(table, "visualization_index")
+                == self.visualization_index
+            )
+        if self.display_order is not None:
+            custom_filters.append(
+                getattr(table, "display_order") == self.display_order
+            )
 
+        # resource-based filtering is handled within the store implementation
         return custom_filters
