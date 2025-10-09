@@ -712,7 +712,6 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
     Returns:
         The package name or None if no package was found.
     """
-
     from importlib.metadata import packages_distributions
 
     top_level_module = module_name.split(".", maxsplit=1)[0]
