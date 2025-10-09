@@ -13,26 +13,17 @@
 #  permissions and limitations under the License.
 """Utility functions for the package."""
 
-import sys
+from importlib.metadata import (
+    PackageNotFoundError,
+    distribution,
+    distributions,
+)
 from typing import Dict, List, Optional, Union, cast
 
 import requests
 from packaging import version
 from packaging.markers import default_environment
 from packaging.requirements import Requirement
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import (
-        PackageNotFoundError,
-        distribution,
-        distributions,
-    )
-else:
-    from importlib.metadata import (
-        PackageNotFoundError,
-        distribution,
-        distributions,
-    )
 
 
 def is_latest_zenml_version() -> bool:

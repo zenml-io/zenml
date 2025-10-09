@@ -41,7 +41,6 @@ dependencies = [
     "pyyaml>=6.0.1",
     "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
     "setuptools>=70.0.0",
-    "importlib_metadata<=7.0.0; python_version < '3.10'",
 ]
 
 [project.urls]
