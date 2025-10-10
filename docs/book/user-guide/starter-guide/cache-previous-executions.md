@@ -205,6 +205,17 @@ def my_step():
     ...
 ```
 
+{% hint style="info" %}
+If you want to expire one of your step runs as a cache candidate manually, you can do so by setting it's cache expiration date (in UTC timezone):
+```python
+from zenml import Client
+from datetime import datetime, timezone
+
+now = datetime.now(timezone.utc)
+Client().update_step_run(<STEP-RUN-ID>, cache_expires_at=now)
+```
+{% endhint %}
+
 ## Code Example
 
 This section combines all the code from this section into one simple script that you can use to see caching easily:

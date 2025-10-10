@@ -4890,6 +4890,26 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    def update_step_run(
+        self,
+        step_run_id: UUID,
+        cache_expires_at: Optional[datetime] = None,
+    ) -> StepRunResponse:
+        """Update a step run.
+
+        Args:
+            step_run_id: The ID of the step run to update.
+            cache_expires_at: The time at which this step run should not be
+                used for cached results anymore.
+
+        Returns:
+            The updated step run.
+        """
+        update = StepRunUpdate(cache_expires_at=cache_expires_at)
+        return self.zen_store.update_run_step(
+            step_run_id=step_run_id, step_run_update=update
+        )
+
     # ------------------------------- Artifacts -------------------------------
 
     def get_artifact(
