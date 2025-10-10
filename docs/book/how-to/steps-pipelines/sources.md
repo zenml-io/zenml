@@ -65,5 +65,5 @@ When running pipeline steps in containers, ZenML ensures your source root files 
 To execute your step code, ZenML imports the Python module containing the step definition. **All imports of local code files must be relative to the source root** for this to work correctly.
 
 {% hint style="info" %}
-If you don't need all files inside your source root for step execution, see the [containerization guide](./containerization/containerization.md#controlling-included-files) for controlling which files are included.
+If you don't need all files inside your source root for step execution, see the [containerization guide](../containerization/containerization.md#controlling-included-files) for controlling which files are included.
 {% endhint %}
