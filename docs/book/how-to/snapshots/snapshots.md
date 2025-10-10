@@ -197,6 +197,20 @@ Learn how to get a bearer token for the curl commands:
 - For Pro management API (`cloudapi.zenml.io`): use [Pro API tokens](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
 {% endhint %}
 
+## Deleting Pipeline Snapshots
+
+You can delete a snapshot using the CLI:
+```bash
+zenml pipeline snapshot delete <SNAPSHOT-NAME-OR-ID>
+```
+
+You can also delete a snapshot using the Python SDK:
+```python
+from zenml.client import Client
+
+Client().delete_snapshot(name_id_or_prefix=<SNAPSHOT-NAME-OR-ID>)
+```
+
 ## Advanced Usage: Running Snapshots from Other Pipelines
 
 You can run snapshots from within other pipelines, enabling complex workflows. There are two ways to do this:
