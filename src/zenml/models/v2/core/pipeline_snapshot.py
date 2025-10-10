@@ -619,6 +619,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         "pipeline",
+        "stack",
         "deployment",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
