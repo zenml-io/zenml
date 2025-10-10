@@ -2410,6 +2410,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         latest_run_status: Optional[str] = None,
+        latest_run_user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
@@ -2429,6 +2430,8 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the pipeline to filter by.
             latest_run_status: Filter by the status of the latest run of a
                 pipeline.
+            latest_run_user: Filter by the name or UUID of the user that
+                executed the latest run.
             project: The project name/ID to filter by.
             user: The name/ID of the user to filter by.
             tag: Tag to filter by.
@@ -2449,6 +2452,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             latest_run_status=latest_run_status,
+            latest_run_user=latest_run_user,
             project=project or self.active_project.id,
             user=user,
             tag=tag,

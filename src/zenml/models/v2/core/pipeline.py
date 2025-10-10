@@ -21,6 +21,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -268,6 +269,7 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
+        "latest_run_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -283,6 +285,20 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         description="Filter by the status of the latest run of a pipeline. "
         "This will always be applied as an `AND` filter for now.",
     )
+
+    latest_run_user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Filter by the name or id of the last user that executed the pipeline. ",
+    )
+
+    @property
+    def filter_by_latest_execution(self) -> bool:
+        """Property returning whether filtering considers latest pipeline execution.
+
+        Returns:
+            True if latest pipeline execution filters are used (e.g. latest_run_status).
+        """
+        return bool(self.latest_run_user) or bool(self.latest_run_status)
 
     def apply_filter(
         self, query: AnyQuery, table: Type["AnySchema"]
@@ -300,9 +316,13 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
 
         from sqlmodel import and_, col, func, select
 
-        from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
+        from zenml.zen_stores.schemas import (
+            PipelineRunSchema,
+            PipelineSchema,
+            UserSchema,
+        )
 
-        if self.latest_run_status:
+        if self.filter_by_latest_execution:
             latest_pipeline_run_subquery = (
                 select(
                     PipelineRunSchema.pipeline_id,
@@ -313,28 +333,39 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
                 .subquery()
             )
 
-            query = (
-                query.join(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,
+            query = query.join(
+                PipelineRunSchema,
+                PipelineSchema.id == PipelineRunSchema.pipeline_id,
+            ).join(
+                latest_pipeline_run_subquery,
+                and_(
+                    PipelineRunSchema.pipeline_id
+                    == latest_pipeline_run_subquery.c.pipeline_id,
+                    PipelineRunSchema.created
+                    == latest_pipeline_run_subquery.c.created,
+                ),
+            )
+
+            if self.latest_run_user:
+                query = query.join(
+                    UserSchema, UserSchema.id == PipelineRunSchema.user_id
                 )
-                .join(
-                    latest_pipeline_run_subquery,
-                    and_(
-                        PipelineRunSchema.pipeline_id
-                        == latest_pipeline_run_subquery.c.pipeline_id,
-                        PipelineRunSchema.created
-                        == latest_pipeline_run_subquery.c.created,
-                    ),
+
+                query = query.where(
+                    self.generate_name_or_id_query_conditions(
+                        value=self.latest_run_user,
+                        table=UserSchema,
+                    )
                 )
-                .where(
+
+            if self.latest_run_status:
+                query = query.where(
                     self.generate_custom_query_conditions_for_column(
                         value=self.latest_run_status,
                         table=PipelineRunSchema,
                         column="status",
                     )
                 )
-            )
 
         return query
 
