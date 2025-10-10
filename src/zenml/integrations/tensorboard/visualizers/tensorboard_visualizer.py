@@ -58,7 +58,7 @@ class TensorboardVisualizer:
             The TensorBoardInfo describing the running TensorBoard server or
             None if no server is running for the supplied logdir location.
         """
-        from tensorboard.manager import get_all  # type:ignore[import-untyped]
+        from tensorboard.manager import get_all
 
         for server in get_all():
             if (
