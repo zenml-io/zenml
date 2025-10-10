@@ -39,6 +39,7 @@
   * [Scheduling](how-to/steps-pipelines/scheduling.md)
   * [Logging](how-to/steps-pipelines/logging.md)
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
+  * [Source Root and Imports](how-to/steps-pipelines/sources-imports.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)

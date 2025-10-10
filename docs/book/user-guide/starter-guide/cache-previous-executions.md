@@ -165,7 +165,7 @@ artifact doesn't support generating a content hash, the artifact ID will be used
 which means changes to any of the files will lead to a new cache key and therefore not cache from previous step executions.
 
 {% hint style="info" %}
-Files specified in this list must be relative to your [source root](https://docs.zenml.io/concepts/source-imports#source-root)
+Files specified in this list must be relative to your [source root](https://docs.zenml.io/concepts//steps_and_pipelines/sources-imports#source-root)
 {% endhint %}
 
 * `source_dependencies`: Allows you to specify a list of Python objects (modules, classes, functions) that your step depends on. The source code of these objects
@@ -173,7 +173,7 @@ will be read and included in the cache key, which means changes to any of the ob
 * `cache_func`: Allows you to specify a function (without arguments) that returns a string. This function will be called as part of the cache key computation, and the
 return value will be included in the cache key.
 
-Both source dependencies as well as the cache function can be passed directly directly in code or as a [source](https://docs.zenml.io/concepts/source-imports#source) string:
+Both source dependencies as well as the cache function can be passed directly directly in code or as a [source](https://docs.zenml.io/concepts/steps_and_pipelines/sources-imports#source) string:
 ```python
 from zenml.config import CachePolicy
 
