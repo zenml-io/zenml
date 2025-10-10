@@ -83,7 +83,7 @@ class ZenFormatter(formatting.HelpFormatter):
 
         Click 8.2 tightened validation so that definition list entries must be
         pairs.  Our CLI groups commands in tagged triples, so we detect that
-        case and render it manually while delegating the standard behaviour to
+        case and render it manually while delegating the standard behavior to
         Click for the classic two-column output.  This keeps the formatter
         compatible with both older Click releases (<8.2) and the newer ones
         without sacrificing the custom grouped layout.
@@ -98,7 +98,6 @@ class ZenFormatter(formatting.HelpFormatter):
             TypeError: If the provided rows do not represent two or three
                 column entries.
         """
-
         normalized_rows: List[Tuple[str, ...]] = [tuple(row) for row in rows]
 
         if not normalized_rows:
