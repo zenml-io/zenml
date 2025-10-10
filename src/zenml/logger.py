@@ -301,6 +301,12 @@ def setup_global_print_wrapping() -> None:
         # Then call original print for console display
         return original_print(message, *args[1:], **kwargs)
 
+    # Make wrapped_print look like the original print to avoid issues with
+    # libraries like numba that check if functions are globally reachable
+    wrapped_print.__module__ = original_print.__module__
+    wrapped_print.__name__ = original_print.__name__
+    wrapped_print.__qualname__ = original_print.__qualname__
+
     # Store original and replace print
     setattr(builtins, "_zenml_original_print", original_print)
     setattr(builtins, "print", wrapped_print)
