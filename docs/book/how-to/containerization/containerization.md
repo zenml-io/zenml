@@ -538,6 +538,19 @@ The repository name will be appended to the registry URI of your container regis
 
 If you don't specify a target repository, the default repository name configured in your container registry stack component settings will be used.
 
+### Specifying Image tags
+
+You can control the tag of the generated Docker images using the image tag option:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(image_tag="1.0.0")
+```
+
+Keep in mind that this will be applied to all images built using the DockerSettings object. If there are multiple
+such images, only one of them will keep the tag while the rest will be untagged.
+
 ### Decoupling Code from Builds
 
 To reuse Docker builds while still using your latest code changes, you need to decouple your code from the build. There are two main approaches:

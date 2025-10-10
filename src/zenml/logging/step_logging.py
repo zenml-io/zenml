@@ -159,7 +159,7 @@ class ArtifactStoreHandler(logging.Handler):
                     message=message,
                     name=record.name,
                     level=level,
-                    timestamp=utc_now(),
+                    timestamp=utc_now(tz_aware=True),
                     module=record.module,
                     filename=record.filename,
                     lineno=record.lineno,
@@ -178,7 +178,7 @@ class ArtifactStoreHandler(logging.Handler):
                         module=record.module,
                         filename=record.filename,
                         lineno=record.lineno,
-                        timestamp=utc_now(),
+                        timestamp=utc_now(tz_aware=True),
                         chunk_index=i,
                         total_chunks=len(chunks),
                         id=entry_id,
@@ -275,7 +275,7 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
 
     timestamp = None
     if old_format:
-        timestamp = old_format.group(1)
+        timestamp = old_format.group(1) + "Z"
         line = line.replace(old_format.group(0), "").strip()
 
     return LogEntry(

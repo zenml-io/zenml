@@ -582,6 +582,9 @@ class AWSDeployer(ContainerizedDeployer):
                 response = self.secrets_manager_client.update_secret(
                     SecretId=secret_name,
                     SecretString=secret_value,
+                )
+                self.secrets_manager_client.tag_resource(
+                    SecretId=response["ARN"],
                     Tags=self.get_tags(deployment, settings),
                 )
                 logger.debug(f"Updated existing secret {secret_name}")
@@ -1619,14 +1622,17 @@ class AWSDeployer(ContainerizedDeployer):
                 deployment
             )
             service_name = existing_metadata.service_name
-            if not service_name:
+            service_id = existing_metadata.service_id
+            if not service_name or not service_id:
                 raise RuntimeError(
-                    f"Service name not found in deployment metadata for "
+                    f"Service name or ID not found in deployment metadata for "
                     f"deployment '{deployment.name}'"
                 )
 
             # App Runner automatically creates CloudWatch log groups
-            log_group_name = f"/aws/apprunner/{service_name}/service"
+            log_group_name = (
+                f"/aws/apprunner/{service_name}/{service_id}/application"
+            )
 
             try:
                 streams_response = self.logs_client.describe_log_streams(

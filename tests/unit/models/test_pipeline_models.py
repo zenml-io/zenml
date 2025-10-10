@@ -18,7 +18,7 @@ from pydantic import ValidationError
 
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.models import PipelineRequest
+from zenml.models import PipelineFilter, PipelineRequest
 
 
 def test_pipeline_request_model_fails_with_long_name():
@@ -41,3 +41,26 @@ def test_pipeline_request_model_fails_with_long_docstring():
             docstring=long_docstring,
             spec=PipelineSpec(steps=[]),
         )
+
+
+def test_pipeline_filter_by_latest_execution():
+    f = PipelineFilter()
+
+    assert not f.filter_by_latest_execution
+
+    f = PipelineFilter(latest_run_status="completed")
+
+    assert f.filter_by_latest_execution
+
+    f = PipelineFilter(latest_run_user="test")
+
+    assert f.filter_by_latest_execution
+
+    # make sure latest pipeline run associated fields are not propagated to base table filters.
+
+    latest_run_fields = [
+        "latest_run_status",
+        "latest_run_user",
+    ]
+
+    assert all(field in f.FILTER_EXCLUDE_FIELDS for field in latest_run_fields)
