@@ -103,6 +103,7 @@ class ResourceType(StrEnum):
             VisualizationResourceTypes.PIPELINE: cls.PIPELINE,
             VisualizationResourceTypes.PIPELINE_RUN: cls.PIPELINE_RUN,
             VisualizationResourceTypes.PIPELINE_SNAPSHOT: cls.PIPELINE_SNAPSHOT,
+            VisualizationResourceTypes.PROJECT: cls.PROJECT,
         }
         return mapping.get(visualization_type)
 

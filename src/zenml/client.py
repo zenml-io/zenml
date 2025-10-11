@@ -61,6 +61,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     ColorVariants,
+    CuratedVisualizationSize,
     DeploymentStatus,
     LogicalOperators,
     ModelStages,
@@ -3750,14 +3751,15 @@ class Client(metaclass=ClientMetaClass):
         artifact_version_id: UUID,
         visualization_index: int,
         *,
-        resources: List[CuratedVisualizationResource],
+        resource: CuratedVisualizationResource,
         project_id: Optional[UUID] = None,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
+        size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
     ) -> CuratedVisualizationResponse:
-        """Create a curated visualization associated with arbitrary resources.
+        """Create a curated visualization associated with a resource.
 
-        Curated visualizations can be attached to any combination of the following
+        Curated visualizations can be attached to any of the following
         ZenML resource types to provide contextual dashboards throughout the ML
         lifecycle:
 
@@ -3770,29 +3772,28 @@ class Client(metaclass=ClientMetaClass):
         - **Pipeline Snapshots** (VisualizationResourceTypes.PIPELINE_SNAPSHOT):
           Link to captured pipeline configurations
 
-        A single visualization can be linked to multiple resources across different
-        types. For example, attach a model performance dashboard to both the
-        deployment and the pipeline run that produced the deployed model.
+        Each visualization is linked to exactly one resource.
 
         Args:
             artifact_version_id: The ID of the artifact version containing the visualization.
             visualization_index: The index of the visualization within the artifact version.
-            resources: One or more resources to associate with the visualization.
-                Each entry should be a `CuratedVisualizationResource` containing
+            resource: The resource to associate with the visualization.
+                Should be a `CuratedVisualizationResource` containing
                 the resource ID and type (e.g., DEPLOYMENT, PIPELINE, PIPELINE_RUN,
                 PIPELINE_SNAPSHOT).
             project_id: The ID of the project to associate with the visualization.
             display_name: The display name of the visualization.
             display_order: The display order of the visualization.
+            size: The layout size of the visualization in the dashboard.
 
         Returns:
             The created curated visualization.
 
         Raises:
-            ValueError: If resources list is empty.
+            ValueError: If resource is not provided.
         """
-        if not resources:
-            raise ValueError("resources must not be empty")
+        if not resource:
+            raise ValueError("resource must be provided")
 
         request = CuratedVisualizationRequest(
             project=project_id or self.active_project.id,
@@ -3800,7 +3801,8 @@ class Client(metaclass=ClientMetaClass):
             visualization_index=visualization_index,
             display_name=display_name,
             display_order=display_order,
-            resources=resources,
+            size=size,
+            resource=resource,
         )
         return self.zen_store.create_curated_visualization(request)
 
@@ -3812,6 +3814,7 @@ class Client(metaclass=ClientMetaClass):
         *,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
+        size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
     ) -> CuratedVisualizationResponse:
         """Attach a curated visualization to a deployment.
 
@@ -3821,6 +3824,7 @@ class Client(metaclass=ClientMetaClass):
             visualization_index: The index of the visualization within the artifact version.
             display_name: Optional display name for the visualization.
             display_order: Optional display order for sorting visualizations.
+            size: Layout size defining the visualization width on the dashboard.
 
         Returns:
             The created curated visualization.
@@ -3829,15 +3833,14 @@ class Client(metaclass=ClientMetaClass):
         return self.create_curated_visualization(
             artifact_version_id=artifact_version_id,
             visualization_index=visualization_index,
-            resources=[
-                CuratedVisualizationResource(
-                    id=deployment_id,
-                    type=VisualizationResourceTypes.DEPLOYMENT,
-                )
-            ],
+            resource=CuratedVisualizationResource(
+                id=deployment_id,
+                type=VisualizationResourceTypes.DEPLOYMENT,
+            ),
             project_id=deployment.project_id,
             display_name=display_name,
             display_order=display_order,
+            size=size,
         )
 
     def list_curated_visualizations(
@@ -3855,6 +3858,7 @@ class Client(metaclass=ClientMetaClass):
         size: Optional[int] = None,
         sort_by: Optional[str] = None,
         visualization_index: Optional[int] = None,
+        tile_size: Optional[CuratedVisualizationSize] = None,
         hydrate: bool = False,
     ) -> Page[CuratedVisualizationResponse]:
         """List curated visualizations, optionally scoped to a resource.
@@ -3883,6 +3887,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             sort_by: The column to sort by.
             visualization_index: The index of the visualization to filter by.
+            tile_size: The layout size of the visualization tiles to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3896,18 +3901,30 @@ class Client(metaclass=ClientMetaClass):
         """
         # Build convenience params dict mapping parameter names to (value, resource_type) tuples
         convenience_params = {
-            "deployment_id": (deployment_id, VisualizationResourceTypes.DEPLOYMENT),
+            "deployment_id": (
+                deployment_id,
+                VisualizationResourceTypes.DEPLOYMENT,
+            ),
             "model_id": (model_id, VisualizationResourceTypes.MODEL),
             "pipeline_id": (pipeline_id, VisualizationResourceTypes.PIPELINE),
-            "pipeline_run_id": (pipeline_run_id, VisualizationResourceTypes.PIPELINE_RUN),
-            "pipeline_snapshot_id": (pipeline_snapshot_id, VisualizationResourceTypes.PIPELINE_SNAPSHOT),
+            "pipeline_run_id": (
+                pipeline_run_id,
+                VisualizationResourceTypes.PIPELINE_RUN,
+            ),
+            "pipeline_snapshot_id": (
+                pipeline_snapshot_id,
+                VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+            ),
             "project_id": (project_id, VisualizationResourceTypes.PROJECT),
         }
 
         # Filter to only provided parameters
         provided = {
             param_name: (param_value, param_type)
-            for param_name, (param_value, param_type) in convenience_params.items()
+            for param_name, (
+                param_value,
+                param_type,
+            ) in convenience_params.items()
             if param_value is not None
         }
 
@@ -3961,6 +3978,8 @@ class Client(metaclass=ClientMetaClass):
             filter_model.sort_by = sort_by
         if visualization_index is not None:
             filter_model.visualization_index = visualization_index
+        if tile_size is not None:
+            filter_model.size = tile_size
 
         return self.zen_store.list_curated_visualizations(
             filter_model=filter_model,
@@ -3973,6 +3992,7 @@ class Client(metaclass=ClientMetaClass):
         *,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
+        size: Optional[CuratedVisualizationSize] = None,
     ) -> CuratedVisualizationResponse:
         """Update display metadata for a curated visualization.
 
@@ -3980,6 +4000,7 @@ class Client(metaclass=ClientMetaClass):
             visualization_id: The ID of the curated visualization to update.
             display_name: New display name for the visualization.
             display_order: New display order for the visualization.
+            size: Updated layout size for the visualization.
 
         Returns:
             The updated deployment visualization.
@@ -3987,6 +4008,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = CuratedVisualizationUpdate(
             display_name=display_name,
             display_order=display_order,
+            size=size,
         )
         return self.zen_store.update_curated_visualization(
             visualization_id=visualization_id,

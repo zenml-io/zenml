@@ -5523,6 +5523,10 @@ class SqlZenStore(BaseZenStore):
                 visualization_index=visualization.visualization_index,
             )
 
+            # Validate and fetch the resource
+            resource_request = visualization.resource
+
+            # Map resource types to their corresponding schema classes
             resource_schema_map: Dict[
                 VisualizationResourceTypes, Type[BaseSchema]
             ] = {
@@ -5534,75 +5538,55 @@ class SqlZenStore(BaseZenStore):
                 VisualizationResourceTypes.PROJECT: ProjectSchema,
             }
 
-            # Group resource requests by type for batch fetching
-            resources_by_type: Dict[
-                VisualizationResourceTypes, List[UUID]
-            ] = defaultdict(list)
-            for resource_request in visualization.resources:
-                if resource_request.type not in resource_schema_map:
-                    raise IllegalOperationError(
-                        f"Curated visualizations are not supported for resource type '{resource_request.type.value}'."
-                    )
-                resources_by_type[resource_request.type].append(
-                    resource_request.id
+            if resource_request.type not in resource_schema_map:
+                raise IllegalOperationError(
+                    f"Invalid resource type: {resource_request.type}"
                 )
 
-            # Batch fetch resources by type
-            fetched_resources: Dict[UUID, BaseSchema] = {}
-            for resource_type, resource_ids in resources_by_type.items():
-                schema_class = resource_schema_map[resource_type]
-                schemas = session.exec(
-                    select(schema_class).where(
-                        schema_class.id.in_(resource_ids)
-                    )
-                ).all()
-
-                # Verify all resources were found
-                found_ids = {schema.id for schema in schemas}
-                missing_ids = set(resource_ids) - found_ids
-                if missing_ids:
-                    raise KeyError(
-                        f"Resources of type '{resource_type.value}' with IDs "
-                        f"{missing_ids} not found."
-                    )
-
-                for schema in schemas:
-                    fetched_resources[schema.id] = schema
-
-            # Validate project scope and check for duplicates
-            resources: List[CuratedVisualizationResourceSchema] = []
-            for resource_request in visualization.resources:
-                resource_schema = fetched_resources[resource_request.id]
-
-                resource_project_id = getattr(
-                    resource_schema, "project_id", None
+            # Fetch the single resource schema
+            schema_class = resource_schema_map[resource_request.type]
+            resource_schema = session.exec(
+                select(schema_class).where(
+                    schema_class.id == resource_request.id
                 )
+            ).first()
+
+            if not resource_schema:
+                raise KeyError(
+                    f"Resource of type '{resource_request.type.value}' "
+                    f"with ID {resource_request.id} not found."
+                )
+
+            # Validate project scope for the resource
+            if hasattr(resource_schema, "project_id"):
+                resource_project_id = resource_schema.project_id
                 if resource_project_id and resource_project_id != project_id:
                     raise IllegalOperationError(
-                        "Curated visualizations must reference resources "
-                        "within the same project as the artifact version."
+                        f"Resource {resource_request.type.value} with ID "
+                        f"{resource_request.id} belongs to a different project than "
+                        f"the curated visualization (project ID: {project_id})."
                     )
 
-                self._assert_curated_visualization_duplicate(
-                    session=session,
-                    artifact_version_id=visualization.artifact_version_id,
-                    visualization_index=visualization.visualization_index,
-                    resource_id=resource_request.id,
-                    resource_type=resource_request.type,
-                )
+            # Check for duplicate
+            self._assert_curated_visualization_duplicate(
+                session=session,
+                artifact_version_id=visualization.artifact_version_id,
+                visualization_index=visualization.visualization_index,
+                resource_id=resource_request.id,
+                resource_type=resource_request.type,
+            )
 
-                resources.append(
-                    CuratedVisualizationResourceSchema(
-                        resource_id=resource_request.id,
-                        resource_type=resource_request.type.value,
-                    )
-                )
+            # Create the resource link
+            resource = CuratedVisualizationResourceSchema(
+                resource_id=resource_request.id,
+                resource_type=resource_request.type.value,
+            )
 
             schema: CuratedVisualizationSchema = (
                 CuratedVisualizationSchema.from_request(visualization)
             )
             schema.project_id = project_id
-            schema.resources = resources
+            schema.resource = resource
 
             session.add(schema)
             session.commit()

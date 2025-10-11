@@ -59,7 +59,6 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.curated_visualization_schemas import (
-    CuratedVisualizationResourceSchema,
     CuratedVisualizationSchema,
     curated_visualization_relationship_kwargs,
 )
@@ -167,7 +166,9 @@ class ModelSchema(NamedSchema, table=True):
                 [
                     joinedload(jl_arg(ModelSchema.user)),
                     # joinedload(jl_arg(ModelSchema.tags)),
-                    selectinload(jl_arg(ModelSchema.visualizations)).selectinload(
+                    selectinload(
+                        jl_arg(ModelSchema.visualizations)
+                    ).selectinload(
                         jl_arg(CuratedVisualizationSchema.artifact_version)
                     ),
                 ]

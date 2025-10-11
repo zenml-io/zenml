@@ -24,9 +24,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from zenml.enums import VisualizationResourceTypes
+from zenml.enums import (
+    CuratedVisualizationSize,
+    VisualizationResourceTypes,
+)
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
@@ -56,8 +59,8 @@ if TYPE_CHECKING:
 class CuratedVisualizationRequest(ProjectScopedRequest):
     """Request model for curated visualizations.
 
-    Curated visualizations can be attached to any combination of the following
-    resource types:
+    Each curated visualization is linked to exactly one resource of the following
+    types:
     - **Deployments**: Surface visualizations on deployment dashboards
     - **Models**: Highlight evaluation dashboards and monitoring views next to
       registered models
@@ -66,10 +69,8 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
     - **Pipeline Snapshots**: Link visualizations to snapshot configurations
     - **Projects**: Provide high-level project dashboards and KPI overviews
 
-    A single visualization can be linked to multiple resources of different types,
-    enabling reuse across the ML workflow. For example, a model performance
-    dashboard could be attached to both a deployment and the pipeline run that
-    produced the deployed model.
+    To attach a visualization to multiple resources, create separate curated
+    visualization entries for each resource.
     """
 
     artifact_version_id: UUID = Field(
@@ -89,32 +90,21 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
         default=None,
         title="The display order of the visualization.",
     )
-    resources: List[CuratedVisualizationResource] = Field(
-        title="Resources associated with this visualization.",
+    size: CuratedVisualizationSize = Field(
+        default=CuratedVisualizationSize.FULL_WIDTH,
+        title="The layout size of the visualization.",
         description=(
-            "List of resources (deployments, models, pipelines, pipeline runs, "
-            "pipeline snapshots, projects) that should surface this visualization. "
-            "Must include at least one resource. Multiple resources of "
-            "different types can be specified to reuse visualizations "
-            "across the ML workflow."
+            "Controls how much horizontal space the visualization occupies "
+            "on the dashboard."
         ),
     )
-
-    @model_validator(mode="after")
-    def validate_resources(self) -> "CuratedVisualizationRequest":
-        """Ensure that at least one resource is associated with the visualization.
-
-        Returns:
-            The validated request instance.
-
-        Raises:
-            ValueError: If no resources are provided.
-        """
-        if not self.resources:
-            raise ValueError(
-                "Curated visualizations must be associated with at least one resource."
-            )
-        return self
+    resource: CuratedVisualizationResource = Field(
+        title="Resource associated with this visualization.",
+        description=(
+            "The single resource (deployment, model, pipeline, pipeline run, "
+            "pipeline snapshot, or project) that should surface this visualization."
+        ),
+    )
 
 
 # ------------------ Update Model ------------------
@@ -130,6 +120,10 @@ class CuratedVisualizationUpdate(BaseUpdate):
     display_order: Optional[int] = Field(
         default=None,
         title="The new display order of the visualization.",
+    )
+    size: Optional[CuratedVisualizationSize] = Field(
+        default=None,
+        title="The updated layout size of the visualization.",
     )
 
 
@@ -155,9 +149,9 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The display order of the visualization.",
     )
-    resources: List[CuratedVisualizationResource] = Field(
-        default_factory=list,
-        title="Resources exposing the visualization.",
+    size: CuratedVisualizationSize = Field(
+        default=CuratedVisualizationSize.FULL_WIDTH,
+        title="The layout size of the visualization.",
     )
 
 
@@ -233,6 +227,15 @@ class CuratedVisualizationResponse(
         return self.get_body().display_order
 
     @property
+    def size(self) -> CuratedVisualizationSize:
+        """The layout size of the visualization.
+
+        Returns:
+            The layout size of the visualization.
+        """
+        return self.get_body().size
+
+    @property
     def artifact_version(self) -> Optional["ArtifactVersionResponse"]:
         """The artifact version resource.
 
@@ -240,14 +243,6 @@ class CuratedVisualizationResponse(
             The artifact version resource if included.
         """
         return self.get_resources().artifact_version
-
-    def visualization_resources(self) -> List[CuratedVisualizationResource]:
-        """Return the resources exposing this visualization.
-
-        Returns:
-            List of associated resources.
-        """
-        return self.get_body().resources
 
 
 # ------------------ Filter Model ------------------
@@ -285,6 +280,10 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
     display_order: Optional[int] = Field(
         default=None,
         description="Display order of the visualization.",
+    )
+    size: Optional[CuratedVisualizationSize] = Field(
+        default=None,
+        description="Layout size of the visualization.",
     )
     resource_type: Optional[VisualizationResourceTypes] = Field(
         default=None,
@@ -364,6 +363,8 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
             custom_filters.append(
                 getattr(table, "display_order") == self.display_order
             )
+        if self.size is not None:
+            custom_filters.append(getattr(table, "size") == self.size)
 
         # resource-based filtering is handled within the store implementation
         return custom_filters

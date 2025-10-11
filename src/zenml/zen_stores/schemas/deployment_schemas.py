@@ -41,6 +41,9 @@ from zenml.models.v2.core.deployment import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.curated_visualization_schemas import (
+    curated_visualization_relationship_kwargs,
+)
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     PipelineSnapshotSchema,
 )
@@ -54,10 +57,6 @@ if TYPE_CHECKING:
         CuratedVisualizationSchema,
     )
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
-
-from zenml.zen_stores.schemas.curated_visualization_schemas import (
-    curated_visualization_relationship_kwargs,
-)
 
 logger = get_logger(__name__)
 

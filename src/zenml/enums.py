@@ -446,6 +446,13 @@ class VisualizationResourceTypes(StrEnum):
     PROJECT = "project"  # Project-level dashboards
 
 
+class CuratedVisualizationSize(StrEnum):
+    """Layout size options for curated visualizations."""
+
+    FULL_WIDTH = "full_width"
+    HALF_WIDTH = "half_width"
+
+
 class SecretResourceTypes(StrEnum):
     """All possible resource types for adding secrets."""
 

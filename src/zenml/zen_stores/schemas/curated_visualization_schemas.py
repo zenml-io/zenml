@@ -21,7 +21,7 @@ from sqlalchemy.orm import foreign, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import VisualizationResourceTypes
+from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
 from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
@@ -29,9 +29,6 @@ from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationResponseMetadata,
     CuratedVisualizationResponseResources,
     CuratedVisualizationUpdate,
-)
-from zenml.models.v2.misc.curated_visualization import (
-    CuratedVisualizationResource,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -52,8 +49,6 @@ class CuratedVisualizationResourceSchema(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint(
             "visualization_id",
-            "resource_id",
-            "resource_type",
             name="unique_curated_visualization_resource",
         ),
         build_index(__tablename__, ["resource_id", "resource_type"]),
@@ -72,7 +67,7 @@ class CuratedVisualizationResourceSchema(SQLModel, table=True):
     resource_type: str = Field(nullable=False)
 
     visualization: "CuratedVisualizationSchema" = Relationship(
-        back_populates="resources",
+        back_populates="resource",
     )
 
 
@@ -107,13 +102,17 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     visualization_index: int = Field(nullable=False)
     display_name: Optional[str] = Field(default=None)
     display_order: Optional[int] = Field(default=None)
+    size: CuratedVisualizationSize = Field(
+        default=CuratedVisualizationSize.FULL_WIDTH, nullable=False
+    )
 
     artifact_version: Optional["ArtifactVersionSchema"] = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"}
     )
-    resources: List[CuratedVisualizationResourceSchema] = Relationship(
+    resource: Optional[CuratedVisualizationResourceSchema] = Relationship(
         back_populates="visualization",
         sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete"},
+        uselist=False,
     )
 
     @classmethod
@@ -141,7 +140,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             options.extend(
                 [
                     selectinload(jl_arg(cls.artifact_version)),
-                    selectinload(jl_arg(cls.resources)),
+                    selectinload(jl_arg(cls.resource)),
                 ]
             )
 
@@ -165,6 +164,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=request.visualization_index,
             display_name=request.display_name,
             display_order=request.display_order,
+            size=request.size,
         )
 
     def update(
@@ -206,14 +206,6 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         Returns:
             The created response model.
         """
-        resources = [
-            CuratedVisualizationResource(
-                id=resource.resource_id,
-                type=VisualizationResourceTypes(resource.resource_type),
-            )
-            for resource in self.resources
-        ]
-
         body = CuratedVisualizationResponseBody(
             project_id=self.project_id,
             created=self.created,
@@ -222,7 +214,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=self.visualization_index,
             display_name=self.display_name,
             display_order=self.display_order,
-            resources=resources,
+            size=self.size,
         )
 
         metadata = None
@@ -270,14 +262,20 @@ def curated_visualization_relationship_kwargs(
         The relationship will be read-only (viewonly=True) and eagerly loaded
         via selectin loading.
     """
+
     def _primaryjoin():
         return and_(
-            CuratedVisualizationResourceSchema.resource_type == resource_type.value,
-            foreign(CuratedVisualizationResourceSchema.resource_id) == parent_column_factory(),
+            CuratedVisualizationResourceSchema.resource_type
+            == resource_type.value,
+            foreign(CuratedVisualizationResourceSchema.resource_id)
+            == parent_column_factory(),
         )
 
     def _secondaryjoin():
-        return CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id
+        return (
+            CuratedVisualizationSchema.id
+            == CuratedVisualizationResourceSchema.visualization_id
+        )
 
     return dict(
         secondary="curated_visualization_resource",

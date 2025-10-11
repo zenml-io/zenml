@@ -67,7 +67,9 @@ There are three ways how you can add custom visualizations to the dashboard:
 
 ### Curated Visualizations Across Resources
 
-Curated visualizations let you surface a specific artifact visualization across multiple ZenML resources. This is useful when you want to highlight the same dashboard in several places—for example, a model performance report that should be visible from the project overview, the training run, and the production deployment.
+Curated visualizations let you surface a specific artifact visualization across multiple ZenML resources. Each curated visualization links to exactly one resource—for example, a model performance report that appears on the model detail page, or a deployment health dashboard that shows up in the deployment view.
+
+To cover multiple resources with the same visualization, create separate curated visualizations for each resource type. This gives you fine-grained control over which dashboards appear where.
 
 Curated visualizations currently support the following resources:
 
@@ -78,13 +80,16 @@ Curated visualizations currently support the following resources:
 - **Pipeline Runs** – detailed diagnostics for specific executions.
 - **Pipeline Snapshots** – configuration/version comparisons for snapshot history.
 
-You can create a curated visualization programmatically by linking an artifact visualization to one or more resources. The example below attaches a single visualization to multiple resource types, including a project:
+You can create a curated visualization programmatically by linking an artifact visualization to a single resource. The example below shows how to create separate visualizations for different resource types:
 
 ```python
 from uuid import UUID
 
 from zenml.client import Client
-from zenml.enums import VisualizationResourceTypes
+from zenml.enums import (
+    CuratedVisualizationSize,
+    VisualizationResourceTypes,
+)
 from zenml.models import CuratedVisualizationResource
 
 client = Client()
@@ -96,20 +101,44 @@ snapshot = pipeline_run.snapshot()
 deployment = client.list_deployments().items[0]
 model = client.list_models().items[0]
 
-visualization = client.create_curated_visualization(
+# Create a visualization for the model
+model_viz = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resources=[
-        CuratedVisualizationResource(id=model.id, type=VisualizationResourceTypes.MODEL),
-        CuratedVisualizationResource(id=project.id, type=VisualizationResourceTypes.PROJECT),
-        CuratedVisualizationResource(id=deployment.id, type=VisualizationResourceTypes.DEPLOYMENT),
-        CuratedVisualizationResource(id=pipeline.id, type=VisualizationResourceTypes.PIPELINE),
-        CuratedVisualizationResource(id=pipeline_run.id, type=VisualizationResourceTypes.PIPELINE_RUN),
-        CuratedVisualizationResource(id=snapshot.id, type=VisualizationResourceTypes.PIPELINE_SNAPSHOT),
-    ],
-    display_name="Project performance dashboard",
+    resource=CuratedVisualizationResource(
+        id=model.id,
+        type=VisualizationResourceTypes.MODEL
+    ),
+    display_name="Model performance dashboard",
+    size=CuratedVisualizationSize.FULL_WIDTH,
+)
+
+# Create a visualization for the deployment
+deployment_viz = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=0,
+    resource=CuratedVisualizationResource(
+        id=deployment.id,
+        type=VisualizationResourceTypes.DEPLOYMENT
+    ),
+    display_name="Deployment health dashboard",
+    size=CuratedVisualizationSize.HALF_WIDTH,
+)
+
+# Create a visualization for the project
+project_viz = client.create_curated_visualization(
+    artifact_version_id=artifact_version_id,
+    visualization_index=0,
+    resource=CuratedVisualizationResource(
+        id=project.id,
+        type=VisualizationResourceTypes.PROJECT
+    ),
+    display_name="Project overview dashboard",
+    size=CuratedVisualizationSize.FULL_WIDTH,
 )
 ```
+
+Note that each visualization is created separately and can reference the same artifact visualization (by using the same `artifact_version_id` and `visualization_index`). This allows you to show the same underlying visualization in multiple contexts while maintaining separate display settings for each resource. Use the optional `size` argument to control whether the visualization spans the full width of the dashboard or renders as a half-width tile. If omitted, the layout defaults to `CuratedVisualizationSize.FULL_WIDTH`.
 
 To list curated visualizations for a specific resource, you can use the `Client.list_curated_visualizations` convenience parameters:
 
@@ -126,7 +155,7 @@ Each call returns a `Page[CuratedVisualizationResponse]` object so you can itera
 
 #### Updating curated visualizations
 
-Once you've created a curated visualization, you can update its display name or order using `Client.update_curated_visualization`:
+Once you've created a curated visualization, you can update its display name, order, or tile size using `Client.update_curated_visualization`:
 
 ```python
 from uuid import UUID
@@ -135,6 +164,7 @@ client.update_curated_visualization(
     visualization_id=UUID("<CURATED_VISUALIZATION_ID>"),
     display_name="Updated Dashboard Title",
     display_order=10,
+    size=CuratedVisualizationSize.HALF_WIDTH,
 )
 ```
 
@@ -144,7 +174,7 @@ When a visualization is no longer relevant, you can remove it entirely:
 client.delete_curated_visualization(visualization_id=UUID("<CURATED_VISUALIZATION_ID>"))
 ```
 
-#### Controlling display order
+#### Controlling display order and size
 
 The optional `display_order` field determines how visualizations are sorted when displayed. Visualizations with lower order values appear first, while those with `None` (the default) appear at the end in creation order.
 
@@ -155,31 +185,43 @@ When setting display orders, consider leaving gaps between values (e.g., 10, 20,
 visualization_a = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resources=[...],
+    resource=CuratedVisualizationResource(
+        id=model.id,
+        type=VisualizationResourceTypes.MODEL
+    ),
     display_order=10,  # Primary dashboard
+    size=CuratedVisualizationSize.FULL_WIDTH,
 )
 
 visualization_b = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=1,
-    resources=[...],
+    resource=CuratedVisualizationResource(
+        id=model.id,
+        type=VisualizationResourceTypes.MODEL
+    ),
     display_order=20,  # Secondary metrics
+    size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
 )
 
 # Later, easily insert between them
 visualization_c = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=2,
-    resources=[...],
+    resource=CuratedVisualizationResource(
+        id=model.id,
+        type=VisualizationResourceTypes.MODEL
+    ),
     display_order=15,  # Now appears between A and B
+    size=CuratedVisualizationSize.HALF_WIDTH,
 )
 ```
 
 #### RBAC visibility
 
-Curated visualizations respect the access permissions of every resource they're linked to. A user can only see a curated visualization if they have read access to **all** the resources it targets. If a user lacks permission for any linked resource, the visualization will be hidden from their view.
+Curated visualizations respect the access permissions of the resource they're linked to. A user can only see a curated visualization if they have read access to the specific resource it targets. If a user lacks permission for the linked resource, the visualization will be hidden from their view.
 
-For example, if you create a visualization linked to both a project and a deployment, users must have read access to both the project and that specific deployment to see the visualization. This ensures that curated visualizations never inadvertently expose information from resources a user shouldn't access.
+For example, if you create a visualization linked to a specific deployment, only users with read access to that deployment will see the visualization. If you need the same visualization to appear in different contexts with different access controls (e.g., on both a project page and a deployment page), create separate curated visualizations for each resource. This ensures that visualizations never inadvertently expose information from resources a user shouldn't access, while giving you fine-grained control over visibility.
 
 ### Visualization via Special Return Types
 

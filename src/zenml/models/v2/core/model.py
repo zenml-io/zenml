@@ -206,14 +206,6 @@ class ModelResponse(
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    def visualizations(self) -> List["CuratedVisualizationResponse"]:
-        """Return curated visualizations linked to the model.
-
-        Returns:
-            A list of curated visualization responses.
-        """
-        return self.get_resources().visualizations
-
     def get_hydrated_version(self) -> "ModelResponse":
         """Get the hydrated version of this model.
 
@@ -323,6 +315,15 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_metadata().save_models_to_registry
+
+    @property
+    def visualizations(self) -> List["CuratedVisualizationResponse"]:
+        """The `visualizations` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().visualizations
 
     # Helper functions
     @property
