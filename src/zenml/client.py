@@ -3979,7 +3979,7 @@ class Client(metaclass=ClientMetaClass):
         if visualization_index is not None:
             filter_model.visualization_index = visualization_index
         if tile_size is not None:
-            filter_model.size = tile_size
+            filter_model.tile_size = tile_size
 
         return self.zen_store.list_curated_visualizations(
             filter_model=filter_model,

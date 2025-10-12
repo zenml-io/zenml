@@ -16,8 +16,8 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence
 from uuid import UUID, uuid4
 
-from sqlalchemy import UniqueConstraint, and_
-from sqlalchemy.orm import foreign, selectinload
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -111,8 +111,11 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     )
     resource: Optional[CuratedVisualizationResourceSchema] = Relationship(
         back_populates="visualization",
-        sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete"},
-        uselist=False,
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "cascade": "all, delete",
+            "uselist": False,
+        },
     )
 
     @classmethod
@@ -262,25 +265,33 @@ def curated_visualization_relationship_kwargs(
         The relationship will be read-only (viewonly=True) and eagerly loaded
         via selectin loading.
     """
+    # Resolve the parent column to extract class and attribute names
+    parent_column = parent_column_factory()
+    parent_class = getattr(parent_column, "class_", None)
+    parent_attribute = getattr(parent_column, "key", None)
 
-    def _primaryjoin():
-        return and_(
-            CuratedVisualizationResourceSchema.resource_type
-            == resource_type.value,
-            foreign(CuratedVisualizationResourceSchema.resource_id)
-            == parent_column_factory(),
+    if parent_class is None or parent_attribute is None:
+        raise ValueError(
+            "parent_column_factory must return an InstrumentedAttribute "
+            "with `class_` and `key` attributes."
         )
 
-    def _secondaryjoin():
-        return (
-            CuratedVisualizationSchema.id
-            == CuratedVisualizationResourceSchema.visualization_id
-        )
-
-    return dict(
-        secondary="curated_visualization_resource",
-        primaryjoin=_primaryjoin,
-        secondaryjoin=_secondaryjoin,
-        viewonly=True,
-        lazy="selectin",
+    # Build string expressions for primaryjoin and secondaryjoin
+    # These strings are evaluated by SQLAlchemy at relationship configuration time
+    parent_class_name = parent_class.__name__
+    primaryjoin_str = (
+        f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{resource_type.value}', "
+        f"foreign(CuratedVisualizationResourceSchema.resource_id)=={parent_class_name}.{parent_attribute})"
     )
+    secondaryjoin_str = (
+        "CuratedVisualizationSchema.id == "
+        "CuratedVisualizationResourceSchema.visualization_id"
+    )
+
+    return {
+        "secondary": "curated_visualization_resource",
+        "primaryjoin": primaryjoin_str,
+        "secondaryjoin": secondaryjoin_str,
+        "viewonly": True,
+        "lazy": "selectin",
+    }

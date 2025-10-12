@@ -5643,9 +5643,10 @@ class SqlZenStore(BaseZenStore):
 
             query = select(CuratedVisualizationSchema)
             if filter_model.resource_type or filter_model.resource_id:
-                resource_alias: AliasedClass[
-                    CuratedVisualizationResourceSchema
-                ] = aliased(CuratedVisualizationResourceSchema)
+                resource_alias = cast(
+                    AliasedClass[CuratedVisualizationResourceSchema],
+                    aliased(CuratedVisualizationResourceSchema),
+                )
                 query = query.join(
                     resource_alias,
                     resource_alias.visualization_id
