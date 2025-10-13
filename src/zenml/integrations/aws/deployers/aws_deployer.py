@@ -44,9 +44,7 @@ from zenml.deployers.exceptions import (
     DeploymentProvisionError,
 )
 from zenml.deployers.server.entrypoint_configuration import (
-    AUTH_KEY_OPTION,
     DEPLOYMENT_ID_OPTION,
-    PORT_OPTION,
     DeploymentEntrypointConfiguration,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
@@ -1285,8 +1283,6 @@ class AWSDeployer(ContainerizedDeployer):
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 DEPLOYMENT_ID_OPTION: deployment.id,
-                PORT_OPTION: settings.port,
-                AUTH_KEY_OPTION: deployment.auth_key,
             }
         )
 
@@ -1312,8 +1308,9 @@ class AWSDeployer(ContainerizedDeployer):
                 f"deploying to App Runner."
             )
 
+        container_port = snapshot.pipeline_configuration.deployment_settings.uvicorn_port
         image_config: Dict[str, Any] = {
-            "Port": str(settings.port),
+            "Port": str(container_port),
             "StartCommand": " ".join(entrypoint + arguments),
         }
 

@@ -53,9 +53,7 @@ from zenml.deployers.exceptions import (
     DeploymentProvisionError,
 )
 from zenml.deployers.server.entrypoint_configuration import (
-    AUTH_KEY_OPTION,
     DEPLOYMENT_ID_OPTION,
-    PORT_OPTION,
     DeploymentEntrypointConfiguration,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
@@ -302,10 +300,7 @@ class DockerDeployer(ContainerizedDeployer):
 
         entrypoint_kwargs = {
             DEPLOYMENT_ID_OPTION: deployment.id,
-            PORT_OPTION: 8000,
         }
-        if deployment.auth_key:
-            entrypoint_kwargs[AUTH_KEY_OPTION] = deployment.auth_key
 
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **entrypoint_kwargs
@@ -367,7 +362,8 @@ class DockerDeployer(ContainerizedDeployer):
             range=settings.port_range,
             address="0.0.0.0",  # nosec
         )
-        ports: Dict[str, Optional[int]] = {"8000/tcp": port}
+        container_port = snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        ports: Dict[str, Optional[int]] = {f"{container_port}/tcp": port}
 
         uid_args: Dict[str, Any] = {}
         if sys.platform == "win32":

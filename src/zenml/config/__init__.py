@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Config classes."""
+from zenml.config.deployment_settings import DeploymentSettings
 from zenml.config.docker_settings import (
     DockerSettings,
     PythonPackageInstaller,
@@ -24,6 +25,7 @@ from zenml.config.store_config import StoreConfiguration
 from zenml.config.cache_policy import CachePolicy
 
 __all__ = [
+    "DeploymentSettings",
     "DockerSettings",
     "PythonPackageInstaller",
     "PythonEnvironmentExportMethod",

@@ -153,35 +153,3 @@ class ExecutionMetrics(BaseModel):
         default=None, title="The time of the last pipeline execution."
     )
 
-
-def get_pipeline_invoke_models(
-    service: "PipelineDeploymentService",
-) -> Tuple[Type[BaseModel], Type[BaseModel]]:
-    """Generate the request and response models for the pipeline invoke endpoint.
-
-    Args:
-        service: The pipeline deployment service.
-
-    Returns:
-        A tuple containing the request and response models.
-    """
-    if TYPE_CHECKING:
-        # mypy has a difficult time with dynamic models, so we return something
-        # static for mypy to use
-        return BaseModel, BaseModel
-
-    else:
-
-        class PipelineInvokeRequest(BaseDeploymentInvocationRequest):
-            parameters: Annotated[
-                service.input_model,
-                WithJsonSchema(service.input_schema, mode="validation"),
-            ]
-
-        class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
-            outputs: Annotated[
-                Optional[Dict[str, Any]],
-                WithJsonSchema(service.output_schema, mode="serialization"),
-            ]
-
-        return PipelineInvokeRequest, PipelineInvokeResponse

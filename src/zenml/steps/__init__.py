@@ -26,14 +26,12 @@ Steps can be subclassed from the `BaseStep` class, or used via our `@step`
 decorator.
 """
 
-from zenml.config import ResourceSettings
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_context import StepContext, get_step_context
 from zenml.steps.step_decorator import step
 
 __all__ = [
     "BaseStep",
-    "ResourceSettings",
     "StepContext",
     "step",
     "get_step_context"
