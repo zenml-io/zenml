@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Dict, List, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models import PipelineSnapshotResponse
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -79,6 +80,16 @@ class BaseStepOperator(StackComponent, ABC):
             environment: Environment variables to set in the step operator
                 environment.
         """
+
+    @abstractmethod
+    def run_dynamic_pipeline(
+        self,
+        command: List[str],
+        snapshot: "PipelineSnapshotResponse",
+        environment: Dict[str, str],
+        sync: bool = False,
+    ) -> None:
+        pass
 
 
 class BaseStepOperatorFlavor(Flavor):

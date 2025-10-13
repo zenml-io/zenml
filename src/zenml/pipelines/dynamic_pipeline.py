@@ -27,6 +27,8 @@ from typing import (
 from pydantic import ConfigDict, ValidationError
 from typing_extensions import Self
 
+from zenml import constants
+from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.logger import get_logger
 from zenml.models import (
@@ -126,6 +128,22 @@ class DynamicPipeline(Pipeline):
             `entrypoint` method. Otherwise, returns the pipeline run or `None`
             if running with a schedule.
         """
+        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
+            # An environment variable was set to stop the execution of
+            # pipelines. This is done to prevent execution of module-level
+            # pipeline.run() calls when importing modules needed to run a step.
+            logger.info(
+                "Preventing execution of pipeline '%s'. If this is not "
+                "intended behavior, make sure to unset the environment "
+                "variable '%s'.",
+                self.name,
+                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+            )
+            return None
+
+        from zenml.pipelines.dynamic_pipeline_entrypoint_configuration import (
+            DynamicPipelineEntrypointConfiguration,
+        )
         from zenml.pipelines.dynamic_pipeline_runtime import (
             get_pipeline_runtime,
             initialize_runtime,
@@ -135,9 +153,26 @@ class DynamicPipeline(Pipeline):
             self._call_entrypoint(*args, **kwargs)
         else:
             snapshot = self._create_snapshot(**self._run_args)
-            initialize_runtime(pipeline=self, snapshot=snapshot)
-            self._call_entrypoint(*args, **kwargs)
-            # TODO: somehow trigger step operator?
+            stack = Client().active_stack
+
+            if step_operator := stack.step_operator:
+                command = (
+                    DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+                    + DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+                        snapshot_id=snapshot.id
+                    )
+                )
+                from zenml.orchestrators.utils import (
+                    get_config_environment_vars,
+                )
+
+                environment = get_config_environment_vars()
+                step_operator.run_dynamic_pipeline(
+                    command=command, snapshot=snapshot, environment=environment
+                )
+            else:
+                initialize_runtime(pipeline=self, snapshot=snapshot)
+                self._call_entrypoint(*args, **kwargs)
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.

@@ -43,7 +43,7 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 
@@ -128,6 +128,13 @@ class KubernetesStepOperator(BaseStepOperator):
             The required Docker builds.
         """
         builds = []
+        # TODO: only needed for dynamic pipelines
+        build = BuildConfiguration(
+            key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY,
+            settings=snapshot.pipeline_configuration.docker_settings,
+        )
+        builds.append(build)
+
         for step_name, step in snapshot.step_configurations.items():
             if step.config.uses_step_operator(self.name):
                 build = BuildConfiguration(
@@ -286,3 +293,77 @@ class KubernetesStepOperator(BaseStepOperator):
             stream_logs=True,
         )
         logger.info("Step operator job completed.")
+
+    def run_dynamic_pipeline(
+        self,
+        command: List[str],
+        snapshot: "PipelineSnapshotResponse",
+        environment: Dict[str, str],
+        sync: bool = False,
+    ) -> None:
+        settings = self.get_settings(snapshot)
+        command = command[:3]
+        args = command[3:]
+
+        image = snapshot.build.get_image(
+            component_key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
+        )
+
+        # We set some default minimum memory resource requests for the step pod
+        # here if the user has not specified any, because the step pod takes up
+        # some memory resources itself and, if not specified, the pod will be
+        # scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = kube_utils.apply_default_resource_requests(
+            memory="400Mi",
+            pod_settings=settings.pod_settings,
+        )
+
+        pod_manifest = build_pod_manifest(
+            pod_name=None,
+            image_name=image,
+            command=command,
+            args=args,
+            env=environment,
+            privileged=settings.privileged,
+            pod_settings=pod_settings,
+            service_account_name=settings.service_account_name,
+        )
+
+        job_name = settings.job_name_prefix or ""
+        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        job_name += f"-{random_prefix}-step-operator"
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        job_manifest = build_job_manifest(
+            job_name=job_name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            # The orchestrator already handles retries, so we don't need to
+            # retry the step operator job.
+            backoff_limit=0,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+        )
+
+        kube_utils.create_job(
+            batch_api=self._k8s_batch_api,
+            namespace=self.config.kubernetes_namespace,
+            job_manifest=job_manifest,
+        )
+
+        if sync:
+            logger.info(
+                "Waiting for step operator job `%s` to finish...",
+                job_name,
+            )
+            kube_utils.wait_for_job_to_finish(
+                batch_api=self._k8s_batch_api,
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                job_name=job_name,
+                fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                stream_logs=True,
+            )
+            logger.info("Step operator job completed.")

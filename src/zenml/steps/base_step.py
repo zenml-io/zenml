@@ -483,7 +483,6 @@ class BaseStep:
 
         if runtime := get_pipeline_runtime():
             # We're executing a dynamic pipeline at the moment
-            # TODO: this should call a step operator in the non-local case
 
             # How should we get some configured params etc here? They're not
             # compiled into the snapshot at the moment, is this just not
@@ -512,6 +511,9 @@ class BaseStep:
             # compile
             from zenml.client import Client
             from zenml.config.compiler import Compiler
+
+            if Client().active_stack.step_operator:
+                self.configure(step_operator=True)
 
             invocation_id = runtime.pipeline.add_step_invocation(
                 step=self,
