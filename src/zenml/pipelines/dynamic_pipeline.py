@@ -164,7 +164,7 @@ class DynamicPipeline(Pipeline):
                 "Check out the pydantic error above for more details."
             ) from e
 
-        return_value = self.entrypoint(**validated_args)
+        self.entrypoint(**validated_args)
 
     def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
         """Computes the output schema for the pipeline.

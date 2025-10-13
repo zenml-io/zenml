@@ -545,7 +545,21 @@ class BaseStep:
                 orchestrator_run_id=runtime.orchestrator_run_id,
             )
             launcher.launch()
-            return
+
+            step_run = launcher._step_run
+            assert step_run
+
+            outputs = (
+                Client().zen_store.get_run_step(step_run.id).regular_outputs
+            )
+            output_values = [output.load() for output in outputs.values()]
+
+            if len(output_values) == 0:
+                return None
+            elif len(output_values) == 1:
+                return output_values[0]
+            else:
+                return tuple(output_values)
 
         if not Pipeline.ACTIVE_PIPELINE:
             from zenml import constants, get_step_context
