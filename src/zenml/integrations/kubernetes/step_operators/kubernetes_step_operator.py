@@ -302,8 +302,7 @@ class KubernetesStepOperator(BaseStepOperator):
         sync: bool = False,
     ) -> None:
         settings = self.get_settings(snapshot)
-        command = command[:3]
-        args = command[3:]
+        command, args = command[:3], command[3:]
 
         image = snapshot.build.get_image(
             component_key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY

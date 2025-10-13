@@ -128,19 +128,6 @@ class DynamicPipeline(Pipeline):
             `entrypoint` method. Otherwise, returns the pipeline run or `None`
             if running with a schedule.
         """
-        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-            # An environment variable was set to stop the execution of
-            # pipelines. This is done to prevent execution of module-level
-            # pipeline.run() calls when importing modules needed to run a step.
-            logger.info(
-                "Preventing execution of pipeline '%s'. If this is not "
-                "intended behavior, make sure to unset the environment "
-                "variable '%s'.",
-                self.name,
-                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-            )
-            return None
-
         from zenml.pipelines.dynamic_pipeline_entrypoint_configuration import (
             DynamicPipelineEntrypointConfiguration,
         )
@@ -149,9 +136,16 @@ class DynamicPipeline(Pipeline):
             initialize_runtime,
         )
 
-        if get_pipeline_runtime():
+        should_prevent_execution = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
+        runtime = get_pipeline_runtime()
+
+        if runtime and runtime.pipeline is self:
             self._call_entrypoint(*args, **kwargs)
+            # TODO: update run status to completed
+        elif should_prevent_execution:
+            logger.warning("Preventing execution of pipeline '%s'.", self.name)
         else:
+            # Client-side, either execute locally or run with step operator
             snapshot = self._create_snapshot(**self._run_args)
             stack = Client().active_stack
 
@@ -166,13 +160,17 @@ class DynamicPipeline(Pipeline):
                     get_config_environment_vars,
                 )
 
-                environment = get_config_environment_vars()
+                environment, secrets = get_config_environment_vars()
+                environment.update(secrets)
                 step_operator.run_dynamic_pipeline(
-                    command=command, snapshot=snapshot, environment=environment
+                    command=command,
+                    snapshot=snapshot,
+                    environment=environment,
                 )
             else:
                 initialize_runtime(pipeline=self, snapshot=snapshot)
                 self._call_entrypoint(*args, **kwargs)
+                # TODO: update run status to completed
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.

@@ -224,7 +224,8 @@ def get_pipeline_run_status(
 
     # Any other state is completed
     else:
-        return ExecutionStatus.COMPLETED
+        # In dynamic pipelines, the amount of steps isn't known ahead of time
+        return ExecutionStatus.RUNNING
 
 
 def publish_pipeline_run_metadata(

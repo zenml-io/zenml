@@ -762,6 +762,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if not run_status.is_finished:
             return True
 
+        # Can't rely on DAG in dynamic case
+        return True
+
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 
