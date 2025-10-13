@@ -634,7 +634,10 @@ class Compiler:
         Raises:
             ValueError: If the pipeline has no steps.
         """
-        if not step_specs:
+        from zenml.pipelines.dynamic_pipeline import DynamicPipeline
+
+        if not step_specs and not isinstance(pipeline, DynamicPipeline):
+            # Static pipelines require at least one step
             raise ValueError(
                 f"Pipeline '{pipeline.name}' cannot be compiled because it has "
                 f"no steps. Please make sure that your steps are decorated "

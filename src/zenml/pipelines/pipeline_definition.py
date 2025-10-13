@@ -1357,18 +1357,19 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The step invocation ID.
         """
-        if Pipeline.ACTIVE_PIPELINE != self:
-            raise RuntimeError(
-                "A step invocation can only be added to an active pipeline."
-            )
+        # TODO: reenable for static pipelines
+        # if Pipeline.ACTIVE_PIPELINE != self:
+        #     raise RuntimeError(
+        #         "A step invocation can only be added to an active pipeline."
+        #     )
 
-        for artifact in input_artifacts.values():
-            if artifact.pipeline is not self:
-                raise RuntimeError(
-                    "Got invalid input artifact for invocation of step "
-                    f"{step.name}: The input artifact was produced by a step "
-                    f"inside a different pipeline {artifact.pipeline.name}."
-                )
+        # for artifact in input_artifacts.values():
+        #     if artifact.pipeline is not self:
+        #         raise RuntimeError(
+        #             "Got invalid input artifact for invocation of step "
+        #             f"{step.name}: The input artifact was produced by a step "
+        #             f"inside a different pipeline {artifact.pipeline.name}."
+        #         )
 
         invocation_id = self._compute_invocation_id(
             step=step, custom_id=custom_id, allow_suffix=allow_id_suffix

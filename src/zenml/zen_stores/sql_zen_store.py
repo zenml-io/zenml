@@ -5167,6 +5167,25 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if snapshot_update.add_steps:
+                current_index = len(snapshot.step_configurations)
+                for index, (step_name, step_configuration) in enumerate(
+                    snapshot_update.add_steps.items()
+                ):
+                    step_configuration_schema = StepConfigurationSchema(
+                        index=current_index + index,
+                        name=step_name,
+                        # Don't include the merged config in the step
+                        # configurations, we reconstruct it in the `to_model` method
+                        # using the pipeline configuration.
+                        config=step_configuration.model_dump_json(
+                            exclude={"config"}
+                        ),
+                        snapshot_id=snapshot.id,
+                    )
+                    session.add(step_configuration_schema)
+                session.commit()
+
             session.refresh(snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True

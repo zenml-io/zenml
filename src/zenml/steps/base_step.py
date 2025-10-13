@@ -474,7 +474,78 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
+        from zenml import ExternalArtifact
+        from zenml.models import PipelineSnapshotUpdate
+        from zenml.pipelines.dynamic_pipeline_runtime import (
+            get_pipeline_runtime,
+        )
         from zenml.pipelines.pipeline_definition import Pipeline
+
+        if runtime := get_pipeline_runtime():
+            # We're executing a dynamic pipeline at the moment
+            # TODO: this should call a step operator in the non-local case
+
+            # How should we get some configured params etc here? They're not
+            # compiled into the snapshot at the moment, is this just not
+            # possible in the dynamic case. How would people specify different
+            # step operators when executing a step now? Maybe through the
+            # args/kwargs when invoking the step?
+            try:
+                validated_args = pydantic_utils.validate_function_args(
+                    self.entrypoint,
+                    ConfigDict(arbitrary_types_allowed=True),
+                    *args,
+                    **kwargs,
+                )
+            except ValidationError as e:
+                raise StepInterfaceError(
+                    "Invalid step function entrypoint arguments. Check out the "
+                    "pydantic error above for more details."
+                ) from e
+
+            artifacts = {}
+            for name, value in validated_args.items():
+                artifacts[name] = ExternalArtifact(
+                    value=value
+                ).upload_by_value()
+
+            # compile
+            from zenml.client import Client
+            from zenml.config.compiler import Compiler
+
+            invocation_id = runtime.pipeline.add_step_invocation(
+                step=self,
+                input_artifacts={},
+                external_artifacts=artifacts,
+                model_artifacts_or_metadata={},
+                client_lazy_loaders={},
+                parameters={},
+                default_parameters={},
+                upstream_steps=set(),
+            )
+            compiled_step = Compiler()._compile_step_invocation(
+                invocation=runtime.pipeline.invocations[invocation_id],
+                stack=Client().active_stack,
+                step_config=self.configuration,
+                pipeline_configuration=runtime.pipeline.configuration,
+            )
+
+            updated_snapshot = Client().zen_store.update_snapshot(
+                runtime.snapshot.id,
+                snapshot_update=PipelineSnapshotUpdate(
+                    add_steps={invocation_id: compiled_step}
+                ),
+            )
+
+            from zenml.orchestrators.step_launcher import StepLauncher
+
+            launcher = StepLauncher(
+                snapshot=updated_snapshot,
+                step=compiled_step,
+                orchestrator_run_id=runtime.orchestrator_run_id,
+            )
+            launcher.launch()
+            return
 
         if not Pipeline.ACTIVE_PIPELINE:
             from zenml import constants, get_step_context
