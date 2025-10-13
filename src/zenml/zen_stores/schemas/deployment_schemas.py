@@ -41,9 +41,6 @@ from zenml.models.v2.core.deployment import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.curated_visualization_schemas import (
-    curated_visualization_relationship_kwargs,
-)
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     PipelineSnapshotSchema,
 )
@@ -144,9 +141,12 @@ class DeploymentSchema(NamedSchema, table=True):
     )
 
     visualizations: List["CuratedVisualizationSchema"] = Relationship(
-        sa_relationship_kwargs=curated_visualization_relationship_kwargs(
-            parent_column_factory=lambda: DeploymentSchema.id,
-            resource_type=VisualizationResourceTypes.DEPLOYMENT,
+        sa_relationship_kwargs=dict(
+            secondary="curated_visualization_resource",
+            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.DEPLOYMENT.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==DeploymentSchema.id)",
+            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            viewonly=True,
+            lazy="selectin",
         ),
     )
 

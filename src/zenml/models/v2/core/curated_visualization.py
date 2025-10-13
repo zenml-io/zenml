@@ -255,7 +255,7 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_id",
         "resource_type",
-        "tile_size",
+        "size",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -282,7 +282,7 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         default=None,
         description="Display order of the visualization.",
     )
-    tile_size: Optional[CuratedVisualizationSize] = Field(
+    size: Optional[CuratedVisualizationSize] = Field(
         default=None,
         description="Layout size of the visualization tile.",
     )
@@ -364,8 +364,8 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
             custom_filters.append(
                 getattr(table, "display_order") == self.display_order
             )
-        if self.tile_size is not None:
-            custom_filters.append(getattr(table, "size") == self.tile_size)
+        if self.size is not None:
+            custom_filters.append(getattr(table, "size") == self.size)
 
         # resource-based filtering is handled within the store implementation
         return custom_filters

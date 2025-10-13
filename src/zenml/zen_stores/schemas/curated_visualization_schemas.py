@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 """SQLModel implementation of curated visualization tables."""
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID, uuid4
 
 from sqlalchemy import UniqueConstraint
@@ -21,7 +21,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
+from zenml.enums import CuratedVisualizationSize
 from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
@@ -241,57 +241,3 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             metadata=metadata,
             resources=response_resources,
         )
-
-
-def curated_visualization_relationship_kwargs(
-    parent_column_factory: Callable[[], Any],
-    resource_type: VisualizationResourceTypes,
-) -> Dict[str, Any]:
-    """Build sa_relationship_kwargs for curated visualization relationships.
-
-    This helper consolidates the relationship definition for linking parent
-    schemas (like DeploymentSchema, ModelSchema) to their curated visualizations
-    through the resource link table.
-
-    Args:
-        parent_column_factory: A callable that returns the parent column
-            (e.g., `lambda: DeploymentSchema.id`). Uses a callable to defer
-            evaluation and avoid circular import issues.
-        resource_type: The VisualizationResourceTypes enum value indicating
-            what type of resource the parent represents.
-
-    Returns:
-        A dictionary suitable for passing to Relationship(sa_relationship_kwargs=...).
-        The relationship will be read-only (viewonly=True) and eagerly loaded
-        via selectin loading.
-    """
-    # Resolve the parent column to extract class and attribute names
-    parent_column = parent_column_factory()
-    parent_class = getattr(parent_column, "class_", None)
-    parent_attribute = getattr(parent_column, "key", None)
-
-    if parent_class is None or parent_attribute is None:
-        raise ValueError(
-            "parent_column_factory must return an InstrumentedAttribute "
-            "with `class_` and `key` attributes."
-        )
-
-    # Build string expressions for primaryjoin and secondaryjoin
-    # These strings are evaluated by SQLAlchemy at relationship configuration time
-    parent_class_name = parent_class.__name__
-    primaryjoin_str = (
-        f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{resource_type.value}', "
-        f"foreign(CuratedVisualizationResourceSchema.resource_id)=={parent_class_name}.{parent_attribute})"
-    )
-    secondaryjoin_str = (
-        "CuratedVisualizationSchema.id == "
-        "CuratedVisualizationResourceSchema.visualization_id"
-    )
-
-    return {
-        "secondary": "curated_visualization_resource",
-        "primaryjoin": primaryjoin_str,
-        "secondaryjoin": secondaryjoin_str,
-        "viewonly": True,
-        "lazy": "selectin",
-    }

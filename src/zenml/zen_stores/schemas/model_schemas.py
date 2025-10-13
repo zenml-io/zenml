@@ -60,7 +60,6 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.curated_visualization_schemas import (
     CuratedVisualizationSchema,
-    curated_visualization_relationship_kwargs,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -134,9 +133,12 @@ class ModelSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     visualizations: List["CuratedVisualizationSchema"] = Relationship(
-        sa_relationship_kwargs=curated_visualization_relationship_kwargs(
-            parent_column_factory=lambda: ModelSchema.id,
-            resource_type=VisualizationResourceTypes.MODEL,
+        sa_relationship_kwargs=dict(
+            secondary="curated_visualization_resource",
+            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.MODEL.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==ModelSchema.id)",
+            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            viewonly=True,
+            lazy="selectin",
         ),
     )
 

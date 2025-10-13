@@ -3858,7 +3858,7 @@ class Client(metaclass=ClientMetaClass):
         size: Optional[int] = None,
         sort_by: Optional[str] = None,
         visualization_index: Optional[int] = None,
-        tile_size: Optional[CuratedVisualizationSize] = None,
+        size: Optional[CuratedVisualizationSize] = None,
         hydrate: bool = False,
     ) -> Page[CuratedVisualizationResponse]:
         """List curated visualizations, optionally scoped to a resource.
@@ -3887,7 +3887,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             sort_by: The column to sort by.
             visualization_index: The index of the visualization to filter by.
-            tile_size: The layout size of the visualization tiles to filter by.
+            size: The layout size of the visualization tiles to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3978,8 +3978,8 @@ class Client(metaclass=ClientMetaClass):
             filter_model.sort_by = sort_by
         if visualization_index is not None:
             filter_model.visualization_index = visualization_index
-        if tile_size is not None:
-            filter_model.tile_size = tile_size
+        if size is not None:
+            filter_model.size = size
 
         return self.zen_store.list_curated_visualizations(
             filter_model=filter_model,

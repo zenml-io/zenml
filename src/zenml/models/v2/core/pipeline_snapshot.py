@@ -61,6 +61,9 @@ from zenml.models.v2.core.user import UserResponse
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -333,6 +336,10 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     latest_run_user: Optional[UserResponse] = Field(
         default=None,
         title="The user that created the latest run of the snapshot.",
+    )
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default=[],
+        title="Curated visualizations associated with the pipeline snapshot.",
     )
 
 

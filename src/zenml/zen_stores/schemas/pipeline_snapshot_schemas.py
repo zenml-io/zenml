@@ -19,7 +19,7 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
@@ -27,7 +27,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotRequest,
@@ -53,6 +53,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.deployment_schemas import (
         DeploymentSchema,
     )
@@ -218,6 +221,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            secondary="curated_visualization_resource",
+            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PIPELINE_SNAPSHOT.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==PipelineSnapshotSchema.id)",
+            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            viewonly=True,
+            lazy="selectin",
+        ),
+    )
 
     @property
     def latest_run(self) -> Optional["PipelineRunSchema"]:
@@ -352,7 +364,20 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
         if include_resources:
-            options.extend([joinedload(jl_arg(PipelineSnapshotSchema.user))])
+            from zenml.zen_stores.schemas.curated_visualization_schemas import (
+                CuratedVisualizationSchema,
+            )
+
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineSnapshotSchema.user)),
+                    selectinload(
+                        jl_arg(PipelineSnapshotSchema.visualizations)
+                    ).selectinload(
+                        jl_arg(CuratedVisualizationSchema.artifact_version)
+                    ),
+                ]
+            )
 
         return options
 
@@ -565,6 +590,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 latest_run_user=latest_run_user.to_model()
                 if latest_run_user
                 else None,
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in (self.visualizations or [])
+                ],
             )
 
         return PipelineSnapshotResponse(

@@ -17,11 +17,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.models import (
     PipelineRequest,
     PipelineResponse,
@@ -38,6 +38,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
         PipelineBuildSchema,
     )
@@ -104,6 +107,15 @@ class PipelineSchema(NamedSchema, table=True):
             overlaps="tags",
         ),
     )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            secondary="curated_visualization_resource",
+            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PIPELINE.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==PipelineSchema.id)",
+            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            viewonly=True,
+            lazy="selectin",
+        ),
+    )
 
     @property
     def latest_run(self) -> Optional["PipelineRunSchema"]:
@@ -155,10 +167,19 @@ class PipelineSchema(NamedSchema, table=True):
         options = []
 
         if include_resources:
+            from zenml.zen_stores.schemas.curated_visualization_schemas import (
+                CuratedVisualizationSchema,
+            )
+
             options.extend(
                 [
                     joinedload(jl_arg(PipelineSchema.user)),
                     # joinedload(jl_arg(PipelineSchema.tags)),
+                    selectinload(
+                        jl_arg(PipelineSchema.visualizations)
+                    ).selectinload(
+                        jl_arg(CuratedVisualizationSchema.artifact_version)
+                    ),
                 ]
             )
 
@@ -226,6 +247,13 @@ class PipelineSchema(NamedSchema, table=True):
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
                 tags=[tag.to_model() for tag in self.tags],
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in (self.visualizations or [])
+                ],
             )
 
         return PipelineResponse(

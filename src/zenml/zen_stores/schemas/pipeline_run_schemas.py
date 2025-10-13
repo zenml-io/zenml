@@ -34,6 +34,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -72,6 +73,9 @@ from zenml.zen_stores.schemas.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import (
         ModelVersionPipelineRunSchema,
@@ -241,6 +245,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="tags",
         ),
     )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            secondary="curated_visualization_resource",
+            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PIPELINE_RUN.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==PipelineRunSchema.id)",
+            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            viewonly=True,
+            lazy="selectin",
+        ),
+    )
 
     # Needed for cascade deletion
     model_versions_pipeline_runs_links: List[
@@ -283,6 +296,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         #     )
 
         if include_resources:
+            from zenml.zen_stores.schemas.curated_visualization_schemas import (
+                CuratedVisualizationSchema,
+            )
+
             options.extend(
                 [
                     selectinload(
@@ -315,6 +332,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.visualizations)
+                    ).selectinload(
+                        jl_arg(CuratedVisualizationSchema.artifact_version)
+                    ),
                 ]
             )
 
@@ -632,6 +654,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 tags=[tag.to_model() for tag in self.tags],
                 logs=client_logs[0].to_model() if client_logs else None,
                 log_collection=[log.to_model() for log in self.logs],
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in (self.visualizations or [])
+                ],
             )
 
         return PipelineRunResponse(
@@ -819,7 +848,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     else:
                         in_progress = any(
                             not ExecutionStatus(status).is_finished
-                            for name, status in step_run_statuses
+                            for _, status in step_run_statuses
                         )
                         return in_progress
                 else:
