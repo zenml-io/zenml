@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
-from typing import Optional, Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import (
+    APIRouter,
+    Depends,
+    Security,
+)
 
 from zenml.constants import (
     API,
@@ -28,8 +31,8 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    Page,
 )
+from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -40,7 +43,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -58,34 +60,19 @@ router = APIRouter(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.post(
-    "/{project_name_or_id}" + DEPLOYMENTS,
-    responses={401: error_response, 409: error_response, 422: error_response},
-    deprecated=True,
-    tags=["deployments"],
-)
 @async_fastapi_endpoint_wrapper
 def create_deployment(
     deployment: DeploymentRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Create a deployment.
+    """Creates a deployment.
 
     Args:
         deployment: Deployment to create.
-        project_name_or_id: Optional project name or ID for backwards
-            compatibility.
 
     Returns:
         The created deployment.
     """
-    if project_name_or_id:
-        project = zen_store().get_project(project_name_or_id)
-        deployment.project = project.id
-
     return verify_permissions_and_create_entity(
         request_model=deployment,
         create_method=zen_store().create_deployment,
@@ -96,38 +83,25 @@ def create_deployment(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
-# and can be removed after the migration
-@workspace_router.get(
-    "/{project_name_or_id}" + DEPLOYMENTS,
-    responses={401: error_response, 404: error_response, 422: error_response},
-    deprecated=True,
-    tags=["deployments"],
-)
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def list_deployments(
     deployment_filter_model: DeploymentFilter = Depends(
         make_dependable(DeploymentFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[DeploymentResponse]:
-    """List deployments.
+    """Gets a list of deployments.
 
     Args:
-        deployment_filter_model: Filter model used for pagination, sorting, and
+        deployment_filter_model: Filter model used for pagination, sorting,
             filtering.
-        project_name_or_id: Optional project name or ID for backwards
-            compatibility.
-        hydrate: Whether to hydrate the returned models.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
-        A page of deployments matching the filter.
+        List of deployment objects matching the filter criteria.
     """
-    if project_name_or_id:
-        deployment_filter_model.project = project_name_or_id
-
     return verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,
         resource_type=ResourceType.DEPLOYMENT,
@@ -146,14 +120,15 @@ def get_deployment(
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Get a deployment by ID.
+    """Gets a specific deployment using its unique id.
 
     Args:
-        deployment_id: The deployment ID.
-        hydrate: Whether to hydrate the returned model.
+        deployment_id: ID of the deployment to get.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
-        The requested deployment.
+        A specific deployment object.
     """
     return verify_permissions_and_get_entity(
         id=deployment_id,
@@ -172,11 +147,11 @@ def update_deployment(
     deployment_update: DeploymentUpdate,
     _: AuthContext = Security(authorize),
 ) -> DeploymentResponse:
-    """Update a deployment.
+    """Updates a specific deployment.
 
     Args:
-        deployment_id: The deployment ID.
-        deployment_update: The updates to apply.
+        deployment_id: ID of the deployment to update.
+        deployment_update: Update model for the deployment.
 
     Returns:
         The updated deployment.
@@ -198,10 +173,10 @@ def delete_deployment(
     deployment_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Delete a deployment.
+    """Deletes a specific deployment.
 
     Args:
-        deployment_id: The deployment ID.
+        deployment_id: ID of the deployment to delete.
     """
     verify_permissions_and_delete_entity(
         id=deployment_id,
