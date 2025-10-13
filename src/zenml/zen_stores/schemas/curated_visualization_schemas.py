@@ -102,7 +102,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     visualization_index: int = Field(nullable=False)
     display_name: Optional[str] = Field(default=None)
     display_order: Optional[int] = Field(default=None)
-    size: CuratedVisualizationSize = Field(
+    layout_size: CuratedVisualizationSize = Field(
         default=CuratedVisualizationSize.FULL_WIDTH, nullable=False
     )
 
@@ -167,7 +167,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=request.visualization_index,
             display_name=request.display_name,
             display_order=request.display_order,
-            size=request.size,
+            layout_size=request.layout_size,
         )
 
     def update(
@@ -217,7 +217,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=self.visualization_index,
             display_name=self.display_name,
             display_order=self.display_order,
-            size=self.size,
+            layout_size=self.layout_size,
         )
 
         metadata = None

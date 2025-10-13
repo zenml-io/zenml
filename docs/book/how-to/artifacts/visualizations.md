@@ -110,7 +110,7 @@ model_viz = client.create_curated_visualization(
         type=VisualizationResourceTypes.MODEL
     ),
     display_name="Model performance dashboard",
-    size=CuratedVisualizationSize.FULL_WIDTH,
+    layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
 
 # Create a visualization for the deployment
@@ -122,7 +122,7 @@ deployment_viz = client.create_curated_visualization(
         type=VisualizationResourceTypes.DEPLOYMENT
     ),
     display_name="Deployment health dashboard",
-    size=CuratedVisualizationSize.HALF_WIDTH,
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )
 
 # Create a visualization for the project
@@ -134,11 +134,11 @@ project_viz = client.create_curated_visualization(
         type=VisualizationResourceTypes.PROJECT
     ),
     display_name="Project overview dashboard",
-    size=CuratedVisualizationSize.FULL_WIDTH,
+    layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
 ```
 
-Note that each visualization is created separately and can reference the same artifact visualization (by using the same `artifact_version_id` and `visualization_index`). This allows you to show the same underlying visualization in multiple contexts while maintaining separate display settings for each resource. Use the optional `size` argument to control whether the visualization spans the full width of the dashboard or renders as a half-width tile. If omitted, the layout defaults to `CuratedVisualizationSize.FULL_WIDTH`.
+Note that each visualization is created separately and can reference the same artifact visualization (by using the same `artifact_version_id` and `visualization_index`). This allows you to show the same underlying visualization in multiple contexts while maintaining separate display settings for each resource. Use the optional `layout_size` argument to control whether the visualization spans the full width of the dashboard or renders as a half-width tile. If omitted, the layout defaults to `CuratedVisualizationSize.FULL_WIDTH`.
 
 To list curated visualizations for a specific resource, you can use the `Client.list_curated_visualizations` convenience parameters:
 
@@ -164,7 +164,7 @@ client.update_curated_visualization(
     visualization_id=UUID("<CURATED_VISUALIZATION_ID>"),
     display_name="Updated Dashboard Title",
     display_order=10,
-    size=CuratedVisualizationSize.HALF_WIDTH,
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )
 ```
 
@@ -190,7 +190,7 @@ visualization_a = client.create_curated_visualization(
         type=VisualizationResourceTypes.MODEL
     ),
     display_order=10,  # Primary dashboard
-    size=CuratedVisualizationSize.FULL_WIDTH,
+    layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
 
 visualization_b = client.create_curated_visualization(
@@ -201,7 +201,7 @@ visualization_b = client.create_curated_visualization(
         type=VisualizationResourceTypes.MODEL
     ),
     display_order=20,  # Secondary metrics
-    size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
 )
 
 # Later, easily insert between them
@@ -213,7 +213,7 @@ visualization_c = client.create_curated_visualization(
         type=VisualizationResourceTypes.MODEL
     ),
     display_order=15,  # Now appears between A and B
-    size=CuratedVisualizationSize.HALF_WIDTH,
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )
 ```
 

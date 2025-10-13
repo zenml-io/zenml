@@ -3755,7 +3755,7 @@ class Client(metaclass=ClientMetaClass):
         project_id: Optional[UUID] = None,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
-        size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
+        layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
     ) -> CuratedVisualizationResponse:
         """Create a curated visualization associated with a resource.
 
@@ -3784,7 +3784,7 @@ class Client(metaclass=ClientMetaClass):
             project_id: The ID of the project to associate with the visualization.
             display_name: The display name of the visualization.
             display_order: The display order of the visualization.
-            size: The layout size of the visualization in the dashboard.
+            layout_size: The layout size of the visualization in the dashboard.
 
         Returns:
             The created curated visualization.
@@ -3801,7 +3801,7 @@ class Client(metaclass=ClientMetaClass):
             visualization_index=visualization_index,
             display_name=display_name,
             display_order=display_order,
-            size=size,
+            layout_size=layout_size,
             resource=resource,
         )
         return self.zen_store.create_curated_visualization(request)
@@ -3814,7 +3814,7 @@ class Client(metaclass=ClientMetaClass):
         *,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
-        size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
+        layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
     ) -> CuratedVisualizationResponse:
         """Attach a curated visualization to a deployment.
 
@@ -3824,7 +3824,7 @@ class Client(metaclass=ClientMetaClass):
             visualization_index: The index of the visualization within the artifact version.
             display_name: Optional display name for the visualization.
             display_order: Optional display order for sorting visualizations.
-            size: Layout size defining the visualization width on the dashboard.
+            layout_size: Layout size defining the visualization width on the dashboard.
 
         Returns:
             The created curated visualization.
@@ -3840,7 +3840,7 @@ class Client(metaclass=ClientMetaClass):
             project_id=deployment.project_id,
             display_name=display_name,
             display_order=display_order,
-            size=size,
+            layout_size=layout_size,
         )
 
     def list_curated_visualizations(
@@ -3858,7 +3858,7 @@ class Client(metaclass=ClientMetaClass):
         size: Optional[int] = None,
         sort_by: Optional[str] = None,
         visualization_index: Optional[int] = None,
-        size: Optional[CuratedVisualizationSize] = None,
+        layout_size: Optional[CuratedVisualizationSize] = None,
         hydrate: bool = False,
     ) -> Page[CuratedVisualizationResponse]:
         """List curated visualizations, optionally scoped to a resource.
@@ -3887,7 +3887,7 @@ class Client(metaclass=ClientMetaClass):
             size: The maximum size of all pages.
             sort_by: The column to sort by.
             visualization_index: The index of the visualization to filter by.
-            size: The layout size of the visualization tiles to filter by.
+            layout_size: The layout size of the visualization tiles to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3978,8 +3978,8 @@ class Client(metaclass=ClientMetaClass):
             filter_model.sort_by = sort_by
         if visualization_index is not None:
             filter_model.visualization_index = visualization_index
-        if size is not None:
-            filter_model.size = size
+        if layout_size is not None:
+            filter_model.layout_size = layout_size
 
         return self.zen_store.list_curated_visualizations(
             filter_model=filter_model,
@@ -3992,7 +3992,7 @@ class Client(metaclass=ClientMetaClass):
         *,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
-        size: Optional[CuratedVisualizationSize] = None,
+        layout_size: Optional[CuratedVisualizationSize] = None,
     ) -> CuratedVisualizationResponse:
         """Update display metadata for a curated visualization.
 
@@ -4000,7 +4000,7 @@ class Client(metaclass=ClientMetaClass):
             visualization_id: The ID of the curated visualization to update.
             display_name: New display name for the visualization.
             display_order: New display order for the visualization.
-            size: Updated layout size for the visualization.
+            layout_size: Updated layout size for the visualization.
 
         Returns:
             The updated deployment visualization.
@@ -4008,7 +4008,7 @@ class Client(metaclass=ClientMetaClass):
         update_model = CuratedVisualizationUpdate(
             display_name=display_name,
             display_order=display_order,
-            size=size,
+            layout_size=layout_size,
         )
         return self.zen_store.update_curated_visualization(
             visualization_id=visualization_id,

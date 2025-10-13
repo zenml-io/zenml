@@ -90,7 +90,7 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
         default=None,
         title="The display order of the visualization.",
     )
-    size: CuratedVisualizationSize = Field(
+    layout_size: CuratedVisualizationSize = Field(
         default=CuratedVisualizationSize.FULL_WIDTH,
         title="The layout size of the visualization.",
         description=(
@@ -121,7 +121,7 @@ class CuratedVisualizationUpdate(BaseUpdate):
         default=None,
         title="The new display order of the visualization.",
     )
-    size: Optional[CuratedVisualizationSize] = Field(
+    layout_size: Optional[CuratedVisualizationSize] = Field(
         default=None,
         title="The updated layout size of the visualization.",
     )
@@ -149,7 +149,7 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The display order of the visualization.",
     )
-    size: CuratedVisualizationSize = Field(
+    layout_size: CuratedVisualizationSize = Field(
         default=CuratedVisualizationSize.FULL_WIDTH,
         title="The layout size of the visualization.",
     )
@@ -227,13 +227,13 @@ class CuratedVisualizationResponse(
         return self.get_body().display_order
 
     @property
-    def size(self) -> CuratedVisualizationSize:
+    def layout_size(self) -> CuratedVisualizationSize:
         """The layout size of the visualization.
 
         Returns:
             The layout size of the visualization.
         """
-        return self.get_body().size
+        return self.get_body().layout_size
 
     @property
     def artifact_version(self) -> Optional["ArtifactVersionResponse"]:
@@ -255,7 +255,7 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_id",
         "resource_type",
-        "size",
+        "layout_size",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -282,7 +282,7 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         default=None,
         description="Display order of the visualization.",
     )
-    size: Optional[CuratedVisualizationSize] = Field(
+    layout_size: Optional[CuratedVisualizationSize] = Field(
         default=None,
         description="Layout size of the visualization tile.",
     )
@@ -364,8 +364,10 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
             custom_filters.append(
                 getattr(table, "display_order") == self.display_order
             )
-        if self.size is not None:
-            custom_filters.append(getattr(table, "size") == self.size)
+        if self.layout_size is not None:
+            custom_filters.append(
+                getattr(table, "layout_size") == self.layout_size
+            )
 
         # resource-based filtering is handled within the store implementation
         return custom_filters

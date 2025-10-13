@@ -5883,7 +5883,7 @@ class TestCuratedVisualizations:
                     )
                 )
                 visualizations[resource_type] = viz
-                assert viz.size == CuratedVisualizationSize.FULL_WIDTH
+                assert viz.layout_size == CuratedVisualizationSize.FULL_WIDTH
 
             # Verify via zen_store filtering - each resource should have exactly one visualization
             for resource_type, resource_id in resource_configs:
@@ -5946,7 +5946,7 @@ class TestCuratedVisualizations:
                 loaded.display_name
                 == f"{VisualizationResourceTypes.PIPELINE.value} visualization"
             )
-            assert loaded.size == CuratedVisualizationSize.FULL_WIDTH
+            assert loaded.layout_size == CuratedVisualizationSize.FULL_WIDTH
 
             # Test duplicate creation - same artifact_version + visualization_index + resource should fail
             with pytest.raises(EntityExistsError):
@@ -5970,12 +5970,12 @@ class TestCuratedVisualizations:
                 visualization_update=CuratedVisualizationUpdate(
                     display_name="Updated",
                     display_order=5,
-                    size=CuratedVisualizationSize.HALF_WIDTH,
+                    layout_size=CuratedVisualizationSize.HALF_WIDTH,
                 ),
             )
             assert updated.display_name == "Updated"
             assert updated.display_order == 5
-            assert updated.size == CuratedVisualizationSize.HALF_WIDTH
+            assert updated.layout_size == CuratedVisualizationSize.HALF_WIDTH
 
             # Delete all visualizations
             for viz in visualizations.values():
