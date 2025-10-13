@@ -86,6 +86,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
+    latest_heartbeat: Optional[datetime] = Field(
+        nullable=True,
+        description="The latest execution heartbeat.",
+    )
     status: str = Field(nullable=False)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
