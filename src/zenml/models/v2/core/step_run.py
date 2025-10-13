@@ -26,7 +26,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
@@ -208,6 +208,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     )
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
+        default=None,
+    )
+    latest_heartbeat: Optional[datetime] = Field(
+        title="The latest heartbeat of the step run.",
         default=None,
     )
     model_version_id: Optional[UUID] = Field(
@@ -590,6 +594,15 @@ class StepRunResponse(
         return self.get_body().end_time
 
     @property
+    def latest_heartbeat(self) -> Optional[datetime]:
+        """The `latest_heartbeat` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().latest_heartbeat
+
+    @property
     def logs(self) -> Optional["LogsResponse"]:
         """The `logs` property.
 
@@ -795,3 +808,14 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
             custom_filters.append(cache_expiration_filter)
 
         return custom_filters
+
+
+# ------------------ Heartbeat Model ---------------
+
+
+class StepHeartbeatResponse(BaseModel):
+    """Light-weight model for Step Heartbeat responses."""
+
+    id: UUID
+    status: str
+    latest_heartbeat: datetime

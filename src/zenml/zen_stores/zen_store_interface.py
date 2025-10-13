@@ -139,6 +139,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -2579,6 +2580,19 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the step run doesn't exist.
+        """
+
+    @abstractmethod
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat.
+
+        Args:
+            step_run_id: The ID of the step to update.
+
+        Returns:
+            The step heartbeat response.
         """
 
     # -------------------- Triggers  --------------------

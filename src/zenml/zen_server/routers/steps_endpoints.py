@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    HEARTBEAT,
     LOGS,
     STATUS,
     STEP_CONFIGURATION,
@@ -38,6 +39,7 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
+from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -198,6 +200,30 @@ def update_step(
         step_run_id=step_id, step_run_update=step_model
     )
     return dehydrate_response_model(updated_step)
+
+
+@router.put(
+    "/{step_run_id}/" + HEARTBEAT,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def update_heartbeat(
+    step_run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> StepHeartbeatResponse:
+    """Updates a step.
+
+    Args:
+        step_run_id: ID of the step.
+
+    Returns:
+        The step heartbeat response (id, status, last_heartbeat).
+    """
+    step = zen_store().get_run_step(step_run_id, hydrate=True)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+
+    return zen_store().update_step_heartbeat(step_run_id=step_run_id)
 
 
 @router.get(
