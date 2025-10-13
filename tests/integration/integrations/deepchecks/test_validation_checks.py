@@ -17,8 +17,8 @@ import pytest
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12,
-    reason="The deepchecks integrations is not yet supported on 3.12.",
+    sys.version_info.minor == 12 or sys.version_info.minor == 13,
+    reason="The deepchecks integrations is not yet supported on 3.12 or 3.13.",
 )
 def test_validation_check_fails_when_checking_name():
     """Ensures that the validation check fails when names not using our format."""
