@@ -502,11 +502,10 @@ class BaseStep:
                     "pydantic error above for more details."
                 ) from e
 
-            artifacts = {}
-            for name, value in validated_args.items():
-                artifacts[name] = ExternalArtifact(
-                    value=value
-                ).upload_by_value()
+            artifacts = {
+                name: ExternalArtifact(value=value)
+                for name, value in validated_args.items()
+            }
 
             # compile
             from zenml.client import Client

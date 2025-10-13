@@ -17,7 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    ClassVar,
     Dict,
     Optional,
     TypeVar,
@@ -25,7 +24,6 @@ from typing import (
 )
 
 from pydantic import ConfigDict, ValidationError
-from typing_extensions import Self
 
 from zenml import constants
 from zenml.client import Client
@@ -52,11 +50,6 @@ F = TypeVar("F", bound=Callable[..., Any])
 class DynamicPipeline(Pipeline):
     """ZenML pipeline class."""
 
-    # The active pipeline is the pipeline to which step invocations will be
-    # added when a step is called. It is set using a context manager when a
-    # pipeline is called (see Pipeline.__call__ for more context)
-    ACTIVE_PIPELINE: ClassVar[Optional["DynamicPipeline"]] = None
-
     @property
     def is_prepared(self) -> bool:
         """If the pipeline is prepared.
@@ -80,32 +73,6 @@ class DynamicPipeline(Pipeline):
             RuntimeError: If the pipeline has parameters configured differently in
                 configuration file and code.
         """
-
-    def __enter__(self) -> Self:
-        """Activate the pipeline context.
-
-        Raises:
-            RuntimeError: If a different pipeline is already active.
-
-        Returns:
-            The pipeline instance.
-        """
-        if DynamicPipeline.ACTIVE_PIPELINE:
-            raise RuntimeError(
-                "Unable to enter pipeline context. A different pipeline "
-                f"{DynamicPipeline.ACTIVE_PIPELINE.name} is already active."
-            )
-
-        DynamicPipeline.ACTIVE_PIPELINE = self
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        """Deactivates the pipeline context.
-
-        Args:
-            *args: The arguments passed to the context exit handler.
-        """
-        DynamicPipeline.ACTIVE_PIPELINE = None
 
     def __call__(
         self, *args: Any, **kwargs: Any
@@ -140,12 +107,12 @@ class DynamicPipeline(Pipeline):
         runtime = get_pipeline_runtime()
 
         if runtime and runtime.pipeline is self:
-            self._call_entrypoint(*args, **kwargs)
-            # TODO: update run status to completed
+            self._run(*args, **kwargs)
         elif should_prevent_execution:
             logger.warning("Preventing execution of pipeline '%s'.", self.name)
         else:
             # Client-side, either execute locally or run with step operator
+            # TODO: create placeholder run and pass to runtime/entrypoint config
             snapshot = self._create_snapshot(**self._run_args)
             stack = Client().active_stack
 
@@ -169,8 +136,16 @@ class DynamicPipeline(Pipeline):
                 )
             else:
                 initialize_runtime(pipeline=self, snapshot=snapshot)
-                self._call_entrypoint(*args, **kwargs)
-                # TODO: update run status to completed
+                self._run(*args, **kwargs)
+
+    def _run(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: pipeline logs
+        try:
+            self._call_entrypoint(*args, **kwargs)
+        except:
+            # publish_failed_pipeline_run(placeholder_run.id)
+            raise
+        # publish_successful_pipeline_run(placeholder_run.id)
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.

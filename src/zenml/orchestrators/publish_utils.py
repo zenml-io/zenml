@@ -138,6 +138,23 @@ def publish_failed_pipeline_run(
     )
 
 
+def publish_successful_pipeline_run(
+    pipeline_run_id: "UUID",
+) -> "PipelineRunResponse":
+    """Publishes a successful pipeline run.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run to update.
+    """
+    return Client().zen_store.update_run(
+        run_id=pipeline_run_id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.COMPLETED,
+            end_time=utc_now(),
+        ),
+    )
+
+
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,
