@@ -112,40 +112,130 @@ class DynamicPipeline(Pipeline):
             logger.warning("Preventing execution of pipeline '%s'.", self.name)
         else:
             # Client-side, either execute locally or run with step operator
-            # TODO: create placeholder run and pass to runtime/entrypoint config
-            snapshot = self._create_snapshot(**self._run_args)
+            from contextlib import nullcontext
+            from uuid import uuid4
+
+            from zenml.logging.step_logging import (
+                PipelineLogsStorageContext,
+                prepare_logs_uri,
+            )
+            from zenml.models import LogsRequest
+            from zenml.pipelines.run_utils import create_placeholder_run
+
             stack = Client().active_stack
+            logging_enabled = True
 
-            if step_operator := stack.step_operator:
-                command = (
-                    DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
-                    + DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
-                        snapshot_id=snapshot.id
-                    )
-                )
-                from zenml.orchestrators.utils import (
-                    get_config_environment_vars,
+            logs_context = nullcontext()
+            logs_model = None
+
+            if logging_enabled:
+                # Configure the logs
+                logs_uri = prepare_logs_uri(
+                    stack.artifact_store,
                 )
 
-                environment, secrets = get_config_environment_vars()
-                environment.update(secrets)
-                step_operator.run_dynamic_pipeline(
-                    command=command,
+                logs_context = PipelineLogsStorageContext(
+                    logs_uri=logs_uri,
+                    artifact_store=stack.artifact_store,
+                    prepend_step_name=False,
+                )  # type: ignore[assignment]
+
+                logs_model = LogsRequest(
+                    uri=logs_uri,
+                    source="client",
+                    artifact_store_id=stack.artifact_store.id,
+                )
+
+            with logs_context:
+                snapshot = self._create_snapshot(**self._run_args)
+                run = create_placeholder_run(
                     snapshot=snapshot,
-                    environment=environment,
+                    orchestrator_run_id=str(uuid4()),
+                    logs=logs_model,
                 )
-            else:
-                initialize_runtime(pipeline=self, snapshot=snapshot)
-                self._run(*args, **kwargs)
+                stack = Client().active_stack
+
+                if step_operator := stack.step_operator:
+                    command = (
+                        DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+                        + DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+                            snapshot_id=snapshot.id,
+                            run_id=run.id,
+                        )
+                    )
+                    from zenml.orchestrators.utils import (
+                        get_config_environment_vars,
+                    )
+
+                    environment, secrets = get_config_environment_vars()
+                    environment.update(secrets)
+                    step_operator.run_dynamic_pipeline(
+                        command=command,
+                        snapshot=snapshot,
+                        environment=environment,
+                    )
+                else:
+                    initialize_runtime(
+                        pipeline=self, snapshot=snapshot, run=run
+                    )
+                    self._run(*args, **kwargs)
 
     def _run(self, *args: Any, **kwargs: Any) -> None:
-        # TODO: pipeline logs
-        try:
-            self._call_entrypoint(*args, **kwargs)
-        except:
-            # publish_failed_pipeline_run(placeholder_run.id)
-            raise
-        # publish_successful_pipeline_run(placeholder_run.id)
+        from zenml.orchestrators.publish_utils import (
+            publish_failed_pipeline_run,
+            publish_successful_pipeline_run,
+        )
+        from zenml.pipelines.dynamic_pipeline_runtime import (
+            get_pipeline_runtime,
+        )
+
+        runtime = get_pipeline_runtime()
+
+        from contextlib import nullcontext
+
+        from zenml.logging.step_logging import (
+            PipelineLogsStorageContext,
+            prepare_logs_uri,
+        )
+        from zenml.models import LogsRequest, PipelineRunUpdate
+
+        stack = Client().active_stack
+        logging_enabled = True
+
+        logs_context = nullcontext()
+
+        if logging_enabled:
+            # Configure the logs
+            logs_uri = prepare_logs_uri(
+                stack.artifact_store,
+            )
+
+            logs_context = PipelineLogsStorageContext(
+                logs_uri=logs_uri,
+                artifact_store=stack.artifact_store,
+                prepend_step_name=False,
+            )  # type: ignore[assignment]
+
+            logs_model = LogsRequest(
+                uri=logs_uri,
+                source="orchestrator",
+                artifact_store_id=stack.artifact_store.id,
+            )
+
+            Client().zen_store.update_run(
+                run_id=runtime.run.id,
+                run_update=PipelineRunUpdate(
+                    add_logs=[logs_model],
+                ),
+            )
+
+        with logs_context:
+            try:
+                self._call_entrypoint(*args, **kwargs)
+            except:
+                publish_failed_pipeline_run(runtime.run.id)
+                raise
+            publish_successful_pipeline_run(runtime.run.id)
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.

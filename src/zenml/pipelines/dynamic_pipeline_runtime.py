@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 
 from typing import Optional
-from uuid import uuid4
 
-from zenml.models import PipelineSnapshotResponse
+from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
 from zenml.pipelines.dynamic_pipeline import DynamicPipeline
 
 
@@ -24,11 +23,11 @@ class DynamicPipelineRuntime:
         self,
         pipeline: DynamicPipeline,
         snapshot: PipelineSnapshotResponse,
-        orchestrator_run_id: str,
+        run: PipelineRunResponse,
     ) -> None:
         self.pipeline = pipeline
         self.snapshot = snapshot
-        self.orchestrator_run_id = orchestrator_run_id
+        self.run = run
 
 
 _active_runtime = None
@@ -37,13 +36,13 @@ _active_runtime = None
 def initialize_runtime(
     pipeline: DynamicPipeline,
     snapshot: PipelineSnapshotResponse,
-    orchestrator_run_id: Optional[str] = None,
+    run: PipelineRunResponse,
 ):
     global _active_runtime
     _active_runtime = DynamicPipelineRuntime(
         pipeline=pipeline,
         snapshot=snapshot,
-        orchestrator_run_id=orchestrator_run_id or str(uuid4()),
+        run=run,
     )
 
 

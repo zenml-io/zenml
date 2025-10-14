@@ -543,7 +543,7 @@ class BaseStep:
             launcher = StepLauncher(
                 snapshot=updated_snapshot,
                 step=compiled_step,
-                orchestrator_run_id=runtime.orchestrator_run_id,
+                orchestrator_run_id=runtime.run.orchestrator_run_id,
             )
             launcher.launch()
 
