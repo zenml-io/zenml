@@ -20,6 +20,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
     cast,
 )
 from uuid import UUID
@@ -270,7 +271,7 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         description="Which column to sort by.",
     )
 
-    artifact_version: Optional[Union[UUID, str]]= Field(
+    artifact_version_id: Optional[Union[UUID, str]]= Field(
         default=None,
         description="ID of the artifact version associated with the visualization.",
         union_mode="left_to_right",        
@@ -339,36 +340,3 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
 
         return super().apply_sorting(query=query, table=table)
 
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        if self.artifact_version:
-            custom_filters.append(
-                getattr(table, "artifact_version_id") == self.artifact_version
-            )
-        if self.visualization_index is not None:
-            custom_filters.append(
-                getattr(table, "visualization_index")
-                == self.visualization_index
-            )
-        if self.display_order is not None:
-            custom_filters.append(
-                getattr(table, "display_order") == self.display_order
-            )
-        if self.layout_size is not None:
-            custom_filters.append(
-                getattr(table, "layout_size") == self.layout_size
-            )
-
-        # resource-based filtering is handled within the store implementation
-        return custom_filters
