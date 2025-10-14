@@ -46,8 +46,6 @@ from zenml.models.v2.misc.curated_visualization import (
 )
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
@@ -271,10 +269,10 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         description="Which column to sort by.",
     )
 
-    artifact_version_id: Optional[Union[UUID, str]]= Field(
+    artifact_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the artifact version associated with the visualization.",
-        union_mode="left_to_right",        
+        union_mode="left_to_right",
     )
     visualization_index: Optional[int] = Field(
         default=None,
@@ -339,4 +337,3 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
             return cast(AnyQuery, query.order_by(asc(column), asc(table.id)))
 
         return super().apply_sorting(query=query, table=table)
-
