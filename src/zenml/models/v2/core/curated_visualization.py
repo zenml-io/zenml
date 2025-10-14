@@ -270,9 +270,10 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
         description="Which column to sort by.",
     )
 
-    artifact_version: Optional[UUID] = Field(
+    artifact_version: Optional[Union[UUID, str]]= Field(
         default=None,
         description="ID of the artifact version associated with the visualization.",
+        union_mode="left_to_right",        
     )
     visualization_index: Optional[int] = Field(
         default=None,
