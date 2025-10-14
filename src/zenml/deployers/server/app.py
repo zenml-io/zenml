@@ -11,58 +11,96 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""FastAPI application for running ZenML pipeline deployments."""
+"""Base deployment app runner."""
 
+from abc import ABC, abstractmethod
 import os
-from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Callable, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Union
 from uuid import UUID
 
-from fastapi import (
-    Depends,
-    FastAPI,
-    HTTPException,
-    Request,
-)
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from zenml import __version__ as zenml_version
 from zenml.client import Client
-from zenml.deployers.server.models import (
-    BaseDeploymentInvocationRequest,
-    BaseDeploymentInvocationResponse,
-    ExecutionMetrics,
-    ServiceInfo,
-)
 from zenml.deployers.server.service import (
     BasePipelineDeploymentService,
     DefaultPipelineDeploymentService,
 )
+from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
+if TYPE_CHECKING:
+    from uvicorn._types import ASGIApplication
 
-class DeploymentApp:
-    """Pipeline deployment application.
 
-    This class is responsible for building and running the FastAPI app and the
-    associated deployment service for the pipeline deployment. It acts as a
-    factory in the sense that it uses the deployment settings to initialize and
-    configure the FastAPI application and the deployment service according to
-    the user's specifications.
+class BaseDeploymentAppRunner(ABC):
+    """Base class for deployment app runners.
+
+    This class is responsible for building and running the ASGI compatible web
+    application (e.g. FastAPI, Django, Flask, Falcon, Quart, BlackSheep, etc.) and the
+    associated deployment service for the pipeline deployment. It also acts as
+    a adaptation layer between the REST API interface and deployment service to
+    preserve the following separation of concerns between the two components:
+
+    * the ASGI application is responsible for handling the HTTP requests and
+    responses to the user
+    * the deployment service is responsible for handling the business logic
+
+    The deployment service code should be free of any ASGI application specific
+    code and concerns and vice-versa. This allows them to be independently
+    extendable and easily swappable.
+
+    Implementations of this class must use the deployment and its settings to
+    configure and run the web application (e.g. FastAPI, Flask, Falcon, Quart,
+    BlackSheep, etc.) that wraps the deployment service according to the user's
+    specifications, particularly concerning the following:
+
+    * exposed endpoints (URL paths, methods, input/output models)
+    * middleware (CORS, authentication, logging, etc.)
+    * error handling
+    * lifecycle management (startup, shutdown)
+    * custom hooks (startup, shutdown)
+    * app configuration (workers, host, port, thread pool size, etc.)
+
+    The following methods must be provided by implementations of this class:
+
+    * build: Build and return an ASGI compatible web application (i.e. an
+    ASGIApplication object that can be run with uvicorn). Most Python ASGI
+    frameworks provide an ASGIApplication object.
     """
 
     def __init__(self, deployment: Union[str, UUID, "DeploymentResponse"]):
         """Initialize the deployment app.
 
         Args:
-            deployment: The deployment. Can be a deployment ID, a deployment
-                UUID, or a deployment response object.
+            deployment: The deployment to run.
+
+        Raises:
+            RuntimeError: If the deployment or its snapshot cannot be loaded.
+        """
+        self.deployment = self.load_deployment(deployment)
+        assert self.deployment.snapshot is not None
+        self.snapshot = self.deployment.snapshot
+
+        self.settings = (
+            self.snapshot.pipeline_configuration.deployment_settings
+        )
+
+        self.service = self.load_deployment_service(deployment)
+
+    @classmethod
+    def load_deployment(
+        cls, deployment: Union[str, UUID, "DeploymentResponse"]
+    ) -> DeploymentResponse:
+        """Load the deployment.
+
+        Args:
+            deployment: The deployment to load.
+
+        Returns:
+            The deployment.
 
         Raises:
             RuntimeError: If the deployment or its snapshot cannot be loaded.
@@ -72,7 +110,7 @@ class DeploymentApp:
 
         if isinstance(deployment, UUID):
             try:
-                self.deployment = Client().zen_store.get_deployment(
+                deployment = Client().zen_store.get_deployment(
                     deployment_id=deployment
                 )
             except Exception as e:
@@ -81,23 +119,79 @@ class DeploymentApp:
                 ) from e
         else:
             assert isinstance(deployment, DeploymentResponse)
-            self.deployment = deployment
 
-        if self.deployment.snapshot is None:
-            raise RuntimeError("Deployment has no snapshot")
+        if deployment.snapshot is None:
+            raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
 
-        self.snapshot = self.deployment.snapshot
+        return deployment
 
-        self.settings = (
-            self.snapshot.pipeline_configuration.deployment_settings
+    @classmethod
+    def load_app_runner(
+        cls, deployment: Union[str, UUID, "DeploymentResponse"]
+    ) -> "BaseDeploymentAppRunner":
+        """Load the app runner for the deployment.
+
+        Args:
+            deployment: The deployment to load the app runner for.
+
+        Returns:
+            The app runner for the deployment.
+        """
+        from zenml.deployers.server.fastapi.app import (
+            FastAPIDeploymentAppRunner,
         )
 
-        self.service = self._load_service()
+        deployment = cls.load_deployment(deployment)
+        assert deployment.snapshot is not None
 
-        self.fast_api_app = self._build_app()
+        settings = (
+            deployment.snapshot.pipeline_configuration.deployment_settings
+        )
 
-    def _load_service(self) -> BasePipelineDeploymentService:
+        if settings.deployment_app_runner_source is None:
+            app_runner_cls = FastAPIDeploymentAppRunner
+        else:
+            try:
+                app_runner_cls = source_utils.load(
+                    settings.deployment_app_runner_source
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to load deployment app runner from source "
+                    f"{settings.deployment_app_runner_source}: {e}\n"
+                    "Please check that the source is valid and that the "
+                    "deployment app runner class is importable from the source "
+                    "root directory. Hint: run `zenml init` in your local "
+                    "source directory to initialize the source root path."
+                ) from e
+
+        if not issubclass(app_runner_cls, BaseDeploymentAppRunner):
+            raise RuntimeError(
+                f"Deployment app runner class '{app_runner_cls}' is not a "
+                "subclass of 'BaseDeploymentAppRunner'"
+            )
+
+        logger.info(
+            f"Instantiating deployment app runner class '{app_runner_cls}' for "
+            f"deployment {deployment.id}"
+        )
+
+        try:
+            return app_runner_cls(deployment)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to instantiate deployment app runner class "
+                f"'{app_runner_cls}' for deployment {deployment.id}: {e}"
+            ) from e
+
+    @classmethod
+    def load_deployment_service(
+        cls, deployment: Union[str, UUID, "DeploymentResponse"]
+    ) -> BasePipelineDeploymentService:
         """Load the service for the deployment.
+
+        Args:
+            deployment: The deployment to load the service for.
 
         Returns:
             The deployment service for the deployment.
@@ -105,17 +199,23 @@ class DeploymentApp:
         Raises:
             RuntimeError: If the deployment service cannot be loaded.
         """
-        if self.settings.deployment_service_source is None:
+        deployment = cls.load_deployment(deployment)
+        assert deployment.snapshot is not None
+
+        settings = (
+            deployment.snapshot.pipeline_configuration.deployment_settings
+        )
+        if settings.deployment_service_source is None:
             service_cls = DefaultPipelineDeploymentService
         else:
             try:
                 service_cls = source_utils.load(
-                    self.settings.deployment_service_source
+                    settings.deployment_service_source
                 )
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to load deployment service from source "
-                    f"{self.settings.deployment_service_source}: {e}\n"
+                    f"{settings.deployment_service_source}: {e}\n"
                     "Please check that the source is valid and that the "
                     "deployment service class is importable from the source "
                     "root directory. Hint: run `zenml init` in your local "
@@ -124,229 +224,22 @@ class DeploymentApp:
 
         if not issubclass(service_cls, BasePipelineDeploymentService):
             raise RuntimeError(
-                f"Deployment service {service_cls} is not a subclass of "
-                "BasePipelineDeploymentService"
+                f"Deployment service class '{service_cls}' is not a subclass "
+                "of 'BasePipelineDeploymentService'"
             )
 
-        return service_cls(self.deployment)
-
-    def _build_invoke_endpoint(self) -> Callable[[BaseDeploymentInvocationRequest], BaseDeploymentInvocationResponse]:
-        """Create the invoke endpoint."""
-        PipelineInvokeRequest, PipelineInvokeResponse = (
-            self.service.get_pipeline_invoke_models()
+        logger.info(
+            f"Instantiating deployment service class '{service_cls}' for "
+            f"deployment {deployment.id}"
         )
 
-        security = HTTPBearer(
-            scheme_name="Bearer Token",
-            description="Enter your API key as a Bearer token",
-            auto_error=False,
-        )
-
-        def verify_token(
-            credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-                security
-            ),
-        ) -> None:
-            """Verify the provided Bearer token for authentication.
-
-            This dependency function integrates with FastAPI's security system
-            to provide proper OpenAPI documentation and authentication UI.
-
-            Args:
-                credentials: HTTP Bearer credentials from the request
-
-            Raises:
-                HTTPException: If authentication is required but token is invalid
-            """
-            auth_key = self.deployment.auth_key
-            auth_enabled = auth_key and auth_key != ""
-
-            # If authentication is not enabled, allow all requests
-            if not auth_enabled:
-                return
-
-            # If authentication is enabled, validate the token
-            if not credentials:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Authorization header required",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            if credentials.credentials != auth_key:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid authentication token",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            # Token is valid, authentication successful
-            return
-
-        def _invoke_endpoint(
-            request: PipelineInvokeRequest,  # type: ignore[valid-type]
-            _: None = Depends(verify_token),
-        ) -> PipelineInvokeResponse:  # type: ignore[valid-type]
-            return self.invoke_endpoint(request)
-
-        return _invoke_endpoint
-
-    def invoke_endpoint(
-        self, request: BaseDeploymentInvocationRequest
-    ) -> BaseDeploymentInvocationResponse:
-        """Invoke the pipeline.
-
-        Args:
-            request: The request.
-
-        Returns:
-            The invocation response.
-        """
-        return self.service.execute_pipeline(request)
-
-    def health_check_endpoint(self, request: Request) -> str:
-        """Health check endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            "OK" if the service is healthy, otherwise raises an HTTPException.
-
-        Raises:
-            HTTPException: If the service is not healthy.
-        """
-        if not self.service.is_healthy():
-            raise HTTPException(503, "Service is unhealthy")
-        return "OK"
-
-    def info_endpoint(self, request: Request) -> ServiceInfo:
-        """Info endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            Service info.
-        """
-        return self.service.get_service_info()
-
-    def execution_metrics_endpoint(self, request: Request) -> ExecutionMetrics:
-        """Execution metrics endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            Execution metrics.
-        """
-        return self.service.get_execution_metrics()
-
-    def root_endpoint(self, request: Request) -> HTMLResponse:
-        """Root endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            The root content.
-        """
-        info = self.service.get_service_info()
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{self.settings.app_title or f"ZenML Pipeline Deployment `{self.deployment.name}`"}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                .header {{ color: #2563eb; }}
-                .section {{ margin: 20px 0; }}
-                .status {{ padding: 5px 10px; border-radius: 4px; background: #10b981; color: white; }}
-            </style>
-        </head>
-        <body>
-            <h1 class="header">🚀 ZenML Pipeline Deployment</h1>
-            <div class="section">
-                <h2>Service Status</h2>
-                <p>Status: <span class="status">Running</span></p>
-                <p>Pipeline: <strong>{info.pipeline.name}</strong></p>
-            </div>
-            <div class="section">
-                <h2>Documentation</h2>
-                <p><a href="{self.settings.docs_url_path}">📖 Interactive API Documentation</a></p>
-            </div>
-        </body>
-        </html>
-        """
-        return HTMLResponse(html_content)
-
-    def error_handler(self, request: Request, exc: ValueError) -> JSONResponse:
-        """FastAPI error handler.
-
-        Args:
-            request: The request.
-            exc: The exception.
-
-        Returns:
-            The error response.
-        """
-        logger.error("Error in request: %s", exc)
-        return JSONResponse(status_code=500, content={"detail": str(exc)})
-
-    def _build_app(self) -> FastAPI:
-        """Build the FastAPI app for the deployment."""
-        # Build app with metadata
-        title = (
-            self.settings.app_title
-            or f"ZenML Pipeline Deployment {self.deployment.name}"
-        )
-        description = (
-            self.settings.app_description
-            or f"ZenML pipeline deployment server for the "
-            f"{self.deployment.name} deployment"
-        )
-        fastapi_kwargs: Dict[str, Any] = dict(
-            title=title,
-            description=description,
-            version=self.settings.app_version
-            if self.settings.app_version is not None
-            else zenml_version,
-            root_path=self.settings.root_url_path,
-            docs_url=self.settings.docs_url_path,
-            redoc_url=self.settings.redoc_url_path,
-            lifespan=self.lifespan,
-        )
-        fastapi_kwargs.update(self.settings.fastapi_kwargs)
-
-        fastapi_app = FastAPI(**fastapi_kwargs)
-
-        # Bind the deployment service to the app state
-        fastapi_app.state.service = self.service
-
-        fastapi_app.add_middleware(
-            CORSMiddleware,
-            allow_origins=self.settings.cors_allow_origins,
-            allow_credentials=self.settings.cors_allow_credentials,
-            allow_methods=self.settings.cors_allow_methods,
-            allow_headers=self.settings.cors_allow_headers,
-        )
-
-        fastapi_app.get("/")(self.root_endpoint)
-        fastapi_app.post(self.settings.invoke_url_path)(
-            self._build_invoke_endpoint()
-        )
-        fastapi_app.get(self.settings.health_url_path)(
-            self.health_check_endpoint
-        )
-        fastapi_app.get(self.settings.info_url_path)(self.info_endpoint)
-        fastapi_app.get(self.settings.metrics_url_path)(
-            self.execution_metrics_endpoint
-        )
-
-        # error handlers
-        fastapi_app.exception_handler(Exception)(self.error_handler)
-
-        return fastapi_app
+        try:
+            return service_cls(deployment)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to instantiate deployment service class "
+                f"'{service_cls}' for deployment {deployment.id}: {e}"
+            ) from e
 
     def run(self) -> None:
         """Run the deployment app."""
@@ -354,8 +247,10 @@ class DeploymentApp:
 
         settings = self.settings
 
+        self.asgi_app = self.build()
+
         logger.info(f"""
-🚀 Starting ZenML Pipeline Deployment:
+🚀 Starting ZenML pipeline deployment application:
    Deployment ID: {self.deployment.id}
    Deployment Name: {self.deployment.name}
    Snapshot ID: {self.snapshot.id}
@@ -368,7 +263,7 @@ class DeploymentApp:
    Log Level: {settings.log_level}
 """)
 
-        uvicorn_kwargs: dict[str, Any] = dict(
+        uvicorn_kwargs: Dict[str, Any] = dict(
             host=settings.uvicorn_host,
             port=settings.uvicorn_port,
             workers=settings.uvicorn_workers,
@@ -379,66 +274,30 @@ class DeploymentApp:
             uvicorn_kwargs.update(settings.uvicorn_kwargs)
 
         try:
-            # Start the FastAPI server
+            # Start the ASGI application
             uvicorn.run(
-                self.fast_api_app,
+                self.asgi_app,
                 **uvicorn_kwargs,
             )
         except KeyboardInterrupt:
-            logger.info("\n🛑 Deployment shutdown")
+            logger.info("\n🛑 Deployment application shutdown")
         except Exception as e:
-            logger.error(f"❌ Failed to start deployment: {str(e)}")
+            logger.error(
+                f"❌ Failed to start deployment application: {str(e)}"
+            )
             raise
 
-    @asynccontextmanager
-    async def lifespan(self, app: FastAPI) -> AsyncGenerator[None, None]:
-        """Manage the deployment application lifespan.
+    @abstractmethod
+    def build(self) -> Union["ASGIApplication", Callable[..., Any]]:
+        """Build the ASGI compatible web application.
 
         Args:
-            app: The FastAPI application instance being deployed.
+            **kwargs: Additional keyword arguments for building the ASGI
+                compatible web application.
 
-        Yields:
-            None: Control is handed back to FastAPI once initialization completes.
-
-        Raises:
-            ValueError: If no deployment identifier is configured.
-            Exception: If initialization or cleanup fails.
+        Returns:
+            The ASGI compatible web application.
         """
-        # Check for test mode
-        if os.getenv("ZENML_DEPLOYMENT_TEST_MODE", "false").lower() == "true":
-            logger.info("🧪 Running in test mode - skipping initialization")
-            yield
-            return
-
-        logger.info("🚀 Initializing the pipeline deployment service...")
-
-        try:
-            self.service.initialize()
-            logger.info(
-                "✅ Pipeline deployment service initialized successfully"
-            )
-        except Exception as e:
-            logger.error(
-                f"❌ Failed to initialize the pipeline deployment service: {e}"
-            )
-            raise
-
-        # TODO: run custom startup app hooks
-
-        yield
-
-        # TODO: run custom shutdown app hooks
-
-        logger.info("🛑 Cleaning up the pipeline deployment service...")
-        try:
-            self.service.cleanup()
-            logger.info(
-                "✅ The pipeline deployment service was cleaned up successfully"
-            )
-        except Exception as e:
-            logger.error(
-                f"❌ Error during the pipeline deployment service cleanup: {e}"
-            )
 
 
 if __name__ == "__main__":
@@ -452,7 +311,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logger.info(f"Starting FastAPI server for deployment {args.deployment_id}")
+    logger.info(
+        f"Starting deployment application server for deployment "
+        f"{args.deployment_id}"
+    )
 
-    app = DeploymentApp(deployment=args.deployment_id)
-    app.run()
+    # Activate integrations to ensure all components are available
+    integration_registry.activate_integrations()
+
+    app_runner = BaseDeploymentAppRunner.load_app_runner(args.deployment_id)
+    app_runner.run()

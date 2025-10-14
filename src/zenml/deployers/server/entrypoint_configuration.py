@@ -105,15 +105,17 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         Raises:
             Exception: If the server fails to start.
         """
-        from zenml.deployers.server.app import DeploymentApp
+        from zenml.deployers.server.app import BaseDeploymentAppRunner
 
         # Activate integrations to ensure all components are available
         integration_registry.activate_integrations()
 
         deployment = self.load_deployment()
-        if deployment.snapshot:
-            # Download code if necessary (for remote execution environments)
-            self.download_code_if_necessary(snapshot=deployment.snapshot)
+        if not deployment.snapshot:
+            raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
 
-        app = DeploymentApp(deployment=deployment)
-        app.run()
+        # Download code if necessary (for remote execution environments)
+        self.download_code_if_necessary(snapshot=deployment.snapshot)
+        
+        app_runner = BaseDeploymentAppRunner.load_app_runner(deployment)
+        app_runner.run()

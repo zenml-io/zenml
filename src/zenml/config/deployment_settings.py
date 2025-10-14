@@ -166,6 +166,7 @@ class DeploymentSettings(BaseSettings):
 
     uvicorn_kwargs: Dict[str, Any] = {}
 
+    deployment_app_runner_source: Optional[SourceWithValidator] = None
     deployment_service_source: Optional[SourceWithValidator] = None
 
     model_config = ConfigDict(
