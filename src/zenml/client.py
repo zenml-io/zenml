@@ -3806,43 +3806,6 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.create_curated_visualization(request)
 
-    def add_visualization_to_deployment(
-        self,
-        deployment_id: UUID,
-        artifact_version_id: UUID,
-        visualization_index: int,
-        *,
-        display_name: Optional[str] = None,
-        display_order: Optional[int] = None,
-        layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
-    ) -> CuratedVisualizationResponse:
-        """Attach a curated visualization to a deployment.
-
-        Args:
-            deployment_id: The ID of the deployment to add visualization to.
-            artifact_version_id: The ID of the artifact version containing the visualization.
-            visualization_index: The index of the visualization within the artifact version.
-            display_name: Optional display name for the visualization.
-            display_order: Optional display order for sorting visualizations.
-            layout_size: Layout size defining the visualization width on the dashboard.
-
-        Returns:
-            The created curated visualization.
-        """
-        deployment = self.get_deployment(deployment_id)
-        return self.create_curated_visualization(
-            artifact_version_id=artifact_version_id,
-            visualization_index=visualization_index,
-            resource=CuratedVisualizationResource(
-                id=deployment_id,
-                type=VisualizationResourceTypes.DEPLOYMENT,
-            ),
-            project_id=deployment.project_id,
-            display_name=display_name,
-            display_order=display_order,
-            layout_size=layout_size,
-        )
-
     def list_curated_visualizations(
         self,
         *,

@@ -102,8 +102,9 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     visualization_index: int = Field(nullable=False)
     display_name: Optional[str] = Field(default=None)
     display_order: Optional[int] = Field(default=None)
-    layout_size: CuratedVisualizationSize = Field(
-        default=CuratedVisualizationSize.FULL_WIDTH, nullable=False
+    layout_size: str = Field(
+        default=CuratedVisualizationSize.FULL_WIDTH.value,
+        nullable=False,
     )
 
     artifact_version: Optional["ArtifactVersionSchema"] = Relationship(
@@ -167,7 +168,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=request.visualization_index,
             display_name=request.display_name,
             display_order=request.display_order,
-            layout_size=request.layout_size,
+            layout_size=request.layout_size.value,
         )
 
     def update(
@@ -182,9 +183,12 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         Returns:
             The updated schema.
         """
-        for field, value in update.model_dump(
-            exclude_unset=True,
-        ).items():
+        changes = update.model_dump(exclude_unset=True)
+        layout_size_update = changes.pop("layout_size", None)
+        if layout_size_update is not None:
+            self.layout_size = layout_size_update.value
+
+        for field, value in changes.items():
             if hasattr(self, field):
                 setattr(self, field, value)
 
@@ -209,6 +213,14 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         Returns:
             The created response model.
         """
+        layout_size_value = (
+            self.layout_size or CuratedVisualizationSize.FULL_WIDTH.value
+        )
+        try:
+            layout_size_enum = CuratedVisualizationSize(layout_size_value)
+        except ValueError:
+            layout_size_enum = CuratedVisualizationSize.FULL_WIDTH
+
         body = CuratedVisualizationResponseBody(
             project_id=self.project_id,
             created=self.created,
@@ -217,7 +229,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             visualization_index=self.visualization_index,
             display_name=self.display_name,
             display_order=self.display_order,
-            layout_size=self.layout_size,
+            layout_size=layout_size_enum,
         )
 
         metadata = None
