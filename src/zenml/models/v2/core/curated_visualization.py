@@ -321,11 +321,11 @@ class CuratedVisualizationFilter(ProjectScopedFilter):
             if operand == SorterOps.DESCENDING:
                 return cast(
                     AnyQuery,
-                    query.order_by(desc(column).nulls_last(), asc(table.id)),
+                    query.order_by(desc(column).nulls_last()),
                 )
             return cast(
                 AnyQuery,
-                query.order_by(asc(column).nulls_first(), asc(table.id)),
+                query.order_by(asc(column).nulls_first()),
             )
 
         if sort_by in {"created", "updated", "visualization_index"}:
