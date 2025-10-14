@@ -247,7 +247,7 @@ def wrapped_print(*args: Any, **kwargs: Any) -> None:
         *args: Arguments to print
         **kwargs: Keyword arguments for print
     """
-    original_print = getattr(builtins, "_zenml_original_print", builtins.print)
+    original_print = getattr(builtins, "_zenml_original_print")
 
     file_arg = kwargs.get("file", sys.stdout)
 
