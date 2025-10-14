@@ -96,7 +96,6 @@ from zenml.models import (
     ArtifactVisualizationRequest,
     ComponentFilter,
     ComponentUpdate,
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResource,
     CuratedVisualizationUpdate,
@@ -5882,62 +5881,18 @@ class TestCuratedVisualizations:
                         display_name=f"{resource_type.value} visualization",
                     )
                 )
-                visualizations[resource_type] = viz
-                assert viz.layout_size == CuratedVisualizationSize.FULL_WIDTH
-
-            # Verify via zen_store filtering - each resource should have exactly one visualization
-            for resource_type, resource_id in resource_configs:
-                result = client.zen_store.list_curated_visualizations(
-                    CuratedVisualizationFilter(
-                        project=project_id,
-                        resource_type=resource_type,
-                        resource_id=resource_id,
-                    )
+                hydrated = client.zen_store.get_curated_visualization(
+                    visualization_id=viz.id,
+                    hydrate=True,
                 )
-                assert result.total == 1
-                assert result.items[0].id == visualizations[resource_type].id
-
-            # Verify via client convenience parameters
-            convenience_params = [
-                (
-                    "pipeline_id",
-                    pipeline_model.id,
-                    VisualizationResourceTypes.PIPELINE,
-                ),
-                ("model_id", model.id, VisualizationResourceTypes.MODEL),
-                (
-                    "pipeline_run_id",
-                    pipeline_run.id,
-                    VisualizationResourceTypes.PIPELINE_RUN,
-                ),
-                (
-                    "pipeline_snapshot_id",
-                    snapshot.id,
-                    VisualizationResourceTypes.PIPELINE_SNAPSHOT,
-                ),
-                (
-                    "deployment_id",
-                    deployment.id,
-                    VisualizationResourceTypes.DEPLOYMENT,
-                ),
-                ("project_id", project_id, VisualizationResourceTypes.PROJECT),
-            ]
-
-            for (
-                param_name,
-                param_value,
-                expected_resource_type,
-            ) in convenience_params:
-                result = client.list_curated_visualizations(
-                    **{param_name: param_value}
-                )
-                assert result.total == 1, f"Failed for {param_name}"
+                assert hydrated.resource is not None
+                assert hydrated.resource.type == resource_type
+                assert hydrated.resource.id == resource_id
                 assert (
-                    result.items[0].id
-                    == visualizations[expected_resource_type].id
+                    hydrated.layout_size == CuratedVisualizationSize.FULL_WIDTH
                 )
+                visualizations[resource_type] = viz
 
-            # Test hydrate/get
             loaded = client.zen_store.get_curated_visualization(
                 visualizations[VisualizationResourceTypes.PIPELINE].id,
                 hydrate=True,
@@ -5947,6 +5902,8 @@ class TestCuratedVisualizations:
                 == f"{VisualizationResourceTypes.PIPELINE.value} visualization"
             )
             assert loaded.layout_size == CuratedVisualizationSize.FULL_WIDTH
+            assert loaded.resource is not None
+            assert loaded.resource.type == VisualizationResourceTypes.PIPELINE
 
             # Test duplicate creation - same artifact_version + visualization_index + resource should fail
             with pytest.raises(EntityExistsError):
@@ -5981,16 +5938,9 @@ class TestCuratedVisualizations:
             for viz in visualizations.values():
                 client.zen_store.delete_curated_visualization(viz.id)
 
-            # Verify all deleted
-            for resource_type, resource_id in resource_configs:
-                result = client.zen_store.list_curated_visualizations(
-                    CuratedVisualizationFilter(
-                        project=project_id,
-                        resource_type=resource_type,
-                        resource_id=resource_id,
-                    )
-                )
-                assert result.total == 0
+            for viz in visualizations.values():
+                with pytest.raises(KeyError):
+                    client.zen_store.get_curated_visualization(viz.id)
         finally:
             # Clean up deployment
             client.zen_store.delete_deployment(deployment.id)
@@ -6039,20 +5989,20 @@ class TestCuratedVisualizations:
             display_name="Project visualization",
         )
 
-        result = client.zen_store.list_curated_visualizations(
-            CuratedVisualizationFilter(
-                project=project.id,
-                resource_type=VisualizationResourceTypes.PROJECT,
-                resource_id=project.id,
-            )
+        hydrated_visualization = client.zen_store.get_curated_visualization(
+            visualization.id, hydrate=True
         )
-        assert result.total == 1
-        assert result.items[0].id == visualization.id
-
-        result = client.list_curated_visualizations(project_id=project.id)
-        assert result.total == 1
-        assert result.items[0].id == visualization.id
+        assert hydrated_visualization.resource is not None
+        assert (
+            hydrated_visualization.resource.type
+            == VisualizationResourceTypes.PROJECT
+        )
+        assert hydrated_visualization.resource.id == project.id
+        assert hydrated_visualization.display_name == "Project visualization"
 
         client.delete_curated_visualization(visualization.id)
+        with pytest.raises(KeyError):
+            client.zen_store.get_curated_visualization(visualization.id)
+
         client.delete_artifact_version(artifact_version.id)
         client.delete_artifact(artifact.id)

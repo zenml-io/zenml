@@ -21,7 +21,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.enums import CuratedVisualizationSize
+from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
 from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
@@ -29,6 +29,9 @@ from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationResponseMetadata,
     CuratedVisualizationResponseResources,
     CuratedVisualizationUpdate,
+)
+from zenml.models.v2.misc.curated_visualization import (
+    CuratedVisualizationResource,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -238,13 +241,33 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
 
         response_resources = None
         if include_resources:
-            response_resources = CuratedVisualizationResponseResources(
-                artifact_version=self.artifact_version.to_model(
+            artifact_version_model = (
+                self.artifact_version.to_model(
                     include_metadata=include_metadata,
                     include_resources=include_resources,
                 )
                 if self.artifact_version
-                else None,
+                else None
+            )
+
+            resource_model = None
+            if self.resource:
+                try:
+                    resource_type_enum = VisualizationResourceTypes(
+                        self.resource.resource_type
+                    )
+                except ValueError:
+                    resource_type_enum = None
+
+                if resource_type_enum is not None:
+                    resource_model = CuratedVisualizationResource(
+                        id=self.resource.resource_id,
+                        type=resource_type_enum,
+                    )
+
+            response_resources = CuratedVisualizationResponseResources(
+                artifact_version=artifact_version_model,
+                resource=resource_model,
             )
 
         return CuratedVisualizationResponse(

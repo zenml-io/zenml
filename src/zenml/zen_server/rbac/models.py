@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """RBAC model classes."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 from uuid import UUID
 
 from pydantic import (
@@ -23,9 +23,6 @@ from pydantic import (
 )
 
 from zenml.utils.enum_utils import StrEnum
-
-if TYPE_CHECKING:
-    from zenml.enums import VisualizationResourceTypes
 
 
 class Action(StrEnum):
@@ -82,30 +79,6 @@ class ResourceType(StrEnum):
     PROJECT = "project"
     # Deactivated for now
     # USER = "user"
-
-    @classmethod
-    def from_visualization_type(
-        cls, visualization_type: "VisualizationResourceTypes"
-    ) -> Optional["ResourceType"]:
-        """Map visualization resource types to RBAC resource types.
-
-        Args:
-            visualization_type: The type of the visualization to map.
-
-        Returns:
-            The RBAC resource type associated with the visualization type.
-        """
-        from zenml.enums import VisualizationResourceTypes
-
-        mapping = {
-            VisualizationResourceTypes.DEPLOYMENT: cls.DEPLOYMENT,
-            VisualizationResourceTypes.MODEL: cls.MODEL,
-            VisualizationResourceTypes.PIPELINE: cls.PIPELINE,
-            VisualizationResourceTypes.PIPELINE_RUN: cls.PIPELINE_RUN,
-            VisualizationResourceTypes.PIPELINE_SNAPSHOT: cls.PIPELINE_SNAPSHOT,
-            VisualizationResourceTypes.PROJECT: cls.PROJECT,
-        }
-        return mapping.get(visualization_type)
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.

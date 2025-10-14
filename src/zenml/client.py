@@ -73,7 +73,6 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
-    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -110,7 +109,6 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResource,
     CuratedVisualizationResponse,
@@ -3805,149 +3803,6 @@ class Client(metaclass=ClientMetaClass):
             resource=resource,
         )
         return self.zen_store.create_curated_visualization(request)
-
-    def list_curated_visualizations(
-        self,
-        *,
-        resource_type: Optional[VisualizationResourceTypes] = None,
-        resource_id: Optional[UUID] = None,
-        deployment_id: Optional[UUID] = None,
-        model_id: Optional[UUID] = None,
-        pipeline_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        pipeline_snapshot_id: Optional[UUID] = None,
-        project_id: Optional[UUID] = None,
-        page: Optional[int] = None,
-        size: Optional[int] = None,
-        sort_by: Optional[str] = None,
-        visualization_index: Optional[int] = None,
-        layout_size: Optional[CuratedVisualizationSize] = None,
-        hydrate: bool = False,
-    ) -> Page[CuratedVisualizationResponse]:
-        """List curated visualizations, optionally scoped to a resource.
-
-        This method supports filtering by any of the following resource types:
-        - Deployments (use `deployment_id` parameter)
-        - Models (use `model_id` parameter)
-        - Pipelines (use `pipeline_id` parameter)
-        - Pipeline Runs (use `pipeline_run_id` parameter)
-        - Pipeline Snapshots (use `pipeline_snapshot_id` parameter)
-        - Projects (use `project_id` parameter)
-
-        Alternatively, you can use `resource_type` and `resource_id` directly
-        for more flexible filtering.
-
-        Args:
-            resource_type: The type of the resource to filter by.
-            resource_id: The ID of the resource to filter by.
-            deployment_id: Convenience parameter to filter by deployment.
-            model_id: Convenience parameter to filter by model.
-            pipeline_id: Convenience parameter to filter by pipeline.
-            pipeline_run_id: Convenience parameter to filter by pipeline run.
-            pipeline_snapshot_id: Convenience parameter to filter by pipeline snapshot.
-            project_id: Convenience parameter to filter by project.
-            page: The page of items.
-            size: The maximum size of all pages.
-            sort_by: The column to sort by.
-            visualization_index: The index of the visualization to filter by.
-            layout_size: The layout size of the visualization tiles to filter by.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of curated visualizations.
-
-        Raises:
-            ValueError: If multiple resource ID parameters are provided, if
-                visualization_index is negative, or if a convenience parameter
-                conflicts with explicitly provided resource_type or resource_id.
-        """
-        # Build convenience params dict mapping parameter names to (value, resource_type) tuples
-        convenience_params = {
-            "deployment_id": (
-                deployment_id,
-                VisualizationResourceTypes.DEPLOYMENT,
-            ),
-            "model_id": (model_id, VisualizationResourceTypes.MODEL),
-            "pipeline_id": (pipeline_id, VisualizationResourceTypes.PIPELINE),
-            "pipeline_run_id": (
-                pipeline_run_id,
-                VisualizationResourceTypes.PIPELINE_RUN,
-            ),
-            "pipeline_snapshot_id": (
-                pipeline_snapshot_id,
-                VisualizationResourceTypes.PIPELINE_SNAPSHOT,
-            ),
-            "project_id": (project_id, VisualizationResourceTypes.PROJECT),
-        }
-
-        # Filter to only provided parameters
-        provided = {
-            param_name: (param_value, param_type)
-            for param_name, (
-                param_value,
-                param_type,
-            ) in convenience_params.items()
-            if param_value is not None
-        }
-
-        if len(provided) > 1:
-            param_names = list(provided.keys())
-            raise ValueError(
-                f"Only one resource ID parameter can be specified at a time. "
-                f"Got: {', '.join(param_names)}"
-            )
-
-        # Validate consistency between convenience parameters and explicit arguments
-        if provided:
-            param_name, (param_id, param_type) = list(provided.items())[0]
-
-            # Check for resource_type mismatch
-            if resource_type is not None and resource_type != param_type:
-                raise ValueError(
-                    f"Conflicting resource type: convenience parameter '{param_name}' "
-                    f"implies resource_type={param_type.value}, but "
-                    f"resource_type={resource_type.value} was explicitly provided."
-                )
-
-            # Check for resource_id mismatch
-            if resource_id is not None and resource_id != param_id:
-                raise ValueError(
-                    f"Conflicting resource ID: convenience parameter '{param_name}' "
-                    f"specifies resource_id={param_id}, but a different "
-                    f"resource_id={resource_id} was explicitly provided."
-                )
-
-            # Auto-set resource_type and resource_id from convenience parameters
-            resource_type = resource_type or param_type
-            resource_id = resource_id or param_id
-
-        if visualization_index is not None and visualization_index < 0:
-            raise ValueError("visualization_index must be non-negative")
-
-        filter_model = CuratedVisualizationFilter(
-            project=self.active_project.id
-        )
-        if resource_type is not None:
-            filter_model.resource_type = resource_type
-        if resource_id is not None:
-            filter_model.resource_id = resource_id
-
-        if page is not None:
-            filter_model.page = page
-        if size is not None:
-            filter_model.size = size
-        if sort_by is not None:
-            filter_model.sort_by = sort_by
-        if visualization_index is not None:
-            filter_model.visualization_index = visualization_index
-        if layout_size is not None:
-            filter_model.layout_size = layout_size
-
-        return self.zen_store.list_curated_visualizations(
-            filter_model=filter_model,
-            hydrate=hydrate,
-        )
 
     def update_curated_visualization(
         self,

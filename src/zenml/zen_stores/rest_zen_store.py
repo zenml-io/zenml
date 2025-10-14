@@ -166,7 +166,6 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
@@ -1896,28 +1895,6 @@ class RestZenStore(BaseZenStore):
             resource_id=visualization_id,
             route=CURATED_VISUALIZATIONS,
             response_model=CuratedVisualizationResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_curated_visualizations(
-        self,
-        filter_model: CuratedVisualizationFilter,
-        hydrate: bool = False,
-    ) -> Page[CuratedVisualizationResponse]:
-        """List curated visualizations via REST API.
-
-        Args:
-            filter_model: The filter model to use.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of curated visualizations.
-        """
-        return self._list_paginated_resources(
-            route=CURATED_VISUALIZATIONS,
-            response_model=CuratedVisualizationResponse,
-            filter_model=filter_model,
             params={"hydrate": hydrate},
         )
 

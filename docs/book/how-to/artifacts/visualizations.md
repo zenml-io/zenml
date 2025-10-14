@@ -69,8 +69,6 @@ There are three ways how you can add custom visualizations to the dashboard:
 
 Curated visualizations let you surface a specific artifact visualization across multiple ZenML resources. Each curated visualization links to exactly one resource—for example, a model performance report that appears on the model detail page, or a deployment health dashboard that shows up in the deployment view.
 
-To cover multiple resources with the same visualization, create separate curated visualizations for each resource type. This gives you fine-grained control over which dashboards appear where.
-
 Curated visualizations currently support the following resources:
 
 - **Projects** – high-level dashboards and KPIs that summarize the state of a project.
@@ -138,20 +136,16 @@ project_viz = client.create_curated_visualization(
 )
 ```
 
-Note that each visualization is created separately and can reference the same artifact visualization (by using the same `artifact_version_id` and `visualization_index`). This allows you to show the same underlying visualization in multiple contexts while maintaining separate display settings for each resource. Use the optional `layout_size` argument to control whether the visualization spans the full width of the dashboard or renders as a half-width tile. If omitted, the layout defaults to `CuratedVisualizationSize.FULL_WIDTH`.
-
-To list curated visualizations for a specific resource, you can use the `Client.list_curated_visualizations` convenience parameters:
+After creation, the returned response includes the visualization ID. You can retrieve a specific visualization later with `Client.get_curated_visualization`:
 
 ```python
-client.list_curated_visualizations(project_id=project.id)
-client.list_curated_visualizations(deployment_id=deployment.id)
-client.list_curated_visualizations(model_id=model.id)
-client.list_curated_visualizations(pipeline_id=pipeline.id)
-client.list_curated_visualizations(pipeline_run_id=pipeline_run.id)
-client.list_curated_visualizations(pipeline_snapshot_id=snapshot.id)
+retrieved = client.get_curated_visualization(model_viz.id, hydrate=True)
+print(retrieved.display_name)
+print(retrieved.resource.type)
+print(retrieved.resource.id)
 ```
 
-Each call returns a `Page[CuratedVisualizationResponse]` object so you can iterate through the visualizations or fetch the hydrated version for additional metadata.
+Curated visualizations are tied to their parent resources and automatically surface in the ZenML dashboard wherever those resources appear, so keep track of the IDs returned by `create_curated_visualization` if you need to reference them later.
 
 #### Updating curated visualizations
 

@@ -48,7 +48,6 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
@@ -1488,14 +1487,6 @@ class ZenStoreInterface(ABC):
         self, visualization_id: UUID, hydrate: bool = True
     ) -> CuratedVisualizationResponse:
         """Get a curated visualization by ID."""
-
-    @abstractmethod
-    def list_curated_visualizations(
-        self,
-        filter_model: CuratedVisualizationFilter,
-        hydrate: bool = False,
-    ) -> Page[CuratedVisualizationResponse]:
-        """List curated visualizations matching the given filter criteria."""
 
     @abstractmethod
     def update_curated_visualization(

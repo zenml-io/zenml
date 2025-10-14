@@ -1,42 +1,54 @@
 """REST API endpoints for curated visualizations."""
 
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Security
 
 from zenml.constants import API, CURATED_VISUALIZATIONS, VERSION_1
+from zenml.enums import VisualizationResourceTypes
 from zenml.models import (
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
+    CuratedVisualizationResource,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
-    Page,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_create_entity,
-    verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
-    verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
-)
-from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions_for_models,
-    dehydrate_page,
-)
-from zenml.zen_server.utils import (
-    async_fastapi_endpoint_wrapper,
-    make_dependable,
-    zen_store,
-)
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.utils import async_fastapi_endpoint_wrapper, zen_store
 
 router = APIRouter(
     prefix=API + VERSION_1 + CURATED_VISUALIZATIONS,
     tags=["curated_visualizations"],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+
+
+def _get_resource_model(
+    resource: CuratedVisualizationResource,
+) -> Any:
+    """Load the model associated with a curated visualization resource."""
+    store = zen_store()
+    resource_type = resource.type
+
+    if resource_type == VisualizationResourceTypes.DEPLOYMENT:
+        return store.get_deployment(resource.id)
+    if resource_type == VisualizationResourceTypes.MODEL:
+        return store.get_model(resource.id)
+    if resource_type == VisualizationResourceTypes.PIPELINE:
+        return store.get_pipeline(resource.id)
+    if resource_type == VisualizationResourceTypes.PIPELINE_RUN:
+        return store.get_run(resource.id)
+    if resource_type == VisualizationResourceTypes.PIPELINE_SNAPSHOT:
+        return store.get_snapshot(resource.id)
+    if resource_type == VisualizationResourceTypes.PROJECT:
+        return store.get_project(resource.id)
+
+    raise RuntimeError(
+        f"Unsupported curated visualization resource type: {resource_type}"
+    )
 
 
 @router.post(
@@ -61,57 +73,16 @@ def create_curated_visualization(
     Returns:
         The created curated visualization.
     """
-    return verify_permissions_and_create_entity(
-        request_model=visualization,
-        create_method=zen_store().create_curated_visualization,
+    store = zen_store()
+    resource_model = _get_resource_model(visualization.resource)
+    artifact_version = store.get_artifact_version(
+        visualization.artifact_version_id
     )
 
+    verify_permission_for_model(resource_model, action=Action.UPDATE)
+    verify_permission_for_model(artifact_version, action=Action.READ)
 
-@router.get(
-    "",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def list_curated_visualizations(
-    visualization_filter_model: CuratedVisualizationFilter = Depends(
-        make_dependable(CuratedVisualizationFilter)
-    ),
-    hydrate: bool = False,
-    _: AuthContext = Security(authorize),
-) -> Page[CuratedVisualizationResponse]:
-    """List curated visualizations.
-
-    Args:
-        visualization_filter_model: Filter model used for pagination, sorting,
-            filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-
-    Returns:
-        A page of curated visualizations.
-    """
-    resource_type = None
-    if visualization_filter_model.resource_type:
-        resource_type = ResourceType.from_visualization_type(
-            visualization_filter_model.resource_type
-        )
-
-    if resource_type is None:
-        # No concrete resource type - call zen store directly and batch verify permissions
-        page = zen_store().list_curated_visualizations(
-            filter_model=visualization_filter_model,
-            hydrate=hydrate,
-        )
-        batch_verify_permissions_for_models(page.items, action=Action.READ)
-        return dehydrate_page(page)
-    else:
-        # Concrete resource type available - use standard RBAC flow
-        return verify_permissions_and_list_entities(
-            filter_model=visualization_filter_model,
-            resource_type=resource_type,
-            list_method=zen_store().list_curated_visualizations,
-            hydrate=hydrate,
-        )
+    return store.create_curated_visualization(visualization)
 
 
 @router.get(
@@ -128,17 +99,28 @@ def get_curated_visualization(
 
     Args:
         visualization_id: The ID of the curated visualization to retrieve.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
+        hydrate: Flag deciding whether to return the hydrated model.
 
     Returns:
         The curated visualization with the given ID.
     """
-    return verify_permissions_and_get_entity(
-        id=visualization_id,
-        get_method=zen_store().get_curated_visualization,
-        hydrate=hydrate,
+    store = zen_store()
+    hydrated_visualization = store.get_curated_visualization(
+        visualization_id, hydrate=True
     )
+    resource = hydrated_visualization.resource
+    if resource is None:
+        raise RuntimeError(
+            f"Curated visualization '{visualization_id}' is missing its resource reference."
+        )
+
+    resource_model = _get_resource_model(resource)
+    verify_permission_for_model(resource_model, action=Action.READ)
+
+    if hydrate:
+        return hydrated_visualization
+
+    return store.get_curated_visualization(visualization_id, hydrate=False)
 
 
 @router.patch(
@@ -160,11 +142,21 @@ def update_curated_visualization(
     Returns:
         The updated curated visualization.
     """
-    return verify_permissions_and_update_entity(
-        id=visualization_id,
-        update_model=visualization_update,
-        get_method=zen_store().get_curated_visualization,
-        update_method=zen_store().update_curated_visualization,
+    store = zen_store()
+    existing_visualization = store.get_curated_visualization(
+        visualization_id, hydrate=True
+    )
+    resource = existing_visualization.resource
+    if resource is None:
+        raise RuntimeError(
+            f"Curated visualization '{visualization_id}' is missing its resource reference."
+        )
+
+    resource_model = _get_resource_model(resource)
+    verify_permission_for_model(resource_model, action=Action.UPDATE)
+
+    return store.update_curated_visualization(
+        visualization_id, visualization_update
     )
 
 
@@ -182,8 +174,17 @@ def delete_curated_visualization(
     Args:
         visualization_id: The ID of the curated visualization to delete.
     """
-    verify_permissions_and_delete_entity(
-        id=visualization_id,
-        get_method=zen_store().get_curated_visualization,
-        delete_method=zen_store().delete_curated_visualization,
+    store = zen_store()
+    existing_visualization = store.get_curated_visualization(
+        visualization_id, hydrate=True
     )
+    resource = existing_visualization.resource
+    if resource is None:
+        raise RuntimeError(
+            f"Curated visualization '{visualization_id}' is missing its resource reference."
+        )
+
+    resource_model = _get_resource_model(resource)
+    verify_permission_for_model(resource_model, action=Action.UPDATE)
+
+    store.delete_curated_visualization(visualization_id)

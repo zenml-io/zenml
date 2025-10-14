@@ -165,7 +165,6 @@ from zenml.models.v2.core.deployment import (
     DeploymentResponseResources,
 )
 from zenml.models.v2.core.curated_visualization import (
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
     CuratedVisualizationResponseBody,
@@ -665,7 +664,6 @@ __all__ = [
     "DeploymentResponseBody",
     "DeploymentResponseMetadata",
     "DeploymentResponseResources",
-    "CuratedVisualizationFilter",
     "CuratedVisualizationRequest",
     "CuratedVisualizationResponse",
     "CuratedVisualizationResponseBody",

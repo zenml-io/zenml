@@ -13,28 +13,14 @@
 #  permissions and limitations under the License.
 """Models representing curated visualizations."""
 
-from typing import (
-    TYPE_CHECKING,
-    ClassVar,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pydantic import Field
 
-from zenml.enums import (
-    CuratedVisualizationSize,
-    VisualizationResourceTypes,
-)
+from zenml.enums import CuratedVisualizationSize
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
-    ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
@@ -47,9 +33,6 @@ from zenml.models.v2.misc.curated_visualization import (
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
-    from zenml.zen_stores.schemas.base_schemas import BaseSchema
-
-    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 # ------------------ Request Model ------------------
@@ -166,6 +149,11 @@ class CuratedVisualizationResponseResources(ProjectScopedResponseResources):
         title="The artifact version.",
         description="Artifact version from which the visualization originates.",
     )
+    resource: Optional[CuratedVisualizationResource] = Field(
+        default=None,
+        title="The linked resource.",
+        description="Resource reference associated with this curated visualization.",
+    )
 
 
 class CuratedVisualizationResponse(
@@ -243,97 +231,12 @@ class CuratedVisualizationResponse(
         """
         return self.get_resources().artifact_version
 
-
-# ------------------ Filter Model ------------------
-
-
-class CuratedVisualizationFilter(ProjectScopedFilter):
-    """Model to enable advanced filtering of curated visualizations."""
-
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "resource_id",
-        "resource_type",
-        "layout_size",
-    ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
-        "display_order",
-        "created",
-        "updated",
-        "visualization_index",
-    ]
-
-    sort_by: str = Field(
-        default="display_order",
-        description="Which column to sort by.",
-    )
-
-    artifact_version_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="ID of the artifact version associated with the visualization.",
-        union_mode="left_to_right",
-    )
-    visualization_index: Optional[int] = Field(
-        default=None,
-        description="Index of the visualization within the artifact version payload.",
-    )
-    display_order: Optional[int] = Field(
-        default=None,
-        description="Display order of the visualization.",
-    )
-    layout_size: Optional[CuratedVisualizationSize] = Field(
-        default=None,
-        description="Layout size of the visualization tile.",
-    )
-    resource_type: Optional[VisualizationResourceTypes] = Field(
-        default=None,
-        description="Type of the resource exposing the visualization.",
-    )
-    resource_id: Optional[UUID] = Field(
-        default=None,
-        description="ID of the resource exposing the visualization.",
-    )
-
-    def apply_sorting(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Apply sorting to the curated visualization query.
-
-        Args:
-            query: The query to which to apply the sorting.
-            table: The query table.
+    @property
+    def resource(self) -> Optional[CuratedVisualizationResource]:
+        """The resource reference associated with this visualization.
 
         Returns:
-            The query with sorting applied.
+            The resource reference if included.
         """
-        from sqlmodel import asc, desc
-
-        from zenml.enums import SorterOps
-
-        sort_by, operand = self.sorting_params
-
-        if sort_by == "display_order":
-            column = getattr(table, "display_order")
-            if operand == SorterOps.DESCENDING:
-                return cast(
-                    AnyQuery,
-                    query.order_by(desc(column).nulls_last()),
-                )
-            return cast(
-                AnyQuery,
-                query.order_by(asc(column).nulls_first()),
-            )
-
-        if sort_by in {"created", "updated", "visualization_index"}:
-            column = getattr(table, sort_by)
-            if operand == SorterOps.DESCENDING:
-                return cast(
-                    AnyQuery,
-                    query.order_by(desc(column), asc(table.id)),
-                )
-            return cast(AnyQuery, query.order_by(asc(column), asc(table.id)))
-
-        return super().apply_sorting(query=query, table=table)
+        resources = self.get_resources()
+        return resources.resource if resources else None

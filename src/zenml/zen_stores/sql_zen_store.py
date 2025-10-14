@@ -77,12 +77,10 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import (
     Mapped,
-    aliased,
     load_only,
     noload,
     selectinload,
 )
-from sqlalchemy.orm.util import AliasedClass
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -207,7 +205,6 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
-    CuratedVisualizationFilter,
     CuratedVisualizationRequest,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
@@ -5619,57 +5616,6 @@ class SqlZenStore(BaseZenStore):
             return schema.to_model(
                 include_metadata=hydrate,
                 include_resources=hydrate,
-            )
-
-    def list_curated_visualizations(
-        self,
-        filter_model: CuratedVisualizationFilter,
-        hydrate: bool = False,
-    ) -> Page[CuratedVisualizationResponse]:
-        """List all curated visualizations matching the given filter.
-
-        Args:
-            filter_model: The filter model to use.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of curated visualizations.
-        """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=filter_model, session=session
-            )
-
-            query = select(CuratedVisualizationSchema)
-            if filter_model.resource_type or filter_model.resource_id:
-                resource_alias = cast(
-                    AliasedClass[CuratedVisualizationResourceSchema],
-                    aliased(CuratedVisualizationResourceSchema),
-                )
-                query = query.join(
-                    resource_alias,
-                    resource_alias.visualization_id
-                    == CuratedVisualizationSchema.id,
-                )
-                if filter_model.resource_type:
-                    query = query.where(
-                        resource_alias.resource_type
-                        == filter_model.resource_type.value
-                    )
-                if filter_model.resource_id:
-                    query = query.where(
-                        resource_alias.resource_id == filter_model.resource_id
-                    )
-                # Add distinct to prevent duplicate rows when joined to multiple resources
-                query = query.distinct()
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=CuratedVisualizationSchema,
-                filter_model=filter_model,
-                hydrate=hydrate,
             )
 
     def update_curated_visualization(
