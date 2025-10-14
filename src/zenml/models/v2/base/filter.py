@@ -290,7 +290,7 @@ class StrFilter(Filter):
                 ),
             }
 
-            return operations[self.operation](numeric_column, self.value)  # type: ignore[no-untyped-call]
+            return operations[self.operation](numeric_column, self.value)
         except Exception as e:
             raise ValueError(
                 f"Failed to compare the column '{column}' to the "
@@ -990,7 +990,7 @@ class BaseFilter(BaseModel):
         column, operand = self.sorting_params
 
         if operand == SorterOps.DESCENDING:
-            sort_clause = desc(getattr(table, column))  # type: ignore[var-annotated]
+            sort_clause = desc(getattr(table, column))
         else:
             sort_clause = asc(getattr(table, column))
 

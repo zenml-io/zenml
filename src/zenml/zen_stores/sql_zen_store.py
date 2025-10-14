@@ -10718,7 +10718,7 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
-            if get_origin(annotation) == Mapped:
+            if get_origin(annotation) == Mapped:  # type: ignore[comparison-overlap]
                 annotation = annotation.__args__[0]
 
             # The annotation must be of the form
