@@ -257,7 +257,7 @@ def wrapped_print(*args: Any, **kwargs: Any) -> None:
     # formatter uses StringIO to format tracebacks, we don't
     # want to intercept it and create a LogRecord about it.
     if file_arg not in (sys.stdout, sys.stderr):
-        return original_print(*args, **kwargs)
+        original_print(*args, **kwargs)
 
     # Convert print arguments to message
     message = " ".join(str(arg) for arg in args)
@@ -291,7 +291,7 @@ def wrapped_print(*args: Any, **kwargs: Any) -> None:
         message = _add_step_name_to_message(message)
 
     # Then call original print for console display
-    return original_print(message, *args[1:], **kwargs)
+    original_print(message, *args[1:], **kwargs)
 
 
 def setup_global_print_wrapping() -> None:
