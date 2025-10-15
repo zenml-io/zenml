@@ -111,7 +111,7 @@ class RequestBodyLimit(BaseHTTPMiddleware):
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
     """Restrict file uploads to certain paths."""
 
-    def __init__(self, app: FastAPI, allowed_paths: Set[str]):
+    def __init__(self, app: ASGIApp, allowed_paths: Set[str]):
         """Restrict file uploads to certain paths.
 
         Args:
