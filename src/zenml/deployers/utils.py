@@ -21,7 +21,9 @@ import jsonref
 import requests
 
 from zenml.client import Client
-from zenml.config.deployment_settings import DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+from zenml.config.deployment_settings import (
+    DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH,
+)
 from zenml.config.step_configurations import Step
 from zenml.deployers.exceptions import (
     DeploymentHTTPError,

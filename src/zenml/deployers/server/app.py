@@ -48,7 +48,7 @@ from zenml.deployers.server.models import (
 )
 from zenml.deployers.server.service import (
     BasePipelineDeploymentService,
-    DefaultPipelineDeploymentService,
+    PipelineDeploymentService,
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -276,7 +276,7 @@ class BaseDeploymentAppRunner(ABC):
         )
         if settings.deployment_service_source is None:
             service_cls: Type[BasePipelineDeploymentService] = (
-                DefaultPipelineDeploymentService
+                PipelineDeploymentService
             )
         else:
             try:
@@ -647,10 +647,10 @@ class BaseDeploymentAppRunner(ABC):
         Raises:
             ValueError: If the startup hook is not callable.
         """
-        if not self.settings.startup_hook_source:
+        if not self.settings.startup_hook:
             return
 
-        startup_hook = self.settings.startup_hook_source.load()
+        startup_hook = self.settings.startup_hook.load()
 
         if not callable(startup_hook):
             raise ValueError(
@@ -690,10 +690,10 @@ class BaseDeploymentAppRunner(ABC):
         Raises:
             ValueError: If the shutdown hook is not callable.
         """
-        if not self.settings.shutdown_hook_source:
+        if not self.settings.shutdown_hook:
             return
 
-        shutdown_hook = self.settings.shutdown_hook_source.load()
+        shutdown_hook = self.settings.shutdown_hook.load()
 
         if not shutdown_hook:
             return

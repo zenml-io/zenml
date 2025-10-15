@@ -312,7 +312,7 @@ class BasePipelineDeploymentService(ABC):
             return PipelineInvokeRequest, PipelineInvokeResponse
 
 
-class DefaultPipelineDeploymentService(BasePipelineDeploymentService):
+class PipelineDeploymentService(BasePipelineDeploymentService):
     """Default pipeline deployment service implementation."""
 
     def initialize(self) -> None:

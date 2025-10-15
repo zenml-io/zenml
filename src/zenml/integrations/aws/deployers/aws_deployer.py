@@ -253,8 +253,6 @@ class AppRunnerDeploymentMetadata(BaseModel):
 class AWSDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines on AWS App Runner."""
 
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
-
     _boto_session: Optional[boto3.Session] = None
     _region: Optional[str] = None
     _app_runner_client: Optional[Any] = None

@@ -38,7 +38,9 @@ logger = get_logger(__name__)
 class ContainerizedDeployer(BaseDeployer, ABC):
     """Base class for all containerized deployers."""
 
-    CONTAINER_REQUIREMENTS: List[str] = []
+    # TODO: this needs to come from the deployment settings or from the
+    # app runner class itself
+    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi", "secure~=0.3.0"]
 
     @staticmethod
     def get_image(snapshot: PipelineSnapshotResponse) -> str:

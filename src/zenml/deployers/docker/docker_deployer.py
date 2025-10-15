@@ -135,7 +135,6 @@ class DockerDeploymentMetadata(BaseModel):
 class DockerDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines locally using Docker."""
 
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
     _docker_client: Optional[DockerClient] = None
 
     @property

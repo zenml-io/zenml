@@ -1,6 +1,7 @@
 """Weather Agent Pipeline."""
 
 import os
+import time
 
 from pipelines.hooks import (
     InitConfig,
@@ -10,9 +11,10 @@ from pipelines.hooks import (
 from steps import analyze_weather_with_llm, get_weather
 
 from zenml import pipeline
-from zenml.config import DockerSettings
+from zenml.config import DeploymentSettings, DockerSettings
 
 # Import enums for type-safe capture mode configuration
+from zenml.config.deployment_settings import MiddlewareSpec
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
 
@@ -20,6 +22,58 @@ docker_settings = DockerSettings(
     requirements=["openai"],
     prevent_build_reuse=True,
     python_package_installer=PythonPackageInstaller.UV,
+)
+
+
+class RequestTimingMiddleware:
+    """ASGI middleware to measure request processing time.
+
+    Uses the standard ASGI interface (scope, receive, send) which works
+    across all ASGI frameworks: FastAPI, Django, Starlette, Quart, etc.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        """Process ASGI request with timing measurement.
+
+        Args:
+            scope: ASGI connection scope (contains request info).
+            receive: Async callable to receive ASGI events.
+            send: Async callable to send ASGI events.
+        """
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        start_time = time.time()
+
+        async def send_wrapper(message):
+            """Intercept response to add timing header."""
+            if message["type"] == "http.response.start":
+                process_time = (time.time() - start_time) * 1000
+                headers = list(message.get("headers", []))
+                headers.append(
+                    (
+                        b"x-process-time-ms",
+                        str(process_time).encode(),
+                    )
+                )
+                message = {**message, "headers": headers}
+
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+deployment_settings = DeploymentSettings(
+    custom_middlewares=[
+        MiddlewareSpec(
+            middleware=RequestTimingMiddleware,
+            order=10,
+            native=True,
+        ),
+    ],
 )
 
 environment = {}
@@ -34,6 +88,7 @@ if os.getenv("OPENAI_API_KEY"):
     on_cleanup=cleanup_hook,
     settings={
         "docker": docker_settings,
+        "deployment": deployment_settings,
         "deployer.gcp": {
             "allow_unauthenticated": True,
             # "location": "us-central1",

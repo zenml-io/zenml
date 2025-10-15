@@ -35,6 +35,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BeforeValidator, PlainSerializer
+from pydantic_core import core_schema
 
 from zenml.config.source import (
     CodeRepositorySource,
@@ -952,6 +953,38 @@ class SourceOrObject:
         if self._source:
             return f"SourceOrObject(source={self._source.import_path})"
         return "SourceOrObject(not initialized)"
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        _source_type: Any,
+        _handler: Any,
+    ) -> core_schema.CoreSchema:
+        """Generate Pydantic core schema for SourceOrObject.
+
+        This method tells Pydantic how to validate and serialize this type.
+
+        Args:
+            _source_type: The source type being processed.
+            _handler: Handler for generating schemas.
+
+        Returns:
+            Core schema for this type.
+        """
+        return core_schema.no_info_after_validator_function(
+            _validate_source_or_object,
+            core_schema.union_schema(
+                [
+                    core_schema.str_schema(),
+                    core_schema.is_instance_schema(Source),
+                    core_schema.is_instance_schema(cls),
+                ]
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                _serialize_source_or_object,
+                return_schema=core_schema.str_schema(),
+            ),
+        )
 
 
 def _validate_source_or_object(value: Any) -> SourceOrObject:

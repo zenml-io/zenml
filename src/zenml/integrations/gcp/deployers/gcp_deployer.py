@@ -247,8 +247,6 @@ class CloudRunDeploymentMetadata(BaseModel):
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     """Deployer responsible for deploying pipelines on GCP Cloud Run."""
 
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
-
     _credentials: Optional[Any] = None
     _project_id: Optional[str] = None
     _cloud_run_client: Optional[run_v2.ServicesClient] = None

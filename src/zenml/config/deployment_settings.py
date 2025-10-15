@@ -446,15 +446,130 @@ DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
 
 
 class DeploymentSettings(BaseSettings):
-    """Settings for the pipeline deployment."""
+    """Settings for the pipeline deployment.
 
-    # This settings is only available at the pipeline level
+    Use these settings to fully customize all aspects of the uvicorn web server
+    and ASGI web application that constitute the pipeline deployment.
+
+    Note that these settings are only available at the pipeline level.
+
+    The following customizations can be used to configure aspects that are
+    framework-agnostic (i.e. not specific to a particular ASGI framework like
+    FastAPI, Django, Flask, etc.):
+
+    * the ASGI application details: `app_title`, `app_description`,
+    `app_version` and `app_kwargs`
+    * the URL paths for the various built-in endpoints: `root_url_path`,
+    `docs_url_path`, `redoc_url_path`, `invoke_url_path`, `health_url_path`,
+    `info_url_path` and `metrics_url_path`
+    * the location of dashboard static files can be provided to replace the
+    default UI that is included with the deployment ASGI application:
+    `dashboard_files_path`
+    * the CORS configuration: `cors`
+    * the secure headers configuration: `secure_headers`
+    * the thread pool size: `thread_pool_size`
+    * custom application startup and shutdown hooks: `startup_hook_source`,
+    `shutdown_hook_source`, `startup_hook_kwargs` and `shutdown_hook_kwargs`
+    * uvicorn server configuration: `uvicorn_host`, `uvicorn_port`,
+    `uvicorn_workers` and `uvicorn_kwargs`
+
+    In addition to the above, the following advanced features can be used to
+    customize the implementation-specific details of the deployment application:
+
+    * custom endpoints (e.g. custom metrics, custom health, etc.): `custom_endpoints`
+    * custom middlewares (e.g. authentication, logging, etc.): `custom_middlewares`
+    * application building extensions - these are pluggable components that can
+    be used to add advanced framework-specific features like custom authentication,
+    logging, metrics, etc.: `app_extensions`
+
+    Ultimately, if neither of the above are sufficient, the user can provide a
+    custom implementations for the two core components that are used to build
+    and run the deployment application itself:
+
+    * the deployment app runner - this is the component that is responsible for
+    building and running the ASGI application. It is represented by the
+    `zenml.deployers.server.BaseDeploymentAppRunner` class.
+    See: `deployment_app_runner_source` and `deployment_app_runner_kwargs`
+    * the deployment service - this is the component that is responsible for
+    handling the business logic of the pipeline deployment. It is represented by
+    the `zenml.deployers.server.BaseDeploymentService` class. See:
+    `deployment_service_source` and `deployment_service_kwargs`
+
+    Both of these base classes or their existing implementations can be extended
+    and provided as sources in the deployment settings to be loaded at runtime.
+
+    Attributes:
+        app_title: Title of the deployment application.
+        app_description: Description of the deployment application.
+        app_version: Version of the deployment application.
+        app_kwargs: Arbitrary framework-specific keyword arguments to be passed
+            to the deployment ASGI application constructor.
+
+        include_default_endpoints: Whether to include the default endpoints in
+            the ASGI application.
+        include_default_middleware: Whether to include the default middleware
+            in the ASGI application.
+
+        root_url_path: Root URL path.
+        docs_url_path: URL path for the OpenAPI documentation endpoint.
+        redoc_url_path: URL path for the Redoc documentation endpoint.
+        invoke_url_path: URL path for the invoke endpoint.
+        health_url_path: URL path for the health check endpoint.
+        info_url_path: URL path for the info endpoint.
+        metrics_url_path: URL path for the metrics endpoint.
+        dashboard_files_path: Path where the dashboard static files are located.
+            This can be used to replace the default UI that is included with the
+            deployment ASGI application. The referenced directory must contain
+            at a minimum an `index.html` file and a `assets` directory. The path
+            can be absolute or relative to the root of the repository
+            initialized with `zenml init` or relative to the current working
+            directory.
+
+        cors: Configuration for CORS.
+        secure_headers: Configuration for secure headers.
+        thread_pool_size: Size of the thread pool for the ASGI application.
+
+        startup_hook: Custom startup hook for the ASGI application.
+        shutdown_hook: Custom shutdown hook for the ASGI application.
+        startup_hook_kwargs: Keyword arguments for the startup hook.
+        shutdown_hook_kwargs: Keyword arguments for the shutdown hook.
+
+        custom_endpoints: Custom endpoints for the ASGI application. See the
+            `EndpointSpec` class for more details.
+        custom_middlewares: Custom middlewares for the ASGI application. See the
+            `MiddlewareSpec` class for more details.
+        app_extensions: App extensions used to build the ASGI application. See
+            the `AppExtensionSpec` class for more details.
+
+        uvicorn_host: Host of the uvicorn server.
+        uvicorn_port: Port of the uvicorn server.
+        uvicorn_workers: Number of workers for the uvicorn server.
+        log_level: Log level for the deployment application.
+        uvicorn_kwargs: Keyword arguments for the uvicorn server.
+
+        deployment_app_runner_source: Source of the deployment app runner. Must
+            point to a class that extends the
+            `zenml.deployers.server.BaseDeploymentAppRunner` class.
+        deployment_app_runner_kwargs: Keyword arguments for the deployment app
+            runner. These will be passed to the constructor of the deployment app
+            runner class.
+        deployment_service_source: Source of the deployment service. Must point
+            to a class that extends the
+            `zenml.deployers.server.BaseDeploymentService` class.
+        deployment_service_kwargs: Keyword arguments for the deployment service.
+            These will be passed to the constructor of the deployment service class.
+    """
+
+    # These settings are only available at the pipeline level
     LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
 
     app_title: Optional[str] = None
     app_description: Optional[str] = None
     app_version: Optional[str] = None
     app_kwargs: Dict[str, Any] = {}
+
+    include_default_endpoints: bool = True
+    include_default_middleware: bool = True
 
     root_url_path: str = DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH
     docs_url_path: str = DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH
@@ -464,15 +579,15 @@ class DeploymentSettings(BaseSettings):
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
 
-    dashboard_files_path: str = ""
+    dashboard_files_path: Optional[str] = None
 
     cors: CORSConfig = CORSConfig()
     secure_headers: SecureHeadersConfig = SecureHeadersConfig()
 
     thread_pool_size: int = DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE
 
-    startup_hook_source: Optional[SourceOrObjectField] = None
-    shutdown_hook_source: Optional[SourceOrObjectField] = None
+    startup_hook: Optional[SourceOrObjectField] = None
+    shutdown_hook: Optional[SourceOrObjectField] = None
     startup_hook_kwargs: Dict[str, Any] = {}
     shutdown_hook_kwargs: Dict[str, Any] = {}
 
@@ -482,12 +597,6 @@ class DeploymentSettings(BaseSettings):
 
     # Pluggable app extensions for advanced features
     app_extensions: Optional[List[AppExtensionSpec]] = None
-
-    # Include default endpoints in the deployment application
-    include_default_endpoints: bool = True
-
-    # Include default middleware in the deployment application
-    include_default_middleware: bool = True
 
     uvicorn_host: str = "0.0.0.0"
     uvicorn_port: int = 8000
@@ -503,10 +612,10 @@ class DeploymentSettings(BaseSettings):
 
     def load_sources(self) -> None:
         """Load source string into callable."""
-        if self.startup_hook_source is not None:
-            self.startup_hook_source.load()
-        if self.shutdown_hook_source is not None:
-            self.shutdown_hook_source.load()
+        if self.startup_hook is not None:
+            self.startup_hook.load()
+        if self.shutdown_hook is not None:
+            self.shutdown_hook.load()
         if self.deployment_app_runner_source is not None:
             self.deployment_app_runner_source.load()
         if self.deployment_service_source is not None:
