@@ -10736,7 +10736,7 @@ class SqlZenStore(BaseZenStore):
                     vars(zenml_schemas), {}, recursive_guard=frozenset()
                 )
             else:
-                target_schema = schema_ref._evaluate(
+                target_schema = schema_ref._evaluate(  # type: ignore[unused-ignore, call-arg, arg-type]
                     vars(zenml_schemas), {}, frozenset()
                 )
             assert target_schema is not None
