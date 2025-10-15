@@ -16,8 +16,6 @@
 import uuid
 from typing import Any, Dict, Union
 
-from tensorboard import default, program  # type: ignore [import-untyped]
-
 from zenml.logger import get_logger
 from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
@@ -107,6 +105,11 @@ class TensorboardService(LocalDaemonService):
 
     def run(self) -> None:
         """Initialize and run the TensorBoard server."""
+        from tensorboard import (  # type: ignore [import-untyped]
+            default,
+            program,
+        )
+
         logger.info(
             "Starting TensorBoard service as blocking "
             "process... press CTRL+C once to stop it."
