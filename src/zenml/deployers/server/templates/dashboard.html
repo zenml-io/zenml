@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ZenML Pipeline Deployment – Dashboard</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-600: #4f46e5;
+      --success: #10b981;
+      --warn: #f59e0b;
+      --error: #ef4444;
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #e5e7eb;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --radius: 12px;
+      --shadow: 0 8px 24px rgba(16,24,40,.06);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: linear-gradient(180deg,#fbfbfe 0%,#ffffff 100%);
+      font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji;
+      color: var(--text); line-height: 1.45;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    /* Top bar */
+    .topbar { position: sticky; top: 0; z-index: 40; backdrop-filter: blur(8px); background: rgba(255,255,255,.7); border-bottom: 1px solid var(--border); }
+    .topbar .inner { display:flex; align-items:center; justify-content:space-between; gap:16px; max-width:1200px; margin:0 auto; padding:12px 24px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; background: var(--primary); color:white; box-shadow: var(--shadow); font-size:18px; }
+    .title { font-weight: 700; letter-spacing: .2px; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .chip { border:1px solid var(--border); padding:4px 10px; border-radius: 999px; font-size:12px; display:inline-flex; align-items:center; gap:6px; }
+    .chip.success { background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+    .chip.warn { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+    .chip.error { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+    .btn { appearance:none; border:1px solid var(--border); background:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+    .btn:hover { border-color:#c7c9cf; }
+    .btn.primary { background: var(--primary); color:white; border-color: transparent; }
+    .btn.primary:hover { background: var(--primary-600); }
+    .btn.small { padding:6px 10px; border-radius:8px; font-size:12px; }
+
+    /* Layout */
+    .grid { display:grid; gap:24px; }
+    @media (min-width: 960px) { .grid.cols-3 { grid-template-columns: 2fr 1fr; } }
+
+    .card {
+      background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px;
+    }
+    .card h2 { font-size: 16px; margin: 0 0 12px 0; display:flex; align-items:center; gap:8px; }
+
+    /* Info grid */
+    .info-grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .info { background:#fafafa; border:1px solid var(--border); border-radius:10px; padding:12px; }
+    .label { color: var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
+    .value { font-weight:600; margin-top:4px; }
+    .mono { font-family: var(--mono); font-size: 12px; }
+
+    /* Playground */
+    .split { display:grid; gap:24px; grid-template-columns: 1fr; }
+    @media (min-width: 1100px) { .split { grid-template-columns: 1fr 1fr; } }
+    .field { display:flex; flex-direction:column; gap:8px; }
+    .field label { font-size: 13px; font-weight:600; }
+    input[type="text"], input[type="number"], input[type="password"], select, textarea {
+      border:1px solid var(--border); border-radius: 10px; padding:10px 12px; font: inherit; background:white;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    input[type="range"] { width:100%; }
+
+    .response { background:#0b1220; color:#e5e7eb; border-radius:10px; padding:12px; font-family: var(--mono); font-size:12px; max-height: 420px; overflow:auto; border:1px solid #1f2937; }
+
+    .api-links { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .api-link { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); border-radius:10px; padding:12px 14px; text-decoration:none; color:inherit; background:linear-gradient(180deg,#fafafa, #fff); }
+    .api-link:hover { border-color:#c7c9cf; }
+
+    .status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+    .status-running { background: var(--success); }
+    .status-degraded { background: var(--warn); }
+    .status-stopped { background: var(--error); }
+
+    .sep { height:1px; background:var(--border); margin:12px 0; }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo">🚀</div>
+        <div>
+          <div class="title" id="hdr-name">{{ pipeline_name }}</div>
+          <div class="sub">Deployment <span class="mono" id="hdr-deploy">—</span> • Uptime <span id="hdr-uptime">—</span> • <span id="hdr-runs">—</span> runs</div>
+        </div>
+        <span class="chip success" id="hdr-status"><span class="status-dot status-running"></span> Running</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input id="auth-token" type="password" placeholder="Bearer token (optional)" style="width:220px" />
+        <button class="btn small" id="save-token">Save</button>
+        <button class="btn primary" id="run-top">Run</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid cols-3">
+      <div class="grid" style="gap:24px;">
+        <div class="card">
+          <h2>📊 Health & Stats</h2>
+          <div class="info-grid">
+            <div class="info"><div class="label">Requests / s</div><div class="value" id="stat-rps">—</div><div id="spark-rps"></div></div>
+            <div class="info"><div class="label">p50 Latency (ms)</div><div class="value" id="stat-lat">—</div><div id="spark-lat"></div></div>
+            <div class="info"><div class="label">Errors / min</div><div class="value" id="stat-err">—</div><div id="spark-err"></div></div>
+          </div>
+          <div class="sep"></div>
+          <div class="info-grid">
+            <div class="info"><div class="label">Endpoint</div><div class="value mono" id="stat-endpoint">/invoke</div><button class="btn small" id="copy-endpoint">Copy</button></div>
+            <div class="info"><div class="label">Deployment ID</div><div class="value mono" id="stat-deploy">—</div><button class="btn small" id="copy-deploy">Copy</button></div>
+            <div class="info"><div class="label">Last Execution</div><div class="value" id="stat-last">—</div></div>
+            <div class="info"><div class="label">Total Executions</div><div class="value" id="stat-total">—</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>▶️ Playground – Test your deployment</h2>
+          <div class="split">
+            <div>
+              <div id="form-fields"></div>
+              <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+                <button class="btn" id="reset-btn">Reset</button>
+                <button class="btn primary" id="run-btn">Run Pipeline</button>
+              </div>
+            </div>
+            <div>
+              <div id="run-status" class="chip" style="display:none"></div>
+              <pre class="response" id="response-box">Run to see output…</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📖 API Endpoints</h2>
+          <div class="api-links">
+            <a class="api-link" href="/docs">Interactive Docs <span>→</span></a>
+            <a class="api-link" href="/redoc">ReDoc <span>→</span></a>
+            <a class="api-link" href="/health">Health <span>→</span></a>
+            <a class="api-link" href="/info">Service Info <span>→</span></a>
+            <a class="api-link" href="/metrics">Execution Metrics <span>→</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🧩 Deployment Details</h2>
+        <div class="info-grid">
+          <div class="info"><div class="label">Pipeline</div><div class="value" id="det-pipe">—</div></div>
+          <div class="info"><div class="label">Status</div><div class="value" id="det-status">—</div></div>
+          <div class="info"><div class="label">Uptime</div><div class="value" id="det-uptime">—</div></div>
+        </div>
+        <div class="sep"></div>
+        <div class="muted" style="font-size:12px;">Auth: uses Bearer token if provided (saved locally).</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Boot data (if FastAPI injected service_info_json into template)
+    // Keep this line for compatibility with your existing root() implementation.
+    // It will be replaced server-side; if not present, it will throw – so guard in try/catch.
+    let SERVICE_INFO_BOOT = null;
+    try { SERVICE_INFO_BOOT = {{ service_info_json }}; } catch (e) { /* no inline boot info */ }
+
+    const qs = (sel) => document.querySelector(sel);
+    const qsa = (sel) => Array.from(document.querySelectorAll(sel));
+
+    const els = {
+      hdrName: qs('#hdr-name'), hdrDeploy: qs('#hdr-deploy'), hdrUptime: qs('#hdr-uptime'), hdrRuns: qs('#hdr-runs'), hdrStatus: qs('#hdr-status'),
+      statEndpoint: qs('#stat-endpoint'), statDeploy: qs('#stat-deploy'), statLast: qs('#stat-last'), statTotal: qs('#stat-total'),
+      statRps: qs('#stat-rps'), statLat: qs('#stat-lat'), statErr: qs('#stat-err'),
+      formFields: qs('#form-fields'), responseBox: qs('#response-box'), runStatus: qs('#run-status'),
+      runBtn: qs('#run-btn'), runTop: qs('#run-top'), resetBtn: qs('#reset-btn'),
+      copyEndpoint: qs('#copy-endpoint'), copyDeploy: qs('#copy-deploy'),
+      detPipe: qs('#det-pipe'), detStatus: qs('#det-status'), detUptime: qs('#det-uptime'),
+      tokenInput: qs('#auth-token'), tokenSave: qs('#save-token'),
+    };
+
+    // Persist token
+    els.tokenInput.value = localStorage.getItem('zenml_auth_token') || '';
+    els.tokenSave.addEventListener('click', () => {
+      localStorage.setItem('zenml_auth_token', els.tokenInput.value.trim());
+      toast('Token saved');
+    });
+
+    function toast(msg) {
+      const t = document.createElement('div');
+      t.textContent = msg; t.style.position='fixed'; t.style.bottom='16px'; t.style.left='50%'; t.style.transform='translateX(-50%)';
+      t.style.background='rgba(17,24,39,.92)'; t.style.color='white'; t.style.padding='8px 12px'; t.style.borderRadius='8px'; t.style.zIndex=1000;
+      document.body.appendChild(t); setTimeout(()=>t.remove(),1600);
+    }
+
+    function setStatusChip(status) {
+      const el = els.hdrStatus; el.classList.remove('success','warn','error');
+      if ((status||'').toLowerCase()==='running') { el.classList.add('success'); el.innerHTML = '<span class="status-dot status-running"></span> Running'; }
+      else if ((status||'').toLowerCase()==='degraded') { el.classList.add('warn'); el.innerHTML = '<span class="status-dot status-degraded"></span> Degraded'; }
+      else { el.classList.add('error'); el.innerHTML = '<span class="status-dot status-stopped"></span> Stopped'; }
+    }
+
+    function fmtUptime(seconds) {
+      if (!seconds && seconds !== 0) return '—';
+      const d = Math.floor(seconds/86400);
+      const h = Math.floor((seconds%86400)/3600);
+      const m = Math.floor((seconds%3600)/60);
+      return [d?d+'d':null,h?h+'h':null,m?m+'m':null].filter(Boolean).join(' ');
+    }
+
+    function ago(tsIso) {
+      if (!tsIso) return 'Never';
+      const t = new Date(tsIso).getTime();
+      const s = Math.floor((Date.now()-t)/1000);
+      if (s < 60) return 'Just now';
+      if (s < 3600) return Math.floor(s/60)+' min ago';
+      if (s < 86400) return Math.floor(s/3600)+'h ago';
+      return Math.floor(s/86400)+'d ago';
+    }
+
+    function drawSparkline(containerId, arr) {
+      const c = qs('#'+containerId);
+      if (!c) return; c.innerHTML = '';
+      if (!Array.isArray(arr) || arr.length < 2) { return; }
+      const w = c.clientWidth || 160, h = 40; const min = Math.min(...arr), max = Math.max(...arr);
+      const norm = (v) => max===min ? h/2 : h - ((v-min)/(max-min))*h;
+      const step = w/(arr.length-1); let d = '';
+      arr.forEach((v,i)=>{ const x = Math.round(i*step); const y = Math.round(norm(v)); d += (i? ' L':'M')+x+','+y; });
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width','100%'); svg.setAttribute('height',h);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d', d); path.setAttribute('fill','none'); path.setAttribute('stroke', 'var(--primary)'); path.setAttribute('stroke-width','2');
+      svg.appendChild(path); c.appendChild(svg);
+    }
+
+    function copy(text) { navigator.clipboard.writeText(text).then(()=>toast('Copied')); }
+
+    els.copyEndpoint.addEventListener('click', ()=> copy(els.statEndpoint.textContent.trim()))
+    els.copyDeploy.addEventListener('click', ()=> copy(els.statDeploy.textContent.trim()))
+
+    // ----- Fetch helpers with auth -----
+    function authHeaders() {
+      const token = localStorage.getItem('zenml_auth_token');
+      return token ? { 'Authorization': 'Bearer '+token } : {};
+    }
+
+    async function getJSON(url) {
+      const res = await fetch(url, { headers: { 'Accept': 'application/json', ...authHeaders() } });
+      if (!res.ok) throw new Error(url+' → '+res.status);
+      return res.json();
+    }
+
+    async function postJSON(url, body) {
+      const res = await fetch(url, { method:'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
+      const json = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error((json && json.detail) ? json.detail : ('HTTP '+res.status));
+      return json;
+    }
+
+    // ----- Schema-driven form -----
+    function getParamSchema(schema) {
+      if (!schema || !schema.properties) return { properties:{}, required:[] };
+      // Support { parameters: { properties:{...}, required:[] } } or flat
+      if (schema.properties.parameters && schema.properties.parameters.properties) {
+        return {
+          properties: schema.properties.parameters.properties,
+          required: schema.properties.parameters.required || [],
+        };
+      }
+      return { properties: schema.properties, required: schema.required || [] };
+    }
+
+    function makeField(name, def, required) {
+      const wrap = document.createElement('div'); wrap.className = 'field';
+      const label = document.createElement('label'); label.textContent = name.replace(/_/g,' ').replace(/\b\w/g, s=>s.toUpperCase()) + (required? ' *':'');
+      wrap.appendChild(label);
+
+      let el; const t = def.type;
+      if (t === 'string' && Array.isArray(def.enum)) {
+        el = document.createElement('select'); def.enum.forEach(opt => { const o = document.createElement('option'); o.value=opt; o.textContent=opt; el.appendChild(o); });
+      } else if (t === 'boolean') {
+        el = document.createElement('input'); el.type = 'checkbox'; el.checked = !!def.default; el.style.width='20px';
+      } else if (t === 'number' || t === 'integer') {
+        if (def.minimum !== undefined && def.maximum !== undefined) {
+          const slider = document.createElement('input'); slider.type='range'; slider.min=def.minimum; slider.max=def.maximum; slider.step=(t==='integer')?1:(def.multipleOf||0.01); slider.value = (def.default ?? def.minimum);
+          const num = document.createElement('input'); num.type='number'; num.value = slider.value; num.style.width='120px'; num.step=slider.step; if (def.minimum!==undefined) num.min = def.minimum; if (def.maximum!==undefined) num.max = def.maximum;
+          const row = document.createElement('div'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='12px'; row.appendChild(slider); row.appendChild(num); wrap.appendChild(row);
+          slider.addEventListener('input', e => num.value = slider.value);
+          num.addEventListener('input', e => slider.value = num.value);
+          el = { get value(){ return t==='integer' ? parseInt(num.value,10) : parseFloat(num.value); }, set value(v){ num.value=v; slider.value=v; } };
+          wrap.dataset._compound = '1';
+        } else {
+          el = document.createElement('input'); el.type='number'; el.value = def.default ?? 0; if (def.minimum!==undefined) el.min=def.minimum; if (def.maximum!==undefined) el.max=def.maximum; el.step=(t==='integer')?1:(def.multipleOf||0.01);
+        }
+      } else if (t === 'object' || t === 'array') {
+        el = document.createElement('textarea'); el.value = JSON.stringify(def.default ?? (t==='array'?[]:{}), null, 2);
+      } else {
+        const long = (def.maxLength||0) > 100 || /prompt|message/i.test(name);
+        if (long) { el = document.createElement('textarea'); el.value = def.default ?? ''; el.rows = 6; }
+        else { el = document.createElement('input'); el.type='text'; el.value = def.default ?? ''; }
+      }
+
+      // store name on element
+      if (!(wrap.dataset._compound)) el.name = name; else wrap.dataset.name = name;
+      wrap.appendChild(el);
+      if (def.description) { const p = document.createElement('div'); p.className='muted'; p.style.fontSize='12px'; p.textContent = def.description; wrap.appendChild(p); }
+      return wrap;
+    }
+
+    function collectForm() {
+      const fields = Array.from(els.formFields.children);
+      const payload = {};
+      for (const f of fields) {
+        let name = f.dataset.name || (f.querySelector('[name]') && f.querySelector('[name]').name);
+        let control = f.querySelector('input,textarea,select');
+        if (!name || !control) continue;
+        if (control.type === 'checkbox') payload[name] = control.checked;
+        else if (control.tagName === 'TEXTAREA') {
+          const v = control.value.trim();
+          if ((v.startsWith('{') && v.endsWith('}')) || (v.startsWith('[') && v.endsWith(']'))) {
+            try { payload[name] = JSON.parse(v); } catch { payload[name] = v; }
+          } else { payload[name] = v; }
+        } else if (control.type === 'number' || control.type === 'range') payload[name] = (control.step && Number(control.step)%1===0)? parseInt(control.value,10) : parseFloat(control.value);
+        else payload[name] = control.value;
+      }
+      return payload;
+    }
+
+    function clearForm() { els.formFields.innerHTML = ''; }
+
+    // ----- Populate from /info & /metrics -----
+    async function hydrate(initial) {
+      let info = initial || SERVICE_INFO_BOOT;
+      try { if (!info) info = await getJSON('/info'); } catch (e) { console.warn('info fetch failed', e); }
+
+      if (info) {
+        els.hdrName.textContent = (info.pipeline && info.pipeline.name) || '{{ pipeline_name }}';
+        els.detPipe.textContent = els.hdrName.textContent;
+        els.hdrDeploy.textContent = (info.deployment && info.deployment.id) || '—';
+        els.statDeploy.textContent = (info.deployment && info.deployment.id) || '—';
+        els.hdrRuns.textContent = (info.total_executions != null ? info.total_executions : '—');
+        els.statTotal.textContent = els.hdrRuns.textContent;
+        const uptimeSec = info.uptime || (info.stats && info.stats.uptime_seconds);
+        els.hdrUptime.textContent = fmtUptime(uptimeSec);
+        els.detUptime.textContent = els.hdrUptime.textContent;
+        const status = info.status || (info.pipeline && info.pipeline.status) || 'Running';
+        setStatusChip(status); els.detStatus.textContent = status;
+
+        // Endpoint (assumed fixed /invoke)
+        els.statEndpoint.textContent = '/invoke';
+
+        // Build form from schema
+        clearForm();
+        const schema = (info.pipeline && info.pipeline.input_schema) || {};
+        const ps = getParamSchema(schema);
+        const props = ps.properties || {};
+        const req = ps.required || [];
+        const names = Object.keys(props);
+        if (!names.length) {
+          const p = document.createElement('div'); p.className='muted'; p.textContent = 'No input parameters defined for this pipeline.'; els.formFields.appendChild(p);
+        } else {
+          names.forEach((n)=>{ els.formFields.appendChild( makeField(n, props[n], req.includes(n)) ); });
+        }
+      }
+
+      // metrics
+      try {
+        const m = await getJSON('/metrics');
+        // Basic fields known from your current app
+        els.statLast.textContent = ago(m.last_execution_time || (m.last_execution && m.last_execution.time));
+        if (typeof m.total_executions === 'number') {
+          els.statTotal.textContent = m.total_executions.toLocaleString();
+          els.hdrRuns.textContent = els.statTotal.textContent;
+        }
+
+        // If timeseries are present, draw sparklines
+        if (m.timeseries && Array.isArray(m.timeseries)) {
+          const rps = m.timeseries.map(p=> p.rps ?? 0);
+          const lat = m.timeseries.map(p=> p.latency_ms ?? 0);
+          const err = m.timeseries.map(p=> p.errors ?? 0);
+          if (rps.length) { els.statRps.textContent = rps[rps.length-1]; drawSparkline('spark-rps', rps); }
+          if (lat.length) { els.statLat.textContent = Math.round(lat[lat.length-1]); drawSparkline('spark-lat', lat); }
+          if (err.length) { els.statErr.textContent = err.slice(-6).reduce((a,b)=>a+(b||0),0); drawSparkline('spark-err', err); }
+        } else {
+          // If no series, hide mini charts and derive graceful values
+          qs('#spark-rps').style.display='none'; qs('#spark-lat').style.display='none'; qs('#spark-err').style.display='none';
+        }
+      } catch(e) {
+        console.warn('metrics fetch failed', e);
+      }
+    }
+
+    // ----- Run pipeline -----
+    async function runPipeline() {
+      const body = { parameters: collectForm(), timeout: 300 };
+      els.runStatus.style.display='inline-flex';
+      els.runStatus.textContent = 'Running…';
+      els.runStatus.className = 'chip';
+      els.responseBox.textContent = '';
+      try {
+        const res = await postJSON('/invoke', body);
+        els.runStatus.classList.add('success'); els.runStatus.innerHTML = '✅ Success';
+        els.responseBox.textContent = JSON.stringify(res, null, 2);
+      } catch (e) {
+        els.runStatus.classList.add('error'); els.runStatus.innerHTML = '❌ ' + (e.message || 'Error');
+        els.responseBox.textContent = (e && e.stack) ? e.stack : String(e);
+      }
+    }
+
+    els.runBtn.addEventListener('click', runPipeline);
+    els.runTop.addEventListener('click', runPipeline);
+    els.resetBtn.addEventListener('click', ()=> hydrate());
+
+    // First paint – hydrate from boot JSON if present, else fetch from API
+    hydrate(SERVICE_INFO_BOOT);
+
+    // Periodic refresh (lightweight): refresh metrics every 20s
+    setInterval(()=> hydrate(), 20000);
+  </script>
+</body>
+</html>

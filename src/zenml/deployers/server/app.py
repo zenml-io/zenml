@@ -210,42 +210,95 @@ app.add_middleware(
 async def root(
     service: PipelineDeploymentService = Depends(get_pipeline_service),
 ) -> str:
-    """Root endpoint with service information.
+    """Root endpoint with enhanced dashboard interface.
 
     Args:
         service: The pipeline serving service dependency.
 
     Returns:
-        An HTML page describing the serving deployment.
+        An HTML page with deployment info and interactive playground.
     """
-    info = service.get_service_info()
+    import json
+    from pathlib import Path
 
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>ZenML Pipeline Deployment</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 40px; }}
-            .header {{ color: #2563eb; }}
-            .section {{ margin: 20px 0; }}
-            .status {{ padding: 5px 10px; border-radius: 4px; background: #10b981; color: white; }}
-        </style>
-    </head>
-    <body>
-        <h1 class="header">🚀 ZenML Pipeline Deployment</h1>
-        <div class="section">
-            <h2>Service Status</h2>
-            <p>Status: <span class="status">Running</span></p>
-            <p>Pipeline: <strong>{info.pipeline.name}</strong></p>
-        </div>
-        <div class="section">
-            <h2>Documentation</h2>
-            <p><a href="/docs">📖 Interactive API Documentation</a></p>
-        </div>
-    </body>
-    </html>
-    """
+    info = service.get_service_info()
+    metrics = service.get_execution_metrics()
+
+    # Prepare data for JavaScript
+    info_json = json.dumps(
+        {
+            "deployment": {
+                "id": str(info.deployment.id),
+                "name": info.deployment.name,
+            },
+            "snapshot": {
+                "id": str(info.snapshot.id),
+                "name": info.snapshot.name,
+            },
+            "pipeline": {
+                "name": info.pipeline.name,
+                "input_schema": info.pipeline.input_schema or {},
+                "output_schema": info.pipeline.output_schema or {},
+            },
+            "status": info.status,
+            "uptime": info.uptime,
+            "total_executions": metrics.total_executions,
+            "last_execution_time": (
+                metrics.last_execution_time.isoformat()
+                if metrics.last_execution_time
+                else None
+            ),
+        }
+    )
+
+    # Format uptime for display
+    uptime_days = int(info.uptime // 86400)
+    uptime_hours = int((info.uptime % 86400) // 3600)
+    uptime_str = (
+        f"{uptime_days}d {uptime_hours}h"
+        if uptime_days > 0
+        else f"{uptime_hours}h"
+    )
+
+    # Format last execution time
+    last_exec_str = "Never"
+    if metrics.last_execution_time:
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        delta = now - metrics.last_execution_time
+        if delta.total_seconds() < 60:
+            last_exec_str = "Just now"
+        elif delta.total_seconds() < 3600:
+            minutes = int(delta.total_seconds() / 60)
+            last_exec_str = f"{minutes} min ago"
+        elif delta.total_seconds() < 86400:
+            hours = int(delta.total_seconds() / 3600)
+            last_exec_str = f"{hours}h ago"
+        else:
+            days = int(delta.total_seconds() / 86400)
+            last_exec_str = f"{days}d ago"
+
+    # Load template from file
+    template_path = Path(__file__).parent / "templates" / "dashboard.html"
+    template = template_path.read_text()
+
+    # Replace template variables
+    html_content = template.replace("{{ pipeline_name }}", info.pipeline.name)
+    html_content = html_content.replace("{{ status }}", info.status)
+    html_content = html_content.replace("{{ uptime_str }}", uptime_str)
+    html_content = html_content.replace(
+        "{{ total_executions }}", str(metrics.total_executions)
+    )
+    html_content = html_content.replace("{{ last_exec_str }}", last_exec_str)
+    html_content = html_content.replace(
+        "{{ deployment_id }}", str(info.deployment.id)
+    )
+    html_content = html_content.replace(
+        "{{ deployment_id_short }}", str(info.deployment.id)[:8]
+    )
+    html_content = html_content.replace("{{ service_info_json }}", info_json)
+
     return html_content
 
 
@@ -302,11 +355,11 @@ async def execution_metrics(
 
 # Custom exception handlers
 @app.exception_handler(ValueError)
-def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
     """Handle ValueError exceptions (synchronous for unit tests).
 
     Args:
-        request: The request.
+        _request: The request (unused, but required by FastAPI).
         exc: The exception.
 
     Returns:
@@ -317,11 +370,13 @@ def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
 
 
 @app.exception_handler(RuntimeError)
-def runtime_error_handler(request: Request, exc: RuntimeError) -> JSONResponse:
+def runtime_error_handler(
+    _request: Request, exc: RuntimeError
+) -> JSONResponse:
     """Handle RuntimeError exceptions (synchronous for unit tests).
 
     Args:
-        request: The request.
+        _request: The request (unused, but required by FastAPI).
         exc: The exception.
 
     Returns:
