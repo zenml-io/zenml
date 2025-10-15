@@ -223,7 +223,7 @@ class CuratedVisualizationResponse(
         return self.get_body().layout_size
 
     @property
-    def artifact_version(self) -> Optional["ArtifactVersionResponse"]:
+    def artifact_version(self) -> "ArtifactVersionResponse":
         """The artifact version resource.
 
         Returns:
