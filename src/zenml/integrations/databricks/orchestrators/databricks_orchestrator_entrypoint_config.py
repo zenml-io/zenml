@@ -15,12 +15,8 @@
 
 import os
 import sys
+from importlib.metadata import distribution
 from typing import Any, List, Set
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import distribution
-else:
-    from importlib.metadata import distribution
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
