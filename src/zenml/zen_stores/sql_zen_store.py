@@ -5455,6 +5455,9 @@ class SqlZenStore(BaseZenStore):
             visualization_index: The index of the visualization to validate.
             resource_id: The ID of the resource to validate.
             resource_type: The type of the resource to validate.
+
+        Raises:
+            EntityExistsError: If a curated visualization link already exists.
         """
         existing = session.exec(
             select(CuratedVisualizationSchema)
@@ -5491,6 +5494,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The persisted curated visualization.
+
+        Raises:
+            IllegalOperationError: If the resource does not belong to the same project as the curated visualization.
+            EntityExistsError: If a curated visualization link already exists.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(

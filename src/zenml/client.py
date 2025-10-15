@@ -3790,9 +3790,6 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If resource is not provided.
         """
-        if not resource:
-            raise ValueError("resource must be provided")
-
         request = CuratedVisualizationRequest(
             project=project_id or self.active_project.id,
             artifact_version_id=artifact_version_id,

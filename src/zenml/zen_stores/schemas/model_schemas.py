@@ -137,8 +137,7 @@ class ModelSchema(NamedSchema, table=True):
             secondary="curated_visualization_resource",
             primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.MODEL.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==ModelSchema.id)",
             secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
-            viewonly=True,
-            lazy="selectin",
+            overlaps="visualizations",
         ),
     )
 

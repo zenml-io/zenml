@@ -145,8 +145,7 @@ class DeploymentSchema(NamedSchema, table=True):
             secondary="curated_visualization_resource",
             primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.DEPLOYMENT.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==DeploymentSchema.id)",
             secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
-            viewonly=True,
-            lazy="selectin",
+            overlaps="visualizations",
         ),
     )
 

@@ -112,8 +112,7 @@ class PipelineSchema(NamedSchema, table=True):
             secondary="curated_visualization_resource",
             primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PIPELINE.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==PipelineSchema.id)",
             secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
-            viewonly=True,
-            lazy="selectin",
+            overlaps="visualizations",
         ),
     )
 

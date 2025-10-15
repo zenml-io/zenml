@@ -134,8 +134,7 @@ class ProjectSchema(NamedSchema, table=True):
             secondary="curated_visualization_resource",
             primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PROJECT.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==ProjectSchema.id)",
             secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
-            viewonly=True,
-            lazy="selectin",
+            overlaps="visualizations",
         ),
     )
 

@@ -1480,13 +1480,29 @@ class ZenStoreInterface(ABC):
     def create_curated_visualization(
         self, visualization: CuratedVisualizationRequest
     ) -> CuratedVisualizationResponse:
-        """Create a new curated visualization."""
+        """Create a new curated visualization.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+        """
 
     @abstractmethod
     def get_curated_visualization(
         self, visualization_id: UUID, hydrate: bool = True
     ) -> CuratedVisualizationResponse:
-        """Get a curated visualization by ID."""
+        """Get a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
 
     @abstractmethod
     def update_curated_visualization(
@@ -1494,11 +1510,23 @@ class ZenStoreInterface(ABC):
         visualization_id: UUID,
         visualization_update: CuratedVisualizationUpdate,
     ) -> CuratedVisualizationResponse:
-        """Update a curated visualization."""
+        """Update a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
 
     @abstractmethod
     def delete_curated_visualization(self, visualization_id: UUID) -> None:
-        """Delete a curated visualization."""
+        """Delete a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
 
     # -------------------- Run templates --------------------
 
