@@ -144,8 +144,7 @@ class CuratedVisualizationResponseMetadata(ProjectScopedResponseMetadata):
 class CuratedVisualizationResponseResources(ProjectScopedResponseResources):
     """Response resources for curated visualizations."""
 
-    artifact_version: Optional["ArtifactVersionResponse"] = Field(
-        default=None,
+    artifact_version: "ArtifactVersionResponse" = Field(
         title="The artifact version.",
         description="Artifact version from which the visualization originates.",
     )
