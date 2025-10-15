@@ -331,6 +331,7 @@ module = [
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
+    "seaborn.*",
     "deepchecks.*",
     "boto3.*",
     "botocore.*",
@@ -369,6 +370,8 @@ module = [
     "numba.*",
     "uvloop.*",
     "litellm",
+    "mlx",
+    "mlx.*",
     "jsonref",
 ]
 ignore_missing_imports = true

@@ -100,6 +100,10 @@ jobs:
             fi
           done
           git add examples/quickstart
+      - name: Regenerate quickstart cloud requirements
+        run: |
+          scripts/generate_cloud_requirements.sh --zenml-version "${{ needs.fetch-versions.outputs.new_version }}"
+          git add examples/quickstart/requirements_*.txt
       # Generate and append release notes
       - name: Generate release notes
         # Only run this part once when the release branch is created
@@ -221,6 +225,7 @@ jobs:
     env:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -241,16 +246,13 @@ jobs:
         with:
           python-version: '3.12'
       # ZenML Integrations
-      - name: Install ZenML and the required integrations
+      - name: Install ZenML
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
-      # Run the Quickstart pipeline
-      - name: Run on ${{ matrix.cloud }}
-        run: |-
-          cd examples/quickstart
-          zenml stack set ${{ matrix.cloud }}
-          sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}-${{ needs.fetch-versions.outputs.new_version }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
-          pip install -r requirements_${{ matrix.cloud }}.txt
-          zenml integration install ${{ matrix.cloud }} -y
-          python run.py --model_type=t5-small --no-cache
+      - name: Run Quickstart release flow on ${{ matrix.cloud }}
+        run: |
+          scripts/qs_run_release_flow.sh \
+            --cloud "${{ matrix.cloud }}" \
+            --parent-image "${{ matrix.parent_image }}" \
+            --new-version "${{ needs.fetch-versions.outputs.new_version }}" \
+            --branch-ref "${{ github.ref }}"

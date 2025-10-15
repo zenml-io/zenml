@@ -38,13 +38,15 @@
   * [Configuration](how-to/steps-pipelines/configuration.md)
   * [Scheduling](how-to/steps-pipelines/scheduling.md)
   * [Logging](how-to/steps-pipelines/logging.md)
-  * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
+  * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)
   * [Visualizations](how-to/artifacts/visualizations.md)
 * [Stack & Components](how-to/stack-components/stack_components.md)
 * [Service Connectors](how-to/stack-components/service_connectors.md)
+* [Pipeline Snapshots](how-to/snapshots/snapshots.md)
+* [Pipeline Deployments](how-to/deployment/deployment.md)
 * [Containerization](how-to/containerization/containerization.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)
 * [Secrets](how-to/secrets/secrets.md)
@@ -52,9 +54,8 @@
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)
-* [Templates](how-to/templates/templates.md)
 * [Dashboard](how-to/dashboard/dashboard-features.md)
-
+* [Templates](how-to/templates/templates.md)
 
 ## Reference
 

@@ -19,7 +19,7 @@ When to use each:
       # This creates a new configuration just for this instance
       my_step.with_options(parameters={"param": "value"})()
   ```
-- Use `.configure()` only when you intentionally want to modify a step globally, and are aware that the change will affect all subsequent uses of that step.
+- Use `.configure()` only when you intentionally want to modify a step globally, and are aware that the change will affect all subsequent invocations of that step.
 
 ## Approaches to Configuration
 
@@ -290,10 +290,6 @@ extra:
 ```
 
 This allows you to easily adapt your pipelines to different environments without changing code.
-
-## Advanced Pipeline Triggering
-
-For triggering pipelines from a client or another pipeline, you can use a `PipelineRunConfiguration` object. This approach is covered in the [advanced template usage documentation](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
 
 ## Autogenerate a template yaml file
 

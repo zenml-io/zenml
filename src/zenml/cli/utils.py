@@ -194,6 +194,31 @@ def error(text: str) -> NoReturn:
     raise StyledClickException(message=error_prefix + error_message)
 
 
+def exception(exception: Exception) -> NoReturn:
+    """Echo an exception string on the CLI.
+
+    Args:
+        exception: Input exception.
+    """
+    # KeyError add quotes around their error message to handle the case when
+    # someone tried to fetch something with the key '' (empty string). In all
+    # other cases where the key is not empty however, this adds unnecessary
+    # quotes around the error message, which this function removes.
+    if (
+        isinstance(exception, KeyError)
+        and len(exception.args) == 1
+        # If the exception is a KeyError with an empty string as the argument,
+        # we use the default string representation which will print ''
+        and exception.args[0]
+        and isinstance(exception.args[0], str)
+    ):
+        error_message = exception.args[0]
+    else:
+        error_message = str(exception)
+
+    error(error_message)
+
+
 def warning(
     text: str,
     bold: Optional[bool] = None,
@@ -2529,7 +2554,7 @@ def pretty_print_deployment(
         cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
 
         declare("[bold]CLI Command Example:[/bold]")
-        console.print(f"  [green]{cli_command}[/green]")
+        console.print(f"[green]{cli_command}[/green]")
 
         # cURL example
         declare("\n[bold]cURL Example:[/bold]")
@@ -2542,18 +2567,18 @@ def pretty_print_deployment(
                     '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
                 )
 
-        curl_params = json.dumps(example, indent=2).replace("\n", "\n      ")
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
 
         curl_headers.append('-H "Content-Type: application/json"')
-        headers_str = " \\\n    ".join(curl_headers)
+        headers_str = "\\\n  ".join(curl_headers)
 
         curl_command = f"""curl -X POST {deployment.url}/invoke \\
-    {headers_str} \\
-    -d '{{
-      "parameters": {curl_params}
-    }}'"""
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
 
-        console.print(f"  [green]{curl_command}[/green]")
+        console.print(f"[green]{curl_command}[/green]")
 
     if show_schema:
         input_schema = get_deployment_input_schema(deployment)
