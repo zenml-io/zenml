@@ -251,6 +251,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PIPELINE_RUN.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==PipelineRunSchema.id)",
             secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
             overlaps="visualizations",
+            cascade="all, delete-orphan",       
         ),
     )
 
