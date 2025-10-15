@@ -110,7 +110,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         nullable=False,
     )
 
-    artifact_version: Optional["ArtifactVersionSchema"] = Relationship(
+    artifact_version: "ArtifactVersionSchema" = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"}
     )
     resource: Optional[CuratedVisualizationResourceSchema] = Relationship(
@@ -246,8 +246,6 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
                     include_metadata=include_metadata,
                     include_resources=include_resources,
                 )
-                if self.artifact_version
-                else None
             )
 
             resource_model = None
