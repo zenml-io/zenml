@@ -96,6 +96,145 @@ logger = get_logger(__name__)
 T = TypeVar("T", bound="BaseStep")
 
 
+from concurrent.futures import Future
+
+from zenml.config.step_configurations import Step
+from zenml.models import ArtifactVersionResponse, PipelineSnapshotResponse
+
+
+def _prepare_snapshot_for_step_execution(
+    step: "BaseStep", *args: Any, **kwargs: Any
+) -> Tuple["PipelineSnapshotResponse", str]:
+    import inspect
+
+    from zenml import ExternalArtifact
+    from zenml.models import PipelineSnapshotUpdate
+    from zenml.pipelines.dynamic_pipeline_runtime import (
+        get_pipeline_runtime,
+    )
+
+    runtime = get_pipeline_runtime()
+
+    signature = inspect.signature(step.entrypoint)
+    validated_args = signature.bind(*args, **kwargs).arguments
+    # try:
+    #     validated_args = pydantic_utils.validate_function_args(
+    #         step.entrypoint,
+    #         ConfigDict(arbitrary_types_allowed=True),
+    #         *args,
+    #         **kwargs,
+    #     )
+    # except ValidationError as e:
+    #     raise StepInterfaceError(
+    #         "Invalid step function entrypoint arguments. Check out the "
+    #         "pydantic error above for more details."
+    #     ) from e
+
+    input_artifacts = {
+        name: value
+        for name, value in validated_args.items()
+        if isinstance(value, ArtifactVersionResponse)
+    }
+    external_artifacts = {
+        name: ExternalArtifact(value=value)
+        for name, value in validated_args.items()
+        if not isinstance(value, ArtifactVersionResponse)
+    }
+    # TODO: input artifacts right now require a StepOutput of static pipelines
+    external_artifacts.update(input_artifacts)
+
+    # compile
+    from zenml.client import Client
+    from zenml.config.compiler import Compiler
+
+    # if Client().active_stack.step_operator:
+    #     step.configure(step_operator=True)
+
+    invocation_id = runtime.pipeline.add_step_invocation(
+        step=step,
+        input_artifacts={},
+        external_artifacts=external_artifacts,
+        model_artifacts_or_metadata={},
+        client_lazy_loaders={},
+        parameters={},
+        default_parameters={},
+        upstream_steps=set(),
+    )
+    compiled_step = Compiler()._compile_step_invocation(
+        invocation=runtime.pipeline.invocations[invocation_id],
+        stack=Client().active_stack,
+        step_config=step.configuration,
+        pipeline_configuration=runtime.pipeline.configuration,
+    )
+
+    return Client().zen_store.update_snapshot(
+        runtime.snapshot.id,
+        snapshot_update=PipelineSnapshotUpdate(
+            add_steps={invocation_id: compiled_step}
+        ),
+    ), invocation_id
+
+
+def _fetch_step_outputs(
+    step_run_id: UUID,
+) -> Optional[
+    Union[ArtifactVersionResponse, Tuple[ArtifactVersionResponse, ...]]
+]:
+    from zenml.client import Client
+
+    outputs = list(
+        Client().zen_store.get_run_step(step_run_id).regular_outputs.values()
+    )
+    if len(outputs) == 0:
+        return None
+    elif len(outputs) == 1:
+        return outputs[0]
+    else:
+        return tuple(outputs)
+
+
+def _run_step(
+    snapshot: "PipelineSnapshotResponse",
+    step: "Step",
+    orchestrator_run_id: str,
+) -> Optional[
+    Union[ArtifactVersionResponse, Tuple[ArtifactVersionResponse, ...]]
+]:
+    from zenml.orchestrators.step_launcher import StepLauncher
+
+    launcher = StepLauncher(
+        snapshot=snapshot,
+        step=step,
+        orchestrator_run_id=orchestrator_run_id,
+    )
+    launcher.launch()
+    return _fetch_step_outputs(launcher._step_run.id)
+
+
+from concurrent.futures import ThreadPoolExecutor
+
+executor = ThreadPoolExecutor(max_workers=3)
+
+
+def _run_step_in_thread(
+    snapshot: "PipelineSnapshotResponse",
+    step: "Step",
+    orchestrator_run_id: str,
+) -> Future[
+    Optional[
+        Union[ArtifactVersionResponse, Tuple[ArtifactVersionResponse, ...]]
+    ]
+]:
+    import contextvars
+
+    ctx = contextvars.copy_context()
+
+    future = executor.submit(
+        ctx.run, _run_step, snapshot, step, orchestrator_run_id
+    )
+    return future
+
+
 class BaseStep:
     """Abstract base class for all ZenML steps."""
 
@@ -474,93 +613,20 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
-        from zenml import ExternalArtifact
-        from zenml.models import PipelineSnapshotUpdate
         from zenml.pipelines.dynamic_pipeline_runtime import (
             get_pipeline_runtime,
         )
         from zenml.pipelines.pipeline_definition import Pipeline
 
         if runtime := get_pipeline_runtime():
-            # We're executing a dynamic pipeline at the moment
-
-            # How should we get some configured params etc here? They're not
-            # compiled into the snapshot at the moment, is this just not
-            # possible in the dynamic case. How would people specify different
-            # step operators when executing a step now? Maybe through the
-            # args/kwargs when invoking the step?
-            try:
-                validated_args = pydantic_utils.validate_function_args(
-                    self.entrypoint,
-                    ConfigDict(arbitrary_types_allowed=True),
-                    *args,
-                    **kwargs,
-                )
-            except ValidationError as e:
-                raise StepInterfaceError(
-                    "Invalid step function entrypoint arguments. Check out the "
-                    "pydantic error above for more details."
-                ) from e
-
-            artifacts = {
-                name: ExternalArtifact(value=value)
-                for name, value in validated_args.items()
-            }
-
-            # compile
-            from zenml.client import Client
-            from zenml.config.compiler import Compiler
-
-            if Client().active_stack.step_operator:
-                self.configure(step_operator=True)
-
-            invocation_id = runtime.pipeline.add_step_invocation(
-                step=self,
-                input_artifacts={},
-                external_artifacts=artifacts,
-                model_artifacts_or_metadata={},
-                client_lazy_loaders={},
-                parameters={},
-                default_parameters={},
-                upstream_steps=set(),
+            snapshot, invocation_id = _prepare_snapshot_for_step_execution(
+                self, *args, **kwargs
             )
-            compiled_step = Compiler()._compile_step_invocation(
-                invocation=runtime.pipeline.invocations[invocation_id],
-                stack=Client().active_stack,
-                step_config=self.configuration,
-                pipeline_configuration=runtime.pipeline.configuration,
+            return _run_step(
+                snapshot,
+                snapshot.step_configurations[invocation_id],
+                runtime.run.orchestrator_run_id,
             )
-
-            updated_snapshot = Client().zen_store.update_snapshot(
-                runtime.snapshot.id,
-                snapshot_update=PipelineSnapshotUpdate(
-                    add_steps={invocation_id: compiled_step}
-                ),
-            )
-
-            from zenml.orchestrators.step_launcher import StepLauncher
-
-            launcher = StepLauncher(
-                snapshot=updated_snapshot,
-                step=compiled_step,
-                orchestrator_run_id=runtime.run.orchestrator_run_id,
-            )
-            launcher.launch()
-
-            step_run = launcher._step_run
-            assert step_run
-
-            outputs = (
-                Client().zen_store.get_run_step(step_run.id).regular_outputs
-            )
-            output_values = [output.load() for output in outputs.values()]
-
-            if len(output_values) == 0:
-                return None
-            elif len(output_values) == 1:
-                return output_values[0]
-            else:
-                return tuple(output_values)
 
         if not Pipeline.ACTIVE_PIPELINE:
             from zenml import constants, get_step_context
@@ -638,6 +704,30 @@ class BaseStep:
             )
             outputs.append(output)
         return outputs[0] if len(outputs) == 1 else outputs
+
+    def submit(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[
+            str, StepArtifact, Sequence[Union[str, StepArtifact]], None
+        ] = None,
+        **kwargs: Any,
+    ) -> Future[Any]:
+        from zenml.pipelines.dynamic_pipeline_runtime import (
+            get_pipeline_runtime,
+        )
+
+        runtime = get_pipeline_runtime()
+
+        snapshot, invocation_id = _prepare_snapshot_for_step_execution(
+            self, *args, **kwargs
+        )
+        return _run_step_in_thread(
+            snapshot,
+            snapshot.step_configurations[invocation_id],
+            runtime.run.orchestrator_run_id,
+        )
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
