@@ -104,7 +104,7 @@ Define settings in a YAML configuration file for better separation of code and c
 ```yaml
 settings:
     docker:
-        parent_image: python:3.9-slim
+        parent_image: python:3.11-slim
         apt_packages:
           - git
           - curl
