@@ -26,11 +26,10 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from pydantic import BaseModel, Field, WithJsonSchema
+from pydantic import BaseModel, WithJsonSchema
 
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
@@ -128,11 +127,14 @@ class BasePipelineDeploymentService(ABC):
     wiring code.
     """
 
-    def __init__(self, deployment: "DeploymentResponse") -> None:
+    def __init__(
+        self, deployment: "DeploymentResponse", **kwargs: Any
+    ) -> None:
         """Initialize the deployment service.
 
         Args:
             deployment: The deployment.
+            **kwargs: Additional keyword arguments for the deployment service.
 
         Raises:
             RuntimeError: If snapshot cannot be loaded.
@@ -177,11 +179,19 @@ class BasePipelineDeploymentService(ABC):
 
     @abstractmethod
     def get_execution_metrics(self) -> ExecutionMetrics:
-        """Return lightweight execution metrics for observability."""
+        """Return lightweight execution metrics for observability.
+
+        Returns:
+            A dictionary containing execution metrics.
+        """
 
     @abstractmethod
-    def is_healthy(self) -> bool:
-        """Check service health."""
+    def health_check(self) -> None:
+        """Check service health.
+
+        Raises:
+            RuntimeError: If the service is not healthy.
+        """
 
     # ----------
     # Schemas and models for OpenAPI enrichment
@@ -443,13 +453,13 @@ class DefaultPipelineDeploymentService(BasePipelineDeploymentService):
             last_execution_time=self.last_execution_time,
         )
 
-    def is_healthy(self) -> bool:
+    def health_check(self) -> None:
         """Check service health.
 
-        Returns:
-            True if the service is healthy, otherwise False.
+        Raises:
+            RuntimeError: If the service is not healthy.
         """
-        return True
+        pass
 
     def _map_outputs(
         self,
@@ -688,7 +698,3 @@ class DefaultPipelineDeploymentService(BasePipelineDeploymentService):
                 snapshot_name=self.snapshot.name,
             ),
         )
-
-
-# Backwards compatibility alias
-PipelineDeploymentService = DefaultPipelineDeploymentService

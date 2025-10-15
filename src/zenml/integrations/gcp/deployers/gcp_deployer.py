@@ -1069,14 +1069,16 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         if settings.vpc_connector:
             vpc_access = run_v2.VpcAccess(connector=settings.vpc_connector)
 
-        container_port = snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
         container = run_v2.Container(
             image=image,
             command=entrypoint,
             args=arguments,
             env=env_vars,
             resources=resources,
-            ports=[run_v2.ContainerPort(container_port=inner_port)],
+            ports=[run_v2.ContainerPort(container_port=container_port)],
         )
 
         template = run_v2.RevisionTemplate(

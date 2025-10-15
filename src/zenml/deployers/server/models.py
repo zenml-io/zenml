@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@
 """FastAPI application models."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, WithJsonSchema
+from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.deployers.server.service import PipelineDeploymentService
 
 
 class DeploymentInvocationResponseMetadata(BaseModel):
@@ -152,4 +149,3 @@ class ExecutionMetrics(BaseModel):
     last_execution_time: Optional[datetime] = Field(
         default=None, title="The time of the last pipeline execution."
     )
-

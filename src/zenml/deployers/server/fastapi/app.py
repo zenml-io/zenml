@@ -13,162 +13,129 @@
 #  permissions and limitations under the License.
 """FastAPI application for running ZenML pipeline deployments."""
 
-from abc import ABC, abstractmethod
 import os
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Callable, Dict, Optional, Union
-from uuid import UUID
+from typing import Any, AsyncGenerator, Dict, List
 
+import secure
+from anyio import to_thread
 from fastapi import (
-    Depends,
     FastAPI,
-    HTTPException,
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import RequestResponseEndpoint
 
 from zenml import __version__ as zenml_version
-from zenml.client import Client
-from zenml.deployers.server.app import BaseDeploymentAppRunner
-from zenml.deployers.server.models import (
-    BaseDeploymentInvocationRequest,
-    BaseDeploymentInvocationResponse,
-    ExecutionMetrics,
-    ServiceInfo,
+from zenml.config.deployment_settings import (
+    EndpointMethod,
+    EndpointSpec,
+    MiddlewareSpec,
 )
-from zenml.deployers.server.service import (
-    BasePipelineDeploymentService,
-    DefaultPipelineDeploymentService,
+from zenml.deployers.server.adapters import (
+    EndpointAdapter,
+    MiddlewareAdapter,
+)
+from zenml.deployers.server.app import BaseDeploymentAppRunner
+from zenml.deployers.server.fastapi.adapters import (
+    FastAPIEndpointAdapter,
+    FastAPIMiddlewareAdapter,
 )
 from zenml.logger import get_logger
-from zenml.models.v2.core.deployment import DeploymentResponse
-from zenml.utils import source_utils
+from zenml.utils.source_utils import SourceOrObject
 
 logger = get_logger(__name__)
 
 
 class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
-    """Default deployment app runner."""
+    """FastAPI deployment app runner."""
 
-    def _build_invoke_endpoint(
-        self,
-    ) -> Callable[
-        [BaseDeploymentInvocationRequest], BaseDeploymentInvocationResponse
-    ]:
-        """Create the invoke endpoint."""
-        PipelineInvokeRequest, PipelineInvokeResponse = (
-            self.service.get_pipeline_invoke_models()
-        )
+    def _create_endpoint_adapter(self) -> EndpointAdapter:
+        """Create FastAPI endpoint adapter.
 
-        security = HTTPBearer(
-            scheme_name="Bearer Token",
-            description="Enter your API key as a Bearer token",
-            auto_error=False,
-        )
+        Returns:
+            FastAPI endpoint adapter instance.
+        """
+        return FastAPIEndpointAdapter()
 
-        def verify_token(
-            credentials: Optional[HTTPAuthorizationCredentials] = Depends(
-                security
-            ),
-        ) -> None:
-            """Verify the provided Bearer token for authentication.
+    def _create_middleware_adapter(self) -> MiddlewareAdapter:
+        """Create FastAPI middleware adapter.
 
-            This dependency function integrates with FastAPI's security system
-            to provide proper OpenAPI documentation and authentication UI.
+        Returns:
+            FastAPI middleware adapter instance.
+        """
+        return FastAPIMiddlewareAdapter()
+
+    def _get_secure_headers_middleware(
+        self, secure_headers: secure.Secure
+    ) -> MiddlewareSpec:
+        """Get the secure headers middleware.
+
+        Args:
+            secure_headers: The secure headers settings.
+
+        Returns:
+            The secure headers middleware.
+        """
+
+        async def _secure_headers_middleware(
+            request: Request, call_next: RequestResponseEndpoint
+        ) -> Any:
+            """Middleware to set secure headers.
 
             Args:
-                credentials: HTTP Bearer credentials from the request
+                request: The incoming request.
+                call_next: The next function to be called.
 
-            Raises:
-                HTTPException: If authentication is required but token is invalid
+            Returns:
+                The response with secure headers set.
             """
-            auth_key = self.deployment.auth_key
-            auth_enabled = auth_key and auth_key != ""
-
-            # If authentication is not enabled, allow all requests
-            if not auth_enabled:
-                return
-
-            # If authentication is enabled, validate the token
-            if not credentials:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Authorization header required",
-                    headers={"WWW-Authenticate": "Bearer"},
+            try:
+                response = await call_next(request)
+            except Exception:
+                logger.exception(
+                    "An error occurred while processing the request"
+                )
+                response = JSONResponse(
+                    status_code=500,
+                    content={"detail": "An unexpected error occurred."},
                 )
 
-            if credentials.credentials != auth_key:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid authentication token",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+            # If the request is for the openAPI docs, don't set secure headers
+            if request.url.path.startswith(
+                self.settings.docs_url_path
+            ) or request.url.path.startswith(self.settings.redoc_url_path):
+                return response
 
-            # Token is valid, authentication successful
-            return
+            secure_headers.framework.fastapi(response)
+            return response
 
-        def _invoke_endpoint(
-            request: PipelineInvokeRequest,  # type: ignore[valid-type]
-            _: None = Depends(verify_token),
-        ) -> PipelineInvokeResponse:  # type: ignore[valid-type]
-            return self.invoke_endpoint(request)
+        return MiddlewareSpec(
+            middleware=SourceOrObject(_secure_headers_middleware),
+            native=True,
+        )
 
-        return _invoke_endpoint
-
-    def invoke_endpoint(
-        self, request: BaseDeploymentInvocationRequest
-    ) -> BaseDeploymentInvocationResponse:
-        """Invoke the pipeline.
-
-        Args:
-            request: The request.
+    def _get_cors_middleware(self) -> MiddlewareSpec:
+        """Get the CORS middleware.
 
         Returns:
-            The invocation response.
+            The CORS middleware.
         """
-        return self.service.execute_pipeline(request)
+        return MiddlewareSpec(
+            middleware=SourceOrObject(CORSMiddleware),
+            init_kwargs=dict(
+                allow_origins=self.settings.cors.allow_origins,
+                allow_credentials=self.settings.cors.allow_credentials,
+                allow_methods=self.settings.cors.allow_methods,
+                allow_headers=self.settings.cors.allow_headers,
+            ),
+            native=True,
+        )
 
-    def health_check_endpoint(self, request: Request) -> str:
-        """Health check endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            "OK" if the service is healthy, otherwise raises an HTTPException.
-
-        Raises:
-            HTTPException: If the service is not healthy.
-        """
-        if not self.service.is_healthy():
-            raise HTTPException(503, "Service is unhealthy")
-        return "OK"
-
-    def info_endpoint(self, request: Request) -> ServiceInfo:
-        """Info endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            Service info.
-        """
-        return self.service.get_service_info()
-
-    def execution_metrics_endpoint(self, request: Request) -> ExecutionMetrics:
-        """Execution metrics endpoint.
-
-        Args:
-            request: The request.
-
-        Returns:
-            Execution metrics.
-        """
-        return self.service.get_execution_metrics()
-
-    def root_endpoint(self, request: Request) -> HTMLResponse:
+    def root_endpoint(self) -> HTMLResponse:
         """Root endpoint.
 
         Args:
@@ -206,6 +173,87 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         """
         return HTMLResponse(html_content)
 
+    def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
+        """Get the dashboard endpoints specs.
+
+        This is called if the dashboard files path is set to construct the
+        endpoints specs for the dashboard.
+
+        Returns:
+            The dashboard endpoints specs.
+        """
+        # @app.get(
+        #     API + "/{invalid_api_path:path}", status_code=404, include_in_schema=False
+        # )
+        # async def invalid_api(invalid_api_path: str) -> None:
+        #     """Invalid API endpoint.
+
+        #     All API endpoints that are not defined in the API routers will be
+        #     redirected to this endpoint and will return a 404 error.
+
+        #     Args:
+        #         invalid_api_path: Invalid API path.
+
+        #     Raises:
+        #         HTTPException: 404 error.
+        #     """
+        #     logger.debug(f"Invalid API path requested: {invalid_api_path}")
+        #     raise HTTPException(status_code=404)
+        dashboard_files_path = self.dashboard_files_path()
+        if not dashboard_files_path:
+            return []
+
+        root_static_files = self.get_root_static_files()
+        assets_static_files_endpoint = StaticFiles(
+            directory=os.path.join(dashboard_files_path, "assets"),
+            check_dir=False,
+        )
+
+        templates = Jinja2Templates(directory=dashboard_files_path)
+
+        async def catch_all_endpoint(request: Request, file_path: str) -> Any:
+            """Dashboard catch-all endpoint.
+
+            Args:
+                request: Request object.
+                file_path: Path to a file in the dashboard root folder.
+
+            Returns:
+                The files in the dashboard root directory.
+            """
+            # some static files need to be served directly from the root dashboard
+            # directory
+            if file_path and file_path in root_static_files:
+                logger.debug(f"Returning static file: {file_path}")
+                full_path = os.path.join(dashboard_files_path, file_path)
+                return FileResponse(full_path)
+
+            # everything else is directed to the index.html file that hosts the
+            # single-page application
+            return templates.TemplateResponse(
+                "index.html", {"request": request}
+            )
+
+        return [
+            EndpointSpec(
+                path="/assets",
+                method=EndpointMethod.GET,
+                handler=SourceOrObject(assets_static_files_endpoint),
+                native=True,
+                auth_required=False,
+            ),
+            EndpointSpec(
+                path="/{file_path:path}",
+                method=EndpointMethod.GET,
+                handler=SourceOrObject(catch_all_endpoint),
+                native=True,
+                auth_required=False,
+                extra_kwargs=dict(
+                    include_in_schema=False,
+                ),
+            ),
+        ]
+
     def error_handler(self, request: Request, exc: ValueError) -> JSONResponse:
         """FastAPI error handler.
 
@@ -220,8 +268,11 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         return JSONResponse(status_code=500, content={"detail": str(exc)})
 
     def build(self) -> FastAPI:
-        """Build the FastAPI app for the deployment."""
-        # Build app with metadata
+        """Build the FastAPI app for the deployment.
+
+        Returns:
+            Configured FastAPI application instance.
+        """
         title = (
             self.settings.app_title
             or f"ZenML Pipeline Deployment {self.deployment.name}"
@@ -242,34 +293,14 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             redoc_url=self.settings.redoc_url_path,
             lifespan=self.lifespan,
         )
-        fastapi_kwargs.update(self.settings.fastapi_kwargs)
+        fastapi_kwargs.update(self.settings.app_kwargs)
 
         fastapi_app = FastAPI(**fastapi_kwargs)
 
-        # Bind the deployment service to the app state
-        fastapi_app.state.service = self.service
-
-        fastapi_app.add_middleware(
-            CORSMiddleware,
-            allow_origins=self.settings.cors_allow_origins,
-            allow_credentials=self.settings.cors_allow_credentials,
-            allow_methods=self.settings.cors_allow_methods,
-            allow_headers=self.settings.cors_allow_headers,
-        )
+        # Bind the app runner to the app state
+        fastapi_app.state.app_runner = self
 
         fastapi_app.get("/")(self.root_endpoint)
-        fastapi_app.post(self.settings.invoke_url_path)(
-            self._build_invoke_endpoint()
-        )
-        fastapi_app.get(self.settings.health_url_path)(
-            self.health_check_endpoint
-        )
-        fastapi_app.get(self.settings.info_url_path)(self.info_endpoint)
-        fastapi_app.get(self.settings.metrics_url_path)(
-            self.execution_metrics_endpoint
-        )
-
-        # error handlers
         fastapi_app.exception_handler(Exception)(self.error_handler)
 
         return fastapi_app
@@ -288,39 +319,13 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             ValueError: If no deployment identifier is configured.
             Exception: If initialization or cleanup fails.
         """
-        # Check for test mode
-        if os.getenv("ZENML_DEPLOYMENT_TEST_MODE", "false").lower() == "true":
-            logger.info("🧪 Running in test mode - skipping initialization")
-            yield
-            return
+        # Set the maximum number of worker threads
+        to_thread.current_default_thread_limiter().total_tokens = (
+            self.settings.thread_pool_size
+        )
 
-        logger.info("🚀 Initializing the pipeline deployment service...")
-
-        try:
-            self.service.initialize()
-            logger.info(
-                "✅ Pipeline deployment service initialized successfully"
-            )
-        except Exception as e:
-            logger.error(
-                f"❌ Failed to initialize the pipeline deployment service: {e}"
-            )
-            raise
-
-        # TODO: run custom startup app hooks
+        self.startup()
 
         yield
 
-        # TODO: run custom shutdown app hooks
-
-        logger.info("🛑 Cleaning up the pipeline deployment service...")
-        try:
-            self.service.cleanup()
-            logger.info(
-                "✅ The pipeline deployment service was cleaned up successfully"
-            )
-        except Exception as e:
-            logger.error(
-                f"❌ Error during the pipeline deployment service cleanup: {e}"
-            )
-
+        self.shutdown()

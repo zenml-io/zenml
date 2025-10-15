@@ -1308,7 +1308,9 @@ class AWSDeployer(ContainerizedDeployer):
                 f"deploying to App Runner."
             )
 
-        container_port = snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
         image_config: Dict[str, Any] = {
             "Port": str(container_port),
             "StartCommand": " ".join(entrypoint + arguments),

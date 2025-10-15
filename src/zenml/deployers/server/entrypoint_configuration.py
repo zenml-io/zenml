@@ -30,6 +30,7 @@ logger = get_logger(__name__)
 # Deployment-specific entrypoint options
 DEPLOYMENT_ID_OPTION = "deployment_id"
 
+
 class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     """Entrypoint configuration for ZenML Pipeline Deployment.
 
@@ -116,6 +117,6 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Download code if necessary (for remote execution environments)
         self.download_code_if_necessary(snapshot=deployment.snapshot)
-        
+
         app_runner = BaseDeploymentAppRunner.load_app_runner(deployment)
         app_runner.run()

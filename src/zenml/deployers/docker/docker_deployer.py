@@ -362,7 +362,9 @@ class DockerDeployer(ContainerizedDeployer):
             range=settings.port_range,
             address="0.0.0.0",  # nosec
         )
-        container_port = snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
         ports: Dict[str, Optional[int]] = {f"{container_port}/tcp": port}
 
         uid_args: Dict[str, Any] = {}
