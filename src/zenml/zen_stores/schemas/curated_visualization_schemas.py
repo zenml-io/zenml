@@ -87,9 +87,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     resource_id: UUID = Field(nullable=False)
     resource_type: str = Field(nullable=False)
 
-    artifact_version: "ArtifactVersionSchema" = Relationship(
-        sa_relationship_kwargs={"lazy": "selectin"}
-    )
+    artifact_version: "ArtifactVersionSchema" = Relationship()
 
     @classmethod
     def get_query_options(
