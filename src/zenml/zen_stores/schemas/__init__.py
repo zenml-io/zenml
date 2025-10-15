@@ -32,7 +32,6 @@ from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.deployment_schemas import DeploymentSchema
 from zenml.zen_stores.schemas.curated_visualization_schemas import (
-    CuratedVisualizationResourceSchema,
     CuratedVisualizationSchema,
 )
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -93,7 +92,6 @@ __all__ = [
     "CodeRepositorySchema",
     "DeploymentSchema",
     "CuratedVisualizationSchema",
-    "CuratedVisualizationResourceSchema",
     "EventSourceSchema",
     "FlavorSchema",
     "LogsSchema",

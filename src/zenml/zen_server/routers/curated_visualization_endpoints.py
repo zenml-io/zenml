@@ -9,7 +9,6 @@ from zenml.constants import API, CURATED_VISUALIZATIONS, VERSION_1
 from zenml.enums import VisualizationResourceTypes
 from zenml.models import (
     CuratedVisualizationRequest,
-    CuratedVisualizationResource,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
 )
@@ -27,34 +26,35 @@ router = APIRouter(
 
 
 def _get_resource_model(
-    resource: CuratedVisualizationResource,
+    resource_type: VisualizationResourceTypes,
+    resource_id: UUID,
 ) -> Any:
-    """Load the model associated with a curated visualization resource.
+    """Fetch the concrete resource model for a curated visualization.
 
     Args:
-        resource: The curated visualization resource to load the model for.
+        resource_type: The type of resource linked to the curated visualization.
+        resource_id: The unique identifier of the linked resource.
 
     Returns:
-        The model associated with the curated visualization resource.
+        The hydrated resource model retrieved from the Zen store.
 
     Raises:
-        RuntimeError: If the resource type is not supported.
+        RuntimeError: If the provided resource type is not supported.
     """
     store = zen_store()
-    resource_type = resource.type
 
     if resource_type == VisualizationResourceTypes.DEPLOYMENT:
-        return store.get_deployment(resource.id)
+        return store.get_deployment(resource_id)
     if resource_type == VisualizationResourceTypes.MODEL:
-        return store.get_model(resource.id)
+        return store.get_model(resource_id)
     if resource_type == VisualizationResourceTypes.PIPELINE:
-        return store.get_pipeline(resource.id)
+        return store.get_pipeline(resource_id)
     if resource_type == VisualizationResourceTypes.PIPELINE_RUN:
-        return store.get_run(resource.id)
+        return store.get_run(resource_id)
     if resource_type == VisualizationResourceTypes.PIPELINE_SNAPSHOT:
-        return store.get_snapshot(resource.id)
+        return store.get_snapshot(resource_id)
     if resource_type == VisualizationResourceTypes.PROJECT:
-        return store.get_project(resource.id)
+        return store.get_project(resource_id)
 
     raise RuntimeError(
         f"Unsupported curated visualization resource type: {resource_type}"
@@ -84,7 +84,9 @@ def create_curated_visualization(
         The created curated visualization.
     """
     store = zen_store()
-    resource_model = _get_resource_model(visualization.resource)
+    resource_model = _get_resource_model(
+        visualization.resource_type, visualization.resource_id
+    )
     artifact_version = store.get_artifact_version(
         visualization.artifact_version_id
     )
@@ -115,19 +117,20 @@ def get_curated_visualization(
         The curated visualization with the given ID.
 
     Raises:
-        RuntimeError: If the curated visualization is missing its resource reference.
+        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     hydrated_visualization = store.get_curated_visualization(
         visualization_id, hydrate=True
     )
-    resource = hydrated_visualization.resource
-    if resource is None:
+    resource_type = hydrated_visualization.resource_type
+    resource_id = hydrated_visualization.resource_id
+    if resource_type is None or resource_id is None:
         raise RuntimeError(
-            f"Curated visualization '{visualization_id}' is missing its resource reference."
+            f"Curated visualization '{visualization_id}' is missing its resource identifier or type."
         )
 
-    resource_model = _get_resource_model(resource)
+    resource_model = _get_resource_model(resource_type, resource_id)
     verify_permission_for_model(resource_model, action=Action.READ)
 
     if hydrate:
@@ -156,19 +159,20 @@ def update_curated_visualization(
         The updated curated visualization.
 
     Raises:
-        RuntimeError: If the curated visualization is missing its resource reference.
+        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     existing_visualization = store.get_curated_visualization(
         visualization_id, hydrate=True
     )
-    resource = existing_visualization.resource
-    if resource is None:
+    resource_type = existing_visualization.resource_type
+    resource_id = existing_visualization.resource_id
+    if resource_type is None or resource_id is None:
         raise RuntimeError(
-            f"Curated visualization '{visualization_id}' is missing its resource reference."
+            f"Curated visualization '{visualization_id}' is missing its resource identifier or type."
         )
 
-    resource_model = _get_resource_model(resource)
+    resource_model = _get_resource_model(resource_type, resource_id)
     verify_permission_for_model(resource_model, action=Action.UPDATE)
 
     return store.update_curated_visualization(
@@ -191,19 +195,20 @@ def delete_curated_visualization(
         visualization_id: The ID of the curated visualization to delete.
 
     Raises:
-        RuntimeError: If the curated visualization is missing its resource reference.
+        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     existing_visualization = store.get_curated_visualization(
         visualization_id, hydrate=True
     )
-    resource = existing_visualization.resource
-    if resource is None:
+    resource_type = existing_visualization.resource_type
+    resource_id = existing_visualization.resource_id
+    if resource_type is None or resource_id is None:
         raise RuntimeError(
-            f"Curated visualization '{visualization_id}' is missing its resource reference."
+            f"Curated visualization '{visualization_id}' is missing its resource identifier or type."
         )
 
-    resource_model = _get_resource_model(resource)
+    resource_model = _get_resource_model(resource_type, resource_id)
     verify_permission_for_model(resource_model, action=Action.UPDATE)
 
     store.delete_curated_visualization(visualization_id)

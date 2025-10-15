@@ -97,7 +97,6 @@ from zenml.models import (
     ComponentFilter,
     ComponentUpdate,
     CuratedVisualizationRequest,
-    CuratedVisualizationResource,
     CuratedVisualizationUpdate,
     DeploymentRequest,
     ModelVersionArtifactFilter,
@@ -5874,10 +5873,8 @@ class TestCuratedVisualizations:
                         project=project_id,
                         artifact_version_id=artifact_version.id,
                         visualization_index=idx,
-                        resource=CuratedVisualizationResource(
-                            id=resource_id,
-                            type=resource_type,
-                        ),
+                        resource_id=resource_id,
+                        resource_type=resource_type,
                         display_name=f"{resource_type.value} visualization",
                     )
                 )
@@ -5885,9 +5882,8 @@ class TestCuratedVisualizations:
                     visualization_id=viz.id,
                     hydrate=True,
                 )
-                assert hydrated.resource is not None
-                assert hydrated.resource.type == resource_type
-                assert hydrated.resource.id == resource_id
+                assert hydrated.resource_id == resource_id
+                assert hydrated.resource_type == resource_type
                 assert (
                     hydrated.layout_size == CuratedVisualizationSize.FULL_WIDTH
                 )
@@ -5902,8 +5898,8 @@ class TestCuratedVisualizations:
                 == f"{VisualizationResourceTypes.PIPELINE.value} visualization"
             )
             assert loaded.layout_size == CuratedVisualizationSize.FULL_WIDTH
-            assert loaded.resource is not None
-            assert loaded.resource.type == VisualizationResourceTypes.PIPELINE
+            assert loaded.resource_id == pipeline_model.id
+            assert loaded.resource_type == VisualizationResourceTypes.PIPELINE
 
             # Test duplicate creation - same artifact_version + visualization_index + resource should fail
             with pytest.raises(EntityExistsError):
@@ -5912,10 +5908,8 @@ class TestCuratedVisualizations:
                         project=project_id,
                         artifact_version_id=artifact_version.id,
                         visualization_index=0,  # Same index as pipeline visualization
-                        resource=CuratedVisualizationResource(
-                            id=pipeline_model.id,
-                            type=VisualizationResourceTypes.PIPELINE,
-                        ),
+                        resource_id=pipeline_model.id,
+                        resource_type=VisualizationResourceTypes.PIPELINE,
                     )
                 )
 
@@ -5982,22 +5976,20 @@ class TestCuratedVisualizations:
         visualization = client.create_curated_visualization(
             artifact_version_id=artifact_version.id,
             visualization_index=0,
-            resource=CuratedVisualizationResource(
-                id=project.id,
-                type=VisualizationResourceTypes.PROJECT,
-            ),
+            resource_id=project.id,
+            resource_type=VisualizationResourceTypes.PROJECT,
+            project_id=project.id,
             display_name="Project visualization",
         )
 
         hydrated_visualization = client.zen_store.get_curated_visualization(
             visualization.id, hydrate=True
         )
-        assert hydrated_visualization.resource is not None
+        assert hydrated_visualization.resource_id == project.id
         assert (
-            hydrated_visualization.resource.type
+            hydrated_visualization.resource_type
             == VisualizationResourceTypes.PROJECT
         )
-        assert hydrated_visualization.resource.id == project.id
         assert hydrated_visualization.display_name == "Project visualization"
 
         client.delete_curated_visualization(visualization.id)

@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from zenml.enums import CuratedVisualizationSize
+from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     ProjectScopedRequest,
@@ -26,9 +26,6 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-)
-from zenml.models.v2.misc.curated_visualization import (
-    CuratedVisualizationResource,
 )
 
 if TYPE_CHECKING:
@@ -80,12 +77,17 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
             "on the dashboard."
         ),
     )
-    resource: CuratedVisualizationResource = Field(
-        title="Resource associated with this visualization.",
+    resource_id: UUID = Field(
+        title="The linked resource ID.",
         description=(
-            "The single resource (deployment, model, pipeline, pipeline run, "
-            "pipeline snapshot, or project) that should surface this visualization."
+            "Identifier of the resource (deployment, model, pipeline, pipeline "
+            "run, pipeline snapshot, or project) that should surface this "
+            "visualization."
         ),
+    )
+    resource_type: VisualizationResourceTypes = Field(
+        title="The linked resource type.",
+        description="Type of the resource associated with this visualization.",
     )
 
 
@@ -135,6 +137,14 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
         default=CuratedVisualizationSize.FULL_WIDTH,
         title="The layout size of the visualization.",
     )
+    resource_id: UUID = Field(
+        title="The linked resource ID.",
+        description="Identifier of the resource associated with this visualization.",
+    )
+    resource_type: VisualizationResourceTypes = Field(
+        title="The linked resource type.",
+        description="Type of the resource associated with this visualization.",
+    )
 
 
 class CuratedVisualizationResponseMetadata(ProjectScopedResponseMetadata):
@@ -142,16 +152,11 @@ class CuratedVisualizationResponseMetadata(ProjectScopedResponseMetadata):
 
 
 class CuratedVisualizationResponseResources(ProjectScopedResponseResources):
-    """Response resources for curated visualizations."""
+    """Response resources included for curated visualizations."""
 
     artifact_version: "ArtifactVersionResponse" = Field(
         title="The artifact version.",
         description="Artifact version from which the visualization originates.",
-    )
-    resource: Optional[CuratedVisualizationResource] = Field(
-        default=None,
-        title="The linked resource.",
-        description="Resource reference associated with this curated visualization.",
     )
 
 
@@ -231,11 +236,19 @@ class CuratedVisualizationResponse(
         return self.get_resources().artifact_version
 
     @property
-    def resource(self) -> Optional[CuratedVisualizationResource]:
-        """The resource reference associated with this visualization.
+    def resource_id(self) -> UUID:
+        """The identifier of the linked resource.
 
         Returns:
-            The resource reference if included.
+            The resource identifier associated with this visualization.
         """
-        resources = self.get_resources()
-        return resources.resource if resources else None
+        return self.get_body().resource_id
+
+    @property
+    def resource_type(self) -> VisualizationResourceTypes:
+        """The type of the linked resource.
+
+        Returns:
+            The resource type associated with this visualization.
+        """
+        return self.get_body().resource_type

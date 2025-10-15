@@ -134,9 +134,11 @@ class ModelSchema(NamedSchema, table=True):
     )
     visualizations: List["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            secondary="curated_visualization_resource",
-            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.MODEL.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==ModelSchema.id)",
-            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.MODEL.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==ModelSchema.id)"
+            ),
             overlaps="visualizations",
         ),
     )

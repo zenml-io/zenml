@@ -14,12 +14,12 @@
 """SQLModel implementation of curated visualization tables."""
 
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
 
 from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
 from zenml.models.v2.core.curated_visualization import (
@@ -29,9 +29,6 @@ from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationResponseMetadata,
     CuratedVisualizationResponseResources,
     CuratedVisualizationUpdate,
-)
-from zenml.models.v2.misc.curated_visualization import (
-    CuratedVisualizationResource,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
@@ -45,35 +42,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 
 
-class CuratedVisualizationResourceSchema(SQLModel, table=True):
-    """Link table mapping curated visualizations to resources."""
-
-    __tablename__ = "curated_visualization_resource"
-    __table_args__ = (
-        UniqueConstraint(
-            "visualization_id",
-            name="unique_curated_visualization_resource",
-        ),
-        build_index(__tablename__, ["resource_id", "resource_type"]),
-    )
-
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    visualization_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target="curated_visualization",
-        source_column="visualization_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    resource_id: UUID = Field(nullable=False)
-    resource_type: str = Field(nullable=False)
-
-    visualization: "CuratedVisualizationSchema" = Relationship(
-        back_populates="resource",
-    )
-
-
 class CuratedVisualizationSchema(BaseSchema, table=True):
     """SQL Model for curated visualizations."""
 
@@ -83,6 +51,13 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             __tablename__, ["artifact_version_id", "visualization_index"]
         ),
         build_index(__tablename__, ["display_order"]),
+        UniqueConstraint(
+            "artifact_version_id",
+            "visualization_index",
+            "resource_id",
+            "resource_type",
+            name="unique_curated_visualization_resource_link",
+        ),
     )
 
     project_id: UUID = build_foreign_key_field(
@@ -109,17 +84,11 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         default=CuratedVisualizationSize.FULL_WIDTH.value,
         nullable=False,
     )
+    resource_id: UUID = Field(nullable=False)
+    resource_type: str = Field(nullable=False)
 
     artifact_version: "ArtifactVersionSchema" = Relationship(
         sa_relationship_kwargs={"lazy": "selectin"}
-    )
-    resource: Optional[CuratedVisualizationResourceSchema] = Relationship(
-        back_populates="visualization",
-        sa_relationship_kwargs={
-            "lazy": "selectin",
-            "cascade": "all, delete",
-            "uselist": False,
-        },
     )
 
     @classmethod
@@ -144,12 +113,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         options: List[ExecutableOption] = []
 
         if include_resources:
-            options.extend(
-                [
-                    selectinload(jl_arg(cls.artifact_version)),
-                    selectinload(jl_arg(cls.resource)),
-                ]
-            )
+            options.append(selectinload(jl_arg(cls.artifact_version)))
 
         return options
 
@@ -172,6 +136,8 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             display_name=request.display_name,
             display_order=request.display_order,
             layout_size=request.layout_size.value,
+            resource_id=request.resource_id,
+            resource_type=request.resource_type.value,
         )
 
     def update(
@@ -224,6 +190,17 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         except ValueError:
             layout_size_enum = CuratedVisualizationSize.FULL_WIDTH
 
+        resource_type_str = self.resource_type
+        if resource_type_str:
+            try:
+                resource_type_enum = VisualizationResourceTypes(
+                    resource_type_str
+                )
+            except ValueError:
+                resource_type_enum = VisualizationResourceTypes.PROJECT
+        else:
+            resource_type_enum = VisualizationResourceTypes.PROJECT
+
         body = CuratedVisualizationResponseBody(
             project_id=self.project_id,
             created=self.created,
@@ -233,6 +210,8 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             display_name=self.display_name,
             display_order=self.display_order,
             layout_size=layout_size_enum,
+            resource_id=self.resource_id,
+            resource_type=resource_type_enum,
         )
 
         metadata = None
@@ -241,31 +220,13 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
 
         response_resources = None
         if include_resources:
-            artifact_version_model = (
-                self.artifact_version.to_model(
-                    include_metadata=include_metadata,
-                    include_resources=include_resources,
-                )
+            artifact_version_model = self.artifact_version.to_model(
+                include_metadata=include_metadata,
+                include_resources=include_resources,
             )
-
-            resource_model = None
-            if self.resource:
-                try:
-                    resource_type_enum = VisualizationResourceTypes(
-                        self.resource.resource_type
-                    )
-                except ValueError:
-                    resource_type_enum = None
-
-                if resource_type_enum is not None:
-                    resource_model = CuratedVisualizationResource(
-                        id=self.resource.resource_id,
-                        type=resource_type_enum,
-                    )
 
             response_resources = CuratedVisualizationResponseResources(
                 artifact_version=artifact_version_model,
-                resource=resource_model,
             )
 
         return CuratedVisualizationResponse(

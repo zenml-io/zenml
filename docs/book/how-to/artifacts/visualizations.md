@@ -78,7 +78,7 @@ Curated visualizations currently support the following resources:
 - **Pipeline Runs** – detailed diagnostics for specific executions.
 - **Pipeline Snapshots** – configuration/version comparisons for snapshot history.
 
-You can create a curated visualization programmatically by linking an artifact visualization to a single resource. The example below shows how to create separate visualizations for different resource types:
+You can create a curated visualization programmatically by linking an artifact visualization to a single resource. Provide the resource identifier and resource type directly when creating the visualization. The example below shows how to create separate visualizations for different resource types:
 
 ```python
 from uuid import UUID
@@ -88,7 +88,6 @@ from zenml.enums import (
     CuratedVisualizationSize,
     VisualizationResourceTypes,
 )
-from zenml.models import CuratedVisualizationResource
 
 client = Client()
 artifact_version_id = UUID("<ARTIFACT_VERSION_ID>")
@@ -103,10 +102,8 @@ model = client.list_models().items[0]
 model_viz = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resource=CuratedVisualizationResource(
-        id=model.id,
-        type=VisualizationResourceTypes.MODEL
-    ),
+    resource_id=model.id,
+    resource_type=VisualizationResourceTypes.MODEL,
     display_name="Model performance dashboard",
     layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
@@ -115,10 +112,8 @@ model_viz = client.create_curated_visualization(
 deployment_viz = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resource=CuratedVisualizationResource(
-        id=deployment.id,
-        type=VisualizationResourceTypes.DEPLOYMENT
-    ),
+    resource_id=deployment.id,
+    resource_type=VisualizationResourceTypes.DEPLOYMENT,
     display_name="Deployment health dashboard",
     layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )
@@ -127,10 +122,8 @@ deployment_viz = client.create_curated_visualization(
 project_viz = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resource=CuratedVisualizationResource(
-        id=project.id,
-        type=VisualizationResourceTypes.PROJECT
-    ),
+    resource_id=project.id,
+    resource_type=VisualizationResourceTypes.PROJECT,
     display_name="Project overview dashboard",
     layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
@@ -179,10 +172,8 @@ When setting display orders, consider leaving gaps between values (e.g., 10, 20,
 visualization_a = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=0,
-    resource=CuratedVisualizationResource(
-        id=model.id,
-        type=VisualizationResourceTypes.MODEL
-    ),
+    resource_id=model.id,
+    resource_type=VisualizationResourceTypes.MODEL,
     display_order=10,  # Primary dashboard
     layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
@@ -190,10 +181,8 @@ visualization_a = client.create_curated_visualization(
 visualization_b = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=1,
-    resource=CuratedVisualizationResource(
-        id=model.id,
-        type=VisualizationResourceTypes.MODEL
-    ),
+    resource_id=model.id,
+    resource_type=VisualizationResourceTypes.MODEL,
     display_order=20,  # Secondary metrics
     layout_size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
 )
@@ -202,10 +191,8 @@ visualization_b = client.create_curated_visualization(
 visualization_c = client.create_curated_visualization(
     artifact_version_id=artifact_version_id,
     visualization_index=2,
-    resource=CuratedVisualizationResource(
-        id=model.id,
-        type=VisualizationResourceTypes.MODEL
-    ),
+    resource_id=model.id,
+    resource_type=VisualizationResourceTypes.MODEL,
     display_order=15,  # Now appears between A and B
     layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )

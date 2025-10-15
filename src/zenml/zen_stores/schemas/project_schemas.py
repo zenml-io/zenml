@@ -131,9 +131,11 @@ class ProjectSchema(NamedSchema, table=True):
     )
     visualizations: List["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            secondary="curated_visualization_resource",
-            primaryjoin=f"and_(foreign(CuratedVisualizationResourceSchema.resource_type)=='{VisualizationResourceTypes.PROJECT.value}', foreign(CuratedVisualizationResourceSchema.resource_id)==ProjectSchema.id)",
-            secondaryjoin="CuratedVisualizationSchema.id == CuratedVisualizationResourceSchema.visualization_id",
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.PROJECT.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==ProjectSchema.id)"
+            ),
             overlaps="visualizations",
         ),
     )

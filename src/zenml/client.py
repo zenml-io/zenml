@@ -73,6 +73,7 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -110,7 +111,6 @@ from zenml.models import (
     ComponentResponse,
     ComponentUpdate,
     CuratedVisualizationRequest,
-    CuratedVisualizationResource,
     CuratedVisualizationResponse,
     CuratedVisualizationUpdate,
     DeploymentFilter,
@@ -3749,7 +3749,8 @@ class Client(metaclass=ClientMetaClass):
         artifact_version_id: UUID,
         visualization_index: int,
         *,
-        resource: CuratedVisualizationResource,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
         project_id: Optional[UUID] = None,
         display_name: Optional[str] = None,
         display_order: Optional[int] = None,
@@ -3775,10 +3776,8 @@ class Client(metaclass=ClientMetaClass):
         Args:
             artifact_version_id: The ID of the artifact version containing the visualization.
             visualization_index: The index of the visualization within the artifact version.
-            resource: The resource to associate with the visualization.
-                Should be a `CuratedVisualizationResource` containing
-                the resource ID and type (e.g., DEPLOYMENT, PIPELINE, PIPELINE_RUN,
-                PIPELINE_SNAPSHOT).
+            resource_id: The identifier of the resource tied to the visualization.
+            resource_type: The type of resource referenced by the visualization.
             project_id: The ID of the project to associate with the visualization.
             display_name: The display name of the visualization.
             display_order: The display order of the visualization.
@@ -3794,7 +3793,8 @@ class Client(metaclass=ClientMetaClass):
             display_name=display_name,
             display_order=display_order,
             layout_size=layout_size,
-            resource=resource,
+            resource_id=resource_id,
+            resource_type=resource_type,
         )
         return self.zen_store.create_curated_visualization(request)
 

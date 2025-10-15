@@ -369,7 +369,6 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
-    CuratedVisualizationResourceSchema,
     CuratedVisualizationSchema,
     DeploymentSchema,
     EventSourceSchema,
@@ -5461,7 +5460,6 @@ class SqlZenStore(BaseZenStore):
         """
         existing = session.exec(
             select(CuratedVisualizationSchema)
-            .join(CuratedVisualizationResourceSchema)
             .where(
                 CuratedVisualizationSchema.artifact_version_id
                 == artifact_version_id
@@ -5470,12 +5468,9 @@ class SqlZenStore(BaseZenStore):
                 CuratedVisualizationSchema.visualization_index
                 == visualization_index
             )
+            .where(CuratedVisualizationSchema.resource_id == resource_id)
             .where(
-                CuratedVisualizationResourceSchema.resource_id == resource_id
-            )
-            .where(
-                CuratedVisualizationResourceSchema.resource_type
-                == resource_type.value
+                CuratedVisualizationSchema.resource_type == resource_type.value
             )
         ).first()
         if existing is not None:
@@ -5527,10 +5522,6 @@ class SqlZenStore(BaseZenStore):
                 visualization_index=visualization.visualization_index,
             )
 
-            # Validate and fetch the resource
-            resource_request = visualization.resource
-
-            # Map resource types to their corresponding schema classes
             resource_schema_map: Dict[
                 VisualizationResourceTypes, Type[BaseSchema]
             ] = {
@@ -5542,55 +5533,45 @@ class SqlZenStore(BaseZenStore):
                 VisualizationResourceTypes.PROJECT: ProjectSchema,
             }
 
-            if resource_request.type not in resource_schema_map:
+            if visualization.resource_type not in resource_schema_map:
                 raise IllegalOperationError(
-                    f"Invalid resource type: {resource_request.type}"
+                    f"Invalid resource type: {visualization.resource_type}"
                 )
 
-            # Fetch the single resource schema
-            schema_class = resource_schema_map[resource_request.type]
+            schema_class = resource_schema_map[visualization.resource_type]
             resource_schema = session.exec(
                 select(schema_class).where(
-                    schema_class.id == resource_request.id
+                    schema_class.id == visualization.resource_id
                 )
             ).first()
 
             if not resource_schema:
                 raise KeyError(
-                    f"Resource of type '{resource_request.type.value}' "
-                    f"with ID {resource_request.id} not found."
+                    f"Resource of type '{visualization.resource_type.value}' "
+                    f"with ID {visualization.resource_id} not found."
                 )
 
-            # Validate project scope for the resource
             if hasattr(resource_schema, "project_id"):
                 resource_project_id = resource_schema.project_id
                 if resource_project_id and resource_project_id != project_id:
                     raise IllegalOperationError(
-                        f"Resource {resource_request.type.value} with ID "
-                        f"{resource_request.id} belongs to a different project than "
+                        f"Resource {visualization.resource_type.value} with ID "
+                        f"{visualization.resource_id} belongs to a different project than "
                         f"the curated visualization (project ID: {project_id})."
                     )
 
-            # Check for duplicate
             self._assert_curated_visualization_duplicate(
                 session=session,
                 artifact_version_id=visualization.artifact_version_id,
                 visualization_index=visualization.visualization_index,
-                resource_id=resource_request.id,
-                resource_type=resource_request.type,
-            )
-
-            # Create the resource link
-            resource = CuratedVisualizationResourceSchema(
-                resource_id=resource_request.id,
-                resource_type=resource_request.type.value,
+                resource_id=visualization.resource_id,
+                resource_type=visualization.resource_type,
             )
 
             schema: CuratedVisualizationSchema = (
                 CuratedVisualizationSchema.from_request(visualization)
             )
             schema.project_id = project_id
-            schema.resource = resource
 
             session.add(schema)
             session.commit()

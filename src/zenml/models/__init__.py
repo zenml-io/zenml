@@ -430,9 +430,6 @@ from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
 )
-from zenml.models.v2.misc.curated_visualization import (
-    CuratedVisualizationResource,
-)
 from zenml.models.v2.misc.server_models import (
     ServerModel,
     ServerDatabaseType,
@@ -888,7 +885,6 @@ __all__ = [
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
-    "CuratedVisualizationResource",
     "ProjectStatistics",
     "PipelineRunDAG",
     "ExceptionInfo",
