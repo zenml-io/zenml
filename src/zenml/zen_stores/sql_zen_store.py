@@ -5497,7 +5497,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: If the resource does not belong to the same project as the curated visualization.
-            EntityExistsError: If a curated visualization link already exists.
+            KeyError: If the resource does not exist.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(

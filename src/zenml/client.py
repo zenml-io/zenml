@@ -3786,9 +3786,6 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created curated visualization.
-
-        Raises:
-            ValueError: If resource is not provided.
         """
         request = CuratedVisualizationRequest(
             project=project_id or self.active_project.id,
