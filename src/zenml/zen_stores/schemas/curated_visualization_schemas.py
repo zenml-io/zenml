@@ -246,8 +246,6 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
                     include_metadata=include_metadata,
                     include_resources=include_resources,
                 )
-                if self.artifact_version
-                else None
             )
 
             resource_model = None
