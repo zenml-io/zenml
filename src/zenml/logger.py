@@ -242,7 +242,7 @@ def set_root_verbosity() -> None:
 
 def wrapped_print(*args: Any, **kwargs: Any) -> None:
     """Wrapped print function.
-    
+
     Args:
         *args: Arguments to print
         **kwargs: Keyword arguments for print
