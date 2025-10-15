@@ -115,6 +115,8 @@ class EndpointSpec(BaseModel):
     configured. The following is an example of an endpoint builder class
 
     ```python
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     class MyHandler:
         def __init__(
             self,
@@ -140,6 +142,8 @@ class EndpointSpec(BaseModel):
     configured. The following is an example of an endpoint builder function:
 
     ```python
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     def my_builder(
         app_runner: "BaseDeploymentAppRunner",
         **kwargs: Any,
@@ -224,6 +228,8 @@ class MiddlewareSpec(BaseModel):
     configured. The following is an example of a middleware class:
 
     ```python
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     class MyMiddleware:
         def __init__(
             self,
@@ -251,6 +257,8 @@ class MiddlewareSpec(BaseModel):
     configured. The following is an example of a middleware builder function:
 
     ```python
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     def my_middleware_builder(
         app_runner: "BaseDeploymentAppRunner",
         **kwargs: Any,
@@ -313,6 +321,8 @@ class AppExtensionSpec(BaseModel):
     `extension_kwargs` as keyword arguments. This is an example:
 
     ```python
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     def extension(app_runner: BaseDeploymentAppRunner, **kwargs)
 
         @app_runner.asgi_app.get("/my-extension")
@@ -327,6 +337,9 @@ class AppExtensionSpec(BaseModel):
     is an example:
 
     ```python
+    from zenml.deployers.server import BaseAppExtension
+    from zenml.deployers.server import BaseDeploymentAppRunner
+
     class MyExtension(BaseAppExtension):
 
         def __init__(self, **kwargs):
@@ -423,6 +436,15 @@ class SecureHeadersConfig(BaseModel):
     )
 
 
+DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH = ""
+DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH = "/docs"
+DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH = "/redoc"
+DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
+DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
+DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
+DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
+
+
 class DeploymentSettings(BaseSettings):
     """Settings for the pipeline deployment."""
 
@@ -434,13 +456,13 @@ class DeploymentSettings(BaseSettings):
     app_version: Optional[str] = None
     app_kwargs: Dict[str, Any] = {}
 
-    root_url_path: str = ""
-    docs_url_path: str = "/docs"
-    redoc_url_path: str = "/redoc"
-    invoke_url_path: str = "/invoke"
-    health_url_path: str = "/health"
-    info_url_path: str = "/info"
-    metrics_url_path: str = "/metrics"
+    root_url_path: str = DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH
+    docs_url_path: str = DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH
+    redoc_url_path: str = DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH
+    invoke_url_path: str = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+    health_url_path: str = DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH
+    info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
+    metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
 
     dashboard_files_path: str = ""
 

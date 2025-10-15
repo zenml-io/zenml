@@ -21,6 +21,7 @@ import jsonref
 import requests
 
 from zenml.client import Client
+from zenml.config.deployment_settings import DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
 from zenml.config.step_configurations import Step
 from zenml.deployers.exceptions import (
     DeploymentHTTPError,
@@ -222,8 +223,12 @@ def invoke_deployment(
             f"Failed to serialize request data to JSON: {e}"
         )
 
+    invoke_url_path = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+    if deployment.snapshot:
+        invoke_url_path = deployment.snapshot.pipeline_configuration.deployment_settings.invoke_url_path
+
     # Construct the invoke endpoint URL
-    invoke_url = deployment.url.rstrip("/") + "/invoke"
+    invoke_url = deployment.url.rstrip("/") + invoke_url_path
 
     # Prepare headers
     headers = {
