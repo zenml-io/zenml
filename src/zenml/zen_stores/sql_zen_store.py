@@ -10737,7 +10737,9 @@ class SqlZenStore(BaseZenStore):
                 )
             else:
                 target_schema = schema_ref._evaluate(  # type: ignore[unused-ignore, call-arg, call-overload]
-                    vars(zenml_schemas), {}, frozenset()  # type: ignore[unused-ignore, arg-type]
+                    vars(zenml_schemas),
+                    {},
+                    frozenset(),  # type: ignore[unused-ignore, arg-type]
                 )
             assert target_schema is not None
             assert issubclass(target_schema, SQLModel)
