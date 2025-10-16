@@ -121,22 +121,15 @@ def get_curated_visualization(
     """
     store = zen_store()
     hydrated_visualization = store.get_curated_visualization(
-        visualization_id, hydrate=True
+        visualization_id, hydrate=hydrate
     )
     resource_type = hydrated_visualization.resource_type
     resource_id = hydrated_visualization.resource_id
-    if resource_type is None or resource_id is None:
-        raise RuntimeError(
-            f"Curated visualization '{visualization_id}' is missing its resource identifier or type."
-        )
 
     resource_model = _get_resource_model(resource_type, resource_id)
     verify_permission_for_model(resource_model, action=Action.READ)
 
-    if hydrate:
-        return hydrated_visualization
-
-    return store.get_curated_visualization(visualization_id, hydrate=False)
+    return hydrated_visualization
 
 
 @router.patch(
