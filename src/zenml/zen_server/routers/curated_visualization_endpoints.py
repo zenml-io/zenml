@@ -160,10 +160,6 @@ def update_curated_visualization(
     )
     resource_type = existing_visualization.resource_type
     resource_id = existing_visualization.resource_id
-    if resource_type is None or resource_id is None:
-        raise RuntimeError(
-            f"Curated visualization '{visualization_id}' is missing its resource identifier or type."
-        )
 
     resource_model = _get_resource_model(resource_type, resource_id)
     verify_permission_for_model(resource_model, action=Action.UPDATE)
