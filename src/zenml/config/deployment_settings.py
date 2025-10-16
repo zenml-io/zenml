@@ -605,9 +605,9 @@ class DeploymentSettings(BaseSettings):
 
     uvicorn_kwargs: Dict[str, Any] = {}
 
-    deployment_app_runner_source: Optional[SourceOrObjectField] = None
+    deployment_app_runner_class: Optional[SourceOrObjectField] = None
     deployment_app_runner_kwargs: Dict[str, Any] = {}
-    deployment_service_source: Optional[SourceOrObjectField] = None
+    deployment_service_class: Optional[SourceOrObjectField] = None
     deployment_service_kwargs: Dict[str, Any] = {}
 
     def load_sources(self) -> None:
@@ -616,10 +616,10 @@ class DeploymentSettings(BaseSettings):
             self.startup_hook.load()
         if self.shutdown_hook is not None:
             self.shutdown_hook.load()
-        if self.deployment_app_runner_source is not None:
-            self.deployment_app_runner_source.load()
-        if self.deployment_service_source is not None:
-            self.deployment_service_source.load()
+        if self.deployment_app_runner_class is not None:
+            self.deployment_app_runner_class.load()
+        if self.deployment_service_class is not None:
+            self.deployment_service_class.load()
 
     model_config = ConfigDict(
         # public attributes are mutable

@@ -33,6 +33,7 @@ import secure
 
 from zenml.client import Client
 from zenml.config.deployment_settings import (
+    AppExtensionSpec,
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
@@ -94,11 +95,12 @@ class BaseDeploymentAppRunner(ABC):
 
     * build: Build and return an ASGI compatible web application (i.e. an
     ASGIApplication object that can be run with uvicorn). Most Python ASGI
-    frameworks provide an ASGIApplication object. This method doesn't have
-    to register any endpoints or middleware, as this is done separately. It MUST
-    however configure the `startup` and `shutdown` methods as part of the
-    ASGI application's lifespan or overload the `run` method to handle the
-    startup and shutdown as a last resort.
+    frameworks provide an ASGIApplication object. This method also has to
+    register all the endpoints, middleware and extensions that are either
+    required internally or supplied to it. It must also configure the `startup`
+    and `shutdown` methods to be run as part of the ASGI application's lifespan
+    or overload the `_run_asgi_app` method to handle the startup and shutdown as
+    an alternative.
     * _get_dashboard_endpoints: Gets the dashboard endpoints specs from the
     deployment configuration. Only required if the dashboard files path is set
     in the deployment configuration and the app runner supports serving a
@@ -209,19 +211,19 @@ class BaseDeploymentAppRunner(ABC):
             deployment.snapshot.pipeline_configuration.deployment_settings
         )
 
-        if settings.deployment_app_runner_source is None:
+        if settings.deployment_app_runner_class is None:
             app_runner_cls: Type[BaseDeploymentAppRunner] = (
                 FastAPIDeploymentAppRunner
             )
         else:
             try:
                 loaded_app_runner_cls = (
-                    settings.deployment_app_runner_source.load()
+                    settings.deployment_app_runner_class.load()
                 )
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to load deployment app runner from source "
-                    f"{settings.deployment_app_runner_source}: {e}\n"
+                    f"{settings.deployment_app_runner_class}: {e}\n"
                     "Please check that the source is valid and that the "
                     "deployment app runner class is importable from the source "
                     "root directory. Hint: run `zenml init` in your local "
@@ -274,17 +276,17 @@ class BaseDeploymentAppRunner(ABC):
         settings = (
             deployment.snapshot.pipeline_configuration.deployment_settings
         )
-        if settings.deployment_service_source is None:
+        if settings.deployment_service_class is None:
             service_cls: Type[BasePipelineDeploymentService] = (
                 PipelineDeploymentService
             )
         else:
             try:
-                loaded_service_cls = settings.deployment_service_source.load()
+                loaded_service_cls = settings.deployment_service_class.load()
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to load deployment service from source "
-                    f"{settings.deployment_service_source}: {e}\n"
+                    f"{settings.deployment_service_class}: {e}\n"
                     "Please check that the source is valid and that the "
                     "deployment service class is importable from the source "
                     "root directory. Hint: run `zenml init` in your local "
@@ -352,46 +354,6 @@ class BaseDeploymentAppRunner(ABC):
             return self.service.execute_pipeline(request)
 
         return _invoke_endpoint
-
-    def install_extensions(self) -> None:
-        """Install all configured app extensions.
-
-        Raises:
-            ValueError: If the extension is not a subclass of BaseAppExtension.
-            RuntimeError: If the extension cannot be initialized.
-        """
-        if not self.settings.app_extensions:
-            return
-
-        for ext_spec in self.settings.app_extensions:
-            # Load extension
-            ext_spec.load_sources()
-            extension_obj = ext_spec.resolve_extension_handler()
-
-            # Handle callable vs class-based extensions
-            if isinstance(extension_obj, type):
-                if not issubclass(extension_obj, BaseAppExtension):
-                    raise ValueError(
-                        f"Extension type {extension_obj} is not a subclass of "
-                        "BaseAppExtension"
-                    )
-
-                try:
-                    extension_instance = extension_obj(
-                        **ext_spec.extension_kwargs
-                    )
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to initialize extension class {extension_obj}: {e}"
-                    ) from e
-
-                extension_instance.install(self)
-            else:
-                # Simple callable extension
-                extension_obj(
-                    app_runner=self,
-                    **ext_spec.extension_kwargs,
-                )
 
     def dashboard_files_path(self) -> Optional[str]:
         """Get the absolute path of the dashboard files directory.
@@ -490,20 +452,6 @@ class BaseDeploymentAppRunner(ABC):
             specs.extend(self._get_dashboard_endpoints())
 
         return specs
-
-    def register_endpoints(self) -> None:
-        """Register all endpoints."""
-        all_endpoints: List[EndpointSpec] = []
-
-        if self.settings.include_default_endpoints:
-            all_endpoints.extend(self._create_default_endpoint_specs())
-
-        if self.settings.custom_endpoints:
-            all_endpoints.extend(self.settings.custom_endpoints)
-
-        for spec in all_endpoints:
-            spec.load_sources()
-            self.endpoint_adapter.register_endpoint(self, spec)
 
     def _get_secure_headers(self) -> secure.Secure:
         """Get the secure headers settings.
@@ -624,22 +572,65 @@ class BaseDeploymentAppRunner(ABC):
 
         return specs
 
-    def register_middlewares(self) -> None:
-        """Register all configured middleware in order."""
-        all_middleware: List[MiddlewareSpec] = []
+    def install_extensions(self, *extension_specs: AppExtensionSpec) -> None:
+        """Install the given app extensions.
 
-        if self.settings.include_default_middleware:
-            all_middleware.extend(self._create_default_middleware_specs())
+        Args:
+            extension_specs: The app extensions to install.
 
-        if self.settings.custom_middlewares:
-            all_middleware.extend(self.settings.custom_middlewares)
+        Raises:
+            ValueError: If the extension is not a subclass of BaseAppExtension.
+            RuntimeError: If the extension cannot be initialized.
+        """
+        for ext_spec in extension_specs:
+            # Load extension
+            ext_spec.load_sources()
+            extension_obj = ext_spec.resolve_extension_handler()
 
-        # Sort by order (lower first)
-        sorted_middleware = sorted(all_middleware, key=lambda m: m.order)
+            # Handle callable vs class-based extensions
+            if isinstance(extension_obj, type):
+                if not issubclass(extension_obj, BaseAppExtension):
+                    raise ValueError(
+                        f"Extension type {extension_obj} is not a subclass of "
+                        "BaseAppExtension"
+                    )
 
-        for spec in sorted_middleware:
-            spec.load_sources()
-            self.middleware_adapter.register_middleware(self, spec)
+                try:
+                    extension_instance = extension_obj(
+                        **ext_spec.extension_kwargs
+                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to initialize extension class {extension_obj}: {e}"
+                    ) from e
+
+                extension_instance.install(self)
+            else:
+                # Simple callable extension
+                extension_obj(
+                    app_runner=self,
+                    **ext_spec.extension_kwargs,
+                )
+
+    def register_endpoints(self, *endpoint_specs: EndpointSpec) -> None:
+        """Register the given endpoints.
+
+        Args:
+            endpoint_specs: The endpoints to register.
+        """
+        for endpoint_spec in endpoint_specs:
+            endpoint_spec.load_sources()
+            self.endpoint_adapter.register_endpoint(self, endpoint_spec)
+
+    def register_middlewares(self, *middleware_specs: MiddlewareSpec) -> None:
+        """Register the given middleware.
+
+        Args:
+            middleware_specs: The middleware to register.
+        """
+        for middleware_spec in middleware_specs:
+            middleware_spec.load_sources()
+            self.middleware_adapter.register_middleware(self, middleware_spec)
 
     def _run_startup_hook(self) -> None:
         """Run the startup hook.
@@ -729,17 +720,48 @@ class BaseDeploymentAppRunner(ABC):
             )
             raise
 
-    def run(self) -> None:
-        """Run the deployment app."""
+    def _build_asgi_app(self) -> Union["ASGIApplication", Callable[..., Any]]:
+        """Build the ASGI application.
+
+        Returns:
+            The ASGI application.
+        """
+        endpoints = []
+
+        if self.settings.include_default_endpoints:
+            endpoints.extend(self._create_default_endpoint_specs())
+
+        if self.settings.custom_endpoints:
+            endpoints.extend(self.settings.custom_endpoints)
+
+        middlewares = []
+        if self.settings.include_default_middleware:
+            middlewares.extend(self._create_default_middleware_specs())
+
+        if self.settings.custom_middlewares:
+            middlewares.extend(self.settings.custom_middlewares)
+
+        extensions = []
+        if self.settings.app_extensions:
+            extensions.extend(self.settings.app_extensions)
+
+        return self.build(middlewares, endpoints, extensions)
+
+    def _run_asgi_app(
+        self, asgi_app: Union["ASGIApplication", Callable[..., Any]]
+    ) -> None:
+        """Run the ASGI application.
+
+        Args:
+            asgi_app: The ASGI application to run.
+
+        Raises:
+            KeyboardInterrupt: If the user interrupts the application.
+            Exception: If the application fails to start.
+        """
         import uvicorn
 
         settings = self.settings
-
-        self._asgi_app = self.build()
-
-        self.register_middlewares()
-        self.register_endpoints()
-        self.install_extensions()
 
         logger.info(f"""
 🚀 Starting ZenML pipeline deployment application:
@@ -768,7 +790,7 @@ class BaseDeploymentAppRunner(ABC):
         try:
             # Start the ASGI application
             uvicorn.run(
-                self.asgi_app,
+                asgi_app,
                 **uvicorn_kwargs,
             )
         except KeyboardInterrupt:
@@ -779,13 +801,26 @@ class BaseDeploymentAppRunner(ABC):
             )
             raise
 
+    def run(self) -> None:
+        """Run the deployment app."""
+        if self._asgi_app is None:
+            self._build_asgi_app()
+
+        self._run_asgi_app(self.asgi_app)
+
     @abstractmethod
-    def build(self) -> Union["ASGIApplication", Callable[..., Any]]:
+    def build(
+        self,
+        middlewares: List[MiddlewareSpec],
+        endpoints: List[EndpointSpec],
+        extensions: List[AppExtensionSpec],
+    ) -> Union["ASGIApplication", Callable[..., Any]]:
         """Build the ASGI compatible web application.
 
         Args:
-            **kwargs: Additional keyword arguments for building the ASGI
-                compatible web application.
+            middlewares: The middleware to register.
+            endpoints: The endpoints to register.
+            extensions: The extensions to install.
 
         Returns:
             The ASGI compatible web application.

@@ -31,6 +31,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 
 from zenml import __version__ as zenml_version
 from zenml.config.deployment_settings import (
+    AppExtensionSpec,
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
@@ -267,11 +268,21 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         logger.error("Error in request: %s", exc)
         return JSONResponse(status_code=500, content={"detail": str(exc)})
 
-    def build(self) -> FastAPI:
+    def build(
+        self,
+        middlewares: List[MiddlewareSpec],
+        endpoints: List[EndpointSpec],
+        extensions: List[AppExtensionSpec],
+    ) -> FastAPI:
         """Build the FastAPI app for the deployment.
 
+        Args:
+            middlewares: The middleware to register.
+            endpoints: The endpoints to register.
+            extensions: The extensions to install.
+
         Returns:
-            Configured FastAPI application instance.
+            The configured FastAPI application instance.
         """
         title = (
             self.settings.app_title
@@ -295,15 +306,27 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         )
         fastapi_kwargs.update(self.settings.app_kwargs)
 
-        fastapi_app = FastAPI(**fastapi_kwargs)
+        asgi_app = FastAPI(**fastapi_kwargs)
+
+        # Save this so it's available for the middleware, endpoint adapters and
+        # extensions
+        self._asgi_app = asgi_app
 
         # Bind the app runner to the app state
-        fastapi_app.state.app_runner = self
+        asgi_app.state.app_runner = self
 
-        fastapi_app.get("/")(self.root_endpoint)
-        fastapi_app.exception_handler(Exception)(self.error_handler)
+        if (
+            self.settings.include_default_endpoints
+            and not self.settings.dashboard_files_path
+        ):
+            asgi_app.get("/")(self.root_endpoint)
+        asgi_app.exception_handler(Exception)(self.error_handler)
 
-        return fastapi_app
+        self.register_middlewares(*middlewares)
+        self.register_endpoints(*endpoints)
+        self.install_extensions(*extensions)
+
+        return self._asgi_app
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI) -> AsyncGenerator[None, None]:

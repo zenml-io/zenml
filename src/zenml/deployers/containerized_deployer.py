@@ -40,7 +40,13 @@ class ContainerizedDeployer(BaseDeployer, ABC):
 
     # TODO: this needs to come from the deployment settings or from the
     # app runner class itself
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi", "secure~=0.3.0"]
+    CONTAINER_REQUIREMENTS: List[str] = [
+        "uvicorn",
+        "fastapi",
+        "secure~=0.3.0",
+        "django>=4.2,<6.0",
+        "Jinja2",
+    ]
 
     @staticmethod
     def get_image(snapshot: PipelineSnapshotResponse) -> str:

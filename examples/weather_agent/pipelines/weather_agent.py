@@ -2,6 +2,7 @@
 
 import os
 import time
+from typing import Any, Dict
 
 from pipelines.hooks import (
     InitConfig,
@@ -14,15 +15,32 @@ from zenml import pipeline
 from zenml.config import DeploymentSettings, DockerSettings
 
 # Import enums for type-safe capture mode configuration
-from zenml.config.deployment_settings import MiddlewareSpec
+from zenml.config.deployment_settings import (
+    EndpointMethod,
+    EndpointSpec,
+    MiddlewareSpec,
+)
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
+from zenml.utils.source_utils import SourceOrObject
 
 docker_settings = DockerSettings(
     requirements=["openai"],
     prevent_build_reuse=True,
     python_package_installer=PythonPackageInstaller.UV,
 )
+
+
+async def health_detailed() -> Dict[str, Any]:
+    """Detailed health check with system metrics."""
+    import psutil
+
+    return {
+        "status": "healthy",
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_percent": psutil.virtual_memory().percent,
+        "disk_percent": psutil.disk_usage("/").percent,
+    }
 
 
 class RequestTimingMiddleware:
@@ -33,6 +51,11 @@ class RequestTimingMiddleware:
     """
 
     def __init__(self, app):
+        """Initialize the middleware.
+
+        Args:
+            app: The ASGI application to wrap.
+        """
         self.app = app
 
     async def __call__(self, scope, receive, send):
@@ -67,13 +90,22 @@ class RequestTimingMiddleware:
 
 
 deployment_settings = DeploymentSettings(
+    custom_endpoints=[
+        EndpointSpec(
+            path="/health/detailed",
+            method=EndpointMethod.GET,
+            handler=SourceOrObject(health_detailed),
+            auth_required=False,
+        ),
+    ],
     custom_middlewares=[
         MiddlewareSpec(
-            middleware=RequestTimingMiddleware,
+            middleware=SourceOrObject(RequestTimingMiddleware),
             order=10,
             native=True,
         ),
     ],
+    deployment_app_runner_class="zenml.deployers.server.django.app.DjangoDeploymentAppRunner",
 )
 
 environment = {}
@@ -89,6 +121,9 @@ if os.getenv("OPENAI_API_KEY"):
     settings={
         "docker": docker_settings,
         "deployment": deployment_settings,
+        "deployer": {
+            "generate_auth_key": True,
+        },
         "deployer.gcp": {
             "allow_unauthenticated": True,
             # "location": "us-central1",
@@ -110,13 +145,7 @@ if os.getenv("OPENAI_API_KEY"):
 def weather_agent(
     city: str = "London",
 ) -> str:
-    """Weather agent pipeline optimized for run-only serving.
-
-    Automatically uses run-only architecture for millisecond-class latency:
-    - Zero database writes
-    - Zero filesystem operations
-    - In-memory step output handoff
-    - Perfect for real-time inference
+    """Weather agent pipeline.
 
     Args:
         city: City name to analyze weather for
