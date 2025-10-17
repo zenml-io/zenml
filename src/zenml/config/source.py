@@ -14,16 +14,19 @@
 """Source classes."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from types import BuiltinFunctionType, FunctionType, ModuleType
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    PlainSerializer,
     SerializeAsAny,
     field_validator,
 )
+from pydantic_core import core_schema
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
@@ -162,6 +165,200 @@ class Source(BaseModel):
         """
         return super().model_dump_json(serialize_as_any=True, **kwargs)
 
+    @classmethod
+    def convert_source(cls, source: Any) -> Any:
+        """Converts an old source string to a source object.
+
+        Args:
+            source: Source string or object.
+
+        Returns:
+            The converted source.
+        """
+        if isinstance(source, str):
+            source = cls.from_import_path(source)
+
+        return source
+
+
+ObjectType = Union[
+    Type[Any],
+    Callable[..., Any],
+    ModuleType,
+    FunctionType,
+    BuiltinFunctionType,
+]
+
+
+class SourceOrObject:
+    """Hybrid type that can hold either a Source path or a loaded object (type, function, variable, etc.).
+
+    This enables:
+    - Internal use: Pass actual objects directly
+    - External use: Pass source strings from config
+    - Serialization: Converts objects to source strings
+    - Lazy loading: Only loads sources when explicitly requested
+
+    Attributes:
+        _source: Source object (if initialized from string).
+        _object: Loaded object object (if initialized from object or loaded).
+        _is_loaded: Whether the callable has been loaded.
+    """
+
+    def __init__(
+        self,
+        value: Union[
+            str,
+            Source,
+            ObjectType,
+        ],
+    ):
+        """Initialize from either a source string/object or object.
+
+        Args:
+            value: Either a source string, Source object, or object.
+        """
+        if isinstance(value, str):
+            self._source: Optional[Source] = Source.from_import_path(value)
+            self._object: Optional[ObjectType] = None
+            self._is_loaded = False
+        elif isinstance(value, Source):
+            self._source = value
+            self._object = None
+            self._is_loaded = False
+        else:
+            self._object = value
+            self._source = None
+            self._is_loaded = True
+
+    def load(self) -> ObjectType:
+        """Load and return the object.
+
+        Returns:
+            The loaded object.
+
+        Raises:
+            RuntimeError: If loading fails.
+        """
+        from zenml.utils import source_utils
+
+        if not self._is_loaded:
+            if self._source is None:
+                raise RuntimeError(
+                    "The source is not initialized for this SourceOrObject"
+                )
+            try:
+                self._object = source_utils.load(self._source)
+                self._is_loaded = True
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to load object from "
+                    f"{self._source.import_path}: {e}"
+                ) from e
+
+        assert self._object is not None
+        return self._object
+
+    @property
+    def is_loaded(self) -> bool:
+        """Whether the object has been loaded.
+
+        Returns:
+            True if the object has been loaded, False otherwise.
+        """
+        return self._is_loaded
+
+    @property
+    def source(self) -> Source:
+        """Get the source representation.
+
+        Returns:
+            The source representation.
+
+        Raises:
+            RuntimeError: If the source is not initialized and cannot be derived
+                on the spot from the object.
+        """
+        from zenml.utils import source_utils
+
+        if self._source is None:
+            if self._object is None:
+                raise RuntimeError(
+                    "SourceOrObject is not initialized with a object"
+                )
+            self._source = source_utils.resolve(self._object)
+        return self._source
+
+    @classmethod
+    def validate_source_or_object(cls, value: Any) -> "SourceOrObject":
+        """Pydantic validator for SourceOrObject fields.
+
+        Args:
+            value: Value to validate.
+
+        Returns:
+            SourceOrObject instance.
+        """
+        if isinstance(value, cls):
+            return value
+        return cls(value)
+
+    @classmethod
+    def serialize_source_or_object(cls, value: "SourceOrObject") -> str:
+        """Pydantic serializer for SourceOrObject fields.
+
+        Args:
+            value: Value to serialize.
+
+        Returns:
+            Serialized import path string.
+        """
+        return value.source.import_path
+
+    def __repr__(self) -> str:
+        """String representation.
+
+        Returns:
+            String representation.
+        """
+        if self._is_loaded:
+            return f"SourceOrObject(loaded={self._object})"
+        if self._source:
+            return f"SourceOrObject(source={self._source.import_path})"
+        return "SourceOrObject(not initialized)"
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        _source_type: Any,
+        _handler: Any,
+    ) -> core_schema.CoreSchema:
+        """Generate Pydantic core schema for SourceOrObject.
+
+        This method tells Pydantic how to validate and serialize this type.
+
+        Args:
+            _source_type: The source type being processed.
+            _handler: Handler for generating schemas.
+
+        Returns:
+            Core schema for this type.
+        """
+        return core_schema.no_info_after_validator_function(
+            cls.validate_source_or_object,
+            core_schema.union_schema(
+                [
+                    core_schema.str_schema(),
+                    core_schema.is_instance_schema(Source),
+                    core_schema.is_instance_schema(cls),
+                ]
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                cls.serialize_source_or_object,
+                return_schema=core_schema.str_schema(),
+            ),
+        )
+
 
 class DistributionPackageSource(Source):
     """Source representing an object from a distribution package.
@@ -283,22 +480,16 @@ class NotebookSource(Source):
         return value
 
 
-def convert_source(source: Any) -> Any:
-    """Converts an old source string to a source object.
-
-    Args:
-        source: Source string or object.
-
-    Returns:
-        The converted source.
-    """
-    if isinstance(source, str):
-        source = Source.from_import_path(source)
-
-    return source
-
-
 SourceWithValidator = Annotated[
     SerializeAsAny[Source],
-    BeforeValidator(convert_source),
+    BeforeValidator(Source.convert_source),
+]
+
+
+SourceOrObjectField = Annotated[
+    SourceOrObject,
+    BeforeValidator(SourceOrObject.validate_source_or_object),
+    PlainSerializer(
+        SourceOrObject.serialize_source_or_object, return_type=str
+    ),
 ]

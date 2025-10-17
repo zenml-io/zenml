@@ -22,12 +22,11 @@ from zenml.config.deployment_settings import (
 )
 from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
-from zenml.utils.source_utils import SourceOrObject
+from zenml.config.source import SourceOrObject
 
 docker_settings = DockerSettings(
     requirements=["openai"],
     prevent_build_reuse=True,
-    python_package_installer=PythonPackageInstaller.UV,
 )
 
 
@@ -105,7 +104,6 @@ deployment_settings = DeploymentSettings(
             native=True,
         ),
     ],
-    deployment_app_runner_class="zenml.deployers.server.django.app.DjangoDeploymentAppRunner",
 )
 
 environment = {}

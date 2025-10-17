@@ -36,6 +36,7 @@ from zenml.config.deployment_settings import (
     EndpointSpec,
     MiddlewareSpec,
 )
+from zenml.config.source import SourceOrObject
 from zenml.deployers.server.adapters import (
     EndpointAdapter,
     MiddlewareAdapter,
@@ -46,7 +47,6 @@ from zenml.deployers.server.fastapi.adapters import (
     FastAPIMiddlewareAdapter,
 )
 from zenml.logger import get_logger
-from zenml.utils.source_utils import SourceOrObject
 
 logger = get_logger(__name__)
 
@@ -138,9 +138,6 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
     def root_endpoint(self) -> HTMLResponse:
         """Root endpoint.
-
-        Args:
-            request: The request.
 
         Returns:
             The root content.
@@ -337,10 +334,6 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
         Yields:
             None: Control is handed back to FastAPI once initialization completes.
-
-        Raises:
-            ValueError: If no deployment identifier is configured.
-            Exception: If initialization or cleanup fails.
         """
         # Set the maximum number of worker threads
         to_thread.current_default_thread_limiter().total_tokens = (

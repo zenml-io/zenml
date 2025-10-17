@@ -1383,7 +1383,9 @@ class AWSDeployer(ContainerizedDeployer):
         }
 
         if settings.health_check_protocol.upper() == "HTTP":
-            health_check_configuration["Path"] = settings.health_check_path
+            root_path = snapshot.pipeline_configuration.deployment_settings.root_url_path
+            health_check_path = f"{root_path}{snapshot.pipeline_configuration.deployment_settings.health_url_path}"
+            health_check_configuration["Path"] = health_check_path
 
         network_configuration = {
             "IngressConfiguration": {

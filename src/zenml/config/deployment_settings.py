@@ -15,7 +15,6 @@
 
 from enum import Enum
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -32,12 +31,9 @@ from pydantic import (
 )
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
+from zenml.config.source import SourceOrObjectField
 from zenml.enums import LoggingLevels
 from zenml.logger import get_logger
-from zenml.utils.source_utils import SourceOrObjectField
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -360,8 +356,6 @@ class AppExtensionSpec(BaseModel):
     extension: SourceOrObjectField
     extension_kwargs: Dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
     def load_sources(self) -> None:
         """Load source string into callable."""
         if not self.extension.is_loaded:
@@ -370,7 +364,14 @@ class AppExtensionSpec(BaseModel):
     def resolve_extension_handler(
         self,
     ) -> Callable[..., Any]:
-        """Resolve the extension handler from the spec."""
+        """Resolve the extension handler from the spec.
+
+        Returns:
+            The extension handler.
+
+        Raises:
+            ValueError: If the extension object is not callable.
+        """
         extension = self.extension.load()
         if not callable(extension):
             raise ValueError(

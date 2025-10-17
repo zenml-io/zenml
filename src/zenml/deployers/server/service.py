@@ -284,9 +284,6 @@ class BasePipelineDeploymentService(ABC):
     ) -> Tuple[Type[BaseModel], Type[BaseModel]]:
         """Generate the request and response models for the pipeline invoke endpoint.
 
-        Args:
-            service: The pipeline deployment service.
-
         Returns:
             A tuple containing the request and response models.
         """
@@ -454,11 +451,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         )
 
     def health_check(self) -> None:
-        """Check service health.
-
-        Raises:
-            RuntimeError: If the service is not healthy.
-        """
+        """Check service health."""
         pass
 
     def _map_outputs(

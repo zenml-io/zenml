@@ -87,9 +87,6 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         Returns:
             The deployment.
-
-        Raises:
-            RuntimeError: If the deployment does not exist.
         """
         deployment_id = UUID(self.entrypoint_args[DEPLOYMENT_ID_OPTION])
         deployment = Client().zen_store.get_deployment(
@@ -104,7 +101,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         and the specified pipeline deployment.
 
         Raises:
-            Exception: If the server fails to start.
+            RuntimeError: If the deployment has no snapshot.
         """
         from zenml.deployers.server.app import BaseDeploymentAppRunner
 

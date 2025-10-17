@@ -38,6 +38,7 @@ from zenml.config.deployment_settings import (
     EndpointSpec,
     MiddlewareSpec,
 )
+from zenml.config.source import SourceOrObject
 from zenml.deployers.server.adapters import (
     EndpointAdapter,
     MiddlewareAdapter,
@@ -54,7 +55,6 @@ from zenml.deployers.server.service import (
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
-from zenml.utils.source_utils import SourceOrObject
 
 logger = get_logger(__name__)
 
@@ -119,9 +119,6 @@ class BaseDeploymentAppRunner(ABC):
         Args:
             deployment: The deployment to run.
             **kwargs: Additional keyword arguments for the deployment app runner.
-
-        Raises:
-            RuntimeError: If the deployment or its snapshot cannot be loaded.
         """
         self.deployment = self.load_deployment(deployment)
         assert self.deployment.snapshot is not None
@@ -146,6 +143,9 @@ class BaseDeploymentAppRunner(ABC):
 
         Returns:
             The ASGI application.
+
+        Raises:
+            RuntimeError: If the ASGI application is not built yet.
         """
         if self._asgi_app is None:
             raise RuntimeError(
@@ -487,6 +487,7 @@ class BaseDeploymentAppRunner(ABC):
             if isinstance(self.settings.secure_headers.xfo, str):
                 xfo.set(self.settings.secure_headers.xfo)
 
+        # TODO: this is not supported with newer versions of the `secure` library.
         xxp: Optional[secure.XXSSProtection] = None
         if self.settings.secure_headers.xxp:
             xxp = secure.XXSSProtection()
@@ -536,6 +537,7 @@ class BaseDeploymentAppRunner(ABC):
         )
 
     @abstractmethod
+    # TODO: this can probably be a default middleware with a generic middleware definition;
     def _get_secure_headers_middleware(
         self, secure_headers: secure.Secure
     ) -> MiddlewareSpec:
@@ -549,6 +551,7 @@ class BaseDeploymentAppRunner(ABC):
         """
 
     @abstractmethod
+    # TODO: this can probably be a default middleware with a generic middleware definition;
     def _get_cors_middleware(self) -> MiddlewareSpec:
         """Get the CORS middleware.
 
@@ -637,6 +640,7 @@ class BaseDeploymentAppRunner(ABC):
 
         Raises:
             ValueError: If the startup hook is not callable.
+            Exception: If the startup hook fails to execute.
         """
         if not self.settings.startup_hook:
             return
@@ -659,7 +663,11 @@ class BaseDeploymentAppRunner(ABC):
             raise
 
     def startup(self) -> None:
-        """Startup the deployment app."""
+        """Startup the deployment app.
+
+        Raises:
+            Exception: If the service initialization fails.
+        """
         logger.info("🚀 Initializing the pipeline deployment service...")
 
         try:
@@ -680,6 +688,7 @@ class BaseDeploymentAppRunner(ABC):
 
         Raises:
             ValueError: If the shutdown hook is not callable.
+            Exception: If the shutdown hook fails to execute.
         """
         if not self.settings.shutdown_hook:
             return
@@ -705,7 +714,11 @@ class BaseDeploymentAppRunner(ABC):
             raise
 
     def shutdown(self) -> None:
-        """Shutdown the deployment app."""
+        """Shutdown the deployment app.
+
+        Raises:
+            Exception: If the service cleanup fails.
+        """
         self._run_shutdown_hook()
 
         logger.info("🛑 Cleaning up the pipeline deployment service...")
