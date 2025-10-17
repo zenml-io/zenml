@@ -355,11 +355,11 @@ async def execution_metrics(
 
 # Custom exception handlers
 @app.exception_handler(ValueError)
-def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
+def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
     """Handle ValueError exceptions (synchronous for unit tests).
 
     Args:
-        _request: The request (unused, but required by FastAPI).
+        request: The request.
         exc: The exception.
 
     Returns:
@@ -371,12 +371,12 @@ def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
 
 @app.exception_handler(RuntimeError)
 def runtime_error_handler(
-    _request: Request, exc: RuntimeError
+    request: Request, exc: RuntimeError
 ) -> JSONResponse:
     """Handle RuntimeError exceptions (synchronous for unit tests).
 
     Args:
-        _request: The request (unused, but required by FastAPI).
+        request: The request.
         exc: The exception.
 
     Returns:
