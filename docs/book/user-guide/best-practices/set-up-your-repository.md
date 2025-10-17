@@ -170,7 +170,7 @@ Collect all your notebooks in one place.
 
 #### .zen
 
-By running `zenml init` at the root of your project, you define the [source root](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-root) for you project.
+By running `zenml init` at the root of your project, you define the [source root](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-root) for your project.
 - When running Jupyter notebooks, it is required that you have a `.zen` directory initialized in one of the parent directories of your notebook.
 - When running regular Python scripts, it is still **highly** recommended that you have a `.zen` directory initialized in the root of your project. If that is not the case, ZenML will look for a `.zen` directory in the parent directories, which might cause issues if one is found (The import paths will not be relative to the source root anymore for example). If no `.zen` directory is found, the parent directory of the Python file that you're executing will be used as the implicit source root.
 
