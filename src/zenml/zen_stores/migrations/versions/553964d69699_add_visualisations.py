@@ -1,8 +1,8 @@
-"""add visualisations [0ede689b266a].
+"""add visualisations [553964d69699].
 
-Revision ID: 0ede689b266a
-Revises: 0.90.0
-Create Date: 2025-10-15 23:48:54.468181
+Revision ID: 553964d69699
+Revises: 7497d2ff5731
+Create Date: 2025-10-17 11:44:15.358521
 
 """
 
@@ -11,8 +11,8 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "0ede689b266a"
-down_revision = "0.90.0"
+revision = "553964d69699"
+down_revision = "7497d2ff5731"
 branch_labels = None
 depends_on = None
 
