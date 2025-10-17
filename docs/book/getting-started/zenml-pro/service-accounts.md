@@ -291,6 +291,33 @@ zenml login <your-workspace-name> --api-key
 # You will be prompted to enter your API key
 ```
 
+* for programmatic access:
+  * the ZenML Pro API key needs first to be exchanged for a control plane API access token, as covered [in the previous section](./service-accounts.md#zenml-pro-api-programmatic-access):
+  
+  ```bash
+  curl -X 'POST' \
+  'https://cloudapi.zenml.io/auth/login' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'password=ZENPROKEY_eyJpZCI6I...'
+  {"access_token":"eyJhbGciOiJIUzI1...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
+  ```
+
+  * then this token can be exchanged for a workspace API access token:
+
+  ```bash
+  curl -X 'POST' \
+  'https://1ca28d37-zenml.cloudinfra.zenml.io/api/v1/login' \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1..."
+  {"access_token":"iIsInR5cCI6Ik...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
+  ```
+
+  * finally, the workspace API access token can be used to make calls to the workspace API:
+  ```bash
+  curl -H "Authorization: Bearer iIsInR5cCI6Ik..." https://1ca28d37-zenml.cloudinfra.zenml.io/api/v1/current-user
+
+  {"body":{"created":"2025-10-16T15:08:11","updated":"2025-10-16T18:06:29","active":true,"activation_token":null,"full_name":"John","email_opted_in":false,"is_service_account":true,"is_admin":false,"default_project_id":null,"avatar_url":null},"metadata":{"email":null,"external_user_id":"d6ace281-5d7e-46db-9a11-d4452ece48ee","user_metadata":{}},"resources":null,"id":"667990c8-199b-45e7-98cd-4b30356ba5e7","permission_denied":false,"name":"john"}
+  ```
+
 ## Migration of workspace level service accounts
 
 Service accounts and API keys at the workspace level are deprecated and will be removed in the future. You can migrate them to the organization level by following these steps:
