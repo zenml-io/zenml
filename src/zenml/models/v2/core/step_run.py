@@ -92,9 +92,8 @@ class StepRunRequest(ProjectScopedRequest):
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    start_time: Optional[datetime] = Field(
+    start_time: datetime = Field(
         title="The start time of the step run.",
-        default=None,
     )
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",

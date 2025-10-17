@@ -132,7 +132,6 @@ class StepRunRequestFactory:
         request.cache_key = cache_key
 
         if step.config.cache_policy.expires_after:
-            assert request.start_time
             request.cache_expires_at = request.start_time + timedelta(
                 seconds=step.config.cache_policy.expires_after
             )
