@@ -1,4 +1,4 @@
-"""add vizualisations and link them to resources [0ede689b266a].
+"""add vizualisations [0ede689b266a].
 
 Revision ID: 0ede689b266a
 Revises: 0.90.0
