@@ -138,9 +138,9 @@ def pipeline(
     """
 
     def inner_decorator(func: "F") -> "Pipeline":
-        from zenml.pipelines.pipeline_definition import Pipeline
+        from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 
-        p = Pipeline(
+        p = DynamicPipeline(
             name=name or func.__name__,
             entrypoint=func,
             enable_cache=enable_cache,

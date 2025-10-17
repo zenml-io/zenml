@@ -242,6 +242,15 @@ class Pipeline:
         return self.configuration.name
 
     @property
+    def is_dynamic(self) -> bool:
+        """If the pipeline is dynamic.
+
+        Returns:
+            If the pipeline is dynamic.
+        """
+        return False
+
+    @property
     def enable_cache(self) -> Optional[bool]:
         """If caching is enabled for the pipeline.
 

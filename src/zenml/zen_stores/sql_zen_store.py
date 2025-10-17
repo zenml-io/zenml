@@ -5167,6 +5167,34 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if snapshot_update.add_steps:
+                # TODO: this doesn't work for scheduled runs that reuse a
+                # snapshot. For that, we'd have to separate config from the
+                # snapshot, which is something we want to do anyway.
+                if not snapshot.is_dynamic:
+                    raise ValueError(
+                        "Cannot dynamically update steps of a static snapshot."
+                    )
+
+                # TODO: race conditions
+                current_index = len(snapshot.step_configurations)
+                for index, (step_name, step_configuration) in enumerate(
+                    snapshot_update.add_steps.items()
+                ):
+                    step_configuration_schema = StepConfigurationSchema(
+                        index=current_index + index,
+                        name=step_name,
+                        # Don't include the merged config in the step
+                        # configurations, we reconstruct it in the `to_model` method
+                        # using the pipeline configuration.
+                        config=step_configuration.model_dump_json(
+                            exclude={"config"}
+                        ),
+                        snapshot_id=snapshot.id,
+                    )
+                    session.add(step_configuration_schema)
+                session.commit()
+
             session.refresh(snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True
@@ -10312,12 +10340,14 @@ class SqlZenStore(BaseZenStore):
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
         num_steps = pipeline_run.snapshot.step_count
+        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
         new_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=num_steps,
+            is_dynamic_pipeline=is_dynamic_pipeline,
         )
 
         if new_status == pipeline_run.status or (

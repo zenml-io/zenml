@@ -762,6 +762,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if not run_status.is_finished:
             return True
 
+        if self.snapshot and self.snapshot.is_dynamic:
+            return False
+
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 

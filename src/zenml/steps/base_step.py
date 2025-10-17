@@ -91,6 +91,9 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
+    from zenml.pipelines.dynamic.runner import StepRunResultFuture
+
+
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="BaseStep")
@@ -454,7 +457,11 @@ class BaseStep:
         *args: Any,
         id: Optional[str] = None,
         after: Union[
-            str, StepArtifact, Sequence[Union[str, StepArtifact]], None
+            str,
+            StepArtifact,
+            "StepRunResultFuture",
+            Sequence[Union[str, StepArtifact, "StepRunResultFuture"]],
+            None,
         ] = None,
         **kwargs: Any,
     ) -> Any:
@@ -474,7 +481,11 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
         from zenml.pipelines.pipeline_definition import Pipeline
+
+        if context := DynamicPipelineRunContext.get():
+            return context.runner.run_step_sync(self, id, args, kwargs, after)
 
         if not Pipeline.ACTIVE_PIPELINE:
             from zenml import constants, get_step_context
@@ -581,6 +592,25 @@ class BaseStep:
             ) from e
 
         return self.entrypoint(**validated_args)
+
+    def submit(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[
+            "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+        ] = None,
+        **kwargs: Any,
+    ) -> "StepRunResultFuture":
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Submitting a step is only possible within a dynamic pipeline."
+            )
+
+        return context.runner.run_step_in_thread(self, id, args, kwargs, after)
 
     @property
     def name(self) -> str:

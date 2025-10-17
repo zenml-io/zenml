@@ -193,6 +193,22 @@ class LocalOrchestrator(BaseOrchestrator):
         self._orchestrator_run_id = None
         return None
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator."""
+        from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
+
+        runner = DynamicPipelineRunner(snapshot=snapshot, run=placeholder_run)
+        with temporary_environment(environment):
+            runner.run_pipeline()
+
+        return None
+
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
 

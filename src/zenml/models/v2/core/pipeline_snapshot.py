@@ -101,6 +101,10 @@ class PipelineSnapshotBase(BaseZenModel):
         default=None,
         title="The pipeline spec of the snapshot.",
     )
+    is_dynamic: bool = Field(
+        default=False,
+        title="Whether this is a snapshot of a dynamic pipeline.",
+    )
 
     @property
     def should_prevent_build_reuse(self) -> bool:
@@ -204,6 +208,7 @@ class PipelineSnapshotUpdate(BaseUpdate):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the snapshot."
     )
+    add_steps: Optional[Dict[str, Step]] = None
 
     @field_validator("name")
     @classmethod
@@ -233,6 +238,9 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     )
     deployable: bool = Field(
         title="If the snapshot can be deployed.",
+    )
+    is_dynamic: bool = Field(
+        title="Whether this is a snapshot of a dynamic pipeline.",
     )
 
 
@@ -381,6 +389,15 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_body().deployable
+
+    @property
+    def is_dynamic(self) -> bool:
+        """The `is_dynamic` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_dynamic
 
     @property
     def description(self) -> Optional[str]:

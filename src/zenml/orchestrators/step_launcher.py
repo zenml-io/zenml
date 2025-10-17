@@ -247,7 +247,7 @@ class StepLauncher:
             logger.debug(f"Cannot register signal handlers: {e}")
             # Continue without signal handling - the step will still run
 
-    def launch(self) -> None:
+    def launch(self) -> StepRunResponse:
         """Launches the step.
 
         Raises:
@@ -378,6 +378,8 @@ class StepLauncher:
                         model_version=model_version,
                     )
 
+        return step_run
+
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
 
@@ -453,13 +455,35 @@ class StepLauncher:
                     step_run_info=step_run_info,
                 )
             else:
-                self._run_step_without_step_operator(
-                    pipeline_run=pipeline_run,
-                    step_run=step_run,
-                    step_run_info=step_run_info,
-                    input_artifacts=step_run.regular_inputs,
-                    output_artifact_uris=output_artifact_uris,
+                should_run_out_of_process = (
+                    self._snapshot.is_dynamic
+                    and self._step.config.in_process is False
                 )
+
+                if (
+                    should_run_out_of_process
+                    and self._stack.orchestrator.supports_dynamic_out_of_process_steps
+                ):
+                    self._run_step_with_dynamic_orchestrator(
+                        step_run_info=step_run_info
+                    )
+                else:
+                    if should_run_out_of_process:
+                        logger.warning(
+                            "The %s does not support running dynamic out of "
+                            "process steps. Running step `%s` in current "
+                            "thread instead.",
+                            self._stack.orchestrator.__class__.__name__,
+                            self._invocation_id,
+                        )
+
+                    self._run_step_in_current_thread(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        step_run_info=step_run_info,
+                        input_artifacts=step_run.regular_inputs,
+                        output_artifact_uris=output_artifact_uris,
+                    )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())
@@ -521,7 +545,27 @@ class StepLauncher:
             environment=environment,
         )
 
-    def _run_step_without_step_operator(
+    def _run_step_with_dynamic_orchestrator(
+        self,
+        step_run_info: StepRunInfo,
+    ) -> None:
+        environment, secrets = orchestrator_utils.get_config_environment_vars(
+            pipeline_run_id=step_run_info.run_id,
+        )
+        environment.update(secrets)
+
+        environment.update(
+            env_utils.get_step_environment(
+                step_config=step_run_info.config,
+                stack=self._stack,
+            )
+        )
+        self._stack.orchestrator.run_dynamic_out_of_process_step(
+            step_run_info=step_run_info,
+            environment=environment,
+        )
+
+    def _run_step_in_current_thread(
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,

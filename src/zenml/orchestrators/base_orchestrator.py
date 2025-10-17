@@ -59,6 +59,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
@@ -208,6 +209,16 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return None
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator."""
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineSnapshotResponse",
@@ -262,6 +273,16 @@ class BaseOrchestrator(StackComponent, ABC):
         # TODO: for now, we don't support separate secrets from environment
         # in the orchestrator environment
         base_environment.update(secrets)
+
+        is_dynamic = True
+        if is_dynamic:
+            submission_result = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=placeholder_run,
+            )
+            return
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -454,6 +475,27 @@ class BaseOrchestrator(StackComponent, ABC):
                         raise
                 else:
                     break
+
+    @property
+    def supports_dynamic_pipelines(self) -> bool:
+        return (
+            getattr(self.submit_dynamic_pipeline, "__func__", None)
+            is not BaseOrchestrator.submit_dynamic_pipeline
+        )
+
+    @property
+    def supports_dynamic_out_of_process_steps(self) -> bool:
+        return (
+            getattr(self.run_dynamic_out_of_process_step, "__func__", None)
+            is not BaseOrchestrator.run_dynamic_out_of_process_step
+        )
+
+    def run_dynamic_out_of_process_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        raise NotImplementedError(
+            "Running dynamic out of process steps is not implemented for the orchestrator."
+        )
 
     @staticmethod
     def requires_resources_in_orchestration_environment(

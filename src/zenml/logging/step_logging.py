@@ -20,12 +20,13 @@ import queue
 import re
 import threading
 import time
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
+    Generator,
     Iterator,
     List,
     Optional,
@@ -930,3 +931,57 @@ def setup_orchestrator_logging(
             f"Failed to setup orchestrator logging for run {run_id}: {e}"
         )
         return nullcontext()
+
+
+@contextmanager
+def setup_pipeline_logging(
+    source: str,
+    snapshot: "PipelineSnapshotResponse",
+    run_id: Optional[UUID] = None,
+    logs_response: Optional[LogsResponse] = None,
+) -> Generator[Optional[LogsRequest], None, None]:
+    logging_enabled = True
+
+    if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
+        logging_enabled = False
+    elif snapshot.pipeline_configuration.enable_pipeline_logs is not None:
+        logging_enabled = snapshot.pipeline_configuration.enable_pipeline_logs
+
+    if logging_enabled:
+        client = Client()
+        artifact_store = client.active_stack.artifact_store
+        logs_model = None
+
+        if logs_response:
+            logs_uri = logs_response.uri
+        else:
+            logs_uri = prepare_logs_uri(
+                artifact_store=artifact_store,
+            )
+            logs_model = LogsRequest(
+                uri=logs_uri,
+                source=source,
+                artifact_store_id=artifact_store.id,
+            )
+
+            if run_id:
+                try:
+                    run_update = PipelineRunUpdate(add_logs=[logs_model])
+                    client.zen_store.update_run(
+                        run_id=run_id, run_update=run_update
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to add logs to the run {run_id}: {e}"
+                    )
+                    raise e
+
+        logging_context = PipelineLogsStorageContext(
+            logs_uri=logs_uri,
+            artifact_store=artifact_store,
+            prepend_step_name=False,
+        )
+        with logging_context:
+            yield logs_model
+    else:
+        yield None

@@ -118,6 +118,23 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     )
 
 
+def publish_successful_pipeline_run(
+    pipeline_run_id: "UUID",
+) -> "PipelineRunResponse":
+    """Publishes a successful pipeline run.
+
+    Args:
+        pipeline_run_id: The ID of the pipeline run to update.
+    """
+    return Client().zen_store.update_run(
+        run_id=pipeline_run_id,
+        run_update=PipelineRunUpdate(
+            status=ExecutionStatus.COMPLETED,
+            end_time=utc_now(),
+        ),
+    )
+
+
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
 ) -> "PipelineRunResponse":
@@ -179,6 +196,7 @@ def get_pipeline_run_status(
     run_status: ExecutionStatus,
     step_statuses: List[ExecutionStatus],
     num_steps: int,
+    is_dynamic_pipeline: bool,
 ) -> ExecutionStatus:
     """Gets the pipeline run status for the given step statuses.
 
@@ -186,6 +204,7 @@ def get_pipeline_run_status(
         run_status: The status of the run.
         step_statuses: The status of steps in this run.
         num_steps: The total amount of steps in this run.
+        is_dynamic_pipeline: If the pipeline is dynamic.
 
     Returns:
         The run status.
@@ -219,7 +238,7 @@ def get_pipeline_run_status(
         return ExecutionStatus.RUNNING
 
     # If there are less steps than the total number of steps, it is running
-    elif len(step_statuses) < num_steps:
+    elif is_dynamic_pipeline or len(step_statuses) < num_steps:
         return ExecutionStatus.RUNNING
 
     # Any other state is completed

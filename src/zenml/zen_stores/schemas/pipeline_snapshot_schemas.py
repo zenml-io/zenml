@@ -84,6 +84,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    is_dynamic: bool = Field(nullable=False, default=False)
 
     pipeline_configuration: str = Field(
         sa_column=Column(
@@ -387,6 +388,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
             pipeline_id=request.pipeline,
@@ -472,6 +474,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             updated=self.updated,
             runnable=runnable,
             deployable=deployable,
+            is_dynamic=self.is_dynamic,
         )
         metadata = None
         if include_metadata:

@@ -214,6 +214,13 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="The cache policy for the step.",
     )
+    in_process: Optional[bool] = Field(
+        default=None,
+        description="Whether to run the step in process. This is only "
+        "applicable for dynamic pipelines. If not set, the step will by "
+        "default run in-process unless it requires a different Docker image "
+        "or has special resource requirements.",
+    )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
