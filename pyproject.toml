@@ -72,15 +72,9 @@ server = [
     "orjson~=3.10.0",
     "Jinja2",
     "ipinfo>=4.4.3",
-    "secure~=0.3.0",
+    "secure~=1.0.1",
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
-]
-deployment-django = [
-    "django>=4.2,<6.0",
-    "uvicorn[standard]>=0.17.5",
-    "secure~=0.3.0",
-    "Jinja2",
 ]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]

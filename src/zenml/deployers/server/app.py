@@ -24,6 +24,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Type,
     Union,
 )
@@ -60,7 +61,12 @@ from zenml.models.v2.core.deployment import DeploymentResponse
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from uvicorn._types import ASGIApplication
+    from asgiref.typing import (
+        ASGIApplication,
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        Scope,
+    )
 
 
 class BaseDeploymentAppRunner(ABC):
@@ -106,8 +112,6 @@ class BaseDeploymentAppRunner(ABC):
     deployment configuration. Only required if the dashboard files path is set
     in the deployment configuration and the app runner supports serving a
     dashboard alongside the API.
-    * _get_secure_headers_middleware: Builds the secure headers middleware from
-    the secure headers settings in the deployment configuration.
     * _get_cors_middleware: Builds the CORS middleware from the CORS settings
     in the deployment configuration.
     """
@@ -134,12 +138,10 @@ class BaseDeploymentAppRunner(ABC):
         # Create framework-specific adapters
         self.endpoint_adapter = self._create_endpoint_adapter()
         self.middleware_adapter = self._create_middleware_adapter()
-        self._asgi_app: Optional[
-            Union["ASGIApplication", Callable[..., Any]]
-        ] = None
+        self._asgi_app: Optional["ASGIApplication"] = None
 
     @property
-    def asgi_app(self) -> Union["ASGIApplication", Callable[..., Any]]:
+    def asgi_app(self) -> "ASGIApplication":
         """Get the ASGI application.
 
         Returns:
@@ -461,24 +463,17 @@ class BaseDeploymentAppRunner(ABC):
             if isinstance(self.settings.secure_headers.xfo, str):
                 xfo.set(self.settings.secure_headers.xfo)
 
-        # TODO: this is not supported with newer versions of the `secure` library.
-        xxp: Optional[secure.XXSSProtection] = None
-        if self.settings.secure_headers.xxp:
-            xxp = secure.XXSSProtection()
-            if isinstance(self.settings.secure_headers.xxp, str):
-                xxp.set(self.settings.secure_headers.xxp)
-
         csp: Optional[secure.ContentSecurityPolicy] = None
         if self.settings.secure_headers.csp:
             csp = secure.ContentSecurityPolicy()
             if isinstance(self.settings.secure_headers.csp, str):
                 csp.set(self.settings.secure_headers.csp)
 
-        content: Optional[secure.XContentTypeOptions] = None
+        xcto: Optional[secure.XContentTypeOptions] = None
         if self.settings.secure_headers.content:
-            content = secure.XContentTypeOptions()
+            xcto = secure.XContentTypeOptions()
             if isinstance(self.settings.secure_headers.content, str):
-                content.set(self.settings.secure_headers.content)
+                xcto.set(self.settings.secure_headers.content)
 
         referrer: Optional[secure.ReferrerPolicy] = None
         if self.settings.secure_headers.referrer:
@@ -496,24 +491,21 @@ class BaseDeploymentAppRunner(ABC):
         if self.settings.secure_headers.permissions:
             permissions = secure.PermissionsPolicy()
             if isinstance(self.settings.secure_headers.permissions, str):
-                permissions.value = self.settings.secure_headers.permissions
+                permissions.set(self.settings.secure_headers.permissions)
 
         return secure.Secure(
             server=server,
             hsts=hsts,
             xfo=xfo,
-            xxp=xxp,
             csp=csp,
-            content=content,
+            xcto=xcto,
             referrer=referrer,
             cache=cache,
             permissions=permissions,
         )
 
-    @abstractmethod
-    # TODO: this can probably be a default middleware with a generic middleware definition;
-    def _get_secure_headers_middleware(
-        self, secure_headers: secure.Secure
+    def _build_secure_headers_middleware(
+        self,
     ) -> MiddlewareSpec:
         """Get the secure headers middleware.
 
@@ -521,8 +513,44 @@ class BaseDeploymentAppRunner(ABC):
             secure_headers: The secure headers settings.
 
         Returns:
-            The secure headers middleware.
+            The secure headers middleware spec.
         """
+        secure_headers = self._get_secure_headers()
+
+        async def set_secure_headers(
+            app: "ASGIApplication",
+            scope: "Scope",
+            receive: "ASGIReceiveCallable",
+            send: "ASGISendCallable",
+        ) -> None:
+            path = scope.get("path", "")
+            if (
+                scope["type"] != "http"
+                or path.startswith(self.settings.docs_url_path)
+                or path.startswith(self.settings.redoc_url_path)
+            ):
+                return await app(scope, receive, send)
+
+            async def send_wrapper(message):
+                if message["type"] == "http.response.start":
+                    hdrs: List[Tuple[bytes, bytes]] = list(
+                        message.get("headers", [])
+                    )
+                    existing = {k: i for i, (k, _) in enumerate(hdrs)}
+                    for k, v in secure_headers.headers.items():
+                        i = existing.get(k.encode())
+                        if i is not None:
+                            hdrs[i] = (k.encode(), v.encode())
+                        else:
+                            hdrs.append((k.encode(), v.encode()))
+                    message["headers"] = hdrs
+                await send(message)
+
+            await app(scope, receive, send_wrapper)
+
+        return MiddlewareSpec(
+            middleware=SourceOrObject(set_secure_headers),
+        )
 
     @abstractmethod
     # TODO: this can probably be a default middleware with a generic middleware definition;
@@ -541,9 +569,7 @@ class BaseDeploymentAppRunner(ABC):
         """
         specs = []
 
-        specs.append(
-            self._get_secure_headers_middleware(self._get_secure_headers())
-        )
+        specs.append(self._build_secure_headers_middleware())
 
         specs.append(self._get_cors_middleware())
 
@@ -707,7 +733,7 @@ class BaseDeploymentAppRunner(ABC):
             )
             raise
 
-    def _build_asgi_app(self) -> Union["ASGIApplication", Callable[..., Any]]:
+    def _build_asgi_app(self) -> "ASGIApplication":
         """Build the ASGI application.
 
         Returns:
@@ -734,9 +760,7 @@ class BaseDeploymentAppRunner(ABC):
 
         return self.build(middlewares, endpoints, extensions)
 
-    def _run_asgi_app(
-        self, asgi_app: Union["ASGIApplication", Callable[..., Any]]
-    ) -> None:
+    def _run_asgi_app(self, asgi_app: "ASGIApplication") -> None:
         """Run the ASGI application.
 
         Args:
@@ -801,7 +825,7 @@ class BaseDeploymentAppRunner(ABC):
         middlewares: List[MiddlewareSpec],
         endpoints: List[EndpointSpec],
         extensions: List[AppExtensionSpec],
-    ) -> Union["ASGIApplication", Callable[..., Any]]:
+    ) -> "ASGIApplication":
         """Build the ASGI compatible web application.
 
         Args:
@@ -848,7 +872,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         Returns:
             The software requirements for the deployment app runner.
         """
-        return ["uvicorn", "secure~=0.3.0"]
+        return ["uvicorn", "secure~=1.0.1"]
 
     @classmethod
     def load_app_runner_flavor(

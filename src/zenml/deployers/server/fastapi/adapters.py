@@ -141,7 +141,38 @@ class FastAPIEndpointAdapter(EndpointAdapter):
 
 
 class FastAPIMiddlewareAdapter(MiddlewareAdapter):
-    """FastAPI implementation of middleware adapter."""
+    """FastAPI implementation of middleware adapter.
+
+    We support two types of native middleware:
+
+    * A middleware class like that receives the ASGIApp object in the
+    constructor and implements the __call__ method to dispatch the middleware,
+    e.g.:
+
+    ```python
+    from starlette.types import ASGIApp, Receive, Scope, Send
+
+    class MyMiddleware:
+        def __init__(self, app: ASGIApp) -> None:
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+            ...
+            await self.app(scope, receive, send)
+    ```
+
+    * A middleware function that takes request and next callable and returns a response,
+    e.g.:
+
+    ```python
+    from fastapi import Request, Response
+
+    async def my_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+        ...
+        return await call_next(request)
+    ```
+
+    """
 
     def register_middleware(
         self,
@@ -166,6 +197,7 @@ class FastAPIMiddlewareAdapter(MiddlewareAdapter):
             )
 
         middleware = self.resolve_middleware_handler(app_runner, spec)
+
         if spec.native:
             if isinstance(middleware, type):
                 app.add_middleware(
@@ -174,6 +206,20 @@ class FastAPIMiddlewareAdapter(MiddlewareAdapter):
                 )
                 return
 
+            app.add_middleware(
+                BaseHTTPMiddleware,
+                dispatch=middleware,
+                **spec.extra_kwargs,
+            )
+
+        if isinstance(middleware, type):
+            app.add_middleware(
+                middleware,
+                **spec.extra_kwargs,
+            )
+            return
+
+        # Convert the unified middleware to a FastAPI middleware class
         app.add_middleware(
             BaseHTTPMiddleware,
             dispatch=middleware,

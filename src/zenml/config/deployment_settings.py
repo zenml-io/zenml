@@ -43,12 +43,7 @@ DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
 )
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XFO = "SAMEORIGIN"
-DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XXP = "0"
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CONTENT = "nosniff"
-_csp_script_src_urls: List[str] = []
-_csp_connect_src_urls: List[str] = []
-_csp_img_src_urls: List[str] = []
-_csp_frame_src_urls: List[str] = []
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
     "script-src 'self'; "
@@ -204,71 +199,66 @@ class MiddlewareSpec(BaseModel):
 
     The middleware field can be set to one of the following:
 
-    1. The function that represents the actual middleware implementation. This
-    will be registered as is. The function itself may be framework-specific.
-
-    ```python
-    async def my_middleware(request: Request, call_next) -> Response:
-        # Process request
-        response = await call_next(request)
-        # Process response
-        return response
-    ```
-
-    2. A middleware class - this is a class that implements the middleware
-    logic. When this is used, the class constructor must accept an argument
-    `app_runner` of type `BaseDeploymentAppRunner` which will be passed by the
-    adapter at application build time.
+    1. A middleware class - this class follows the standard ASGI middleware
+    interface, i.e. it implements the __call__ method and takes the scope,
+    receive and send arguments.
 
     The adapter will also pass the `init_kwargs` to the class constructor if
     configured. The following is an example of a middleware class:
 
     ```python
-    from zenml.deployers.server import BaseDeploymentAppRunner
+    from asgiref.typing import (
+        ASGIApplication,
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        Scope,
+    )
 
     class MyMiddleware:
         def __init__(
             self,
-            app_runner: "BaseDeploymentAppRunner",
+            app: ASGIApp,
             **kwargs: Any,
         ) -> None:
-            self.app_runner = app_runner
+            self.app = app
             self.kwargs = kwargs
 
         async def __call__(
-            self, request: Request, call_next
-        ) -> Response:
+            self,
+            scope: Scope,
+            receive: ASGIReceiveCallable,
+            send: ASGISendCallable,
+        ) -> None:
             # Middleware logic
             ...
+            await self.app(scope, receive, send)
     ```
 
-    3. A middleware builder function - this is a function that is used to
-    build and return the middleware. When this is used, the adapter will call
-    the provided function first and is expected to return the actual middleware
-    function. The builder function must accept an argument `app_runner` of type
-    `BaseDeploymentAppRunner` which will be passed by the adapter at
-    application build time.
-
-    The adapter will also pass the `init_kwargs` to the builder function if
-    configured. The following is an example of a middleware builder function:
+    2. A middleware function - this function follows the standard ASGI middleware
+    interface, i.e. it takes the ASGIApp object, scope, receive and send arguments.
+    The adapter will pass the `init_kwargs` to the middleware function if
+    configured. The following is an example of a middleware function:
 
     ```python
-    from zenml.deployers.server import BaseDeploymentAppRunner
+    from asgiref.typing import (
+        ASGIApplication,
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        Scope,
+    )
 
-    def my_middleware_builder(
-        app_runner: "BaseDeploymentAppRunner",
+    async def my_middleware(
+        app: ASGIApplication,
+        scope: Scope,
+        receive: ASGIReceiveCallable,
+        send: ASGISendCallable,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> None:
         ...
-
-        async def middleware(request: Request, call_next) -> Response:
-            # Middleware logic
-            ...
-
-        return middleware
+        await app(scope, receive, send)
     ```
 
-    4. Alternatively, the middleware can be set to any framework-specific
+    3. Alternatively, the middleware can be set to any framework-specific
     source-loadable object that can be used directly, by setting `native` to
     `True`. In this case, the framework-specific middleware adapter will decide
     what to do with the object and how to use the init_kwargs.
@@ -409,10 +399,6 @@ class SecureHeadersConfig(BaseModel):
     )
     xfo: Union[bool, str] = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XFO,
-        union_mode="left_to_right",
-    )
-    xxp: Union[bool, str] = Field(
-        default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XXP,
         union_mode="left_to_right",
     )
     content: Union[bool, str] = Field(

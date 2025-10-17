@@ -14,9 +14,16 @@
 """Framework adapter interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from asgiref.typing import (
+        ASGIApplication,
+        ASGIReceiveCallable,
+        ASGISendCallable,
+        Scope,
+    )
+
     from zenml.config.deployment_settings import (
         EndpointSpec,
         MiddlewareSpec,
@@ -31,7 +38,7 @@ class EndpointAdapter(ABC):
         self,
         app_runner: "BaseDeploymentAppRunner",
         endpoint_spec: "EndpointSpec",
-    ) -> Callable[..., Any]:
+    ) -> Any:
         """Resolve an endpoint handler from its specification.
 
         This method handles three types of handlers as defined in EndpointSpec:
@@ -59,10 +66,6 @@ class EndpointAdapter(ABC):
         handler = endpoint_spec.handler.load()
 
         if endpoint_spec.native:
-            if not callable(handler):
-                raise ValueError(
-                    f"The handler object {handler} must be callable"
-                )
             return handler
 
         # Type 2: Endpoint builder class
@@ -149,15 +152,13 @@ class MiddlewareAdapter(ABC):
         self,
         app_runner: "BaseDeploymentAppRunner",
         middleware_spec: "MiddlewareSpec",
-    ) -> Callable[..., Any]:
+    ) -> Any:
         """Resolve a middleware handler from its specification.
 
-        This method handles three types of middleware as defined above:
-        1. Direct middleware function - returned as-is
-        2. Middleware class - instantiated with app_runner, app, and
-        init_kwargs
-        3. Middleware builder function - called with app_runner, app, and
-        init_kwargs to obtain the actual middleware
+        This method handles three types of middleware as defined in MiddlewareSpec:
+        1. Middleware callable class
+        2. Middleware callable function
+        3. Native middleware object
 
         Args:
             app_runner: Deployment app runner instance.
@@ -177,65 +178,51 @@ class MiddlewareAdapter(ABC):
         middleware = middleware_spec.middleware.load()
 
         if middleware_spec.native:
-            if not callable(middleware):
-                raise ValueError(
-                    f"The middleware object {middleware} must be callable"
-                )
             return middleware
 
-        # Type 2: Middleware class
+        # Type 1: Middleware class
         if isinstance(middleware, type):
-            try:
-                inner_middleware = middleware(
-                    app_runner=app_runner,
-                    **middleware_spec.init_kwargs,
-                )
-            except TypeError as e:
-                raise RuntimeError(
-                    f"Failed to instantiate middleware class "
-                    f"{middleware.__name__}: {e}"
-                ) from e
-
-            if not callable(inner_middleware):
-                raise ValueError(
-                    f"The __call__ method of the middleware class "
-                    f"{middleware.__name__} must return a callable"
-                )
-            return inner_middleware  # type: ignore[no-any-return]
+            return middleware
 
         if not callable(middleware):
             raise ValueError(f"Middleware {middleware} is not callable")
 
-        # Determine if it's Type 3 (builder function) or Type 1 (direct)
-        try:
-            sig = inspect.signature(middleware)
-            params = set(sig.parameters.keys())
+        # Wrap the middleware function in a middleware class
+        class _MiddlewareAdapter:
+            def __init__(self, app: "ASGIApplication", **kwargs: Any) -> None:
+                self.app = app
+                self.kwargs = kwargs
 
-            # Type 3: Builder function (has app_runner parameter)
-            if "app_runner" in params:
+            async def __call__(
+                self,
+                scope: "Scope",
+                receive: "ASGIReceiveCallable",
+                send: "ASGISendCallable",
+            ) -> None:
                 try:
-                    inner_middleware = middleware(
-                        app_runner=app_runner,
-                        **middleware_spec.init_kwargs,
-                    )
-                    if not callable(inner_middleware):
-                        raise ValueError(
-                            f"Builder function {middleware.__name__} must "
-                            f"return a callable, got {type(inner_middleware)}"
+                    if inspect.iscoroutinefunction(middleware):
+                        await middleware(
+                            app=self.app,
+                            scope=scope,
+                            receive=receive,
+                            send=send,
+                            **self.kwargs,
                         )
-                    return inner_middleware  # type: ignore[no-any-return]
-                except TypeError as e:
+                    else:
+                        middleware(
+                            app=self.app,
+                            scope=scope,
+                            receive=receive,
+                            send=send,
+                            **self.kwargs,
+                        )
+                except Exception as e:
                     raise RuntimeError(
-                        f"Failed to call builder function "
+                        f"Failed to call configured middleware function "
                         f"{middleware.__name__}: {e}"
                     ) from e
 
-            # Type 1: Direct middleware function
-            return middleware
-
-        except ValueError:
-            # inspect.signature failed, assume it's a direct middleware
-            return middleware
+        return _MiddlewareAdapter
 
     @abstractmethod
     def register_middleware(

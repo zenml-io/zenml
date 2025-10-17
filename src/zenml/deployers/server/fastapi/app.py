@@ -15,9 +15,8 @@
 
 import os
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, cast
 
-import secure
 from anyio import to_thread
 from fastapi import (
     FastAPI,
@@ -27,7 +26,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.base import RequestResponseEndpoint
 
 from zenml import __version__ as zenml_version
 from zenml.config.deployment_settings import (
@@ -46,6 +44,13 @@ from zenml.deployers.server.fastapi.adapters import (
     FastAPIEndpointAdapter,
     FastAPIMiddlewareAdapter,
 )
+
+if TYPE_CHECKING:
+    from asgiref.typing import (
+        ASGIApplication,
+    )
+
+
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -69,55 +74,6 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             FastAPI middleware adapter instance.
         """
         return FastAPIMiddlewareAdapter()
-
-    def _get_secure_headers_middleware(
-        self, secure_headers: secure.Secure
-    ) -> MiddlewareSpec:
-        """Get the secure headers middleware.
-
-        Args:
-            secure_headers: The secure headers settings.
-
-        Returns:
-            The secure headers middleware.
-        """
-
-        async def _secure_headers_middleware(
-            request: Request, call_next: RequestResponseEndpoint
-        ) -> Any:
-            """Middleware to set secure headers.
-
-            Args:
-                request: The incoming request.
-                call_next: The next function to be called.
-
-            Returns:
-                The response with secure headers set.
-            """
-            try:
-                response = await call_next(request)
-            except Exception:
-                logger.exception(
-                    "An error occurred while processing the request"
-                )
-                response = JSONResponse(
-                    status_code=500,
-                    content={"detail": "An unexpected error occurred."},
-                )
-
-            # If the request is for the openAPI docs, don't set secure headers
-            if request.url.path.startswith(
-                self.settings.docs_url_path
-            ) or request.url.path.startswith(self.settings.redoc_url_path):
-                return response
-
-            secure_headers.framework.fastapi(response)
-            return response
-
-        return MiddlewareSpec(
-            middleware=SourceOrObject(_secure_headers_middleware),
-            native=True,
-        )
 
     def _get_cors_middleware(self) -> MiddlewareSpec:
         """Get the CORS middleware.
@@ -270,7 +226,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         middlewares: List[MiddlewareSpec],
         endpoints: List[EndpointSpec],
         extensions: List[AppExtensionSpec],
-    ) -> FastAPI:
+    ) -> "ASGIApplication":
         """Build the FastAPI app for the deployment.
 
         Args:
@@ -307,7 +263,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
         # Save this so it's available for the middleware, endpoint adapters and
         # extensions
-        self._asgi_app = asgi_app
+        self._asgi_app = cast("ASGIApplication", asgi_app)
 
         # Bind the app runner to the app state
         asgi_app.state.app_runner = self

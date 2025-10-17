@@ -100,7 +100,6 @@ deployment_settings = DeploymentSettings(
         MiddlewareSpec(
             middleware=SourceOrObject(RequestTimingMiddleware),
             order=10,
-            native=True,
         ),
     ],
 )
