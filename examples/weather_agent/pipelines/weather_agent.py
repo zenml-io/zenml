@@ -20,7 +20,6 @@ from zenml.config.deployment_settings import (
     EndpointSpec,
     MiddlewareSpec,
 )
-from zenml.config.docker_settings import PythonPackageInstaller
 from zenml.config.resource_settings import ResourceSettings
 from zenml.config.source import SourceOrObject
 

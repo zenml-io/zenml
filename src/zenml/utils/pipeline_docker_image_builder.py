@@ -29,6 +29,7 @@ from typing import (
 
 import zenml
 from zenml.config import DockerSettings
+from zenml.config.deployment_settings import DeploymentSettings
 from zenml.config.docker_settings import (
     DockerBuildConfig,
     PythonEnvironmentExportMethod,
@@ -38,6 +39,7 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
+from zenml.deployers.utils import load_deployment_requirements
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -84,6 +86,7 @@ class PipelineDockerImageBuilder:
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
         code_repository: Optional["BaseCodeRepository"] = None,
+        deployment_settings: Optional[DeploymentSettings] = None,
     ) -> Tuple[str, Optional[str], Optional[str]]:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
@@ -102,6 +105,7 @@ class PipelineDockerImageBuilder:
                 content or a file path.
             code_repository: The code repository from which files will be
                 downloaded.
+            deployment_settings: Deployment settings for the build.
 
         Returns:
             A tuple (image_digest, dockerfile, requirements):
@@ -276,6 +280,7 @@ class PipelineDockerImageBuilder:
                 docker_settings=docker_settings,
                 stack=stack,
                 code_repository=code_repository,
+                deployment_settings=deployment_settings,
             )
 
             self._add_requirements_files(
@@ -412,6 +417,7 @@ class PipelineDockerImageBuilder:
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
         log: bool = True,
+        deployment_settings: Optional[DeploymentSettings] = None,
     ) -> List[Tuple[str, str, List[str]]]:
         """Gathers and/or generates pip requirements files.
 
@@ -427,6 +433,7 @@ class PipelineDockerImageBuilder:
             code_repository: The code repository from which files will be
                 downloaded.
             log: If True, will log the requirements.
+            deployment_settings: Deployment settings for the build.
 
         Raises:
             RuntimeError: If the command to export the local python packages
@@ -441,6 +448,7 @@ class PipelineDockerImageBuilder:
             - Packages installed in the local Python environment
             - Requirements defined by stack integrations
             - Requirements defined by user integrations
+            - Requirements defined by deployment settings
             - Requirements exported from a pyproject.toml
             - User-defined requirements
         """
@@ -577,6 +585,31 @@ class PipelineDockerImageBuilder:
                 logger.info(
                     "- Including integration requirements: %s",
                     ", ".join(f"`{r}`" for r in integration_requirements_list),
+                )
+
+        if (
+            deployment_settings
+            and docker_settings.install_deployment_requirements
+            and stack.deployer is not None
+        ):
+            deployment_requirements = load_deployment_requirements(
+                deployment_settings
+            )
+            deployment_requirements_list = sorted(deployment_requirements)
+            deployment_requirements_file = "\n".join(
+                deployment_requirements_list
+            )
+            requirements_files.append(
+                (
+                    ".zenml_deployment_requirements",
+                    deployment_requirements_file,
+                    [],
+                )
+            )
+            if log:
+                logger.info(
+                    "- Including deployment requirements: %s",
+                    ", ".join(f"`{r}`" for r in deployment_requirements_list),
                 )
 
         if pyproject_path:

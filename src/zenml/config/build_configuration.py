@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from pydantic import BaseModel
 
+from zenml.config.deployment_settings import DeploymentSettings
 from zenml.config.docker_settings import DockerSettings
 from zenml.logger import get_logger
 from zenml.utils import json_utils
@@ -36,6 +37,7 @@ class BuildConfiguration(BaseModel):
     Attributes:
         key: The key to store the build.
         settings: Settings for the build.
+        deployment_settings: Deployment settings for the build.
         step_name: Name of the step for which this image will be built.
         entrypoint: Optional entrypoint for the image.
         extra_files: Extra files to include in the Docker image.
@@ -43,6 +45,7 @@ class BuildConfiguration(BaseModel):
 
     key: str
     settings: DockerSettings
+    deployment_settings: Optional[DeploymentSettings] = None
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
@@ -73,6 +76,7 @@ class BuildConfiguration(BaseModel):
             default=json_utils.pydantic_encoder,
         )
         hash_.update(settings_json.encode())
+
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 
@@ -93,6 +97,7 @@ class BuildConfiguration(BaseModel):
                 stack=stack,
                 code_repository=code_repository if pass_code_repo else None,
                 log=False,
+                deployment_settings=self.deployment_settings,
             )
         )
         for _, requirements, _ in requirements_files:

@@ -407,6 +407,7 @@ def create_pipeline_build(
                 entrypoint=build_config.entrypoint,
                 extra_files=build_config.extra_files,
                 code_repository=code_repository if pass_code_repo else None,
+                deployment_settings=build_config.deployment_settings,
             )
             contains_code = include_files
 

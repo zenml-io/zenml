@@ -490,11 +490,11 @@ class DeploymentSettings(BaseSettings):
     * the deployment app runner - this is the component that is responsible for
     building and running the ASGI application. It is represented by the
     `zenml.deployers.server.BaseDeploymentAppRunner` class.
-    See: `deployment_app_runner_source` and `deployment_app_runner_kwargs`
+    See: `deployment_app_runner_flavor` and `deployment_app_runner_kwargs`
     * the deployment service - this is the component that is responsible for
     handling the business logic of the pipeline deployment. It is represented by
     the `zenml.deployers.server.BaseDeploymentService` class. See:
-    `deployment_service_source` and `deployment_service_kwargs`
+    `deployment_service_class` and `deployment_service_kwargs`
 
     Both of these base classes or their existing implementations can be extended
     and provided as sources in the deployment settings to be loaded at runtime.
@@ -548,13 +548,13 @@ class DeploymentSettings(BaseSettings):
         log_level: Log level for the deployment application.
         uvicorn_kwargs: Keyword arguments for the uvicorn server.
 
-        deployment_app_runner_source: Source of the deployment app runner. Must
+        deployment_app_runner_flavor: Flavor of the deployment app runner. Must
             point to a class that extends the
-            `zenml.deployers.server.BaseDeploymentAppRunner` class.
+            `zenml.deployers.server.BaseDeploymentAppRunnerFlavor` class.
         deployment_app_runner_kwargs: Keyword arguments for the deployment app
             runner. These will be passed to the constructor of the deployment app
             runner class.
-        deployment_service_source: Source of the deployment service. Must point
+        deployment_service_class: Class of the deployment service. Must point
             to a class that extends the
             `zenml.deployers.server.BaseDeploymentService` class.
         deployment_service_kwargs: Keyword arguments for the deployment service.
@@ -606,7 +606,7 @@ class DeploymentSettings(BaseSettings):
 
     uvicorn_kwargs: Dict[str, Any] = {}
 
-    deployment_app_runner_class: Optional[SourceOrObjectField] = None
+    deployment_app_runner_flavor: Optional[SourceOrObjectField] = None
     deployment_app_runner_kwargs: Dict[str, Any] = {}
     deployment_service_class: Optional[SourceOrObjectField] = None
     deployment_service_kwargs: Dict[str, Any] = {}
@@ -617,8 +617,8 @@ class DeploymentSettings(BaseSettings):
             self.startup_hook.load()
         if self.shutdown_hook is not None:
             self.shutdown_hook.load()
-        if self.deployment_app_runner_class is not None:
-            self.deployment_app_runner_class.load()
+        if self.deployment_app_runner_flavor is not None:
+            self.deployment_app_runner_flavor.load()
         if self.deployment_service_class is not None:
             self.deployment_service_class.load()
 

@@ -13,14 +13,39 @@
 #  permissions and limitations under the License.
 """FastAPI implementation of the deployment app factory and adapters."""
 
-from zenml.deployers.server.fastapi.app import FastAPIDeploymentAppRunner
-from zenml.deployers.server.fastapi.adapters import (
-    FastAPIEndpointAdapter,
-    FastAPIMiddlewareAdapter,
-)
 
-__all__ = [
-    "FastAPIDeploymentAppRunner",
-    "FastAPIEndpointAdapter",
-    "FastAPIMiddlewareAdapter",
-]
+from typing import List, Type
+from zenml.deployers.server.app import BaseDeploymentAppRunner, BaseDeploymentAppRunnerFlavor
+
+FASTAPI_APP_RUNNER_FLAVOR_NAME = "fastapi"
+
+class FastAPIDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
+    """FastAPI deployment app runner flavor."""
+
+    @property
+    def name(self) -> str:
+        """The name of the deployment app runner flavor.
+
+        Returns:
+            The name of the deployment app runner flavor.
+        """
+        return FASTAPI_APP_RUNNER_FLAVOR_NAME
+
+    @property
+    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+        """The class that implements the deployment app runner.
+
+        Returns:
+            The implementation class for the deployment app runner.
+        """
+        from zenml.deployers.server.fastapi.app import FastAPIDeploymentAppRunner
+        return FastAPIDeploymentAppRunner
+
+    @property
+    def requirements(self) -> List[str]:
+        """The software requirements for the deployment app runner.
+
+        Returns:
+            The software requirements for the deployment app runner.
+        """
+        return super().requirements + ["fastapi"]

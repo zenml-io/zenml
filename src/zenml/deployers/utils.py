@@ -14,7 +14,7 @@
 """ZenML deployers utilities."""
 
 import json
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import jsonref
@@ -23,6 +23,7 @@ import requests
 from zenml.client import Client
 from zenml.config.deployment_settings import (
     DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH,
+    DeploymentSettings,
 )
 from zenml.config.step_configurations import Step
 from zenml.deployers.exceptions import (
@@ -405,3 +406,32 @@ def deployment_snapshot_request_from_source_snapshot(
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=updated_pipeline_spec,
     )
+
+
+def load_deployment_requirements(
+    deployment_settings: DeploymentSettings,
+) -> List[str]:
+    """Load the software requirements for a deployment.
+
+    Args:
+        deployment_settings: The deployment settings for which to load the
+            software requirements.
+
+    Returns:
+        The software requirements for the deployment.
+    """
+    from zenml.deployers.server.app import BaseDeploymentAppRunnerFlavor
+
+    try:
+        deployment_app_runner_flavor = (
+            BaseDeploymentAppRunnerFlavor.load_app_runner_flavor(
+                deployment_settings
+            )
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to load deployment app runner flavor from deployment "
+            f"settings: {e}"
+        ) from e
+
+    return deployment_app_runner_flavor.requirements

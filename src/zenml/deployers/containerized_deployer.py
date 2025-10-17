@@ -38,16 +38,6 @@ logger = get_logger(__name__)
 class ContainerizedDeployer(BaseDeployer, ABC):
     """Base class for all containerized deployers."""
 
-    # TODO: this needs to come from the deployment settings or from the
-    # app runner class itself
-    CONTAINER_REQUIREMENTS: List[str] = [
-        "uvicorn",
-        "fastapi",
-        "secure~=0.3.0",
-        "django>=4.2,<6.0",
-        "Jinja2",
-    ]
-
     @staticmethod
     def get_image(snapshot: PipelineSnapshotResponse) -> str:
         """Get the docker image used to deploy a pipeline snapshot.
@@ -78,7 +68,6 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             A set of PyPI requirements for the deployer.
         """
         requirements = super().requirements
-        requirements.update(self.CONTAINER_REQUIREMENTS)
 
         if self.config.is_local and GlobalConfiguration().uses_sql_store:
             # If we're directly connected to a DB, we need to install the
@@ -102,5 +91,6 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             BuildConfiguration(
                 key=DEPLOYER_DOCKER_IMAGE_KEY,
                 settings=snapshot.pipeline_configuration.docker_settings,
+                deployment_settings=snapshot.pipeline_configuration.deployment_settings,
             )
         ]

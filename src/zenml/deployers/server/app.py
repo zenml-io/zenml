@@ -34,6 +34,7 @@ import secure
 from zenml.client import Client
 from zenml.config.deployment_settings import (
     AppExtensionSpec,
+    DeploymentSettings,
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
@@ -200,10 +201,6 @@ class BaseDeploymentAppRunner(ABC):
         Returns:
             The app runner for the deployment.
         """
-        from zenml.deployers.server.fastapi.app import (
-            FastAPIDeploymentAppRunner,
-        )
-
         deployment = cls.load_deployment(deployment)
         assert deployment.snapshot is not None
 
@@ -211,34 +208,11 @@ class BaseDeploymentAppRunner(ABC):
             deployment.snapshot.pipeline_configuration.deployment_settings
         )
 
-        if settings.deployment_app_runner_class is None:
-            app_runner_cls: Type[BaseDeploymentAppRunner] = (
-                FastAPIDeploymentAppRunner
-            )
-        else:
-            try:
-                loaded_app_runner_cls = (
-                    settings.deployment_app_runner_class.load()
-                )
-            except Exception as e:
-                raise RuntimeError(
-                    f"Failed to load deployment app runner from source "
-                    f"{settings.deployment_app_runner_class}: {e}\n"
-                    "Please check that the source is valid and that the "
-                    "deployment app runner class is importable from the source "
-                    "root directory. Hint: run `zenml init` in your local "
-                    "source directory to initialize the source root path."
-                ) from e
+        app_runner_flavor = (
+            BaseDeploymentAppRunnerFlavor.load_app_runner_flavor(settings)
+        )
 
-            if not isinstance(loaded_app_runner_cls, type) or not issubclass(
-                loaded_app_runner_cls, BaseDeploymentAppRunner
-            ):
-                raise RuntimeError(
-                    f"Deployment app runner class '{loaded_app_runner_cls}' is not a "
-                    "subclass of 'BaseDeploymentAppRunner'"
-                )
-
-            app_runner_cls = loaded_app_runner_cls
+        app_runner_cls = app_runner_flavor.implementation_class
 
         logger.info(
             f"Instantiating deployment app runner class '{app_runner_cls}' for "
@@ -838,6 +812,100 @@ class BaseDeploymentAppRunner(ABC):
         Returns:
             The ASGI compatible web application.
         """
+
+
+class BaseDeploymentAppRunnerFlavor(ABC):
+    """Base class for deployment app runner flavors.
+
+    BaseDeploymentAppRunner implementations must also provide implementations
+    for this class. The flavor class implementation should be kept separate from
+    the implementation class to allow it to be imported without importing the
+    implementation class and all its dependencies.
+    """
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """The name of the deployment app runner flavor.
+
+        Returns:
+            The name of the deployment app runner flavor.
+        """
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+        """The class that implements the deployment app runner.
+
+        Returns:
+            The implementation class for the deployment app runner.
+        """
+
+    @property
+    def requirements(self) -> List[str]:
+        """The software requirements for the deployment app runner.
+
+        Returns:
+            The software requirements for the deployment app runner.
+        """
+        return ["uvicorn", "secure~=0.3.0"]
+
+    @classmethod
+    def load_app_runner_flavor(
+        cls, settings: DeploymentSettings
+    ) -> "BaseDeploymentAppRunnerFlavor":
+        """Load the app runner flavor for the deployment settings.
+
+        Args:
+            settings: The deployment settings to load the app runner flavor for.
+
+        Returns:
+            The app runner flavor for the deployment.
+        """
+        from zenml.deployers.server.fastapi import (
+            FastAPIDeploymentAppRunnerFlavor,
+        )
+
+        if settings.deployment_app_runner_flavor is None:
+            app_runner_flavor_class: Type[BaseDeploymentAppRunnerFlavor] = (
+                FastAPIDeploymentAppRunnerFlavor
+            )
+        else:
+            try:
+                loaded_app_runner_flavor_class = (
+                    settings.deployment_app_runner_flavor.load()
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to load deployment app runner flavor from source "
+                    f"{settings.deployment_app_runner_flavor}: {e}\n"
+                    "Please check that the source is valid and that the "
+                    "deployment app runner flavor class is importable from the "
+                    "source root directory. Hint: run `zenml init` in your "
+                    "local source directory to initialize the source root path."
+                ) from e
+
+            if not isinstance(
+                loaded_app_runner_flavor_class, type
+            ) or not issubclass(
+                loaded_app_runner_flavor_class, BaseDeploymentAppRunnerFlavor
+            ):
+                raise RuntimeError(
+                    f"The object '{loaded_app_runner_flavor_class}' is not a "
+                    "subclass of 'BaseDeploymentAppRunnerFlavor'"
+                )
+
+            app_runner_flavor_class = loaded_app_runner_flavor_class
+
+        try:
+            app_runner_flavor = app_runner_flavor_class()
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to instantiate deployment app runner flavor "
+                f"'{loaded_app_runner_flavor_class}': {e}"
+            ) from e
+
+        return app_runner_flavor
 
 
 if __name__ == "__main__":
