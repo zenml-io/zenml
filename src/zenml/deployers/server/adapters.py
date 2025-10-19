@@ -14,7 +14,7 @@
 """Framework adapter interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 if TYPE_CHECKING:
     from asgiref.typing import (
@@ -92,7 +92,7 @@ class EndpointAdapter(ABC):
                     f"{handler.__name__} must return a callable"
                 )
 
-            return inner_handler  # type: ignore[no-any-return]
+            return inner_handler
 
         if not callable(handler):
             raise ValueError(f"Handler {handler} is not callable")
@@ -114,7 +114,7 @@ class EndpointAdapter(ABC):
                             f"Builder function {handler.__name__} must "
                             f"return a callable, got {type(inner_handler)}"
                         )
-                    return inner_handler  # type: ignore[no-any-return]
+                    return inner_handler
                 except TypeError as e:
                     raise RuntimeError(
                         f"Failed to call builder function "
@@ -171,7 +171,6 @@ class MiddlewareAdapter(ABC):
         Raises:
             ValueError: If middleware is not callable or builder returns
                 non-callable.
-            RuntimeError: If middleware resolution fails.
         """
         import inspect
 
@@ -200,8 +199,9 @@ class MiddlewareAdapter(ABC):
                 send: "ASGISendCallable",
             ) -> None:
                 try:
-                    if inspect.iscoroutinefunction(middleware):
-                        await middleware(
+                    callable_middleware = cast(Callable[..., Any], middleware)
+                    if inspect.iscoroutinefunction(callable_middleware):
+                        await callable_middleware(
                             app=self.app,
                             scope=scope,
                             receive=receive,
@@ -209,7 +209,7 @@ class MiddlewareAdapter(ABC):
                             **self.kwargs,
                         )
                     else:
-                        middleware(
+                        callable_middleware(
                             app=self.app,
                             scope=scope,
                             receive=receive,

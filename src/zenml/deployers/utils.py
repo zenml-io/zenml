@@ -419,6 +419,9 @@ def load_deployment_requirements(
 
     Returns:
         The software requirements for the deployment.
+
+    Raises:
+        RuntimeError: If the deployment app runner flavor cannot be loaded.
     """
     from zenml.deployers.server.app import BaseDeploymentAppRunnerFlavor
 

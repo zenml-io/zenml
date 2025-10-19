@@ -27,10 +27,12 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 from uuid import UUID
 
 import secure
+from asgiref.compatibility import guarantee_single_callable
 
 from zenml.client import Client
 from zenml.config.deployment_settings import (
@@ -65,6 +67,8 @@ if TYPE_CHECKING:
         ASGIApplication,
         ASGIReceiveCallable,
         ASGISendCallable,
+        ASGISendEvent,
+        HTTPScope,
         Scope,
     )
 
@@ -202,6 +206,9 @@ class BaseDeploymentAppRunner(ABC):
 
         Returns:
             The app runner for the deployment.
+
+        Raises:
+            RuntimeError: If the deployment app runner cannot be loaded.
         """
         deployment = cls.load_deployment(deployment)
         assert deployment.snapshot is not None
@@ -509,9 +516,6 @@ class BaseDeploymentAppRunner(ABC):
     ) -> MiddlewareSpec:
         """Get the secure headers middleware.
 
-        Args:
-            secure_headers: The secure headers settings.
-
         Returns:
             The secure headers middleware spec.
         """
@@ -523,15 +527,19 @@ class BaseDeploymentAppRunner(ABC):
             receive: "ASGIReceiveCallable",
             send: "ASGISendCallable",
         ) -> None:
-            path = scope.get("path", "")
-            if (
-                scope["type"] != "http"
-                or path.startswith(self.settings.docs_url_path)
-                or path.startswith(self.settings.redoc_url_path)
-            ):
-                return await app(scope, receive, send)
+            skip = False
+            if scope["type"] != "http":
+                skip = True
+            else:
+                scope = cast("HTTPScope", scope)
+                path = scope["path"]
 
-            async def send_wrapper(message):
+                if path.startswith(
+                    self.settings.docs_url_path
+                ) or path.startswith(self.settings.redoc_url_path):
+                    skip = True
+
+            async def send_wrapper(message: "ASGISendEvent") -> None:
                 if message["type"] == "http.response.start":
                     hdrs: List[Tuple[bytes, bytes]] = list(
                         message.get("headers", [])
@@ -546,14 +554,15 @@ class BaseDeploymentAppRunner(ABC):
                     message["headers"] = hdrs
                 await send(message)
 
-            await app(scope, receive, send_wrapper)
+            wrapped_app = guarantee_single_callable(app)  # type: ignore[no-untyped-call]
+
+            await wrapped_app(scope, receive, send if skip else send_wrapper)
 
         return MiddlewareSpec(
             middleware=SourceOrObject(set_secure_headers),
         )
 
     @abstractmethod
-    # TODO: this can probably be a default middleware with a generic middleware definition;
     def _get_cors_middleware(self) -> MiddlewareSpec:
         """Get the CORS middleware.
 
@@ -767,7 +776,6 @@ class BaseDeploymentAppRunner(ABC):
             asgi_app: The ASGI application to run.
 
         Raises:
-            KeyboardInterrupt: If the user interrupts the application.
             Exception: If the application fails to start.
         """
         import uvicorn
@@ -872,7 +880,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         Returns:
             The software requirements for the deployment app runner.
         """
-        return ["uvicorn", "secure~=1.0.1"]
+        return ["uvicorn", "secure~=1.0.1", "asgiref~=3.10.0"]
 
     @classmethod
     def load_app_runner_flavor(
@@ -885,6 +893,9 @@ class BaseDeploymentAppRunnerFlavor(ABC):
 
         Returns:
             The app runner flavor for the deployment.
+
+        Raises:
+            RuntimeError: If the deployment app runner flavor cannot be loaded.
         """
         from zenml.deployers.server.fastapi import (
             FastAPIDeploymentAppRunnerFlavor,

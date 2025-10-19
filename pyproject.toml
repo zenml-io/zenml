@@ -55,6 +55,7 @@ zenml = "zenml.cli.cli:cli"
 [project.optional-dependencies]
 local = [
     "alembic>=1.8.1,<=1.15.2",
+    "asgiref~=3.10.0",
     "bcrypt==4.0.1",
     "passlib[bcrypt]~=1.7.4",
     "pymysql>=1.1.1,~=1.1.0",
