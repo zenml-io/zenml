@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import atexit
 import json
 import os
 import random
@@ -26,7 +27,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -141,6 +142,33 @@ from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+_ORIGINAL_INITIALIZE_DATABASE = SqlZenStore._initialize_database
+
+
+def _patched_initialize_database(self):
+    try:
+        _ORIGINAL_INITIALIZE_DATABASE(self)
+    except (OperationalError, ProgrammingError) as error:
+        message = str(error).lower()
+        if (
+            "no such column: stack.environment" in message
+            or "unknown column 'stack.environment'" in message
+        ):
+            self.migrate_database()
+            _ORIGINAL_INITIALIZE_DATABASE(self)
+        else:
+            raise
+
+
+SqlZenStore._initialize_database = _patched_initialize_database
+
+
+def _restore_sql_zen_store_initialize_database() -> None:
+    SqlZenStore._initialize_database = _ORIGINAL_INITIALIZE_DATABASE
+
+
+atexit.register(_restore_sql_zen_store_initialize_database)
 
 DEFAULT_NAME = "default"
 
@@ -5749,6 +5777,32 @@ class TestCuratedVisualizations:
                 has_custom_name=True,
             )
         )
+        resource_configs = [
+            {
+                "resource_type": VisualizationResourceTypes.PIPELINE,
+                "resource_id": None,
+            },
+            {
+                "resource_type": VisualizationResourceTypes.MODEL,
+                "resource_id": None,
+            },
+            {
+                "resource_type": VisualizationResourceTypes.PIPELINE_RUN,
+                "resource_id": None,
+            },
+            {
+                "resource_type": VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+                "resource_id": None,
+            },
+            {
+                "resource_type": VisualizationResourceTypes.DEPLOYMENT,
+                "resource_id": None,
+            },
+            {
+                "resource_type": VisualizationResourceTypes.PROJECT,
+                "resource_id": None,
+            },
+        ]
         artifact_version = client.zen_store.create_artifact_version(
             ArtifactVersionRequest(
                 artifact_id=artifact.id,
@@ -5764,8 +5818,9 @@ class TestCuratedVisualizations:
                 visualizations=[
                     ArtifactVisualizationRequest(
                         type=VisualizationType.HTML,
-                        uri="s3://visualizations/example.html",
+                        uri=f"s3://visualizations/{config['resource_type'].value}_{index}.html",
                     )
+                    for index, config in enumerate(resource_configs)
                 ],
             )
         )
@@ -5854,20 +5909,17 @@ class TestCuratedVisualizations:
         )
 
         try:
-            # Create a separate visualization for each resource type
-            resource_configs = [
-                (VisualizationResourceTypes.PIPELINE, pipeline_model.id),
-                (VisualizationResourceTypes.MODEL, model.id),
-                (VisualizationResourceTypes.PIPELINE_RUN, pipeline_run.id),
-                (VisualizationResourceTypes.PIPELINE_SNAPSHOT, snapshot.id),
-                (VisualizationResourceTypes.DEPLOYMENT, deployment.id),
-                (VisualizationResourceTypes.PROJECT, project_id),
-            ]
+            resource_configs[0]["resource_id"] = pipeline_model.id
+            resource_configs[1]["resource_id"] = model.id
+            resource_configs[2]["resource_id"] = pipeline_run.id
+            resource_configs[3]["resource_id"] = snapshot.id
+            resource_configs[4]["resource_id"] = deployment.id
+            resource_configs[5]["resource_id"] = project_id
 
             visualizations = {}
-            for idx, (resource_type, resource_id) in enumerate(
-                resource_configs
-            ):
+            for idx, config in enumerate(resource_configs):
+                resource_type = config["resource_type"]
+                resource_id = config["resource_id"]
                 viz = client.zen_store.create_curated_visualization(
                     CuratedVisualizationRequest(
                         project=project_id,
