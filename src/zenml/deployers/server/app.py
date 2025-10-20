@@ -239,9 +239,6 @@ class BaseDeploymentAppRunner(ABC):
     def load_deployment_service(self) -> BasePipelineDeploymentService:
         """Load the service for the deployment.
 
-        Args:
-            deployment: The deployment to load the service for.
-
         Returns:
             The deployment service for the deployment.
 
@@ -343,6 +340,9 @@ class BaseDeploymentAppRunner(ABC):
 
         Returns:
             Absolute path.
+
+        Raises:
+            RuntimeError: If the dashboard files path cannot be loaded.
         """
         # If an absolute path is provided, use it
         dashboard_files_path = self.settings.dashboard_files_path

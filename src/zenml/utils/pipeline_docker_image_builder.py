@@ -39,7 +39,6 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
-from zenml.deployers.utils import load_deployment_requirements
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
@@ -452,6 +451,8 @@ class PipelineDockerImageBuilder:
             - Requirements exported from a pyproject.toml
             - User-defined requirements
         """
+        from zenml.deployers.utils import load_deployment_requirements
+
         implicit_requirements = False
         pyproject_path = docker_settings.pyproject_path
         requirements = docker_settings.requirements

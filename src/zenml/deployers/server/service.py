@@ -61,13 +61,13 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
 )
-from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.deployers.server.app import BaseDeploymentAppRunner
+    from zenml.pipelines.pipeline_definition import Pipeline
 
 logger = get_logger(__name__)
 
@@ -229,7 +229,7 @@ class BasePipelineDeploymentService(ABC):
             )
 
         try:
-            pipeline_class: Pipeline = source_utils.load(
+            pipeline_class: "Pipeline" = source_utils.load(
                 self.snapshot.pipeline_spec.source
             )
         except Exception as e:
