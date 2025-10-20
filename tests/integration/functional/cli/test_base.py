@@ -28,7 +28,7 @@ from zenml.utils.io_utils import get_global_config_directory
 def test_init_creates_zen_folder(tmp_path: Path) -> None:
     """Check that init command creates a .zen folder."""
     runner = cli_runner()
-    result = runner.invoke(init, ["--path", str(tmp_path)])
+    result = runner.invoke(init, ["--path", str(tmp_path), "--test"])
     assert result.exit_code == 0, f"Command failed: {result.output}"
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
 
@@ -54,6 +54,7 @@ def test_init_creates_from_templates(
             "--template",
             template_name,
             "--template-with-defaults",
+            "--test",
         ],
     )
     assert result.exit_code == 0, f"Command failed: {result.output}"
