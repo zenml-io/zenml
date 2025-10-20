@@ -1299,6 +1299,10 @@ class SqlZenStore(BaseZenStore):
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
 
+            # Discard existing connections created without the foreign key
+            # checks enabled
+            self._engine.dispose()
+
         secrets_store_config = self.config.secrets_store
 
         # Initialize the secrets store
