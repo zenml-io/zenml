@@ -1901,20 +1901,21 @@ class RestZenStore(BaseZenStore):
     def update_curated_visualization(
         self,
         visualization_id: UUID,
-        update: CuratedVisualizationUpdate,
+        visualization_update: CuratedVisualizationUpdate,
     ) -> CuratedVisualizationResponse:
         """Update a curated visualization via REST API.
 
         Args:
             visualization_id: The ID of the curated visualization to update.
-            update: The update to apply to the curated visualization.
+            visualization_update: The update to apply to the curated
+                visualization.
 
         Returns:
             The updated curated visualization.
         """
         return self._update_resource(
             resource_id=visualization_id,
-            resource_update=update,
+            resource_update=visualization_update,
             response_model=CuratedVisualizationResponse,
             route=CURATED_VISUALIZATIONS,
             params={"hydrate": True},
