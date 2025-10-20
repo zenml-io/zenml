@@ -9,7 +9,7 @@ icon: cauldron
 {% step %}
 #### Install ZenML
 
-ZenML currently supports **Python 3.9, 3.10, 3.11, and 3.12**. Please make sure that you are using a supported Python version.
+ZenML currently supports **Python 3.10, 3.11, 3.12, and 3.13**. Please make sure that you are using a supported Python version.
 
 {% tabs %}
 {% tab title="Base package" %}

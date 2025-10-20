@@ -23,7 +23,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.40.3" "0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0" "0.70.0" "0.71.0" "0.72.0" "0.74.0" "0.80.0" "0.80.1" "0.80.2" "0.81.0" "0.83.1" "0.84.0" "0.84.1" "0.85.0" "0.90.0")
+VERSIONS=("0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0" "0.70.0" "0.71.0" "0.72.0" "0.74.0" "0.80.0" "0.80.1" "0.80.2" "0.81.0" "0.83.1" "0.84.0" "0.84.1" "0.85.0" "0.90.0")
 
 # Try to get the latest version using pip index
 version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
@@ -245,14 +245,6 @@ function test_upgrade_to_version() {
 
     # Get the major and minor version of Python
     PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-
-    # Check if the Python version is 3.9 and VERSION is > 0.44.0 and < 0.53.0
-    if [[ "$PYTHON_VERSION" == "3.9" ]]; then
-        if [ "$(version_compare "$VERSION" "0.44.0")" == ">" ] && [ "$(version_compare "$VERSION" "0.53.0")" == "<" ]; then
-            # Install importlib_metadata for Python 3.9 and versions > 0.44.0 and < 0.53.0
-            uv pip install importlib_metadata
-        fi
-    fi
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 

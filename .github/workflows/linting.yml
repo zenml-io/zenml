@@ -37,7 +37,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.9', '3.10', '3.11', '3.12']
+        options: ['3.10', '3.11', '3.12', '3.13']
         required: false
         default: '3.11'
       enable_tmate:

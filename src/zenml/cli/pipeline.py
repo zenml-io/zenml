@@ -1276,3 +1276,36 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "code_path",
             ],
         )
+
+
+@snapshot.command("delete", help="Delete a pipeline snapshot.")
+@click.argument("snapshot_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline_snapshot(
+    snapshot_name_or_id: str, yes: bool = False
+) -> None:
+    """Delete a pipeline snapshot.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete snapshot `{snapshot_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Snapshot deletion canceled.")
+            return
+
+    try:
+        Client().delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Deleted snapshot '{snapshot_name_or_id}'.")

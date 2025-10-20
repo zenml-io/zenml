@@ -19,11 +19,6 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import psutil
 from rich import print
-from tensorboard import notebook  # type:ignore[import-untyped]
-from tensorboard.manager import (  # type:ignore[import-untyped]
-    TensorBoardInfo,
-    get_all,
-)
 
 from zenml.client import Client
 from zenml.enums import ArtifactType
@@ -35,6 +30,10 @@ from zenml.integrations.tensorboard.services.tensorboard_service import (
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from tensorboard.manager import (  # type:ignore[import-untyped]
+        TensorBoardInfo,
+    )
+
     from zenml.models import StepRunResponse
 
 logger = get_logger(__name__)
@@ -46,7 +45,7 @@ class TensorboardVisualizer:
     @classmethod
     def find_running_tensorboard_server(
         cls, logdir: str
-    ) -> Optional[TensorBoardInfo]:
+    ) -> Optional["TensorBoardInfo"]:
         """Find a local TensorBoard server instance.
 
         Finds when it is running for the supplied logdir location and return its
@@ -59,6 +58,8 @@ class TensorboardVisualizer:
             The TensorBoardInfo describing the running TensorBoard server or
             None if no server is running for the supplied logdir location.
         """
+        from tensorboard.manager import get_all
+
         for server in get_all():
             if (
                 server.logdir == logdir
@@ -138,6 +139,8 @@ class TensorboardVisualizer:
                 requests.
             height: Height of the generated visualization.
         """
+        from tensorboard import notebook  # type:ignore[import-untyped]
+
         if Environment.in_notebook():
             notebook.display(port, height=height)
             return
