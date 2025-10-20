@@ -1262,14 +1262,6 @@ class SqlZenStore(BaseZenStore):
             engine_args=engine_args,
         )
 
-        if self.config.driver == SQLDatabaseDriver.SQLITE:
-            # Enable foreign key checks at the SQLite database level
-            @event.listens_for(self._engine, "connect")
-            def _(dbapi_connection: Any, connection_record: Any) -> None:
-                cursor = dbapi_connection.cursor()
-                cursor.execute("PRAGMA foreign_keys=ON")
-                cursor.close()
-
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
         if (
@@ -1297,6 +1289,15 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # Enable foreign key checks at the SQLite database level, but only
+            # after any migration has been done.
+            @event.listens_for(self._engine, "connect")
+            def _(dbapi_connection: Any, connection_record: Any) -> None:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
 
         secrets_store_config = self.config.secrets_store
 

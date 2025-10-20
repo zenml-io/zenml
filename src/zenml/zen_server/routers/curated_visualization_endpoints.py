@@ -129,7 +129,7 @@ def get_curated_visualization(
     return hydrated_visualization
 
 
-@router.patch(
+@router.put(
     "/{visualization_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )

@@ -1918,7 +1918,6 @@ class RestZenStore(BaseZenStore):
             resource_update=visualization_update,
             response_model=CuratedVisualizationResponse,
             route=CURATED_VISUALIZATIONS,
-            params={"hydrate": True},
         )
 
     def delete_curated_visualization(self, visualization_id: UUID) -> None:
