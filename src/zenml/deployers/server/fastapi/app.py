@@ -16,9 +16,12 @@
 import os
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, cast
+from typing import Any, AsyncGenerator, Dict, List, cast
 
 from anyio import to_thread
+from asgiref.typing import (
+    ASGIApplication,
+)
 from fastapi import (
     FastAPI,
     HTTPException,
@@ -36,7 +39,6 @@ from zenml.config.deployment_settings import (
     EndpointSpec,
     MiddlewareSpec,
 )
-from zenml.config.source import SourceOrObject
 from zenml.deployers.server.adapters import (
     EndpointAdapter,
     MiddlewareAdapter,
@@ -50,13 +52,6 @@ from zenml.deployers.server.fastapi.adapters import (
     FastAPIEndpointAdapter,
     FastAPIMiddlewareAdapter,
 )
-
-if TYPE_CHECKING:
-    from asgiref.typing import (
-        ASGIApplication,
-    )
-
-
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -97,7 +92,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             The CORS middleware.
         """
         return MiddlewareSpec(
-            middleware=SourceOrObject(CORSMiddleware),
+            middleware=CORSMiddleware,
             init_kwargs=dict(
                 allow_origins=self.settings.cors.allow_origins,
                 allow_credentials=self.settings.cors.allow_credentials,
@@ -147,7 +142,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
                     path=f"{self.settings.api_url_path}"
                     + "/{invalid_api_path:path}",
                     method=EndpointMethod.GET,
-                    handler=SourceOrObject(catch_invalid_api),
+                    handler=catch_invalid_api,
                     native=True,
                     extra_kwargs=dict(
                         include_in_schema=False,
@@ -159,6 +154,9 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         static_directories = []
         index_html_path = None
         for file in os.listdir(dashboard_files_path):
+            if file.startswith("__"):
+                logger.debug(f"Skipping private file: {file}")
+                continue
             if file in ["index.html", "index.htm"]:
                 # this is served separately
                 index_html_path = os.path.join(dashboard_files_path, file)
@@ -183,7 +181,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
                 EndpointSpec(
                     path=f"/{static_dir}",
                     method=EndpointMethod.GET,
-                    handler=SourceOrObject(static_files_endpoint),
+                    handler=static_files_endpoint,
                     native=True,
                     auth_required=False,
                 )
@@ -214,7 +212,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
                 "index.html",
                 dict(
                     request=request,
-                    service_info_json=self.service.get_service_info(),
+                    service_info_json=self.service.get_service_info().model_dump_json(),
                 ),
             )
 
@@ -222,7 +220,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             EndpointSpec(
                 path="/{file_path:path}",
                 method=EndpointMethod.GET,
-                handler=SourceOrObject(catch_all_endpoint),
+                handler=catch_all_endpoint,
                 native=True,
                 auth_required=False,
                 extra_kwargs=dict(
@@ -251,7 +249,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         middlewares: List[MiddlewareSpec],
         endpoints: List[EndpointSpec],
         extensions: List[AppExtensionSpec],
-    ) -> "ASGIApplication":
+    ) -> ASGIApplication:
         """Build the FastAPI app for the deployment.
 
         Args:
@@ -288,7 +286,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
         # Save this so it's available for the middleware, endpoint adapters and
         # extensions
-        self._asgi_app = cast("ASGIApplication", asgi_app)
+        self._asgi_app = cast(ASGIApplication, asgi_app)
 
         # Bind the app runner to the app state
         asgi_app.state.app_runner = self

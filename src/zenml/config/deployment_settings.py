@@ -31,7 +31,7 @@ from pydantic import (
 )
 
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.source import SourceOrObjectField
+from zenml.config.source import SourceOrObject, SourceOrObjectField
 from zenml.enums import LoggingLevels
 from zenml.logger import get_logger
 
@@ -180,6 +180,7 @@ class EndpointSpec(BaseModel):
 
     def load_sources(self) -> None:
         """Load all source strings into callables."""
+        assert isinstance(self.handler, SourceOrObject)
         if not self.handler.is_loaded:
             self.handler.load()
 
@@ -285,6 +286,7 @@ class MiddlewareSpec(BaseModel):
 
     def load_sources(self) -> None:
         """Load source string into callable."""
+        assert isinstance(self.middleware, SourceOrObject)
         if not self.middleware.is_loaded:
             self.middleware.load()
 
@@ -348,6 +350,7 @@ class AppExtensionSpec(BaseModel):
 
     def load_sources(self) -> None:
         """Load source string into callable."""
+        assert isinstance(self.extension, SourceOrObject)
         if not self.extension.is_loaded:
             self.extension.load()
 
@@ -362,6 +365,8 @@ class AppExtensionSpec(BaseModel):
         Raises:
             ValueError: If the extension object is not callable.
         """
+        assert isinstance(self.extension, SourceOrObject)
+
         extension = self.extension.load()
         if not callable(extension):
             raise ValueError(
@@ -669,12 +674,18 @@ class DeploymentSettings(BaseSettings):
     def load_sources(self) -> None:
         """Load source string into callable."""
         if self.startup_hook is not None:
+            assert isinstance(self.startup_hook, SourceOrObject)
             self.startup_hook.load()
         if self.shutdown_hook is not None:
+            assert isinstance(self.shutdown_hook, SourceOrObject)
             self.shutdown_hook.load()
         if self.deployment_app_runner_flavor is not None:
+            assert isinstance(
+                self.deployment_app_runner_flavor, SourceOrObject
+            )
             self.deployment_app_runner_flavor.load()
         if self.deployment_service_class is not None:
+            assert isinstance(self.deployment_service_class, SourceOrObject)
             self.deployment_service_class.load()
 
     model_config = ConfigDict(

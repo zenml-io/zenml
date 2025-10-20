@@ -16,14 +16,16 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-if TYPE_CHECKING:
-    from asgiref.typing import (
-        ASGIApplication,
-        ASGIReceiveCallable,
-        ASGISendCallable,
-        Scope,
-    )
+from asgiref.typing import (
+    ASGIApplication,
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    Scope,
+)
 
+from zenml.config.source import SourceOrObject
+
+if TYPE_CHECKING:
     from zenml.config.deployment_settings import (
         EndpointSpec,
         MiddlewareSpec,
@@ -63,6 +65,7 @@ class EndpointAdapter(ABC):
         """
         import inspect
 
+        assert isinstance(endpoint_spec.handler, SourceOrObject)
         handler = endpoint_spec.handler.load()
 
         if endpoint_spec.native:
@@ -174,6 +177,7 @@ class MiddlewareAdapter(ABC):
         """
         import inspect
 
+        assert isinstance(middleware_spec.middleware, SourceOrObject)
         middleware = middleware_spec.middleware.load()
 
         if middleware_spec.native:
@@ -188,15 +192,15 @@ class MiddlewareAdapter(ABC):
 
         # Wrap the middleware function in a middleware class
         class _MiddlewareAdapter:
-            def __init__(self, app: "ASGIApplication", **kwargs: Any) -> None:
+            def __init__(self, app: ASGIApplication, **kwargs: Any) -> None:
                 self.app = app
                 self.kwargs = kwargs
 
             async def __call__(
                 self,
-                scope: "Scope",
-                receive: "ASGIReceiveCallable",
-                send: "ASGISendCallable",
+                scope: Scope,
+                receive: ASGIReceiveCallable,
+                send: ASGISendCallable,
             ) -> None:
                 callable_middleware = cast(Callable[..., Any], middleware)
                 if inspect.iscoroutinefunction(callable_middleware):

@@ -21,7 +21,6 @@ from zenml.config.deployment_settings import (
     MiddlewareSpec,
 )
 from zenml.config.resource_settings import ResourceSettings
-from zenml.config.source import SourceOrObject
 
 docker_settings = DockerSettings(
     requirements=["openai"],
@@ -92,13 +91,13 @@ deployment_settings = DeploymentSettings(
         EndpointSpec(
             path="/health/detailed",
             method=EndpointMethod.GET,
-            handler=SourceOrObject(health_detailed),
+            handler=health_detailed,
             auth_required=False,
         ),
     ],
     custom_middlewares=[
         MiddlewareSpec(
-            middleware=SourceOrObject(RequestTimingMiddleware),
+            middleware=RequestTimingMiddleware,
             order=10,
         ),
     ],

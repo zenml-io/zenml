@@ -17,7 +17,6 @@ import importlib
 import os
 from abc import ABC, abstractmethod
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -32,6 +31,14 @@ from uuid import UUID
 
 import secure
 from asgiref.compatibility import guarantee_single_callable
+from asgiref.typing import (
+    ASGIApplication,
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    ASGISendEvent,
+    HTTPScope,
+    Scope,
+)
 
 from zenml.client import Client
 from zenml.config.deployment_settings import (
@@ -60,16 +67,6 @@ from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from asgiref.typing import (
-        ASGIApplication,
-        ASGIReceiveCallable,
-        ASGISendCallable,
-        ASGISendEvent,
-        HTTPScope,
-        Scope,
-    )
 
 
 class BaseDeploymentAppRunner(ABC):
@@ -143,10 +140,10 @@ class BaseDeploymentAppRunner(ABC):
         # Create framework-specific adapters
         self.endpoint_adapter = self._create_endpoint_adapter()
         self.middleware_adapter = self._create_middleware_adapter()
-        self._asgi_app: Optional["ASGIApplication"] = None
+        self._asgi_app: Optional[ASGIApplication] = None
 
     @property
-    def asgi_app(self) -> "ASGIApplication":
+    def asgi_app(self) -> ASGIApplication:
         """Get the ASGI application.
 
         Returns:
@@ -257,6 +254,9 @@ class BaseDeploymentAppRunner(ABC):
                 PipelineDeploymentService
             )
         else:
+            assert isinstance(
+                settings.deployment_service_class, SourceOrObject
+            )
             try:
                 loaded_service_cls = settings.deployment_service_class.load()
             except Exception as e:
@@ -384,7 +384,7 @@ class BaseDeploymentAppRunner(ABC):
             EndpointSpec(
                 path=f"{self.settings.api_url_path}{self.settings.invoke_url_path}",
                 method=EndpointMethod.POST,
-                handler=SourceOrObject(self._build_invoke_endpoint()),
+                handler=self._build_invoke_endpoint(),
                 auth_required=True,
             )
         )
@@ -393,7 +393,7 @@ class BaseDeploymentAppRunner(ABC):
             EndpointSpec(
                 path=f"{self.settings.api_url_path}{self.settings.health_url_path}",
                 method=EndpointMethod.GET,
-                handler=SourceOrObject(self.service.health_check),
+                handler=self.service.health_check,
                 auth_required=False,
             )
         )
@@ -402,7 +402,7 @@ class BaseDeploymentAppRunner(ABC):
             EndpointSpec(
                 path=f"{self.settings.api_url_path}{self.settings.info_url_path}",
                 method=EndpointMethod.GET,
-                handler=SourceOrObject(self.service.get_service_info),
+                handler=self.service.get_service_info,
                 auth_required=False,
             )
         )
@@ -411,7 +411,7 @@ class BaseDeploymentAppRunner(ABC):
             EndpointSpec(
                 path=f"{self.settings.api_url_path}{self.settings.metrics_url_path}",
                 method=EndpointMethod.GET,
-                handler=SourceOrObject(self.service.get_execution_metrics),
+                handler=self.service.get_execution_metrics,
                 auth_required=False,
             )
         )
@@ -513,16 +513,16 @@ class BaseDeploymentAppRunner(ABC):
         secure_headers = self._get_secure_headers()
 
         async def set_secure_headers(
-            app: "ASGIApplication",
-            scope: "Scope",
-            receive: "ASGIReceiveCallable",
-            send: "ASGISendCallable",
+            app: ASGIApplication,
+            scope: Scope,
+            receive: ASGIReceiveCallable,
+            send: ASGISendCallable,
         ) -> None:
             skip = False
             if scope["type"] != "http":
                 skip = True
             else:
-                scope = cast("HTTPScope", scope)
+                scope = cast(HTTPScope, scope)
                 path = scope["path"]
 
                 if path.startswith(
@@ -530,7 +530,7 @@ class BaseDeploymentAppRunner(ABC):
                 ) or path.startswith(self.settings.redoc_url_path):
                     skip = True
 
-            async def send_wrapper(message: "ASGISendEvent") -> None:
+            async def send_wrapper(message: ASGISendEvent) -> None:
                 if message["type"] == "http.response.start":
                     hdrs: List[Tuple[bytes, bytes]] = list(
                         message.get("headers", [])
@@ -550,7 +550,7 @@ class BaseDeploymentAppRunner(ABC):
             await wrapped_app(scope, receive, send if skip else send_wrapper)
 
         return MiddlewareSpec(
-            middleware=SourceOrObject(set_secure_headers),
+            middleware=set_secure_headers,
         )
 
     @abstractmethod
@@ -645,6 +645,7 @@ class BaseDeploymentAppRunner(ABC):
         if not self.settings.startup_hook:
             return
 
+        assert isinstance(self.settings.startup_hook, SourceOrObject)
         startup_hook = self.settings.startup_hook.load()
 
         if not callable(startup_hook):
@@ -693,6 +694,8 @@ class BaseDeploymentAppRunner(ABC):
         if not self.settings.shutdown_hook:
             return
 
+        assert isinstance(self.settings.shutdown_hook, SourceOrObject)
+
         shutdown_hook = self.settings.shutdown_hook.load()
 
         if not shutdown_hook:
@@ -733,7 +736,7 @@ class BaseDeploymentAppRunner(ABC):
             )
             raise
 
-    def _build_asgi_app(self) -> "ASGIApplication":
+    def _build_asgi_app(self) -> ASGIApplication:
         """Build the ASGI application.
 
         Returns:
@@ -760,7 +763,7 @@ class BaseDeploymentAppRunner(ABC):
 
         return self.build(middlewares, endpoints, extensions)
 
-    def _run_asgi_app(self, asgi_app: "ASGIApplication") -> None:
+    def _run_asgi_app(self, asgi_app: ASGIApplication) -> None:
         """Run the ASGI application.
 
         Args:
@@ -824,7 +827,7 @@ class BaseDeploymentAppRunner(ABC):
         middlewares: List[MiddlewareSpec],
         endpoints: List[EndpointSpec],
         extensions: List[AppExtensionSpec],
-    ) -> "ASGIApplication":
+    ) -> ASGIApplication:
         """Build the ASGI compatible web application.
 
         Args:
@@ -897,6 +900,9 @@ class BaseDeploymentAppRunnerFlavor(ABC):
                 FastAPIDeploymentAppRunnerFlavor
             )
         else:
+            assert isinstance(
+                settings.deployment_app_runner_flavor, SourceOrObject
+            )
             try:
                 loaded_app_runner_flavor_class = (
                     settings.deployment_app_runner_flavor.load()
