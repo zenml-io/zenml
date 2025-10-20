@@ -155,7 +155,11 @@ class ZenMLCLI(click.Group):
 @click.version_option(__version__, "--version", "-v")
 @click.pass_context
 def cli(ctx: click.Context) -> None:
-    """CLI base command for ZenML."""
+    """CLI base command for ZenML.
+
+    Args:
+        ctx: The click context.
+    """
     set_root_verbosity()
     source_context.set(SourceContextTypes.CLI)
     repo_root = Client.find_repository()

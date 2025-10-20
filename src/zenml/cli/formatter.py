@@ -45,6 +45,15 @@ def _safe_width(
     Click sets width to None in some non-interactive contexts. This helper
     ensures we always get a valid integer width, preferring the explicit width
     first, then max_width, then a sensible default.
+
+    Args:
+        width: Explicit terminal or content width to use when available.
+        max_width: Upper bound to apply if width is not set or invalid.
+        default: Fallback width used when neither width nor max_width is a
+            positive integer.
+
+    Returns:
+        The effective positive integer width used for wrapping.
     """
     if isinstance(width, int) and width > 0:
         return width
