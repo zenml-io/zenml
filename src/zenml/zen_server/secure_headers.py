@@ -99,7 +99,11 @@ def initialize_secure_headers() -> None:
     if config.secure_headers_permissions:
         permissions = secure.PermissionsPolicy()
         if isinstance(config.secure_headers_permissions, str):
-            permissions.set(config.secure_headers_permissions)
+            # This one is special, because it doesn't allow setting the
+            # value as a string, but rather as a list of directives, so we
+            # hack our way around it by setting the private _default_value
+            # attribute.
+            permissions._default_value = config.secure_headers_permissions
 
     _secure_headers = secure.Secure(
         server=server,

@@ -198,29 +198,23 @@ class MiddlewareAdapter(ABC):
                 receive: "ASGIReceiveCallable",
                 send: "ASGISendCallable",
             ) -> None:
-                try:
-                    callable_middleware = cast(Callable[..., Any], middleware)
-                    if inspect.iscoroutinefunction(callable_middleware):
-                        await callable_middleware(
-                            app=self.app,
-                            scope=scope,
-                            receive=receive,
-                            send=send,
-                            **self.kwargs,
-                        )
-                    else:
-                        callable_middleware(
-                            app=self.app,
-                            scope=scope,
-                            receive=receive,
-                            send=send,
-                            **self.kwargs,
-                        )
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to call configured middleware function "
-                        f"{middleware.__name__}: {e}"
-                    ) from e
+                callable_middleware = cast(Callable[..., Any], middleware)
+                if inspect.iscoroutinefunction(callable_middleware):
+                    await callable_middleware(
+                        app=self.app,
+                        scope=scope,
+                        receive=receive,
+                        send=send,
+                        **self.kwargs,
+                    )
+                else:
+                    callable_middleware(
+                        app=self.app,
+                        scope=scope,
+                        receive=receive,
+                        send=send,
+                        **self.kwargs,
+                    )
 
         return _MiddlewareAdapter
 

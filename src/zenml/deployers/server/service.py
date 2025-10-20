@@ -35,6 +35,7 @@ import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
+    AppInfo,
     BaseDeploymentInvocationRequest,
     BaseDeploymentInvocationResponse,
     DeploymentInfo,
@@ -51,7 +52,6 @@ from zenml.enums import StackComponentType
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.models import (
-    DeploymentResponse,
     PipelineRunResponse,
     PipelineRunTriggerInfo,
     PipelineSnapshotResponse,
@@ -65,6 +65,9 @@ from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
+
+if TYPE_CHECKING:
+    from zenml.deployers.server.app import BaseDeploymentAppRunner
 
 logger = get_logger(__name__)
 
@@ -128,18 +131,19 @@ class BasePipelineDeploymentService(ABC):
     """
 
     def __init__(
-        self, deployment: "DeploymentResponse", **kwargs: Any
+        self, app_runner: "BaseDeploymentAppRunner", **kwargs: Any
     ) -> None:
         """Initialize the deployment service.
 
         Args:
-            deployment: The deployment.
+            app_runner: The deployment application runner used with this service.
             **kwargs: Additional keyword arguments for the deployment service.
 
         Raises:
             RuntimeError: If snapshot cannot be loaded.
         """
-        self.deployment = deployment
+        self.app_runner = app_runner
+        self.deployment = app_runner.deployment
         if self.deployment.snapshot is None:
             raise RuntimeError("Deployment has no snapshot")
         self.snapshot = self.deployment.snapshot
@@ -416,6 +420,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             A dictionary containing service information.
         """
         uptime = time.time() - self.service_start_time
+        settings = self.app_runner.settings
+        api_urlpath = f"{self.app_runner.settings.root_url_path}{self.app_runner.settings.api_url_path}"
         return ServiceInfo(
             deployment=DeploymentInfo(
                 id=self.deployment.id,
@@ -432,6 +438,15 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 else None,
                 input_schema=self.input_schema,
                 output_schema=self.output_schema,
+            ),
+            app=AppInfo(
+                app_runner_flavor=self.app_runner.flavor.name,
+                docs_url_path=settings.docs_url_path,
+                redoc_url_path=settings.redoc_url_path,
+                invoke_url_path=api_urlpath + settings.invoke_url_path,
+                health_url_path=api_urlpath + settings.health_url_path,
+                info_url_path=api_urlpath + settings.info_url_path,
+                metrics_url_path=api_urlpath + settings.metrics_url_path,
             ),
             total_executions=self.total_executions,
             last_execution_time=self.last_execution_time,

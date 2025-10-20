@@ -118,6 +118,18 @@ class SnapshotInfo(BaseModel):
     )
 
 
+class AppInfo(BaseModel):
+    """App info model."""
+
+    app_runner_flavor: str
+    docs_url_path: str
+    redoc_url_path: str
+    invoke_url_path: str
+    health_url_path: str
+    info_url_path: str
+    metrics_url_path: str
+
+
 class ServiceInfo(BaseModel):
     """Service info model."""
 
@@ -130,6 +142,7 @@ class ServiceInfo(BaseModel):
     pipeline: PipelineInfo = Field(
         title="The pipeline of the pipeline service."
     )
+    app: AppInfo = Field(title="The deployment application")
     total_executions: int = Field(
         title="The total number of pipeline executions."
     )

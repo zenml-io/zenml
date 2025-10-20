@@ -1382,9 +1382,14 @@ class AWSDeployer(ContainerizedDeployer):
             "UnhealthyThreshold": settings.health_check_unhealthy_threshold,
         }
 
+        deployment_settings = (
+            snapshot.pipeline_configuration.deployment_settings
+        )
+
         if settings.health_check_protocol.upper() == "HTTP":
-            root_path = snapshot.pipeline_configuration.deployment_settings.root_url_path
-            health_check_path = f"{root_path}{snapshot.pipeline_configuration.deployment_settings.health_url_path}"
+            root_path = deployment_settings.root_url_path
+            api_url_path = deployment_settings.api_url_path
+            health_check_path = f"{root_path}{api_url_path}{deployment_settings.health_url_path}"
             health_check_configuration["Path"] = health_check_path
 
         network_configuration = {

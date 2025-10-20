@@ -228,7 +228,10 @@ def invoke_deployment(
 
     invoke_url_path = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
     if deployment.snapshot:
-        invoke_url_path = deployment.snapshot.pipeline_configuration.deployment_settings.invoke_url_path
+        deployment_settings = (
+            deployment.snapshot.pipeline_configuration.deployment_settings
+        )
+        invoke_url_path = f"{deployment_settings.root_url_path}{deployment_settings.api_url_path}{deployment_settings.invoke_url_path}"
 
     # Construct the invoke endpoint URL
     invoke_url = deployment.url.rstrip("/") + invoke_url_path

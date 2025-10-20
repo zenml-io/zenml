@@ -46,10 +46,10 @@ DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CONTENT = "nosniff"
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
-    "script-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
     "connect-src 'self'; "
     "img-src 'self'; "
-    "style-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
     "base-uri 'self'; "
     "form-action 'self'; "
     "font-src 'self';"
@@ -387,7 +387,68 @@ class CORSConfig(BaseModel):
 
 
 class SecureHeadersConfig(BaseModel):
-    """Configuration for secure headers."""
+    """Configuration for secure headers.
+
+    Attributes:
+        server: Custom value to be set in the `Server` HTTP header to identify
+            the server. If not specified, or if set to one of the reserved values
+            `enabled`, `yes`, `true`, `on`, the `Server` header will be set to the
+            default value (ZenML server ID). If set to one of the reserved values
+            `disabled`, `no`, `none`, `false`, `off` or to an empty string, the
+            `Server` header will not be included in responses.
+        hsts: The server header value to be set in the HTTP header
+            `Strict-Transport-Security`. If not specified, or if set to one of
+            the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Strict-Transport-Security` header will be set to the default value
+            (`max-age=63072000; includeSubdomains`). If set to one of the reserved
+            values `disabled`, `no`, `none`, `false`, `off` or to an empty string,
+            the `Strict-Transport-Security` header will not be included in responses.
+        xfo: The server header value to be set in the HTTP header
+            `X-Frame-Options`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `X-Frame-Options`
+            header will be set to the default value (`SAMEORIGIN`). If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `X-Frame-Options` header will not be
+            included in responses.
+        content: The server header value to be set in the HTTP header
+            `X-Content-Type-Options`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `X-Content-Type-Options` header will be set to the default value
+            (`nosniff`). If set to one of the reserved values `disabled`, `no`,
+            `none`, `false`, `off` or to an empty string, the
+            `X-Content-Type-Options` header will not be included in responses.
+        csp: The server header value to be set in the HTTP header
+            `Content-Security-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Content-Security-Policy` header will be set to the default value
+            DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CSP. If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Content-Security-Policy` header will not be
+            included in responses.
+        referrer: The server header value to be set in the HTTP header
+            `Referrer-Policy`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Referrer-Policy`
+            header will be set to the default value
+            (`no-referrer-when-downgrade`). If set to one of the reserved values
+            `disabled`, `no`, `none`, `false`, `off` or to an empty string, the
+            `Referrer-Policy` header will not be included in responses.
+        cache: The server header value to be set in the HTTP header
+            `Cache-Control`. If not specified, or if set to one of the
+            reserved values `enabled`, `yes`, `true`, `on`, the `Cache-Control`
+            header will be set to the default value
+            (`no-store, no-cache, must-revalidate`). If set to one of the
+            reserved values `disabled`, `no`, `none`, `false`, `off` or to an
+            empty string, the `Cache-Control` header will not be included in
+            responses.
+        permissions: The server header value to be set in the HTTP header
+            `Permissions-Policy`. If not specified, or if set to one
+            of the reserved values `enabled`, `yes`, `true`, `on`, the
+            `Permissions-Policy` header will be set to the default value
+            DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_PERMISSIONS. If set to
+            one of the reserved values `disabled`, `no`, `none`, `false`, `off`
+            or to an empty string, the `Permissions-Policy` header will not be
+            included in responses.
+    """
 
     server: Union[bool, str] = Field(
         default=True,
@@ -424,12 +485,16 @@ class SecureHeadersConfig(BaseModel):
 
 
 DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH = ""
+DEFAULT_DEPLOYMENT_APP_API_URL_PATH = "/api"
 DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH = "/docs"
 DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH = "/redoc"
 DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
 DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
 DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
 DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
+DEFAULT_DEPLOYMENT_APP_DASHBOARD_FILES_PATH = (
+    "zenml.deployers.server.dashboard"
+)
 
 
 class DeploymentSettings(BaseSettings):
@@ -447,8 +512,8 @@ class DeploymentSettings(BaseSettings):
     * the ASGI application details: `app_title`, `app_description`,
     `app_version` and `app_kwargs`
     * the URL paths for the various built-in endpoints: `root_url_path`,
-    `docs_url_path`, `redoc_url_path`, `invoke_url_path`, `health_url_path`,
-    `info_url_path` and `metrics_url_path`
+    `api_url_path`, `docs_url_path`, `redoc_url_path`, `invoke_url_path`,
+    `health_url_path`, `info_url_path` and `metrics_url_path`
     * the location of dashboard static files can be provided to replace the
     default UI that is included with the deployment ASGI application:
     `dashboard_files_path`
@@ -500,17 +565,18 @@ class DeploymentSettings(BaseSettings):
         root_url_path: Root URL path.
         docs_url_path: URL path for the OpenAPI documentation endpoint.
         redoc_url_path: URL path for the Redoc documentation endpoint.
-        invoke_url_path: URL path for the invoke endpoint.
-        health_url_path: URL path for the health check endpoint.
-        info_url_path: URL path for the info endpoint.
-        metrics_url_path: URL path for the metrics endpoint.
-        dashboard_files_path: Path where the dashboard static files are located.
-            This can be used to replace the default UI that is included with the
-            deployment ASGI application. The referenced directory must contain
-            at a minimum an `index.html` file and a `assets` directory. The path
-            can be absolute or relative to the root of the repository
-            initialized with `zenml init` or relative to the current working
-            directory.
+        api_url_path: URL path for the API endpoints.
+        invoke_url_path: URL path for the API invoke endpoint.
+        health_url_path: URL path for the API health check endpoint.
+        info_url_path: URL path for the API info endpoint.
+        metrics_url_path: URL path for the API metrics endpoint.
+        dashboard_files_path: Path where the dashboard static files (e.g. for an
+            single-page application) are located. This can be used to replace the
+            default UI that is included with the deployment ASGI application.
+            The referenced directory must contain at a minimum an `index.html`
+            file. One or more subdirectories can be included to serve static
+            files (e.g. /assets, /css, /js, etc.). The value can be an absolute
+            path or a Python source path (e.g. "myproject.static_files").
 
         cors: Configuration for CORS.
         secure_headers: Configuration for secure headers.
@@ -559,6 +625,7 @@ class DeploymentSettings(BaseSettings):
     include_default_middleware: bool = True
 
     root_url_path: str = DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH
+    api_url_path: str = DEFAULT_DEPLOYMENT_APP_API_URL_PATH
     docs_url_path: str = DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH
     redoc_url_path: str = DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH
     invoke_url_path: str = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
@@ -566,7 +633,9 @@ class DeploymentSettings(BaseSettings):
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
 
-    dashboard_files_path: Optional[str] = None
+    dashboard_files_path: Optional[str] = (
+        DEFAULT_DEPLOYMENT_APP_DASHBOARD_FILES_PATH
+    )
 
     cors: CORSConfig = CORSConfig()
     secure_headers: SecureHeadersConfig = SecureHeadersConfig()

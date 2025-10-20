@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Base deployment app runner."""
 
+import importlib
 import os
 from abc import ABC, abstractmethod
-from functools import lru_cache
-from genericpath import isfile
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -104,6 +103,8 @@ class BaseDeploymentAppRunner(ABC):
 
     The following methods must be provided by implementations of this class:
 
+    * flavor: Return the flavor class associated with this deployment
+    application runner.
     * build: Build and return an ASGI compatible web application (i.e. an
     ASGIApplication object that can be run with uvicorn). Most Python ASGI
     frameworks provide an ASGIApplication object. This method also has to
@@ -137,7 +138,7 @@ class BaseDeploymentAppRunner(ABC):
             self.snapshot.pipeline_configuration.deployment_settings
         )
 
-        self.service = self.load_deployment_service(deployment)
+        self.service = self.load_deployment_service()
 
         # Create framework-specific adapters
         self.endpoint_adapter = self._create_endpoint_adapter()
@@ -238,10 +239,7 @@ class BaseDeploymentAppRunner(ABC):
                 f"'{app_runner_cls}' for deployment {deployment.id}: {e}"
             ) from e
 
-    @classmethod
-    def load_deployment_service(
-        cls, deployment: Union[str, UUID, "DeploymentResponse"]
-    ) -> BasePipelineDeploymentService:
+    def load_deployment_service(self) -> BasePipelineDeploymentService:
         """Load the service for the deployment.
 
         Args:
@@ -253,12 +251,7 @@ class BaseDeploymentAppRunner(ABC):
         Raises:
             RuntimeError: If the deployment service cannot be loaded.
         """
-        deployment = cls.load_deployment(deployment)
-        assert deployment.snapshot is not None
-
-        settings = (
-            deployment.snapshot.pipeline_configuration.deployment_settings
-        )
+        settings = self.snapshot.pipeline_configuration.deployment_settings
         if settings.deployment_service_class is None:
             service_cls: Type[BasePipelineDeploymentService] = (
                 PipelineDeploymentService
@@ -287,18 +280,25 @@ class BaseDeploymentAppRunner(ABC):
 
         logger.info(
             f"Instantiating deployment service class '{service_cls}' for "
-            f"deployment {deployment.id}"
+            f"deployment {self.deployment.id}"
         )
 
         try:
-            return service_cls(
-                deployment, **settings.deployment_service_kwargs
-            )
+            return service_cls(self, **settings.deployment_service_kwargs)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to instantiate deployment service class "
-                f"'{service_cls}' for deployment {deployment.id}: {e}"
+                f"'{service_cls}' for deployment {self.deployment.id}: {e}"
             ) from e
+
+    @property
+    @abstractmethod
+    def flavor(cls) -> "BaseDeploymentAppRunnerFlavor":
+        """Return the flavor associated with this deployment application runner.
+
+        Returns:
+            The flavor associated with this deployment application runner.
+        """
 
     @abstractmethod
     def _create_endpoint_adapter(self) -> EndpointAdapter:
@@ -351,30 +351,15 @@ class BaseDeploymentAppRunner(ABC):
         if os.path.isabs(dashboard_files_path):
             return dashboard_files_path
 
-        # Otherwise, use a path relative to the server module
-        return os.path.join(os.path.dirname(__file__), dashboard_files_path)
+        # Otherwise, assume this is a Python source path and load the module
+        try:
+            module = importlib.import_module(dashboard_files_path)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to import dashboard files module {dashboard_files_path}: {e}"
+            ) from e
 
-    @lru_cache(maxsize=None)
-    def get_root_static_files(self) -> List[str]:
-        """Get the list of static files in the root dashboard directory.
-
-        These files are static files that are not in the /static subdirectory
-        that need to be served as static files under the root URL path.
-
-        Returns:
-            List of static files in the root directory.
-        """
-        root_path = self.dashboard_files_path()
-        if not root_path or not os.path.isdir(root_path):
-            return []
-        files = []
-        for file in os.listdir(root_path):
-            if file == "index.html":
-                # this is served separately
-                continue
-            if isfile(os.path.join(root_path, file)):
-                files.append(file)
-        return files
+        return module.__path__[0]
 
     @abstractmethod
     def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
@@ -397,7 +382,7 @@ class BaseDeploymentAppRunner(ABC):
 
         specs.append(
             EndpointSpec(
-                path=self.settings.invoke_url_path,
+                path=f"{self.settings.api_url_path}{self.settings.invoke_url_path}",
                 method=EndpointMethod.POST,
                 handler=SourceOrObject(self._build_invoke_endpoint()),
                 auth_required=True,
@@ -406,7 +391,7 @@ class BaseDeploymentAppRunner(ABC):
 
         specs.append(
             EndpointSpec(
-                path=self.settings.health_url_path,
+                path=f"{self.settings.api_url_path}{self.settings.health_url_path}",
                 method=EndpointMethod.GET,
                 handler=SourceOrObject(self.service.health_check),
                 auth_required=False,
@@ -415,7 +400,7 @@ class BaseDeploymentAppRunner(ABC):
 
         specs.append(
             EndpointSpec(
-                path=self.settings.info_url_path,
+                path=f"{self.settings.api_url_path}{self.settings.info_url_path}",
                 method=EndpointMethod.GET,
                 handler=SourceOrObject(self.service.get_service_info),
                 auth_required=False,
@@ -424,7 +409,7 @@ class BaseDeploymentAppRunner(ABC):
 
         specs.append(
             EndpointSpec(
-                path=self.settings.metrics_url_path,
+                path=f"{self.settings.api_url_path}{self.settings.metrics_url_path}",
                 method=EndpointMethod.GET,
                 handler=SourceOrObject(self.service.get_execution_metrics),
                 auth_required=False,
@@ -498,7 +483,13 @@ class BaseDeploymentAppRunner(ABC):
         if self.settings.secure_headers.permissions:
             permissions = secure.PermissionsPolicy()
             if isinstance(self.settings.secure_headers.permissions, str):
-                permissions.set(self.settings.secure_headers.permissions)
+                # This one is special, because it doesn't allow setting the
+                # value as a string, but rather as a list of directives, so we
+                # hack our way around it by setting the private _default_value
+                # attribute.
+                permissions._default_value = (
+                    self.settings.secure_headers.permissions
+                )
 
         return secure.Secure(
             server=server,
@@ -880,7 +871,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         Returns:
             The software requirements for the deployment app runner.
         """
-        return ["uvicorn", "secure~=1.0.1", "asgiref~=3.10.0"]
+        return ["uvicorn", "secure~=1.0.1", "asgiref~=3.10.0", "Jinja2"]
 
     @classmethod
     def load_app_runner_flavor(

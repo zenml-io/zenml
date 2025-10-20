@@ -116,13 +116,6 @@ class FastAPIEndpointAdapter(EndpointAdapter):
                     handler, prefix=spec.path, **spec.extra_kwargs
                 )
                 return
-            app.add_route(
-                spec.path,
-                handler,
-                methods=[spec.method.value],
-                **spec.extra_kwargs,
-            )
-            return
 
         # Register with appropriate HTTP method
         route_kwargs: Dict[str, Any] = {"dependencies": dependencies}

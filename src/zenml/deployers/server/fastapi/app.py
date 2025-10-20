@@ -15,15 +15,17 @@
 
 import os
 from contextlib import asynccontextmanager
+from genericpath import isdir, isfile
 from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, cast
 
 from anyio import to_thread
 from fastapi import (
     FastAPI,
+    HTTPException,
     Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -39,7 +41,11 @@ from zenml.deployers.server.adapters import (
     EndpointAdapter,
     MiddlewareAdapter,
 )
-from zenml.deployers.server.app import BaseDeploymentAppRunner
+from zenml.deployers.server.app import (
+    BaseDeploymentAppRunner,
+    BaseDeploymentAppRunnerFlavor,
+)
+from zenml.deployers.server.fastapi import FastAPIDeploymentAppRunnerFlavor
 from zenml.deployers.server.fastapi.adapters import (
     FastAPIEndpointAdapter,
     FastAPIMiddlewareAdapter,
@@ -58,6 +64,15 @@ logger = get_logger(__name__)
 
 class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
     """FastAPI deployment app runner."""
+
+    @property
+    def flavor(cls) -> "BaseDeploymentAppRunnerFlavor":
+        """Return the flavor associated with this deployment application runner.
+
+        Returns:
+            The flavor associated with this deployment application runner.
+        """
+        return FastAPIDeploymentAppRunnerFlavor()
 
     def _create_endpoint_adapter(self) -> EndpointAdapter:
         """Create FastAPI endpoint adapter.
@@ -92,41 +107,6 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             native=True,
         )
 
-    def root_endpoint(self) -> HTMLResponse:
-        """Root endpoint.
-
-        Returns:
-            The root content.
-        """
-        info = self.service.get_service_info()
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{self.settings.app_title or f"ZenML Pipeline Deployment `{self.deployment.name}`"}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                .header {{ color: #2563eb; }}
-                .section {{ margin: 20px 0; }}
-                .status {{ padding: 5px 10px; border-radius: 4px; background: #10b981; color: white; }}
-            </style>
-        </head>
-        <body>
-            <h1 class="header">🚀 ZenML Pipeline Deployment</h1>
-            <div class="section">
-                <h2>Service Status</h2>
-                <p>Status: <span class="status">Running</span></p>
-                <p>Pipeline: <strong>{info.pipeline.name}</strong></p>
-            </div>
-            <div class="section">
-                <h2>Documentation</h2>
-                <p><a href="{self.settings.docs_url_path}">📖 Interactive API Documentation</a></p>
-            </div>
-        </body>
-        </html>
-        """
-        return HTMLResponse(html_content)
-
     def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
         """Get the dashboard endpoints specs.
 
@@ -135,33 +115,79 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
         Returns:
             The dashboard endpoints specs.
+
+        Raises:
+            ValueError: If the index HTML file is not found in the dashboard
+                files path.
         """
-        # @app.get(
-        #     API + "/{invalid_api_path:path}", status_code=404, include_in_schema=False
-        # )
-        # async def invalid_api(invalid_api_path: str) -> None:
-        #     """Invalid API endpoint.
-
-        #     All API endpoints that are not defined in the API routers will be
-        #     redirected to this endpoint and will return a 404 error.
-
-        #     Args:
-        #         invalid_api_path: Invalid API path.
-
-        #     Raises:
-        #         HTTPException: 404 error.
-        #     """
-        #     logger.debug(f"Invalid API path requested: {invalid_api_path}")
-        #     raise HTTPException(status_code=404)
         dashboard_files_path = self.dashboard_files_path()
-        if not dashboard_files_path:
+        if not dashboard_files_path or not os.path.isdir(dashboard_files_path):
             return []
 
-        root_static_files = self.get_root_static_files()
-        assets_static_files_endpoint = StaticFiles(
-            directory=os.path.join(dashboard_files_path, "assets"),
-            check_dir=False,
-        )
+        endpoints: List[EndpointSpec] = []
+
+        async def catch_invalid_api(invalid_api_path: str) -> None:
+            """Invalid API endpoint.
+
+            All API endpoints that are not defined in the API routers will be
+            caught by this endpoint and will return a 404 error.
+
+            Args:
+                invalid_api_path: Invalid API path.
+
+            Raises:
+                HTTPException: 404 error.
+            """
+            logger.debug(f"Invalid API path requested: {invalid_api_path}")
+            raise HTTPException(status_code=404)
+
+        if self.settings.api_url_path:
+            endpoints.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}"
+                    + "/{invalid_api_path:path}",
+                    method=EndpointMethod.GET,
+                    handler=SourceOrObject(catch_invalid_api),
+                    native=True,
+                    extra_kwargs=dict(
+                        include_in_schema=False,
+                    ),
+                )
+            )
+
+        static_files = []
+        static_directories = []
+        index_html_path = None
+        for file in os.listdir(dashboard_files_path):
+            if file in ["index.html", "index.htm"]:
+                # this is served separately
+                index_html_path = os.path.join(dashboard_files_path, file)
+                continue
+            if isfile(os.path.join(dashboard_files_path, file)):
+                static_files.append(file)
+            elif isdir(os.path.join(dashboard_files_path, file)):
+                static_directories.append(file)
+
+        if index_html_path is None:
+            raise ValueError(
+                f"Index HTML file not found in the dashboard files path: "
+                f"{dashboard_files_path}"
+            )
+
+        for static_dir in static_directories:
+            static_files_endpoint = StaticFiles(
+                directory=os.path.join(dashboard_files_path, static_dir),
+                check_dir=False,
+            )
+            endpoints.append(
+                EndpointSpec(
+                    path=f"/{static_dir}",
+                    method=EndpointMethod.GET,
+                    handler=SourceOrObject(static_files_endpoint),
+                    native=True,
+                    auth_required=False,
+                )
+            )
 
         templates = Jinja2Templates(directory=dashboard_files_path)
 
@@ -177,25 +203,22 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             """
             # some static files need to be served directly from the root dashboard
             # directory
-            if file_path and file_path in root_static_files:
+            if file_path and file_path in static_files:
                 logger.debug(f"Returning static file: {file_path}")
                 full_path = os.path.join(dashboard_files_path, file_path)
                 return FileResponse(full_path)
 
             # everything else is directed to the index.html file that hosts the
-            # single-page application
+            # single-page application - this is to support client-side routing
             return templates.TemplateResponse(
-                "index.html", {"request": request}
+                "index.html",
+                dict(
+                    request=request,
+                    service_info_json=self.service.get_service_info(),
+                ),
             )
 
-        return [
-            EndpointSpec(
-                path="/assets",
-                method=EndpointMethod.GET,
-                handler=SourceOrObject(assets_static_files_endpoint),
-                native=True,
-                auth_required=False,
-            ),
+        endpoints.append(
             EndpointSpec(
                 path="/{file_path:path}",
                 method=EndpointMethod.GET,
@@ -206,7 +229,9 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
                     include_in_schema=False,
                 ),
             ),
-        ]
+        )
+
+        return endpoints
 
     def error_handler(self, request: Request, exc: ValueError) -> JSONResponse:
         """FastAPI error handler.
@@ -267,12 +292,6 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
         # Bind the app runner to the app state
         asgi_app.state.app_runner = self
-
-        if (
-            self.settings.include_default_endpoints
-            and not self.settings.dashboard_files_path
-        ):
-            asgi_app.get("/")(self.root_endpoint)
         asgi_app.exception_handler(Exception)(self.error_handler)
 
         self.register_middlewares(*middlewares)
