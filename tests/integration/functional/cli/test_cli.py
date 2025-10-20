@@ -16,15 +16,17 @@ import os
 
 import click
 import pytest
-from click.testing import CliRunner
 
+from tests.integration.functional.cli.utils import (
+    cli_runner as create_cli_runner,
+)
 from zenml.cli.cli import ZenMLCLI, cli
 from zenml.cli.formatter import ZenFormatter
 
 
 @pytest.fixture(scope="function")
 def runner(request):
-    return CliRunner()
+    return create_cli_runner()
 
 
 def test_cli_command_defines_a_cli_group() -> None:
@@ -57,7 +59,7 @@ def test_cli_sets_custom_source_root_if_outside_of_repository(
     mock_set_custom_source_root = mocker.patch(
         "zenml.utils.source_utils.set_custom_source_root"
     )
-    runner = CliRunner()
+    runner = create_cli_runner()
 
     # Invoke a subcommand so the root CLI group gets called
     runner.invoke(cli, ["version"])
@@ -73,7 +75,7 @@ def test_cli_does_not_set_custom_source_root_if_inside_repository(
     mock_set_custom_source_root = mocker.patch(
         "zenml.utils.source_utils.set_custom_source_root"
     )
-    runner = CliRunner()
+    runner = create_cli_runner()
 
     # Invoke a subcommand so the root CLI group gets called
     runner.invoke(cli, ["version"])
