@@ -176,7 +176,7 @@ def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
     # Special case for `tuple[()]`, which used to return ((),) with
     # `typing.Tuple in python 3.10- but now returns () for `tuple` and `Tuple`.
     try:
-        if tp == Tuple[()] or sys.version_info >= (3, 9) and tp == tuple[()]:
+        if tp == Tuple[()] or tp == tuple[()]:  # type: ignore[comparison-overlap]
             return ((),)
     # there is a TypeError when compiled with cython
     except TypeError:  # pragma: no cover
