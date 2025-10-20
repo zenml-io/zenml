@@ -13,16 +13,28 @@
 #  permissions and limitations under the License.
 """Helper functions to format output for CLI."""
 
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 from click import formatting
 
-try:
-    # Prefer the public API available in newer Click versions
-    from click.utils import term_len  # type: ignore[attr-defined]
-except Exception:
-    # Fallback for older Click versions
-    from click._compat import term_len  # type: ignore[attr-defined]
+if TYPE_CHECKING:
+    from typing import Callable
+
+    term_len: Callable[[str], int]
+else:
+    try:
+        from click.utils import term_len
+    except Exception:
+        from click._compat import term_len
 
 
 def _safe_width(

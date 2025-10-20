@@ -140,7 +140,7 @@ class ZenMLCLI(click.Group):
                 if isinstance(formatter, ZenFormatter):
                     section_title = "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
                     with formatter.section(section_title):
-                        formatter.write_dl(rows)  # type: ignore[arg-type]
+                        formatter.write_dl(rows)
                 else:
                     # Fallback: use simple pairs without category and avoid rich markup in header
                     section_title = "Available ZenML Commands"
