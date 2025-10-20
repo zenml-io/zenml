@@ -15,6 +15,7 @@
 
 from typing import (
     TYPE_CHECKING,
+    Callable,
     Dict,
     Iterable,
     Iterator,
@@ -27,8 +28,6 @@ from typing import (
 from click import formatting
 
 if TYPE_CHECKING:
-    from typing import Callable
-
     term_len: Callable[[str], int]
 else:
     try:
