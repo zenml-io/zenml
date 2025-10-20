@@ -137,16 +137,24 @@ class ZenMLCLI(click.Group):
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))
             if rows:
-                colored_section_title = (
-                    "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
-                )
-                with formatter.section(colored_section_title):
-                    formatter.write_dl(rows)  # type: ignore[arg-type]
+                if isinstance(formatter, ZenFormatter):
+                    section_title = "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
+                    with formatter.section(section_title):
+                        formatter.write_dl(rows)  # type: ignore[arg-type]
+                else:
+                    # Fallback: use simple pairs without category and avoid rich markup in header
+                    section_title = "Available ZenML Commands"
+                    with formatter.section(section_title):
+                        pair_rows: List[Tuple[str, str]] = [
+                            (subcmd, help_) for _, subcmd, help_ in rows
+                        ]
+                        formatter.write_dl(pair_rows)
 
 
-@click.group(cls=ZenMLCLI)
+@click.group(cls=ZenMLCLI, invoke_without_command=True)
 @click.version_option(__version__, "--version", "-v")
-def cli() -> None:
+@click.pass_context
+def cli(ctx: click.Context) -> None:
     """CLI base command for ZenML."""
     set_root_verbosity()
     source_context.set(SourceContextTypes.CLI)
@@ -157,6 +165,15 @@ def cli() -> None:
         # as a source root is the CLI script located in the python site
         # packages directory
         source_utils.set_custom_source_root(source_root=os.getcwd())
+
+    # Manually show help and exit with code 0 when invoked without a subcommand.
+    # Click 8.2+ raises NoArgsIsHelpError before the callback runs when
+    # no_args_is_help=True. By relying solely on invoke_without_command=True
+    # and handling help here, we ensure consistent behavior across Click
+    # versions while leveraging our custom help formatter in ZenMLCLI.get_help().
+    if ctx.invoked_subcommand is None and not ctx.resilient_parsing:
+        ctx.command.get_help(ctx)
+        ctx.exit(0)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,29 @@
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
 from click import formatting
-from click._compat import term_len
+
+try:
+    # Prefer the public API available in newer Click versions
+    from click.utils import term_len  # type: ignore[attr-defined]
+except Exception:
+    # Fallback for older Click versions
+    from click._compat import term_len  # type: ignore[attr-defined]
+
+
+def _safe_width(
+    width: Optional[int], max_width: Optional[int], default: int = 80
+) -> int:
+    """Return a non-None width value suitable for wrapping.
+
+    Click sets width to None in some non-interactive contexts. This helper
+    ensures we always get a valid integer width, preferring the explicit width
+    first, then max_width, then a sensible default.
+    """
+    if isinstance(width, int) and width > 0:
+        return width
+    if isinstance(max_width, int) and max_width > 0:
+        return max_width
+    return default
 
 
 def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
@@ -137,12 +159,14 @@ class ZenFormatter(formatting.HelpFormatter):
                 "Expected three columns for tagged definition list entries."
             )
 
+        # Compute target column offsets with spacing applied
         first_col = min(widths[0], col_max) + col_spacing
         second_col = min(widths[1], col_max) + col_spacing * 2
 
         current_tag: Optional[str] = None
 
         for first, second, third in iter_rows(rows, 3):
+            # Print a category header when the tag changes
             if current_tag != first:
                 current_tag = first
                 self.write("\n")
@@ -150,33 +174,41 @@ class ZenFormatter(formatting.HelpFormatter):
                     f"[#431d93]{'':>{self.current_indent}}{first}:[/#431d93]\n"
                 )
 
+            # Preserve behavior for empty third-column values
             if not third:
                 self.write("\n")
                 continue
 
+            # Layout for the command name column
             if term_len(first) <= first_col - col_spacing:
-                self.write(" " * self.current_indent * 2)
+                self.write(" " * (self.current_indent * 2))
             else:
                 self.write("\n")
                 self.write(" " * (first_col + self.current_indent))
 
+            # Command name with current indentation
             self.write(f"{'':>{self.current_indent}}{second}")
 
-            text_width = max(self.width - second_col - 4, 10)
+            # Wrap and render the description using a safe width calculation
+            effective_width = _safe_width(
+                self.width, getattr(self, "max_width", None)
+            )
+            text_width = max(effective_width - second_col - 4, 10)
             wrapped_text = formatting.wrap_text(
                 third, text_width, preserve_paragraphs=True
             )
             lines = wrapped_text.splitlines()
 
             if lines:
+                # First line appears on the same row as the command name
                 self.write(
                     " " * (second_col - term_len(second) + self.current_indent)
                 )
                 self.write(f"{lines[0]}\n")
 
+                # Continuation lines align with the description column
                 for line in lines[1:]:
-                    self.write(
-                        f"{'':>{second_col + self.current_indent * 4}}{line}\n"
-                    )
+                    self.write(" " * (second_col + self.current_indent))
+                    self.write(f"{line}\n")
             else:
                 self.write("\n")
