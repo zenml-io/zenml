@@ -72,7 +72,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
     is_custom_deployment: Optional[bool] = False
-    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)  # type: ignore[arg-type]
+    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
     serviceAccountName: Optional[str] = None
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:

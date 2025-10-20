@@ -710,7 +710,7 @@ Learn more: [Models](https://docs.zenml.io/concepts/models#tracking-metrics-and-
 ```bash
 # 1. Create a Dockerfile for your parent image
 cat > Dockerfile.parent << EOF
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

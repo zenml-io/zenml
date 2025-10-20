@@ -207,6 +207,6 @@ def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
             if method_name not in interface.__abstractmethods__
         )
 
-        return cast(C, _cls)
+        return cast(C, _cls)  # type: ignore[redundant-cast]
 
     return _inner_decorator

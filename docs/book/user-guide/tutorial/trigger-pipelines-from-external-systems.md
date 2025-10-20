@@ -576,7 +576,7 @@ if __name__ == "__main__":
 Create a `Dockerfile` to containerize your API:
 
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
