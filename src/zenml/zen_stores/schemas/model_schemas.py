@@ -140,6 +140,7 @@ class ModelSchema(NamedSchema, table=True):
                 "foreign(CuratedVisualizationSchema.resource_id)==ModelSchema.id)"
             ),
             overlaps="visualizations",
+            cascade="all, delete-orphan",
         ),
     )
 

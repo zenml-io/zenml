@@ -91,15 +91,20 @@ from zenml.models import (
     APIKeyRequest,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ArtifactRequest,
     ArtifactVersionFilter,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVisualizationRequest,
     ComponentFilter,
+    ComponentRequest,
     ComponentUpdate,
     CuratedVisualizationRequest,
     CuratedVisualizationUpdate,
     DeploymentRequest,
+    ModelFilter,
+    ModelRequest,
+    ModelUpdate,
     ModelVersionArtifactFilter,
     ModelVersionArtifactRequest,
     ModelVersionFilter,
@@ -109,10 +114,12 @@ from zenml.models import (
     ModelVersionUpdate,
     PipelineRequest,
     PipelineRunFilter,
+    PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotRequest,
     ProjectFilter,
     ProjectUpdate,
+    RunMetadataRequest,
     RunMetadataResource,
     ScheduleRequest,
     ServiceAccountFilter,
@@ -125,19 +132,14 @@ from zenml.models import (
     StackRequest,
     StackUpdate,
     StepRunFilter,
+    StepRunRequest,
     StepRunUpdate,
     TagResourceRequest,
+    UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
 )
-from zenml.models.v2.core.artifact import ArtifactRequest
-from zenml.models.v2.core.component import ComponentRequest
-from zenml.models.v2.core.model import ModelFilter, ModelRequest, ModelUpdate
-from zenml.models.v2.core.pipeline_run import PipelineRunRequest
-from zenml.models.v2.core.run_metadata import RunMetadataRequest
-from zenml.models.v2.core.step_run import StepRunRequest
-from zenml.models.v2.core.user import UserFilter
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.rest_zen_store import RestZenStore
@@ -5770,13 +5772,6 @@ class TestCuratedVisualizations:
         client = Client()
         project_id = client.active_project.id
 
-        artifact = client.zen_store.create_artifact(
-            ArtifactRequest(
-                name=sample_name("artifact"),
-                project=project_id,
-                has_custom_name=True,
-            )
-        )
         resource_configs = [
             {
                 "resource_type": VisualizationResourceTypes.PIPELINE,
@@ -5803,27 +5798,42 @@ class TestCuratedVisualizations:
                 "resource_id": None,
             },
         ]
-        artifact_version = client.zen_store.create_artifact_version(
-            ArtifactVersionRequest(
-                artifact_id=artifact.id,
-                project=project_id,
-                version="1",
-                type=ArtifactType.DATA,
-                uri=sample_name("artifact_uri"),
-                materializer=Source(
-                    module="acme.foo", type=SourceType.INTERNAL
-                ),
-                data_type=Source(module="acme.foo", type=SourceType.INTERNAL),
-                save_type=ArtifactSaveType.STEP_OUTPUT,
-                visualizations=[
-                    ArtifactVisualizationRequest(
-                        type=VisualizationType.HTML,
-                        uri=f"s3://visualizations/{config['resource_type'].value}_{index}.html",
-                    )
-                    for index, config in enumerate(resource_configs)
-                ],
+
+        def create_artifact_version():
+            artifact = client.zen_store.create_artifact(
+                ArtifactRequest(
+                    name=sample_name("artifact"),
+                    project=project_id,
+                    has_custom_name=True,
+                )
             )
-        )
+            artifact_version = client.zen_store.create_artifact_version(
+                ArtifactVersionRequest(
+                    artifact_id=artifact.id,
+                    project=project_id,
+                    version="1",
+                    type=ArtifactType.DATA,
+                    uri=sample_name("artifact_uri"),
+                    materializer=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                    data_type=Source(
+                        module="acme.foo", type=SourceType.INTERNAL
+                    ),
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
+                    visualizations=[
+                        ArtifactVisualizationRequest(
+                            type=VisualizationType.HTML,
+                            uri=f"s3://visualizations/{config['resource_type'].value}_{index}.html",
+                        )
+                        for index, config in enumerate(resource_configs)
+                    ],
+                )
+            )
+
+            return artifact, artifact_version
+
+        artifact, artifact_version = create_artifact_version()
 
         pipeline_model = client.zen_store.create_pipeline(
             PipelineRequest(
@@ -5874,29 +5884,14 @@ class TestCuratedVisualizations:
             )
         )
 
-        # Try to find a deployer component from active stack first
-        deployer_id = None
-        active_stack_model = client.active_stack_model
-        if StackComponentType.MODEL_DEPLOYER in active_stack_model.components:
-            deployer_components = active_stack_model.components[
-                StackComponentType.MODEL_DEPLOYER
-            ]
-            if deployer_components:
-                deployer_id = deployer_components[0].id
-
-        if deployer_id is None:
-            # Fall back to listing all MODEL_DEPLOYER components
-            deployers = client.zen_store.list_stack_components(
-                ComponentFilter(type=StackComponentType.MODEL_DEPLOYER)
+        deployer = client.zen_store.create_stack_component(
+            ComponentRequest(
+                name=sample_name("foo"),
+                type=StackComponentType.DEPLOYER,
+                flavor="docker",
+                configuration={},
             )
-            if deployers.total > 0:
-                deployer_id = deployers.items[0].id
-
-        if deployer_id is None:
-            pytest.skip(
-                "No deployer component available in the active stack or registered components. "
-                "Skipping deployment curated visualization test."
-            )
+        )
 
         # Create a deployment
         deployment = client.zen_store.create_deployment(
@@ -5904,18 +5899,11 @@ class TestCuratedVisualizations:
                 project=project_id,
                 name=sample_name("deployment"),
                 snapshot_id=snapshot.id,
-                deployer_id=deployer_id,
+                deployer_id=deployer.id,
             )
         )
 
-        try:
-            resource_configs[0]["resource_id"] = pipeline_model.id
-            resource_configs[1]["resource_id"] = model.id
-            resource_configs[2]["resource_id"] = pipeline_run.id
-            resource_configs[3]["resource_id"] = snapshot.id
-            resource_configs[4]["resource_id"] = deployment.id
-            resource_configs[5]["resource_id"] = project_id
-
+        def create_visualizations(artifact_version):
             visualizations = {}
             for idx, config in enumerate(resource_configs):
                 resource_type = config["resource_type"]
@@ -5940,6 +5928,17 @@ class TestCuratedVisualizations:
                     hydrated.layout_size == CuratedVisualizationSize.FULL_WIDTH
                 )
                 visualizations[resource_type] = viz
+            return visualizations
+
+        try:
+            resource_configs[0]["resource_id"] = pipeline_model.id
+            resource_configs[1]["resource_id"] = model.id
+            resource_configs[2]["resource_id"] = pipeline_run.id
+            resource_configs[3]["resource_id"] = snapshot.id
+            resource_configs[4]["resource_id"] = deployment.id
+            resource_configs[5]["resource_id"] = project_id
+
+            visualizations = create_visualizations(artifact_version)
 
             loaded = client.zen_store.get_curated_visualization(
                 visualizations[VisualizationResourceTypes.PIPELINE].id,
@@ -5987,9 +5986,100 @@ class TestCuratedVisualizations:
             for viz in visualizations.values():
                 with pytest.raises(KeyError):
                     client.zen_store.get_curated_visualization(viz.id)
-        finally:
+
+            visualizations = create_visualizations(artifact_version)
+
+            # Clean up artifact
+            client.zen_store.delete_artifact(artifact.id)
+
+            # Check that all visualizations have been auto-deleted
+            for viz in visualizations.values():
+                with pytest.raises(KeyError):
+                    client.zen_store.get_curated_visualization(viz.id)
+
+            artifact, artifact_version = create_artifact_version()
+            visualizations = create_visualizations(artifact_version)
+
             # Clean up deployment
             client.zen_store.delete_deployment(deployment.id)
+
+            with pytest.raises(KeyError):
+                client.zen_store.get_curated_visualization(
+                    visualizations[VisualizationResourceTypes.DEPLOYMENT].id
+                )
+
+            # Clean up pipeline run
+            client.zen_store.delete_run(pipeline_run.id)
+            with pytest.raises(KeyError):
+                client.zen_store.get_curated_visualization(
+                    visualizations[VisualizationResourceTypes.PIPELINE_RUN].id
+                )
+
+            # Clean up model
+            client.zen_store.delete_model(model.id)
+            with pytest.raises(KeyError):
+                client.zen_store.get_curated_visualization(
+                    visualizations[VisualizationResourceTypes.MODEL].id
+                )
+
+            # Clean up snapshot
+            client.zen_store.delete_snapshot(snapshot.id)
+            with pytest.raises(KeyError):
+                client.zen_store.get_curated_visualization(
+                    visualizations[
+                        VisualizationResourceTypes.PIPELINE_SNAPSHOT
+                    ].id
+                )
+
+            # Clean up pipeline
+            client.zen_store.delete_pipeline(pipeline_model.id)
+            with pytest.raises(KeyError):
+                client.zen_store.get_curated_visualization(
+                    visualizations[VisualizationResourceTypes.PIPELINE].id
+                )
+
+        finally:
+            # Clean up deployment
+            try:
+                client.zen_store.delete_deployment(deployment.id)
+            except KeyError:
+                pass
+
+            # Clean up pipeline run
+            try:
+                client.zen_store.delete_run(pipeline_run.id)
+            except KeyError:
+                pass
+
+            # Clean up model
+            try:
+                client.zen_store.delete_model(model.id)
+            except KeyError:
+                pass
+
+            # Clean up snapshot
+            try:
+                client.zen_store.delete_snapshot(snapshot.id)
+            except KeyError:
+                pass
+
+            # Clean up pipeline
+            try:
+                client.zen_store.delete_pipeline(pipeline_model.id)
+            except KeyError:
+                pass
+
+            # Clean up deployer
+            try:
+                client.zen_store.delete_stack_component(deployer.id)
+            except KeyError:
+                pass
+
+            # Clean up artifact
+            try:
+                client.zen_store.delete_artifact(artifact.id)
+            except KeyError:
+                pass
 
     def test_curated_visualizations_project_only(self):
         """Test project-level curated visualizations with single resource."""

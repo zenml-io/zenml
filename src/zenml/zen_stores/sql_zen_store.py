@@ -69,7 +69,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, func, update
+from sqlalchemy import QueuePool, event, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -1261,6 +1261,14 @@ class SqlZenStore(BaseZenStore):
             connect_args=connect_args,
             engine_args=engine_args,
         )
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # Enable foreign key checks at the SQLite database level
+            @event.listens_for(self._engine, "connect")
+            def _(dbapi_connection: Any, connection_record: Any) -> None:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
@@ -5609,13 +5617,13 @@ class SqlZenStore(BaseZenStore):
     def update_curated_visualization(
         self,
         visualization_id: UUID,
-        update: CuratedVisualizationUpdate,
+        visualization_update: CuratedVisualizationUpdate,
     ) -> CuratedVisualizationResponse:
         """Update mutable fields on a curated visualization.
 
         Args:
             visualization_id: The ID of the curated visualization to update.
-            update: The update to apply to the curated visualization.
+            visualization_update: The update to apply to the curated visualization.
 
         Returns:
             The updated curated visualization.
@@ -5626,7 +5634,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=CuratedVisualizationSchema,
                 session=session,
             )
-            schema.update(update)
+            schema.update(visualization_update)
             session.add(schema)
             session.commit()
             session.refresh(schema)

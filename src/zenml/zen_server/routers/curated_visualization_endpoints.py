@@ -115,9 +115,6 @@ def get_curated_visualization(
 
     Returns:
         The curated visualization with the given ID.
-
-    Raises:
-        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     hydrated_visualization = store.get_curated_visualization(
@@ -150,9 +147,6 @@ def update_curated_visualization(
 
     Returns:
         The updated curated visualization.
-
-    Raises:
-        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     existing_visualization = store.get_curated_visualization(
@@ -182,9 +176,6 @@ def delete_curated_visualization(
 
     Args:
         visualization_id: The ID of the curated visualization to delete.
-
-    Raises:
-        RuntimeError: If the curated visualization is missing its resource identifier or type.
     """
     store = zen_store()
     existing_visualization = store.get_curated_visualization(

@@ -137,6 +137,7 @@ class ProjectSchema(NamedSchema, table=True):
                 "foreign(CuratedVisualizationSchema.resource_id)==ProjectSchema.id)"
             ),
             overlaps="visualizations",
+            cascade="all, delete-orphan",
         ),
     )
 
