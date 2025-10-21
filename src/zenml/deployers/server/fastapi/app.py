@@ -86,7 +86,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         """
         return FastAPIMiddlewareAdapter()
 
-    def _get_cors_middleware(self) -> MiddlewareSpec:
+    def _build_cors_middleware(self) -> MiddlewareSpec:
         """Get the CORS middleware.
 
         Returns:

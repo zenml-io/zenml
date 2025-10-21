@@ -648,65 +648,117 @@ You can supply either a callable or a class. The adapter passes `app_runner` int
 
 The extensions are installed into the ASGI near the end of the process - after the ASGI app has been built according to the deployment settings.
 
-Callable extension:
+The example below installs API key authentication at the FastAPI application
+level, attaches the dependency to selected routes, registers an auth error
+handler, and augments the OpenAPI schema with the security scheme.
 
 ```python
-from typing import Dict
-from zenml.config import DeploymentSettings, AppExtensionSpec
+from __future__ import annotations
 
-def install_admin(app_runner, **kwargs) -> None:
-    # Example: mount a small router or serve an internal admin page
-    app = app_runner.asgi_app
-    try:
-        from fastapi import APIRouter
+from typing import Literal, Sequence, Set
 
-        router = APIRouter()
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
+from fastapi.security import APIKeyHeader
 
-        @router.get("/admin/ping")
-        def ping() -> Dict[str, str]:
-            return {"pong": "ok"}
-
-        app.include_router(router)
-    except Exception:
-        # Fallback across frameworks (no-op)
-        pass
-
-settings = DeploymentSettings(
-    app_extensions=[AppExtensionSpec(extension=install_admin)]
-)
-```
-
-Class-based extension:
-
-```python
-from typing import Dict
 from zenml.config import AppExtensionSpec, DeploymentSettings
+from zenml.deployers.server.app import BaseDeploymentAppRunner
+from zenml.deployers.server.extensions import BaseAppExtension
 
-class MetricsExtension:
-    def __init__(self, namespace: str = "app") -> None:
-        self.namespace = namespace
 
-    def install(self, app_runner, **kwargs) -> None:
-        # Example: register metrics endpoints/handlers
+class FastAPIAuthExtension(BaseAppExtension):
+    """Install API key auth and OpenAPI security on a FastAPI app."""
+
+    def __init__(
+        self,
+        scheme: Literal["api_key"] = "api_key",
+        header_name: str = "x-api-key",
+        valid_keys: Sequence[str] | None = None,
+        protect_paths_prefix: str = "/api",
+    ) -> None:
+        self.scheme = scheme
+        self.header_name = header_name
+        self.valid_keys: Set[str] = set(valid_keys or [])
+        self.protect_paths_prefix = protect_paths_prefix
+
+    def install(self, app_runner: BaseDeploymentAppRunner, **_: object) -> None:
         app = app_runner.asgi_app
-        try:
-            from fastapi import APIRouter
+        if not isinstance(app, FastAPI):
+            raise RuntimeError("FastAPIAuthExtension requires FastAPI")
 
-            router = APIRouter()
+        api_key_header = APIKeyHeader(
+            name=self.header_name, auto_error=False
+        )
 
-            @router.get("/metrics/namespace")
-            def ns() -> Dict[str, str]:
-                return {"namespace": self.namespace}
+        async def verify_api_key(
+            api_key: str | None = Depends(api_key_header),
+        ) -> None:
+            if not api_key or api_key not in self.valid_keys:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or missing API key",
+                )
 
-            app.include_router(router)
-        except Exception:
-            pass
+        # Attach dependency to protected routes
+        for route in app.routes:
+            if isinstance(route, APIRoute) and route.path.startswith(
+                self.protect_paths_prefix
+            ):
+                route.dependencies.append(Depends(verify_api_key))
+
+        # Auth error handler
+        @app.exception_handler(HTTPException)
+        async def auth_exception_handler(
+            _, exc: HTTPException
+        ) -> JSONResponse:
+            if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+                return JSONResponse(
+                    status_code=exc.status_code,
+                    content={"detail": exc.detail},
+                    headers={"WWW-Authenticate": "ApiKey"},
+                )
+            return JSONResponse(
+                status_code=exc.status_code, content={"detail": exc.detail}
+            )
+
+        # OpenAPI security
+        def custom_openapi() -> dict:
+            if app.openapi_schema:
+                return app.openapi_schema  # type: ignore[return-value]
+            openapi_schema = get_openapi(
+                title=app.title,
+                version=app.version if app.version else "0.1.0",
+                description=app.description,
+                routes=app.routes,
+            )
+            components = openapi_schema.setdefault("components", {})
+            security_schemes = components.setdefault("securitySchemes", {})
+            security_schemes["ApiKeyAuth"] = {
+                "type": "apiKey",
+                "in": "header",
+                "name": self.header_name,
+            }
+            openapi_schema["security"] = [{"ApiKeyAuth": []}]
+            app.openapi_schema = openapi_schema
+            return openapi_schema
+
+        app.openapi = custom_openapi  # type: ignore[assignment]
+
 
 settings = DeploymentSettings(
     app_extensions=[
         AppExtensionSpec(
-            extension=MetricsExtension,
-            extension_kwargs={"namespace": "scoring"},
+            extension=(
+                "my_project.extensions.FastAPIAuthExtension"
+            ),
+            extension_kwargs={
+                "scheme": "api_key",
+                "header_name": "x-api-key",
+                "valid_keys": ["secret-1", "secret-2"],
+                "protect_paths_prefix": "/api",
+            },
         )
     ]
 )

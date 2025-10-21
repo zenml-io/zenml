@@ -118,7 +118,7 @@ class BaseDeploymentAppRunner(ABC):
     deployment configuration. Only required if the dashboard files path is set
     in the deployment configuration and the app runner supports serving a
     dashboard alongside the API.
-    * _get_cors_middleware: Builds the CORS middleware from the CORS settings
+    * _build_cors_middleware: Builds the CORS middleware from the CORS settings
     in the deployment configuration.
     """
 
