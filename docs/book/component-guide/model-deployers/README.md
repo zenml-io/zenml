@@ -8,7 +8,7 @@ description: Deploying your models and serve real-time predictions.
 {% hint style="warning" %}
 **DEPRECATION NOTICE**
 
-The Model Deployer stack component is deprecated in favor of the more flexible [**Deployer**](https://docs.zenml.io/component-guide/deployers) component and [**Pipeline Deployments**](https://docs.zenml.io/how-to/deployment).
+The Model Deployer stack component is deprecated in favor of the more flexible [**Deployer**](https://docs.zenml.io/stacks/stack-components/deployers) component and [**Pipeline Deployments**](https://docs.zenml.io/how-to/deployment).
 
 The Model Deployer abstraction focused exclusively on single-model serving, but modern ML workflows often require multi-step pipelines with preprocessing, tool integration, and custom business logic. The new Pipeline Deployment paradigm provides:
 
