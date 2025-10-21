@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -83,18 +83,18 @@ class BaseEntrypointConfiguration(ABC):
         return DEFAULT_ENTRYPOINT_COMMAND
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
-            A set of strings with all required options.
+            A dictionary of options and whether they are required.
         """
         return {
             # Importable source pointing to the entrypoint configuration class
             # that should be used inside the entrypoint.
-            ENTRYPOINT_CONFIG_SOURCE_OPTION,
+            ENTRYPOINT_CONFIG_SOURCE_OPTION: True,
             # ID of the pipeline snapshot to use in this entrypoint
-            SNAPSHOT_ID_OPTION,
+            SNAPSHOT_ID_OPTION: True,
         }
 
     @classmethod
@@ -178,13 +178,13 @@ class BaseEntrypointConfiguration(ABC):
 
         parser = _CustomParser()
 
-        for option_name in cls.get_entrypoint_options():
+        for option_name, required in cls.get_entrypoint_options().items():
             if option_name == ENTRYPOINT_CONFIG_SOURCE_OPTION:
                 # This option is already used by
                 # `zenml.entrypoints.entrypoint` to read which config
                 # class to use
                 continue
-            parser.add_argument(f"--{option_name}", required=True)
+            parser.add_argument(f"--{option_name}", required=required)
 
         result, _ = parser.parse_known_args(arguments)
         return vars(result)

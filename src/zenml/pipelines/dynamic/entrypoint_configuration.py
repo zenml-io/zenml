@@ -27,7 +27,7 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a pipeline."""
 
-from typing import Any, List, Set
+from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -44,14 +44,14 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
     """Base class for entrypoint configurations that run an entire pipeline."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the name of the
             step to run.
         """
-        return super().get_entrypoint_options() | {RUN_ID_OPTION}
+        return super().get_entrypoint_options() | {RUN_ID_OPTION: False}
 
     @classmethod
     def get_entrypoint_arguments(
@@ -73,10 +73,15 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
             The superclass arguments as well as arguments for the name of the
             step to run.
         """
-        return super().get_entrypoint_arguments(**kwargs) + [
-            f"--{RUN_ID_OPTION}",
-            str(kwargs[RUN_ID_OPTION]),
-        ]
+        args = super().get_entrypoint_arguments(**kwargs)
+        if RUN_ID_OPTION in kwargs:
+            args.extend(
+                [
+                    f"--{RUN_ID_OPTION}",
+                    str(kwargs[RUN_ID_OPTION]),
+                ]
+            )
+        return args
 
     def run(self) -> None:
         """Prepares the environment and runs the configured pipeline."""
@@ -88,9 +93,9 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
         self.download_code_if_necessary(snapshot=snapshot)
 
-        # TODO: make this optional
-        run_id = UUID(self.entrypoint_args[RUN_ID_OPTION])
-        run = Client().get_pipeline_run(run_id)
+        run = None
+        if run_id := self.entrypoint_args.get(RUN_ID_OPTION, None):
+            run = Client().get_pipeline_run(UUID(run_id))
 
         runner = DynamicPipelineRunner(snapshot=snapshot, run=run)
         runner.run_pipeline()

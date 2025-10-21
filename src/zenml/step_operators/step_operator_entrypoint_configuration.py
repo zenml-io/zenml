@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Set
+from ast import Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -36,14 +37,14 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
     """Base class for step operator entrypoint configurations."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the step run id.
         """
         return super().get_entrypoint_options() | {
-            STEP_RUN_ID_OPTION,
+            STEP_RUN_ID_OPTION: True,
         }
 
     @classmethod
