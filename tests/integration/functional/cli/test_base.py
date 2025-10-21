@@ -85,3 +85,33 @@ def test_clean_user_config(clean_client) -> None:
     assert user_id == new_yaml_contents["user_id"]
     assert analytics_opt_in == new_yaml_contents["analytics_opt_in"]
     assert version == new_yaml_contents["version"]
+
+
+def test_clean_calls_store_close(monkeypatch, clean_client) -> None:
+    # Import locally to avoid modifying module-level imports
+    from zenml.config.global_config import GlobalConfiguration
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+    # Track whether close was called
+    called = {"closed": False}
+
+    # Keep reference to the original close to preserve behavior
+    orig_close = SqlZenStore.close
+
+    def tracked_close(self):
+        called["closed"] = True
+        # Call through to the original to keep cleanup behavior intact
+        return orig_close(self)
+
+    # Patch the close method
+    monkeypatch.setattr(SqlZenStore, "close", tracked_close, raising=True)
+
+    # Ensure the store is initialized in this process so there is something to close
+    _ = GlobalConfiguration().zen_store
+
+    # Run clean
+    result = cli_runner().invoke(clean, ["--yes"])
+    assert result.exit_code == 0, f"Command failed: {result.output}"
+
+    # Verify that our close hook was executed
+    assert called["closed"] is True

@@ -170,6 +170,17 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                 singleton. If None, the global GlobalConfiguration singleton is
                 reset to an empty value.
         """
+        # Proactively dispose resources held by the current singleton instance
+        # to avoid file-handle issues on platforms like Windows.
+        if cls._global_config is not None:
+            try:
+                cls._global_config.close_store()
+            except Exception:
+                logger.debug(
+                    "Failed to close store during GlobalConfiguration reset.",
+                    exc_info=True,
+                )
+
         cls._global_config = config
         if config:
             config._write_config()
@@ -700,6 +711,30 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         config = self._get_store_configuration(baseline=config)
         self._configure_store(config, skip_default_registrations, **kwargs)
         logger.info("Updated the global store configuration.")
+
+    def close_store(self) -> None:
+        """Close and detach the cached store if it has been initialized.
+
+        Important:
+        - Operates only on the cached store; does not instantiate a new one.
+        - Logs cleanup errors at debug level and never raises.
+        """
+        store = self._zen_store
+        if store is None:
+            return
+
+        close_fn = getattr(store, "close", None)
+        if callable(close_fn):
+            try:
+                close_fn()
+            except Exception as e:
+                logger.debug(
+                    "Error while closing zen store during cleanup: %s",
+                    e,
+                    exc_info=True,
+                )
+        # Clear the cached store reference irrespective of cleanup result.
+        self._zen_store = None
 
     @property
     def is_initialized(self) -> bool:

@@ -381,6 +381,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
         global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(global_zen_config)):
             gc = GlobalConfiguration()
+            # Ensure any open DB handles (e.g., SQLite) are released before deletion
+            gc.close_store()
             for dir_name in fileio.listdir(str(global_zen_config)):
                 if fileio.isdir(str(global_zen_config / str(dir_name))):
                     warning(
