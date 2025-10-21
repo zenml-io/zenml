@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 import pytest
 from pydantic import BaseModel
@@ -8,10 +8,12 @@ from typing_extensions import Annotated
 
 from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
-from zenml.client import Client
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+
+if TYPE_CHECKING:
+    from zenml.client import Client
 
 
 class ComplexObject(BaseModel):
@@ -44,11 +46,7 @@ class ComplexObjectMaterializer(BaseMaterializer):
             f.write(data.model_dump_json())
 
 
-@step(
-    output_materializers=[
-        ComplexObjectMaterializer,
-    ]
-)
+@step
 def _output_complex_object_step():
     """This step would call `save` of `ComplexObjectMaterializer`.
     `save` should not fail and have access to the step context"""
@@ -68,19 +66,21 @@ def _access_step_context_step():
     assert get_step_context().pipeline.name == "bar"
 
 
-def test_materializer_can_access_step_context():
+def test_materializer_can_access_step_context(clean_client: "Client"):
     """Call steps using `ComplexObjectMaterializer` to validate that
     step context is available to Materializers"""
 
     @pipeline(name="bar")
     def _complex_object_materialization_pipeline():
-        complex_object = _output_complex_object_step()
+        complex_object = _output_complex_object_step.with_options(
+            output_materializers=ComplexObjectMaterializer
+        )()
         _input_complex_object_step(complex_object)
 
     _complex_object_materialization_pipeline()
 
 
-def test_step_can_access_step_context():
+def test_step_can_access_step_context(clean_client: "Client"):
     """Call step using step context directly, before Materializers"""
 
     @pipeline(name="bar")
@@ -106,7 +106,7 @@ def step_context_metadata_reader_step(my_input: int) -> None:
     assert my_input_metadata["some_key"] == "some_value"
 
 
-def test_input_artifacts_property():
+def test_input_artifacts_property(clean_client: "Client"):
     """Test the `StepContext.inputs` property."""
 
     @pipeline
