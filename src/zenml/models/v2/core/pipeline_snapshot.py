@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+    AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 # ------------------ Request Model ------------------
@@ -617,6 +618,9 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "pipeline",
+        "stack",
+        "deployment",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -770,6 +774,62 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             custom_filters.append(deployed_filter)
 
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: "AnyQuery",
+        table: Type["AnySchema"],
+    ) -> "AnyQuery":
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            DeploymentSchema,
+            PipelineSchema,
+            PipelineSnapshotSchema,
+            StackSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "pipeline":
+            query = query.outerjoin(
+                PipelineSchema,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+            )
+            column = PipelineSchema.name
+        elif sort_by == "stack":
+            query = query.outerjoin(
+                StackSchema,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
+            )
+            column = StackSchema.name
+        elif sort_by == "deployment":
+            query = query.outerjoin(
+                DeploymentSchema,
+                PipelineSnapshotSchema.id == DeploymentSchema.snapshot_id,
+            )
+            column = DeploymentSchema.name
+        else:
+            return super().apply_sorting(query=query, table=table)
+
+        query = query.add_columns(column)
+
+        if operand == SorterOps.ASCENDING:
+            query = query.order_by(asc(column))
+        else:
+            query = query.order_by(desc(column))
+
+        return query
 
 
 # ------------------ Trigger Model ------------------

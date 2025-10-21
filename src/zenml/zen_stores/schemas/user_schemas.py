@@ -78,7 +78,10 @@ class UserSchema(NamedSchema, table=True):
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
-    avatar_url: Optional[str] = Field(default=None, nullable=True)
+    avatar_url: Optional[str] = Field(
+        default=None,
+        sa_column=Column(TEXT, nullable=True),
+    )
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
