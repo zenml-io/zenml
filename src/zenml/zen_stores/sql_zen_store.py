@@ -1356,34 +1356,6 @@ class SqlZenStore(BaseZenStore):
         # Send user enriched events that we missed due to a bug in 0.57.0
         self._send_user_enriched_events_if_necessary()
 
-    # --------------------------------
-    # Resource lifecycle
-    # --------------------------------
-
-    def close(self) -> None:
-        """Release DB resources held by this store.
-
-        Safe to call multiple times. Primarily ensures SQLite file handles are
-        released so the DB file can be removed on platforms like Windows.
-        """
-        try:
-            engine = self._engine
-            if engine is not None:
-                # Disposes pooled connections and releases file handles.
-                engine.dispose()
-        except Exception as e:
-            # Cleanup must not raise; surface at debug level only.
-            logger.debug(
-                "Error disposing SQLAlchemy engine during SqlZenStore.close(): %s",
-                e,
-                exc_info=True,
-            )
-        finally:
-            # Clear references to avoid accidental reuse and help GC.
-            self._engine = None
-            self._alembic = None
-            self._migration_utils = None
-
     def _get_db_backup_file_path(self) -> str:
         """Get the path to the database backup file.
 
