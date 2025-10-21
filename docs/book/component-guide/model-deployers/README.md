@@ -8,7 +8,7 @@ description: Deploying your models and serve real-time predictions.
 {% hint style="warning" %}
 **DEPRECATION NOTICE**
 
-The Model Deployer stack component is deprecated in favor of the more flexible [**Deployer**](https://docs.zenml.io/stacks/stack-components/deployers) component and [**Pipeline Deployments**](https://docs.zenml.io/how-to/deployment).
+The Model Deployer stack component is deprecated in favor of the more flexible [**Deployer**](https://docs.zenml.io/stacks/stack-components/deployers) component and [**Pipeline Deployments**](https://docs.zenml.io/concepts/deployment).
 
 The Model Deployer abstraction focused exclusively on single-model serving, but modern ML workflows often require multi-step pipelines with preprocessing, tool integration, and custom business logic. The new Pipeline Deployment paradigm provides:
 
@@ -17,7 +17,7 @@ The Model Deployer abstraction focused exclusively on single-model serving, but 
 - **Simpler mental model**: One primitive for all deployment scenarios instead of separate abstractions for models vs. pipelines
 - **Better extensibility**: Deploy to Docker, AWS App Runner, GCP Cloud Run, and other platforms with consistent patterns
 
-**Migration Path**: Instead of using Model Deployer-specific steps, wrap your model inference logic in a regular ZenML pipeline and deploy it using `zenml pipeline deploy`. See the [Pipeline Deployment guide](https://docs.zenml.io/how-to/deployment) for examples of deploying ML models as HTTP services.
+**Migration Path**: Instead of using Model Deployer-specific steps, wrap your model inference logic in a regular ZenML pipeline and deploy it using `zenml pipeline deploy`. See the [Pipeline Deployment guide](https://docs.zenml.io/concepts/deployment) for examples of deploying ML models as HTTP services.
 
 While Model Deployer integrations remain available for backward compatibility, we strongly recommend migrating to Pipeline Deployments for new projects.
 {% endhint %}
