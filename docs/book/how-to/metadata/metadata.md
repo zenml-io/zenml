@@ -195,6 +195,99 @@ log_metadata(
 )
 ```
 
+## Bulk Metadata Logging
+
+The log_metadata function does not support logging the same metadata for multiple entities of the same type simultaneously. To achieve this, you can use the bulk_log_metadata function:
+
+~~~python
+from zenml.models import (
+    PipelineRunIdentifier, StepRunIdentifier, VersionedIdentifier,
+)
+from zenml import bulk_log_metadata
+
+bulk_log_metadata(
+    metadata={"python_version": "3.11", "environment": "macosx"},
+    pipeline_runs=[
+        PipelineRunIdentifier(id="<run_id>"),
+        PipelineRunIdentifier(name="run name")
+    ],
+    step_runs=[
+        StepRunIdentifier(id="<step_run_id>"),
+        StepRunIdentifier(name="<step_name>", pipeline=PipelineRunIdentifier(id="<run_id>"))
+    ],
+    artifact_versions=[
+        VersionedIdentifier(id="<artifact_version_id>"),
+        VersionedIdentifier(name="artifact_name", version="artifact_version")
+    ],
+    model_versions=[
+        VersionedIdentifier(id="<model_version_id>"),
+        VersionedIdentifier(name="model_name", version="model_version")
+    ]
+)
+
+~~~
+
+Note that the bulk_log_metadata function has a slightly different signature compared to log_metadata.
+You can use the Identifier class objects to specify any parameter combination that uniquely identifies an object:
+
+* VersionedIdentifier
+  * Specify either an id or a combination of name and version.
+  * Used for artifact and model versions.
+* PipelineRunIdentifier
+  * Specify an id, name, or prefix.
+* StepRunIdentifier
+  * Specify an id or a combination of name and a pipeline run identifier.
+
+Similar to the log_metadata function, if you are calling bulk_log_metadata from within a step, you can use the infer options to automatically log metadata for the step’s model version or artifacts:
+
+```python
+from zenml import bulk_log_metadata, step
+
+@step()
+def get_train_test_datasets():
+    
+    train_dataset, test_dataset = get_datasets()
+
+    bulk_log_metadata(
+        metadata={"python_version": "3.11", "environment": "macosx"},
+        infer_models=True,
+        infer_artifacts=True
+    )
+    
+    return train_dataset, test_dataset
+```
+
+Keep in mind that when using the infer_artifacts option, the bulk_log_metadata function logs metadata to all output artifacts of the step.
+
+## Performance improvements hints
+
+Both `log_metadata` and `bulk_log_metadata` internally use parameters such as name and version to resolve the actual IDs of entities.
+For example, when you provide an artifact's name and version, the function performs an additional lookup to resolve the artifact version ID.
+
+To improve performance, prefer using the entity's ID directly instead of its name, version, or other identifiers whenever possible.
+
+## Using the client directly
+
+If the `log_metadata` or `bulk_log_metadata` functions are too restrictive for your use case, you can use the ZenML Client directly to create run metadata for resources:
+
+~~~python
+from zenml.client import Client
+from zenml.enums import MetadataResourceTypes
+from zenml.models import RunMetadataResource
+
+client = Client()
+
+client.create_run_metadata(
+    metadata={"python": "3.11"},
+    resources=[
+        RunMetadataResource(id="<step_run_id>", type=MetadataResourceTypes.STEP_RUN),
+        RunMetadataResource(id="<run_id>", type=MetadataResourceTypes.PIPELINE_RUN),
+        RunMetadataResource(id="<artifact_version_id>", type=MetadataResourceTypes.ARTIFACT_VERSION),
+        RunMetadataResource(id="<model_version_id>", type=MetadataResourceTypes.MODEL_VERSION)
+    ]
+)
+~~~
+
 ## Special Metadata Types
 
 ZenML includes several special metadata types that provide standardized ways to represent common metadata:

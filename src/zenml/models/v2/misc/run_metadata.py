@@ -29,7 +29,7 @@ class RunMetadataResource(BaseModel):
     id: UUID = Field(title="The ID of the resource.")
     type: MetadataResourceTypes = Field(title="The type of the resource.")
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
         """Overrides equality operator.
 
         Args:

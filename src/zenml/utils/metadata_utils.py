@@ -455,7 +455,7 @@ def bulk_log_metadata(
     # resolve step runs and add metadata resources
 
     for step in step_runs or []:
-        if not step.id:
+        if not step.id and (step.name and step.pipeline):
             step.id = (
                 client.get_pipeline_run(name_id_or_prefix=step.pipeline.value)
                 .steps[step.name]
@@ -471,7 +471,7 @@ def bulk_log_metadata(
     # resolve artifacts and add metadata resources
 
     for artifact_version in artifact_versions or []:
-        if not artifact_version.id:
+        if not artifact_version.id and (artifact_version.name and artifact_version.version):
             artifact_version.id = client.get_artifact_version(
                 name_id_or_prefix=artifact_version.name,
                 version=artifact_version.version,
@@ -499,11 +499,11 @@ def bulk_log_metadata(
 
     # infer models - resolve from step context
 
-    if infer_models and not step_context.model_version:
+    if infer_models and step_context and not step_context.model_version:
         raise ValueError(
             "The step context does not feature any model versions."
         )
-    elif infer_models:
+    elif infer_models and step_context and step_context.model_version:
         resources.add(
             RunMetadataResource(
                 id=step_context.model_version.id,
@@ -513,7 +513,7 @@ def bulk_log_metadata(
 
     # infer artifacts - resolve from step context
 
-    if infer_artifacts:
+    if infer_artifacts and step_context:
         step_output_names = list(step_context._outputs.keys())
 
         for artifact_name in step_output_names:
