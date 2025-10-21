@@ -5,6 +5,23 @@ description: Deploying your models and serve real-time predictions.
 
 # Model Deployers
 
+{% hint style="warning" %}
+**DEPRECATION NOTICE**
+
+The Model Deployer stack component is deprecated in favor of the more flexible [**Deployer**](../deployers/README.md) component and [**Pipeline Deployments**](../../how-to/deployment/deployment.md).
+
+The Model Deployer abstraction focused exclusively on single-model serving, but modern ML workflows often require multi-step pipelines with preprocessing, tool integration, and custom business logic. The new Pipeline Deployment paradigm provides:
+
+- **Unified approach**: Deploy any pipeline—classical ML inference, agentic workflows, or hybrid systems—as a long-running HTTP service
+- **Greater flexibility**: Customize your deployment with full FastAPI control, add middleware, custom routes, and even frontend interfaces
+- **Simpler mental model**: One primitive for all deployment scenarios instead of separate abstractions for models vs. pipelines
+- **Better extensibility**: Deploy to Docker, AWS App Runner, GCP Cloud Run, and other platforms with consistent patterns
+
+**Migration Path**: Instead of using Model Deployer-specific steps, wrap your model inference logic in a regular ZenML pipeline and deploy it using `zenml pipeline deploy`. See the [Pipeline Deployment guide](../../how-to/deployment/deployment.md) for examples of deploying ML models as HTTP services.
+
+While Model Deployer integrations remain available for backward compatibility, we strongly recommend migrating to Pipeline Deployments for new projects.
+{% endhint %}
+
 Model Deployment is the process of making a machine learning model available to make predictions and decisions on
 real-world data. Getting predictions from trained models can be done in different ways depending on the use case, a
 batch prediction is used to generate predictions for a large amount of data at once, while a real-time prediction is
