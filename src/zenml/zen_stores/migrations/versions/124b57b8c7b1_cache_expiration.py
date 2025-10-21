@@ -1,7 +1,7 @@
 """Cache expiration [124b57b8c7b1].
 
 Revision ID: 124b57b8c7b1
-Revises: 0.90.0
+Revises: 7497d2ff5731
 Create Date: 2025-10-06 14:35:53.052890
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "124b57b8c7b1"
-down_revision = "0.90.0"
+down_revision = "7497d2ff5731"
 branch_labels = None
 depends_on = None
 
