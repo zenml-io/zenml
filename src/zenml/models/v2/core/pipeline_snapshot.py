@@ -208,7 +208,6 @@ class PipelineSnapshotUpdate(BaseUpdate):
     remove_tags: Optional[List[str]] = Field(
         default=None, title="Tags to remove from the snapshot."
     )
-    add_steps: Optional[Dict[str, Step]] = None
 
     @field_validator("name")
     @classmethod

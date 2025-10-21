@@ -216,6 +216,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ),
         )
     )
+    dynamic_step_configuration_schema: Optional["StepConfigurationSchema"] = (
+        Relationship()
+    )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
@@ -344,7 +347,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         step = None
 
         if self.snapshot is not None:
-            if self.step_configuration_schema:
+            if (
+                self.dynamic_step_configuration_schema
+                or self.step_configuration_schema
+            ):
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.snapshot.pipeline_configuration
@@ -354,8 +360,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     start_time=self.pipeline_run.start_time,
                     inplace=True,
                 )
+                config_schema = (
+                    self.dynamic_step_configuration_schema
+                    or self.step_configuration_schema
+                )
                 step = Step.from_dict(
-                    json.loads(self.step_configuration_schema.config),
+                    json.loads(config_schema.config),
                     pipeline_configuration=pipeline_configuration,
                 )
         if not step and self.step_configuration:

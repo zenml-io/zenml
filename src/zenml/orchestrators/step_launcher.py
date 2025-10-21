@@ -108,6 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        dynamic: bool = False,
     ):
         """Initializes the launcher.
 
@@ -122,6 +123,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._dynamic = dynamic
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -306,7 +308,8 @@ class StepLauncher:
                 stack=self._stack,
             )
             step_run_request = request_factory.create_request(
-                invocation_id=self._invocation_id
+                invocation_id=self._invocation_id,
+                dynamic_config=self._step if self._dynamic else None,
             )
             step_run_request.logs = logs_model
 

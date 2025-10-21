@@ -586,6 +586,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "snapshot_id",
+            "step_run_id",
             "name",
             name="unique_step_name_for_snapshot",
         ),
@@ -608,5 +609,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
         source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
+    )
+    step_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="step_run",
+        source_column="step_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )

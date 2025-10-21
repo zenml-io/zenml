@@ -13,12 +13,11 @@ from typing import (
     Tuple,
     Union,
 )
-from zenml.client import Client
-from zenml.config.compiler import Compiler
-
 from uuid import UUID
+
 from zenml import ExternalArtifact
 from zenml.client import Client
+from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
 from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
@@ -27,7 +26,6 @@ from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
     PipelineSnapshotResponse,
-    PipelineSnapshotUpdate,
 )
 from zenml.models.v2.core.step_run import StepRunResponse
 from zenml.orchestrators.publish_utils import (
@@ -169,18 +167,19 @@ class DynamicPipelineRunner:
         compiled_step, invocation_id = _compile_step(
             self.pipeline, step, id, upstream_steps, inputs
         )
-        updated_snapshot = Client().zen_store.update_snapshot(
-            self._snapshot.id,
-            snapshot_update=PipelineSnapshotUpdate(
-                add_steps={invocation_id: compiled_step}
-            ),
-        )
-        step_config = updated_snapshot.step_configurations[invocation_id]
+        # updated_snapshot = Client().zen_store.update_snapshot(
+        #     self._snapshot.id,
+        #     snapshot_update=PipelineSnapshotUpdate(
+        #         add_steps={invocation_id: compiled_step}
+        #     ),
+        # )
+        # step_config = updated_snapshot.step_configurations[invocation_id]
         step_run = _run_step_sync(
-            snapshot=updated_snapshot,
-            step=step_config,
+            snapshot=self._snapshot,
+            step=compiled_step,
             orchestrator_run_id=self._run.orchestrator_run_id,
-            retry=_should_retry_locally(step_config),
+            retry=_should_retry_locally(compiled_step),
+            dynamic=True,
         )
         return _load_step_result(step_run.id)
 
@@ -198,31 +197,20 @@ class DynamicPipelineRunner:
         compiled_step, invocation_id = _compile_step(
             self.pipeline, step, id, upstream_steps, inputs
         )
-        updated_snapshot = Client().zen_store.update_snapshot(
-            self._snapshot.id,
-            snapshot_update=PipelineSnapshotUpdate(
-                add_steps={invocation_id: compiled_step}
-            ),
-        )
-        step_config = updated_snapshot.step_configurations[invocation_id]
 
         def _run() -> StepRunResult:
             step_run = _run_step_sync(
-                snapshot=updated_snapshot,
-                step=step_config,
+                snapshot=self._snapshot,
+                step=compiled_step,
                 orchestrator_run_id=self._run.orchestrator_run_id,
-                retry=_should_retry_locally(step_config),
+                retry=_should_retry_locally(compiled_step),
+                dynamic=True,
             )
             return _load_step_result(step_run.id)
 
         ctx = contextvars.copy_context()
-        future = self._executor.submit(
-            ctx.run, _run
-        )
-        return StepRunResultFuture(
-            wrapped=future, invocation_id=invocation_id
-        )
-
+        future = self._executor.submit(ctx.run, _run)
+        return StepRunResultFuture(wrapped=future, invocation_id=invocation_id)
 
 
 def _prepare_step_run(
@@ -318,12 +306,14 @@ def _run_step_sync(
     step: "Step",
     orchestrator_run_id: str,
     retry: bool = False,
+    dynamic: bool = False,
 ) -> StepRunResponse:
     def _launch_step() -> StepRunResponse:
         launcher = StepLauncher(
             snapshot=snapshot,
             step=step,
             orchestrator_run_id=orchestrator_run_id,
+            dynamic=dynamic,
         )
         return launcher.launch()
 
@@ -362,7 +352,7 @@ def _run_step_sync(
                     raise
             else:
                 break
-    
+
     return step_run
 
 
@@ -377,7 +367,7 @@ def _load_step_result(step_run_id: UUID) -> StepRunResult:
             step_name=step_run.name,
             **artifact.model_dump(),
         )
-        
+
     output_artifacts = step_run.regular_outputs
     if len(output_artifacts) == 0:
         return None
@@ -399,16 +389,19 @@ def _should_retry_locally(step: "Step") -> bool:
         return True
     else:
         # Running out of process with the orchestrator
-        return not Client().active_stack.orchestrator.config.handles_step_retries
+        return (
+            not Client().active_stack.orchestrator.config.handles_step_retries
+        )
+
 
 def _runs_in_process(step: "Step") -> bool:
     if step.config.step_operator:
         return False
-    
+
     if not Client().active_stack.orchestrator.supports_dynamic_out_of_process_steps:
         return False
 
     if step.config.in_process is False:
         return False
-    
+
     return True

@@ -5167,34 +5167,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if snapshot_update.add_steps:
-                # TODO: this doesn't work for scheduled runs that reuse a
-                # snapshot. For that, we'd have to separate config from the
-                # snapshot, which is something we want to do anyway.
-                if not snapshot.is_dynamic:
-                    raise ValueError(
-                        "Cannot dynamically update steps of a static snapshot."
-                    )
-
-                # TODO: race conditions
-                current_index = len(snapshot.step_configurations)
-                for index, (step_name, step_configuration) in enumerate(
-                    snapshot_update.add_steps.items()
-                ):
-                    step_configuration_schema = StepConfigurationSchema(
-                        index=current_index + index,
-                        name=step_name,
-                        # Don't include the merged config in the step
-                        # configurations, we reconstruct it in the `to_model` method
-                        # using the pipeline configuration.
-                        config=step_configuration.model_dump_json(
-                            exclude={"config"}
-                        ),
-                        snapshot_id=snapshot.id,
-                    )
-                    session.add(step_configuration_schema)
-                session.commit()
-
             session.refresh(snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True
@@ -9677,7 +9649,10 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            step_config = run.get_step_configuration(step_name=step_run.name)
+            step_config = (
+                step_run.dynamic_config
+                or run.get_step_configuration(step_name=step_run.name)
+            )
 
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
@@ -9928,6 +9903,20 @@ class SqlZenStore(BaseZenStore):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
+
+            if step_run.dynamic_config:
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
 
             session.commit()
             session.refresh(
