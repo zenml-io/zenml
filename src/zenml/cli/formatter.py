@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 else:
     try:
         from click.utils import term_len
-    except Exception:
+    except ImportError:
         from click._compat import term_len
 
 
@@ -211,7 +211,8 @@ class ZenFormatter(formatting.HelpFormatter):
 
             # Wrap and render the description using a safe width calculation
             effective_width = _safe_width(
-                self.width, getattr(self, "max_width", None)
+                self.width,
+                getattr(self, "max_width", None),  # type: ignore[attr-defined]  # max_width may not be present on all formatter types; this is intentional
             )
             text_width = max(effective_width - second_col - 4, 10)
             wrapped_text = formatting.wrap_text(
