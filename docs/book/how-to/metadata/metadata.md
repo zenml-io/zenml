@@ -261,6 +261,38 @@ def get_train_test_datasets():
 ```
 
 Keep in mind that when using the `infer_artifacts` option, the `bulk_log_metadata` function logs metadata to all output artifacts of the step.
+When logging metadata, you may need the option to use `infer` options in combination with identifier references. For instance, you may want
+to log metadata to a step's outputs but also to its inputs. The `bulk_log_metadata` function enables you to use both options in one go:
+
+```python
+from zenml import bulk_log_metadata, get_step_context, step
+from zenml.models import ArtifactVersionIdentifier
+
+
+def calculate_metrics(model, test_dataset):
+    ...
+
+
+def summarize_metrics(metrics_report):
+    ...
+
+
+@step
+def model_evaluation(test_dataset, model):
+    metrics_report = calculate_metrics(model, test_dataset)
+
+    slim_metrics_version = summarize_metrics(metrics_report)
+
+    bulk_log_metadata(
+        metadata=slim_metrics_version,
+        infer_artifacts=True,  # log metadata for outputs
+        artifact_versions=[
+            ArtifactVersionIdentifier(id=get_step_context().inputs["model"].id)
+        ]  # log metadata for the model input
+    )
+
+    return metrics_report
+```
 
 ### Performance improvements hints
 

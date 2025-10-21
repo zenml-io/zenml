@@ -15,24 +15,6 @@ from zenml.utils.metadata_utils import bulk_log_metadata
 
 
 def test_bulk_log_metadata_validations(monkeypatch):
-    # test one can not specify both explicit and infer options for models
-
-    with pytest.raises(ValueError):
-        bulk_log_metadata(
-            metadata={"x": 1},
-            infer_models=True,
-            model_versions=[ModelVersionIdentifier(id=uuid4())],
-        )
-
-    # test one can not specify both explicit and infer options for a
-
-    with pytest.raises(ValueError):
-        bulk_log_metadata(
-            metadata={"x": 1},
-            infer_artifacts=True,
-            model_versions=[ModelVersionIdentifier(id=uuid4())],
-        )
-
     def boom():
         raise RuntimeError("boom!")
 
@@ -167,3 +149,38 @@ def test_bulk_log_metadata_infer_model(monkeypatch):
     assert (
         len(mock_client.create_run_metadata.call_args.kwargs["resources"]) == 1
     )
+
+
+def test_combined_infer_with_explicit_options(monkeypatch):
+    mock_step_context = MagicMock(
+        model_version=MagicMock(id=uuid4()),
+        _outputs={"a": MagicMock(id=uuid4()), "b": MagicMock(id=uuid4())},
+    )
+
+    mock_client = MagicMock()
+    mock_client.create_run_metadata = MagicMock()
+
+    with monkeypatch.context() as m:
+        m.setattr(metadata_utils, "Client", lambda: mock_client)
+        m.setattr(
+            metadata_utils, "get_step_context", lambda: mock_step_context
+        )
+
+        bulk_log_metadata(
+            metadata={"x": 1},
+            infer_models=True,
+            infer_artifacts=True,
+            model_versions=[ModelVersionIdentifier(id=uuid4())],
+            artifact_versions=[ArtifactVersionIdentifier(id=uuid4())],
+        )
+
+        assert mock_client.create_run_metadata.call_count == 1
+
+        assert mock_client.create_run_metadata.call_args.kwargs[
+            "metadata"
+        ] == {"x": 1}
+        assert (
+            len(mock_client.create_run_metadata.call_args.kwargs["resources"])
+            == 3
+        )
+        assert mock_step_context.add_output_metadata.call_count == 2

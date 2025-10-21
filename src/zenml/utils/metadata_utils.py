@@ -395,7 +395,7 @@ def bulk_log_metadata(
         infer_artifacts: Flag - when enabled infer artifact to log metadata for from step context.
 
     Raises:
-        ValueError: If options are not passed correctly (infer options with explicit declarations) or
+        ValueError: If options are not passed correctly (empty metadata or no identifier options) or
             invocation with `infer` options is done outside of a step context.
     """
     client = Client()
@@ -418,16 +418,6 @@ def bulk_log_metadata(
     ):
         raise ValueError(
             "You must select at least one entity to log metadata to."
-        )
-
-    if infer_models and model_versions:
-        raise ValueError(
-            "You can either specify model versions or use the infer option."
-        )
-
-    if infer_artifacts and artifact_versions:
-        raise ValueError(
-            "You can either specify artifact versions or use the infer option."
         )
 
     try:
