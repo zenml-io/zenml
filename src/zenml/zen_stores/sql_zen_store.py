@@ -10718,7 +10718,7 @@ class SqlZenStore(BaseZenStore):
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
-            if get_origin(annotation) == Mapped:
+            if get_origin(annotation) == Mapped:  # type: ignore[comparison-overlap]
                 annotation = annotation.__args__[0]
 
             # The annotation must be of the form
@@ -10736,8 +10736,10 @@ class SqlZenStore(BaseZenStore):
                     vars(zenml_schemas), {}, recursive_guard=frozenset()
                 )
             else:
-                target_schema = schema_ref._evaluate(
-                    vars(zenml_schemas), {}, frozenset()
+                target_schema = schema_ref._evaluate(  # type: ignore[unused-ignore, call-arg, call-overload]
+                    vars(zenml_schemas),
+                    {},
+                    frozenset(),  # type: ignore[unused-ignore, arg-type]
                 )
             assert target_schema is not None
             assert issubclass(target_schema, SQLModel)
@@ -13841,7 +13843,7 @@ class SqlZenStore(BaseZenStore):
                             PipelineSnapshotFilter(
                                 id=f"notequals:{resource.id}",
                                 project=resource.project.id,
-                                pipeline_id=scope_id,
+                                pipeline=scope_id,
                                 tags=[tag_schema.name],
                             )
                         )
@@ -13884,9 +13886,8 @@ class SqlZenStore(BaseZenStore):
                             "Can not attach exclusive tag to resource of type "
                             f"{resource_type.value} with ID: `{resource.id}`. "
                             "Exclusive tag functionality only works for "
-                            "templates, for pipeline runs (within the scope of "
-                            "pipelines) and for artifact versions (within the "
-                            "scope of artifacts)."
+                            "pipeline runs, pipeline snapshots, pipeline "
+                            "deployments and artifact versions"
                         )
 
                     # Check for duplicate IDs in any of the scope_ids list

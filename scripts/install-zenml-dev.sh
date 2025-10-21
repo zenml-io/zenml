@@ -108,8 +108,8 @@ install_integrations() {
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure skypilot_kubernetes skypilot_lambda pigeon prodigy argilla vllm"
 
-    # Ignore tensorflow and deepchecks only on Python 3.12
-    if [ "$python_version" = "3.12" ]; then
+    # Ignore tensorflow and deepchecks only on Python 3.12 and 3.13
+    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
     

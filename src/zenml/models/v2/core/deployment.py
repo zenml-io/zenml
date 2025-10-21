@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+    AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 class DeploymentOperationalState(BaseModel):
@@ -338,6 +339,8 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "snapshot",
+        "pipeline",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
@@ -409,3 +412,55 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
             custom_filters.append(pipeline_filter)
 
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: "AnyQuery",
+        table: Type["AnySchema"],
+    ) -> "AnyQuery":
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            DeploymentSchema,
+            PipelineSchema,
+            PipelineSnapshotSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "pipeline":
+            query = query.outerjoin(
+                PipelineSnapshotSchema,
+                DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id,
+            ).outerjoin(
+                PipelineSchema,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+            )
+            column: Any = PipelineSchema.name
+        elif sort_by == "snapshot":
+            query = query.outerjoin(
+                PipelineSnapshotSchema,
+                DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id,
+            )
+            column = PipelineSnapshotSchema.name
+        else:
+            return super().apply_sorting(query=query, table=table)
+
+        query = query.add_columns(column)
+
+        if operand == SorterOps.ASCENDING:
+            query = query.order_by(asc(column))
+        else:
+            query = query.order_by(desc(column))
+
+        return query

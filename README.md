@@ -127,7 +127,7 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
-- **[Your First AI Pipeline](https://docs.zenml.io/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
+- **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference

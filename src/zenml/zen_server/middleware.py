@@ -111,7 +111,7 @@ class RequestBodyLimit(BaseHTTPMiddleware):
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
     """Restrict file uploads to certain paths."""
 
-    def __init__(self, app: FastAPI, allowed_paths: Set[str]):
+    def __init__(self, app: ASGIApp, allowed_paths: Set[str]):
         """Restrict file uploads to certain paths.
 
         Args:
@@ -404,7 +404,7 @@ def add_middlewares(app: FastAPI) -> None:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=server_config().cors_allow_origins,
+        allow_origins=server_config().cors_allow_origins or [],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

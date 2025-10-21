@@ -24,8 +24,8 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12,
-    reason="The tensorflow integrations is not yet supported on 3.12.",
+    sys.version_info.minor == 12 or sys.version_info.minor == 13,
+    reason="The tensorflow integrations is not yet supported on 3.12 or 3.13.",
 )
 def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""

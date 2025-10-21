@@ -158,8 +158,10 @@ def _reconstruct_nodes(
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
-        if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY, None):
-            node = nodes[step_name]
+        if step_name_annotation := annotations.get(
+            STEP_NAME_ANNOTATION_KEY, None
+        ):
+            node = nodes[str(step_name_annotation)]
             node.metadata["job_name"] = job.metadata.name
 
             if node.status == NodeStatus.NOT_READY:

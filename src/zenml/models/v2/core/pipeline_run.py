@@ -615,7 +615,6 @@ class PipelineRunFilter(
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
-        "tag",
         "stack",
         "pipeline",
         "model",
