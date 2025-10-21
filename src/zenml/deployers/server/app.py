@@ -14,8 +14,10 @@
 """Base deployment app runner."""
 
 import os
+import re
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -27,7 +29,6 @@ from typing import (
 )
 from uuid import UUID
 
-import secure
 from asgiref.compatibility import guarantee_single_callable
 from asgiref.typing import (
     ASGIApplication,
@@ -38,8 +39,10 @@ from asgiref.typing import (
 )
 
 from zenml.client import Client
-from zenml.config.deployment_settings import (
+from zenml.config import (
     AppExtensionSpec,
+    DeploymentDefaultEndpoints,
+    DeploymentDefaultMiddleware,
     DeploymentSettings,
     EndpointMethod,
     EndpointSpec,
@@ -63,6 +66,9 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from secure import Secure
 
 logger = get_logger(__name__)
 
@@ -340,7 +346,8 @@ class BaseDeploymentAppRunner(ABC):
             Absolute path.
 
         Raises:
-            RuntimeError: If the dashboard files path cannot be loaded.
+            ValueError: If the dashboard files path is absolute.
+            RuntimeError: If the dashboard files path does not exist.
         """
         # If an absolute path is provided, use it
         dashboard_files_path = self.settings.dashboard_files_path
@@ -352,7 +359,10 @@ class BaseDeploymentAppRunner(ABC):
             )
 
         if os.path.isabs(dashboard_files_path):
-            return dashboard_files_path
+            raise ValueError(
+                f"Dashboard files path '{dashboard_files_path}' must be "
+                "relative to the source root, not absolute."
+            )
 
         # Otherwise, assume this is a path relative to the source root
         source_root = source_utils.get_source_root()
@@ -385,52 +395,56 @@ class BaseDeploymentAppRunner(ABC):
         """
         specs = []
 
-        specs.append(
-            EndpointSpec(
-                path=f"{self.settings.api_url_path}{self.settings.invoke_url_path}",
-                method=EndpointMethod.POST,
-                handler=self._build_invoke_endpoint(),
-                auth_required=True,
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.INVOKE):
+            specs.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}{self.settings.invoke_url_path}",
+                    method=EndpointMethod.POST,
+                    handler=self._build_invoke_endpoint(),
+                    auth_required=True,
+                )
             )
-        )
 
-        specs.append(
-            EndpointSpec(
-                path=f"{self.settings.api_url_path}{self.settings.health_url_path}",
-                method=EndpointMethod.GET,
-                handler=self.service.health_check,
-                auth_required=False,
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.HEALTH):
+            specs.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}{self.settings.health_url_path}",
+                    method=EndpointMethod.GET,
+                    handler=self.service.health_check,
+                    auth_required=False,
+                )
             )
-        )
 
-        specs.append(
-            EndpointSpec(
-                path=f"{self.settings.api_url_path}{self.settings.info_url_path}",
-                method=EndpointMethod.GET,
-                handler=self.service.get_service_info,
-                auth_required=False,
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.INFO):
+            specs.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}{self.settings.info_url_path}",
+                    method=EndpointMethod.GET,
+                    handler=self.service.get_service_info,
+                    auth_required=False,
+                )
             )
-        )
 
-        specs.append(
-            EndpointSpec(
-                path=f"{self.settings.api_url_path}{self.settings.metrics_url_path}",
-                method=EndpointMethod.GET,
-                handler=self.service.get_execution_metrics,
-                auth_required=False,
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.METRICS):
+            specs.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}{self.settings.metrics_url_path}",
+                    method=EndpointMethod.GET,
+                    handler=self.service.get_execution_metrics,
+                    auth_required=False,
+                )
             )
-        )
-
-        specs.extend(self._get_dashboard_endpoints())
 
         return specs
 
-    def _get_secure_headers(self) -> secure.Secure:
+    def _get_secure_headers(self) -> "Secure":
         """Get the secure headers settings.
 
         Returns:
             The secure headers settings.
         """
+        import secure
+
         # For each of the secure headers supported by the `secure` library, we
         # check if the corresponding configuration is set in the deployment
         # configuration:
@@ -557,11 +571,11 @@ class BaseDeploymentAppRunner(ABC):
         )
 
     @abstractmethod
-    def _get_cors_middleware(self) -> MiddlewareSpec:
+    def _build_cors_middleware(self) -> MiddlewareSpec:
         """Get the CORS middleware.
 
         Returns:
-            The CORS middleware.
+            The CORS middleware spec.
         """
 
     def _create_default_middleware_specs(self) -> List[MiddlewareSpec]:
@@ -572,9 +586,13 @@ class BaseDeploymentAppRunner(ABC):
         """
         specs = []
 
-        specs.append(self._build_secure_headers_middleware())
+        if self.settings.middleware_enabled(
+            DeploymentDefaultMiddleware.SECURE_HEADERS
+        ):
+            specs.append(self._build_secure_headers_middleware())
 
-        specs.append(self._get_cors_middleware())
+        if self.settings.middleware_enabled(DeploymentDefaultMiddleware.CORS):
+            specs.append(self._build_cors_middleware())
 
         return specs
 
@@ -745,17 +763,46 @@ class BaseDeploymentAppRunner(ABC):
         Returns:
             The ASGI application.
         """
-        endpoints = []
+        endpoints = self._create_default_endpoint_specs()
 
-        if self.settings.include_default_endpoints:
-            endpoints.extend(self._create_default_endpoint_specs())
+        custom_endpoints = (
+            self.settings.custom_endpoints
+            if self.settings.custom_endpoints
+            else []
+        )
 
-        if self.settings.custom_endpoints:
-            endpoints.extend(self.settings.custom_endpoints)
+        # Allow custom endpoints to override default endpoints when they share
+        # the same path and method.
 
-        middlewares = []
-        if self.settings.include_default_middleware:
-            middlewares.extend(self._create_default_middleware_specs())
+        def normalize_path(path: str) -> str:
+            if path and path != "/":
+                path = re.sub(r"(?<!^)/+$", "", path)
+
+            # normalize typed path params: {name:path} -> {param:path}
+            path = re.sub(r"\{[^{}:/]+:path\}", "{param:path}", path)
+
+            # normalize untyped params: {name} -> {param}
+            path = re.sub(r"\{[^{}:/]+\}", "{param}", path)
+
+            return path
+
+        custom_keys = {
+            (e.method, normalize_path(e.path)) for e in custom_endpoints
+        }
+        endpoints = [
+            e
+            for e in endpoints
+            if (e.method, normalize_path(e.path)) not in custom_keys
+        ]
+
+        endpoints.extend(custom_endpoints)
+
+        if self.settings.endpoint_enabled(
+            DeploymentDefaultEndpoints.DASHBOARD
+        ):
+            endpoints.extend(self._get_dashboard_endpoints())
+
+        middlewares = self._create_default_middleware_specs()
 
         if self.settings.custom_middlewares:
             middlewares.extend(self.settings.custom_middlewares)

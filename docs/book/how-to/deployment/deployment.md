@@ -420,6 +420,48 @@ The following happens when the pipeline is deployed and then later invoked:
 
 This mechanism can be used to initialize and share global state between all the HTTP requests made to the deployment or to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
 
+## Deployment Configuration
+
+The deployer settings cover aspects of the pipeline deployment process and specific back-end infrastructure used to provision and manage the resources required to run the deployment servers. Independently of that, `DeploymentSettings` can be used to fully customize all aspects pertaining to the deployment ASGI application itself, including:
+
+* HTTP endpoints
+* middleware
+* secure headers
+* CORS settings
+* mounting and serving static files to support deploying single-page applications alongside the pipeline
+* for more advanced cases, even the ASGI framework (e.g. FastAPI, Django, Flask, Falcon, Quart, BlackSheep, etc.) and its configuration can be customized
+
+Example:
+
+```python
+from zenml.config import DeploymentSettings, EndpointSpec, EndpointMethod
+from zenml import pipeline
+
+async def custom_health_check() -> Dict[str, Any]:
+    from zenml.client import Client
+
+    client = Client()
+    return {
+        "status": "healthy",
+        "info": client.zen_store.get_store_info().model_dump(),
+    }
+
+@pipeline(settings={"deployment": DeploymentSettings(
+    custom_endpoints=[
+        EndpointSpec(
+            path="/health",
+            method=EndpointMethod.GET,
+            handler=custom_health_check,
+            auth_required=False,
+        ),
+    ],
+)})
+def my_pipeline():
+    ...
+```
+
+For more detailed information on deployment options, see the [deployment settings guide](./deployment_settings.md).
+
 ## Best Practices
 
 1. **Design for Parameters**: Structure your pipelines to accept meaningful parameters that control behavior

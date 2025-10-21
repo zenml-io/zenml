@@ -23,7 +23,7 @@ import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
-from zenml.config.deployment_settings import (
+from zenml.config import (
     AppExtensionSpec,
     DeploymentSettings,
     EndpointSpec,

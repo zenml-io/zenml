@@ -16,7 +16,7 @@
 import os
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
-from typing import Any, AsyncGenerator, Dict, List, cast
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 from anyio import to_thread
 from asgiref.typing import (
@@ -33,8 +33,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from zenml import __version__ as zenml_version
-from zenml.config.deployment_settings import (
+from zenml.config import (
     AppExtensionSpec,
+    DeploymentDefaultEndpoints,
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
@@ -269,6 +270,15 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             or f"ZenML pipeline deployment server for the "
             f"{self.deployment.name} deployment"
         )
+        docs_url_path: Optional[str] = None
+        redoc_url_path: Optional[str] = None
+        if not self.settings.endpoint_enabled(DeploymentDefaultEndpoints.DOCS):
+            docs_url_path = self.settings.docs_url_path
+        if not self.settings.endpoint_enabled(
+            DeploymentDefaultEndpoints.REDOC
+        ):
+            redoc_url_path = self.settings.redoc_url_path
+
         fastapi_kwargs: Dict[str, Any] = dict(
             title=title,
             description=description,
@@ -276,8 +286,8 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             if self.settings.app_version is not None
             else zenml_version,
             root_path=self.settings.root_url_path,
-            docs_url=self.settings.docs_url_path,
-            redoc_url=self.settings.redoc_url_path,
+            docs_url=docs_url_path,
+            redoc_url=redoc_url_path,
             lifespan=self.lifespan,
         )
         fastapi_kwargs.update(self.settings.app_kwargs)

@@ -26,7 +26,7 @@ from asgiref.typing import (
 from zenml.config.source import SourceOrObject
 
 if TYPE_CHECKING:
-    from zenml.config.deployment_settings import (
+    from zenml.config import (
         EndpointSpec,
         MiddlewareSpec,
     )

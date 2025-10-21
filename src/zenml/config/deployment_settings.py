@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Deployment settings."""
 
-from enum import Enum
+from enum import Enum, IntFlag, auto
 from typing import (
     Any,
     Callable,
@@ -490,13 +490,36 @@ class SecureHeadersConfig(BaseModel):
 
 
 DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH = ""
-DEFAULT_DEPLOYMENT_APP_API_URL_PATH = "/api"
+DEFAULT_DEPLOYMENT_APP_API_URL_PATH = ""
 DEFAULT_DEPLOYMENT_APP_DOCS_URL_PATH = "/docs"
 DEFAULT_DEPLOYMENT_APP_REDOC_URL_PATH = "/redoc"
 DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
 DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
 DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
 DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
+
+
+class DeploymentDefaultEndpoints(IntFlag):
+    """Default endpoints for the deployment application."""
+
+    DOCS = auto()
+    REDOC = auto()
+    INVOKE = auto()
+    HEALTH = auto()
+    INFO = auto()
+    METRICS = auto()
+    DASHBOARD = auto()
+    DOC = DOCS | REDOC
+    API = INVOKE | HEALTH | INFO | METRICS
+    ALL = DOCS | REDOC | INVOKE | HEALTH | INFO | METRICS | DASHBOARD
+
+
+class DeploymentDefaultMiddleware(IntFlag):
+    """Default middleware for the deployment application."""
+
+    CORS = auto()
+    SECURE_HEADERS = auto()
+    ALL = CORS | SECURE_HEADERS
 
 
 class DeploymentSettings(BaseSettings):
@@ -519,6 +542,8 @@ class DeploymentSettings(BaseSettings):
     * the location of dashboard static files can be provided to replace the
     default UI that is included with the deployment ASGI application:
     `dashboard_files_path`
+    * which default endpoints and middleware to include:
+    `include_default_endpoints` and `include_default_middleware`
     * the CORS configuration: `cors`
     * the secure headers configuration: `secure_headers`
     * the thread pool size: `thread_pool_size`
@@ -560,9 +585,13 @@ class DeploymentSettings(BaseSettings):
             to the deployment ASGI application constructor.
 
         include_default_endpoints: Whether to include the default endpoints in
-            the ASGI application.
+            the ASGI application. Can be a boolean or a list of default endpoints
+            to include. See the `DeploymentDefaultEndpoints` enum for the available
+            default endpoints.
         include_default_middleware: Whether to include the default middleware
-            in the ASGI application.
+            in the ASGI application. Can be a boolean or a list of default middleware
+            to include. See the `DeploymentDefaultMiddleware` enum for the available
+            default middleware.
 
         root_url_path: Root URL path.
         docs_url_path: URL path for the OpenAPI documentation endpoint.
@@ -577,9 +606,9 @@ class DeploymentSettings(BaseSettings):
             default UI that is included with the deployment ASGI application.
             The referenced directory must contain at a minimum an `index.html`
             file. One or more subdirectories can be included to serve static
-            files (e.g. /assets, /css, /js, etc.). The value can be an absolute
-            path or a path relative to the source root (i.e. relative to the
-            directory where `zenml init` was run).
+            files (e.g. /assets, /css, /js, etc.). The path must be relative to
+            the source root (e.g. relative to the directory where `zenml init`
+            was run or where the main running Python script is located).
 
         cors: Configuration for CORS.
         secure_headers: Configuration for secure headers.
@@ -624,8 +653,12 @@ class DeploymentSettings(BaseSettings):
     app_version: Optional[str] = None
     app_kwargs: Dict[str, Any] = {}
 
-    include_default_endpoints: bool = True
-    include_default_middleware: bool = True
+    include_default_endpoints: Union[
+        bool, List[DeploymentDefaultEndpoints]
+    ] = True
+    include_default_middleware: Union[
+        bool, List[DeploymentDefaultMiddleware]
+    ] = True
 
     root_url_path: str = DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH
     api_url_path: str = DEFAULT_DEPLOYMENT_APP_API_URL_PATH
@@ -654,7 +687,7 @@ class DeploymentSettings(BaseSettings):
     # Pluggable app extensions for advanced features
     app_extensions: Optional[List[AppExtensionSpec]] = None
 
-    uvicorn_host: str = "0.0.0.0"
+    uvicorn_host: str = "0.0.0.0"  # nosec
     uvicorn_port: int = 8000
     uvicorn_workers: int = 1
     log_level: LoggingLevels = LoggingLevels.INFO
@@ -682,6 +715,34 @@ class DeploymentSettings(BaseSettings):
         if self.deployment_service_class is not None:
             assert isinstance(self.deployment_service_class, SourceOrObject)
             self.deployment_service_class.load()
+
+    def endpoint_enabled(self, endpoint: DeploymentDefaultEndpoints) -> bool:
+        """Check if an endpoint is enabled.
+
+        Args:
+            endpoint: The endpoint to check.
+
+        Returns:
+            True if the endpoint is enabled, False otherwise.
+        """
+        if isinstance(self.include_default_endpoints, bool):
+            return self.include_default_endpoints
+        return endpoint in self.include_default_endpoints
+
+    def middleware_enabled(
+        self, middleware: DeploymentDefaultMiddleware
+    ) -> bool:
+        """Check if a middleware is enabled.
+
+        Args:
+            middleware: The middleware to check.
+
+        Returns:
+            True if the middleware is enabled, False otherwise.
+        """
+        if isinstance(self.include_default_middleware, bool):
+            return self.include_default_middleware
+        return middleware in self.include_default_middleware
 
     model_config = ConfigDict(
         # public attributes are mutable

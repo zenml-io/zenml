@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from zenml.config.deployment_settings import (
+from zenml.config import (
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,

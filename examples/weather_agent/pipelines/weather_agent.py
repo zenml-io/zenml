@@ -12,16 +12,15 @@ from pipelines.hooks import (
 from steps import analyze_weather_with_llm, get_weather
 
 from zenml import pipeline
-from zenml.config import DeploymentSettings, DockerSettings
-
-# Import enums for type-safe capture mode configuration
-from zenml.config.deployment_settings import (
+from zenml.config import (
+    DeploymentSettings,
+    DockerSettings,
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
+    ResourceSettings,
     SecureHeadersConfig,
 )
-from zenml.config.resource_settings import ResourceSettings
 
 docker_settings = DockerSettings(
     requirements=["openai"],
@@ -33,11 +32,16 @@ async def health_detailed() -> Dict[str, Any]:
     """Detailed health check with system metrics."""
     import psutil
 
+    from zenml.client import Client
+
+    client = Client()
+
     return {
         "status": "healthy",
         "cpu_percent": psutil.cpu_percent(),
         "memory_percent": psutil.virtual_memory().percent,
         "disk_percent": psutil.disk_usage("/").percent,
+        "zenml": client.zen_store.get_store_info().model_dump(),
     }
 
 
@@ -90,7 +94,7 @@ class RequestTimingMiddleware:
 deployment_settings = DeploymentSettings(
     custom_endpoints=[
         EndpointSpec(
-            path="/health/detailed",
+            path="/health",
             method=EndpointMethod.GET,
             handler=health_detailed,
             auth_required=False,
@@ -102,7 +106,7 @@ deployment_settings = DeploymentSettings(
             order=10,
         ),
     ],
-    # dashboard_files_path="ui",
+    dashboard_files_path="ui",
     secure_headers=SecureHeadersConfig(
         csp=(
             "default-src 'none'; "

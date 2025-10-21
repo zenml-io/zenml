@@ -12,7 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Config classes."""
-from zenml.config.deployment_settings import DeploymentSettings
+from zenml.config.deployment_settings import (
+    DeploymentSettings,
+    DeploymentDefaultEndpoints,
+    DeploymentDefaultMiddleware,
+    EndpointSpec,
+    EndpointMethod,
+    MiddlewareSpec,
+    AppExtensionSpec,
+    SecureHeadersConfig,
+    CORSConfig,
+)
 from zenml.config.docker_settings import (
     DockerSettings,
     PythonPackageInstaller,
@@ -26,6 +36,14 @@ from zenml.config.cache_policy import CachePolicy
 
 __all__ = [
     "DeploymentSettings",
+    "DeploymentDefaultEndpoints",
+    "DeploymentDefaultMiddleware",
+    "EndpointSpec",
+    "EndpointMethod",
+    "MiddlewareSpec",
+    "AppExtensionSpec",
+    "SecureHeadersConfig",
+    "CORSConfig",
     "DockerSettings",
     "PythonPackageInstaller",
     "PythonEnvironmentExportMethod",

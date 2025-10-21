@@ -47,6 +47,7 @@
 * [Service Connectors](how-to/stack-components/service_connectors.md)
 * [Pipeline Snapshots](how-to/snapshots/snapshots.md)
 * [Pipeline Deployments](how-to/deployment/deployment.md)
+  * [Deployment Settings](how-to/deployment/deployment_settings.md)
 * [Containerization](how-to/containerization/containerization.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)
 * [Secrets](how-to/secrets/secrets.md)
