@@ -194,7 +194,7 @@ class FastAPIMiddlewareAdapter(MiddlewareAdapter):
         if spec.native:
             if isinstance(middleware, type):
                 app.add_middleware(
-                    middleware,
+                    middleware,  # type: ignore[arg-type]
                     **spec.extra_kwargs,
                 )
                 return
@@ -207,7 +207,7 @@ class FastAPIMiddlewareAdapter(MiddlewareAdapter):
 
         if isinstance(middleware, type):
             app.add_middleware(
-                middleware,
+                middleware,  # type: ignore[arg-type]
                 **spec.extra_kwargs,
             )
             return

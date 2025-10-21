@@ -24,7 +24,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -35,7 +34,6 @@ from asgiref.typing import (
     ASGIReceiveCallable,
     ASGISendCallable,
     ASGISendEvent,
-    HTTPScope,
     Scope,
 )
 
@@ -423,8 +421,7 @@ class BaseDeploymentAppRunner(ABC):
             )
         )
 
-        if self.settings.dashboard_files_path:
-            specs.extend(self._get_dashboard_endpoints())
+        specs.extend(self._get_dashboard_endpoints())
 
         return specs
 
@@ -529,7 +526,6 @@ class BaseDeploymentAppRunner(ABC):
             if scope["type"] != "http":
                 skip = True
             else:
-                scope = cast(HTTPScope, scope)
                 path = scope["path"]
 
                 if path.startswith(

@@ -102,7 +102,7 @@ deployment_settings = DeploymentSettings(
             order=10,
         ),
     ],
-    dashboard_files_path="ui",
+    # dashboard_files_path="ui",
     secure_headers=SecureHeadersConfig(
         csp=(
             "default-src 'none'; "
