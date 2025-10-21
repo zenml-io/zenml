@@ -497,9 +497,6 @@ DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH = "/invoke"
 DEFAULT_DEPLOYMENT_APP_HEALTH_URL_PATH = "/health"
 DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH = "/info"
 DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
-DEFAULT_DEPLOYMENT_APP_DASHBOARD_FILES_PATH = (
-    "zenml.deployers.server.dashboard"
-)
 
 
 class DeploymentSettings(BaseSettings):
@@ -581,7 +578,8 @@ class DeploymentSettings(BaseSettings):
             The referenced directory must contain at a minimum an `index.html`
             file. One or more subdirectories can be included to serve static
             files (e.g. /assets, /css, /js, etc.). The value can be an absolute
-            path or a Python source path (e.g. "myproject.static_files").
+            path or a path relative to the source root (i.e. relative to the
+            directory where `zenml init` was run).
 
         cors: Configuration for CORS.
         secure_headers: Configuration for secure headers.
@@ -638,10 +636,7 @@ class DeploymentSettings(BaseSettings):
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
 
-    dashboard_files_path: Optional[str] = (
-        DEFAULT_DEPLOYMENT_APP_DASHBOARD_FILES_PATH
-    )
-
+    dashboard_files_path: Optional[str] = None
     cors: CORSConfig = CORSConfig()
     secure_headers: SecureHeadersConfig = SecureHeadersConfig()
 

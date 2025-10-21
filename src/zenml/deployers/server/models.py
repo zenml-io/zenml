@@ -107,6 +107,9 @@ class DeploymentInfo(BaseModel):
 
     id: UUID = Field(title="The ID of the deployment.")
     name: str = Field(title="The name of the deployment.")
+    auth_enabled: bool = Field(
+        title="Whether the deployment is authenticated."
+    )
 
 
 class SnapshotInfo(BaseModel):

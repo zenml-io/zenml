@@ -19,6 +19,7 @@ from zenml.config.deployment_settings import (
     EndpointMethod,
     EndpointSpec,
     MiddlewareSpec,
+    SecureHeadersConfig,
 )
 from zenml.config.resource_settings import ResourceSettings
 
@@ -101,6 +102,15 @@ deployment_settings = DeploymentSettings(
             order=10,
         ),
     ],
+    dashboard_files_path="ui",
+    secure_headers=SecureHeadersConfig(
+        csp=(
+            "default-src 'none'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline'"
+        ),
+    ),
 )
 
 environment = {}
@@ -139,7 +149,7 @@ if os.getenv("OPENAI_API_KEY"):
 )
 def weather_agent(
     city: str = "London",
-) -> str:
+) -> tuple[Dict[str, float], str]:
     """Weather agent pipeline.
 
     Args:
@@ -150,4 +160,4 @@ def weather_agent(
     """
     weather_data = get_weather(city=city)
     result = analyze_weather_with_llm(weather_data=weather_data, city=city)
-    return result
+    return weather_data, result

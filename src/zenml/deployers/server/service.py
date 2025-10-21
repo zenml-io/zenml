@@ -426,6 +426,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             deployment=DeploymentInfo(
                 id=self.deployment.id,
                 name=self.deployment.name,
+                auth_enabled=self.deployment.auth_key is not None,
             ),
             snapshot=SnapshotInfo(
                 id=self.snapshot.id,

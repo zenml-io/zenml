@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base deployment app runner."""
 
-import importlib
 import os
 from abc import ABC, abstractmethod
 from typing import (
@@ -65,6 +64,7 @@ from zenml.deployers.server.service import (
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
+from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -347,19 +347,26 @@ class BaseDeploymentAppRunner(ABC):
         # If an absolute path is provided, use it
         dashboard_files_path = self.settings.dashboard_files_path
         if not dashboard_files_path:
-            return None
+            import zenml
+
+            return os.path.join(
+                zenml.__path__[0], "deployers", "server", "dashboard"
+            )
+
         if os.path.isabs(dashboard_files_path):
             return dashboard_files_path
 
-        # Otherwise, assume this is a Python source path and load the module
-        try:
-            module = importlib.import_module(dashboard_files_path)
-        except Exception as e:
+        # Otherwise, assume this is a path relative to the source root
+        source_root = source_utils.get_source_root()
+        dashboard_path = os.path.join(source_root, dashboard_files_path)
+        if not os.path.exists(dashboard_path):
             raise RuntimeError(
-                f"Failed to import dashboard files module {dashboard_files_path}: {e}"
-            ) from e
-
-        return module.__path__[0]
+                f"Dashboard files path '{dashboard_path}' does not exist. "
+                f"Please check that the path exists and that the source root "
+                f"is set correctly. Hint: run `zenml init` in your local source "
+                f"directory to initialize the source root path."
+            )
+        return dashboard_path
 
     @abstractmethod
     def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
