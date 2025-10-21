@@ -18,7 +18,7 @@ from uuid import UUID
 from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
@@ -158,10 +158,6 @@ class DynamicPipelineRunner:
                     self._orchestrator.run_cleanup_hook(
                         snapshot=self._snapshot
                     )
-                # TODO: This update should include something that the run is
-                # actually finished. This is the only way for us to make sure we can
-                # invalidate the run scoped token, as the pipeline function can
-                # continue after a step failed when the user catches the exception.
                 publish_successful_pipeline_run(run.id)
 
     def run_step_sync(
@@ -174,9 +170,10 @@ class DynamicPipelineRunner:
             "StepRunResultFuture", Sequence["StepRunResultFuture"], None
         ] = None,
     ) -> StepRunResult:
+        step = step.copy()
         inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
         compiled_step, _ = _compile_step(
-            self.pipeline, step, id, upstream_steps, inputs
+            self._snapshot, self.pipeline, step, id, upstream_steps, inputs
         )
         step_run = _run_step_sync(
             snapshot=self._snapshot,
@@ -197,9 +194,10 @@ class DynamicPipelineRunner:
             "StepRunResultFuture", Sequence["StepRunResultFuture"], None
         ] = None,
     ) -> StepRunResultFuture:
+        step = step.copy()
         inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
         compiled_step, invocation_id = _compile_step(
-            self.pipeline, step, id, upstream_steps, inputs
+            self._snapshot, self.pipeline, step, id, upstream_steps, inputs
         )
 
         def _run() -> StepRunResult:
@@ -266,6 +264,7 @@ def _prepare_step_run(
 
 
 def _compile_step(
+    snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
     step: "BaseStep",
     id: Optional[str],
@@ -286,6 +285,9 @@ def _compile_step(
             external_artifacts[name] = value
         else:
             external_artifacts[name] = ExternalArtifact(value=value)
+
+    if config := get_dynamic_step_configuration(snapshot, step):
+        step._configuration = config
 
     invocation_id = pipeline.add_dynamic_invocation(
         step=step,
@@ -409,3 +411,16 @@ def _runs_in_process(step: "Step") -> bool:
         return False
 
     return True
+
+
+def get_dynamic_step_configuration(
+    snapshot: "PipelineSnapshotResponse",
+    step: "BaseStep",
+) -> Optional["StepConfiguration"]:
+    step_source = step.resolve().import_path
+
+    for compiled_step in snapshot.step_configurations.values():
+        if compiled_step.spec.source.import_path == step_source:
+            return compiled_step.config
+
+    return None

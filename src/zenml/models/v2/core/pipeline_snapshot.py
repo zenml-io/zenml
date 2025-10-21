@@ -31,7 +31,7 @@ from pydantic import Field, field_validator
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step, StepConfiguration
+from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
@@ -81,12 +81,6 @@ class PipelineSnapshotBase(BaseZenModel):
     )
     step_configurations: Dict[str, Step] = Field(
         default={}, title="The step configurations for this snapshot."
-    )
-    step_configuration_templates: Optional[Dict[str, StepConfiguration]] = (
-        Field(
-            default=None,
-            title="The step configuration templates of the snapshot.",
-        )
     )
     client_environment: Dict[str, Any] = Field(
         default={}, title="The client environment for this snapshot."

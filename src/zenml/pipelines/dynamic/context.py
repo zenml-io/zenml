@@ -69,7 +69,3 @@ class DynamicPipelineRunContext(BaseContext):
                 "Calling a pipeline within a dynamic pipeline is not allowed."
             )
         return super().__enter__()
-
-
-def get_dynamic_pipeline_run_context() -> Optional[DynamicPipelineRunContext]:
-    return DynamicPipelineRunContext.get()

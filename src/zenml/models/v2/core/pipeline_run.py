@@ -175,6 +175,10 @@ class PipelineRunUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     end_time: Optional[datetime] = None
+    completed: Optional[bool] = Field(
+        default=None,
+        title="Whether the pipeline run is completed.",
+    )
     orchestrator_run_id: Optional[str] = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use

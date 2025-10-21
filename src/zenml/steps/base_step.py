@@ -200,14 +200,12 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(
-            name=name,
+        self._configuration = PartialStepConfiguration(name=name)
+        self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
-        )
-        self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
@@ -1061,6 +1059,7 @@ To avoid this consider setting step parameters only in one place (config or code
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
+        skip_input_validation: bool = False,
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
@@ -1075,6 +1074,7 @@ To avoid this consider setting step parameters only in one place (config or code
             model_artifacts_or_metadata: The model artifacts or metadata of
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
+            skip_input_validation: If True, will skip the input validation.
 
         Raises:
             StepInterfaceError: If explicit materializers were specified for an
@@ -1164,12 +1164,13 @@ To avoid this consider setting step parameters only in one place (config or code
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
-        self._validate_inputs(
-            input_artifacts=input_artifacts,
-            external_artifacts=external_artifacts,
-            model_artifacts_or_metadata=model_artifacts_or_metadata,
-            client_lazy_loaders=client_lazy_loaders,
-        )
+        if not skip_input_validation:
+            self._validate_inputs(
+                input_artifacts=input_artifacts,
+                external_artifacts=external_artifacts,
+                model_artifacts_or_metadata=model_artifacts_or_metadata,
+                client_lazy_loaders=client_lazy_loaders,
+            )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)

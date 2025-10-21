@@ -30,11 +30,9 @@ from pydantic import ConfigDict, ValidationError
 from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import ArtifactVersionResponse, PipelineRunResponse
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.pipelines.run_utils import (
-    create_placeholder_run,
     should_prevent_pipeline_execution,
 )
 from zenml.steps.step_invocation import StepInvocation
@@ -54,7 +52,15 @@ class DynamicPipeline(Pipeline):
 
     @property
     def depends_on(self) -> List["BaseStep"]:
-        return []
+        # TODO: Even with this, it will not be possible to define all potential
+        # docker builds:
+        # If a step will be called multiple times, once without step operator
+        # and once with, it might require multiple docker images. Even if this
+        # list had two copies of the same step, how would we map at runtime
+        # which one to use?
+        # TODO: maybe this needs to be a dict, and steps can select which
+        # "template" config (including the docker image) to use?
+        return getattr(self, "_depends_on", [])
 
     @property
     def is_dynamic(self) -> bool:
@@ -141,6 +147,18 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self._parameters = validated_args
         self._invocations = {}
+        with self:
+            for step in self.depends_on:
+                self.add_step_invocation(
+                    step,
+                    input_artifacts={},
+                    external_artifacts={},
+                    model_artifacts_or_metadata={},
+                    client_lazy_loaders={},
+                    parameters={},
+                    default_parameters={},
+                    upstream_steps=set(),
+                )
 
     def add_dynamic_invocation(
         self,
@@ -179,28 +197,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return
 
         stack = Client().active_stack
-
         if not stack.orchestrator.supports_dynamic_pipelines:
             raise RuntimeError(
                 f"The {stack.orchestrator.__class__.__name__} does not support dynamic pipelines. "
             )
 
         self.prepare(*args, **kwargs)
-        snapshot = self._create_snapshot(**self._run_args)
-
-        with setup_pipeline_logging(
-            source="client", snapshot=snapshot
-        ) as logs_request:
-            run = create_placeholder_run(
-                snapshot=snapshot,
-                logs=logs_request,
-            )
-            stack.orchestrator.run(
-                snapshot=snapshot,
-                stack=stack,
-                placeholder_run=run,
-            )
-        return Client().get_pipeline_run(run.id)
+        return self._run()
 
     def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
         """Calls the pipeline entrypoint function with the given arguments.
@@ -227,6 +230,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "Check out the pydantic error above for more details."
             ) from e
 
+        # Clear the invocations as they might still contain invocations from
+        # the compilation phase.
+        self._invocations = {}
         self.entrypoint(**validated_args)
 
     def _compute_output_schema(self) -> Optional[Dict[str, Any]]:

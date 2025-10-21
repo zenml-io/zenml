@@ -131,6 +131,7 @@ def publish_successful_pipeline_run(
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.COMPLETED,
             end_time=utc_now(),
+            completed=True,
         ),
     )
 
@@ -151,6 +152,7 @@ def publish_failed_pipeline_run(
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
             end_time=utc_now(),
+            completed=True,
         ),
     )
 

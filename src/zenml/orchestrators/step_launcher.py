@@ -431,12 +431,14 @@ class StepLauncher:
         """
         step_run_info = StepRunInfo(
             config=self._step.config,
+            spec=self._step.spec,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self._invocation_id,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
             force_write_logs=force_write_logs,
+            snapshot=self._snapshot,
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(

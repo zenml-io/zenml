@@ -666,7 +666,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
 
-            self.in_progress = self._check_if_run_in_progress()
+            if run_update.completed:
+                self.in_progress = False
+            elif self.snapshot and self.snapshot.is_dynamic:
+                # In dynamic pipelines, we can't actually check if the run is
+                # in progress by inspecting the DAG. Only once the orchestration
+                # container finishes we know for sure.
+                pass
+            else:
+                self.in_progress = self._check_if_run_in_progress()
 
         if run_update.orchestrator_run_id:
             self.orchestrator_run_id = run_update.orchestrator_run_id
@@ -761,9 +769,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if not run_status.is_finished:
             return True
-
-        if self.snapshot and self.snapshot.is_dynamic:
-            return False
 
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
