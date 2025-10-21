@@ -18,22 +18,25 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Optional,
     Set,
     TypeVar,
     Union,
 )
-from uuid import uuid4
 
 from pydantic import ConfigDict, ValidationError
 
-from zenml import ExternalArtifact, constants
+from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import ArtifactVersionResponse, PipelineRunResponse
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.pipelines.run_utils import (
+    create_placeholder_run,
+    should_prevent_pipeline_execution,
+)
 from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import dict_utils, pydantic_utils
 
@@ -48,6 +51,10 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 class DynamicPipeline(Pipeline):
     """ZenML pipeline class."""
+
+    @property
+    def depends_on(self) -> List["BaseStep"]:
+        return []
 
     @property
     def is_dynamic(self) -> bool:
@@ -167,15 +174,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def __call__(
         self, *args: Any, **kwargs: Any
     ) -> Optional[PipelineRunResponse]:
-        should_prevent_execution = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
-
-        if should_prevent_execution:
-            logger.warning("Preventing execution of pipeline '%s'.", self.name)
+        if should_prevent_pipeline_execution():
+            logger.info("Preventing execution of pipeline '%s'.", self.name)
             return
 
-        if not Client().active_stack.orchestrator.supports_dynamic_pipelines:
+        stack = Client().active_stack
+
+        if not stack.orchestrator.supports_dynamic_pipelines:
             raise RuntimeError(
-                f"The {Client().active_stack.orchestrator.__class__.__name__} does not support dynamic pipelines. "
+                f"The {stack.orchestrator.__class__.__name__} does not support dynamic pipelines. "
             )
 
         self.prepare(*args, **kwargs)
@@ -186,12 +193,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         ) as logs_request:
             run = create_placeholder_run(
                 snapshot=snapshot,
-                orchestrator_run_id=str(uuid4()),
                 logs=logs_request,
             )
-            Client().active_stack.orchestrator.run(
+            stack.orchestrator.run(
                 snapshot=snapshot,
-                stack=Client().active_stack,
+                stack=stack,
                 placeholder_run=run,
             )
         return Client().get_pipeline_run(run.id)

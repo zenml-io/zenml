@@ -120,6 +120,24 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 builds.append(pipeline_build)
                 included_pipeline_build = True
 
+        for name, step_config in snapshot.step_configuration_templates.items():
+            step_settings = step_config.docker_settings
+
+            if step_settings != pipeline_settings:
+                build = BuildConfiguration(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+                    settings=step_settings,
+                    step_name=name,
+                )
+                builds.append(build)
+            elif not included_pipeline_build:
+                pipeline_build = BuildConfiguration(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+                    settings=pipeline_settings,
+                )
+                builds.append(pipeline_build)
+                included_pipeline_build = True
+
         if not included_pipeline_build and self.should_build_pipeline_image(
             snapshot
         ):

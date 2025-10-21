@@ -96,13 +96,6 @@ class LocalOrchestrator(BaseOrchestrator):
                 step.
             RuntimeError: If the pipeline run fails.
         """
-        if snapshot.schedule:
-            logger.warning(
-                "Local Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
-
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()
 
@@ -203,10 +196,19 @@ class LocalOrchestrator(BaseOrchestrator):
         """Submits a dynamic pipeline to the orchestrator."""
         from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
 
+        self._orchestrator_run_id = str(uuid4())
+        start_time = time.time()
+
         runner = DynamicPipelineRunner(snapshot=snapshot, run=placeholder_run)
         with temporary_environment(environment):
             runner.run_pipeline()
 
+        run_duration = time.time() - start_time
+        logger.info(
+            "Pipeline run has finished in `%s`.",
+            string_utils.get_human_readable_time(run_duration),
+        )
+        self._orchestrator_run_id = None
         return None
 
     def get_orchestrator_run_id(self) -> str:

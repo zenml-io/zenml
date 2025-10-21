@@ -17,11 +17,11 @@ import argparse
 import logging
 import sys
 
-from zenml import constants
 from zenml.entrypoints.base_entrypoint_configuration import (
     ENTRYPOINT_CONFIG_SOURCE_OPTION,
     BaseEntrypointConfiguration,
 )
+from zenml.pipelines.run_utils import prevent_pipeline_execution
 from zenml.utils import source_utils
 
 
@@ -35,23 +35,22 @@ def main() -> None:
     _setup_logging()
 
     # Make sure this entrypoint does not run an entire pipeline when
-    # importing user modules. This could happen if the `pipeline.run()` call
-    # is not wrapped in a function or an `if __name__== "__main__":` check)
-    constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+    # importing user modules. This could happen if a pipeline is called in a
+    # module without an `if __name__== "__main__":` check)
+    with prevent_pipeline_execution():
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True
+        )
+        args, remaining_args = parser.parse_known_args()
 
-    # Read the source for the entrypoint configuration class from the command
-    # line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
-    args, remaining_args = parser.parse_known_args()
+        entrypoint_config_class = source_utils.load_and_validate_class(
+            args.entrypoint_config_source,
+            expected_class=BaseEntrypointConfiguration,
+        )
+        entrypoint_config = entrypoint_config_class(arguments=remaining_args)
 
-    entrypoint_config_class = source_utils.load_and_validate_class(
-        args.entrypoint_config_source,
-        expected_class=BaseEntrypointConfiguration,
-    )
-    entrypoint_config = entrypoint_config_class(arguments=remaining_args)
-
-    entrypoint_config.run()
+        entrypoint_config.run()
 
 
 if __name__ == "__main__":

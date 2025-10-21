@@ -488,7 +488,10 @@ class BaseStep:
             return context.runner.run_step_sync(self, id, args, kwargs, after)
 
         if not Pipeline.ACTIVE_PIPELINE:
-            from zenml import constants, get_step_context
+            from zenml import get_step_context
+            from zenml.pipelines.run_utils import (
+                should_prevent_pipeline_execution,
+            )
 
             # If the environment variable was set to explicitly not run on the
             # stack, we do that.
@@ -508,11 +511,8 @@ class BaseStep:
                 # but instead just call the step function
                 return self.call_entrypoint(*args, **kwargs)
 
-            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-                logger.info(
-                    "Preventing execution of step '%s'.",
-                    self.name,
-                )
+            if should_prevent_pipeline_execution():
+                logger.info("Preventing execution of step '%s'.", self.name)
                 return
 
             return run_as_single_step_pipeline(self, *args, **kwargs)

@@ -41,7 +41,6 @@ import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import Self
 
-from zenml import constants
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
@@ -54,6 +53,10 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.constants import (
+    ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
+    handle_bool_env_var,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
@@ -80,6 +83,7 @@ from zenml.models import (
 from zenml.pipelines import build_utils
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
+    should_prevent_pipeline_execution,
     submit_pipeline,
     upload_notebook_cell_code_if_necessary,
 )
@@ -935,17 +939,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The pipeline run or `None` if running with a schedule.
         """
-        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-            # An environment variable was set to stop the execution of
-            # pipelines. This is done to prevent execution of module-level
-            # pipeline.run() calls when importing modules needed to run a step.
-            logger.info(
-                "Preventing execution of pipeline '%s'. If this is not "
-                "intended behavior, make sure to unset the environment "
-                "variable '%s'.",
-                self.name,
-                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-            )
+        if should_prevent_pipeline_execution():
+            logger.info("Preventing execution of pipeline '%s'.", self.name)
             return None
 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
@@ -958,8 +953,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 # Pipeline runs scheduled to run in the future are not logged
                 # via the client.
                 logging_enabled = False
-            elif constants.handle_bool_env_var(
-                constants.ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
+            elif handle_bool_env_var(
+                ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
             ):
                 logging_enabled = False
             else:

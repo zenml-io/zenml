@@ -35,6 +35,7 @@ from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
+    StepConfiguration,
     StepConfigurationUpdate,
     StepSpec,
 )
@@ -47,6 +48,7 @@ from zenml.utils import pydantic_utils, secret_utils, settings_utils
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.stack import Stack, StackComponent
+    from zenml.steps.base_step import BaseStep
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
@@ -126,17 +128,29 @@ class Compiler:
                 merge=False,
             )
 
-        steps = {
-            invocation_id: self._compile_step_invocation(
-                invocation=invocation,
-                stack=stack,
-                step_config=(run_configuration.steps or {}).get(invocation_id),
-                pipeline_configuration=pipeline.configuration,
-            )
-            for invocation_id, invocation in self._get_sorted_invocations(
-                pipeline=pipeline
-            )
-        }
+        if pipeline.is_dynamic:
+            step_templates = {
+                step.name: self._compile_config_template(
+                    step=step, stack=stack
+                )
+                for step in pipeline.depends_on
+            }
+            steps = {}
+        else:
+            step_templates = None
+            steps = {
+                invocation_id: self._compile_step_invocation(
+                    invocation=invocation,
+                    stack=stack,
+                    step_config=(run_configuration.steps or {}).get(
+                        invocation_id
+                    ),
+                    pipeline_configuration=pipeline.configuration,
+                )
+                for invocation_id, invocation in self._get_sorted_invocations(
+                    pipeline=pipeline
+                )
+            }
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
 
@@ -156,6 +170,7 @@ class Compiler:
             is_dynamic=pipeline.is_dynamic,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
+            step_configuration_templates=step_templates,
             client_environment=get_run_environment_dict(),
             client_version=client_version,
             server_version=server_version,
@@ -519,6 +534,48 @@ class Compiler:
             spec=step_spec,
             config=full_step_config,
             step_config_overrides=step_configuration_overrides,
+        )
+
+    def _compile_config_template(
+        self,
+        step: "BaseStep",
+        stack: "Stack",
+        step_config: Optional["StepConfigurationUpdate"],
+    ) -> StepConfiguration:
+        """Compiles a ZenML step.
+
+        Args:
+            invocation: The step invocation to compile.
+            stack: The stack on which the pipeline will be run.
+            step_config: Run configuration for the step.
+            pipeline_configuration: Configuration for the pipeline.
+
+        Returns:
+            The compiled step.
+        """
+        if step_config:
+            step._apply_configuration(step_config)
+
+        convert_component_shortcut_settings_keys(
+            step.configuration.settings, stack=stack
+        )
+        step_secrets = secret_utils.resolve_and_verify_secrets(
+            step.configuration.secrets
+        )
+        step_settings = self._filter_and_validate_settings(
+            settings=step.configuration.settings,
+            configuration_level=ConfigurationLevel.STEP,
+            stack=stack,
+        )
+        step.configure(
+            secrets=step_secrets,
+            settings=step_settings,
+            merge=False,
+        )
+
+        # TODO: apply pipeline config
+        return StepConfiguration.model_validate(
+            step.configuration.model_dump()
         )
 
     def _get_sorted_invocations(

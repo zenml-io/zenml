@@ -95,14 +95,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
 
-    step_configuration: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=True,
-        )
-    )
     exception_info: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -208,16 +200,26 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     original_step_run: Optional["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )
-    step_configuration_schema: Optional["StepConfigurationSchema"] = (
-        Relationship(
-            sa_relationship_kwargs=dict(
-                viewonly=True,
-                primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.snapshot_id) == StepRunSchema.snapshot_id)",
-            ),
-        )
+    # In static pipelines, we use the config that is compiled in the snapshot.
+    static_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            viewonly=True,
+            primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.snapshot_id) == StepRunSchema.snapshot_id)",
+        ),
     )
-    dynamic_step_configuration_schema: Optional["StepConfigurationSchema"] = (
-        Relationship()
+    # In dynamic pipelines, the config is dynamically generated and cannot be
+    # included in the compiled snapshot. In this case, we link it directly to
+    # the step run.
+    dynamic_config: Optional["StepConfigurationSchema"] = Relationship()
+    # In legacy pipelines (before snapshots, former deployments), the config
+    # is stored as a string in the step run.
+    step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
     )
 
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
@@ -253,7 +255,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            joinedload(jl_arg(StepRunSchema.step_configuration_schema)),
+            joinedload(jl_arg(StepRunSchema.static_config)),
+            joinedload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
         if include_metadata:
@@ -347,10 +350,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         step = None
 
         if self.snapshot is not None:
-            if (
-                self.dynamic_step_configuration_schema
-                or self.step_configuration_schema
-            ):
+            if config_schema := (self.dynamic_config or self.static_config):
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.snapshot.pipeline_configuration
@@ -359,10 +359,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 pipeline_configuration.finalize_substitutions(
                     start_time=self.pipeline_run.start_time,
                     inplace=True,
-                )
-                config_schema = (
-                    self.dynamic_step_configuration_schema
-                    or self.step_configuration_schema
                 )
                 step = Step.from_dict(
                     json.loads(config_schema.config),

@@ -36,6 +36,7 @@ from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.utils import source_utils
 
@@ -102,7 +103,11 @@ class DynamicPipelineRunner:
         self._snapshot = snapshot
         self._run = run
         self._executor = ThreadPoolExecutor(max_workers=3)
-        self._pipeline = None
+        self._pipeline: Optional["DynamicPipeline"] = None
+        self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
+        self._orchestrator_run_id = (
+            self._orchestrator.get_orchestrator_run_id()
+        )
 
     @property
     def pipeline(self) -> "DynamicPipeline":
@@ -130,23 +135,29 @@ class DynamicPipelineRunner:
             snapshot=self._snapshot,
             run_id=self._run.id if self._run else None,
         ) as logs_request:
-            pipeline = self._load_pipeline()
             run = self._run or create_placeholder_run(
-                snapshot=self._snapshot, logs=logs_request
+                snapshot=self._snapshot,
+                orchestrator_run_id=self._orchestrator_run_id,
+                logs=logs_request,
             )
-            pipeline_kwargs = self._snapshot.pipeline_spec.parameters
+            pipeline_parameters = self._snapshot.pipeline_spec.parameters
 
             with DynamicPipelineRunContext(
-                pipeline=pipeline,
+                pipeline=self.pipeline,
                 run=run,
                 snapshot=self._snapshot,
                 runner=self,
             ):
+                self._orchestrator.run_init_hook(snapshot=self._snapshot)
                 try:
-                    pipeline._call_entrypoint(**pipeline_kwargs)
+                    self.pipeline._call_entrypoint(**pipeline_parameters)
                 except:
                     publish_failed_pipeline_run(run.id)
                     raise
+                finally:
+                    self._orchestrator.run_cleanup_hook(
+                        snapshot=self._snapshot
+                    )
                 # TODO: This update should include something that the run is
                 # actually finished. This is the only way for us to make sure we can
                 # invalidate the run scoped token, as the pipeline function can
@@ -164,20 +175,13 @@ class DynamicPipelineRunner:
         ] = None,
     ) -> StepRunResult:
         inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
-        compiled_step, invocation_id = _compile_step(
+        compiled_step, _ = _compile_step(
             self.pipeline, step, id, upstream_steps, inputs
         )
-        # updated_snapshot = Client().zen_store.update_snapshot(
-        #     self._snapshot.id,
-        #     snapshot_update=PipelineSnapshotUpdate(
-        #         add_steps={invocation_id: compiled_step}
-        #     ),
-        # )
-        # step_config = updated_snapshot.step_configurations[invocation_id]
         step_run = _run_step_sync(
             snapshot=self._snapshot,
             step=compiled_step,
-            orchestrator_run_id=self._run.orchestrator_run_id,
+            orchestrator_run_id=self._orchestrator_run_id,
             retry=_should_retry_locally(compiled_step),
             dynamic=True,
         )
@@ -202,7 +206,7 @@ class DynamicPipelineRunner:
             step_run = _run_step_sync(
                 snapshot=self._snapshot,
                 step=compiled_step,
-                orchestrator_run_id=self._run.orchestrator_run_id,
+                orchestrator_run_id=self._orchestrator_run_id,
                 retry=_should_retry_locally(compiled_step),
                 dynamic=True,
             )
