@@ -79,7 +79,7 @@ def test_clean_user_config(clean_client) -> None:
     analytics_opt_in = yaml_contents["analytics_opt_in"]
     version = yaml_contents["version"]
     runner = cli_runner()
-    result = runner.invoke(clean, ["--yes", True])
+    result = runner.invoke(clean, ["--yes"])
     assert result.exit_code == 0, f"Command failed: {result.output}"
     new_yaml_contents = yaml_utils.read_yaml(str(global_zen_config_yaml))
     assert user_id == new_yaml_contents["user_id"]
