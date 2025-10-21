@@ -15,18 +15,25 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from types import SimpleNamespace
-from typing import Dict, Iterator, List, Type
-from uuid import UUID, uuid4
+from typing import Dict, List, Type
+from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
-from zenml.config.deployment_settings import AppExtensionSpec, DeploymentSettings, EndpointSpec, MiddlewareSpec
+from zenml.config.deployment_settings import (
+    AppExtensionSpec,
+    DeploymentSettings,
+    EndpointSpec,
+    MiddlewareSpec,
+)
 from zenml.deployers.server.adapters import EndpointAdapter, MiddlewareAdapter
-from zenml.deployers.server.app import BaseDeploymentAppRunner, BaseDeploymentAppRunnerFlavor
+from zenml.deployers.server.app import (
+    BaseDeploymentAppRunner,
+    BaseDeploymentAppRunnerFlavor,
+)
 from zenml.deployers.server.models import BaseDeploymentInvocationRequest
 from zenml.deployers.server.service import PipelineDeploymentService
 
@@ -47,7 +54,7 @@ def _make_snapshot() -> SimpleNamespace:
         init_hook_source=None,
         init_hook_kwargs={},
         cleanup_hook_source=None,
-        deployment_settings = DeploymentSettings()
+        deployment_settings=DeploymentSettings(),
     )
     pipeline_spec = SimpleNamespace(
         parameters={"city": "London"},
@@ -71,9 +78,8 @@ def _make_snapshot() -> SimpleNamespace:
 def _make_deployment() -> SimpleNamespace:
     """Create a deployment stub with the attributes accessed by the service."""
     return SimpleNamespace(
-        id=uuid4(), name="deployment", snapshot=_make_snapshot(), auth_key = None
+        id=uuid4(), name="deployment", snapshot=_make_snapshot(), auth_key=None
     )
-
 
 
 class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
@@ -87,11 +93,8 @@ class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
 
 
 class _DummyDeploymentAppRunner(BaseDeploymentAppRunner):
-
     @classmethod
-    def load_deployment(
-        cls, deployment
-    ):
+    def load_deployment(cls, deployment):
         return deployment
 
     @property
@@ -136,6 +139,7 @@ def _make_service_stub(mocker: MockerFixture) -> PipelineDeploymentService:
     service.last_execution_time = None
     service.total_executions = 0
     return service
+
 
 def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
     """execute_pipeline should orchestrate helper methods and return response."""

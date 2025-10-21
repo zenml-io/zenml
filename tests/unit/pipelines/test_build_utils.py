@@ -198,7 +198,7 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
         extra_files=build_config.extra_files,
         include_files=True,
         code_repository=None,
-        deployment_settings=None,
+        extra_requirements_files={},
     )
     assert build.pipeline.id == pipeline_id
     assert build.is_local is True

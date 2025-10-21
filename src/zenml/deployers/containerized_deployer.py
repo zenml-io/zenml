@@ -26,6 +26,7 @@ from zenml.constants import (
     DEPLOYER_DOCKER_IMAGE_KEY,
 )
 from zenml.deployers.base_deployer import BaseDeployer
+from zenml.deployers.utils import load_deployment_requirements
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotBase,
@@ -87,10 +88,22 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         Returns:
             The required Docker builds.
         """
+        deployment_settings = (
+            snapshot.pipeline_configuration.deployment_settings
+        )
+        docker_settings = snapshot.pipeline_configuration.docker_settings
+        if not docker_settings.install_deployment_requirements:
+            return []
+
+        deployment_requirements = load_deployment_requirements(
+            deployment_settings
+        )
         return [
             BuildConfiguration(
                 key=DEPLOYER_DOCKER_IMAGE_KEY,
                 settings=snapshot.pipeline_configuration.docker_settings,
-                deployment_settings=snapshot.pipeline_configuration.deployment_settings,
+                extra_requirements_files={
+                    ".zenml_deployment_requirements": deployment_requirements,
+                },
             )
         ]

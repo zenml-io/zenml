@@ -15,12 +15,12 @@
 
 from types import SimpleNamespace
 from typing import Generator, List
-from typing_extensions import Type
 from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
+from typing_extensions import Type
 
 from zenml.config.deployment_settings import (
     AppExtensionSpec,
@@ -54,7 +54,7 @@ class _DummySnapshot:
             init_hook_source=None,
             init_hook_kwargs=None,
             cleanup_hook_source=None,
-            deployment_settings = DeploymentSettings()
+            deployment_settings=DeploymentSettings(),
         )
         self.pipeline_spec = SimpleNamespace(
             parameters={},
@@ -119,6 +119,7 @@ class _DummyOrchestrator:
     def run(self, snapshot, stack, placeholder_run):  # noqa: D401
         runtime.record_step_outputs("step1", {"result": "fast_value"})
 
+
 @pytest.fixture(autouse=True)
 def clean_runtime_state() -> Generator[None, None, None]:
     """Ensure runtime state is reset before and after each test."""
@@ -166,7 +167,9 @@ def _make_service(
     monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
     monkeypatch.setattr("zenml.deployers.server.app.Client", DummyClient)
 
-    service = PipelineDeploymentService(_DummyDeploymentAppRunner(deployment.id))
+    service = PipelineDeploymentService(
+        _DummyDeploymentAppRunner(deployment.id)
+    )
     service.initialize()
     service.params_model = _DummyParams
     service._orchestrator = _DummyOrchestrator()

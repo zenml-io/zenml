@@ -294,14 +294,19 @@ class SourceOrObject(Source):
         return self._is_loaded
 
     @classmethod
-    def convert_source_or_object(cls, source: Any) -> Any:
+    def convert_source_or_object(
+        cls,
+        source: Union[
+            str, "SourceOrObject", Source, Dict[str, Any], ObjectType
+        ],
+    ) -> Union["SourceOrObject", Dict[str, Any]]:
         """Converts a source string or object to a SourceOrObject object.
 
         Args:
             source: Source string or object.
 
         Returns:
-            The converted source.
+            The converted source or object.
         """
         if isinstance(source, str):
             source = cls.from_import_path(source)
