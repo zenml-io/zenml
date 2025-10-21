@@ -212,7 +212,9 @@ class ZenFormatter(formatting.HelpFormatter):
             # Wrap and render the description using a safe width calculation
             effective_width = _safe_width(
                 self.width,
-                getattr(self, "max_width", None),  # type: ignore[attr-defined]  # max_width may not be present on all formatter types; this is intentional
+                getattr(
+                    self, "max_width", None
+                ),  # max_width may not be present on all formatter types; this is intentional
             )
             text_width = max(effective_width - second_col - 4, 10)
             wrapped_text = formatting.wrap_text(
