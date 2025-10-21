@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from zenml.enums import MetadataResourceTypes
 from zenml.models import RunMetadataResource
 
@@ -31,8 +29,7 @@ def test_run_metadata_resource_equality_and_hash():
     )
     assert hash(r1) != hash(r4), "Hashes should differ for different types"
 
-    with pytest.raises(TypeError):
-        _ = r1 == "not_a_resource"
+    assert r1 != 1
 
     s = {r1, r2, r3}
     assert len(s) == 2, "Set should treat r1 and r2 as the same object"

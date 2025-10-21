@@ -21,10 +21,11 @@ from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
     PipelineRunIdentifier,
     RunMetadataResource,
     StepRunIdentifier,
-    VersionedIdentifier,
 )
 from zenml.steps.step_context import get_step_context
 
@@ -377,8 +378,8 @@ def bulk_log_metadata(
     metadata: Dict[str, MetadataType],
     pipeline_runs: list[PipelineRunIdentifier] | None = None,
     step_runs: list[StepRunIdentifier] | None = None,
-    artifact_versions: list[VersionedIdentifier] | None = None,
-    model_versions: list[VersionedIdentifier] | None = None,
+    artifact_versions: list[ArtifactVersionIdentifier] | None = None,
+    model_versions: list[ModelVersionIdentifier] | None = None,
     infer_models: bool = False,
     infer_artifacts: bool = False,
 ) -> None:
@@ -416,7 +417,7 @@ def bulk_log_metadata(
         ]
     ):
         raise ValueError(
-            "You must select at least one pipeline/step/artifact/model to log metadata to."
+            "You must select at least one entity to log metadata to."
         )
 
     if infer_models and model_versions:
@@ -441,23 +442,21 @@ def bulk_log_metadata(
 
     # resolve pipeline runs and add metadata resources
 
-    for pipeline in pipeline_runs or []:
-        if not pipeline.id:
-            pipeline.id = client.get_pipeline_run(
-                name_id_or_prefix=pipeline.value
-            ).id
+    for run in pipeline_runs or []:
+        if not run.id:
+            run.id = client.get_pipeline_run(name_id_or_prefix=run.value).id
         resources.add(
             RunMetadataResource(
-                id=pipeline.id, type=MetadataResourceTypes.PIPELINE_RUN
+                id=run.id, type=MetadataResourceTypes.PIPELINE_RUN
             )
         )
 
     # resolve step runs and add metadata resources
 
     for step in step_runs or []:
-        if not step.id and (step.name and step.pipeline):
+        if not step.id and (step.name and step.run):
             step.id = (
-                client.get_pipeline_run(name_id_or_prefix=step.pipeline.value)
+                client.get_pipeline_run(name_id_or_prefix=step.run.value)
                 .steps[step.name]
                 .id
             )
@@ -471,7 +470,9 @@ def bulk_log_metadata(
     # resolve artifacts and add metadata resources
 
     for artifact_version in artifact_versions or []:
-        if not artifact_version.id and (artifact_version.name and artifact_version.version):
+        if not artifact_version.id and (
+            artifact_version.name and artifact_version.version
+        ):
             artifact_version.id = client.get_artifact_version(
                 name_id_or_prefix=artifact_version.name,
                 version=artifact_version.version,

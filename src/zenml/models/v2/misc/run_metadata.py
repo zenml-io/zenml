@@ -36,13 +36,11 @@ class RunMetadataResource(BaseModel):
             other: The object to compare.
 
         Returns:
-            True if the object is equal to the given object.
+            True if the object is equal to the given object. Will always return False if compared to a different type.
 
-        Raises:
-            TypeError: If the object is not an instance of RunMetadataResource.
         """
         if not isinstance(other, RunMetadataResource):
-            raise TypeError(f"Expected RunMetadataResource, got {type(other)}")
+            return False
 
         return hash(other) == hash(self)
 

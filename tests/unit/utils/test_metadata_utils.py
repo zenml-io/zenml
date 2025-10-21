@@ -4,10 +4,11 @@ import pytest
 from mock import MagicMock
 
 from zenml.models import (
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
     PipelineRunIdentifier,
     RunMetadataResource,
     StepRunIdentifier,
-    VersionedIdentifier,
 )
 from zenml.utils import metadata_utils
 from zenml.utils.metadata_utils import bulk_log_metadata
@@ -20,7 +21,7 @@ def test_bulk_log_metadata_validations(monkeypatch):
         bulk_log_metadata(
             metadata={"x": 1},
             infer_models=True,
-            model_versions=[VersionedIdentifier(id=uuid4())],
+            model_versions=[ModelVersionIdentifier(id=uuid4())],
         )
 
     # test one can not specify both explicit and infer options for a
@@ -29,7 +30,7 @@ def test_bulk_log_metadata_validations(monkeypatch):
         bulk_log_metadata(
             metadata={"x": 1},
             infer_artifacts=True,
-            model_versions=[VersionedIdentifier(id=uuid4())],
+            model_versions=[ModelVersionIdentifier(id=uuid4())],
         )
 
     def boom():
@@ -54,7 +55,7 @@ def test_bulk_log_metadata_validations(monkeypatch):
     with pytest.raises(ValueError):
         bulk_log_metadata(
             metadata={},
-            model_versions=[VersionedIdentifier(id=uuid4())],
+            model_versions=[ModelVersionIdentifier(id=uuid4())],
         )
 
     # no entities provided triggers value error
@@ -84,7 +85,7 @@ def test_bulk_log_metadata_explicit(monkeypatch):
             step_runs=[
                 StepRunIdentifier(
                     name="step",
-                    pipeline=PipelineRunIdentifier(id=uuid4()),
+                    run=PipelineRunIdentifier(id=uuid4()),
                 )
             ],
             pipeline_runs=[
@@ -92,12 +93,12 @@ def test_bulk_log_metadata_explicit(monkeypatch):
                 PipelineRunIdentifier(name="test"),
             ],
             artifact_versions=[
-                VersionedIdentifier(id=uuid4()),
-                VersionedIdentifier(name="artifact", version="1"),
+                ArtifactVersionIdentifier(id=uuid4()),
+                ArtifactVersionIdentifier(name="artifact", version="1"),
             ],
             model_versions=[
-                VersionedIdentifier(name="model", version="1"),
-                VersionedIdentifier(id=uuid4()),
+                ModelVersionIdentifier(name="model", version="1"),
+                ModelVersionIdentifier(id=uuid4()),
             ],
             infer_models=False,
             infer_artifacts=False,

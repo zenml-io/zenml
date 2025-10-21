@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -45,6 +45,18 @@ class VersionedIdentifier(BaseModel):
         return self
 
 
+class ArtifactVersionIdentifier(VersionedIdentifier):
+    """Class for artifact version identifier group."""
+
+    pass
+
+
+class ModelVersionIdentifier(VersionedIdentifier):
+    """Class for model version identifier group."""
+
+    pass
+
+
 class PipelineRunIdentifier(BaseModel):
     """Class grouping different pipeline run identifiers."""
 
@@ -89,7 +101,7 @@ class StepRunIdentifier(BaseModel):
 
     id: UUID | None = None
     name: str | None = None
-    pipeline: PipelineRunIdentifier | None = None
+    run: PipelineRunIdentifier | None = None
 
     @model_validator(mode="after")
     def _validate_options(self) -> "StepRunIdentifier":
@@ -105,9 +117,9 @@ class StepRunIdentifier(BaseModel):
                 "Use either id or name."
             )
 
-        if bool(self.name) ^ bool(self.pipeline):
+        if bool(self.name) ^ bool(self.run):
             raise ValueError(
-                "To identify a run by name you need to specify a pipeline run identifier."
+                "To identify a step run by name you need to specify a pipeline run identifier."
             )
 
         return self

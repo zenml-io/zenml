@@ -4,30 +4,34 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.models import (
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
     PipelineRunIdentifier,
     StepRunIdentifier,
-    VersionedIdentifier,
 )
 
 
 def test_versioned_identifier_validators():
-    v_id = VersionedIdentifier(id=uuid4())
-    assert v_id.id is not None and v_id.name is None and v_id.version is None
+    for cls in [ArtifactVersionIdentifier, ModelVersionIdentifier]:
+        v_id = cls(id=uuid4())
+        assert (
+            v_id.id is not None and v_id.name is None and v_id.version is None
+        )
 
-    v_nv = VersionedIdentifier(id=None, name="artifact", version="1.2.3")
-    assert v_nv.name == "artifact" and v_nv.version == "1.2.3"
+        v_nv = cls(id=None, name="artifact", version="1.2.3")
+        assert v_nv.name == "artifact" and v_nv.version == "1.2.3"
 
-    with pytest.raises(ValidationError):
-        VersionedIdentifier(id=uuid4(), name="artifact", version="1.0")
+        with pytest.raises(ValidationError):
+            cls(id=uuid4(), name="artifact", version="1.0")
 
-    with pytest.raises(ValidationError):
-        VersionedIdentifier(id=None, name=None, version=None)
+        with pytest.raises(ValidationError):
+            cls(id=None, name=None, version=None)
 
-    with pytest.raises(ValidationError):
-        VersionedIdentifier(name="artifact")
+        with pytest.raises(ValidationError):
+            cls(name="artifact")
 
-    with pytest.raises(ValidationError):
-        VersionedIdentifier(version="1.0.0")
+        with pytest.raises(ValidationError):
+            cls(version="1.0.0")
 
 
 def test_pipeline_run_identifier_validators():
@@ -63,30 +67,29 @@ def test_pipeline_run_identifier_validators():
 
 
 def test_step_run_identifier_validators():
-    s_id_only = StepRunIdentifier(id=uuid4(), name="", pipeline=None)
-    assert (
-        s_id_only.id is not None
-        and s_id_only.name == ""
-        and s_id_only.pipeline is None
-    )
+    id_ = uuid4()
+
+    s_id_only = StepRunIdentifier(id=id_)
+
+    assert s_id_only.id == id_
 
     run_ident = PipelineRunIdentifier(id=None, name="nightly", prefix=None)
 
     s_name_with_pipeline = StepRunIdentifier(
-        id=None, name="load_data", pipeline=run_ident
+        id=None, name="load_data", run=run_ident
     )
     assert s_name_with_pipeline.id is None
     assert s_name_with_pipeline.name == "load_data"
-    assert isinstance(s_name_with_pipeline.pipeline, PipelineRunIdentifier)
+    assert isinstance(s_name_with_pipeline.run, PipelineRunIdentifier)
 
     with pytest.raises(ValidationError):
-        StepRunIdentifier(id=uuid4(), name="transform", pipeline=run_ident)
+        StepRunIdentifier(id=uuid4(), name="transform", run=run_ident)
 
     with pytest.raises(ValidationError):
-        StepRunIdentifier(id=None, name="", pipeline=None)
+        StepRunIdentifier(id=None, name="")
 
     with pytest.raises(ValidationError):
-        StepRunIdentifier(id=None, name="train_model", pipeline=None)
+        StepRunIdentifier(id=None, name="train_model")
 
     with pytest.raises(ValidationError):
-        StepRunIdentifier(id=None, name="", pipeline=run_ident)
+        StepRunIdentifier(id=None, run=run_ident)
