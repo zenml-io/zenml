@@ -1,0 +1,11 @@
+parameters:
+  customer_features:
+    account_length: 45
+    customer_service_calls: 3
+    monthly_charges: 65.0
+    total_charges: 2925.0
+    has_internet_service: 1
+    has_phone_service: 1
+    contract_length: 1
+    payment_method_electronic: 1
+  model_name: "churn-model"

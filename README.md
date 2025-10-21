@@ -99,6 +99,11 @@ zenml init
 zenml login
 ```
 
+You can then begin with any of the [examples](examples/) in this repo, or perhaps
+easiest is to start with the [quickstart](examples/quickstart/).
+
+## Demo
+
 Here is a brief demo:
 
 https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
