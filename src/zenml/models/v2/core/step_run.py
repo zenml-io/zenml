@@ -782,8 +782,9 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
             )
 
         if self.cache_expired is True:
-            cache_expiration_filter = (
-                col(StepRunSchema.cache_expires_at) < utc_now()
+            cache_expiration_filter = and_(
+                col(StepRunSchema.cache_expires_at).is_not(None),
+                col(StepRunSchema.cache_expires_at) < utc_now(),
             )
             custom_filters.append(cache_expiration_filter)
         elif self.cache_expired is False:

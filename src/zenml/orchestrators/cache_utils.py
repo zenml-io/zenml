@@ -23,7 +23,7 @@ from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
-from zenml.utils import io_utils, source_code_utils, source_utils
+from zenml.utils import source_code_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -74,6 +74,7 @@ def generate_cache_key(
         ValueError: If some file dependencies are outside the source root or
             missing.
         ValueError: If the cache function is invalid.
+        RuntimeError: If executing the cache function failed.
 
     Returns:
         A cache key.
@@ -173,12 +174,11 @@ def generate_cache_key(
         for file_path in sorted(absolute_paths):
             # Use relative path to source root as key so we don't generate
             # different hashes on different machines
-            relative_path = os.path.relpath(
-                file_path, source_utils.get_source_root()
-            )
+            relative_path = os.path.relpath(file_path, source_root)
             hash_.update(relative_path.encode())
-            file_content = io_utils.read_file_contents_as_string(file_path)
-            hash_.update(file_content.encode())
+            with open(file_path, "rb") as f:
+                while chunk := f.read(1024 * 1024):
+                    hash_.update(chunk)
 
     if cache_policy.source_dependencies:
         source_dependencies = [
@@ -199,7 +199,10 @@ def generate_cache_key(
                 "not callable."
             )
 
-        result = cache_func()
+        try:
+            result = cache_func()
+        except Exception as e:
+            raise RuntimeError("Failed to run cache function.") from e
 
         if not isinstance(result, str):
             raise ValueError(
