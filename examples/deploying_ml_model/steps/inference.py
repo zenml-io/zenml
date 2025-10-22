@@ -19,10 +19,8 @@
 from typing import Annotated, Dict
 
 import pandas as pd
-from sklearn.pipeline import Pipeline
 
-from zenml import step
-from zenml.client import Client
+from zenml import get_step_context, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,11 +30,14 @@ logger = get_logger(__name__)
 def predict_churn(
     customer_features: Dict[str, float], model_name: str = "churn-model"
 ) -> Annotated[Dict[str, float], "prediction"]:
-    """Predict churn probability for a customer.
+    """Predict churn probability for a customer using pre-loaded model.
+
+    This step uses the model that was loaded during deployment initialization,
+    avoiding the overhead of loading the model for each inference request.
 
     Args:
         customer_features: Dictionary of customer features
-        model_name: Name of the model artifact to load
+        model_name: Name of the model (used for compatibility, actual model comes from pipeline state)
 
     Returns:
         Dictionary containing churn probability and prediction
@@ -45,37 +46,29 @@ def predict_churn(
         f"Making churn prediction for customer features: {customer_features}"
     )
 
-    # Load the production model
-    client = Client()
     try:
-        # Get the latest version of the model (it should be tagged as production)
-        model_artifact = client.get_artifact_version(
-            name_id_or_prefix=model_name
-        )
-        model: Pipeline = model_artifact.load()
-        logger.info(f"Loaded model version: {model_artifact.version}")
-    except Exception as e:
-        logger.error(f"Failed to load model '{model_name}': {e}")
-        # Return a default prediction if model loading fails
-        return {
-            "churn_probability": 0.5,
-            "churn_prediction": 1,
-            "model_status": "error",
-            "error": str(e),
-        }
+        # Get the pre-loaded model from pipeline state
+        step_context = get_step_context()
+        model_state = step_context.pipeline_state
 
-    try:
+        if model_state is None:
+            raise RuntimeError(
+                "Model not found in pipeline state. Ensure deployment initialization hook is configured."
+            )
+
         # Convert features to DataFrame (model expects this format)
         features_df = pd.DataFrame([customer_features])
 
-        # Make prediction
-        churn_probability = float(model.predict_proba(features_df)[0, 1])
+        # Make prediction using the pre-loaded model
+        churn_probability = float(
+            model_state.model.predict_proba(features_df)[0, 1]
+        )
         churn_prediction = int(churn_probability > 0.5)
 
         result = {
             "churn_probability": round(churn_probability, 3),
             "churn_prediction": churn_prediction,
-            "model_version": model_artifact.version,
+            "model_version": model_state.model_version,
             "model_status": "success",
         }
 

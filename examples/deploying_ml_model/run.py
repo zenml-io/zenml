@@ -107,40 +107,32 @@ def main() -> None:
             print(f"Error: {result['error']}")
 
     else:
-        print("Customer Churn Prediction Example")
-        print("\nUsage:")
-        print("  python run.py --train                    # Train the model")
-        print(
-            "  python run.py --predict                  # Predict with sample data"
-        )
-        print(
-            "  python run.py --predict --features '{...}'  # Predict with custom data"
-        )
-        print("\nWorkflow:")
-        print("1. Train model:    python run.py --train")
-        print("2. Test locally:   python run.py --predict")
-        print(
-            "3. Deploy service: zenml pipeline deploy pipelines.churn_inference_pipeline.churn_inference_pipeline"
-        )
-        print(
-            '4. Test endpoint:  curl -X POST <endpoint>/invoke -d \'{"parameters": {"customer_features": {...}}}\''
-        )
-        print("\nExample customer features:")
-        print(
-            json.dumps(
-                {
-                    "account_length": 45,
-                    "customer_service_calls": 3,
-                    "monthly_charges": 65.0,
-                    "total_charges": 2925.0,
-                    "has_internet_service": 1,
-                    "has_phone_service": 1,
-                    "contract_length": 1,
-                    "payment_method_electronic": 1,
-                },
-                indent=2,
-            )
-        )
+        example_features = {
+            "account_length": 45,
+            "customer_service_calls": 3,
+            "monthly_charges": 65.0,
+            "total_charges": 2925.0,
+            "has_internet_service": 1,
+            "has_phone_service": 1,
+            "contract_length": 1,
+            "payment_method_electronic": 1,
+        }
+
+        print(f"""Customer Churn Prediction Example
+
+Usage:
+  python run.py --train                    # Train the model
+  python run.py --predict                  # Predict with sample data
+  python run.py --predict --features '{{...}}'  # Predict with custom data
+
+Workflow:
+1. Train model:    python run.py --train
+2. Test locally:   python run.py --predict
+3. Deploy service: zenml pipeline deploy pipelines.churn_inference_pipeline.churn_inference_pipeline
+4. Test endpoint:  curl -X POST <endpoint>/invoke -d '{{"parameters": {{"customer_features": {{...}}}}}}'
+
+Example customer features:
+{json.dumps(example_features, indent=2)}""")
 
 
 if __name__ == "__main__":

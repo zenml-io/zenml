@@ -18,6 +18,7 @@
 
 from typing import Dict
 
+from pipelines.hooks import cleanup_model, init_model
 from steps import predict_churn
 
 from zenml import pipeline
@@ -27,6 +28,8 @@ from zenml.config.resource_settings import ResourceSettings
 
 @pipeline(
     enable_cache=False,
+    on_init=init_model,
+    on_cleanup=cleanup_model,
     settings={
         "docker": DockerSettings(
             requirements="requirements.txt",
@@ -58,8 +61,8 @@ def churn_inference_pipeline(
 ) -> Dict[str, float]:
     """Predict customer churn probability for a given customer.
 
-    This pipeline loads a trained churn prediction model and makes a
-    prediction for a customer based on their features.
+    This pipeline uses a pre-loaded churn prediction model (loaded during
+    deployment initialization) to make fast predictions for customers.
 
     Args:
         customer_features: Dictionary containing customer features:

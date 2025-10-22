@@ -16,7 +16,13 @@
 
 """Churn prediction pipelines."""
 
-from .training_pipeline import churn_training_pipeline
+from .hooks import cleanup_model, init_model
 from .inference_pipeline import churn_inference_pipeline
+from .training_pipeline import churn_training_pipeline
 
-__all__ = ["churn_training_pipeline", "churn_inference_pipeline"]
+__all__ = [
+    "churn_training_pipeline",
+    "churn_inference_pipeline",
+    "init_model",
+    "cleanup_model",
+]
