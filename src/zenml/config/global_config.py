@@ -723,18 +723,17 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if store is None:
             return
 
-        close_fn = getattr(store, "close", None)
-        if callable(close_fn):
-            try:
-                close_fn()
-            except Exception as e:
-                logger.debug(
-                    "Error while closing zen store during cleanup: %s",
-                    e,
-                    exc_info=True,
-                )
-        # Clear the cached store reference irrespective of cleanup result.
-        self._zen_store = None
+        try:
+            store.close()
+        except Exception as e:
+            logger.debug(
+                "Error while closing zen store during cleanup: %s",
+                e,
+                exc_info=True,
+            )
+        finally:
+            # Clear the cached store reference irrespective of cleanup result.
+            self._zen_store = None
 
     @property
     def is_initialized(self) -> bool:

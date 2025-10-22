@@ -141,6 +141,18 @@ class BaseZenStore(
         else:
             logger.debug("Skipping database initialization")
 
+    def close(self) -> None:
+        """Release external resources held by this store instance.
+
+        Default no-op implementation. Subclasses should override this to
+        release any external resources (e.g., database connections, HTTP
+        sessions, file handles, background workers). Implementations must
+        remain idempotent (safe to call multiple times) and must not raise;
+        any cleanup failures should be handled internally and logged at
+        debug level instead.
+        """
+        return
+
     @staticmethod
     def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
         """Returns the class of the given store type.
