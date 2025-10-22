@@ -4807,6 +4807,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         cache_key: Optional[str] = None,
+        cache_expires_at: Optional[Union[datetime, str]] = None,
+        cache_expired: Optional[bool] = None,
         code_hash: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -4843,6 +4845,10 @@ class Client(metaclass=ClientMetaClass):
             model: Filter by model name/ID.
             name: The name of the step run to filter by.
             cache_key: The cache key of the step run to filter by.
+            cache_expires_at: The cache expiration time of the step run to
+                filter by.
+            cache_expired: Whether the cache expiration time of the step run
+                has passed.
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
@@ -4860,6 +4866,8 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             id=id,
             cache_key=cache_key,
+            cache_expires_at=cache_expires_at,
+            cache_expired=cache_expired,
             code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
             snapshot_id=snapshot_id,
@@ -4880,6 +4888,26 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
             hydrate=hydrate,
+        )
+
+    def update_step_run(
+        self,
+        step_run_id: UUID,
+        cache_expires_at: Optional[datetime] = None,
+    ) -> StepRunResponse:
+        """Update a step run.
+
+        Args:
+            step_run_id: The ID of the step run to update.
+            cache_expires_at: The time at which this step run should not be
+                used for cached results anymore.
+
+        Returns:
+            The updated step run.
+        """
+        update = StepRunUpdate(cache_expires_at=cache_expires_at)
+        return self.zen_store.update_run_step(
+            step_run_id=step_run_id, step_run_update=update
         )
 
     # ------------------------------- Artifacts -------------------------------

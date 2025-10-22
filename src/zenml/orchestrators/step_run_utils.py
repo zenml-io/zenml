@@ -14,6 +14,7 @@
 """Utilities for creating step runs."""
 
 import json
+from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
@@ -130,6 +131,11 @@ class StepRunRequestFactory:
         )
         request.cache_key = cache_key
 
+        if step.config.cache_policy.expires_after:
+            request.cache_expires_at = request.start_time + timedelta(
+                seconds=step.config.cache_policy.expires_after
+            )
+
         (
             docstring,
             source_code,
@@ -163,6 +169,11 @@ class StepRunRequestFactory:
 
                 request.status = ExecutionStatus.CACHED
                 request.end_time = request.start_time
+
+                # Cached step runs themselves are not valid candidates for
+                # caching, but just in case we set the cache expiration time to
+                # the time when the cached step run expires.
+                request.cache_expires_at = cached_step_run.cache_expires_at
 
                 # As a last resort, we try to reuse the docstring/source code
                 # from the cached step run. This is part of the cache key

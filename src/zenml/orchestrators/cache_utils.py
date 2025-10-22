@@ -14,6 +14,7 @@
 """Utilities for caching."""
 
 import hashlib
+import os
 from typing import TYPE_CHECKING, Mapping, Optional
 from uuid import UUID
 
@@ -22,6 +23,7 @@ from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
+from zenml.utils import source_code_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
@@ -46,8 +48,8 @@ def generate_cache_key(
 ) -> str:
     """Generates a cache key for a step run.
 
-    If the cache key is the same for two step runs, we conclude that the step
-    runs are identical and can be cached.
+    If a step has caching enabled, the cache key will be used to find existing
+    equivalent step runs.
 
     The cache key is a MD5 hash of:
     - the project ID,
@@ -60,12 +62,19 @@ def generate_cache_key(
     - additional custom caching parameters of the step.
     - the environment variables defined for the step.
     - the secrets defined for the step.
+    - other elements of the cache policy defined for the step.
 
     Args:
         step: The step to generate the cache key for.
         input_artifacts: The input artifacts for the step.
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
+
+    Raises:
+        ValueError: If some file dependencies are outside the source root or
+            missing.
+        ValueError: If the cache function is invalid.
+        RuntimeError: If executing the cache function failed.
 
     Returns:
         A cache key.
@@ -135,6 +144,74 @@ def generate_cache_key(
     for secret_name_or_id in sorted([str(s) for s in step.config.secrets]):
         hash_.update(secret_name_or_id.encode())
 
+    if file_dependencies := cache_policy.file_dependencies:
+        source_root = source_utils.get_source_root()
+
+        absolute_paths = []
+        for file_path in file_dependencies:
+            if os.path.isabs(file_path):
+                if not os.path.relpath(file_path, source_root):
+                    raise ValueError(
+                        f"Cache policy file dependency `{file_path}` is not "
+                        f"within your source root `{source_root}`. Only files "
+                        "within your source root are allowed."
+                    )
+            else:
+                file_path = os.path.abspath(
+                    os.path.join(source_root, file_path)
+                )
+
+            if not os.path.exists(file_path):
+                raise ValueError(
+                    f"Missing file for cache computation: `{file_path}`. "
+                    "Please make sure to specify values in "
+                    "`CachePolicy.file_dependencies` as a path relative to "
+                    f"your source root ({source_root})."
+                )
+
+            absolute_paths.append(file_path)
+
+        for file_path in sorted(absolute_paths):
+            # Use relative path to source root as key so we don't generate
+            # different hashes on different machines
+            relative_path = os.path.relpath(file_path, source_root)
+            hash_.update(relative_path.encode())
+            with open(file_path, "rb") as f:
+                while chunk := f.read(1024 * 1024):
+                    hash_.update(chunk)
+
+    if cache_policy.source_dependencies:
+        source_dependencies = [
+            source.import_path for source in cache_policy.source_dependencies
+        ]
+        for source_path in sorted(source_dependencies):
+            hash_.update(source_path.encode())
+            object_ = source_utils.load(source_path)
+            source_code = source_code_utils.get_source_code(object_)
+            hash_.update(source_code.encode())
+
+    if cache_policy.cache_func:
+        cache_func = source_utils.load(cache_policy.cache_func)
+
+        if not callable(cache_func):
+            raise ValueError(
+                f"The cache function {cache_policy.cache_func.import_path} is "
+                "not callable."
+            )
+
+        try:
+            result = cache_func()
+        except Exception as e:
+            raise RuntimeError("Failed to run cache function.") from e
+
+        if not isinstance(result, str):
+            raise ValueError(
+                f"The cache function {cache_policy.cache_func.import_path} "
+                "must return a string."
+            )
+
+        hash_.update(result.encode())
+
     return hash_.hexdigest()
 
 
@@ -155,6 +232,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     cache_candidates = client.list_run_steps(
         project=client.active_project.id,
         cache_key=cache_key,
+        cache_expired=False,
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
