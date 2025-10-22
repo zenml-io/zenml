@@ -137,18 +137,11 @@ class ZenMLCLI(click.Group):
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))
             if rows:
-                if isinstance(formatter, ZenFormatter):
-                    section_title = "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
-                    with formatter.section(section_title):
-                        formatter.write_dl(rows)
-                else:
-                    # Fallback: use simple pairs without category and avoid rich markup in header
-                    section_title = "Available ZenML Commands"
-                    with formatter.section(section_title):
-                        pair_rows: List[Tuple[str, str]] = [
-                            (subcmd, help_) for _, subcmd, help_ in rows
-                        ]
-                        formatter.write_dl(pair_rows)
+                section_title = (
+                    "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
+                )
+                with formatter.section(section_title):
+                    formatter.write_dl(rows)
 
 
 @click.group(cls=ZenMLCLI, invoke_without_command=True)
