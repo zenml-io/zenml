@@ -28,6 +28,7 @@ classifiers = [
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
+    "asgiref~=3.10.0",
     "click>=8.0.1,<=8.2.1",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
@@ -55,7 +56,6 @@ zenml = "zenml.cli.cli:cli"
 [project.optional-dependencies]
 local = [
     "alembic>=1.8.1,<=1.15.2",
-    "asgiref~=3.10.0",
     "bcrypt==4.0.1",
     "passlib[bcrypt]~=1.7.4",
     "pymysql>=1.1.1,~=1.1.0",

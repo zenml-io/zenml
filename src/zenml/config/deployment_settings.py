@@ -218,7 +218,7 @@ class MiddlewareSpec(BaseModel):
     class MyMiddleware:
         def __init__(
             self,
-            app: ASGIApp,
+            app: ASGIApplication,
             **kwargs: Any,
         ) -> None:
             self.app = app

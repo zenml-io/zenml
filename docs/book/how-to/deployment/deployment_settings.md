@@ -10,12 +10,15 @@ ZenML pipeline deployments run an ASGI application under a production-grade
 workloads like real-time ML inference, LLM agents/workflows, and even full
 web apps co-located with pipelines.
 
-At runtime, two core components work together:
+At runtime, three core components work together:
 
-- ASGI application: the HTTP surface that exposes endpoints (health, invoke,
-  metrics, docs) and any custom routes or middleware you configure.
-- Deployment service: the component responsible for the business logic that
+- the ASGI application: the HTTP surface that exposes endpoints (health, invoke,
+  metrics, docs) and any custom routes or middleware you configure. This is powered by an ASGI framework like FastAPI, Starlette, Django, Flask, etc.
+- the ASGI application factory (aka the Deployment App Runner): this component is responsible for constructing the ASGI application piece by piece based on the instructions provided by users via runtime configuration.
+- the Deployment Service: the component responsible for the business logic that
   backs the pipeline deployment and its invocation lifecycle.
+
+Both the Deployment App Runner and the Deployment Service are customizable at runtime, through the `DeploymentSettings` configuration mechanism. They can also be extended via inheritance to support different ASGI frameworks or to tweak existing functionality.
 
 The `DeploymentSettings` class lets you shape both server behavior and the
 ASGI app composition without changing framework code. Typical reasons to
@@ -36,11 +39,6 @@ All `DeploymentSettings` are pipeline-level settings. They apply to the
 deployment that serves the pipeline as a whole. They are not available at
 step-level.
 
-Before being launched, the ASGI application is constructed piece by piece from
-the `DeploymentSettings` by an ASGI application factory component - aka the
-Deployment App Runner - which itself can be extended via inheritance to support
-different ASGI frameworks or to tweak existing functionality.
-
 ## Configuration overview
 
 You can configure `DeploymentSettings` in Python or via YAML, the same way as
@@ -48,6 +46,9 @@ other settings classes. The settings can be attached to a pipeline decorator
 or via `with_options`. These settings are only valid at pipeline level.
 
 ### Python configuration
+
+Use the `DeploymentSettings` class to configure the deployment settings for your
+pipeline in-code
 
 ```python
 from zenml import pipeline
@@ -121,26 +122,22 @@ settings:
 
 Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
-## What you can customize
+## Basic customization options
 
-`DeploymentSettings` expose the following key areas. The sections below provide
+`DeploymentSettings` expose the following basic customization options. The sections below provide
 short examples and guidance.
 
-- Application metadata and paths
-- Built-in endpoints and middleware toggles
-- Static files (SPAs) and dashboards
+- application metadata and paths
+- built-in endpoints and middleware toggles
+- static files (SPAs) and dashboards
 - CORS
-- Secure headers
-- Startup and shutdown hooks
-- Custom endpoints
-- Custom middleware
-- App extensions
-- Uvicorn server options, logging level, and thread pool size
-
+- secure headers
+- startup and shutdown hooks
+- uvicorn server options, logging level, and thread pool size
 
 ### Application metadata
 
-You can set `app_title`, `app_description`, and `app_version`.
+You can set `app_title`, `app_description`, and `app_version` to be reflected in the ASGI application's metadata:
 
 ```python
 from zenml.config import DeploymentSettings
@@ -154,24 +151,24 @@ settings = DeploymentSettings(
 )
 ```
 
-### Default endpoints and middleware
+### Default URL paths, endpoints and middleware
 
-The ASGI application exposes the following built-in endpoints:
+The ASGI application exposes the following built-in endpoints by default:
 
 * documentation endpoints:
-    * `/docs` - The API documentation (OpenAPI schema)
-    * `/redoc` - The API documentation (ReDoc schema)
+    * `/docs` - The OpenAPI documentation UI generated based on the endpoints and their signatures.
+    * `/redoc` - The ReDoc documentation UI generated based on the endpoints and their signatures.
 * REST API endpoints:
-    * `/invoke` - The API invoke endpoint (for synchronous inference)
-    * `/health` - The API health check endpoint (for health checks)
-    * `/info` - The API info endpoint (for service information)
-    * `/metrics` - The API metrics endpoint (for metrics)
-* dashboard endpoints:
-    * `/`, `/index.html`, `/static` - Endpoints for serving the dashboard files
+    * `/invoke` - The main pipeline invocation endpoint for synchronous inference.
+    * `/health` - The health check endpoint.
+    * `/info` - The info endpoint providing extensive information about the deployment and its service.
+    * `/metrics` - Simple metrics endpoint.
+* dashboard endpoints - present only if the accompanying UI is enabled:
+    * `/`, `/index.html`, `/static` - Endpoints for serving the dashboard files from the `dashboard_files_path` directory.
 
-The ASGI application includes the following built-in middleware:
-* secure headers middleware: for setting security headers
-* CORS middleware: for handling CORS requests
+The ASGI application includes the following built-in middleware by default:
+* secure headers middleware: for setting security headers.
+* CORS middleware: for handling CORS requests.
 
 You can include or exclude these default endpoints and middleware either globally or individually by setting the `include_default_endpoints` and `include_default_middleware` settings. It is also possible to remap the built-in endpoint URL paths.
 
@@ -205,15 +202,32 @@ settings = DeploymentSettings(
 With the above settings, the ASGI application will only expose the following endpoints and middleware:
 
 - `/pipeline/documentation` - The API documentation (OpenAPI schema)
-- `/pipeline/api/invoke` - The API invoke endpoint (for synchronous inference)
-- `/pipeline/api/healthz` - The API health check endpoint (for health checks)
+- `/pipeline/api/invoke` - The REST API pipeline invocation endpoint
+- `/pipeline/api/healthz` - The REST API health check endpoint
 - CORS middleware: for handling CORS requests
 
-### Static files (SPA)
+### Static files (single-page applications)
 
-Serve a single-page app (e.g., React/Vue) alongside your APIs by setting
-`dashboard_files_path` to a directory that contains an `index.html` and any
-assets subdirectories. The path must be relative to the [source root](../steps-pipelines/sources.md#source-root).
+Deployed pipelines can serve full single-page applications (React/Vue/Svelte)
+from the same origin as your inference API. This eliminates CORS/auth/routing
+friction and lets you ship user-facing UI components alongside
+your endpoints, such as:
+
+* operator dashboards
+* governance portals
+* experiment browsers
+* feature explorers
+* custom data labeling interfaces
+* model cards
+* observability dashboards
+* customer-facing playgrounds
+
+Co-locating UI and API streamlines delivery (one image, one URL, one CI/CD),
+improves latency, and keeps telemetry and auth consistent.
+
+To enable this, point `dashboard_files_path` to a directory containing an
+`index.html` and any static assets. The path must be relative to the
+[source root](../steps-pipelines/sources.md#source-root):
 
 ```python
 settings = DeploymentSettings(
@@ -221,10 +235,7 @@ settings = DeploymentSettings(
 )
 ```
 
-This is useful to ship a minimal admin console, model cards, an operator
-UI or a full-fledged single-page application side-by-side with the deployment.
-If not set, the default deployment UI that is included with the ZenML python package
-will be used, unless explicitly excluded via `include_default_endpoints`.
+A rudimentary playground dashboard is included with the ZenML python package that features a simple UI useful for sending pipeline invocations and viewing the pipeline's response.
 
 {% hint style="info" %}
 When supplying your own custom dashboard, you may also need to [customize the security headers](./deployment_settings#secure-headers) to allow the dashboard to access various resources. For example, you may want to tweak the `Content-Security-Policy` header to allow the dashboard to access external javascript libraries, images, etc.
@@ -232,7 +243,7 @@ When supplying your own custom dashboard, you may also need to [customize the se
 
 ### CORS
 
-Fine-tune cross-origin access.
+Fine-tune cross-origin access:
 
 ```python
 from zenml.config import DeploymentSettings, CORSConfig
@@ -251,7 +262,7 @@ settings = DeploymentSettings(
 
 Harden responses with strict headers. Each field supports either a boolean or
 string. Using `True` selects a safe default, `False` disables the header, and
-custom strings allow fully custom policies.
+custom strings allow fully custom policies:
 
 ```python
 from zenml.config import (
@@ -282,8 +293,28 @@ value. The defaults are strong, production-safe policies.
 
 ### Startup and shutdown hooks
 
-Register lifecycle hooks to initialize shared clients (DB, feature store,
-tracer) or to perform graceful shutdown.
+Lifecycle startup and shutdown hooks are called as part of the ASGI application's lifespan. This is an alternative to [the `on_init` and `on_cleanup` hooks that can be configured at pipeline level](./deployment.md#deployment-initialization-cleanup-and-state).
+
+Common use-cases:
+
+- Model inference
+  - load models/tokenizers and warm caches (JIT/ONNX/TensorRT, HF, sklearn)
+  - hydrate feature stores, connect to vector DBs (FAISS, Milvus, PGVector)
+  - initialize GPU memory pools and thread/process pools
+  - set global config, download artifacts from registry or object store
+  - prefetch embeddings, label maps, lookup tables
+  - create connection pools for databases, Redis, Kafka, SQS, Pub/Sub
+
+- LLM agent workflows
+  - initialize LLM client(s), tool registry, and router/policy engine
+  - build or load RAG indexes; warm retrieval caches and prompts
+  - configure rate limiting, concurrency guards, circuit breakers
+  - load guardrails (PII filters, toxicity, jailbreak detection)
+  - configure tracing/observability for token usage and tool calls
+
+- Shutdown
+  - flush metrics/traces/logs, close pools/clients, persist state/caches
+  - graceful draining: wait for in-flight requests before teardown
 
 Hooks can be provided as:
 
@@ -320,8 +351,6 @@ settings:
       drain_timeout_s: 2
 ```
 
-The startup and shutdown hooks are called as part of the ASGI application's lifespan.
-
 ### Uvicorn and threading
 
 Tune server runtime parameters for performance and topology:
@@ -344,29 +373,70 @@ settings = DeploymentSettings(
 )
 ```
 
+## Advanced customization options
 
-## Custom endpoints
+When the built-in ASGI application, endpoints and middleware are not enough, you can take customizing your deployment to the next level by providing your own implementation for endpoints, middleware and other ASGI application extensions. ZenML `DeploymentSettings` provides a flexible and extensible mechanism to inject your own custom code into the ASGI application at runtime:
 
-Use `custom_endpoints` to expose your own HTTP endpoints. These can power
-real-time inference, LLM agent tools, orchestration webhooks, or integration
-health endpoints. Endpoints support multiple definition modes:
+- custom endpoints - to expose your own HTTP endpoints.
+- custom middleware - to insert your own ASGI middleware.
+- free-form ASGI application extensions - to take full control of the ASGI application and its lifecycle for truly advanced use-cases when endpoints and middleware are not enough.
 
-1) Direct callable (framework-specific signature allowed)
-2) Builder class (callable class with `__call__`)
-3) Builder function (returns the actual endpoint callable)
-4) Native framework-specific object (`native=True`)
+### Custom endpoints
 
-Definitions can be provided as Python objects or as loadable source strings.
+In production, custom endpoints are often required alongside the main
+pipeline invoke route. Common use-cases include:
 
-The adapter passes `app_runner` into builders - this is the `BaseDeploymentAppRunner`
-instance - the application factory that is responsible for building the ASGI
-application. You can use it to access information such as:
+- Online inference controls
+  - model (re)load, warm-up, and cache priming
+  - dynamic model/version switching and traffic shaping (A/B, canary)
+  - async/batch prediction submission and job-status polling
+  - feature store materialization/backfills and online/offline sync triggers
 
-* the built ASGI app
-* the deployment service instance
-* the `DeploymentResponse` object itself
+- Enterprise integration
+  - authentication bootstrap (API key issuance/rotation), JWKS rotation
+  - OIDC/OAuth device-code flows and SSO callback handlers
+  - external system webhooks (CRM, billing, ticketing, audit sink)
 
-The signature of the endpoint function itself can take any input arguments and return any output that are JSON-serializable or Pydantic models. It can also use framework-specific request/response types (e.g. FastAPI `Request`, `Response`) or dependency injection patterns as needed.
+- Observability and operations
+  - detailed health/readiness endpoints (subsystems, dependencies)
+  - metrics/traces/log shipping toggles; log level switch (INFO/DEBUG)
+  - maintenance-mode enable/disable and graceful drain controls
+
+- LLM agent serving
+  - tool registry CRUD, tool execution sandboxes, guardrail toggles
+  - RAG index CRUD (upsert documents, rebuild embeddings, vacuum/compact)
+  - prompt template catalogs and runtime overrides
+  - session memory inspection/reset, conversation export/import
+
+- Governance and data management
+  - payload redaction policy updates and capture sampling controls
+  - schema/contract discovery (sample payloads, test vectors)
+  - tenant provisioning, quotas/limits, and per-tenant configuration
+
+You can configure `custom_endpoints` in `DeploymentSettings` to expose your own HTTP endpoints.
+
+Endpoints support multiple definition modes (see code examples below):
+
+1) Direct callable - a simple function that takes in request parameters and returns a response. Framework-specific arguments such as FastAPI's `Request`, `Response` and dependency injection patterns are supported.
+2) Builder class - a callable class with a `__call__` method that is the actual endpoint callable described at 1). The builder class constructor is called by the ASGI application factory and can be leveraged to execute any global initialization logic before the endpoint is called.
+3) Builder function - a function that returns the actual endpoint callable described at 1). Similar to the builder class.
+4) Native framework-specific object (`native=True`). This can vary from ASGI framework to framework.
+
+Definitions can be provided as Python objects or as loadable source path strings.
+
+The builder class and builder function must accept an `app_runner` argument of type `BaseDeploymentAppRunner`. This is the application factory that is responsible for building the ASGI application. You can use it to access information such as:
+
+* the ASGI application instance that is being built
+* the deployment service instance that is being deployed
+* the `DeploymentResponse` object itself, which also contains details about the snapshot, pipeline, etc. 
+
+The final endpoint callable can take any input arguments and return any output that are JSON-serializable or Pydantic models. The application factory will handle converting these into the appropriate schema for the ASGI application.
+
+You can also use framework-specific request/response types (e.g. FastAPI `Request`, `Response`) or dependency injection patterns for your endpoint callable if needed. However, this will limit the portability of your endpoint to other frameworks.
+
+The following code examples demonstrate the different definition modes for custom endpoints:
+
+1. a custom detailed health check endpoint implemented as a direct callable
 
 ```python
 from typing import Any, Callable, Dict, List
@@ -380,7 +450,6 @@ from zenml.config import (
 from zenml.deployers.server import BaseDeploymentAppRunner
 from zenml.models import DeploymentResponse
 
-# 1) Direct callable: detailed health check endpoint
 async def health_detailed() -> Dict[str, Any]:
     import psutil
 
@@ -394,7 +463,33 @@ async def health_detailed() -> Dict[str, Any]:
         "zenml": client.zen_store.get_store_info().model_dump(),
     }
 
-# 2) Builder function: load a model once and expose a prediction endpoint
+settings = DeploymentSettings(
+    custom_endpoints=[
+        EndpointSpec(
+            path="/health",
+            method=EndpointMethod.GET,
+            handler=health_detailed,
+            auth_required=False,
+        ),
+    ]
+)
+```
+
+2. a custom ML model inference endpoint, implemented as a builder function. Note how the builder function loads the model only once at runtime, and then reuses it for all subsequent requests.
+
+
+```python
+from typing import Any, Callable, Dict, List
+from pydantic import BaseModel
+from zenml.client import Client
+from zenml.config import (
+    DeploymentSettings,
+    EndpointSpec,
+    EndpointMethod,
+)
+from zenml.deployers.server import BaseDeploymentAppRunner
+from zenml.models import DeploymentResponse
+
 class PredictionRequest(BaseModel):
     features: List[float]
 
@@ -413,13 +508,40 @@ def build_predict_endpoint(
     async def predict(
         request: PredictionRequest,
     ) -> PredictionResponse:
-        yhat = float(model.predict([request.features])[0])
+        pred = float(model.predict([request.features])[0])
         # Example: return fixed confidence if model lacks proba
-        return PredictionResponse(prediction=yhat, confidence=0.9)
+        return PredictionResponse(prediction=pred, confidence=0.9)
 
     return predict
 
-# 3) Builder function: deployment info
+settings = DeploymentSettings(
+    custom_endpoints=[
+        EndpointSpec(
+            path="/predict/custom",
+            method=EndpointMethod.POST,
+            handler=build_predict_endpoint,
+            init_kwargs={"model_path": "/models/model.pkl"},
+            auth_required=True,
+        ),
+    ]
+)
+```
+
+3. a custom deployment info endpoint implemented as a builder class
+
+
+```python
+from typing import Any, Callable, Dict, List
+from pydantic import BaseModel
+from zenml.client import Client
+from zenml.config import (
+    DeploymentSettings,
+    EndpointSpec,
+    EndpointMethod,
+)
+from zenml.deployers.server import BaseDeploymentAppRunner
+from zenml.models import DeploymentResponse
+
 def build_deployment_info(app_runner: BaseDeploymentAppRunner) -> Callable[[], DeploymentResponse]:
     async def endpoint() -> DeploymentResponse:
         return app_runner.deployment
@@ -429,66 +551,79 @@ def build_deployment_info(app_runner: BaseDeploymentAppRunner) -> Callable[[], D
 settings = DeploymentSettings(
     custom_endpoints=[
         EndpointSpec(
-            path="/health",
-            method=EndpointMethod.GET,
-            handler=health_detailed,
-            auth_required=False,
-        ),
-        EndpointSpec(
-            path="/predict/custom",
-            method=EndpointMethod.POST,
-            handler=build_predict_endpoint,
-            init_kwargs={"model_path": "/models/model.pkl"},
-            auth_required=True,
-        ),
-        EndpointSpec(
             path="/deployment",
             method=EndpointMethod.GET,
             handler=build_deployment_info,
-            auth_required=False,
+            auth_required=True,
         ),
     ]
 )
 ```
 
-FastAPI-native example (native mode). In native mode you pass a
-framework-specific object; the adapter uses it directly. You can also use
-`extra_kwargs` for framework-specific parameters like `response_model`.
+4. a custom model selection endpoint, implemented as a FastAPI router. This example is more involved and demonstrates how to coordinate multiple endpoints with the main pipeline invoke endpoint.
 
 ```python
 # my_project.fastapi_endpoints
-from pydantic import BaseModel
-from fastapi import APIRouter
-from typing import List
+from __future__ import annotations
 
-from zenml.config import (
-    DeploymentSettings,
-    EndpointSpec,
-    EndpointMethod,
-)
+from typing import List, Optional
 
-router = APIRouter()
-
-class ScoreRequest(BaseModel):
-    features: List[float]
-
-class ScoreResponse(BaseModel):
-    score: float
-
-@router.post("/score", response_model=ScoreResponse)
-def score(req: ScoreRequest) -> ScoreResponse:
-    return ScoreResponse(score=0.42)
-```
-
-```python
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+from sklearn.base import ClassifierMixin
+from zenml.client import Client
+from zenml.models import ArtifactVersionResponse
 from zenml.config import DeploymentSettings, EndpointSpec, EndpointMethod
 
-settings = DeploymentSettings(
+model_router = APIRouter()
+
+# Global, process-local model registry for inference
+CURRENT_MODEL: Optional[ClassifierMixin] = None
+CURRENT_MODEL_ARTIFACT: Optional[ArtifactVersionResponse] = None
+
+
+class LoadModelRequest(BaseModel):
+    """Request to load/replace the in-memory model version."""
+
+    model_name: str = Field(default="fraud-classifier")
+    version_name: str = Field(default="v1")
+    artifact_name: str = Field(default="sklearn_model")
+
+
+@model_router.post("/load", response_model=ArtifactVersionResponse)
+def load_model(req: LoadModelRequest) -> ArtifactVersionResponse:
+    """Load or replace the in-memory model version."""
+    global CURRENT_MODEL, CURRENT_MODEL_ARTIFACT
+
+    model_version = Client().get_model_version(
+        req.model_name, req.version_name
+    )
+    model_artifact = model_version.get_artifact(req.artifact_name)
+    model_: ClassifierMixin = model_artifact.load()
+
+    CURRENT_MODEL = model_
+    CURRENT_MODEL_ARTIFACT = model_artifact
+    return model_artifact
+
+
+@model_router.get("/current", response_model=ArtifactVersionResponse)
+def current_model() -> ArtifactVersionResponse:
+    """Return the artifact of the currently loaded in-memory model."""
+
+    if CURRENT_MODEL_ARTIFACT is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No model loaded. Use /model/load first.",
+        )
+
+    return CURRENT_MODEL_ARTIFACT
+
+deploy_settings = DeploymentSettings(
     custom_endpoints=[
         EndpointSpec(
-            path="/native/score",
-            method=EndpointMethod.POST,
-            handler="my_project.fastapi_endpoints.router",
+            path="/model",
+            method=EndpointMethod.POST,  # method is ignored for native routers
+            handler=model_router,
             native=True,
             auth_required=True,
         )
@@ -496,15 +631,53 @@ settings = DeploymentSettings(
 )
 ```
 
-Notes:
+And here is a minimal ZenML inference pipeline that uses the globally loaded
+model. The prediction step reads the model from the global variable set
+by the FastAPI router above. You can invoke this pipeline via the built-in
+`/invoke` endpoint once a model has been loaded through `/model/load`.
 
-- `auth_required` signals to the adapter to attach any configured auth
-  dependencies or middlewares.
-- Direct callable endpoints may use framework request/response types (e.g.,
-  FastAPI `Request`, `Response`) as needed.
+```python
+from __future__ import annotations
+
+from typing import List
+
+from pydantic import BaseModel
+from zenml import pipeline, step
 
 
-## Custom middleware
+class InferenceRequest(BaseModel):
+    features: List[float]
+
+
+class InferenceResponse(BaseModel):
+    prediction: float
+
+
+@step
+def preprocess_step(request: InferenceRequest) -> List[float]:
+    # Replace with real transformations, scaling, encoding, etc.
+    return request.features
+
+@step
+def predict_step(features: List[float]) -> InferenceResponse:
+    """Run model inference using the globally loaded model."""
+
+    if GLOBAL_CURRENT_MODEL is None:
+        raise RuntimeError(
+            "No model loaded. Call /model/load before invoking."
+        )
+
+    pred = float(GLOBAL_CURRENT_MODEL.predict([features])[0])
+    return InferenceResponse(prediction=pred)
+
+
+@pipeline(settings={"deployment": deploy_settings})
+def inference_pipeline(request: InferenceRequest) -> InferenceResponse:
+    processed = preprocess_step(request)
+    return predict_step(processed)
+```
+
+### Custom middleware
 
 `custom_middlewares` allows inserting ASGI middleware for security,
 observability, and behavior shaping (rate limiting, correlation IDs, tracing,
@@ -635,7 +808,7 @@ settings = DeploymentSettings(
 Ordering: lower `order` values install earlier in the chain.
 
 
-## App extensions
+### App extensions
 
 App extensions are pluggable components that can install complex, possibly
 framework-specific structures: routers, auth systems, tracing, or metrics.

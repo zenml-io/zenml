@@ -110,7 +110,7 @@ class _DummyDeploymentAppRunner(BaseDeploymentAppRunner):
     def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
         return []
 
-    def _get_cors_middleware(self) -> MiddlewareSpec:
+    def _build_cors_middleware(self) -> MiddlewareSpec:
         return None
 
     def build(
