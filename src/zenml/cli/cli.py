@@ -170,11 +170,13 @@ def cli(ctx: click.Context) -> None:
         # packages directory
         source_utils.set_custom_source_root(source_root=os.getcwd())
 
-    # Manually show help and exit with code 0 when invoked without a subcommand.
-    # Click 8.2+ raises NoArgsIsHelpError before the callback runs when
-    # no_args_is_help=True. By relying solely on invoke_without_command=True
-    # and handling help here, we ensure consistent behavior across Click
-    # versions while leveraging our custom help formatter in ZenMLCLI.get_help().
+    # Manually show help when invoked without a subcommand to ensure our custom
+    # formatter is used. Without invoke_without_command=True, Click defaults to
+    # no_args_is_help=True, which in Click 8.2+ raises NoArgsIsHelpError before
+    # this callback runs. That error triggers Click's default help display,
+    # bypassing ZenMLCLI.get_help() and losing our custom formatting (categories,
+    # colors, layout). By using invoke_without_command=True and manually checking
+    # for no subcommand, we guarantee consistent behavior across Click versions.
     if ctx.invoked_subcommand is None and not ctx.resilient_parsing:
         ctx.command.get_help(ctx)
         ctx.exit(0)
