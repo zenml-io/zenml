@@ -16,7 +16,7 @@
 
 """Inference step for churn prediction."""
 
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Any
 
 import pandas as pd
 
@@ -28,8 +28,8 @@ logger = get_logger(__name__)
 
 @step
 def predict_churn(
-    customer_features: Dict[str, float], model_name: str = "churn-model"
-) -> Annotated[Dict[str, float], "prediction"]:
+    customer_features: Dict[str, float],
+) -> Annotated[Dict[str, Any], "prediction"]:
     """Predict churn probability for a customer using pre-loaded model.
 
     This step uses the model that was loaded during deployment initialization,
@@ -37,7 +37,6 @@ def predict_churn(
 
     Args:
         customer_features: Dictionary of customer features
-        model_name: Name of the model (used for compatibility, actual model comes from pipeline state)
 
     Returns:
         Dictionary containing churn probability and prediction

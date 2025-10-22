@@ -16,13 +16,13 @@
 
 """Churn prediction inference pipeline."""
 
-from typing import Dict
+from typing import Dict, Any
 
 from pipelines.hooks import cleanup_model, init_model
 from steps import predict_churn
 
 from zenml import pipeline
-from zenml.config import DockerSettings
+from zenml.config import DeploymentSettings, DockerSettings
 from zenml.config.resource_settings import ResourceSettings
 
 
@@ -33,6 +33,12 @@ from zenml.config.resource_settings import ResourceSettings
     settings={
         "docker": DockerSettings(
             requirements="requirements.txt",
+        ),
+        "deployment": DeploymentSettings(
+            app_title="Customer Churn Prediction Service",
+            app_description="Real-time churn prediction with interactive web interface",
+            app_version="1.0.0",
+            dashboard_files_path="frontend",
         ),
         "deployer.local": {
             "port": 8080,
@@ -57,8 +63,8 @@ from zenml.config.resource_settings import ResourceSettings
     },
 )
 def churn_inference_pipeline(
-    customer_features: Dict[str, float], model_name: str = "churn-model"
-) -> Dict[str, float]:
+    customer_features: Dict[str, float],
+) -> Dict[str, Any]:
     """Predict customer churn probability for a given customer.
 
     This pipeline uses a pre-loaded churn prediction model (loaded during
@@ -74,16 +80,13 @@ def churn_inference_pipeline(
             - has_phone_service: 1 if has phone, 0 otherwise
             - contract_length: Contract length in months (1, 12, or 24)
             - payment_method_electronic: 1 if electronic payment, 0 otherwise
-        model_name: Name of the model artifact to use for prediction
 
     Returns:
         Dictionary containing:
             - churn_probability: Probability of churn (0.0 to 1.0)
             - churn_prediction: Binary prediction (0 or 1)
-            - model_version: Version of the model used
+            - model_version: Version of the model used (string)
             - model_status: Status of the prediction ("success", "error", etc.)
     """
-    prediction = predict_churn(
-        customer_features=customer_features, model_name=model_name
-    )
+    prediction: Dict[str, Any] = predict_churn(customer_features=customer_features)
     return prediction

@@ -102,7 +102,7 @@ zenml login
 You can then begin with any of the [examples](examples/) in this repo, or perhaps
 easiest is to start with the [quickstart](examples/quickstart/).
 
-## Demo
+## 🎮 Demo
 
 Here is a brief demo:
 

@@ -7,6 +7,7 @@ This example demonstrates the complete lifecycle of a machine learning model wit
 - **Training ML Models**: Build and train a customer churn prediction model using synthetic data
 - **Model Deployment**: Deploy your trained model as a real-time HTTP service
 - **Pipeline Deployments**: Convert batch pipelines into production-ready APIs
+- **Interactive Web Interface**: Beautiful frontend for easy testing and demonstration
 - **Model Versioning**: Manage model artifacts with automatic versioning and tagging
 - **Real-time Inference**: Serve predictions with millisecond latency
 
@@ -21,6 +22,8 @@ deploying_ml_model/
 │   ├── data.py                  # Synthetic data generation
 │   ├── train.py                 # Model training step
 │   └── inference.py             # Prediction step
+├── frontend/
+│   └── index.html               # Interactive web interface
 ├── run.py                       # Main CLI interface
 ├── requirements.txt             # Python dependencies
 └── README.md                    # This file
@@ -92,9 +95,18 @@ zenml pipeline deploy pipelines.churn_inference_pipeline.churn_inference_pipelin
   --name churn-service-prod
 ```
 
-### 4. Test the Deployed Service
+### 4. Use the Web Interface
 
-Once deployed, you can make predictions via HTTP:
+Once deployed, open your browser and navigate to the deployment URL (typically `http://localhost:8080`) to access the interactive web interface:
+
+- **Interactive Form**: Enter customer details using intuitive form fields
+- **Real-time Predictions**: Get instant churn predictions with probability scores
+- **Visual Results**: Color-coded risk levels (Low/Medium/High) with detailed metrics
+- **Auto-calculated Fields**: Smart defaults that update based on your inputs
+
+### 5. Test via API
+
+You can also make predictions directly via HTTP API:
 
 ```bash
 # Get deployment URL
