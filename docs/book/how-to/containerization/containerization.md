@@ -267,7 +267,7 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 By default, ZenML automatically installs all packages required by your active ZenML stack. 
 
 {% hint style="warning" %}
-In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current source root and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
+In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
 you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
 {% endhint %}
 
@@ -438,12 +438,7 @@ Be cautious with handling credentials. Always use secure methods to manage and d
 
 ## Source Code Management
 
-ZenML determines the root directory of your source files in the following order:
-
-1. If you've initialized zenml (`zenml init`) in your current working directory or one of its parent directories, the repository root directory will be used.
-2. Otherwise, the parent directory of the Python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
-
-You can specify how the files inside this root directory are handled:
+You can specify how the files inside your [source root directory](../steps-pipelines/sources.md#source-root) are handled for containerized steps:
 
 ```python
 docker_settings = DockerSettings(
@@ -586,7 +581,7 @@ zenml integration install github
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the source root is computed
+* First, the [source root](../steps-pipelines/sources.md#source-root) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code versions for pipeline runs
