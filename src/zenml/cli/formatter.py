@@ -13,52 +13,10 @@
 #  permissions and limitations under the License.
 """Helper functions to format output for CLI."""
 
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple
 
 from click import formatting
-
-if TYPE_CHECKING:
-    term_len: Callable[[str], int]
-else:
-    try:
-        from click.utils import term_len
-    except ImportError:
-        from click._compat import term_len
-
-
-def _safe_width(
-    width: Optional[int], max_width: Optional[int], default: int = 80
-) -> int:
-    """Return a non-None width value suitable for wrapping.
-
-    Click sets width to None in some non-interactive contexts. This helper
-    ensures we always get a valid integer width, preferring the explicit width
-    first, then max_width, then a sensible default.
-
-    Args:
-        width: Explicit terminal or content width to use when available.
-        max_width: Upper bound to apply if width is not set or invalid.
-        default: Fallback width used when neither width nor max_width is a
-            positive integer.
-
-    Returns:
-        The effective positive integer width used for wrapping.
-    """
-    if isinstance(width, int) and width > 0:
-        return width
-    if isinstance(max_width, int) and max_width > 0:
-        return max_width
-    return default
+from click._compat import term_len
 
 
 def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
@@ -121,117 +79,105 @@ class ZenFormatter(formatting.HelpFormatter):
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:
-        """Writes a definition list into the formatter buffer.
+        """Writes a definition list into the buffer.
 
-        Click 8.2 tightened validation so that definition list entries must be
-        pairs.  Our CLI groups commands in tagged triples, so we detect that
-        case and render it manually while delegating the standard behavior to
-        Click for the classic two-column output.  This keeps the formatter
-        compatible with both older Click releases (<8.2) and the newer ones
-        without sacrificing the custom grouped layout.
+        This is how options and commands are usually formatted.
 
-        Args:
-            rows: A sequence of tuples that represent the definition list
-                entries.
-            col_max: The maximum width of the first column.
-            col_spacing: The number of spaces between columns.
+        Arguments:
+            rows: a list of items as tuples for the terms and values.
+            col_max: the maximum width of the first column.
+            col_spacing: the number of spaces between the first and
+                            second column (and third).
+
+        The default behavior is to format the rows in a definition list
+        with rows of 2 columns following the format ``(term, value)``.
+        But for new CLI commands, we want to format the rows in a definition
+        list with rows of 3 columns following the format
+        ``(term, value, description)``.
 
         Raises:
-            TypeError: If the provided rows do not represent two or three
-                column entries.
+            TypeError: if the number of columns is not 2 or 3.
         """
-        normalized_rows: List[Tuple[str, ...]] = [tuple(row) for row in rows]
-
-        if not normalized_rows:
-            return
-
-        unique_lengths = {len(row) for row in normalized_rows}
-
-        if unique_lengths == {2}:
-            two_col_rows = [(row[0], row[1]) for row in normalized_rows]
-            super().write_dl(
-                two_col_rows, col_max=col_max, col_spacing=col_spacing
-            )
-            return
-
-        if unique_lengths == {3}:
-            self._write_triple_definition_list(
-                [(row[0], row[1], row[2]) for row in normalized_rows],
-                col_max=col_max,
-                col_spacing=col_spacing,
-            )
-            return
-
-        raise TypeError(
-            "Expected either two- or three-column definition list entries."
-        )
-
-    def _write_triple_definition_list(
-        self,
-        rows: List[Tuple[str, str, str]],
-        col_max: int,
-        col_spacing: int,
-    ) -> None:
+        rows = list(rows)
         widths = measure_table(rows)
 
-        if len(widths) < 3:
+        if len(widths) == 2:
+            first_col = min(widths[0], col_max) + col_spacing
+
+            for first, second in iter_rows(rows, len(widths)):
+                self.write(f"{'':>{self.current_indent}}{first}")
+                if not second:
+                    self.write("\n")
+                    continue
+                if term_len(first) <= first_col - col_spacing:
+                    self.write(" " * (first_col - term_len(first)))
+                else:
+                    self.write("\n")
+                    self.write(" " * (first_col + self.current_indent))
+
+                text_width = max(self.width - first_col - 2, 10)
+                wrapped_text = formatting.wrap_text(
+                    second, text_width, preserve_paragraphs=True
+                )
+                lines = wrapped_text.splitlines()
+
+                if lines:
+                    self.write(f"{lines[0]}\n")
+
+                    for line in lines[1:]:
+                        self.write(
+                            f"{'':>{first_col + self.current_indent}}{line}\n"
+                        )
+                else:
+                    self.write("\n")
+
+        elif len(widths) == 3:
+            first_col = min(widths[0], col_max) + col_spacing
+            second_col = min(widths[1], col_max) + col_spacing * 2
+
+            current_tag = None
+            for first, second, third in iter_rows(rows, len(widths)):
+                if current_tag != first:
+                    current_tag = first
+                    self.write("\n")
+                    # Adding [#431d93] [/#431d93] makes the tag colorful when
+                    # it is printed by rich print
+                    self.write(
+                        f"[#431d93]{'':>{self.current_indent}}{first}:[/#431d93]\n"
+                    )
+
+                if not third:
+                    self.write("\n")
+                    continue
+
+                if term_len(first) <= first_col - col_spacing:
+                    self.write(" " * self.current_indent * 2)
+                else:
+                    self.write("\n")
+                    self.write(" " * (first_col + self.current_indent))
+
+                self.write(f"{'':>{self.current_indent}}{second}")
+
+                text_width = max(self.width - second_col - 4, 10)
+                wrapped_text = formatting.wrap_text(
+                    third, text_width, preserve_paragraphs=True
+                )
+                lines = wrapped_text.splitlines()
+
+                if lines:
+                    self.write(
+                        " "
+                        * (second_col - term_len(second) + self.current_indent)
+                    )
+                    self.write(f"{lines[0]}\n")
+
+                    for line in lines[1:]:
+                        self.write(
+                            f"{'':>{second_col + self.current_indent * 4}}{line}\n"
+                        )
+                else:
+                    self.write("\n")
+        else:
             raise TypeError(
-                "Expected three columns for tagged definition list entries."
+                "Expected either three or two columns for definition list"
             )
-
-        # Compute target column offsets with spacing applied
-        first_col = min(widths[0], col_max) + col_spacing
-        second_col = min(widths[1], col_max) + col_spacing * 2
-
-        current_tag: Optional[str] = None
-
-        for first, second, third in iter_rows(rows, 3):
-            # Print a category header when the tag changes
-            if current_tag != first:
-                current_tag = first
-                self.write("\n")
-                self.write(
-                    f"[#431d93]{'':>{self.current_indent}}{first}:[/#431d93]\n"
-                )
-
-            # Preserve behavior for empty third-column values
-            if not third:
-                self.write("\n")
-                continue
-
-            # Layout for the command name column
-            if term_len(first) <= first_col - col_spacing:
-                self.write(" " * (self.current_indent * 2))
-            else:
-                self.write("\n")
-                self.write(" " * (first_col + self.current_indent))
-
-            # Command name with current indentation
-            self.write(f"{'':>{self.current_indent}}{second}")
-
-            # Wrap and render the description using a safe width calculation
-            effective_width = _safe_width(
-                self.width,
-                getattr(
-                    self, "max_width", None
-                ),  # max_width may not be present on all formatter types; this is intentional
-            )
-            text_width = max(effective_width - second_col - 4, 10)
-            wrapped_text = formatting.wrap_text(
-                third, text_width, preserve_paragraphs=True
-            )
-            lines = wrapped_text.splitlines()
-
-            if lines:
-                # First line appears on the same row as the command name
-                self.write(
-                    " " * (second_col - term_len(second) + self.current_indent)
-                )
-                self.write(f"{lines[0]}\n")
-
-                # Continuation lines align with the description column
-                for line in lines[1:]:
-                    self.write(" " * (second_col + self.current_indent))
-                    self.write(f"{line}\n")
-            else:
-                self.write("\n")
