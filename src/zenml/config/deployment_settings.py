@@ -335,7 +335,7 @@ class AppExtensionSpec(BaseModel):
             self.router = APIRouter()
             ...
 
-        def install(self, app_runner: BaseDeploymentAppRunner, **kwargs) -> None:
+        def install(self, app_runner: BaseDeploymentAppRunner) -> None:
 
             app_runner.asgi_app.include_router(self.router)
     ```

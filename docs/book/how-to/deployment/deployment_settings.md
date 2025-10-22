@@ -679,13 +679,52 @@ def inference_pipeline(request: InferenceRequest) -> InferenceResponse:
 
 ### Custom middleware
 
-`custom_middlewares` allows inserting ASGI middleware for security,
-observability, and behavior shaping (rate limiting, correlation IDs, tracing,
-body size limits, gzip, etc.). Supported modes are:
+Middleware is where you enforce cross-cutting concerns consistently across every endpoint. Common use-cases include:
 
-1) Middleware class (ASGI callable class)
-2) Middleware function (ASGI callable function)
-3) Native framework-specific middleware (`native=True`)
+- Security and access control
+  - API key/JWT verification, tenant extraction and context injection
+  - IP allow/deny lists, basic WAF-style request filtering, mTLS header checks
+  - Request body/schema validation and max body size enforcement
+
+- Governance and privacy
+  - PII detection/redaction on inputs/outputs; payload sampling/scrubbing
+  - Policy enforcement (data residency, retention, consent) at request time
+
+- Reliability and traffic shaping
+  - Rate limiting, quotas, per-tenant concurrency limits
+  - Idempotency keys, deduplication, retries with backoff, circuit breakers
+  - Timeouts, slow-request detection, maintenance mode and graceful drain
+
+- Observability
+  - Correlation/trace IDs, OpenTelemetry spans, structured logging
+  - Metrics for latency, throughput, error rates, request/response sizes
+
+- Performance and caching
+  - Response caching/ETags, compression (gzip/br), streaming/chunked responses
+  - Adaptive content negotiation and serialization tuning
+
+- LLM/agent-specific controls
+  - Token accounting/limits, cost guards per tenant/user
+  - Guardrails (toxicity/PII/jailbreak) and output filtering
+  - Tool execution sandboxing gates and allowlists
+
+- Data and feature enrichment
+  - Feature store prefetch, user/tenant profile enrichment, AB bucketing tags
+
+
+You can configure `custom_middlewares` in `DeploymentSettings` to insert your own ASGI middleware.
+
+Middlewares support multiple definition modes (see code examples below):
+
+1) Middleware class - a standard ASGI middleware class that implements the `__call__` method that takes the traditional `scope`, `receive` and `send` arguments. The constructor must accept an `app` argument of type `ASGIApplication` and any additional keyword arguments.
+2) Middleware callable - a callable that takes all arguments in one go: `app`, `scope`, `receive` and `send`.
+3) Native framework-specific middleware (`native=True`) - this can vary from ASGI framework to framework.
+
+Definitions can be provided as Python objects or as loadable source path strings. The `order` parameter controls the insertion order in the middleware chain. Lower `order` values insert the middleware earlier in the chain.
+
+The following code examples demonstrate the different definition modes for custom middlewares:
+
+1. a custom middleware that processing timing information via a custom header to the response, implemented as a middleware class:
 
 ```python
 import time
@@ -694,19 +733,17 @@ from asgiref.typing import (
     ASGIApplication,
     ASGIReceiveCallable,
     ASGISendCallable,
+    ASGISendEvent,
     Scope,
 )
 from zenml.config import DeploymentSettings, MiddlewareSpec
 
 class RequestTimingMiddleware:
-    """ASGI middleware to measure request processing time.
+    """ASGI middleware to measure request processing time."""
 
-    Uses the standard ASGI interface (scope, receive, send) which works across
-    all ASGI frameworks: FastAPI, Django, Starlette, Quart, etc.
-    """
-
-    def __init__(self, app: ASGIApplication) -> None:
+    def __init__(self, app: ASGIApplication, header_name: str = "x-process-time-ms") -> None:
         self.app = app
+        self.header_name = header_name
 
     async def __call__(
         self,
@@ -719,11 +756,11 @@ class RequestTimingMiddleware:
 
         start_time = time.time()
 
-        async def send_wrapper(message):  # type: ignore
+        async def send_wrapper(message: ASGISendEvent) -> None:
             if message["type"] == "http.response.start":
                 process_time = (time.time() - start_time) * 1000
                 headers = list(message.get("headers", []))
-                headers.append((b"x-process-time-ms", str(process_time).encode()))
+                headers.append((self.header_name.encode(), str(process_time).encode()))
                 message = {**message, "headers": headers}
 
             await send(message)
@@ -731,33 +768,58 @@ class RequestTimingMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
-async def timing_header_middleware(
+settings = DeploymentSettings(
+    custom_middlewares=[
+        MiddlewareSpec(
+            middleware=RequestTimingMiddleware,
+            order=10,
+            init_kwargs={"header_name": "x-process-time-ms"},
+        ),
+    ]
+)
+```
+
+2. a custom middleware that injects a correlation ID into responses (and generates one if missing), implemented as a middleware callable:
+
+```python
+import uuid
+from typing import Any
+from asgiref.typing import (
+    ASGIApplication,
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    ASGISendEvent,
+    Scope,
+)
+from zenml.config import DeploymentSettings, MiddlewareSpec
+
+async def request_id_middleware(
     app: ASGIApplication,
     scope: Scope,
     receive: ASGIReceiveCallable,
     send: ASGISendCallable,
-    header_name: str = "x-process-time-ms",
+    header_name: str = "x-request-id",
 ) -> None:
-    """ASGI function middleware that adds a timing header.
+    """ASGI function middleware that ensures a correlation ID header exists."""
 
-    Args:
-        app: The wrapped ASGI application.
-        scope: The ASGI connection scope.
-        receive: Callable to receive ASGI events.
-        send: Callable to send ASGI events.
-        header_name: Name of the header to inject.
-    """
     if scope["type"] != "http":
         await app(scope, receive, send)
         return
 
-    start_time = time.time()
+    # Reuse existing request ID if present; otherwise generate one
+    request_id = None
+    for k, v in scope.get("headers", []):
+        if k.decode().lower() == header_name:
+            request_id = v.decode()
+            break
 
-    async def send_wrapper(message) -> None:  # type: ignore[no-any-explicit]
+    if not request_id:
+        request_id = str(uuid.uuid4())
+
+    async def send_wrapper(message: ASGISendEvent) -> None:
         if message["type"] == "http.response.start":
-            ms = (time.time() - start_time) * 1000
             headers = list(message.get("headers", []))
-            headers.append((header_name.encode(), f"{ms}".encode()))
+            headers.append((header_name.encode(), request_id.encode()))
             message = {**message, "headers": headers}
 
         await send(message)
@@ -768,35 +830,24 @@ async def timing_header_middleware(
 settings = DeploymentSettings(
     custom_middlewares=[
         MiddlewareSpec(
-            middleware=RequestTimingMiddleware,
-            order=10,
-        ),
-        MiddlewareSpec(
-            middleware=timing_header_middleware,
+            middleware=request_id_middleware,
             order=5,
-            init_kwargs={"header_name": "x-latency-ms"},
+            init_kwargs={"header_name": "x-request-id"},
         ),
     ]
 )
 ```
 
-FastAPI/Starlette-native middlewares (native mode):
+4. a FastAPI/Starlette-native middleware that adds GZIP support, implemented as a native middleware:
 
 ```python
+from starlette.middleware.gzip import GZipMiddleware
+from zenml.config import DeploymentSettings, MiddlewareSpec
+
 settings = DeploymentSettings(
     custom_middlewares=[
         MiddlewareSpec(
-            middleware="starlette.middleware.cors.CORSMiddleware",
-            native=True,
-            order=0,
-            extra_kwargs={
-                "allow_origins": ["*"],
-                "allow_methods": ["*"],
-                "allow_headers": ["*"],
-            },
-        ),
-        MiddlewareSpec(
-            middleware="starlette.middleware.gzip.GZipMiddleware",
+            middleware=GZipMiddleware,
             native=True,
             order=20,
             extra_kwargs={"minimum_size": 1024},
@@ -805,21 +856,24 @@ settings = DeploymentSettings(
 )
 ```
 
-Ordering: lower `order` values install earlier in the chain.
-
-
 ### App extensions
 
-App extensions are pluggable components that can install complex, possibly
-framework-specific structures: routers, auth systems, tracing, or metrics.
+App extensions are pluggable components that can install complex, possibly framework-specific structures: routers, auth systems, tracing, or metrics.
 
-You can supply either a callable or a class. The adapter passes `app_runner` into both - this is the `BaseDeploymentAppRunner` instance - the application factory that is responsible for building the ASGI application. You can use it to access information such as:
+App extensions support multiple definition modes (see code examples below):
 
-* the built ASGI app
-* the deployment service instance
-* the `DeploymentResponse` object itself
+1) Extension class - a class that implements the `BaseAppExtension` abstract class. The class constructor must accept any keyword arguments and the `install` method must accept an `app_runner` argument of type `BaseDeploymentAppRunner`.
+2) Extension callable - a callable that takes the `app_runner` argument of type `BaseDeploymentAppRunner`.
 
-The extensions are installed into the ASGI near the end of the process - after the ASGI app has been built according to the deployment settings.
+Both classes and callables must take in an `app_runner` argument of type `BaseDeploymentAppRunner`. This is the application factory that is responsible for building the ASGI application. You can use it to access information such as:
+
+* the ASGI application instance that is being built
+* the deployment service instance that is being deployed
+* the `DeploymentResponse` object itself, which also contains details about the snapshot, pipeline, etc. 
+
+Definitions can be provided as Python objects or as loadable source path strings.
+
+The extensions are summoned to take part in the ASGI application building process near the end of the initialization - after the ASGI app has been built according to the deployment configuration settings.
 
 The example below installs API key authentication at the FastAPI application
 level, attaches the dependency to selected routes, registers an auth error
@@ -937,17 +991,20 @@ settings = DeploymentSettings(
 )
 ```
 
-## Advanced: customizing the runner and service
+## Implementation customizations for advanced use cases
 
 For cases where you need deeper control over how the ASGI app is created or
 how the deployment logic is implemented, you can swap/extend the core
-components:
+components using the following `DeploymentSettings` fields:
 
 - `deployment_app_runner_flavor` and `deployment_app_runner_kwargs` let you
-  choose or extend the app runner that constructs and runs the ASGI app.
+  choose or extend the app runner that constructs and runs the ASGI app. This
+  needs to be set to a subclass of `BaseDeploymentAppRunnerFlavor`, which is
+  basically a descriptor of an app runner implementation that itself is a
+  subclass of `BaseDeploymentAppRunner`.
 - `deployment_service_class` and `deployment_service_kwargs` let you provide
-  your own deployment service to customize the pipeline deployment logic.
+  your own deployment service to customize the pipeline deployment logic. This
+  needs to be set to a subclass of `BasePipelineDeploymentService`.
 
 Both accept loadable sources or objects. We cover how to implement custom
 runner flavors and services in a dedicated guide.
-
