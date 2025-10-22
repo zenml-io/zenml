@@ -141,7 +141,7 @@ class ZenMLCLI(click.Group):
                     "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
                 )
                 with formatter.section(section_title):
-                    formatter.write_dl(rows)
+                    formatter.write_dl(rows)  # type: ignore[arg-type]
 
 
 @click.group(cls=ZenMLCLI, invoke_without_command=True)
