@@ -858,7 +858,32 @@ settings = DeploymentSettings(
 
 ### App extensions
 
-App extensions are pluggable components that can install complex, possibly framework-specific structures: routers, auth systems, tracing, or metrics.
+App extensions are pluggable components that are running as part of the ASGI application factory that can install complex, possibly framework-specific structures. The following are usual scenarios for using a full-blown extension instead of endpoints/middleware:
+
+- Advanced authentication and authorization
+  - install org-wide dependencies (e.g., OAuth/OIDC auth, RBAC guards)
+  - register custom exception handlers for uniform error envelopes
+  - augment OpenAPI with security schemes and per-route security policies
+
+- Multi-tenant and routing topology
+  - programmatically include routers per tenant/region/version
+  - mount sub-apps for internal admin vs public APIs under different prefixes
+  - dynamic route rewrites/switches for blue/green or canary rollouts
+
+- Observability and platform integration
+  - wire OpenTelemetry instrumentation at the app level (tracer/meter providers)
+  - register global request/response logging with redaction policies
+  - expose or mount vendor-specific observability apps (e.g., Prometheus)
+
+- LLM agent control plane
+  - attach a tool registry/router and lifecycle hooks for tools
+  - register guardrail handlers and policy engines across routes
+  - install runtime prompt/template catalogs and index management routers
+
+- API ergonomics and governance
+  - reshape OpenAPI (tags, servers, components) and versioned docs
+  - global response model wrapping, pagination conventions, error mappers
+  - maintenance-mode switch and graceful-drain controls at the app level
 
 App extensions support multiple definition modes (see code examples below):
 
@@ -910,7 +935,7 @@ class FastAPIAuthExtension(BaseAppExtension):
         self.valid_keys: Set[str] = set(valid_keys or [])
         self.protect_paths_prefix = protect_paths_prefix
 
-    def install(self, app_runner: BaseDeploymentAppRunner, **_: object) -> None:
+    def install(self, app_runner: BaseDeploymentAppRunner) -> None:
         app = app_runner.asgi_app
         if not isinstance(app, FastAPI):
             raise RuntimeError("FastAPIAuthExtension requires FastAPI")
