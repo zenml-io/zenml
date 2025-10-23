@@ -1,0 +1,3 @@
+qwen-agent>=0.0.10
+openai>=1.0.0
+zenml[local]

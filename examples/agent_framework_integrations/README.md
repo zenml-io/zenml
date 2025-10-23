@@ -58,11 +58,13 @@ python run.py
 | [CrewAI](crewai/) | 👥 Crews | Agent crews, Task delegation | crewai, openai |
 | [Google ADK](google_adk/) | 🔮 Gemini | Gemini-powered agents with tool calling | google-adk, gemini |
 | [Haystack](haystack/) | 🔍 RAG | Retrieval pipelines, Document processing | haystack, openai |
+| [lagent](lagent/) | 🔄 ReAct | ReAct pattern, Python interpreter, Lightweight | lagent, openai, internlm |
 | [LangChain](langchain/) | 🔗 Chains | Runnable chains, Tool composition | langchain, openai |
 | [LangGraph](langgraph/) | 🕸️ Graphs | ReAct agents, Graph workflows | langgraph, openai |
 | [LlamaIndex](llama_index/) | 📚 Functions | Function agents, Async execution | llama-index, openai |
 | [OpenAI Agents SDK](openai_agents_sdk/) | 🏗️ Structured | Official OpenAI agents, Structured execution | openai-agents, openai |
 | [PydanticAI](pydanticai/) | ✅ Type-Safe | Type-safe agents, Validation | pydantic-ai, openai |
+| [Qwen-Agent](qwen-agent/) | 🧠 Function Call | Custom tools, MCP integration, Qwen models | qwen-agent, openai |
 | [Semantic Kernel](semantic-kernel/) | 🧩 Plugins | Plugin architecture, Microsoft ecosystem | semantic-kernel, openai |
 
 ## 🎯 Core Patterns
@@ -120,6 +122,10 @@ def agent_pipeline() -> str:
 - **Haystack**: RAG pipelines with retrieval components
 - **LlamaIndex**: Function agents with async capabilities
 - **OpenAI Agents SDK**: Structured execution with OpenAI
+
+### International Frameworks
+- **Qwen-Agent**: Alibaba Cloud's agent framework with MCP support and custom tool registration
+- **lagent**: InternLM's lightweight ReAct agent with Python interpreter (中文支持 / Chinese support)
 
 ## 🔄 Implementation Notes
 
