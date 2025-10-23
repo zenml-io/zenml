@@ -16,7 +16,7 @@
 
 """Inference step for churn prediction."""
 
-from typing import Annotated, Dict, Any
+from typing import Annotated, Any, Dict
 
 import pandas as pd
 
@@ -48,9 +48,9 @@ def predict_churn(
     try:
         # Get the pre-loaded model from pipeline state
         step_context = get_step_context()
-        model_state = step_context.pipeline_state
+        model = step_context.pipeline_state
 
-        if model_state is None:
+        if model is None:
             raise RuntimeError(
                 "Model not found in pipeline state. Ensure deployment initialization hook is configured."
             )
@@ -59,15 +59,12 @@ def predict_churn(
         features_df = pd.DataFrame([customer_features])
 
         # Make prediction using the pre-loaded model
-        churn_probability = float(
-            model_state.model.predict_proba(features_df)[0, 1]
-        )
+        churn_probability = float(model.predict_proba(features_df)[0, 1])
         churn_prediction = int(churn_probability > 0.5)
 
         result = {
             "churn_probability": round(churn_probability, 3),
             "churn_prediction": churn_prediction,
-            "model_version": model_state.model_version,
             "model_status": "success",
         }
 

@@ -16,7 +16,7 @@
 
 """Churn prediction inference pipeline."""
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from pipelines.hooks import cleanup_model, init_model
 from steps import predict_churn
@@ -88,5 +88,7 @@ def churn_inference_pipeline(
             - model_version: Version of the model used (string)
             - model_status: Status of the prediction ("success", "error", etc.)
     """
-    prediction: Dict[str, Any] = predict_churn(customer_features=customer_features)
+    prediction: Dict[str, Any] = predict_churn(
+        customer_features=customer_features
+    )
     return prediction

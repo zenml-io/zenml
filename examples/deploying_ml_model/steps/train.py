@@ -60,7 +60,6 @@ def train_churn_model(
     """
     logger.info(f"Training churn model on {len(features)} samples...")
 
-    # Split the data
     X_train, X_test, y_train, y_test = train_test_split(
         features,
         target,
@@ -69,7 +68,6 @@ def train_churn_model(
         stratify=target,
     )
 
-    # Create a simple but effective pipeline
     pipeline = Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -85,11 +83,8 @@ def train_churn_model(
         ]
     )
 
-    logger.info("Training Random Forest classifier...")
     pipeline.fit(X_train, y_train)
 
-    # Evaluate the model
-    logger.info("Evaluating model performance...")
     y_pred = pipeline.predict(X_test)
     y_pred_proba = pipeline.predict_proba(X_test)[:, 1]
 
@@ -102,30 +97,19 @@ def train_churn_model(
     logger.info("Classification Report:")
     logger.info(f"\n{classification_report(y_test, y_pred, zero_division=0)}")
 
-    # Log training metadata to the model artifact
     log_metadata(
         metadata={
-            "training_metrics": {
+            "training": {
                 "accuracy": round(accuracy, 3),
                 "auc_score": round(auc_score, 3),
-                "total_samples": len(features),
-                "training_samples": len(X_train),
-                "test_samples": len(X_test),
-                "churn_rate": round(target.mean(), 3),
-            },
-            "model_config": {
-                "algorithm": "RandomForestClassifier",
-                "n_estimators": 100,
-                "max_depth": 10,
-                "features": list(features.columns),
-                "feature_count": len(features.columns),
-            },
+                "samples": len(features),
+                "features": len(features.columns),
+            }
         },
         artifact_name="churn-model",
         infer_artifact=True,
     )
 
-    # Tag as production model
     add_tags(
         tags=["production"], artifact_name="churn-model", infer_artifact=True
     )

@@ -46,7 +46,6 @@ def generate_churn_data(
 
     np.random.seed(random_seed)
 
-    # Generate realistic customer features
     data = {
         "account_length": np.random.normal(100, 40, num_samples).astype(int),
         "customer_service_calls": np.random.poisson(1.5, num_samples),
@@ -66,14 +65,12 @@ def generate_churn_data(
         ),
     }
 
-    # Ensure positive values where appropriate
     data["account_length"] = np.maximum(data["account_length"], 1)
     data["monthly_charges"] = np.maximum(data["monthly_charges"], 10)
     data["total_charges"] = np.maximum(data["total_charges"], 50)
 
     features = pd.DataFrame(data)
 
-    # Generate target variable with realistic correlations
     churn_prob = (
         0.1  # base churn rate
         + 0.4 * (features["customer_service_calls"] > 3)  # high service calls
@@ -89,7 +86,6 @@ def generate_churn_data(
         )  # internet service (retention)
     )
 
-    # Add some randomness and clip to valid probability range
     churn_prob = np.clip(
         churn_prob + np.random.normal(0, 0.1, num_samples), 0, 1
     )

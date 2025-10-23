@@ -24,21 +24,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ModelState:
-    """Container for the shared model state."""
-
-    def __init__(self, model: Pipeline, model_version: str):
-        """Initialize model state.
-
-        Args:
-            model: The loaded sklearn pipeline
-            model_version: Version identifier of the model
-        """
-        self.model = model
-        self.model_version = model_version
-
-
-def init_model(model_name: str = "churn-model") -> ModelState:
+def init_model(model_name: str = "churn-model") -> Pipeline:
     """Initialize and load the churn prediction model at deployment startup.
 
     This function runs once when the deployment starts and loads the model
@@ -48,7 +34,7 @@ def init_model(model_name: str = "churn-model") -> ModelState:
         model_name: Name of the model artifact to load
 
     Returns:
-        ModelState containing the loaded model and version info
+        Loaded sklearn Pipeline model
 
     Raises:
         Exception: If model loading fails
@@ -56,21 +42,16 @@ def init_model(model_name: str = "churn-model") -> ModelState:
     logger.info(f"Initializing churn prediction model: {model_name}")
 
     try:
-        # Load the production model once at startup
         client = Client()
         model_artifact = client.get_artifact_version(
             name_id_or_prefix=model_name
         )
         model: Pipeline = model_artifact.load()
 
-        model_state = ModelState(
-            model=model, model_version=model_artifact.version
-        )
-
         logger.info(
             f"Successfully loaded model version: {model_artifact.version}"
         )
-        return model_state
+        return model
 
     except Exception as e:
         logger.error(f"Failed to initialize model '{model_name}': {e}")
@@ -83,5 +64,3 @@ def cleanup_model() -> None:
     Note: The cleanup hook takes no arguments according to ZenML's hook specification.
     """
     logger.info("Cleaning up churn prediction model resources")
-    # For sklearn models, no explicit cleanup is needed
-    # But this hook is available for models that need resource cleanup
