@@ -32,7 +32,7 @@ zenml stack register docker-deployer -D docker -o default -a default --set
 ZenML will build a local Docker image called `zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as a Docker container. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now deploy your ZenML pipeline using the Docker deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the Docker deployer:
 
 ```shell
 zenml pipeline deploy my_module.my_pipeline

@@ -30,7 +30,7 @@ zenml deployer register <DEPLOYER_NAME> --flavor=local
 zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
 ```
 
-You can now deploy any ZenML pipeline using the local deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the local deployer:
 
 ```shell
 zenml pipeline deploy --name my_deployment my_module.my_pipeline

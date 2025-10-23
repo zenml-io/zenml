@@ -136,7 +136,7 @@ def weather_pipeline(city: str = "Paris", temperature: float = 20.0) -> str:
     return analysis
 ```
 
-For more information, see the [Deployable Pipeline Requirements](../../how-to/deployment/deployment.md#deployable-pipeline-requirements) section of the tutorial.
+For more information, see the [Deployable Pipeline Requirements](https://docs.zenml.io/concepts/deployment#deployable-pipeline-requirements) section of the tutorial.
 
 #### Deployment Lifecycle Management
 
