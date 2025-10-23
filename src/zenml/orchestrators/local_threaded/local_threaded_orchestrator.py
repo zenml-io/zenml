@@ -135,34 +135,52 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
         def get_ready_steps() -> List[str]:
             """Get steps that are ready to run (all dependencies completed)."""
             ready = []
-            for step_name, step in snapshot.step_configurations.items():
-                # Skip if already processed
+
+            # In FAIL_FAST mode, stop scheduling new steps if we have a failure
+            with lock:
                 if (
-                    step_name in completed_steps
-                    or step_name in failed_steps
-                    or step_name in skipped_steps
-                    or step_name in futures
+                    execution_mode == ExecutionMode.FAIL_FAST
+                    and step_exception is not None
                 ):
+                    return ready
+
+            for step_name, step in snapshot.step_configurations.items():
+                # Take a snapshot of the step states under lock to ensure consistency
+                with lock:
+                    already_processed = (
+                        step_name in completed_steps
+                        or step_name in failed_steps
+                        or step_name in skipped_steps
+                    )
+                    has_failures = bool(failed_steps)
+                    failed_steps_copy = set(failed_steps)
+                    skipped_steps_copy = set(skipped_steps)
+                    completed_steps_copy = set(completed_steps)
+
+                # Skip if already processed or currently running
+                if already_processed or step_name in futures:
                     continue
 
                 # Check if we should skip due to execution mode
                 if (
                     execution_mode == ExecutionMode.STOP_ON_FAILURE
-                    and failed_steps
+                    and has_failures
                 ):
                     with lock:
                         skipped_steps.add(step_name)
                     logger.warning(
                         "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
                         step_name,
-                        ", ".join(failed_steps),
+                        ", ".join(failed_steps_copy),
                         execution_mode,
                     )
                     continue
 
                 # Check for failed upstream steps
                 failed_upstream = [
-                    fs for fs in failed_steps if fs in step.spec.upstream_steps
+                    fs
+                    for fs in failed_steps_copy
+                    if fs in step.spec.upstream_steps
                 ]
                 if failed_upstream:
                     with lock:
@@ -178,7 +196,7 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
                 # Check for skipped upstream steps
                 skipped_upstream = [
                     ss
-                    for ss in skipped_steps
+                    for ss in skipped_steps_copy
                     if ss in step.spec.upstream_steps
                 ]
                 if skipped_upstream:
@@ -194,7 +212,7 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
 
                 # Check if all upstream steps are completed
                 all_upstream_completed = all(
-                    upstream in completed_steps
+                    upstream in completed_steps_copy
                     for upstream in step.spec.upstream_steps
                 )
 
@@ -258,12 +276,22 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
                 for step_name in done_futures:
                     del futures[step_name]
 
+                # In FAIL_FAST mode, if we have an exception and no more running steps, exit immediately
+                with lock:
+                    if (
+                        execution_mode == ExecutionMode.FAIL_FAST
+                        and step_exception is not None
+                        and not futures
+                    ):
+                        break
+
                 # Check if we're done (all steps processed)
-                total_processed = (
-                    len(completed_steps)
-                    + len(failed_steps)
-                    + len(skipped_steps)
-                )
+                with lock:
+                    total_processed = (
+                        len(completed_steps)
+                        + len(failed_steps)
+                        + len(skipped_steps)
+                    )
                 total_steps = len(snapshot.step_configurations)
 
                 if total_processed >= total_steps:
@@ -276,12 +304,13 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
                     and not ready_steps
                     and total_processed < total_steps
                 ):
-                    remaining_steps = (
-                        set(snapshot.step_configurations.keys())
-                        - completed_steps
-                        - failed_steps
-                        - skipped_steps
-                    )
+                    with lock:
+                        remaining_steps = (
+                            set(snapshot.step_configurations.keys())
+                            - completed_steps
+                            - failed_steps
+                            - skipped_steps
+                        )
                     raise RuntimeError(
                         f"Pipeline execution stalled. Remaining steps cannot be executed: {remaining_steps}"
                     )
