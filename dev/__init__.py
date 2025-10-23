@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI callable through `./zen-dev ....`.
-
-This CLI will serve as a general interface for all convenience functions
-during development.
-"""
-
-import sys
-
-from dev.cli import cli
-
-if __name__ == "__main__":
-    sys.exit(cli())
