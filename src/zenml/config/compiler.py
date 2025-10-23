@@ -153,6 +153,7 @@ class Compiler:
 
         snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
+            is_dynamic=pipeline.is_dynamic,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
             client_environment=get_run_environment_dict(),
@@ -634,7 +635,7 @@ class Compiler:
         Raises:
             ValueError: If the pipeline has no steps.
         """
-        if not step_specs:
+        if not step_specs and not pipeline.is_dynamic:
             raise ValueError(
                 f"Pipeline '{pipeline.name}' cannot be compiled because it has "
                 f"no steps. Please make sure that your steps are decorated "

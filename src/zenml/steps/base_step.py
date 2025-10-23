@@ -91,6 +91,9 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
+    from zenml.pipelines.dynamic.runner import StepRunResultFuture
+
+
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="BaseStep")
@@ -197,14 +200,12 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(
-            name=name,
+        self._configuration = PartialStepConfiguration(name=name)
+        self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
-        )
-        self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
@@ -454,7 +455,11 @@ class BaseStep:
         *args: Any,
         id: Optional[str] = None,
         after: Union[
-            str, StepArtifact, Sequence[Union[str, StepArtifact]], None
+            str,
+            StepArtifact,
+            "StepRunResultFuture",
+            Sequence[Union[str, StepArtifact, "StepRunResultFuture"]],
+            None,
         ] = None,
         **kwargs: Any,
     ) -> Any:
@@ -474,10 +479,17 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
         from zenml.pipelines.pipeline_definition import Pipeline
 
+        if context := DynamicPipelineRunContext.get():
+            return context.runner.run_step_sync(self, id, args, kwargs, after)
+
         if not Pipeline.ACTIVE_PIPELINE:
-            from zenml import constants, get_step_context
+            from zenml import get_step_context
+            from zenml.pipelines.run_utils import (
+                should_prevent_pipeline_execution,
+            )
 
             # If the environment variable was set to explicitly not run on the
             # stack, we do that.
@@ -497,11 +509,8 @@ class BaseStep:
                 # but instead just call the step function
                 return self.call_entrypoint(*args, **kwargs)
 
-            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-                logger.info(
-                    "Preventing execution of step '%s'.",
-                    self.name,
-                )
+            if should_prevent_pipeline_execution():
+                logger.info("Preventing execution of step '%s'.", self.name)
                 return
 
             return run_as_single_step_pipeline(self, *args, **kwargs)
@@ -581,6 +590,25 @@ class BaseStep:
             ) from e
 
         return self.entrypoint(**validated_args)
+
+    def submit(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union[
+            "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+        ] = None,
+        **kwargs: Any,
+    ) -> "StepRunResultFuture":
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Submitting a step is only possible within a dynamic pipeline."
+            )
+
+        return context.runner.run_step_in_thread(self, id, args, kwargs, after)
 
     @property
     def name(self) -> str:
@@ -1031,6 +1059,7 @@ To avoid this consider setting step parameters only in one place (config or code
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
+        skip_input_validation: bool = False,
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
@@ -1045,6 +1074,7 @@ To avoid this consider setting step parameters only in one place (config or code
             model_artifacts_or_metadata: The model artifacts or metadata of
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
+            skip_input_validation: If True, will skip the input validation.
 
         Raises:
             StepInterfaceError: If explicit materializers were specified for an
@@ -1134,12 +1164,13 @@ To avoid this consider setting step parameters only in one place (config or code
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
-        self._validate_inputs(
-            input_artifacts=input_artifacts,
-            external_artifacts=external_artifacts,
-            model_artifacts_or_metadata=model_artifacts_or_metadata,
-            client_lazy_loaders=client_lazy_loaders,
-        )
+        if not skip_input_validation:
+            self._validate_inputs(
+                input_artifacts=input_artifacts,
+                external_artifacts=external_artifacts,
+                model_artifacts_or_metadata=model_artifacts_or_metadata,
+                client_lazy_loaders=client_lazy_loaders,
+            )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)

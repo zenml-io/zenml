@@ -16,7 +16,7 @@
 import os
 import sys
 from importlib.metadata import distribution
-from typing import Any, List, Set
+from typing import Any, Dict, List
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -38,17 +38,16 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the wheel package.
         """
-        return (
-            super().get_entrypoint_options()
-            | {WHEEL_PACKAGE_OPTION}
-            | {DATABRICKS_JOB_ID_OPTION}
-        )
+        return super().get_entrypoint_options() | {
+            WHEEL_PACKAGE_OPTION: True,
+            DATABRICKS_JOB_ID_OPTION: True,
+        }
 
     @classmethod
     def get_entrypoint_arguments(

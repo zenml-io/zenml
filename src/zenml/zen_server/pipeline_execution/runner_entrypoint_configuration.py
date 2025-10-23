@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Runner entrypoint configuration."""
 
-from typing import Any, List, Set
+from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -29,14 +29,16 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     """Runner entrypoint configuration."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the name of the
             step to run.
         """
-        return super().get_entrypoint_options() | {PLACEHOLDER_RUN_ID_OPTION}
+        return super().get_entrypoint_options() | {
+            PLACEHOLDER_RUN_ID_OPTION: True
+        }
 
     @classmethod
     def get_entrypoint_arguments(

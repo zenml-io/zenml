@@ -14,7 +14,7 @@
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
 import os
-from typing import Any, List, Set
+from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -46,20 +46,20 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for the deployment entrypoint.
 
         Returns:
             Set of required option names
         """
         return {
-            DEPLOYMENT_ID_OPTION,
-            HOST_OPTION,
-            PORT_OPTION,
-            WORKERS_OPTION,
-            LOG_LEVEL_OPTION,
-            CREATE_RUNS_OPTION,
-            AUTH_KEY_OPTION,
+            DEPLOYMENT_ID_OPTION: True,
+            HOST_OPTION: True,
+            PORT_OPTION: True,
+            WORKERS_OPTION: True,
+            LOG_LEVEL_OPTION: True,
+            CREATE_RUNS_OPTION: True,
+            AUTH_KEY_OPTION: True,
         }
 
     @classmethod

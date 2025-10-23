@@ -82,7 +82,9 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         Returns:
             Whether to build the pipeline image.
         """
-        return False
+        # When running a dynamic pipeline, we need an image for the
+        # orchestration container.
+        return snapshot.is_dynamic
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"

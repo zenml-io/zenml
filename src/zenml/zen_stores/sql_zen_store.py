@@ -9649,7 +9649,10 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            step_config = run.get_step_configuration(step_name=step_run.name)
+            step_config = (
+                step_run.dynamic_config
+                or run.get_step_configuration(step_name=step_run.name)
+            )
 
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
@@ -9900,6 +9903,20 @@ class SqlZenStore(BaseZenStore):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
+
+            if step_run.dynamic_config:
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
 
             session.commit()
             session.refresh(
@@ -10312,12 +10329,14 @@ class SqlZenStore(BaseZenStore):
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
         num_steps = pipeline_run.snapshot.step_count
+        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
         new_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=num_steps,
+            is_dynamic_pipeline=is_dynamic_pipeline,
         )
 
         if new_status == pipeline_run.status or (

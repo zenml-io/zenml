@@ -246,11 +246,6 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 # ZenML Analytics Server - URL
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
-# Container utils
-SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
-    ENV_ZENML_PREVENT_PIPELINE_EXECUTION
-)
-
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"

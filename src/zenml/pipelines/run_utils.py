@@ -1,16 +1,20 @@
 """Utility functions for running pipelines."""
 
 import time
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from zenml import constants
 from zenml.client import Client
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.constants import (
+    ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+    handle_bool_env_var,
+)
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
@@ -26,7 +30,13 @@ from zenml.models import (
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.stack import Flavor, Stack
-from zenml.utils import code_utils, notebook_utils, source_utils, string_utils
+from zenml.utils import (
+    code_utils,
+    env_utils,
+    notebook_utils,
+    source_utils,
+    string_utils,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -36,6 +46,26 @@ if TYPE_CHECKING:
     ]
 
 logger = get_logger(__name__)
+
+
+def should_prevent_pipeline_execution() -> bool:
+    """Whether to prevent pipeline execution.
+
+    Returns:
+        Whether to prevent pipeline execution.
+    """
+    return handle_bool_env_var(
+        ENV_ZENML_PREVENT_PIPELINE_EXECUTION, default=False
+    )
+
+
+@contextmanager
+def prevent_pipeline_execution():
+    """Context manager to prevent pipeline execution."""
+    with env_utils.temporary_environment(
+        {ENV_ZENML_PREVENT_PIPELINE_EXECUTION: "True"}
+    ):
+        yield
 
 
 def get_default_run_name(pipeline_name: str) -> str:
@@ -114,32 +144,29 @@ def submit_pipeline(
     """
     # Prevent execution of nested pipelines which might lead to
     # unexpected behavior
-    previous_value = constants.SHOULD_PREVENT_PIPELINE_EXECUTION
-    constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
-    try:
-        stack.prepare_pipeline_submission(snapshot=snapshot)
-        stack.submit_pipeline(
-            snapshot=snapshot,
-            placeholder_run=placeholder_run,
-        )
-    except RunMonitoringError as e:
-        # Don't mark the run as failed if the error happened during monitoring
-        # of the run.
-        raise e.original_exception from None
-    except BaseException as e:
-        if (
-            placeholder_run
-            and not Client()
-            .get_pipeline_run(placeholder_run.id, hydrate=False)
-            .status.is_finished
-        ):
-            # We failed during/before the submission of the run, so we mark the
-            # run as failed if it is still in an initializing/running state.
-            publish_failed_pipeline_run(placeholder_run.id)
+    with prevent_pipeline_execution():
+        try:
+            stack.prepare_pipeline_submission(snapshot=snapshot)
+            stack.submit_pipeline(
+                snapshot=snapshot,
+                placeholder_run=placeholder_run,
+            )
+        except RunMonitoringError as e:
+            # Don't mark the run as failed if the error happened during
+            # monitoring of the run.
+            raise e.original_exception from None
+        except BaseException as e:
+            if (
+                placeholder_run
+                and not Client()
+                .get_pipeline_run(placeholder_run.id, hydrate=False)
+                .status.is_finished
+            ):
+                # We failed during/before the submission of the run, so we mark
+                # the run as failed if it's still in an unfinished state.
+                publish_failed_pipeline_run(placeholder_run.id)
 
-        raise e
-    finally:
-        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = previous_value
+            raise e
 
 
 def wait_for_pipeline_run_to_finish(run_id: UUID) -> "PipelineRunResponse":

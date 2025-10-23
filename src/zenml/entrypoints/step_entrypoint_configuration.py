@@ -15,7 +15,7 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, List, Set
+from typing import TYPE_CHECKING, Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -115,14 +115,14 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the name of the
             step to run.
         """
-        return super().get_entrypoint_options() | {STEP_NAME_OPTION}
+        return super().get_entrypoint_options() | {STEP_NAME_OPTION: True}
 
     @classmethod
     def get_entrypoint_arguments(
