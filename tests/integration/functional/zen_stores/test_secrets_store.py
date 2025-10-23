@@ -557,14 +557,18 @@ def test_reusing_private_secret_name_succeeds():
                 assert len(private_secrets) == 1
                 assert other_secret.id == private_secrets[0].id
 
-                other_private_secrets = store.list_secrets(
-                    SecretFilter(
-                        name=secret.name,
-                        private=True,
-                    ),
-                ).items
-                assert len(other_private_secrets) == 1
-                assert secret.id == other_private_secrets[0].id
+        # After switching back to the original user context, instantiate a fresh client/store
+        original_client = Client()
+        original_store = original_client.zen_store
+
+        other_private_secrets = original_store.list_secrets(
+            SecretFilter(
+                name=secret.name,
+                private=True,
+            ),
+        ).items
+        assert len(other_private_secrets) == 1
+        assert secret.id == other_private_secrets[0].id
 
 
 def test_update_scope_succeeds():
