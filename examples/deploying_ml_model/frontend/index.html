@@ -224,7 +224,7 @@
 
         <div class="content">
             <div class="endpoint-info">
-                <strong>API Endpoint:</strong> <span id="endpoint-url">http://localhost:8080/invoke</span>
+                <strong>API Endpoint:</strong> <span id="endpoint-url">http://localhost:8000/invoke</span>
             </div>
 
             <form id="prediction-form">
@@ -312,7 +312,7 @@
         // Auto-detect API endpoint
         const currentHost = window.location.hostname;
         const apiUrl = currentHost === 'localhost' || currentHost === '127.0.0.1'
-            ? 'http://localhost:8080/invoke'
+            ? 'http://localhost:8000/invoke'
             : `${window.location.protocol}//${window.location.host}/invoke`;
 
         endpointUrl.textContent = apiUrl;
@@ -345,6 +345,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': 'Bearer o3eUBsVJHaXoPei7NICYlGSVQwhuuGK8'
                     },
                     body: JSON.stringify(payload)
                 });

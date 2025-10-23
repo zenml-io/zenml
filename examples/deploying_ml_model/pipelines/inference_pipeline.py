@@ -22,7 +22,7 @@ from pipelines.hooks import cleanup_model, init_model
 from steps import predict_churn
 
 from zenml import pipeline
-from zenml.config import DeploymentSettings, DockerSettings
+from zenml.config import DeploymentSettings, DockerSettings, CORSConfig
 from zenml.config.resource_settings import ResourceSettings
 
 
@@ -39,10 +39,13 @@ from zenml.config.resource_settings import ResourceSettings
             app_description="Real-time churn prediction with interactive web interface",
             app_version="1.0.0",
             dashboard_files_path="frontend",
+            cors=CORSConfig(
+                allow_origins=["*"],
+                allow_methods=["GET", "POST", "OPTIONS"],
+                allow_headers=["*"],
+                allow_credentials=True,
+            ),
         ),
-        "deployer": {
-            "generate_auth_key": True,
-        },
         "resources": ResourceSettings(
             memory="1GB",
             cpu_count=1,
