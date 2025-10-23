@@ -563,8 +563,8 @@ class PipelineDockerImageBuilder:
                         ", ".join(f"`{r}`" for r in stack_requirements_list),
                     )
 
-        for filename, requirements in extra_requirements_files.items():
-            requirements_list = sorted(requirements)
+        for filename, extra_requirements in extra_requirements_files.items():
+            requirements_list = sorted(extra_requirements)
             requirements_file = "\n".join(requirements_list)
             requirements_files.append((filename, requirements_file, []))
             if log:
