@@ -220,12 +220,17 @@ def stop_daemon(pid_file: str) -> None:
     except psutil.TimeoutExpired:
         logger.warning(
             "Daemon PID %s did not terminate in time; killing.", pid
+
         )
-        process.kill()
         try:
-            process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
-        except psutil.TimeoutExpired:
-            logger.error("Failed to kill daemon PID %s.", pid)
+            process.kill()
+            try:
+                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+            except psutil.TimeoutExpired:
+                logger.error("Failed to kill daemon PID %s.", pid)
+        except Exception as e:
+            logger.error("Failed to kill daemon PID %s: %s", pid, e)
+
 
 
 def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
