@@ -25,10 +25,11 @@ Use deployers when you need request-response patterns, and orchestrators for sch
 
 ### Deployer Flavors
 
-ZenML provides deployer implementations for different deployment environments:
+Out of the box, ZenML comes with a `local` deployer already part of the default stack that deploys pipelines on your local machine in the form of background processes. Additional Deployers are provided by integrations:
 
 | Deployer                           | Flavor    | Integration   | Notes                                                                        |
 |------------------------------------|-----------|---------------|------------------------------------------------------------------------------|
+| [Local](local.md)                  | `local`  | _built-in_  | None               | This is the default Deployer. It deploys pipelines on your local machine in the form of background processes. Should be used only for running ZenML locally. |
 | [Docker](docker.md)                | `docker`   | Built-in      | Deploys pipelines as locally running Docker containers                                |
 | [GCP Cloud Run](gcp-cloud-run.md)            | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
 | [AWS App Runner](aws-app-runner.md)           | `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |

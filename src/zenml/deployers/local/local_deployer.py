@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Local deployer."""
 
+import ipaddress
 import os
 import shutil
 import subprocess
@@ -64,6 +65,8 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
+
+DEFAULT_TAIL_FOLLOW_LINES = 100
 
 
 class LocalDeploymentMetadata(BaseModel):
@@ -290,10 +293,19 @@ class LocalDeployer(BaseDeployer):
             app_runner.settings.uvicorn_port = port
             app_runner.run()
             return DeploymentOperationalState(
-                status=DeploymentStatus.ABSENT,
+                status=DeploymentStatus.RUNNING,
                 metadata=None,
             )
         else:
+            address = settings.address
+            # Validate that the address is a valid IP address
+            try:
+                ipaddress.ip_address(address)
+            except ValueError:
+                raise DeploymentProvisionError(
+                    f"Invalid address: {address}. Must be a valid IP address."
+                )
+
             # Launch the deployment app as a background subprocess.
             python_exe = sys.executable
             module = "zenml.deployers.server.app"
@@ -315,7 +327,7 @@ class LocalDeployer(BaseDeployer):
 
             try:
                 os.makedirs(os.path.dirname(pid_file), exist_ok=True)
-                proc = subprocess.Popen(  # nosec B603
+                proc = subprocess.Popen(
                     cmd,
                     cwd=os.getcwd(),
                     env=child_env,
@@ -345,7 +357,7 @@ class LocalDeployer(BaseDeployer):
         address = settings.address
         if address == "0.0.0.0":
             address = "localhost"
-        state.url = f"http://{settings.address}:{port}"
+        state.url = f"http://{address}:{port}"
 
         return state
 
@@ -465,7 +477,7 @@ class LocalDeployer(BaseDeployer):
 
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                 if not tail:
-                    tail = 100
+                    tail = DEFAULT_TAIL_FOLLOW_LINES
                 lines = f.readlines()
                 for line in lines[-tail:]:
                     yield line.rstrip("\n")

@@ -25,7 +25,7 @@ To use the Docker deployer, you can register it and use it in your active stack:
 ```shell
 zenml deployer register docker --flavor=docker
 
-# Register and activate a stack with the new orchestrator
+# Register and activate a stack with the new deployer
 zenml stack register docker-deployer -D docker -o default -a default --set
 ```
 {% hint style="info" %}
@@ -40,7 +40,7 @@ zenml pipeline deploy my_module.my_pipeline
 
 ### Additional configuration
 
-For additional configuration of the Local Docker orchestrator, you can pass the following `DockerDeployerSettings` attributes defined in the `zenml.deployers.docker.docker_deployer` module when configuring the deployer or defining or deploying your pipeline:
+For additional configuration of the Docker deployer, you can pass the following `DockerDeployerSettings` attributes defined in the `zenml.deployers.docker.docker_deployer` module when configuring the deployer or defining or deploying your pipeline:
 
 * Basic settings common to all Deployers:
 
@@ -71,7 +71,7 @@ def greet(name: str) -> str:
 
 settings = {
     "deployer": DockerDeployerSettings(
-        run_args={"port": 8000}
+        port=8000
     )
 }
 

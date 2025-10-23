@@ -2418,6 +2418,13 @@ def test_update_default_stack_component_fails():
         )
     )[0]
 
+    default_deployer = store.list_stack_components(
+        ComponentFilter(
+            type=StackComponentType.DEPLOYER,
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
+        )
+    )[0]
+
     component_update = ComponentUpdate(name="aria")
     with pytest.raises(IllegalOperationError):
         store.update_stack_component(
@@ -2429,6 +2436,13 @@ def test_update_default_stack_component_fails():
     with pytest.raises(IllegalOperationError):
         store.update_stack_component(
             component_id=default_artifact_store.id,
+            component_update=component_update,
+        )
+
+    default_deployer.name = "blupus"
+    with pytest.raises(IllegalOperationError):
+        store.update_stack_component(
+            component_id=default_deployer.id,
             component_update=component_update,
         )
 
@@ -2451,11 +2465,21 @@ def test_delete_default_stack_component_fails():
         )
     )[0]
 
+    default_deployer = store.list_stack_components(
+        ComponentFilter(
+            type=StackComponentType.DEPLOYER,
+            name=DEFAULT_STACK_AND_COMPONENT_NAME,
+        )
+    )[0]
+
     with pytest.raises(IllegalOperationError):
         store.delete_stack_component(default_artifact_store.id)
 
     with pytest.raises(IllegalOperationError):
         store.delete_stack_component(default_orchestrator.id)
+
+    with pytest.raises(IllegalOperationError):
+        store.delete_stack_component(default_deployer.id)
 
 
 def test_count_stack_components():

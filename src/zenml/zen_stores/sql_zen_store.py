@@ -3710,6 +3710,7 @@ class SqlZenStore(BaseZenStore):
                 and component.type
                 in {
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 }
             )
@@ -3871,6 +3872,7 @@ class SqlZenStore(BaseZenStore):
                 and existing_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 ]
             ):
@@ -3948,6 +3950,7 @@ class SqlZenStore(BaseZenStore):
                 and stack_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 ]
             ):
@@ -9479,6 +9482,20 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
+            deployer = self.create_stack_component(
+                # Use `DefaultComponentRequest` instead of
+                # `ComponentRequest` here to force the `create_stack_component`
+                # call to use `None` for the user, meaning the orchestrator
+                # is owned by the server, which for RBAC indicates that
+                # everyone can read it
+                component=DefaultComponentRequest(
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
+                    type=StackComponentType.DEPLOYER,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
             artifact_store = self.create_stack_component(
                 # Use `DefaultComponentRequest` instead of
                 # `ComponentRequest` here to force the `create_stack_component`
@@ -9494,7 +9511,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             components = {
-                c.type: [c.id] for c in [orchestrator, artifact_store]
+                c.type: [c.id]
+                for c in [orchestrator, deployer, artifact_store]
             }
 
             # Use `DefaultStackRequest` instead of `StackRequest` here to force
