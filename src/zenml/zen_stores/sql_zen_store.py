@@ -5465,7 +5465,7 @@ class SqlZenStore(BaseZenStore):
         exclude_visualization_id: Optional[UUID] = None,
     ) -> None:
         """Ensure curated visualizations per resource use unique display orders.
-        
+
         Args:
             session: The database session.
             resource_id: The ID of the resource.
