@@ -148,7 +148,7 @@ class DeploymentSchema(NamedSchema, table=True):
                 "foreign(CuratedVisualizationSchema.resource_id)==DeploymentSchema.id)"
             ),
             overlaps="visualizations",
-            cascade="all, delete-orphan",
+            cascade="delete",
             order_by="CuratedVisualizationSchema.display_order",
         ),
     )

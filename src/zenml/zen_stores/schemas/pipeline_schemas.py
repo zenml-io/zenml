@@ -115,7 +115,7 @@ class PipelineSchema(NamedSchema, table=True):
                 "foreign(CuratedVisualizationSchema.resource_id)==PipelineSchema.id)"
             ),
             overlaps="visualizations",
-            cascade="all, delete-orphan",
+            cascade="delete",
             order_by="CuratedVisualizationSchema.display_order",
         ),
     )

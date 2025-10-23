@@ -229,7 +229,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 "foreign(CuratedVisualizationSchema.resource_id)==PipelineSnapshotSchema.id)"
             ),
             overlaps="visualizations",
-            cascade="all, delete-orphan",
+            cascade="delete",
             order_by="CuratedVisualizationSchema.display_order",
         ),
     )
