@@ -44,9 +44,15 @@ zenml deployer flavor list
 
 You don't need to directly interact with the ZenML deployer stack component in your code. As long as the deployer that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK. The resulting deployment can be managed using the ZenML CLI or the ZenML SDK.
 
-Example:
+Examples:
 
-* set up a stack with a deployer:
+* just use the default stack - it has a default local deployer that will deploy the pipeline on your local machine in the form of a background process:
+
+```bash
+zenml stack set default
+```
+
+* or set up a new stack with a deployer in it:
 
 ```bash
 zenml deployer register docker --flavor=local
