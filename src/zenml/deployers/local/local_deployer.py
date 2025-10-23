@@ -383,9 +383,6 @@ class LocalDeployer(BaseDeployer):
 
         Returns:
             Operational state of the deployment.
-
-        Raises:
-            DeploymentNotFoundError: If metadata cannot be resolved.
         """
         assert deployment.snapshot, "Pipeline snapshot not found"
 
