@@ -232,6 +232,19 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def close(self) -> None:
+        """Release external resources held by this store instance.
+
+        Implementations must:
+        - Release any external resources such as database connections, HTTP
+          sessions, open file handles, background workers, etc.
+        - Be safe to call multiple times (idempotent). Subsequent calls should
+          be no-ops and must not fail because resources were already released.
+        - Never raise exceptions. Any cleanup failures should be handled
+          internally and logged at debug level instead of being propagated.
+        """
+
+    @abstractmethod
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
 

@@ -51,6 +51,12 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - For full coverage, use CI (see CI section below)
 - Some tests use: `bash scripts/test-coverage-xml.sh` (but this won't run all tests)
 
+#### CLI Testing Best Practices
+- When writing new CLI tests, use the `cli_runner()` helper from `tests/integration/functional/cli/utils.py` instead of directly instantiating `CliRunner()`
+- The helper handles Click version compatibility (Click 8.2+ removed the `mix_stderr` parameter)
+- Always check `result.exit_code` after invoking CLI commands to catch failures early
+- Existing tests with `CliRunner()` (no arguments) are fine - only new tests need the helper
+
 ## Development Workflow
 
 ### Prerequisites

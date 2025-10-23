@@ -1238,6 +1238,30 @@ class SqlZenStore(BaseZenStore):
     # Initialization and configuration
     # --------------------------------
 
+    def close(self) -> None:
+        """Release DB resources held by this store.
+
+        Safe to call multiple times. Primarily ensures SQLite file handles are
+        released so the DB file can be removed on platforms like Windows.
+        """
+        try:
+            engine = self._engine
+            if engine is not None:
+                # Disposes pooled connections and releases file handles.
+                engine.dispose()
+        except Exception as e:
+            # Cleanup must not raise; surface at debug level only.
+            logger.debug(
+                "Error disposing SQLAlchemy engine during SqlZenStore.close(): %s",
+                e,
+                exc_info=True,
+            )
+        finally:
+            # Clear references to avoid accidental reuse and help GC.
+            self._engine = None
+            self._alembic = None
+            self._migration_utils = None
+
     def _initialize(self) -> None:
         """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)

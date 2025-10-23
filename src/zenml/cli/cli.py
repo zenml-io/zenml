@@ -137,17 +137,22 @@ class ZenMLCLI(click.Group):
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))
             if rows:
-                colored_section_title = (
+                section_title = (
                     "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
                 )
-                with formatter.section(colored_section_title):
+                with formatter.section(section_title):
                     formatter.write_dl(rows)  # type: ignore[arg-type]
 
 
-@click.group(cls=ZenMLCLI)
+@click.group(cls=ZenMLCLI, invoke_without_command=True)
 @click.version_option(__version__, "--version", "-v")
-def cli() -> None:
-    """CLI base command for ZenML."""
+@click.pass_context
+def cli(ctx: click.Context) -> None:
+    """CLI base command for ZenML.
+
+    Args:
+        ctx: The click context.
+    """
     set_root_verbosity()
     source_context.set(SourceContextTypes.CLI)
     repo_root = Client.find_repository()
@@ -157,6 +162,17 @@ def cli() -> None:
         # as a source root is the CLI script located in the python site
         # packages directory
         source_utils.set_custom_source_root(source_root=os.getcwd())
+
+    # Manually show help when invoked without a subcommand to ensure our custom
+    # formatter is used. Without invoke_without_command=True, Click defaults to
+    # no_args_is_help=True, which in Click 8.2+ raises NoArgsIsHelpError before
+    # this callback runs. That error triggers Click's default help display,
+    # bypassing ZenMLCLI.get_help() and losing our custom formatting (categories,
+    # colors, layout). By using invoke_without_command=True and manually checking
+    # for no subcommand, we guarantee consistent behavior across Click versions.
+    if ctx.invoked_subcommand is None and not ctx.resilient_parsing:
+        ctx.command.get_help(ctx)
+        ctx.exit(0)
 
 
 if __name__ == "__main__":

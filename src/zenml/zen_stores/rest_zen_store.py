@@ -4265,6 +4265,40 @@ class RestZenStore(BaseZenStore):
             route=TAG_RESOURCES,
         )
 
+    def close(self) -> None:
+        """Release external resources held by this store instance.
+
+        This implementation closes the underlying HTTP session and clears transient
+        authentication state. It is safe to call multiple times and never raises;
+        unexpected cleanup issues are logged at debug level instead.
+        """
+        try:
+            with self._session_lock:
+                if self._session is not None:
+                    try:
+                        self._session.close()
+                    except Exception as e:
+                        # Cleanup must not raise; surface at debug level only.
+                        logger.debug(
+                            "Error closing REST session during RestZenStore.close(): %s",
+                            e,
+                            exc_info=True,
+                        )
+                    finally:
+                        # Clear the session reference to avoid reuse and help GC.
+                        self._session = None
+
+                # Clear transient auth state so future use starts cleanly.
+                self._api_token = None
+                self._last_authenticated = None
+        except Exception as e:
+            # Absolute safety: no exceptions should escape close()
+            logger.debug(
+                "Unexpected error during RestZenStore.close(): %s",
+                e,
+                exc_info=True,
+            )
+
     # =======================
     # Internal helper methods
     # =======================
