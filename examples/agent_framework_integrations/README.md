@@ -123,10 +123,6 @@ def agent_pipeline() -> str:
 - **LlamaIndex**: Function agents with async capabilities
 - **OpenAI Agents SDK**: Structured execution with OpenAI
 
-### International Frameworks
-- **Qwen-Agent**: Alibaba Cloud's agent framework with MCP support and custom tool registration
-- **lagent**: InternLM's lightweight ReAct agent with Python interpreter
-
 ## 🔄 Implementation Notes
 
 ### Production vs. Demos
