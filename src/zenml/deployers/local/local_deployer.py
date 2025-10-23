@@ -67,6 +67,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_TAIL_FOLLOW_LINES = 100
+DEFAULT_DAEMON_STARTUP_TIMEOUT = 10
 
 
 class LocalDeploymentMetadata(BaseModel):
@@ -284,6 +285,10 @@ class LocalDeployer(BaseDeployer):
                     f"'{deployment.name}' with PID {current_pid}: {e}"
                 )
 
+        # Remove the pid file if it exists
+        if os.path.exists(pid_file):
+            os.remove(pid_file)
+
         if settings.blocking:
             app_runner = BaseDeploymentAppRunner.load_app_runner(deployment.id)
             # We ignore and overwrite the host and port values in the deployment
@@ -296,51 +301,51 @@ class LocalDeployer(BaseDeployer):
                 status=DeploymentStatus.RUNNING,
                 metadata=None,
             )
-        else:
-            address = settings.address
-            # Validate that the address is a valid IP address
-            try:
-                ipaddress.ip_address(address)
-            except ValueError:
-                raise DeploymentProvisionError(
-                    f"Invalid address: {address}. Must be a valid IP address."
-                )
 
-            # Launch the deployment app as a background subprocess.
-            python_exe = sys.executable
-            module = "zenml.deployers.server.app"
-            cmd = [
-                python_exe,
-                "-m",
-                module,
-                "--deployment_id",
-                str(deployment.id),
-                "--pid_file",
-                os.path.abspath(pid_file),
-                "--log_file",
-                os.path.abspath(log_file),
-                "--host",
-                settings.address,
-                "--port",
-                str(port),
-            ]
+        address = settings.address
+        # Validate that the address is a valid IP address
+        try:
+            ipaddress.ip_address(address)
+        except ValueError:
+            raise DeploymentProvisionError(
+                f"Invalid address: {address}. Must be a valid IP address."
+            )
 
-            try:
-                os.makedirs(os.path.dirname(pid_file), exist_ok=True)
-                proc = subprocess.Popen(
-                    cmd,
-                    cwd=os.getcwd(),
-                    env=child_env,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    start_new_session=True,
-                    close_fds=True,
-                )
-            except Exception as e:
-                raise DeploymentProvisionError(
-                    f"Failed to start subprocess for deployment "
-                    f"'{deployment.name}': {e}"
-                ) from e
+        # Launch the deployment app as a background subprocess.
+        python_exe = sys.executable
+        module = "zenml.deployers.server.app"
+        cmd = [
+            python_exe,
+            "-m",
+            module,
+            "--deployment_id",
+            str(deployment.id),
+            "--pid_file",
+            os.path.abspath(pid_file),
+            "--log_file",
+            os.path.abspath(log_file),
+            "--host",
+            settings.address,
+            "--port",
+            str(port),
+        ]
+
+        try:
+            os.makedirs(os.path.dirname(pid_file), exist_ok=True)
+            proc = subprocess.Popen(
+                cmd,
+                cwd=os.getcwd(),
+                env=child_env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+                close_fds=True,
+            )
+        except Exception as e:
+            raise DeploymentProvisionError(
+                f"Failed to start subprocess for deployment "
+                f"'{deployment.name}': {e}"
+            ) from e
 
         metadata = LocalDeploymentMetadata(
             pid=proc.pid,
@@ -358,6 +363,13 @@ class LocalDeployer(BaseDeployer):
         if address == "0.0.0.0":
             address = "localhost"
         state.url = f"http://{address}:{port}"
+
+        # Wait a while until the process is running
+        for _ in range(DEFAULT_DAEMON_STARTUP_TIMEOUT):
+            pid = get_daemon_pid_if_running(pid_file)
+            if pid:
+                break
+            time.sleep(1)
 
         return state
 
@@ -378,18 +390,21 @@ class LocalDeployer(BaseDeployer):
         assert deployment.snapshot, "Pipeline snapshot not found"
 
         meta = self._load_or_default_metadata(deployment)
-        if meta.pid_file:
-            meta.pid = get_daemon_pid_if_running(meta.pid_file)
+        if not meta.pid_file or not os.path.exists(meta.pid_file):
+            return DeploymentOperationalState(
+                status=DeploymentStatus.ABSENT,
+            )
+
+        meta.pid = get_daemon_pid_if_running(meta.pid_file)
 
         state = DeploymentOperationalState(
-            status=DeploymentStatus.ABSENT,
+            status=DeploymentStatus.ERROR,
             metadata=meta.model_dump(exclude_none=True),
         )
 
-        if not meta.pid_file or not meta.pid:
+        if not meta.pid:
             return state
 
-        state.status = DeploymentStatus.UNKNOWN
         if meta.port and meta.address:
             # Use pending until we can confirm the daemon is reachable
             state.status = DeploymentStatus.PENDING
@@ -407,7 +422,7 @@ class LocalDeployer(BaseDeployer):
             # Attempt to connect to the daemon and set the status to RUNNING
             # if successful
             try:
-                response = requests.get(health_check_url, timeout=10)
+                response = requests.get(health_check_url, timeout=3)
                 if response.status_code == 200:
                     state.status = DeploymentStatus.RUNNING
                 else:
@@ -422,6 +437,11 @@ class LocalDeployer(BaseDeployer):
                     f"Daemon for deployment '{deployment.name}' is not "
                     f"reachable at '{health_check_url}': {e}"
                 )
+                # It can take a long time after the deployment is started until
+                # the deployment is ready to serve requests, but this isn't an
+                # error condition. We return PENDING instead of ERROR here to
+                # signal to the polling in the base deployer class to keep trying.
+                state.status = DeploymentStatus.PENDING
 
         state.metadata = meta.model_dump(exclude_none=True)
 
@@ -521,8 +541,9 @@ class LocalDeployer(BaseDeployer):
 
         pid = get_daemon_pid_if_running(meta.pid_file)
         if not pid:
-            raise DeploymentNotFoundError(
-                f"Daemon for deployment '{deployment.name}' not found"
+            shutil.rmtree(self._runtime_dir(deployment.id))
+            return DeploymentOperationalState(
+                status=DeploymentStatus.ABSENT,
             )
 
         try:

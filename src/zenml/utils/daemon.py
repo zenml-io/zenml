@@ -330,11 +330,24 @@ else:
             logger.warning("Daemon PID file '%s' does not exist.", pid_file)
             return
 
-        if psutil.pid_exists(pid):
-            process = psutil.Process(pid)
-            process.terminate()
-        else:
+        if not psutil.pid_exists(pid):
             logger.warning("PID from '%s' does not exist.", pid_file)
+            return
+
+        process = psutil.Process(pid)
+        process.terminate()
+
+        try:
+            process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+        except psutil.TimeoutExpired:
+            logger.warning(
+                "Daemon PID %s did not terminate in time; killing.", pid
+            )
+            process.kill()
+            try:
+                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+            except psutil.TimeoutExpired:
+                logger.error("Failed to kill daemon PID %s.", pid)
 
     def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
         """Read and return the PID value from a PID file.
