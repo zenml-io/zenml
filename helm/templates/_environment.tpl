@@ -335,6 +335,9 @@ vault_addr: {{ .SecretsStore.hashicorp.vault_addr | quote }}
 {{- if .SecretsStore.hashicorp.vault_namespace }}
 vault_namespace: {{ .SecretsStore.hashicorp.vault_namespace | quote }}
 {{- end }}
+{{- if .SecretsStore.hashicorp.mount_point }}
+mount_point: {{ .SecretsStore.hashicorp.mount_point | quote }}
+{{- end }}
 {{- if .SecretsStore.hashicorp.max_versions }}
 max_versions: {{ .SecretsStore.hashicorp.max_versions | quote }}
 {{- end }}

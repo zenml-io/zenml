@@ -702,6 +702,8 @@ zenml:
       vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
       vault_namespace:
+      # The mount point to use (defaults to "secret" if not set)
+      mount_point:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
@@ -962,6 +964,8 @@ zenml:
       vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
       vault_namespace:
+      # The mount point to use (defaults to "secret" if not set)
+      mount_point:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
