@@ -82,7 +82,9 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
 
         dist = distribution(wheel_package)
-        project_root = os.path.join(dist.locate_file("."), wheel_package)
+        project_root = os.path.join(
+            str(dist.locate_file(".")), str(wheel_package)
+        )
 
         if project_root not in sys.path:
             sys.path.insert(0, project_root)

@@ -1,9 +1,11 @@
 import os
+import time
 from unittest.mock import patch
 
 import pytest
 
 from zenml import pipeline, step
+from zenml.config import CachePolicy
 from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
 from zenml.exceptions import EntityExistsError
 
@@ -138,3 +140,29 @@ def test_duplicate_pipeline_run_name_raises_improved_error(clean_client):
         or "existing pipeline run with the same name" in error_message.lower()
         or f"Pipeline run name '{run_name}' already exists" in error_message
     )
+
+
+@step
+def cacheable_step() -> int:
+    return 0
+
+
+def test_cache_expiration(clean_client):
+    """Test cache expiration."""
+
+    @pipeline(cache_policy=CachePolicy(expires_after=1))
+    def test_pipeline():
+        cacheable_step()
+
+    test_pipeline()
+    time.sleep(1)
+    run = test_pipeline()
+    assert run.steps["cacheable_step"].status == "completed"
+
+    @pipeline(cache_policy=CachePolicy(expires_after=3600))
+    def test_pipeline():
+        cacheable_step()
+
+    test_pipeline()
+    run = test_pipeline()
+    assert run.steps["cacheable_step"].status == "cached"

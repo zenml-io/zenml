@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
 from typing import Tuple
 from unittest import mock
 from unittest.mock import ANY
@@ -166,6 +167,69 @@ def test_generate_cache_key_considers_input_artifact_content_hash(
     assert key_1 != key_2
 
 
+def test_generate_cache_key_considers_file_dependencies(
+    generate_cache_key_kwargs,
+    clean_client_with_repo,
+):
+    """Check that the cache key changes if the file dependencies change."""
+    with open("file_dependency.txt", "w") as f:
+        f.write("before")
+    generate_cache_key_kwargs["step"].config.cache_policy.file_dependencies = [
+        "file_dependency.txt"
+    ]
+    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+
+    with open("file_dependency.txt", "w") as f:
+        f.write("after")
+    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    assert key_1 != key_2
+
+
+def test_generate_cache_key_considers_source_dependencies(
+    generate_cache_key_kwargs,
+    clean_client_with_repo,
+):
+    """Check that the cache key changes if the source dependencies change."""
+    module_name = str(uuid4())
+    with open(f"{module_name}.py", "w") as f:
+        f.write("def f():\n  return 1")
+    generate_cache_key_kwargs[
+        "step"
+    ].config.cache_policy.source_dependencies = [
+        Source.from_import_path(f"{module_name}.f")
+    ]
+    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    del sys.modules[module_name]
+    with open(f"{module_name}.py", "w") as f:
+        f.write("def f():\n  return 1 # comment")
+    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    assert key_1 != key_2
+    del sys.modules[module_name]
+
+
+def test_generate_cache_key_considers_cache_func(
+    generate_cache_key_kwargs,
+    clean_client_with_repo,
+):
+    """Check that the cache key changes if the cache func changes."""
+    module_name = str(uuid4())
+    with open(f"{module_name}.py", "w") as f:
+        f.write("def f():\n  return 'before'")
+    generate_cache_key_kwargs[
+        "step"
+    ].config.cache_policy.cache_func = Source.from_import_path(
+        f"{module_name}.f"
+    )
+    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+
+    del sys.modules[module_name]
+    with open(f"{module_name}.py", "w") as f:
+        f.write("def f():\n  return 'after'")
+    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    assert key_1 != key_2
+    del sys.modules[module_name]
+
+
 def test_generate_cache_key_considers_output_artifacts(
     generate_cache_key_kwargs,
 ):
@@ -225,6 +289,7 @@ def test_fetching_cached_step_run_queries_cache_candidates(
     mock_list_run_steps.assert_called_with(
         project=ANY,
         cache_key="cache_key",
+        cache_expired=False,
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,

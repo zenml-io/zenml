@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+from datetime import datetime
 from uuid import UUID
 
 import pytest
@@ -40,4 +41,5 @@ def test_step_run_request_model_fails_with_long_docstring():
             step_configuration={},
             docstring=long_docstring_name,
             mlmd_parent_step_ids=[],
+            start_time=datetime.now(),
         )
