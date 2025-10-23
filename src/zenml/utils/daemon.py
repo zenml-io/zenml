@@ -142,6 +142,75 @@ else:
             children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
         )
 
+    def setup_daemon(
+        pid_file: Optional[str] = None, log_file: Optional[str] = None
+    ) -> None:
+        """Sets up a daemon process.
+
+        Args:
+            pid_file: Path to file in which to store the PID of the daemon
+                process.
+            log_file: Optional file to which the daemons stdout/stderr will be
+                redirected to.
+        """
+        # redirect standard file descriptors to devnull (or the given logfile)
+        devnull = "/dev/null"
+        if hasattr(os, "devnull"):
+            devnull = os.devnull
+
+        devnull_fd = os.open(devnull, os.O_RDWR)
+        log_fd = (
+            os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
+            if log_file
+            else None
+        )
+        out_fd = log_fd or devnull_fd
+
+        try:
+            os.dup2(devnull_fd, sys.stdin.fileno())
+        except io.UnsupportedOperation:
+            # stdin is not a file descriptor
+            pass
+        try:
+            os.dup2(out_fd, sys.stdout.fileno())
+        except io.UnsupportedOperation:
+            # stdout is not a file descriptor
+            pass
+        try:
+            os.dup2(out_fd, sys.stderr.fileno())
+        except io.UnsupportedOperation:
+            # stderr is not a file descriptor
+            pass
+
+        if pid_file:
+            # write the PID file
+            with open(pid_file, "w+") as f:
+                f.write(f"{os.getpid()}\n")
+
+        # register actions in case this process exits/gets killed
+        def cleanup() -> None:
+            """Daemon cleanup."""
+            sys.stderr.write("Cleanup: terminating children processes...\n")
+            terminate_children()
+            if pid_file and os.path.exists(pid_file):
+                sys.stderr.write(f"Cleanup: removing PID file {pid_file}...\n")
+                os.remove(pid_file)
+            sys.stderr.flush()
+
+        def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
+            """Daemon signal handler.
+
+            Args:
+                signum: Signal number.
+                frame: Frame object.
+            """
+            sys.stderr.write(f"Handling signal {signum}...\n")
+            cleanup()
+
+        signal.signal(signal.SIGTERM, sighndl)
+        signal.signal(signal.SIGINT, sighndl)
+        atexit.register(cleanup)
+
     def run_as_daemon(
         daemon_function: F,
         *args: Any,
@@ -227,63 +296,8 @@ else:
             # catching the SystemExit exception and doing something else.
             os._exit(1)
 
-        # redirect standard file descriptors to devnull (or the given logfile)
-        devnull = "/dev/null"
-        if hasattr(os, "devnull"):
-            devnull = os.devnull
-
-        devnull_fd = os.open(devnull, os.O_RDWR)
-        log_fd = (
-            os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
-            if log_file
-            else None
-        )
-        out_fd = log_fd or devnull_fd
-
-        try:
-            os.dup2(devnull_fd, sys.stdin.fileno())
-        except io.UnsupportedOperation:
-            # stdin is not a file descriptor
-            pass
-        try:
-            os.dup2(out_fd, sys.stdout.fileno())
-        except io.UnsupportedOperation:
-            # stdout is not a file descriptor
-            pass
-        try:
-            os.dup2(out_fd, sys.stderr.fileno())
-        except io.UnsupportedOperation:
-            # stderr is not a file descriptor
-            pass
-
-        if pid_file:
-            # write the PID file
-            with open(pid_file, "w+") as f:
-                f.write(f"{os.getpid()}\n")
-
-        # register actions in case this process exits/gets killed
-        def cleanup() -> None:
-            """Daemon cleanup."""
-            sys.stderr.write("Cleanup: terminating children processes...\n")
-            terminate_children()
-            if pid_file and os.path.exists(pid_file):
-                sys.stderr.write(f"Cleanup: removing PID file {pid_file}...\n")
-                os.remove(pid_file)
-            sys.stderr.flush()
-
-        def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
-            """Daemon signal handler.
-
-            Args:
-                signum: Signal number.
-                frame: Frame object.
-            """
-            sys.stderr.write(f"Handling signal {signum}...\n")
-            cleanup()
-
-        signal.signal(signal.SIGTERM, sighndl)
-        signal.signal(signal.SIGINT, sighndl)
-        atexit.register(cleanup)
+        # setup the daemon
+        setup_daemon(pid_file, log_file)
 
         # finally run the actual daemon code
         daemon_function(*args, **kwargs)

@@ -66,6 +66,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.utils import source_utils
+from zenml.utils.daemon import setup_daemon
 
 if TYPE_CHECKING:
     from secure import Secure
@@ -1006,7 +1007,37 @@ if __name__ == "__main__":
         default=os.getenv("ZENML_DEPLOYMENT_ID"),
         help="Pipeline snapshot ID",
     )
+    parser.add_argument(
+        "--pid_file",
+        default=os.getenv("ZENML_PID_FILE"),
+        help="PID file to use for the deployment",
+    )
+    parser.add_argument(
+        "--log_file",
+        default=os.getenv("ZENML_LOG_FILE"),
+        help="Log file to use for the deployment",
+    )
+    parser.add_argument(
+        "--host",
+        default=None,
+        help=(
+            "Optional host override for the uvicorn server. If provided, "
+            "this takes precedence over the deployment settings."
+        ),
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help=(
+            "Optional port override for the uvicorn server. If provided, "
+            "this takes precedence over the deployment settings."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.pid_file or args.log_file:
+        setup_daemon(args.pid_file, args.log_file)
 
     logger.info(
         f"Starting deployment application server for deployment "
@@ -1017,4 +1048,10 @@ if __name__ == "__main__":
     integration_registry.activate_integrations()
 
     app_runner = BaseDeploymentAppRunner.load_app_runner(args.deployment_id)
+
+    # Allow host/port overrides coming from the CLI.
+    if args.host:
+        app_runner.settings.uvicorn_host = args.host
+    if args.port:
+        app_runner.settings.uvicorn_port = int(args.port)
     app_runner.run()

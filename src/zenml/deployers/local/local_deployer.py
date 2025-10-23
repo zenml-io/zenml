@@ -13,13 +13,24 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Local deployer."""
 
-from __future__ import annotations
-
 import os
+import shutil
+import subprocess
+import sys
 import time
-from typing import Any, Dict, Generator, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 from uuid import UUID
 
+import requests
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
@@ -42,13 +53,15 @@ from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
 from zenml.utils.daemon import (
     get_daemon_pid_if_running,
-    run_as_daemon,
     stop_daemon,
 )
 from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.networking_utils import (
     lookup_preferred_or_free_port,
 )
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -93,12 +106,15 @@ class LocalDeployerSettings(BaseDeployerSettings):
         allocate_port_if_busy: Whether to allocate a free port if busy.
         port_range: Range to scan when allocating a free port.
         address: Address to bind the server to.
+        blocking: Whether to run the deployment in the current process instead
+            of running it as a daemon process.
     """
 
     port: Optional[int] = None
     allocate_port_if_busy: bool = True
     port_range: Tuple[int, int] = (8000, 65535)
     address: str = "127.0.0.1"
+    blocking: bool = False
 
 
 class LocalDeployerConfig(BaseDeployerConfig, LocalDeployerSettings):
@@ -232,7 +248,7 @@ class LocalDeployer(BaseDeployer):
 
         existing_meta = self._load_or_default_metadata(deployment)
 
-        preferred_ports = []  # type: ignore[var-annotated]
+        preferred_ports: List[int] = []
         if settings.port:
             preferred_ports.append(settings.port)
         if existing_meta.port:
@@ -240,7 +256,7 @@ class LocalDeployer(BaseDeployer):
 
         try:
             port = lookup_preferred_or_free_port(
-                preferred_ports=preferred_ports,  # type: ignore[arg-type]
+                preferred_ports=preferred_ports,
                 allocate_port_if_busy=settings.allocate_port_if_busy,
                 range=settings.port_range,
                 address=settings.address,
@@ -248,7 +264,6 @@ class LocalDeployer(BaseDeployer):
         except IOError as e:
             raise DeploymentProvisionError(str(e))
 
-        address = settings.address
         pid_file = existing_meta.pid_file or self._pid_file_path(deployment.id)
         log_file = existing_meta.log_file or self._log_file_path(deployment.id)
 
@@ -256,65 +271,82 @@ class LocalDeployer(BaseDeployer):
         if not os.path.exists(runtime_dir):
             os.makedirs(runtime_dir, exist_ok=True)
 
-        def _daemon_entrypoint(
-            dep_id: str, host: str, listen_port: int, env: Dict[str, str]
-        ) -> None:
-            """Entrypoint that runs the deployment app in the daemon.
+        current_pid = get_daemon_pid_if_running(pid_file)
+        if current_pid:
+            try:
+                stop_daemon(pid_file)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to stop existing daemon process for deployment "
+                    f"'{deployment.name}' with PID {current_pid}: {e}"
+                )
 
-            Args:
-                dep_id: Deployment UUID.
-                host: Bind address.
-                listen_port: Bind port.
-                env: Environment variables to set.
-            """
-            os.environ.update(env)
-            app_runner = BaseDeploymentAppRunner.load_app_runner(dep_id)
-            app_runner.settings.uvicorn_host = host
-            app_runner.settings.uvicorn_port = listen_port
+        if settings.blocking:
+            app_runner = BaseDeploymentAppRunner.load_app_runner(deployment.id)
+            # We ignore and overwrite the host and port values in the deployment
+            # settings here because we are running the server directly on the
+            # local host.
+            app_runner.settings.uvicorn_host = settings.address
+            app_runner.settings.uvicorn_port = port
             app_runner.run()
-
-        try:
-            run_as_daemon(
-                _daemon_entrypoint,
-                pid_file=pid_file,
-                log_file=log_file,
-                working_directory="/",
-            )(
-                dep_id=deployment_id,
-                host=address,
-                listen_port=port,
-                env=child_env,
+            return DeploymentOperationalState(
+                status=DeploymentStatus.ABSENT,
+                metadata=None,
             )
-        except FileExistsError as e:
-            raise DeploymentProvisionError(str(e))
-        except Exception as e:
-            raise DeploymentProvisionError(
-                f"Failed to start daemon for deployment '{deployment.name}': "
-                f"{e}"
-            ) from e
+        else:
+            # Launch the deployment app as a background subprocess.
+            python_exe = sys.executable
+            module = "zenml.deployers.server.app"
+            cmd = [
+                python_exe,
+                "-m",
+                module,
+                "--deployment_id",
+                str(deployment.id),
+                "--pid_file",
+                os.path.abspath(pid_file),
+                "--log_file",
+                os.path.abspath(log_file),
+                "--host",
+                settings.address,
+                "--port",
+                str(port),
+            ]
 
-        pid: Optional[int] = None
-        for _ in range(10):
-            pid = get_daemon_pid_if_running(pid_file)
-            if pid:
-                break
-            time.sleep(0.1)
+            try:
+                os.makedirs(os.path.dirname(pid_file), exist_ok=True)
+                proc = subprocess.Popen(  # nosec B603
+                    cmd,
+                    cwd=os.getcwd(),
+                    env=child_env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                    close_fds=True,
+                )
+            except Exception as e:
+                raise DeploymentProvisionError(
+                    f"Failed to start subprocess for deployment "
+                    f"'{deployment.name}': {e}"
+                ) from e
 
         metadata = LocalDeploymentMetadata(
-            pid=pid,
+            pid=proc.pid,
             port=port,
-            address=address,
+            address=settings.address,
             pid_file=pid_file,
             log_file=log_file,
         )
 
         state = DeploymentOperationalState(
-            status=DeploymentStatus.RUNNING
-            if pid
-            else DeploymentStatus.PENDING,
+            status=DeploymentStatus.PENDING,
             metadata=metadata.model_dump(exclude_none=True),
         )
-        state.url = f"http://{address}:{port}"
+        address = settings.address
+        if address == "0.0.0.0":
+            address = "localhost"
+        state.url = f"http://{settings.address}:{port}"
+
         return state
 
     def do_get_deployment_state(
@@ -331,26 +363,57 @@ class LocalDeployer(BaseDeployer):
         Raises:
             DeploymentNotFoundError: If metadata cannot be resolved.
         """
-        meta = self._load_or_default_metadata(deployment)
-        if not meta.pid_file:
-            raise DeploymentNotFoundError(
-                f"Daemon metadata for deployment '{deployment.name}' missing."
-            )
+        assert deployment.snapshot, "Pipeline snapshot not found"
 
-        pid = get_daemon_pid_if_running(meta.pid_file)
+        meta = self._load_or_default_metadata(deployment)
+        if meta.pid_file:
+            meta.pid = get_daemon_pid_if_running(meta.pid_file)
+
         state = DeploymentOperationalState(
-            status=DeploymentStatus.ABSENT,
+            status=DeploymentStatus.ABSENT
+            if not meta.pid_file
+            else DeploymentStatus.PENDING,
             metadata=meta.model_dump(exclude_none=True),
         )
 
-        if pid:
-            meta.pid = pid
-            addr = meta.address or "127.0.0.1"
-            prt = meta.port or 0
-            state.metadata = meta.model_dump(exclude_none=True)
-            state.status = DeploymentStatus.RUNNING
-            if prt:
-                state.url = f"http://{addr}:{prt}"
+        if not meta.pid_file or not meta.pid:
+            return state
+
+        state.status = DeploymentStatus.UNKNOWN
+        if meta.port and meta.address:
+            # Use pending until we can confirm the daemon is reachable
+            state.status = DeploymentStatus.PENDING
+            address = meta.address
+            if address == "0.0.0.0":
+                address = "localhost"
+            state.url = f"http://{address}:{meta.port}"
+
+            settings = (
+                deployment.snapshot.pipeline_configuration.deployment_settings
+            )
+            health_check_path = f"{settings.root_url_path}{settings.api_url_path}{settings.health_url_path}"
+            health_check_url = f"{state.url}{health_check_path}"
+
+            # Attempt to connect to the daemon and set the status to RUNNING
+            # if successful
+            try:
+                response = requests.get(health_check_url, timeout=10)
+                if response.status_code == 200:
+                    state.status = DeploymentStatus.RUNNING
+                else:
+                    logger.debug(
+                        f"Daemon for deployment '{deployment.name}' returned "
+                        f"status code {response.status_code} for health check "
+                        f"at '{health_check_url}'"
+                    )
+                    state.status = DeploymentStatus.ERROR
+            except Exception as e:
+                logger.debug(
+                    f"Daemon for deployment '{deployment.name}' is not "
+                    f"reachable at '{health_check_url}': {e}"
+                )
+
+        state.metadata = meta.model_dump(exclude_none=True)
 
         return state
 
@@ -401,12 +464,11 @@ class LocalDeployer(BaseDeployer):
                 return
 
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                if tail and tail > 0:
-                    lines = f.readlines()
-                    for line in lines[-tail:]:
-                        yield line.rstrip("\n")
-                else:
-                    f.seek(0, os.SEEK_END)
+                if not tail:
+                    tail = 100
+                lines = f.readlines()
+                for line in lines[-tail:]:
+                    yield line.rstrip("\n")
 
                 while True:
                     where = f.tell()
@@ -460,6 +522,8 @@ class LocalDeployer(BaseDeployer):
                 f"Failed to stop daemon for deployment '{deployment.name}': "
                 f"{e}"
             ) from e
+        else:
+            shutil.rmtree(self._runtime_dir(deployment.id))
 
         return None
 
