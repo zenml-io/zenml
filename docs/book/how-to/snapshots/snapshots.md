@@ -83,13 +83,9 @@ snapshot = my_pipeline.create_snapshot(name="<NAME>")
 
 ### Using the CLI
 
-You can create a snapshot using the ZenML CLI:
+You can create a snapshot using the ZenML CLI, by passing the [source path](../steps-pipelines/sources.md#source-paths) of your pipeline: 
 
 ```bash
-# The <PIPELINE-SOURCE-PATH> will be `run.my_pipeline` if you defined a
-# pipeline with name `my_pipeline` in a file called `run.py`. This will be either relative
-# to your ZenML repository (that you created by running `zenml init`) or your current working
-# directory.
 zenml pipeline snapshot create <PIPELINE-SOURCE-PATH> --name=<SNAPSHOT-NAME>
 ```
 

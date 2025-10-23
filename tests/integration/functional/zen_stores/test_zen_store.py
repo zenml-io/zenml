@@ -5553,6 +5553,7 @@ class TestRunMetadata:
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
+                    start_time=datetime.now(),
                 )
             )
             resource = (

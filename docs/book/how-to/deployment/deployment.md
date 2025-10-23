@@ -25,6 +25,41 @@ Pipeline deployments are ideal for scenarios requiring real-time, on-demand exec
 
 **Multi-step Business Workflows**: Orchestrate complex processes involving multiple AI/ML components, like document processing pipelines that combine OCR, entity extraction, sentiment analysis, and classification into a single deployable service.
 
+## Traditional Model Serving vs. Deployed Pipelines
+
+If you're reaching for tools like Seldon or KServe, consider this: deployed
+pipelines give you all the core serving primitives, plus the power of a full
+application runtime.
+
+- Equivalent functionality: A pipeline handles the end-to-end inference path
+  out of the box — request validation, feature pre-processing, model loading
+  and inference, post-processing, and response shaping.
+- More flexible: Deployed pipelines are unopinionated, so you can layer in
+  retrieval, guardrails, rules, A/B routing, canary logic, human-in-the-loop,
+  or any custom orchestration. You're not constrained by a model-server template.
+- More customizable: The deployment is a real ASGI app. Tailor endpoints,
+  authentication, authorization, rate limiting, structured logging, tracing,
+  correlation IDs, or SSO/OIDC — all with first-class middleware and
+  framework-level hooks.
+- More features: Serve single-page apps alongside the API. Ship admin/ops
+  dashboards, experiment playgrounds, model cards, or customer-facing UIs
+  from the very same deployment for tighter operational feedback loops.
+
+This approach aligns better with production realities: inference is rarely
+"just call a model." There are policies, data dependencies, and integrations
+that need a programmable, evolvable surface. Deployed pipelines give you that
+without sacrificing the convenience of a managed deployer and a clean HTTP
+contract.
+
+{% hint style="info" %}
+Deprecation notice: ZenML is phasing out the Model Deployer stack components
+in favor of pipeline deployments. Pipeline deployments are the strategic
+direction for real-time serving: they are more dynamic, more extensible, and
+offer deeper integration points with your security, observability, and product
+requirements. Existing model deployers will continue to function during the
+transition period, but new investments will focus on pipeline deployments.
+{% endhint %}
+
 ## How Deployments Work
 
 To deploy a pipeline or snapshot, a **Deployer** stack component needs to be in your active stack:
@@ -419,6 +454,48 @@ The following happens when the pipeline is deployed and then later invoked:
 3. The on_cleanup hook is executed only once, when the deployment is stopped
 
 This mechanism can be used to initialize and share global state between all the HTTP requests made to the deployment or to execute long-running initialization or cleanup operations when the deployment is started or stopped rather than on each HTTP request.
+
+## Deployment Configuration
+
+The deployer settings cover aspects of the pipeline deployment process and specific back-end infrastructure used to provision and manage the resources required to run the deployment servers. Independently of that, `DeploymentSettings` can be used to fully customize all aspects pertaining to the deployment ASGI application itself, including:
+
+* HTTP endpoints
+* middleware
+* secure headers
+* CORS settings
+* mounting and serving static files to support deploying single-page applications alongside the pipeline
+* for more advanced cases, even the ASGI framework (e.g. FastAPI, Django, Flask, Falcon, Quart, BlackSheep, etc.) and its configuration can be customized
+
+Example:
+
+```python
+from zenml.config import DeploymentSettings, EndpointSpec, EndpointMethod
+from zenml import pipeline
+
+async def custom_health_check() -> Dict[str, Any]:
+    from zenml.client import Client
+
+    client = Client()
+    return {
+        "status": "healthy",
+        "info": client.zen_store.get_store_info().model_dump(),
+    }
+
+@pipeline(settings={"deployment": DeploymentSettings(
+    custom_endpoints=[
+        EndpointSpec(
+            path="/health",
+            method=EndpointMethod.GET,
+            handler=custom_health_check,
+            auth_required=False,
+        ),
+    ],
+)})
+def my_pipeline():
+    ...
+```
+
+For more detailed information on deployment options, see the [deployment settings guide](./deployment_settings.md).
 
 ## Best Practices
 

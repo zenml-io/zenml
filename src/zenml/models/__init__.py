@@ -320,6 +320,12 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
     StackResponseResources
 )
+from zenml.models.v2.misc.param_groups import (
+    PipelineRunIdentifier,
+    StepRunIdentifier,
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
+)
 from zenml.models.v2.misc.statistics import (
     ProjectStatistics,
     ServerStatistics,
@@ -874,4 +880,8 @@ __all__ = [
     "ProjectStatistics",
     "PipelineRunDAG",
     "ExceptionInfo",
+    "PipelineRunIdentifier",
+    "StepRunIdentifier",
+    "ArtifactVersionIdentifier",
+    "ModelVersionIdentifier",
 ]

@@ -15,15 +15,25 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from types import SimpleNamespace
-from typing import Dict, Iterator
-from uuid import UUID, uuid4
+from typing import Dict, List, Type
+from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
+from zenml.config import (
+    AppExtensionSpec,
+    DeploymentSettings,
+    EndpointSpec,
+    MiddlewareSpec,
+)
+from zenml.deployers.server.adapters import EndpointAdapter, MiddlewareAdapter
+from zenml.deployers.server.app import (
+    BaseDeploymentAppRunner,
+    BaseDeploymentAppRunnerFlavor,
+)
 from zenml.deployers.server.models import BaseDeploymentInvocationRequest
 from zenml.deployers.server.service import PipelineDeploymentService
 
@@ -44,6 +54,7 @@ def _make_snapshot() -> SimpleNamespace:
         init_hook_source=None,
         init_hook_kwargs={},
         cleanup_hook_source=None,
+        deployment_settings=DeploymentSettings(),
     )
     pipeline_spec = SimpleNamespace(
         parameters={"city": "London"},
@@ -67,14 +78,55 @@ def _make_snapshot() -> SimpleNamespace:
 def _make_deployment() -> SimpleNamespace:
     """Create a deployment stub with the attributes accessed by the service."""
     return SimpleNamespace(
-        id=uuid4(), name="deployment", snapshot=_make_snapshot()
+        id=uuid4(), name="deployment", snapshot=_make_snapshot(), auth_key=None
     )
+
+
+class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
+    @property
+    def name(self) -> str:
+        return "dummy"
+
+    @property
+    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+        return _DummyDeploymentAppRunner
+
+
+class _DummyDeploymentAppRunner(BaseDeploymentAppRunner):
+    @classmethod
+    def load_deployment(cls, deployment):
+        return deployment
+
+    @property
+    def flavor(cls) -> "BaseDeploymentAppRunnerFlavor":
+        return _DummyDeploymentAppRunnerFlavor()
+
+    def _create_endpoint_adapter(self) -> EndpointAdapter:
+        return None
+
+    def _create_middleware_adapter(self) -> MiddlewareAdapter:
+        return None
+
+    def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
+        return []
+
+    def _build_cors_middleware(self) -> MiddlewareSpec:
+        return None
+
+    def build(
+        self,
+        middlewares: List[MiddlewareSpec],
+        endpoints: List[EndpointSpec],
+        extensions: List[AppExtensionSpec],
+    ):
+        return None
 
 
 def _make_service_stub(mocker: MockerFixture) -> PipelineDeploymentService:
     """Create a service instance without running __init__ for isolated tests."""
     deployment = _make_deployment()
-    service = PipelineDeploymentService.__new__(PipelineDeploymentService)
+    app_runner = _DummyDeploymentAppRunner(deployment)
+    service = PipelineDeploymentService(app_runner)
     service._client = mocker.MagicMock()
     service._orchestrator = mocker.MagicMock()
     mocker.patch.object(
@@ -86,98 +138,7 @@ def _make_service_stub(mocker: MockerFixture) -> PipelineDeploymentService:
     service.service_start_time = 100.0
     service.last_execution_time = None
     service.total_executions = 0
-    service.deployment = deployment
-    service.snapshot = deployment.snapshot
     return service
-
-
-def test_initialization_loads_deployment(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """__init__ should load the deployment from the store."""
-    deployment = _make_deployment()
-
-    class DummyZenStore:
-        """In-memory zen store stub that records requested snapshot IDs."""
-
-        def __init__(self) -> None:
-            self.requested_snapshot_id: UUID | None = None
-            self.requested_deployment_id: UUID | None = None
-
-        def get_snapshot(self, snapshot_id: UUID) -> SimpleNamespace:  # noqa: D401
-            """Return the stored snapshot and remember the requested ID."""
-
-            self.requested_snapshot_id = snapshot_id
-            return deployment.snapshot
-
-        def get_deployment(self, deployment_id: UUID) -> SimpleNamespace:  # noqa: D401
-            """Return the stored deployment and remember the requested ID."""
-
-            self.requested_deployment_id = deployment_id
-            return deployment
-
-    dummy_store = DummyZenStore()
-
-    class DummyClient:
-        """Client stub providing access to the dummy zen store."""
-
-        def __init__(self) -> None:
-            self.zen_store = dummy_store
-
-    monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
-
-    service = PipelineDeploymentService(deployment.id)
-
-    assert service.deployment is deployment
-    assert service.snapshot is deployment.snapshot
-    assert dummy_store.requested_deployment_id == deployment.id
-    assert dummy_store.requested_snapshot_id is None
-
-
-def test_initialize_sets_up_orchestrator(
-    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
-) -> None:
-    """initialize should activate integrations and build orchestrator."""
-    deployment = _make_deployment()
-
-    class DummyZenStore:
-        """Zen store stub that supplies the prepared snapshot."""
-
-        def get_snapshot(self, snapshot_id: UUID) -> SimpleNamespace:  # noqa: D401
-            return deployment.snapshot
-
-        def get_deployment(self, deployment_id: UUID) -> SimpleNamespace:  # noqa: D401
-            return deployment
-
-    class DummyClient:
-        """Client stub exposing only the attributes required by the service."""
-
-        def __init__(self) -> None:
-            self.zen_store = DummyZenStore()
-
-    monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
-
-    mock_orchestrator = mocker.MagicMock()
-    monkeypatch.setattr(
-        "zenml.deployers.server.service.SharedLocalOrchestrator",
-        mocker.MagicMock(return_value=mock_orchestrator),
-    )
-
-    @contextmanager
-    def _noop_env(_: object) -> Iterator[None]:
-        """Provide a no-op temporary environment context manager for tests."""
-
-        yield
-
-    monkeypatch.setattr(
-        "zenml.deployers.server.service.env_utils.temporary_environment",
-        _noop_env,
-    )
-
-    service = PipelineDeploymentService(uuid4())
-    service.initialize()
-
-    assert service._orchestrator is mock_orchestrator
 
 
 def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
