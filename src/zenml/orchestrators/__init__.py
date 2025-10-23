@@ -42,6 +42,10 @@ from zenml.orchestrators.local_docker.local_docker_orchestrator import (
     LocalDockerOrchestrator,
     LocalDockerOrchestratorFlavor,
 )
+from zenml.orchestrators.local_threaded.local_threaded_orchestrator import (
+    LocalThreadedOrchestrator,
+    LocalThreadedOrchestratorFlavor,
+)
 
 __all__ = [
     "BaseOrchestrator",
@@ -53,5 +57,7 @@ __all__ = [
     "LocalOrchestratorFlavor",
     "LocalDockerOrchestrator",
     "LocalDockerOrchestratorFlavor",
+    "LocalThreadedOrchestrator",
+    "LocalThreadedOrchestratorFlavor",
     "SubmissionResult",
 ]
