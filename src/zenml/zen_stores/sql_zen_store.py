@@ -5464,7 +5464,18 @@ class SqlZenStore(BaseZenStore):
         display_order: Optional[int],
         exclude_visualization_id: Optional[UUID] = None,
     ) -> None:
-        """Ensure curated visualizations per resource use unique display orders."""
+        """Ensure curated visualizations per resource use unique display orders.
+        
+        Args:
+            session: The database session.
+            resource_id: The ID of the resource.
+            resource_type: The type of the resource.
+            display_order: The display order to check.
+            exclude_visualization_id: The ID of the visualization to exclude.
+
+        Raises:
+            EntityExistsError: If a curated visualization for this resource already uses the display order.
+        """
         if display_order is None:
             return
 
