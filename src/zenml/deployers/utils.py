@@ -14,13 +14,17 @@
 """ZenML deployers utilities."""
 
 import json
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import jsonref
 import requests
 
 from zenml.client import Client
+from zenml.config.deployment_settings import (
+    DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH,
+    DeploymentSettings,
+)
 from zenml.config.step_configurations import Step
 from zenml.deployers.exceptions import (
     DeploymentHTTPError,
@@ -222,8 +226,15 @@ def invoke_deployment(
             f"Failed to serialize request data to JSON: {e}"
         )
 
+    invoke_url_path = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+    if deployment.snapshot:
+        deployment_settings = (
+            deployment.snapshot.pipeline_configuration.deployment_settings
+        )
+        invoke_url_path = f"{deployment_settings.root_url_path}{deployment_settings.api_url_path}{deployment_settings.invoke_url_path}"
+
     # Construct the invoke endpoint URL
-    invoke_url = deployment.url.rstrip("/") + "/invoke"
+    invoke_url = deployment.url.rstrip("/") + invoke_url_path
 
     # Prepare headers
     headers = {
@@ -398,3 +409,35 @@ def deployment_snapshot_request_from_source_snapshot(
         pipeline_version_hash=source_snapshot.pipeline_version_hash,
         pipeline_spec=updated_pipeline_spec,
     )
+
+
+def load_deployment_requirements(
+    deployment_settings: DeploymentSettings,
+) -> List[str]:
+    """Load the software requirements for a deployment.
+
+    Args:
+        deployment_settings: The deployment settings for which to load the
+            software requirements.
+
+    Returns:
+        The software requirements for the deployment.
+
+    Raises:
+        RuntimeError: If the deployment app runner flavor cannot be loaded.
+    """
+    from zenml.deployers.server.app import BaseDeploymentAppRunnerFlavor
+
+    try:
+        deployment_app_runner_flavor = (
+            BaseDeploymentAppRunnerFlavor.load_app_runner_flavor(
+                deployment_settings
+            )
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to load deployment app runner flavor from deployment "
+            f"settings: {e}"
+        ) from e
+
+    return deployment_app_runner_flavor.requirements

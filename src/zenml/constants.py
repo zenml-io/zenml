@@ -319,7 +319,6 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
-DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
 _csp_connect_src_urls = [

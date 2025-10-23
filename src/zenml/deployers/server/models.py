@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2024. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@
 """FastAPI application models."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, WithJsonSchema
+from pydantic import BaseModel, Field
 
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
-
-if TYPE_CHECKING:
-    from zenml.deployers.server.service import PipelineDeploymentService
 
 
 class DeploymentInvocationResponseMetadata(BaseModel):
@@ -110,6 +107,9 @@ class DeploymentInfo(BaseModel):
 
     id: UUID = Field(title="The ID of the deployment.")
     name: str = Field(title="The name of the deployment.")
+    auth_enabled: bool = Field(
+        title="Whether the deployment is authenticated."
+    )
 
 
 class SnapshotInfo(BaseModel):
@@ -119,6 +119,18 @@ class SnapshotInfo(BaseModel):
     name: Optional[str] = Field(
         default=None, title="The name of the snapshot."
     )
+
+
+class AppInfo(BaseModel):
+    """App info model."""
+
+    app_runner_flavor: str
+    docs_url_path: str
+    redoc_url_path: str
+    invoke_url_path: str
+    health_url_path: str
+    info_url_path: str
+    metrics_url_path: str
 
 
 class ServiceInfo(BaseModel):
@@ -133,6 +145,7 @@ class ServiceInfo(BaseModel):
     pipeline: PipelineInfo = Field(
         title="The pipeline of the pipeline service."
     )
+    app: AppInfo = Field(title="The deployment application")
     total_executions: int = Field(
         title="The total number of pipeline executions."
     )
@@ -152,36 +165,3 @@ class ExecutionMetrics(BaseModel):
     last_execution_time: Optional[datetime] = Field(
         default=None, title="The time of the last pipeline execution."
     )
-
-
-def get_pipeline_invoke_models(
-    service: "PipelineDeploymentService",
-) -> Tuple[Type[BaseModel], Type[BaseModel]]:
-    """Generate the request and response models for the pipeline invoke endpoint.
-
-    Args:
-        service: The pipeline deployment service.
-
-    Returns:
-        A tuple containing the request and response models.
-    """
-    if TYPE_CHECKING:
-        # mypy has a difficult time with dynamic models, so we return something
-        # static for mypy to use
-        return BaseModel, BaseModel
-
-    else:
-
-        class PipelineInvokeRequest(BaseDeploymentInvocationRequest):
-            parameters: Annotated[
-                service.input_model,
-                WithJsonSchema(service.input_schema, mode="validation"),
-            ]
-
-        class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
-            outputs: Annotated[
-                Optional[Dict[str, Any]],
-                WithJsonSchema(service.output_schema, mode="serialization"),
-            ]
-
-        return PipelineInvokeRequest, PipelineInvokeResponse

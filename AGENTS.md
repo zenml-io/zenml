@@ -62,6 +62,9 @@ Use filesystem navigation tools to explore the codebase structure as needed.
   - It resolves dependencies more quickly and reliably than pip
   - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
 
+### Documentation Access via MCP
+ZenML documentation is available via a built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. IDE agents like Cursor and Claude Code can add this as an HTTP MCP server named 'ZenML Docs' to answer questions directly from the docs while you code. This enables live, source-of-truth lookups with fewer hallucinations and faster feature discovery. Note that the MCP server indexes the latest released docs, not the develop branch. For full setup details and examples, see docs/book/reference/llms-txt.md.
+
 ### Environment Variables
 - Several environment variables are useful during ZenML development:
   - `ZENML_DEBUG=true`: Enables verbose debug logging
