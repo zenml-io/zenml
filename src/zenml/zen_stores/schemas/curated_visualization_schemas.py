@@ -110,17 +110,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         options: List[ExecutableOption] = []
 
         if include_resources:
-            from zenml.zen_stores.schemas.artifact_visualization_schemas import (
-                ArtifactVisualizationSchema,
-            )
-
-            options.append(
-                selectinload(jl_arg(cls.artifact_visualization)).options(
-                    selectinload(
-                        jl_arg(ArtifactVisualizationSchema.artifact_version)
-                    )
-                )
-            )
+            options.append(selectinload(jl_arg(cls.artifact_visualization)))
 
         return options
 
@@ -221,21 +211,19 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         if include_metadata:
             metadata = CuratedVisualizationResponseMetadata()
 
-        response_resources = None
-        if include_resources and self.artifact_visualization is not None:
-            artifact_visualization_model = (
-                self.artifact_visualization.to_model(
-                    include_metadata=False,
-                    include_resources=False,
-                )
+        resources = None
+        if include_resources:
+            artifact_visualization = self.artifact_visualization.to_model(
+                include_metadata=False,
+                include_resources=False,
             )
-            response_resources = CuratedVisualizationResponseResources(
-                artifact_visualization=artifact_visualization_model,
+            resources = CuratedVisualizationResponseResources(
+                artifact_visualization=artifact_visualization,
             )
 
         return CuratedVisualizationResponse(
             id=self.id,
             body=body,
             metadata=metadata,
-            resources=response_resources,
+            resources=resources,
         )

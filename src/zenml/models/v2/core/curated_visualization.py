@@ -29,7 +29,6 @@ from zenml.models.v2.base.scoped import (
 )
 
 if TYPE_CHECKING:
-    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.artifact_visualization import (
         ArtifactVisualizationResponse,
     )
@@ -237,37 +236,9 @@ class CuratedVisualizationResponse(
         """The curated artifact visualization resource.
 
         Returns:
-            The artifact visualization resource if included.
-
-        Raises:
-            RuntimeError: If the response was not hydrated with resources.
+            The artifact visualization resource.
         """
-        resources = self.get_resources()
-        if resources is None or resources.artifact_visualization is None:
-            raise RuntimeError(
-                "Curated visualization response was not hydrated with the artifact visualization resource."
-            )
-        return resources.artifact_visualization
-
-    @property
-    def artifact_version(self) -> "ArtifactVersionResponse":
-        """The artifact version resource, if available.
-
-        Returns:
-            The artifact version resource associated with the curated visualization.
-
-        Raises:
-            RuntimeError: If the artifact version is not included in the hydrated resources.
-        """
-        artifact_visualization = self.artifact_visualization
-        if (
-            artifact_visualization.get_resources() is None
-            or artifact_visualization.get_resources().artifact_version is None
-        ):
-            raise RuntimeError(
-                "Curated visualization response was not hydrated with the artifact version resource."
-            )
-        return artifact_visualization.artifact_version
+        return self.get_resources().artifact_visualization
 
     @property
     def resource_id(self) -> UUID:

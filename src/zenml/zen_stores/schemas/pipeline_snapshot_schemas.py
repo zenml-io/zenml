@@ -595,7 +595,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         include_metadata=False,
                         include_resources=False,
                     )
-                    for visualization in (self.visualizations or [])
+                    for visualization in self.visualizations
                 ],
             )
 

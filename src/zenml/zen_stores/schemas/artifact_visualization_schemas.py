@@ -123,12 +123,16 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
             )
 
         resources = None
-        if include_resources and self.artifact_version is not None:
-            resources = ArtifactVisualizationResponseResources(
-                artifact_version=self.artifact_version.to_model(
+        if include_resources:
+            if self.artifact_version is not None:
+                artifact_version = self.artifact_version.to_model(
                     include_metadata=False,
                     include_resources=False,
                 )
+            else:
+                artifact_version = None
+            resources = ArtifactVisualizationResponseResources(
+                artifact_version=artifact_version,
             )
 
         return ArtifactVisualizationResponse(

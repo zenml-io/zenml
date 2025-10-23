@@ -118,21 +118,13 @@ class ArtifactVisualizationResponse(
         return self.get_metadata().artifact_version_id
 
     @property
-    def artifact_version(self) -> "ArtifactVersionResponse":
+    def artifact_version(self) -> Optional["ArtifactVersionResponse"]:
         """The artifact version resource, if the response was hydrated with it.
 
         Returns:
-            The artifact version resource associated with this visualization.
-
-        Raises:
-            RuntimeError: If the artifact version resource is not available.
+            The artifact version resource, if available.
         """
-        resources = self.get_resources()
-        if resources is None or resources.artifact_version is None:
-            raise RuntimeError(
-                "Artifact visualization response was not hydrated with the artifact version resource."
-            )
-        return resources.artifact_version
+        return self.get_resources().artifact_version
 
 
 # ------------------ Filter Model ------------------
