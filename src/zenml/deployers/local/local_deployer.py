@@ -286,8 +286,10 @@ class LocalDeployer(BaseDeployer):
                 )
 
         # Remove the pid file if it exists
-        if os.path.exists(pid_file):
+        try:
             os.remove(pid_file)
+        except FileNotFoundError:
+            pass  # File was already removed
 
         if settings.blocking:
             app_runner = BaseDeploymentAppRunner.load_app_runner(deployment.id)
