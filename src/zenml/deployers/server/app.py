@@ -1037,6 +1037,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.pid_file or args.log_file:
+        # create parent directory if necessary
+        for f in (args.pid_file, args.log_file):
+            if f:
+                os.makedirs(os.path.dirname(f), exist_ok=True)
+
         setup_daemon(args.pid_file, args.log_file)
 
     logger.info(

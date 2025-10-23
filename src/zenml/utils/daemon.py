@@ -150,6 +150,18 @@ def setup_daemon(
         # stderr is not a file descriptor
         pass
 
+    # Close original FDs after duplication to avoid leaks.
+    try:
+        os.close(devnull_fd)
+    except OSError:
+        pass
+
+    if log_fd is not None:
+        try:
+            os.close(log_fd)
+        except OSError:
+            pass
+
     if pid_file:
         # write the PID file
         with open(pid_file, "w+") as f:
@@ -243,9 +255,9 @@ else:
             log_file = os.path.abspath(log_file)
 
         # create parent directory if necessary
-        dir_name = os.path.dirname(pid_file)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
+        for f in (pid_file, log_file):
+            if f:
+                os.makedirs(os.path.dirname(f), exist_ok=True)
 
         # check if PID file exists
         if pid_file and os.path.exists(pid_file):

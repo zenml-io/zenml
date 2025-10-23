@@ -382,9 +382,7 @@ class LocalDeployer(BaseDeployer):
             meta.pid = get_daemon_pid_if_running(meta.pid_file)
 
         state = DeploymentOperationalState(
-            status=DeploymentStatus.ABSENT
-            if not meta.pid_file
-            else DeploymentStatus.PENDING,
+            status=DeploymentStatus.ABSENT,
             metadata=meta.model_dump(exclude_none=True),
         )
 
