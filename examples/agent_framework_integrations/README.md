@@ -125,7 +125,7 @@ def agent_pipeline() -> str:
 
 ### International Frameworks
 - **Qwen-Agent**: Alibaba Cloud's agent framework with MCP support and custom tool registration
-- **lagent**: InternLM's lightweight ReAct agent with Python interpreter (中文支持 / Chinese support)
+- **lagent**: InternLM's lightweight ReAct agent with Python interpreter
 
 ## 🔄 Implementation Notes
 
