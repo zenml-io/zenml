@@ -87,12 +87,12 @@ def create_curated_visualization(
     resource_model = _get_resource_model(
         visualization.resource_type, visualization.resource_id
     )
-    artifact_version = store.get_artifact_version(
-        visualization.artifact_version_id
+    artifact_visualization = store.get_artifact_visualization(
+        visualization.artifact_visualization_id
     )
 
     verify_permission_for_model(resource_model, action=Action.UPDATE)
-    verify_permission_for_model(artifact_version, action=Action.READ)
+    verify_permission_for_model(artifact_visualization, action=Action.READ)
 
     return store.create_curated_visualization(visualization)
 

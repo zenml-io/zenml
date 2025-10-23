@@ -5905,14 +5905,16 @@ class TestCuratedVisualizations:
 
         def create_visualizations(artifact_version):
             visualizations = {}
-            for idx, config in enumerate(resource_configs):
+            artifact_visualizations = artifact_version.visualizations or []
+            for artifact_viz, config in zip(
+                artifact_visualizations, resource_configs
+            ):
                 resource_type = config["resource_type"]
                 resource_id = config["resource_id"]
                 viz = client.zen_store.create_curated_visualization(
                     CuratedVisualizationRequest(
                         project=project_id,
-                        artifact_version_id=artifact_version.id,
-                        visualization_index=idx,
+                        artifact_visualization_id=artifact_viz.id,
                         resource_id=resource_id,
                         resource_type=resource_type,
                         display_name=f"{resource_type.value} visualization",
@@ -5952,13 +5954,12 @@ class TestCuratedVisualizations:
             assert loaded.resource_id == pipeline_model.id
             assert loaded.resource_type == VisualizationResourceTypes.PIPELINE
 
-            # Test duplicate creation - same artifact_version + visualization_index + resource should fail
+            # Test duplicate creation - same artifact visualization + resource should fail
             with pytest.raises(EntityExistsError):
                 client.zen_store.create_curated_visualization(
                     CuratedVisualizationRequest(
                         project=project_id,
-                        artifact_version_id=artifact_version.id,
-                        visualization_index=0,  # Same index as pipeline visualization
+                        artifact_visualization_id=loaded.artifact_visualization_id,
                         resource_id=pipeline_model.id,
                         resource_type=VisualizationResourceTypes.PIPELINE,
                     )
@@ -6115,9 +6116,10 @@ class TestCuratedVisualizations:
             )
         )
 
+        artifact_visualization = (artifact_version.visualizations or [])[0]
+
         visualization = client.create_curated_visualization(
-            artifact_version_id=artifact_version.id,
-            visualization_index=0,
+            artifact_visualization_id=artifact_visualization.id,
             resource_id=project.id,
             resource_type=VisualizationResourceTypes.PROJECT,
             project_id=project.id,

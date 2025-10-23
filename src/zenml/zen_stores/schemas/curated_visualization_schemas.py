@@ -39,7 +39,9 @@ from zenml.zen_stores.schemas.schema_utils import (
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
+    from zenml.zen_stores.schemas.artifact_visualization_schemas import (
+        ArtifactVisualizationSchema,
+    )
 
 
 class CuratedVisualizationSchema(BaseSchema, table=True):
@@ -47,13 +49,9 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
 
     __tablename__ = "curated_visualization"
     __table_args__ = (
-        build_index(
-            __tablename__, ["artifact_version_id", "visualization_index"]
-        ),
-        build_index(__tablename__, ["display_order"]),
+        build_index(__tablename__, ["artifact_visualization_id"]),
         UniqueConstraint(
-            "artifact_version_id",
-            "visualization_index",
+            "artifact_visualization_id",
             "resource_id",
             "resource_type",
             name="unique_curated_visualization_resource_link",
@@ -68,16 +66,15 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    artifact_version_id: UUID = build_foreign_key_field(
+    artifact_visualization_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target="artifact_version",
-        source_column="artifact_version_id",
+        target="artifact_visualization",
+        source_column="artifact_visualization_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
 
-    visualization_index: int = Field(nullable=False)
     display_name: Optional[str] = Field(default=None)
     display_order: Optional[int] = Field(default=None)
     layout_size: str = Field(
@@ -87,7 +84,9 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
     resource_id: UUID = Field(nullable=False)
     resource_type: str = Field(nullable=False)
 
-    artifact_version: "ArtifactVersionSchema" = Relationship()
+    artifact_visualization: "ArtifactVisualizationSchema" = Relationship(
+        back_populates="curated_visualizations"
+    )
 
     @classmethod
     def get_query_options(
@@ -111,7 +110,17 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         options: List[ExecutableOption] = []
 
         if include_resources:
-            options.append(selectinload(jl_arg(cls.artifact_version)))
+            from zenml.zen_stores.schemas.artifact_visualization_schemas import (
+                ArtifactVisualizationSchema,
+            )
+
+            options.append(
+                selectinload(jl_arg(cls.artifact_visualization)).options(
+                    selectinload(
+                        jl_arg(ArtifactVisualizationSchema.artifact_version)
+                    )
+                )
+            )
 
         return options
 
@@ -129,8 +138,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         """
         return cls(
             project_id=request.project,
-            artifact_version_id=request.artifact_version_id,
-            visualization_index=request.visualization_index,
+            artifact_visualization_id=request.artifact_visualization_id,
             display_name=request.display_name,
             display_order=request.display_order,
             layout_size=request.layout_size.value,
@@ -180,31 +188,28 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         Returns:
             The created response model.
         """
-        layout_size_value = (
-            self.layout_size or CuratedVisualizationSize.FULL_WIDTH.value
-        )
         try:
-            layout_size_enum = CuratedVisualizationSize(layout_size_value)
+            layout_size_enum = CuratedVisualizationSize(self.layout_size)
         except ValueError:
             layout_size_enum = CuratedVisualizationSize.FULL_WIDTH
 
-        resource_type_str = self.resource_type
-        if resource_type_str:
-            try:
-                resource_type_enum = VisualizationResourceTypes(
-                    resource_type_str
-                )
-            except ValueError:
-                resource_type_enum = VisualizationResourceTypes.PROJECT
-        else:
+        try:
+            resource_type_enum = VisualizationResourceTypes(self.resource_type)
+        except ValueError:
             resource_type_enum = VisualizationResourceTypes.PROJECT
+
+        artifact_version_id: Optional[UUID] = None
+        if self.artifact_visualization is not None:
+            artifact_version_id = (
+                self.artifact_visualization.artifact_version_id
+            )
 
         body = CuratedVisualizationResponseBody(
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            artifact_version_id=self.artifact_version_id,
-            visualization_index=self.visualization_index,
+            artifact_visualization_id=self.artifact_visualization_id,
+            artifact_version_id=artifact_version_id,
             display_name=self.display_name,
             display_order=self.display_order,
             layout_size=layout_size_enum,
@@ -217,14 +222,15 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
             metadata = CuratedVisualizationResponseMetadata()
 
         response_resources = None
-        if include_resources:
-            artifact_version_model = self.artifact_version.to_model(
-                include_metadata=include_metadata,
-                include_resources=include_resources,
+        if include_resources and self.artifact_visualization is not None:
+            artifact_visualization_model = (
+                self.artifact_visualization.to_model(
+                    include_metadata=False,
+                    include_resources=False,
+                )
             )
-
             response_resources = CuratedVisualizationResponseResources(
-                artifact_version=artifact_version_model,
+                artifact_visualization=artifact_visualization_model,
             )
 
         return CuratedVisualizationResponse(

@@ -3746,8 +3746,7 @@ class Client(metaclass=ClientMetaClass):
 
     def create_curated_visualization(
         self,
-        artifact_version_id: UUID,
-        visualization_index: int,
+        artifact_visualization_id: UUID,
         *,
         resource_id: UUID,
         resource_type: VisualizationResourceTypes,
@@ -3774,8 +3773,7 @@ class Client(metaclass=ClientMetaClass):
         Each visualization is linked to exactly one resource.
 
         Args:
-            artifact_version_id: The ID of the artifact version containing the visualization.
-            visualization_index: The index of the visualization within the artifact version.
+            artifact_visualization_id: The UUID of the artifact visualization to curate.
             resource_id: The identifier of the resource tied to the visualization.
             resource_type: The type of resource referenced by the visualization.
             project_id: The ID of the project to associate with the visualization.
@@ -3788,8 +3786,7 @@ class Client(metaclass=ClientMetaClass):
         """
         request = CuratedVisualizationRequest(
             project=project_id or self.active_project.id,
-            artifact_version_id=artifact_version_id,
-            visualization_index=visualization_index,
+            artifact_visualization_id=artifact_visualization_id,
             display_name=display_name,
             display_order=display_order,
             layout_size=layout_size,

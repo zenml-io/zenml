@@ -90,49 +90,87 @@ from zenml.enums import (
 )
 
 client = Client()
-artifact_version_id = UUID("<ARTIFACT_VERSION_ID>")
-project = client.active_project
-pipeline = client.list_pipelines().items[0]
-pipeline_run = pipeline.runs()[0]
-snapshot = pipeline_run.snapshot()
-deployment = client.list_deployments().items[0]
+
+# Define the identifiers for the pipeline and run you want to enrich
+pipeline_id = UUID("<PIPELINE_ID>")
+pipeline_run_id = UUID("<PIPELINE_RUN_ID>")
+
+# Retrieve the artifact version produced by the evaluation step
+pipeline_run = client.get_pipeline_run(pipeline_run_id)
+artifact_version_id = pipeline_run.output.get("evaluation_report")
+artifact_version = client.get_artifact_version(artifact_version_id)
+artifact_visualizations = artifact_version.visualizations or []
+
+# Fetch the resources we want to enrich
 model = client.list_models().items[0]
+model_id = model.id
 
-# Create a visualization for the model
-model_viz = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=0,
-    resource_id=model.id,
+deployment = client.list_deployments().items[0]
+deployment_id = deployment.id
+
+project_id = client.active_project.id
+
+pipeline_model = client.get_pipeline(pipeline_id)
+pipeline_id = pipeline_model.id
+
+pipeline_snapshot = pipeline_run.snapshot()
+snapshot_id = pipeline_snapshot.id
+
+pipeline_run_id = pipeline_run.id
+
+# Create curated visualizations for each supported resource type
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[0].id,
+    resource_id=model_id,
     resource_type=VisualizationResourceTypes.MODEL,
-    display_name="Model performance dashboard",
-    layout_size=CuratedVisualizationSize.FULL_WIDTH,
+    project_id=project_id,
+    display_name="Latest Model Evaluation",
 )
 
-# Create a visualization for the deployment
-deployment_viz = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=0,
-    resource_id=deployment.id,
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[1].id,
+    resource_id=deployment_id,
     resource_type=VisualizationResourceTypes.DEPLOYMENT,
-    display_name="Deployment health dashboard",
-    layout_size=CuratedVisualizationSize.HALF_WIDTH,
+    project_id=project_id,
+    display_name="Deployment Health Dashboard",
 )
 
-# Create a visualization for the project
-project_viz = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=0,
-    resource_id=project.id,
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[2].id,
+    resource_id=project_id,
     resource_type=VisualizationResourceTypes.PROJECT,
-    display_name="Project overview dashboard",
-    layout_size=CuratedVisualizationSize.FULL_WIDTH,
+    display_name="Project Overview",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[3].id,
+    resource_id=pipeline_id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    project_id=project_id,
+    display_name="Pipeline Summary",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[4].id,
+    resource_id=pipeline_run_id,
+    resource_type=VisualizationResourceTypes.PIPELINE_RUN,
+    project_id=project_id,
+    display_name="Run Results",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[5].id,
+    resource_id=snapshot_id,
+    resource_type=VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+    project_id=project_id,
+    display_name="Snapshot Metrics",
 )
 ```
 
 After creation, the returned response includes the visualization ID. You can retrieve a specific visualization later with `Client.get_curated_visualization`:
 
 ```python
-retrieved = client.get_curated_visualization(model_viz.id, hydrate=True)
+retrieved = client.get_curated_visualization(pipeline_viz.id, hydrate=True)
 print(retrieved.display_name)
 print(retrieved.resource.type)
 print(retrieved.resource.id)
@@ -170,31 +208,31 @@ When setting display orders, consider leaving gaps between values (e.g., 10, 20,
 ```python
 # Leave gaps for future insertions
 visualization_a = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=0,
-    resource_id=model.id,
-    resource_type=VisualizationResourceTypes.MODEL,
+    artifact_visualization_id=artifact_visualizations[0].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Model performance at a glance",
     display_order=10,  # Primary dashboard
-    layout_size=CuratedVisualizationSize.FULL_WIDTH,
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
 )
 
 visualization_b = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=1,
-    resource_id=model.id,
-    resource_type=VisualizationResourceTypes.MODEL,
+    artifact_visualization_id=artifact_visualizations[1].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Drill-down metrics",
     display_order=20,  # Secondary metrics
     layout_size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
 )
 
 # Later, easily insert between them
 visualization_c = client.create_curated_visualization(
-    artifact_version_id=artifact_version_id,
-    visualization_index=2,
-    resource_id=model.id,
-    resource_type=VisualizationResourceTypes.MODEL,
+    artifact_visualization_id=artifact_visualizations[2].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Raw output preview",
     display_order=15,  # Now appears between A and B
-    layout_size=CuratedVisualizationSize.HALF_WIDTH,
+    layout_size=CuratedVisualizationSize.FULL_WIDTH,
 )
 ```
 

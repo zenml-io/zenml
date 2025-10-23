@@ -230,6 +230,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             ),
             overlaps="visualizations",
             cascade="all, delete-orphan",
+            order_by=(
+                "CuratedVisualizationSchema.display_order",
+                "CuratedVisualizationSchema.created",
+            ),
         ),
     )
 
@@ -366,17 +370,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
         if include_resources:
-            from zenml.zen_stores.schemas.curated_visualization_schemas import (
-                CuratedVisualizationSchema,
-            )
-
             options.extend(
                 [
                     joinedload(jl_arg(PipelineSnapshotSchema.user)),
                     selectinload(
                         jl_arg(PipelineSnapshotSchema.visualizations)
-                    ).selectinload(
-                        jl_arg(CuratedVisualizationSchema.artifact_version)
                     ),
                 ]
             )

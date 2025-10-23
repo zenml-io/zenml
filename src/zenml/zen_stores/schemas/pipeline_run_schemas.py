@@ -254,6 +254,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ),
             overlaps="visualizations",
             cascade="all, delete-orphan",
+            order_by=(
+                "CuratedVisualizationSchema.display_order",
+                "CuratedVisualizationSchema.created",
+            ),
         ),
     )
 
@@ -298,10 +302,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         #     )
 
         if include_resources:
-            from zenml.zen_stores.schemas.curated_visualization_schemas import (
-                CuratedVisualizationSchema,
-            )
-
             options.extend(
                 [
                     selectinload(
@@ -334,11 +334,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.visualizations)
-                    ).selectinload(
-                        jl_arg(CuratedVisualizationSchema.artifact_version)
-                    ),
+                    selectinload(jl_arg(PipelineRunSchema.visualizations)),
                 ]
             )
 

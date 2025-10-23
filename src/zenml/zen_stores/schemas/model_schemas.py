@@ -141,6 +141,10 @@ class ModelSchema(NamedSchema, table=True):
             ),
             overlaps="visualizations",
             cascade="all, delete-orphan",
+            order_by=(
+                "CuratedVisualizationSchema.display_order",
+                "CuratedVisualizationSchema.created",
+            ),
         ),
     )
 
@@ -170,11 +174,7 @@ class ModelSchema(NamedSchema, table=True):
                 [
                     joinedload(jl_arg(ModelSchema.user)),
                     # joinedload(jl_arg(ModelSchema.tags)),
-                    selectinload(
-                        jl_arg(ModelSchema.visualizations)
-                    ).selectinload(
-                        jl_arg(CuratedVisualizationSchema.artifact_version)
-                    ),
+                    selectinload(jl_arg(ModelSchema.visualizations)),
                 ]
             )
 

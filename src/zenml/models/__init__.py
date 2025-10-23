@@ -112,6 +112,7 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponse,
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
+    ArtifactVisualizationResponseResources,
 )
 from zenml.models.v2.core.service import (
     ServiceResponse,
@@ -636,6 +637,7 @@ __all__ = [
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",
     "ArtifactVisualizationResponseMetadata",
+    "ArtifactVisualizationResponseResources",
     "CodeReferenceRequest",
     "CodeReferenceResponse",
     "CodeReferenceResponseBody",

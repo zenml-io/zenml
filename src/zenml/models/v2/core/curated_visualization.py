@@ -30,6 +30,9 @@ from zenml.models.v2.base.scoped import (
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+    from zenml.models.v2.core.artifact_visualization import (
+        ArtifactVisualizationResponse,
+    )
 
 
 # ------------------ Request Model ------------------
@@ -38,28 +41,23 @@ if TYPE_CHECKING:
 class CuratedVisualizationRequest(ProjectScopedRequest):
     """Request model for curated visualizations.
 
-    Each curated visualization is linked to exactly one resource of the following
-    types:
-    - **Deployments**: Surface visualizations on deployment dashboards
-    - **Models**: Highlight evaluation dashboards and monitoring views next to
-      registered models
-    - **Pipelines**: Associate visualizations with pipeline definitions
-    - **Pipeline Runs**: Attach visualizations to specific execution runs
-    - **Pipeline Snapshots**: Link visualizations to snapshot configurations
-    - **Projects**: Provide high-level project dashboards and KPI overviews
-
-    To attach a visualization to multiple resources, create separate curated
-    visualization entries for each resource.
+    Each curated visualization links a pre-rendered artifact visualization
+    to a single ZenML resource to surface it in the appropriate UI context.
+    Supported resources include:
+    - **Deployments**
+    - **Models**
+    - **Pipelines**
+    - **Pipeline Runs**
+    - **Pipeline Snapshots**
+    - **Projects**
     """
 
-    artifact_version_id: UUID = Field(
-        title="The artifact version ID.",
-        description="Identifier of the artifact version providing the visualization.",
-    )
-    visualization_index: int = Field(
-        ge=0,
-        title="The visualization index.",
-        description="Index of the visualization within the artifact version payload.",
+    artifact_visualization_id: UUID = Field(
+        title="The artifact visualization ID.",
+        description=(
+            "Identifier of the artifact visualization that should be surfaced "
+            "for the target resource."
+        ),
     )
     display_name: Optional[str] = Field(
         default=None,
@@ -117,13 +115,19 @@ class CuratedVisualizationUpdate(BaseUpdate):
 class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
     """Response body for curated visualizations."""
 
-    artifact_version_id: UUID = Field(
-        title="The artifact version ID.",
-        description="Identifier of the artifact version providing the visualization.",
+    artifact_visualization_id: UUID = Field(
+        title="The artifact visualization ID.",
+        description=(
+            "Identifier of the artifact visualization that is curated for this resource."
+        ),
     )
-    visualization_index: int = Field(
-        title="The visualization index.",
-        description="Index of the visualization within the artifact version payload.",
+    artifact_version_id: Optional[UUID] = Field(
+        default=None,
+        title="The artifact version ID.",
+        description=(
+            "Identifier of the artifact version that owns the curated visualization. "
+            "Provided for read-only context when available."
+        ),
     )
     display_name: Optional[str] = Field(
         default=None,
@@ -154,9 +158,11 @@ class CuratedVisualizationResponseMetadata(ProjectScopedResponseMetadata):
 class CuratedVisualizationResponseResources(ProjectScopedResponseResources):
     """Response resources included for curated visualizations."""
 
-    artifact_version: "ArtifactVersionResponse" = Field(
-        title="The artifact version.",
-        description="Artifact version from which the visualization originates.",
+    artifact_visualization: "ArtifactVisualizationResponse" = Field(
+        title="The artifact visualization.",
+        description=(
+            "Artifact visualization that is surfaced through this curated visualization."
+        ),
     )
 
 
@@ -182,22 +188,22 @@ class CuratedVisualizationResponse(
 
     # Helper properties
     @property
-    def artifact_version_id(self) -> UUID:
+    def artifact_visualization_id(self) -> UUID:
+        """The artifact visualization ID.
+
+        Returns:
+            The artifact visualization ID.
+        """
+        return self.get_body().artifact_visualization_id
+
+    @property
+    def artifact_version_id(self) -> Optional[UUID]:
         """The artifact version ID.
 
         Returns:
-            The artifact version ID.
+            The artifact version ID if available.
         """
         return self.get_body().artifact_version_id
-
-    @property
-    def visualization_index(self) -> int:
-        """The visualization index.
-
-        Returns:
-            The visualization index.
-        """
-        return self.get_body().visualization_index
 
     @property
     def display_name(self) -> Optional[str]:
@@ -227,13 +233,41 @@ class CuratedVisualizationResponse(
         return self.get_body().layout_size
 
     @property
-    def artifact_version(self) -> "ArtifactVersionResponse":
-        """The artifact version resource.
+    def artifact_visualization(self) -> "ArtifactVisualizationResponse":
+        """The curated artifact visualization resource.
 
         Returns:
-            The artifact version resource if included.
+            The artifact visualization resource if included.
+
+        Raises:
+            RuntimeError: If the response was not hydrated with resources.
         """
-        return self.get_resources().artifact_version
+        resources = self.get_resources()
+        if resources is None or resources.artifact_visualization is None:
+            raise RuntimeError(
+                "Curated visualization response was not hydrated with the artifact visualization resource."
+            )
+        return resources.artifact_visualization
+
+    @property
+    def artifact_version(self) -> "ArtifactVersionResponse":
+        """The artifact version resource, if available.
+
+        Returns:
+            The artifact version resource associated with the curated visualization.
+
+        Raises:
+            RuntimeError: If the artifact version is not included in the hydrated resources.
+        """
+        artifact_visualization = self.artifact_visualization
+        if (
+            artifact_visualization.get_resources() is None
+            or artifact_visualization.get_resources().artifact_version is None
+        ):
+            raise RuntimeError(
+                "Curated visualization response was not hydrated with the artifact version resource."
+            )
+        return artifact_visualization.artifact_version
 
     @property
     def resource_id(self) -> UUID:

@@ -5419,67 +5419,20 @@ class SqlZenStore(BaseZenStore):
 
         # -------------------- Curated visualizations --------------------
 
-    def _validate_curated_visualization_index(
-        self,
-        session: Session,
-        artifact_version_id: UUID,
-        visualization_index: int,
-    ) -> None:
-        """Validate that the artifact version exposes the given visualization index.
-
-        Args:
-            session: The database session to use.
-            artifact_version_id: ID of the artifact version that produced the visualization.
-            visualization_index: Index of the visualization to validate.
-
-        Raises:
-            IllegalOperationError: If the artifact version does not expose the specified visualization index.
-        """
-        count = session.scalar(
-            select(func.count())
-            .select_from(ArtifactVisualizationSchema)
-            .where(
-                ArtifactVisualizationSchema.artifact_version_id
-                == artifact_version_id
-            )
-        )
-        if not count or visualization_index >= count:
-            raise IllegalOperationError(
-                "Artifact version "
-                f"`{artifact_version_id}` does not expose a visualization "
-                f"with index {visualization_index}."
-            )
-
     def _assert_curated_visualization_duplicate(
         self,
         session: Session,
         *,
-        artifact_version_id: UUID,
-        visualization_index: int,
+        artifact_visualization_id: UUID,
         resource_id: UUID,
         resource_type: VisualizationResourceTypes,
     ) -> None:
-        """Ensure a curated visualization link does not already exist.
-
-        Args:
-            session: The session to use.
-            artifact_version_id: The ID of the artifact version to validate.
-            visualization_index: The index of the visualization to validate.
-            resource_id: The ID of the resource to validate.
-            resource_type: The type of the resource to validate.
-
-        Raises:
-            EntityExistsError: If a curated visualization link already exists.
-        """
+        """Ensure a curated visualization link does not already exist."""
         existing = session.exec(
             select(CuratedVisualizationSchema)
             .where(
-                CuratedVisualizationSchema.artifact_version_id
-                == artifact_version_id
-            )
-            .where(
-                CuratedVisualizationSchema.visualization_index
-                == visualization_index
+                CuratedVisualizationSchema.artifact_visualization_id
+                == artifact_visualization_id
             )
             .where(CuratedVisualizationSchema.resource_id == resource_id)
             .where(
@@ -5489,51 +5442,36 @@ class SqlZenStore(BaseZenStore):
         if existing is not None:
             raise EntityExistsError(
                 "A curated visualization for this resource already exists "
-                "for the specified artifact version and visualization index."
+                "for the specified artifact visualization."
             )
 
     def create_curated_visualization(
         self, visualization: CuratedVisualizationRequest
     ) -> CuratedVisualizationResponse:
-        """Persist a curated visualization link.
-
-        Args:
-            visualization: The curated visualization to persist.
-
-        Returns:
-            The persisted curated visualization.
-
-        Raises:
-            IllegalOperationError: If the resource does not belong to the same project as the curated visualization.
-            KeyError: If the resource does not exist.
-        """
+        """Persist a curated visualization link."""
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=visualization, session=session
             )
 
-            artifact_version: ArtifactVersionSchema = self._get_schema_by_id(
-                resource_id=visualization.artifact_version_id,
-                schema_class=ArtifactVersionSchema,
-                session=session,
+            artifact_visualization: ArtifactVisualizationSchema = (
+                self._get_reference_schema_by_id(
+                    resource=visualization,
+                    reference_schema=ArtifactVisualizationSchema,
+                    reference_id=visualization.artifact_visualization_id,
+                    session=session,
+                )
             )
 
-            # Validate explicitly provided project before defaulting
-            if visualization.project:
-                if visualization.project != artifact_version.project_id:
-                    raise IllegalOperationError(
-                        "Curated visualizations must target the same project as "
-                        "the artifact version."
-                    )
-                project_id = visualization.project
-            else:
-                project_id = artifact_version.project_id
+            artifact_version = artifact_visualization.artifact_version
+            project_id = artifact_version.project_id
 
-            self._validate_curated_visualization_index(
-                session=session,
-                artifact_version_id=visualization.artifact_version_id,
-                visualization_index=visualization.visualization_index,
-            )
+            if visualization.project != project_id:
+                raise IllegalOperationError(
+                    "Curated visualizations must target the same project as "
+                    "the artifact visualization."
+                )
+            project_id = visualization.project
 
             resource_schema_map: Dict[
                 VisualizationResourceTypes, Type[BaseSchema]
@@ -5547,7 +5485,7 @@ class SqlZenStore(BaseZenStore):
             }
 
             if visualization.resource_type not in resource_schema_map:
-                raise IllegalOperationError(
+                raise ValueError(
                     f"Invalid resource type: {visualization.resource_type}"
                 )
 
@@ -5575,16 +5513,12 @@ class SqlZenStore(BaseZenStore):
 
             self._assert_curated_visualization_duplicate(
                 session=session,
-                artifact_version_id=visualization.artifact_version_id,
-                visualization_index=visualization.visualization_index,
+                artifact_visualization_id=visualization.artifact_visualization_id,
                 resource_id=visualization.resource_id,
                 resource_type=visualization.resource_type,
             )
 
-            schema: CuratedVisualizationSchema = (
-                CuratedVisualizationSchema.from_request(visualization)
-            )
-            schema.project_id = project_id
+            schema = CuratedVisualizationSchema.from_request(visualization)
 
             session.add(schema)
             session.commit()

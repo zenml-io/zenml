@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing artifact visualizations."""
 
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
+
+from pydantic import Field
 
 from zenml.enums import VisualizationType
 from zenml.models.v2.base.base import (
@@ -23,6 +26,9 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
+
+if TYPE_CHECKING:
+    from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 
 # ------------------ Request Model ------------------
 
@@ -56,6 +62,12 @@ class ArtifactVisualizationResponseMetadata(BaseResponseMetadata):
 
 class ArtifactVisualizationResponseResources(BaseResponseResources):
     """Class for all resource models associated with the artifact visualization."""
+
+    artifact_version: Optional["ArtifactVersionResponse"] = Field(
+        default=None,
+        title="The artifact version.",
+        description="Artifact version that owns this visualization, when included.",
+    )
 
 
 class ArtifactVisualizationResponse(
@@ -104,6 +116,23 @@ class ArtifactVisualizationResponse(
             the value of the property.
         """
         return self.get_metadata().artifact_version_id
+
+    @property
+    def artifact_version(self) -> "ArtifactVersionResponse":
+        """The artifact version resource, if the response was hydrated with it.
+
+        Returns:
+            The artifact version resource associated with this visualization.
+
+        Raises:
+            RuntimeError: If the artifact version resource is not available.
+        """
+        resources = self.get_resources()
+        if resources is None or resources.artifact_version is None:
+            raise RuntimeError(
+                "Artifact visualization response was not hydrated with the artifact version resource."
+            )
+        return resources.artifact_version
 
 
 # ------------------ Filter Model ------------------

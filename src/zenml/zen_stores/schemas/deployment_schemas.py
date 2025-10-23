@@ -149,6 +149,10 @@ class DeploymentSchema(NamedSchema, table=True):
             ),
             overlaps="visualizations",
             cascade="all, delete-orphan",
+            order_by=(
+                "CuratedVisualizationSchema.display_order",
+                "CuratedVisualizationSchema.created",
+            ),
         ),
     )
 
@@ -174,10 +178,6 @@ class DeploymentSchema(NamedSchema, table=True):
         options = []
 
         if include_resources:
-            from zenml.zen_stores.schemas.curated_visualization_schemas import (
-                CuratedVisualizationSchema,
-            )
-
             options.extend(
                 [
                     selectinload(jl_arg(DeploymentSchema.user)),
@@ -185,11 +185,7 @@ class DeploymentSchema(NamedSchema, table=True):
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
                     ),
-                    selectinload(
-                        jl_arg(DeploymentSchema.visualizations)
-                    ).selectinload(
-                        jl_arg(CuratedVisualizationSchema.artifact_version)
-                    ),
+                    selectinload(jl_arg(DeploymentSchema.visualizations)),
                 ]
             )
 
