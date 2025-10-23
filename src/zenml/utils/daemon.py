@@ -37,6 +37,8 @@ logger = get_logger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+CHILD_PROCESS_WAIT_TIMEOUT = 5
+
 
 def daemonize(
     pid_file: str,
@@ -268,37 +270,31 @@ def check_if_daemon_is_running(pid_file: str) -> bool:
     return get_daemon_pid_if_running(pid_file) is not None
 
 
+def terminate_children() -> None:
+    """Terminate all processes that are children of the currently running process."""
+    pid = os.getpid()
+    try:
+        parent = psutil.Process(pid)
+    except psutil.Error:
+        # could not find parent process id
+        return
+    children = parent.children(recursive=False)
+
+    for p in children:
+        sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+        p.terminate()
+    _, alive = psutil.wait_procs(children, timeout=CHILD_PROCESS_WAIT_TIMEOUT)
+    for p in alive:
+        sys.stderr.write(f"Killing child process with PID {p.pid}...\n")
+        p.kill()
+    _, alive = psutil.wait_procs(children, timeout=CHILD_PROCESS_WAIT_TIMEOUT)
+
+
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
     )
 else:
-    CHILD_PROCESS_WAIT_TIMEOUT = 5
-
-    def terminate_children() -> None:
-        """Terminate all processes that are children of the currently running process."""
-        pid = os.getpid()
-        try:
-            parent = psutil.Process(pid)
-        except psutil.Error:
-            # could not find parent process id
-            return
-        children = parent.children(recursive=False)
-
-        for p in children:
-            sys.stderr.write(
-                f"Terminating child process with PID {p.pid}...\n"
-            )
-            p.terminate()
-        _, alive = psutil.wait_procs(
-            children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
-        )
-        for p in alive:
-            sys.stderr.write(f"Killing child process with PID {p.pid}...\n")
-            p.kill()
-        _, alive = psutil.wait_procs(
-            children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
-        )
 
     def run_as_daemon(
         daemon_function: F,
