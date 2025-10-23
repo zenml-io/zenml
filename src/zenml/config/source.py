@@ -280,9 +280,8 @@ class SourceOrObject(Source):
             return
 
         source = source_utils.resolve(self._object)
-        self.module = source.module
-        self.attribute = source.attribute
-        self.type = source.type
+        for k, v in source.model_dump().items():
+            setattr(self, k, v)
 
     @property
     def is_loaded(self) -> bool:

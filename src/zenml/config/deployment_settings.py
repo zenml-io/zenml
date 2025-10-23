@@ -386,9 +386,9 @@ class CORSConfig(BaseModel):
     """Configuration for CORS."""
 
     allow_origins: List[str] = ["*"]
-    allow_methods: List[str] = ["GET", "OPTIONS"]
+    allow_methods: List[str] = ["GET", "POST", "OPTIONS"]
     allow_headers: List[str] = ["*"]
-    allow_credentials: bool = True
+    allow_credentials: bool = False
 
 
 class SecureHeadersConfig(BaseModel):
@@ -502,6 +502,7 @@ DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH = "/metrics"
 class DeploymentDefaultEndpoints(IntFlag):
     """Default endpoints for the deployment application."""
 
+    NONE = 0
     DOCS = auto()
     REDOC = auto()
     INVOKE = auto()
@@ -509,6 +510,7 @@ class DeploymentDefaultEndpoints(IntFlag):
     INFO = auto()
     METRICS = auto()
     DASHBOARD = auto()
+
     DOC = DOCS | REDOC
     API = INVOKE | HEALTH | INFO | METRICS
     ALL = DOCS | REDOC | INVOKE | HEALTH | INFO | METRICS | DASHBOARD
@@ -517,8 +519,10 @@ class DeploymentDefaultEndpoints(IntFlag):
 class DeploymentDefaultMiddleware(IntFlag):
     """Default middleware for the deployment application."""
 
+    NONE = 0
     CORS = auto()
     SECURE_HEADERS = auto()
+
     ALL = CORS | SECURE_HEADERS
 
 
@@ -653,12 +657,12 @@ class DeploymentSettings(BaseSettings):
     app_version: Optional[str] = None
     app_kwargs: Dict[str, Any] = {}
 
-    include_default_endpoints: Union[
-        bool, List[DeploymentDefaultEndpoints]
-    ] = True
-    include_default_middleware: Union[
-        bool, List[DeploymentDefaultMiddleware]
-    ] = True
+    include_default_endpoints: DeploymentDefaultEndpoints = (
+        DeploymentDefaultEndpoints.ALL
+    )
+    include_default_middleware: DeploymentDefaultMiddleware = (
+        DeploymentDefaultMiddleware.ALL
+    )
 
     root_url_path: str = DEFAULT_DEPLOYMENT_APP_ROOT_URL_PATH
     api_url_path: str = DEFAULT_DEPLOYMENT_APP_API_URL_PATH
@@ -725,8 +729,6 @@ class DeploymentSettings(BaseSettings):
         Returns:
             True if the endpoint is enabled, False otherwise.
         """
-        if isinstance(self.include_default_endpoints, bool):
-            return self.include_default_endpoints
         return endpoint in self.include_default_endpoints
 
     def middleware_enabled(
@@ -740,8 +742,6 @@ class DeploymentSettings(BaseSettings):
         Returns:
             True if the middleware is enabled, False otherwise.
         """
-        if isinstance(self.include_default_middleware, bool):
-            return self.include_default_middleware
         return middleware in self.include_default_middleware
 
     model_config = ConfigDict(

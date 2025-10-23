@@ -321,12 +321,20 @@ Hooks can be provided as:
 - A Python callable object
 - A source path string to be loaded dynamically (e.g. `my_project.runtime.hooks.on_startup`)
 
+The callable must accept an `app_runner` argument of type `BaseDeploymentAppRunner` and any additional keyword arguments. The `app_runner` argument is the application factory that is responsible for building the ASGI application. You can use it to access information such as:
+
+* the ASGI application instance that is being built
+* the deployment service instance that is being deployed
+* the `DeploymentResponse` object itself, which also contains details about the snapshot, pipeline, etc. 
+
 ```python
-def on_startup(warm: bool = False) -> None:
+from zenml.deployers.server import BaseDeploymentAppRunner
+
+def on_startup(app_runner: BaseDeploymentAppRunner, warm: bool = False) -> None:
     # e.g., warm model cache, connect tracer, prefetch embeddings
     ...
 
-def on_shutdown(drain_timeout_s: int = 2) -> None:
+def on_shutdown(app_runner: BaseDeploymentAppRunner, drain_timeout_s: int = 2) -> None:
     # e.g., flush metrics, close clients
     ...
 
@@ -379,7 +387,7 @@ When the built-in ASGI application, endpoints and middleware are not enough, you
 
 - custom endpoints - to expose your own HTTP endpoints.
 - custom middleware - to insert your own ASGI middleware.
-- free-form ASGI application extensions - to take full control of the ASGI application and its lifecycle for truly advanced use-cases when endpoints and middleware are not enough.
+- free-form ASGI application building extensions - to take full control of the ASGI application and its lifecycle for truly advanced use-cases when endpoints and middleware are not enough.
 
 ### Custom endpoints
 
@@ -498,14 +506,17 @@ class PredictionResponse(BaseModel):
     confidence: float
 
 def build_predict_endpoint(
-    app_runner: BaseDeploymentAppRunner, model_path: str
+    app_runner: BaseDeploymentAppRunner,
+    model_name: str,
+    model_version: str,
+    model_artifact: str,
 ) -> Callable[[PredictionRequest], PredictionResponse]:
-    import joblib
 
-    # This gets loaded only once at app build time
-    model = joblib.load(model_path)
+    stored_model_version = Client().get_model_version(model_name, model_version)
+    stored_model_artifact = stored_model_version.get_artifact(model_artifact)
+    model = stored_model_artifact.load()
 
-    async def predict(
+    def predict(
         request: PredictionRequest,
     ) -> PredictionResponse:
         pred = float(model.predict([request.features])[0])
@@ -520,18 +531,24 @@ settings = DeploymentSettings(
             path="/predict/custom",
             method=EndpointMethod.POST,
             handler=build_predict_endpoint,
-            init_kwargs={"model_path": "/models/model.pkl"},
+            init_kwargs={
+                "model_name": "fraud-classifier",
+                "model_version": "v1",
+                "model_artifact": "sklearn_model",
+            },
             auth_required=True,
         ),
     ]
 )
 ```
 
+NOTE: a similar way to do this is to implement a proper ZenML pipeline that loads the model in the `on_init` hook and then runs pre-processing and inference steps in the pipeline.
+
 3. a custom deployment info endpoint implemented as a builder class
 
 
 ```python
-from typing import Any, Callable, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List
 from pydantic import BaseModel
 from zenml.client import Client
 from zenml.config import (
@@ -542,7 +559,7 @@ from zenml.config import (
 from zenml.deployers.server import BaseDeploymentAppRunner
 from zenml.models import DeploymentResponse
 
-def build_deployment_info(app_runner: BaseDeploymentAppRunner) -> Callable[[], DeploymentResponse]:
+def build_deployment_info(app_runner: BaseDeploymentAppRunner) -> Callable[[], Awaitable[DeploymentResponse]]:
     async def endpoint() -> DeploymentResponse:
         return app_runner.deployment
 
@@ -578,7 +595,7 @@ from zenml.config import DeploymentSettings, EndpointSpec, EndpointMethod
 model_router = APIRouter()
 
 # Global, process-local model registry for inference
-CURRENT_MODEL: Optional[ClassifierMixin] = None
+CURRENT_MODEL: Optional[Any] = None
 CURRENT_MODEL_ARTIFACT: Optional[ArtifactVersionResponse] = None
 
 
@@ -598,12 +615,10 @@ def load_model(req: LoadModelRequest) -> ArtifactVersionResponse:
     model_version = Client().get_model_version(
         req.model_name, req.version_name
     )
-    model_artifact = model_version.get_artifact(req.artifact_name)
-    model_: ClassifierMixin = model_artifact.load()
+    CURRENT_MODEL_ARTIFACT = model_version.get_artifact(req.artifact_name)
+    CURRENT_MODEL = CURRENT_MODEL_ARTIFACT.load()
 
-    CURRENT_MODEL = model_
-    CURRENT_MODEL_ARTIFACT = model_artifact
-    return model_artifact
+    return CURRENT_MODEL_ARTIFACT
 
 
 @model_router.get("/current", response_model=ArtifactVersionResponse)
@@ -623,7 +638,7 @@ deploy_settings = DeploymentSettings(
         EndpointSpec(
             path="/model",
             method=EndpointMethod.POST,  # method is ignored for native routers
-            handler=model_router,
+            handler="my_project.fastapi_endpoints.model_router",
             native=True,
             auth_required=True,
         )
@@ -637,8 +652,6 @@ by the FastAPI router above. You can invoke this pipeline via the built-in
 `/invoke` endpoint once a model has been loaded through `/model/load`.
 
 ```python
-from __future__ import annotations
-
 from typing import List
 
 from pydantic import BaseModel
@@ -724,11 +737,12 @@ Definitions can be provided as Python objects or as loadable source path strings
 
 The following code examples demonstrate the different definition modes for custom middlewares:
 
-1. a custom middleware that processing timing information via a custom header to the response, implemented as a middleware class:
+1. a custom middleware that adds a processing time header to every response, implemented as a middleware class:
 
 ```python
 import time
 from typing import Any
+from asgiref.compatibility import guarantee_single_callable
 from asgiref.typing import (
     ASGIApplication,
     ASGIReceiveCallable,
@@ -742,7 +756,7 @@ class RequestTimingMiddleware:
     """ASGI middleware to measure request processing time."""
 
     def __init__(self, app: ASGIApplication, header_name: str = "x-process-time-ms") -> None:
-        self.app = app
+        self.app = guarantee_single_callable(app)
         self.header_name = header_name
 
     async def __call__(
@@ -752,7 +766,8 @@ class RequestTimingMiddleware:
         send: ASGISendCallable,
     ) -> None:
         if scope["type"] != "http":
-            return await self.app(scope, receive, send)
+            await self.app(scope, receive, send)
+            return
 
         start_time = time.time()
 
@@ -784,6 +799,7 @@ settings = DeploymentSettings(
 ```python
 import uuid
 from typing import Any
+from asgiref.compatibility import guarantee_single_callable
 from asgiref.typing import (
     ASGIApplication,
     ASGIReceiveCallable,
@@ -801,6 +817,8 @@ async def request_id_middleware(
     header_name: str = "x-request-id",
 ) -> None:
     """ASGI function middleware that ensures a correlation ID header exists."""
+
+    app = guarantee_single_callable(app)
 
     if scope["type"] != "http":
         await app(scope, receive, send)

@@ -94,7 +94,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         """
         return MiddlewareSpec(
             middleware=CORSMiddleware,
-            init_kwargs=dict(
+            extra_kwargs=dict(
                 allow_origins=self.settings.cors.allow_origins,
                 allow_credentials=self.settings.cors.allow_credentials,
                 allow_methods=self.settings.cors.allow_methods,
@@ -272,11 +272,9 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         )
         docs_url_path: Optional[str] = None
         redoc_url_path: Optional[str] = None
-        if not self.settings.endpoint_enabled(DeploymentDefaultEndpoints.DOCS):
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.DOCS):
             docs_url_path = self.settings.docs_url_path
-        if not self.settings.endpoint_enabled(
-            DeploymentDefaultEndpoints.REDOC
-        ):
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.REDOC):
             redoc_url_path = self.settings.redoc_url_path
 
         fastapi_kwargs: Dict[str, Any] = dict(
