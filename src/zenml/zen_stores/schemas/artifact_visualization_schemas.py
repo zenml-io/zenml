@@ -63,10 +63,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     curated_visualizations: List["CuratedVisualizationSchema"] = Relationship(
         back_populates="artifact_visualization",
         sa_relationship_kwargs=dict(
-            order_by=(
-                "CuratedVisualizationSchema.display_order",
-                "CuratedVisualizationSchema.created",
-            ),
+            order_by="CuratedVisualizationSchema.display_order",
         ),
     )
 

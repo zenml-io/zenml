@@ -138,10 +138,7 @@ class ProjectSchema(NamedSchema, table=True):
             ),
             overlaps="visualizations",
             cascade="all, delete-orphan",
-            order_by=(
-                "CuratedVisualizationSchema.display_order",
-                "CuratedVisualizationSchema.created",
-            ),
+            order_by="CuratedVisualizationSchema.display_order",
         ),
     )
 
