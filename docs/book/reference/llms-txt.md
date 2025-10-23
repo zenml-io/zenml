@@ -1,6 +1,6 @@
 ---
 icon: robot
-description: The llms.txt file(s) for ZenML
+description: Access ZenML documentation via MCP server or llms.txt
 ---
 
 ## About llms.txt
@@ -27,6 +27,48 @@ When working with LLMs (like ChatGPT, Claude, or others), you can use this file 
 - Point the LLM to the `docs.zenml.io/llms.txt` URL when asking questions about ZenML
 - While prompting, instruct the LLM to only provide answers based on information contained in the file to avoid hallucinations
 - For best results, use models with sufficient context window to process the entire file
+
+## Use llms-full.txt for complete documentation context
+
+The llms-full.txt file contains the entire ZenML documentation in a single, concatenated markdown file optimized for LLMs. Use it when you want to load all docs as context at once (for example, a one-shot grounding pass) rather than querying individual pages. Access it here: https://docs.zenml.io/llms-full.txt. For interactive, selective queries from your IDE, the built-in MCP server is still the recommended option.
+
+## Use the built-in GitBook MCP server (recommended)
+
+ZenML docs are also exposed through a native GitBook MCP server that IDE agents can query in real time.
+
+- Endpoint: https://docs.zenml.io/~gitbook/mcp
+
+### Quick setup
+
+#### Claude Code (VS Code)
+Run the following command in your terminal to add the server:
+```bash
+claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
+```
+
+#### Cursor
+Add the server via Cursor's JSON settings (Settings → search "MCP" → Configure via JSON):
+```json
+{
+  "mcpServers": {
+    "zenmldocs": {
+      "transport": {
+        "type": "http",
+        "url": "https://docs.zenml.io/~gitbook/mcp"
+      }
+    }
+  }
+}
+```
+
+### Why use it
+- Live doc queries directly from your IDE agent
+- Syntax-aware, source-of-truth answers with fewer hallucinations
+- Faster feature discovery across guides, APIs, and examples
+
+The MCP server indexes the latest released documentation, not the develop branch.
+
+Prefer the native GitBook MCP server above for the best experience; if you prefer working directly with llms.txt or need alternative workflows, the following tools are helpful:
 
 To use the llms.txt file in partnership with an MCP client, you can use the
 following tools:
