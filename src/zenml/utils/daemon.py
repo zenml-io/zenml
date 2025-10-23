@@ -192,6 +192,82 @@ def setup_daemon(
     atexit.register(cleanup)
 
 
+def stop_daemon(pid_file: str) -> None:
+    """Stops a daemon process.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon process to
+            kill.
+    """
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+    except (IOError, FileNotFoundError):
+        logger.warning("Daemon PID file '%s' does not exist.", pid_file)
+        return
+
+    if not psutil.pid_exists(pid):
+        logger.warning("PID from '%s' does not exist.", pid_file)
+        return
+
+    process = psutil.Process(pid)
+    process.terminate()
+
+    try:
+        process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+    except psutil.TimeoutExpired:
+        logger.warning(
+            "Daemon PID %s did not terminate in time; killing.", pid
+        )
+        process.kill()
+        try:
+            process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+        except psutil.TimeoutExpired:
+            logger.error("Failed to kill daemon PID %s.", pid)
+
+
+def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
+    """Read and return the PID value from a PID file.
+
+    It does this if the daemon process tracked by the PID file is running.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon
+            process to check.
+
+    Returns:
+        The PID of the daemon process if it is running, otherwise None.
+    """
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+    except (IOError, FileNotFoundError):
+        logger.debug(
+            f"Daemon PID file '{pid_file}' does not exist or cannot be read."
+        )
+        return None
+
+    if not pid or not psutil.pid_exists(pid):
+        logger.debug(f"Daemon with PID '{pid}' is no longer running.")
+        return None
+
+    logger.debug(f"Daemon with PID '{pid}' is running.")
+    return pid
+
+
+def check_if_daemon_is_running(pid_file: str) -> bool:
+    """Checks whether a daemon process indicated by the PID file is running.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon
+            process to check.
+
+    Returns:
+        True if the daemon process is running, otherwise False.
+    """
+    return get_daemon_pid_if_running(pid_file) is not None
+
+
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
@@ -315,76 +391,3 @@ else:
         # finally run the actual daemon code
         daemon_function(*args, **kwargs)
         sys.exit(0)
-
-    def stop_daemon(pid_file: str) -> None:
-        """Stops a daemon process.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon process to
-                kill.
-        """
-        try:
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-        except (IOError, FileNotFoundError):
-            logger.warning("Daemon PID file '%s' does not exist.", pid_file)
-            return
-
-        if not psutil.pid_exists(pid):
-            logger.warning("PID from '%s' does not exist.", pid_file)
-            return
-
-        process = psutil.Process(pid)
-        process.terminate()
-
-        try:
-            process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
-        except psutil.TimeoutExpired:
-            logger.warning(
-                "Daemon PID %s did not terminate in time; killing.", pid
-            )
-            process.kill()
-            try:
-                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
-            except psutil.TimeoutExpired:
-                logger.error("Failed to kill daemon PID %s.", pid)
-
-    def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
-        """Read and return the PID value from a PID file.
-
-        It does this if the daemon process tracked by the PID file is running.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon
-                process to check.
-
-        Returns:
-            The PID of the daemon process if it is running, otherwise None.
-        """
-        try:
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-        except (IOError, FileNotFoundError):
-            logger.debug(
-                f"Daemon PID file '{pid_file}' does not exist or cannot be read."
-            )
-            return None
-
-        if not pid or not psutil.pid_exists(pid):
-            logger.debug(f"Daemon with PID '{pid}' is no longer running.")
-            return None
-
-        logger.debug(f"Daemon with PID '{pid}' is running.")
-        return pid
-
-    def check_if_daemon_is_running(pid_file: str) -> bool:
-        """Checks whether a daemon process indicated by the PID file is running.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon
-                process to check.
-
-        Returns:
-            True if the daemon process is running, otherwise False.
-        """
-        return get_daemon_pid_if_running(pid_file) is not None

@@ -360,7 +360,7 @@ class LocalDeployer(BaseDeployer):
             metadata=metadata.model_dump(exclude_none=True),
         )
         address = settings.address
-        if address == "0.0.0.0":
+        if address == "0.0.0.0":  # nosec
             address = "localhost"
         state.url = f"http://{address}:{port}"
 
@@ -406,7 +406,7 @@ class LocalDeployer(BaseDeployer):
             # Use pending until we can confirm the daemon is reachable
             state.status = DeploymentStatus.PENDING
             address = meta.address
-            if address == "0.0.0.0":
+            if address == "0.0.0.0":  # nosec
                 address = "localhost"
             state.url = f"http://{address}:{meta.port}"
 
@@ -567,6 +567,33 @@ class LocalDeployerFlavor(BaseDeployerFlavor):
             Flavor name.
         """
         return "local"
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A url to point at docs explaining this flavor.
+
+        Returns:
+            A flavor docs url.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A url to point at SDK docs explaining this flavor.
+
+        Returns:
+            A flavor SDK docs url.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """A url to represent the flavor in the dashboard.
+
+        Returns:
+            The flavor logo.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/local.png"
 
     @property
     def config_class(self) -> Type[BaseDeployerConfig]:
