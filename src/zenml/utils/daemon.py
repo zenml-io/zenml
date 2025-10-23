@@ -244,6 +244,11 @@ def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
         with open(pid_file, "r") as f:
             pid = int(f.read().strip())
     except (IOError, FileNotFoundError):
+        logger.warning("Daemon PID file '%s' does not exist.", pid_file)
+        return
+    except ValueError:
+        logger.warning("Daemon PID file '%s' contains invalid data.", pid_file)
+        return
         logger.debug(
             f"Daemon PID file '{pid_file}' does not exist or cannot be read."
         )
