@@ -5427,7 +5427,17 @@ class SqlZenStore(BaseZenStore):
         resource_id: UUID,
         resource_type: VisualizationResourceTypes,
     ) -> None:
-        """Ensure a curated visualization link does not already exist."""
+        """Ensure a curated visualization link does not already exist.
+
+        Args:
+            session: The database session.
+            artifact_visualization_id: The ID of the artifact visualization.
+            resource_id: The ID of the resource.
+            resource_type: The type of the resource.
+
+        Raises:
+            EntityExistsError: If a curated visualization link already exists.
+        """
         existing = session.exec(
             select(CuratedVisualizationSchema)
             .where(
@@ -5445,10 +5455,55 @@ class SqlZenStore(BaseZenStore):
                 "for the specified artifact visualization."
             )
 
+    def _assert_curated_visualization_display_order_unique(
+        self,
+        session: Session,
+        *,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
+        display_order: Optional[int],
+        exclude_visualization_id: Optional[UUID] = None,
+    ) -> None:
+        """Ensure curated visualizations per resource use unique display orders."""
+        if display_order is None:
+            return
+
+        statement = (
+            select(CuratedVisualizationSchema)
+            .where(CuratedVisualizationSchema.resource_id == resource_id)
+            .where(
+                CuratedVisualizationSchema.resource_type == resource_type.value
+            )
+            .where(CuratedVisualizationSchema.display_order == display_order)
+        )
+        if exclude_visualization_id is not None:
+            statement = statement.where(
+                CuratedVisualizationSchema.id != exclude_visualization_id
+            )
+
+        existing = session.exec(statement).first()
+        if existing is not None:
+            raise EntityExistsError(
+                "A curated visualization for this resource already uses the "
+                f"display order '{display_order}'. Please choose a different value."
+            )
+
     def create_curated_visualization(
         self, visualization: CuratedVisualizationRequest
     ) -> CuratedVisualizationResponse:
-        """Persist a curated visualization link."""
+        """Persist a curated visualization link.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+
+        Raises:
+            IllegalOperationError: If the curated visualization does not target the same project as the artifact visualization.
+            ValueError: If the resource type is invalid.
+            KeyError: If the resource is not found.
+        """
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=visualization, session=session
@@ -5517,6 +5572,13 @@ class SqlZenStore(BaseZenStore):
                 resource_id=visualization.resource_id,
                 resource_type=visualization.resource_type,
             )
+            if visualization.display_order is not None:
+                self._assert_curated_visualization_display_order_unique(
+                    session=session,
+                    resource_id=visualization.resource_id,
+                    resource_type=visualization.resource_type,
+                    display_order=visualization.display_order,
+                )
 
             schema = CuratedVisualizationSchema.from_request(visualization)
 
@@ -5573,6 +5635,21 @@ class SqlZenStore(BaseZenStore):
                 schema_class=CuratedVisualizationSchema,
                 session=session,
             )
+            update_fields = visualization_update.model_dump(exclude_unset=True)
+            if "display_order" in update_fields:
+                new_display_order = update_fields["display_order"]
+                if new_display_order is not None:
+                    self._assert_curated_visualization_display_order_unique(
+                        session=session,
+                        resource_id=schema.resource_id,
+                        resource_type=VisualizationResourceTypes(
+                            schema.resource_type
+                        ),
+                        display_order=new_display_order,
+                        exclude_visualization_id=visualization_id,
+                    )
+                # Explicit None clears the display order, so uniqueness validation is skipped.
+
             schema.update(visualization_update)
             session.add(schema)
             session.commit()

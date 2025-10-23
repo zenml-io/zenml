@@ -236,6 +236,8 @@ visualization_c = client.create_curated_visualization(
 )
 ```
 
+> **Note:** Reusing the same `display_order` for multiple curated visualizations targeting the same resource now raises an error. Pick distinct values—leaving gaps still helps when you later insert additional tiles.
+
 #### RBAC visibility
 
 Curated visualizations respect the access permissions of the resource they're linked to. A user can only see a curated visualization if they have read access to the specific resource it targets. If a user lacks permission for the linked resource, the visualization will be hidden from their view.

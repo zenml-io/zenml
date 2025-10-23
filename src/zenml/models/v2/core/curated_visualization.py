@@ -65,6 +65,10 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
     display_order: Optional[int] = Field(
         default=None,
         title="The display order of the visualization.",
+        description=(
+            "Optional ordering hint that must be unique for the combination "
+            "of resource type and resource ID."
+        ),
     )
     layout_size: CuratedVisualizationSize = Field(
         default=CuratedVisualizationSize.FULL_WIDTH,
@@ -101,6 +105,10 @@ class CuratedVisualizationUpdate(BaseUpdate):
     display_order: Optional[int] = Field(
         default=None,
         title="The new display order of the visualization.",
+        description=(
+            "Optional ordering hint. When provided, it must remain unique for "
+            "the combination of resource type and resource ID."
+        ),
     )
     layout_size: Optional[CuratedVisualizationSize] = Field(
         default=None,
@@ -135,6 +143,10 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
     display_order: Optional[int] = Field(
         default=None,
         title="The display order of the visualization.",
+        description=(
+            "Optional ordering hint that is unique per combination of "
+            "resource type and resource ID."
+        ),
     )
     layout_size: CuratedVisualizationSize = Field(
         default=CuratedVisualizationSize.FULL_WIDTH,
