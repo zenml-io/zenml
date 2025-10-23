@@ -33,6 +33,7 @@ from zenml.config.resource_settings import ResourceSettings
     settings={
         "docker": DockerSettings(
             requirements="requirements.txt",
+            parent_image="zenmldocker/zenml:0.84.3-py3.12",
         ),
         "deployment": DeploymentSettings(
             app_title="Customer Churn Prediction Service",
@@ -40,17 +41,7 @@ from zenml.config.resource_settings import ResourceSettings
             app_version="1.0.0",
             dashboard_files_path="frontend",
         ),
-        "deployer.local": {
-            "port": 8080,
-        },
-        "deployer.docker": {
-            "port": 8080,
-        },
-        "deployer.gcp": {
-            "allow_unauthenticated": True,
-            "generate_auth_key": True,
-        },
-        "deployer.aws": {
+        "deployer": {
             "generate_auth_key": True,
         },
         "resources": ResourceSettings(
@@ -63,7 +54,16 @@ from zenml.config.resource_settings import ResourceSettings
     },
 )
 def churn_inference_pipeline(
-    customer_features: Dict[str, float],
+    customer_features: Dict[str, float] = {
+        "account_length": 100,
+        "customer_service_calls": 2,
+        "monthly_charges": 50.0,
+        "total_charges": 1200.0,
+        "has_internet_service": 1,
+        "has_phone_service": 1,
+        "contract_length": 12,
+        "payment_method_electronic": 1,
+    },
 ) -> Dict[str, Any]:
     """Predict customer churn probability for a given customer.
 
