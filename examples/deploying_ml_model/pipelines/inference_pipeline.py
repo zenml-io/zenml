@@ -33,7 +33,6 @@ from zenml.config.resource_settings import ResourceSettings
     settings={
         "docker": DockerSettings(
             requirements="requirements.txt",
-            parent_image="zenmldocker/zenml:0.84.3-py3.12",
         ),
         "deployment": DeploymentSettings(
             app_title="Customer Churn Prediction Service",
