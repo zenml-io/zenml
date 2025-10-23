@@ -28,6 +28,7 @@ AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 AWS_SAGEMAKER_ORCHESTRATOR_FLAVOR = "sagemaker"
+AWS_BATCH_STEP_OPERATOR_FLAVOR = "aws_batch"
 AWS_DEPLOYER_FLAVOR = "aws"
 
 # Service connector constants
@@ -66,6 +67,7 @@ class AWSIntegration(Integration):
             AWSImageBuilderFlavor,
             SagemakerOrchestratorFlavor,
             SagemakerStepOperatorFlavor,
+            AWSBatchStepOperatorFlavor
         )
 
         return [
@@ -74,4 +76,5 @@ class AWSIntegration(Integration):
             AWSImageBuilderFlavor,
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
+            AWSBatchStepOperatorFlavor
         ]
