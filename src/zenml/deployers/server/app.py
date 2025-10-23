@@ -146,6 +146,10 @@ class BaseDeploymentAppRunner(ABC):
         self.middleware_adapter = self._create_middleware_adapter()
         self._asgi_app: Optional[ASGIApplication] = None
 
+        self.endpoints: List[EndpointSpec] = []
+        self.middlewares: List[MiddlewareSpec] = []
+        self.extensions: List[AppExtensionSpec] = []
+
     @property
     def asgi_app(self) -> ASGIApplication:
         """Get the ASGI application.
@@ -635,6 +639,7 @@ class BaseDeploymentAppRunner(ABC):
                     app_runner=self,
                     **ext_spec.extension_kwargs,
                 )
+            self.extensions.append(ext_spec)
 
     def register_endpoints(self, *endpoint_specs: EndpointSpec) -> None:
         """Register the given endpoints.
@@ -645,6 +650,7 @@ class BaseDeploymentAppRunner(ABC):
         for endpoint_spec in endpoint_specs:
             endpoint_spec.load_sources()
             self.endpoint_adapter.register_endpoint(self, endpoint_spec)
+            self.endpoints.append(endpoint_spec)
 
     def register_middlewares(self, *middleware_specs: MiddlewareSpec) -> None:
         """Register the given middleware.
@@ -655,6 +661,7 @@ class BaseDeploymentAppRunner(ABC):
         for middleware_spec in middleware_specs:
             middleware_spec.load_sources()
             self.middleware_adapter.register_middleware(self, middleware_spec)
+            self.middlewares.append(middleware_spec)
 
     def _run_startup_hook(self) -> None:
         """Run the startup hook.

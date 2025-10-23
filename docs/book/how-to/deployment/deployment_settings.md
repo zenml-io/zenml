@@ -927,10 +927,9 @@ from __future__ import annotations
 
 from typing import Literal, Sequence, Set
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRoute
 from fastapi.security import APIKeyHeader
 
 from zenml.config import AppExtensionSpec, DeploymentSettings
@@ -946,12 +945,10 @@ class FastAPIAuthExtension(BaseAppExtension):
         scheme: Literal["api_key"] = "api_key",
         header_name: str = "x-api-key",
         valid_keys: Sequence[str] | None = None,
-        protect_paths_prefix: str = "/api",
     ) -> None:
         self.scheme = scheme
         self.header_name = header_name
         self.valid_keys: Set[str] = set(valid_keys or [])
-        self.protect_paths_prefix = protect_paths_prefix
 
     def install(self, app_runner: BaseDeploymentAppRunner) -> None:
         app = app_runner.asgi_app
@@ -959,24 +956,26 @@ class FastAPIAuthExtension(BaseAppExtension):
             raise RuntimeError("FastAPIAuthExtension requires FastAPI")
 
         api_key_header = APIKeyHeader(
-            name=self.header_name, auto_error=False
+            name=self.header_name, auto_error=True
         )
 
-        async def verify_api_key(
-            api_key: str | None = Depends(api_key_header),
-        ) -> None:
-            if not api_key or api_key not in self.valid_keys:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid or missing API key",
-                )
+        # Find endpoints that have auth_required=True
+        protected_endpoints = [
+            endpoint.path
+            for endpoint in app_runner.endpoints
+            if endpoint.auth_required
+        ]
 
-        # Attach dependency to protected routes
-        for route in app.routes:
-            if isinstance(route, APIRoute) and route.path.startswith(
-                self.protect_paths_prefix
-            ):
-                route.dependencies.append(Depends(verify_api_key))
+        @app.middleware("http")
+        async def api_key_guard(request: Request, call_next):
+            if request.url.path in protected_endpoints:
+                api_key = await api_key_header(request)
+                if api_key not in self.valid_keys:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid or missing API key",
+                    )
+            return await call_next(request)
 
         # Auth error handler
         @app.exception_handler(HTTPException)
@@ -1027,7 +1026,6 @@ settings = DeploymentSettings(
                 "scheme": "api_key",
                 "header_name": "x-api-key",
                 "valid_keys": ["secret-1", "secret-2"],
-                "protect_paths_prefix": "/api",
             },
         )
     ]
