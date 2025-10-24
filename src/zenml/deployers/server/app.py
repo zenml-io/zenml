@@ -73,6 +73,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+ZENML_DEPLOYMENT_ID_ENV_VAR = "ZENML_DEPLOYMENT_ID"
+
 
 class BaseDeploymentAppRunner(ABC):
     """Base class for deployment app runners.
@@ -765,7 +767,7 @@ class BaseDeploymentAppRunner(ABC):
             )
             raise
 
-    def _build_asgi_app(self) -> ASGIApplication:
+    def build_asgi_app(self) -> ASGIApplication:
         """Build the ASGI application.
 
         Returns:
@@ -821,11 +823,8 @@ class BaseDeploymentAppRunner(ABC):
 
         return self.build(middlewares, endpoints, extensions)
 
-    def _run_asgi_app(self, asgi_app: ASGIApplication) -> None:
-        """Run the ASGI application.
-
-        Args:
-            asgi_app: The ASGI application to run.
+    def run(self) -> None:
+        """Run the ASGI application via uvicorn.
 
         Raises:
             Exception: If the application fails to start.
@@ -853,31 +852,39 @@ class BaseDeploymentAppRunner(ABC):
             port=settings.uvicorn_port,
             workers=settings.uvicorn_workers,
             log_level=settings.log_level.value,
+            reload=settings.uvicorn_reload,
             access_log=True,
         )
         if settings.uvicorn_kwargs:
             uvicorn_kwargs.update(settings.uvicorn_kwargs)
 
+        if settings.uvicorn_workers > 1 or settings.uvicorn_reload:
+            # These settings require the app to run as a subprocess, so we need
+            # to use the factory pattern and pass the app as a source object.
+            os.environ[ZENML_DEPLOYMENT_ID_ENV_VAR] = str(self.deployment.id)
+
+            app_source = source_utils.resolve(build_asgi_app)
+            app_path = f"{app_source.module}:{app_source.attribute}"
+            uvicorn_kwargs.update(dict(app=app_path, factory=True))
+        else:
+            # The regular path is to build the app and pass it as an object in
+            # the same process.
+            app = self.build_asgi_app()
+            uvicorn_kwargs.update(dict(app=app))
+
         try:
             # Start the ASGI application
             uvicorn.run(
-                asgi_app,
                 **uvicorn_kwargs,
             )
         except KeyboardInterrupt:
-            logger.info("\n🛑 Deployment application shutdown")
+            pass
         except Exception as e:
             logger.error(
                 f"❌ Failed to start deployment application: {str(e)}"
             )
             raise
-
-    def run(self) -> None:
-        """Run the deployment app."""
-        if self._asgi_app is None:
-            self._build_asgi_app()
-
-        self._run_asgi_app(self.asgi_app)
+        logger.info("\n🛑 Deployment application shutdown")
 
     @abstractmethod
     def build(
@@ -998,12 +1005,34 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         return app_runner_flavor
 
 
+def build_asgi_app() -> ASGIApplication:
+    """Build the ASGI application.
+
+    This is the factory method called by uvicorn to build the ASGI
+    application. It is not allowed to receive any arguments and therefore
+    the deployment ID must be passed in as the ZENML_DEPLOYMENT_ID
+    environment variable.
+
+    Returns:
+        The ASGI application.
+    """
+    deployment_id = os.getenv(ZENML_DEPLOYMENT_ID_ENV_VAR)
+    if not deployment_id:
+        raise RuntimeError(
+            f"{ZENML_DEPLOYMENT_ID_ENV_VAR} environment variable is not set"
+        )
+
+    app_runner = BaseDeploymentAppRunner.load_app_runner(deployment_id)
+    return app_runner.build_asgi_app()
+
+
 def start_deployment_app(
     deployment_id: UUID,
     pid_file: Optional[str] = None,
     log_file: Optional[str] = None,
     host: Optional[str] = None,
     port: Optional[int] = None,
+    reload: Optional[bool] = None,
 ) -> None:
     """Start the deployment app.
 
@@ -1013,6 +1042,8 @@ def start_deployment_app(
         log_file: The log file to use for the deployment.
         host: The custom host to use for the deployment.
         port: The custom port to use for the deployment.
+        reload: Whether to automatically reload the deployment when the
+            code changes.
     """
     if pid_file or log_file:
         # create parent directory if necessary
@@ -1034,6 +1065,8 @@ def start_deployment_app(
         app_runner.settings.uvicorn_host = host
     if port:
         app_runner.settings.uvicorn_port = int(port)
+    if reload is not None:
+        app_runner.settings.uvicorn_reload = reload
     app_runner.run()
 
 
@@ -1043,7 +1076,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--deployment_id",
-        default=os.getenv("ZENML_DEPLOYMENT_ID"),
+        default=os.getenv(ZENML_DEPLOYMENT_ID_ENV_VAR),
         help="Pipeline snapshot ID",
     )
     parser.add_argument(
@@ -1058,7 +1091,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--host",
-        default=None,
+        default=os.getenv("ZENML_UVICORN_HOST"),
         help=(
             "Optional host override for the uvicorn server. If provided, "
             "this takes precedence over the deployment settings."
@@ -1067,10 +1100,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--port",
         type=int,
-        default=None,
+        default=os.getenv("ZENML_UVICORN_PORT"),
         help=(
             "Optional port override for the uvicorn server. If provided, "
             "this takes precedence over the deployment settings."
+        ),
+    )
+    parser.add_argument(
+        "--reload",
+        type=bool,
+        default=os.getenv("ZENML_UVICORN_RELOAD"),
+        help=(
+            "Whether to automatically reload the deployment when the code changes."
         ),
     )
     args = parser.parse_args()
@@ -1084,4 +1125,5 @@ if __name__ == "__main__":
         log_file=args.log_file,
         host=args.host,
         port=args.port,
+        reload=args.reload,
     )
