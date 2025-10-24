@@ -44,6 +44,12 @@ from zenml.deployers.docker.docker_deployer import (
     DockerDeployerFlavor,
     DockerDeployerSettings,
 )
+from zenml.deployers.local.local_deployer import (
+    LocalDeployer,
+    LocalDeployerConfig,
+    LocalDeployerFlavor,
+    LocalDeployerSettings,
+)
 
 __all__ = [
     "BaseDeployer",
@@ -54,4 +60,8 @@ __all__ = [
     "DockerDeployerConfig",
     "DockerDeployerFlavor",
     "DockerDeployerSettings",
+    "LocalDeployer",
+    "LocalDeployerConfig",
+    "LocalDeployerFlavor",
+    "LocalDeployerSettings",
 ]

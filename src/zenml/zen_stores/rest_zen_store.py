@@ -65,6 +65,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
+    CURATED_VISUALIZATIONS,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
@@ -165,6 +166,9 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
     DeploymentFilter,
     DeploymentRequest,
@@ -1854,6 +1858,77 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=deployment_id,
             route=DEPLOYMENTS,
+        )
+
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization via REST API.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+        """
+        return self._create_resource(
+            resource=visualization,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+            params={"hydrate": True},
+        )
+
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
+        return self._get_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated
+                visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
+        return self._update_resource(
+            resource_id=visualization_id,
+            resource_update=visualization_update,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+        )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        self._delete_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
         )
 
     # -------------------- Run templates --------------------
