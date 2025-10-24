@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for SQLModel schemas."""
 
-from typing import Any, List
+from typing import Any, List, Optional
 
 from sqlalchemy import Column, ForeignKey, Index
 from sqlmodel import Field
@@ -45,6 +45,7 @@ def build_foreign_key_field(
     target_column: str,
     ondelete: str,
     nullable: bool,
+    custom_constraint_name: Optional[str] = None,
     **sa_column_kwargs: Any,
 ) -> Any:
     """Build a SQLModel foreign key field.
@@ -56,6 +57,7 @@ def build_foreign_key_field(
         target_column: Target column name.
         ondelete: On delete behavior.
         nullable: Whether the field is nullable.
+        custom_constraint_name: Custom name for the foreign key constraint.
         **sa_column_kwargs: Keyword arguments for the SQLAlchemy column.
 
     Returns:
@@ -63,16 +65,22 @@ def build_foreign_key_field(
 
     Raises:
         ValueError: If the ondelete and nullable arguments are not compatible.
+        ValueError: If the foreign key constraint name is too long.
     """
     if not nullable and ondelete == "SET NULL":
         raise ValueError(
             "Cannot set ondelete to SET NULL if the field is not nullable."
         )
-    constraint_name = foreign_key_constraint_name(
+    constraint_name = custom_constraint_name or foreign_key_constraint_name(
         source=source,
         target=target,
         source_column=source_column,
     )
+    if len(constraint_name) > 64:
+        raise ValueError(
+            f"Foreign key constraint name {constraint_name} is too long. "
+            "The maximum length is 64 characters."
+        )
     return Field(
         sa_column=Column(
             ForeignKey(

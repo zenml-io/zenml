@@ -65,6 +65,183 @@ There are three ways how you can add custom visualizations to the dashboard:
 * If you are already handling HTML, Markdown, CSV or JSON data in one of your steps, you can have them visualized in just a few lines of code by casting them to a [special class](#visualization-via-special-return-types) inside your step.
 * If you want to automatically extract visualizations for all artifacts of a certain data type, you can define type-specific visualization logic by [building a custom materializer](#visualization-via-materializers).
 
+### Curated Visualizations Across Resources
+
+Curated visualizations let you surface a specific artifact visualization across multiple ZenML resources. Each curated visualization links to exactly one resource—for example, a model performance report that appears on the model detail page, or a deployment health dashboard that shows up in the deployment view.
+
+Curated visualizations currently support the following resources:
+
+- **Projects** – high-level dashboards and KPIs that summarize the state of a project.
+- **Deployments** – monitoring pages for deployed pipelines.
+- **Models** – evaluation dashboards and health views for registered models.
+- **Pipelines** – reusable visual documentation attached to pipeline definitions.
+- **Pipeline Runs** – detailed diagnostics for specific executions.
+- **Pipeline Snapshots** – configuration/version comparisons for snapshot history.
+
+You can create a curated visualization programmatically by linking an artifact visualization to a single resource. Provide the resource identifier and resource type directly when creating the visualization. The example below shows how to create separate visualizations for different resource types:
+
+```python
+from uuid import UUID
+
+from zenml.client import Client
+from zenml.enums import (
+    CuratedVisualizationSize,
+    VisualizationResourceTypes,
+)
+
+client = Client()
+
+# Define the identifiers for the pipeline and run you want to enrich
+pipeline_id = UUID("<PIPELINE_ID>")
+pipeline_run_id = UUID("<PIPELINE_RUN_ID>")
+
+# Retrieve the artifact version produced by the evaluation step
+pipeline_run = client.get_pipeline_run(pipeline_run_id)
+artifact_version_id = pipeline_run.output.get("evaluation_report")
+artifact_version = client.get_artifact_version(artifact_version_id)
+artifact_visualizations = artifact_version.visualizations or []
+
+# Fetch the resources we want to enrich
+model = client.list_models().items[0]
+model_id = model.id
+
+deployment = client.list_deployments().items[0]
+deployment_id = deployment.id
+
+project_id = client.active_project.id
+
+pipeline_model = client.get_pipeline(pipeline_id)
+pipeline_id = pipeline_model.id
+
+pipeline_snapshot = pipeline_run.snapshot()
+snapshot_id = pipeline_snapshot.id
+
+pipeline_run_id = pipeline_run.id
+
+# Create curated visualizations for each supported resource type
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[0].id,
+    resource_id=model_id,
+    resource_type=VisualizationResourceTypes.MODEL,
+    project_id=project_id,
+    display_name="Latest Model Evaluation",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[1].id,
+    resource_id=deployment_id,
+    resource_type=VisualizationResourceTypes.DEPLOYMENT,
+    project_id=project_id,
+    display_name="Deployment Health Dashboard",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[2].id,
+    resource_id=project_id,
+    resource_type=VisualizationResourceTypes.PROJECT,
+    display_name="Project Overview",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[3].id,
+    resource_id=pipeline_id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    project_id=project_id,
+    display_name="Pipeline Summary",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[4].id,
+    resource_id=pipeline_run_id,
+    resource_type=VisualizationResourceTypes.PIPELINE_RUN,
+    project_id=project_id,
+    display_name="Run Results",
+)
+
+client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[5].id,
+    resource_id=snapshot_id,
+    resource_type=VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+    project_id=project_id,
+    display_name="Snapshot Metrics",
+)
+```
+
+After creation, the returned response includes the visualization ID. You can retrieve a specific visualization later with `Client.get_curated_visualization`:
+
+```python
+retrieved = client.get_curated_visualization(pipeline_viz.id, hydrate=True)
+print(retrieved.display_name)
+print(retrieved.resource.type)
+print(retrieved.resource.id)
+```
+
+Curated visualizations are tied to their parent resources and automatically surface in the ZenML dashboard wherever those resources appear, so keep track of the IDs returned by `create_curated_visualization` if you need to reference them later.
+
+#### Updating curated visualizations
+
+Once you've created a curated visualization, you can update its display name, order, or tile size using `Client.update_curated_visualization`:
+
+```python
+from uuid import UUID
+
+client.update_curated_visualization(
+    visualization_id=UUID("<CURATED_VISUALIZATION_ID>"),
+    display_name="Updated Dashboard Title",
+    display_order=10,
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
+)
+```
+
+When a visualization is no longer relevant, you can remove it entirely:
+
+```python
+client.delete_curated_visualization(visualization_id=UUID("<CURATED_VISUALIZATION_ID>"))
+```
+
+#### Controlling display order and size
+
+The optional `display_order` field determines how visualizations are sorted when displayed. Visualizations with lower order values appear first, while those with `None` (the default) appear at the end in creation order.
+
+When setting display orders, consider leaving gaps between values (e.g., 10, 20, 30 instead of 1, 2, 3) to make it easier to insert new visualizations later without renumbering everything:
+
+```python
+# Leave gaps for future insertions
+visualization_a = client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[0].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Model performance at a glance",
+    display_order=10,  # Primary dashboard
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,
+)
+
+visualization_b = client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[1].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Drill-down metrics",
+    display_order=20,  # Secondary metrics
+    layout_size=CuratedVisualizationSize.HALF_WIDTH,  # Compact chart beside the primary tile
+)
+
+# Later, easily insert between them
+visualization_c = client.create_curated_visualization(
+    artifact_visualization_id=artifact_visualizations[2].id,
+    resource_type=VisualizationResourceTypes.PIPELINE,
+    resource_id=pipeline_id,
+    display_name="Raw output preview",
+    display_order=15,  # Now appears between A and B
+    layout_size=CuratedVisualizationSize.FULL_WIDTH,
+)
+```
+
+#### RBAC visibility
+
+Curated visualizations respect the access permissions of the resource they're linked to. A user can only see a curated visualization if they have read access to the specific resource it targets. If a user lacks permission for the linked resource, the visualization will be hidden from their view.
+
+For example, if you create a visualization linked to a specific deployment, only users with read access to that deployment will see the visualization. If you need the same visualization to appear in different contexts with different access controls (e.g., on both a project page and a deployment page), create separate curated visualizations for each resource. This ensures that visualizations never inadvertently expose information from resources a user shouldn't access, while giving you fine-grained control over visibility.
+
 ### Visualization via Special Return Types
 
 If you already have HTML, Markdown, CSV or JSON data available as a string inside your step, you can simply cast them to one of the following types and return them from your step:

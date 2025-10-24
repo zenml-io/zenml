@@ -61,6 +61,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     ColorVariants,
+    CuratedVisualizationSize,
     DeploymentStatus,
     LogicalOperators,
     ModelStages,
@@ -72,6 +73,7 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -108,6 +110,9 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeploymentFilter,
     DeploymentResponse,
     EventSourceFilter,
@@ -3739,6 +3744,96 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    def create_curated_visualization(
+        self,
+        artifact_visualization_id: UUID,
+        *,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
+        project_id: Optional[UUID] = None,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+        layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization associated with a resource.
+
+        Curated visualizations can be attached to any of the following
+        ZenML resource types to provide contextual dashboards throughout the ML
+        lifecycle:
+
+        - **Deployments** (VisualizationResourceTypes.DEPLOYMENT): Surface on
+          deployment monitoring dashboards
+        - **Pipelines** (VisualizationResourceTypes.PIPELINE): Associate with
+          pipeline definitions
+        - **Pipeline Runs** (VisualizationResourceTypes.PIPELINE_RUN): Attach to
+          specific execution runs
+        - **Pipeline Snapshots** (VisualizationResourceTypes.PIPELINE_SNAPSHOT):
+          Link to captured pipeline configurations
+
+        Each visualization is linked to exactly one resource.
+
+        Args:
+            artifact_visualization_id: The UUID of the artifact visualization to curate.
+            resource_id: The identifier of the resource tied to the visualization.
+            resource_type: The type of resource referenced by the visualization.
+            project_id: The ID of the project to associate with the visualization.
+            display_name: The display name of the visualization.
+            display_order: The display order of the visualization.
+            layout_size: The layout size of the visualization in the dashboard.
+
+        Returns:
+            The created curated visualization.
+        """
+        request = CuratedVisualizationRequest(
+            project=project_id or self.active_project.id,
+            artifact_visualization_id=artifact_visualization_id,
+            display_name=display_name,
+            display_order=display_order,
+            layout_size=layout_size,
+            resource_id=resource_id,
+            resource_type=resource_type,
+        )
+        return self.zen_store.create_curated_visualization(request)
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        *,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+        layout_size: Optional[CuratedVisualizationSize] = None,
+    ) -> CuratedVisualizationResponse:
+        """Update display metadata for a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            display_name: New display name for the visualization.
+            display_order: New display order for the visualization.
+            layout_size: Updated layout size for the visualization.
+
+        Returns:
+            The updated deployment visualization.
+        """
+        update_model = CuratedVisualizationUpdate(
+            display_name=display_name,
+            display_order=display_order,
+            layout_size=layout_size,
+        )
+        return self.zen_store.update_curated_visualization(
+            visualization_id=visualization_id,
+            visualization_update=update_model,
+        )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        self.zen_store.delete_curated_visualization(
+            visualization_id=visualization_id
+        )
+
     def list_deployments(
         self,
         sort_by: str = "created",
@@ -4807,6 +4902,8 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         cache_key: Optional[str] = None,
+        cache_expires_at: Optional[Union[datetime, str]] = None,
+        cache_expired: Optional[bool] = None,
         code_hash: Optional[str] = None,
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
@@ -4843,6 +4940,10 @@ class Client(metaclass=ClientMetaClass):
             model: Filter by model name/ID.
             name: The name of the step run to filter by.
             cache_key: The cache key of the step run to filter by.
+            cache_expires_at: The cache expiration time of the step run to
+                filter by.
+            cache_expired: Whether the cache expiration time of the step run
+                has passed.
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
             run_metadata: Filter by run metadata.
@@ -4860,6 +4961,8 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             id=id,
             cache_key=cache_key,
+            cache_expires_at=cache_expires_at,
+            cache_expired=cache_expired,
             code_hash=code_hash,
             pipeline_run_id=pipeline_run_id,
             snapshot_id=snapshot_id,
@@ -4880,6 +4983,26 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
             hydrate=hydrate,
+        )
+
+    def update_step_run(
+        self,
+        step_run_id: UUID,
+        cache_expires_at: Optional[datetime] = None,
+    ) -> StepRunResponse:
+        """Update a step run.
+
+        Args:
+            step_run_id: The ID of the step run to update.
+            cache_expires_at: The time at which this step run should not be
+                used for cached results anymore.
+
+        Returns:
+            The updated step run.
+        """
+        update = StepRunUpdate(cache_expires_at=cache_expires_at)
+        return self.zen_store.update_run_step(
+            step_run_id=step_run_id, step_run_update=update
         )
 
     # ------------------------------- Artifacts -------------------------------

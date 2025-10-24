@@ -195,6 +195,7 @@ These configuration options are only relevant if you're using Hashicorp Vault as
 * **ZENML\_SECRETS\_STORE\_VAULT\_ADDR**: The URL of the HashiCorp Vault server to connect to. NOTE: this is the same as setting the `VAULT_ADDR` environment variable.
 * **ZENML\_SECRETS\_STORE\_VAULT\_TOKEN**: The token to use to authenticate with the HashiCorp Vault server. NOTE: this is the same as setting the `VAULT_TOKEN` environment variable.
 * **ZENML\_SECRETS\_STORE\_VAULT\_NAMESPACE**: The Vault Enterprise namespace. Not required for Vault OSS. NOTE: this is the same as setting the `VAULT_NAMESPACE` environment variable.
+* **ZENML\_SECRETS\_STORE\_MOUNT\_POINT**: The mount point to use for the HashiCorp Vault secrets store. If not set, the default value of `secret` will be used.
 * **ZENML\_SECRETS\_STORE\_MAX\_VERSIONS**: The maximum number of secret versions to keep for each Vault secret. If not set, the default value of 1 will be used (only the latest version will be kept).
 {% endtab %}
 
@@ -256,7 +257,6 @@ The following secure headers environment variables are supported:
 * **ZENML\_SERVER\_SECURE\_HEADERS\_SERVER**: The `Server` HTTP header value used to identify the server. The default value is the ZenML server ID.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_HSTS**: The `Strict-Transport-Security` HTTP header value. The default value is `max-age=63072000; includeSubDomains`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_XFO**: The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
-* **ZENML\_SERVER\_SECURE\_HEADERS\_XXP**: The `X-XSS-Protection` HTTP header value. The default value is `0`. NOTE: this header is deprecated and should not be customized anymore. The `Content-Security-Policy` header should be used instead.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CONTENT**: The `X-Content-Type-Options` HTTP header value. The default value is `nosniff`.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_CSP**: The `Content-Security-Policy` HTTP header value. This is by default set to a strict CSP policy that only allows content from the origins required by the ZenML dashboard. NOTE: customizing this header is discouraged, as it may cause the ZenML dashboard to malfunction.
 * **ZENML\_SERVER\_SECURE\_HEADERS\_REFERRER**: The `Referrer-Policy` HTTP header value. The default value is `no-referrer-when-downgrade`.

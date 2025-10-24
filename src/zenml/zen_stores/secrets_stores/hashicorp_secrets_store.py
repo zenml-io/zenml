@@ -44,6 +44,7 @@ logger = get_logger(__name__)
 HVAC_ZENML_SECRET_NAME_PREFIX = "zenml"
 ZENML_VAULT_SECRET_VALUES_KEY = "zenml_secret_values"
 ZENML_VAULT_SECRET_METADATA_KEY = "zenml_secret_metadata"
+DEFAULT_MOUNT_POINT = "secret"
 
 
 class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
@@ -120,13 +121,11 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
                 else None,
                 namespace=self.config.vault_namespace,
             )
+            # Configure the intended mount (idempotent)
             self._client.secrets.kv.v2.configure(
+                mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
                 max_versions=self.config.max_versions,
             )
-            if self.config.mount_point:
-                self._client.secrets.kv.v2.configure(
-                    mount_point=self.config.mount_point,
-                )
         return self._client
 
     # ====================================
@@ -197,6 +196,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
                 },
                 # Do not allow overwriting an existing secret
                 cas=0,
+                mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
             )
         except VaultError as e:
             raise RuntimeError(f"Error creating secret: {e}")
@@ -224,6 +224,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             vault_secret = (
                 self.client.secrets.kv.v2.read_secret(
                     path=vault_secret_id,
+                    mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
                 )
                 .get("data", {})
                 .get("data", {})
@@ -295,6 +296,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
                     ZENML_VAULT_SECRET_VALUES_KEY: secret_values,
                     ZENML_VAULT_SECRET_METADATA_KEY: metadata,
                 },
+                mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
             )
         except InvalidPath:
             raise KeyError(f"Secret with ID {secret_id} does not exist.")
@@ -320,6 +322,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
         try:
             self.client.secrets.kv.v2.delete_metadata_and_all_versions(
                 path=vault_secret_id,
+                mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
             )
         except InvalidPath:
             raise KeyError(f"Secret with ID {secret_id} does not exist.")

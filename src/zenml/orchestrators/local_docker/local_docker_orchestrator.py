@@ -223,10 +223,12 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
                 self.get_settings(step),
             )
             image = self.get_image(snapshot=snapshot, step_name=step_name)
+            image = settings.run_args.pop("image", image)
 
             user = None
             if sys.platform != "win32":
                 user = os.getuid()
+            user = settings.run_args.pop("user", user)
             logger.info("Running step `%s` in Docker:", step_name)
 
             run_args = copy.deepcopy(settings.run_args)

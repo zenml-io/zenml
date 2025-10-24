@@ -37,7 +37,6 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
-from zenml.deployers.server import runtime
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
@@ -137,6 +136,8 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
         """
+        from zenml.deployers.server import runtime
+
         if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
             step_logging_enabled = False
         else:
@@ -613,6 +614,8 @@ class StepRunner:
         Returns:
             The IDs of the published output artifacts.
         """
+        from zenml.deployers.server import runtime
+
         step_context = get_step_context()
         artifact_requests = []
 

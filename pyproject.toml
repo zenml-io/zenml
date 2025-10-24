@@ -28,6 +28,7 @@ classifiers = [
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
+    "asgiref~=3.10.0",
     "click>=8.0.1,<=8.2.1",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
@@ -72,7 +73,7 @@ server = [
     "orjson~=3.10.0",
     "Jinja2",
     "ipinfo>=4.4.3",
-    "secure~=0.3.0",
+    "secure~=1.0.1",
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
 ]

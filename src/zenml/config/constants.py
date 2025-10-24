@@ -15,3 +15,4 @@
 
 DOCKER_SETTINGS_KEY = "docker"
 RESOURCE_SETTINGS_KEY = "resources"
+DEPLOYMENT_SETTINGS_KEY = "deployment"
