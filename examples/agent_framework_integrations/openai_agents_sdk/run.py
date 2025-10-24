@@ -7,8 +7,6 @@ for orchestration and artifact management.
 import os
 from typing import Annotated, Any, Dict
 
-from openai_agent import agent
-
 from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
@@ -25,12 +23,10 @@ docker_settings = DockerSettings(
 def run_openai_agent(query: str) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the OpenAI Agents SDK agent and return results."""
     try:
-        import asyncio
-        import multiprocessing
+        import json
         import subprocess
         import sys
         import tempfile
-        import json
 
         # Create a standalone script to run the agent in a separate process
         agent_script = '''
@@ -70,15 +66,22 @@ if __name__ == "__main__":
 '''
 
         # Write the script to a temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
             f.write(agent_script)
             script_path = f.name
 
         try:
             # Determine the correct working directory
             import os
+
             current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            work_dir = '/app/code' if os.path.exists('/app/code') else current_file_dir
+            work_dir = (
+                "/app/code"
+                if os.path.exists("/app/code")
+                else current_file_dir
+            )
 
             # Run the agent in a separate process
             result = subprocess.run(
@@ -87,7 +90,7 @@ if __name__ == "__main__":
                 text=True,
                 timeout=60,
                 cwd=work_dir,
-                env={**os.environ, 'PYTHONPATH': work_dir}
+                env={**os.environ, "PYTHONPATH": work_dir},
             )
 
             if result.returncode == 0:
@@ -97,7 +100,7 @@ if __name__ == "__main__":
                     return {
                         "query": query,
                         "response": output_data["response"],
-                        "status": "success"
+                        "status": "success",
                     }
                 else:
                     return {
@@ -114,6 +117,7 @@ if __name__ == "__main__":
         finally:
             # Clean up the temporary file
             import os
+
             try:
                 os.unlink(script_path)
             except:
