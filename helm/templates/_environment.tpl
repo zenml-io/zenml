@@ -338,6 +338,16 @@ vault_namespace: {{ .SecretsStore.hashicorp.vault_namespace | quote }}
 {{- if .SecretsStore.hashicorp.mount_point }}
 mount_point: {{ .SecretsStore.hashicorp.mount_point | quote }}
 {{- end }}
+auth_method: {{ .SecretsStore.hashicorp.auth_method | quote }}
+{{- if .SecretsStore.hashicorp.auth_mount_point }}
+auth_mount_point: {{ .SecretsStore.hashicorp.auth_mount_point | quote }}
+{{- end }}
+{{- if eq .SecretsStore.hashicorp.auth_method "app_role" }}
+app_role_id: {{ .SecretsStore.hashicorp.app_role_id | quote }}
+{{- else if eq .SecretsStore.hashicorp.auth_method "aws" }}
+aws_role: {{ .SecretsStore.hashicorp.aws_role | quote }}
+aws_header_value: {{ .SecretsStore.hashicorp.aws_header_value | quote }}
+{{- end }}
 {{- if .SecretsStore.hashicorp.max_versions }}
 max_versions: {{ .SecretsStore.hashicorp.max_versions | quote }}
 {{- end }}
@@ -439,8 +449,10 @@ auth_config: {{ include "zenml.legacyGCPSecretsStoreAuthConfig" . | fromYaml | t
 auth_config: {{ .SecretsStore.gcp.authConfig | toJson | quote }}
 {{- end }}
 {{- else if eq .SecretsStore.type "hashicorp" }}
-{{- if .SecretsStore.hashicorp.vault_token }}
+{{- if eq .SecretsStore.hashicorp.auth_method "token" }}
 vault_token: {{ .SecretsStore.hashicorp.vault_token | quote }}
+{{- else if eq .SecretsStore.hashicorp.auth_method "app_role" }}
+app_secret_id: {{ .SecretsStore.hashicorp.app_secret_id | quote }}
 {{- end }}
 {{- end }}
 {{- end }}

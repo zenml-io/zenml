@@ -497,8 +497,8 @@ class HashiCorpVaultSecretsStoreBackend(BaseSecretsStoreBackend):
             RuntimeError: If the HashiCorp Vault API returns an unexpected
                 error.
         """
-        from hvac import Client  # type: ignore[import-untyped]
-        from hvac.exceptions import (  # type: ignore[import-untyped]
+        from hvac import Client
+        from hvac.exceptions import (
             InvalidPath,
             VaultError,
         )

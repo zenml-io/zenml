@@ -960,12 +960,26 @@ zenml:
 
       # The url of the HashiCorp Vault server
       vault_addr: https://vault.example.com
-      # The token used to authenticate with the Vault server
-      vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
       vault_namespace:
       # The mount point to use (defaults to "secret" if not set)
       mount_point:
+
+      # The authentication method to use to authenticate with the Vault server.
+      # One of: `token`, `app_role`, `aws`
+      auth_method: token
+      # Custom mount point to use for the authentication method.
+      auth_mount_point:
+      # The role ID to use for the app role authentication method.
+      app_role_id:
+      # The secret ID to use for the app role authentication method.
+      app_secret_id:
+      # The AWS role to use for the AWS authentication method.
+      aws_role:
+      # The AWS header value to use for the AWS authentication method.
+      aws_header_value:
+      # The token to use with the token authentication method.
+      vault_token:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
