@@ -137,11 +137,11 @@ The pipeline is optimized for deployment:
 - **Scalable**: Supports multiple workers and high concurrency
 - **Cloud ready**: Configured for GCP and AWS deployment
 
-To deploy the pipeline for real-time execution, you need a **Deployer** stack component in your stack. You can use the Docker deployer to deploy the pipeline with minimal setup:
+To deploy the pipeline for real-time execution, you need a **Deployer** stack component in your stack. Luckily, the `default` stack
+comes with a built-in local deployer:
 
 ```bash
-zenml deployer register docker --flavor=docker
-zenml stack register local_with_docker -a default -o default -D docker --set
+zenml stack set default
 ```
 
 Then you can deploy the pipeline with:
@@ -150,7 +150,7 @@ Then you can deploy the pipeline with:
 zenml pipeline deploy pipelines.weather_agent
 ```
 
-The pipeline will be deployed as a Docker container running locally and exposing an HTTP endpoint at e.g. `http://localhost:8000`.
+The pipeline will be deployed in a background process and expose an HTTP endpoint at e.g. `http://localhost:8000`.
 
 You can then send HTTP requests to the endpoint to trigger pipeline runs using either `zenml pipeline invoke` or `curl`:
 
