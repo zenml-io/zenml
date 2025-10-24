@@ -9,14 +9,17 @@ from typing import Annotated, Any, Dict
 
 from qwen_agent_impl import agent  # Use the local agent implementation
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
     python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",  # relative to the pipeline directory
     environment={
+        # Propagate API keys into the container so either OpenAI-compatible endpoints
+        # or Alibaba DashScope can be used interchangeably based on the LLM config.
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        "DASHSCOPE_API_KEY": os.getenv("DASHSCOPE_API_KEY"),
     },
 )
 
@@ -83,19 +86,14 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def qwen_agent_pipeline() -> str:
+def agent_pipeline(query: str = "Calculate the result of 15 multiplied by 7, then add 42 to it.") -> str:
     """ZenML pipeline that orchestrates the Qwen-Agent.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for the query
-    user_query = ExternalArtifact(
-        value="Calculate the result of 15 multiplied by 7, then add 42 to it."
-    )
-
-    # Run the Qwen-Agent
-    agent_results = run_qwen_agent(user_query)
+    # Run the Qwen-Agent with the provided query
+    agent_results = run_qwen_agent(query=query)
 
     # Format the results
     summary = format_qwen_response(agent_results)
@@ -105,6 +103,6 @@ def qwen_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running Qwen-Agent pipeline...")
-    run_result = qwen_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")
