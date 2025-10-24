@@ -129,7 +129,6 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
         ),
     )
     artifact_version_id: UUID = Field(
-        default=None,
         title="The artifact version ID.",
         description=(
             "Identifier of the artifact version that owns the curated visualization. "
