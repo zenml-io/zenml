@@ -1161,13 +1161,6 @@
   </main>
 
   <script>
-    let serviceInfo = null;
-    try {
-      serviceInfo = JSON.parse({{ service_info_json | tojson}});
-    } catch (e) {
-      console.error('Failed to parse service info: ', e);
-    }
-    
     let currentInputMode = 'form';
     let currentOutputMode = 'preview';
     let lastResult = null;
@@ -1495,16 +1488,14 @@
     }
 
     async function loadPipelineInfo() {
-      if (serviceInfo && serviceInfo.pipeline) {
-        const pipelineName = serviceInfo.pipeline.name;
-        document.getElementById('pipeline-name').textContent = pipelineName;
-        document.getElementById('deployment-title').textContent = pipelineName;
-        
-        buildFormFields(serviceInfo.pipeline.input_schema);
-        
-        // Initialize JSON view with default values
-        syncFormToJson();
-      }
+      const pipelineName = "{{ service_info.pipeline.name }}";
+      document.getElementById('pipeline-name').textContent = pipelineName;
+      document.getElementById('deployment-title').textContent = pipelineName;
+      
+      buildFormFields(JSON.parse('{{ service_info.pipeline.input_schema | tojson }}'));
+      
+      // Initialize JSON view with default values
+      syncFormToJson();
     }
 
     function displayOutput(result) {
@@ -1698,11 +1689,11 @@
 
     async function runPipeline() {
       try {
-        document.getElementById('run-btn').disabled = true;
+        document.getElementById('run-btn').disabled = true; 
         document.getElementById('run-btn').textContent = 'Running...';
         
         const params = collectFormData();
-        const result = await postJSON(serviceInfo.app.invoke_url_path, { parameters: params, timeout: 300 });
+        const result = await postJSON("{{ service_info.app.invoke_url_path }}", { parameters: params, timeout: 300 });
 
         lastResult = result;
         displayOutput(result);
