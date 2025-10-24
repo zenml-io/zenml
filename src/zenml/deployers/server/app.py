@@ -66,6 +66,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.utils import source_utils
+from zenml.utils.daemon import setup_daemon
 
 if TYPE_CHECKING:
     from secure import Secure
@@ -997,6 +998,45 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         return app_runner_flavor
 
 
+def start_deployment_app(
+    deployment_id: UUID,
+    pid_file: Optional[str] = None,
+    log_file: Optional[str] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
+) -> None:
+    """Start the deployment app.
+
+    Args:
+        deployment_id: The deployment ID.
+        pid_file: The PID file to use for the deployment.
+        log_file: The log file to use for the deployment.
+        host: The custom host to use for the deployment.
+        port: The custom port to use for the deployment.
+    """
+    if pid_file or log_file:
+        # create parent directory if necessary
+        for f in (pid_file, log_file):
+            if f:
+                os.makedirs(os.path.dirname(f), exist_ok=True)
+
+        setup_daemon(pid_file, log_file)
+
+    logger.info(
+        f"Starting deployment application server for deployment "
+        f"{deployment_id}"
+    )
+
+    app_runner = BaseDeploymentAppRunner.load_app_runner(deployment_id)
+
+    # Allow host/port overrides coming from the CLI.
+    if host:
+        app_runner.settings.uvicorn_host = host
+    if port:
+        app_runner.settings.uvicorn_port = int(port)
+    app_runner.run()
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -1006,15 +1046,42 @@ if __name__ == "__main__":
         default=os.getenv("ZENML_DEPLOYMENT_ID"),
         help="Pipeline snapshot ID",
     )
-    args = parser.parse_args()
-
-    logger.info(
-        f"Starting deployment application server for deployment "
-        f"{args.deployment_id}"
+    parser.add_argument(
+        "--pid_file",
+        default=os.getenv("ZENML_PID_FILE"),
+        help="PID file to use for the deployment",
     )
+    parser.add_argument(
+        "--log_file",
+        default=os.getenv("ZENML_LOG_FILE"),
+        help="Log file to use for the deployment",
+    )
+    parser.add_argument(
+        "--host",
+        default=None,
+        help=(
+            "Optional host override for the uvicorn server. If provided, "
+            "this takes precedence over the deployment settings."
+        ),
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help=(
+            "Optional port override for the uvicorn server. If provided, "
+            "this takes precedence over the deployment settings."
+        ),
+    )
+    args = parser.parse_args()
 
     # Activate integrations to ensure all components are available
     integration_registry.activate_integrations()
 
-    app_runner = BaseDeploymentAppRunner.load_app_runner(args.deployment_id)
-    app_runner.run()
+    start_deployment_app(
+        deployment_id=args.deployment_id,
+        pid_file=args.pid_file,
+        log_file=args.log_file,
+        host=args.host,
+        port=args.port,
+    )
