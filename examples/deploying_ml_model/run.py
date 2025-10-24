@@ -129,7 +129,7 @@ Workflow:
 1. Train model:    python run.py --train
 2. Test locally:   python run.py --predict
 3. Deploy service: zenml pipeline deploy pipelines.churn_inference_pipeline.churn_inference_pipeline
-4. Open web UI:    Navigate to http://localhost:8080 for interactive predictions
+4. Open web UI:    Navigate to http://localhost:8000 for interactive predictions
 5. Test API:       curl -X POST <endpoint>/invoke -d '{{"parameters": {{"customer_features": {{...}}}}}}'
 
 Example customer features:

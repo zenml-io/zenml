@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Customer Churn Prediction | ZenML</title>
+
+    <!-- ZenML Brand Fonts (Fontsource CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== CSS Variables - ZenML Design System ===== */
+      :root {
+        /* Primary Colors */
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --zenml-purple-mid: #9565f6;
+
+        /* Neutral Colors */
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+
+        /* Semantic Colors */
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+
+        /* Border Colors */
+        --border-moderate: #e5e7eb;
+        --border-bold: #6b7280;
+
+        /* Typography */
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New",
+          monospace;
+
+        /* Spacing Scale (8pt grid) */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Shadows */
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-emphasized: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      /* ===== Reset & Base Styles ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        padding: var(--spacing-lg);
+        font-size: 16px;
+        line-height: 24px;
+      }
+
+      /* ===== Layout ===== */
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-standard);
+        overflow: hidden;
+      }
+
+      /* ===== Header ===== */
+      .header {
+        background: var(--surface-primary);
+        padding: var(--spacing-lg);
+        text-align: center;
+        border-bottom: 1px solid var(--border-moderate);
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 32px;
+        letter-spacing: -0.01em;
+        margin-bottom: var(--spacing-sm);
+        color: var(--text-primary);
+      }
+
+      .header p {
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 400;
+        color: var(--text-secondary);
+      }
+
+      /* ===== Content Area ===== */
+      .content {
+        padding: var(--spacing-lg);
+      }
+
+      /* ===== Endpoint Info (Code Block) ===== */
+      .endpoint-info {
+        background: var(--surface-tertiary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 20px;
+      }
+
+      .endpoint-info strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      .endpoint-info .url {
+        color: var(--text-primary);
+        word-break: break-all;
+      }
+
+      /* ===== Form Sections ===== */
+      .form-section {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .form-section h2 {
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--spacing-md);
+      }
+
+      /* ===== Form Groups ===== */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 20px;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .form-group input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      .form-group input:disabled,
+      .form-group select:disabled {
+        background: var(--surface-tertiary);
+        color: var(--text-tertiary);
+        cursor: not-allowed;
+      }
+
+      /* ===== Primary Button (ZenML Brand) ===== */
+      .btn {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+        border: none;
+        padding: 12px 24px;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease,
+          box-shadow 0.2s ease;
+        width: 100%;
+        margin-top: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+      }
+
+      .btn:hover:not(:disabled) {
+        background: var(--zenml-purple-dark);
+        box-shadow: var(--shadow-standard);
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* ===== Loading Spinner ===== */
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--surface-primary);
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== Result Card ===== */
+      .result {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+        display: none;
+      }
+
+      .result.success {
+        background: var(--success-light);
+        border-color: var(--success);
+      }
+
+      .result.warning {
+        background: var(--warning-light);
+        border-color: var(--warning);
+      }
+
+      .result.error {
+        background: var(--error-light);
+        border-color: var(--error);
+      }
+
+      .result h3 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .result.success h3 {
+        color: var(--success);
+      }
+
+      .result.warning h3 {
+        color: var(--warning);
+      }
+
+      .result.error h3 {
+        color: var(--error);
+      }
+
+      /* ===== Prediction Details Grid ===== */
+      .prediction-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-md);
+      }
+
+      .detail-item {
+        background: var(--surface-primary);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .detail-item strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+        letter-spacing: 0.02em;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+        text-transform: uppercase;
+      }
+
+      .detail-item .value {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 24px;
+        color: var(--text-primary);
+      }
+
+      /* ===== Badge ===== */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+      }
+
+      .badge.success {
+        background: var(--success-light);
+        color: var(--success);
+      }
+
+      .badge.warning {
+        background: var(--warning-light);
+        color: var(--warning);
+      }
+
+      .badge.error {
+        background: var(--error-light);
+        color: var(--error);
+      }
+
+      /* ===== Footer ===== */
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        background: var(--surface-secondary);
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 20px;
+        border-top: 1px solid var(--border-moderate);
+      }
+
+      .footer strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      /* ===== Responsive Design ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--spacing-md);
+        }
+
+        .header {
+          padding: var(--spacing-lg);
+        }
+
+        .header h1 {
+          font-size: 20px;
+          line-height: 28px;
+        }
+
+        .content {
+          padding: var(--spacing-lg);
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .prediction-details {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>🔮 Customer Churn Prediction</h1>
+        <p>Predict customer churn using ZenML ML pipelines</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- API Endpoint Info -->
+        <div class="endpoint-info">
+          <strong>API Endpoint:</strong>
+          <span class="url" id="endpoint-url"
+            >http://localhost:8000/invoke</span
+          >
+        </div>
+
+        <!-- Prediction Form -->
+        <form id="prediction-form">
+          <!-- Customer Information -->
+          <div class="form-section">
+            <h2>Customer Information</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="account_length">Account Length (months)</label>
+                <input
+                  type="number"
+                  id="account_length"
+                  name="account_length"
+                  value="45"
+                  min="1"
+                  max="300"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="customer_service_calls"
+                  >Customer Service Calls</label
+                >
+                <input
+                  type="number"
+                  id="customer_service_calls"
+                  name="customer_service_calls"
+                  value="3"
+                  min="0"
+                  max="20"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="monthly_charges">Monthly Charges ($)</label>
+                <input
+                  type="number"
+                  id="monthly_charges"
+                  name="monthly_charges"
+                  value="65.0"
+                  min="0"
+                  max="200"
+                  step="0.01"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="total_charges">Total Charges ($)</label>
+                <input
+                  type="number"
+                  id="total_charges"
+                  name="total_charges"
+                  value="2925.0"
+                  min="0"
+                  max="10000"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Service Details -->
+          <div class="form-section">
+            <h2>Service Details</h2>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="has_internet_service">Internet Service</label>
+                <select
+                  id="has_internet_service"
+                  name="has_internet_service"
+                  required
+                >
+                  <option value="1" selected>Yes</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="has_phone_service">Phone Service</label>
+                <select
+                  id="has_phone_service"
+                  name="has_phone_service"
+                  required
+                >
+                  <option value="1" selected>Yes</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="contract_length">Contract Length</label>
+                <select id="contract_length" name="contract_length" required>
+                  <option value="1" selected>Month-to-month</option>
+                  <option value="12">One year</option>
+                  <option value="24">Two years</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="payment_method_electronic"
+                  >Electronic Payment</label
+                >
+                <select
+                  id="payment_method_electronic"
+                  name="payment_method_electronic"
+                  required
+                >
+                  <option value="1" selected>Yes</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn" id="predict-btn">
+            Predict Churn Risk
+          </button>
+        </form>
+
+        <!-- Result Display -->
+        <div id="result" class="result">
+          <h3 id="result-title"></h3>
+          <div id="result-content"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        Powered by <strong>ZenML</strong> Pipeline Deployments | Real-time ML
+        inference
+      </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+      // DOM Elements
+      const form = document.getElementById("prediction-form");
+      const resultDiv = document.getElementById("result");
+      const resultTitle = document.getElementById("result-title");
+      const resultContent = document.getElementById("result-content");
+      const predictBtn = document.getElementById("predict-btn");
+      const endpointUrl = document.getElementById("endpoint-url");
+
+      // Auto-detect API endpoint
+      const currentHost = window.location.hostname;
+      const apiUrl =
+        currentHost === "localhost" || currentHost === "127.0.0.1"
+          ? "http://localhost:8000/invoke"
+          : `${window.location.protocol}//${window.location.host}/invoke`;
+
+      endpointUrl.textContent = apiUrl;
+
+      // Form submission handler
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Show loading state
+        predictBtn.disabled = true;
+        predictBtn.innerHTML =
+          '<span class="loading"></span>Making Prediction...';
+        resultDiv.style.display = "none";
+
+        // Collect form data
+        const formData = new FormData(form);
+        const customerFeatures = {};
+
+        for (const [key, value] of formData.entries()) {
+          customerFeatures[key] = parseFloat(value);
+        }
+
+        // Prepare request payload
+        const payload = {
+          parameters: {
+            customer_features: customerFeatures,
+          },
+        };
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer o3eUBsVJHaXoPei7NICYlGSVQwhuuGK8",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+
+          if (result.success && result.outputs && result.outputs.prediction) {
+            displayPredictionResult(result.outputs.prediction, result.metadata);
+          } else {
+            throw new Error(result.error || "Invalid response format");
+          }
+        } catch (error) {
+          displayError(error.message);
+        } finally {
+          // Reset button
+          predictBtn.disabled = false;
+          predictBtn.innerHTML = "Predict Churn Risk";
+        }
+      });
+
+      // Display prediction result
+      function displayPredictionResult(prediction, metadata) {
+        const probability = prediction.churn_probability;
+        const willChurn = prediction.churn_prediction === 1;
+        const modelVersion = prediction.model_version || "Unknown";
+        const status = prediction.model_status || "Active";
+
+        // Determine result type based on churn probability
+        let resultClass, icon, titleText, riskLevel, badgeClass;
+
+        if (probability >= 0.7) {
+          resultClass = "error";
+          icon = "⚠️";
+          titleText = "High Churn Risk";
+          riskLevel = "High";
+          badgeClass = "error";
+        } else if (probability >= 0.4) {
+          resultClass = "warning";
+          icon = "⚡";
+          titleText = "Medium Churn Risk";
+          riskLevel = "Medium";
+          badgeClass = "warning";
+        } else {
+          resultClass = "success";
+          icon = "✅";
+          titleText = "Low Churn Risk";
+          riskLevel = "Low";
+          badgeClass = "success";
+        }
+
+        resultDiv.className = `result ${resultClass}`;
+        resultTitle.innerHTML = `${icon} ${titleText}`;
+
+        resultContent.innerHTML = `
+                <div class="prediction-details">
+                    <div class="detail-item">
+                        <strong>Churn Probability</strong>
+                        <div class="value">${(probability * 100).toFixed(
+                          1
+                        )}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Risk Level</strong>
+                        <div class="value">
+                            <span class="badge ${badgeClass}">${riskLevel}</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Prediction</strong>
+                        <div class="value">${
+                          willChurn ? "Will Churn" : "Will Stay"
+                        }</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Model Version</strong>
+                        <div class="value">${modelVersion}</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Response Time</strong>
+                        <div class="value">${
+                          metadata && metadata.execution_time
+                            ? (metadata.execution_time * 1000).toFixed(0) + "ms"
+                            : "N/A"
+                        }</div>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status</strong>
+                        <div class="value">${status}</div>
+                    </div>
+                </div>
+            `;
+
+        resultDiv.style.display = "block";
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Display error
+      function displayError(message) {
+        resultDiv.className = "result error";
+        resultTitle.innerHTML = "❌ Prediction Failed";
+        resultContent.innerHTML = `
+                <p style="color: var(--text-primary); margin-bottom: 12px;">
+                    <strong>Error:</strong> ${message}
+                </p>
+                <p style="color: var(--text-secondary); font-size: 14px;">
+                    Please check that the ZenML deployment is running and accessible at the endpoint above.
+                </p>
+            `;
+        resultDiv.style.display = "block";
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Smart form helpers - auto-calculate total charges
+      const monthlyChargesInput = document.getElementById("monthly_charges");
+      const accountLengthInput = document.getElementById("account_length");
+      const totalChargesInput = document.getElementById("total_charges");
+
+      function updateTotalCharges() {
+        const monthlyCharges = parseFloat(monthlyChargesInput.value) || 0;
+        const accountLength = parseFloat(accountLengthInput.value) || 1;
+        const estimatedTotal = monthlyCharges * accountLength;
+        const currentTotal = parseFloat(totalChargesInput.value) || 0;
+
+        // Only update if total charges is close to calculated value or empty
+        if (
+          Math.abs(currentTotal - estimatedTotal) < currentTotal * 0.1 ||
+          currentTotal === 0
+        ) {
+          totalChargesInput.value = estimatedTotal.toFixed(2);
+        }
+      }
+
+      monthlyChargesInput.addEventListener("input", updateTotalCharges);
+      accountLengthInput.addEventListener("input", updateTotalCharges);
+    </script>
+  </body>
+</html>
