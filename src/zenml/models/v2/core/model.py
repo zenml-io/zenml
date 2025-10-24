@@ -45,6 +45,9 @@ from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.model.model import Model
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.models.v2.core.tag import TagResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -185,6 +188,10 @@ class ModelResponseResources(ProjectScopedResponseResources):
     )
     latest_version_name: Optional[str] = None
     latest_version_id: Optional[UUID] = None
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default_factory=list,
+        title="Curated visualizations associated with the model.",
+    )
 
 
 class ModelResponse(
@@ -308,6 +315,15 @@ class ModelResponse(
             the value of the property.
         """
         return self.get_metadata().save_models_to_registry
+
+    @property
+    def visualizations(self) -> List["CuratedVisualizationResponse"]:
+        """The `visualizations` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().visualizations
 
     # Helper functions
     @property

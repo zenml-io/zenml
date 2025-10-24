@@ -61,6 +61,7 @@ from zenml.constants import (
 from zenml.enums import (
     ArtifactType,
     ColorVariants,
+    CuratedVisualizationSize,
     DeploymentStatus,
     LogicalOperators,
     ModelStages,
@@ -72,6 +73,7 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -108,6 +110,9 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeploymentFilter,
     DeploymentResponse,
     EventSourceFilter,
@@ -3737,6 +3742,96 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
             project=project,
             hydrate=hydrate,
+        )
+
+    def create_curated_visualization(
+        self,
+        artifact_visualization_id: UUID,
+        *,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
+        project_id: Optional[UUID] = None,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+        layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization associated with a resource.
+
+        Curated visualizations can be attached to any of the following
+        ZenML resource types to provide contextual dashboards throughout the ML
+        lifecycle:
+
+        - **Deployments** (VisualizationResourceTypes.DEPLOYMENT): Surface on
+          deployment monitoring dashboards
+        - **Pipelines** (VisualizationResourceTypes.PIPELINE): Associate with
+          pipeline definitions
+        - **Pipeline Runs** (VisualizationResourceTypes.PIPELINE_RUN): Attach to
+          specific execution runs
+        - **Pipeline Snapshots** (VisualizationResourceTypes.PIPELINE_SNAPSHOT):
+          Link to captured pipeline configurations
+
+        Each visualization is linked to exactly one resource.
+
+        Args:
+            artifact_visualization_id: The UUID of the artifact visualization to curate.
+            resource_id: The identifier of the resource tied to the visualization.
+            resource_type: The type of resource referenced by the visualization.
+            project_id: The ID of the project to associate with the visualization.
+            display_name: The display name of the visualization.
+            display_order: The display order of the visualization.
+            layout_size: The layout size of the visualization in the dashboard.
+
+        Returns:
+            The created curated visualization.
+        """
+        request = CuratedVisualizationRequest(
+            project=project_id or self.active_project.id,
+            artifact_visualization_id=artifact_visualization_id,
+            display_name=display_name,
+            display_order=display_order,
+            layout_size=layout_size,
+            resource_id=resource_id,
+            resource_type=resource_type,
+        )
+        return self.zen_store.create_curated_visualization(request)
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        *,
+        display_name: Optional[str] = None,
+        display_order: Optional[int] = None,
+        layout_size: Optional[CuratedVisualizationSize] = None,
+    ) -> CuratedVisualizationResponse:
+        """Update display metadata for a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            display_name: New display name for the visualization.
+            display_order: New display order for the visualization.
+            layout_size: Updated layout size for the visualization.
+
+        Returns:
+            The updated deployment visualization.
+        """
+        update_model = CuratedVisualizationUpdate(
+            display_name=display_name,
+            display_order=display_order,
+            layout_size=layout_size,
+        )
+        return self.zen_store.update_curated_visualization(
+            visualization_id=visualization_id,
+            visualization_update=update_model,
+        )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        self.zen_store.delete_curated_visualization(
+            visualization_id=visualization_id
         )
 
     def list_deployments(
