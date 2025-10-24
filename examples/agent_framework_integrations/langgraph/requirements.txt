@@ -2,3 +2,5 @@ langgraph>=0.5.3
 langchain>=0.2.0
 langchain-openai>=0.2.0
 zenml[local]
+jinja2>=3.1.0
+secure>=0.3.0

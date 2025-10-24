@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from agent import agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -89,19 +89,16 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def llamaindex_agent_pipeline() -> str:
+def agent_pipeline(
+    query: str = "What's the weather in New York and calculate a tip for a $50 bill?",
+) -> str:
     """ZenML pipeline that orchestrates the LlamaIndex Function Agent.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(
-        value="What's the weather in New York and calculate a tip for a $50 bill?"
-    )
-
     # Run the LlamaIndex agent
-    agent_results = run_llamaindex_agent(agent_query)
+    agent_results = run_llamaindex_agent(query=query)
 
     # Format the results
     summary = format_llamaindex_response(agent_results)
@@ -111,6 +108,6 @@ def llamaindex_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running LlamaIndex Function Agent pipeline...")
-    run_result = llamaindex_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

@@ -1,6 +1,4 @@
-"""
-semantic_kernel_agent.py
-~~~~~~~~~~~~~~~~~~~~~~~~
+"""Semantic Kernel agent example for PanAgent.
 
 Stage 1 Semantic Kernel example for PanAgent.
 
@@ -44,8 +42,7 @@ class WeatherPlugin:
         self,
         city: Annotated[str, "The city to get weather for"],
     ) -> str:
-        """
-        Pretend to fetch weather information.
+        """Pretend to fetch weather information.
 
         In real scenarios you might call an external API here.
         """
@@ -60,15 +57,13 @@ def create_kernel(
     model_id: str = "gpt-5-nano",
     service_id: str = "openai-chat",
 ) -> Kernel:
-    """
-    Build and return a ready-to-use Semantic Kernel instance.
+    """Build and return a ready-to-use Semantic Kernel instance.
 
-    Parameters
-    ----------
-    model_id:
-        OpenAI model to register (default: ``gpt-5-nano``).
-    service_id:
-        Service identifier used when registering the chat completion service.
+    Args:
+        model_id:
+            OpenAI model to register (default: ``gpt-5-nano``).
+        service_id:
+            Service identifier used when registering the chat completion service.
     """
     kernel = Kernel()
 

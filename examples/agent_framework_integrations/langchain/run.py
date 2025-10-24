@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from langchain_agent import chain
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -77,19 +77,14 @@ Summary:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def langchain_summarization_pipeline() -> str:
+def agent_pipeline(query: str = "Summarize: https://docs.zenml.io/") -> str:
     """ZenML pipeline that orchestrates the LangChain document summarization.
 
     Returns:
         Formatted document summary
     """
-    # External artifact for URL to summarize
-    document_url = ExternalArtifact(
-        value="Summarize: https://python.langchain.com/docs/introduction/"
-    )
-
     # Run the LangChain chain
-    chain_results = run_langchain_chain(document_url)
+    chain_results = run_langchain_chain(query)
 
     # Format the results
     summary = format_langchain_response(chain_results)
@@ -99,6 +94,6 @@ def langchain_summarization_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running LangChain summarization pipeline...")
-    run_result = langchain_summarization_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

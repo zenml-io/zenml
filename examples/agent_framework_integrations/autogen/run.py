@@ -19,7 +19,7 @@ from autogen_core import (
 )
 from pydantic import BaseModel
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -32,14 +32,14 @@ docker_settings = DockerSettings(
 
 
 class TravelQuery(BaseModel):
-    """User wants to plan a trip"""
+    """User wants to plan a trip."""
 
     destination: str
     days: int
 
 
 class WeatherInfo(BaseModel):
-    """Weather information for a destination"""
+    """Weather information for a destination."""
 
     destination: str
     forecast: str
@@ -47,14 +47,14 @@ class WeatherInfo(BaseModel):
 
 
 class AttractionInfo(BaseModel):
-    """Tourist attractions for a destination"""
+    """Tourist attractions for a destination."""
 
     destination: str
     attractions: List[str]
 
 
 class TravelPlan(BaseModel):
-    """Complete travel plan combining all information"""
+    """Complete travel plan combining all information."""
 
     destination: str
     days: int
@@ -67,16 +67,17 @@ class TravelPlan(BaseModel):
 
 
 class WeatherAgent(RoutedAgent):
-    """Expert in weather information"""
+    """Expert in weather information."""
 
     def __init__(self):
+        """Initialize the Weather Specialist agent."""
         super().__init__("Weather Specialist")
 
     @message_handler
     async def check_weather(
         self, message: TravelQuery, ctx: MessageContext
     ) -> WeatherInfo:
-        """Get weather for the destination"""
+        """Get weather for the destination."""
         # Simulate weather API call
         weather_data = {
             "Paris": ("Partly cloudy with chance of rain", "15°C"),
@@ -101,16 +102,17 @@ class WeatherAgent(RoutedAgent):
 
 
 class AttractionAgent(RoutedAgent):
-    """Expert in tourist attractions"""
+    """Expert in tourist attractions."""
 
     def __init__(self):
+        """Initialize the Tourism Specialist agent."""
         super().__init__("Tourism Specialist")
 
     @message_handler
     async def find_attractions(
         self, message: TravelQuery, ctx: MessageContext
     ) -> AttractionInfo:
-        """Find top attractions for the destination"""
+        """Find top attractions for the destination."""
         # Simulate attraction database
         attractions_db = {
             "Paris": [
@@ -153,16 +155,17 @@ class TravelCoordinator(RoutedAgent):
     """Coordinates between specialists to create a travel plan and returns it."""
 
     def __init__(self):
+        """Initialize the Travel Coordinator agent."""
         super().__init__("Travel Coordinator")
 
     @message_handler
     async def coordinate_travel_plan(
         self, message: TravelQuery, _
     ) -> TravelPlan:
-        """
-        Receives a query, fans out to specialist agents, gathers results,
-        and returns a complete travel plan. This is the main entrypoint
-        for an external request.
+        """Receive a query, fan out to specialist agents, and gather results.
+
+        This is the main entrypoint for an external request that creates
+        a complete travel plan.
         """
         print(f"📋 Coordinator: Planning trip to {message.destination}")
 
@@ -213,16 +216,10 @@ async def setup_runtime() -> AgentRuntime:
 
 @step
 def run_autogen_agents(
-    query: str,
+    destination: str,
+    days: int,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the autogen multi-agent system and return results."""
-    # Parse destination and days from query string
-    # Format: "Plan a X-day trip to DESTINATION"
-    parts = query.split(" to ")
-    destination = parts[1] if len(parts) > 1 else "Unknown"
-    days_part = [w for w in query.split() if w.endswith("-day")][0]
-    days = int(days_part.replace("-day", ""))
-
     # Create TravelQuery for the agents
     travel_query = TravelQuery(destination=destination, days=days)
 
@@ -290,17 +287,14 @@ def format_travel_plan(
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def autogen_travel_pipeline() -> str:
+def agent_pipeline(destination: str = "Paris", days: int = 4) -> str:
     """ZenML pipeline that orchestrates the autogen multi-agent travel system.
 
     Returns:
         Formatted travel plan summary
     """
-    # External artifact for travel query
-    travel_query = ExternalArtifact(value="Plan a 4-day trip to Paris")
-
     # Run the autogen agents
-    plan_data = run_autogen_agents(travel_query)
+    plan_data = run_autogen_agents(destination=destination, days=days)
 
     # Format the results
     summary = format_travel_plan(plan_data)
@@ -310,6 +304,6 @@ def autogen_travel_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running autogen travel pipeline...")
-    run_result = autogen_travel_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

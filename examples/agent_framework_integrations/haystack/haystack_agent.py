@@ -1,5 +1,4 @@
-"""
-Minimal Haystack RAG pipeline for PanAgent.
+"""Minimal Haystack RAG pipeline for PanAgent.
 
 How it works
 ------------

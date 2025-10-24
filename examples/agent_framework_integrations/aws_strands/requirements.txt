@@ -1,3 +1,5 @@
 strands-agents[openai]>=1.0.0
 strands-agents-tools>=0.0.1
 zenml[local]
+jinja2>=3.1.0
+secure>=0.3.0

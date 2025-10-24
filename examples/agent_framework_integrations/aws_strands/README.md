@@ -1,6 +1,6 @@
-# Autogen + ZenML
+# AWS Strands + ZenML
 
-Multi-agent conversation framework integrated with ZenML for travel planning with collaborative agents.
+AWS Strands agent framework integrated with ZenML for mathematical calculations and problem solving.
 
 ## 🚀 Quick Run
 
@@ -28,21 +28,21 @@ Deploy this agent as a real-time HTTP service:
 
 ```bash
 # Deploy the pipeline as an HTTP service
-zenml pipeline deploy run.agent_pipeline --name autogen-agent
+zenml pipeline deploy run.agent_pipeline --name aws-strands-agent
 
 # Invoke via CLI
-zenml deployment invoke autogen-agent --destination="Tokyo" --days=3
+zenml deployment invoke aws-strands-agent --query="Calculate the square root of 144"
 
 # Invoke via HTTP API
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
-  -d '{"parameters": {"destination": "Tokyo", "days": 3}}'
+  -d '{"parameters": {"query": "What is 15 * 23?"}}'
 ```
 
 ## ✨ Features
 
-- **Multi-Agent Collaboration**: Weather specialist and travel advisor agents
-- **Async Runtime Management**: Proper agent lifecycle with cleanup
-- **Travel Planning**: Comprehensive itinerary generation with weather integration
+- **Mathematical Calculations**: Built-in arithmetic and advanced math operations
+- **Tool Integration**: Uses `@tool` decorator for seamless function calling
+- **Simple Agent Interface**: Straightforward callable interface for easy integration
 - **Real-time Deployment**: Deploy as HTTP API for instant responses
 - **ZenML Orchestration**: Full pipeline tracking and artifact management

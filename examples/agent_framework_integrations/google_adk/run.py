@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 
 from google.adk.agents import Agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 
@@ -153,25 +153,21 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def google_adk_agent_pipeline() -> str:
+def agent_pipeline(
+    query: str = "What's the weather in Paris and the current time in Europe/Paris?",
+) -> str:
     """ZenML pipeline orchestrating the Google ADK agent end-to-end.
 
     Returns:
         A formatted string summarizing the agent response.
     """
-    # Using an ExternalArtifact models real-world usage where queries come
-    # from outside the pipeline (batch files, triggers, or other systems).
-    agent_query = ExternalArtifact(
-        value="What's the weather in Paris and the current time in Europe/Paris?"
-    )
-
-    results = run_google_adk_agent(agent_query)
+    results = run_google_adk_agent(query=query)
     summary = format_google_adk_response(results)
     return summary
 
 
 if __name__ == "__main__":
     print("🚀 Running Google ADK (Gemini) agent pipeline...")
-    _ = google_adk_agent_pipeline()
+    _ = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

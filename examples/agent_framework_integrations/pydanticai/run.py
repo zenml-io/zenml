@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from pydanticai_agent import agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -71,17 +71,14 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def pydanticai_agent_pipeline() -> str:
+def agent_pipeline(query: str = "What is the secret data?") -> str:
     """ZenML pipeline that orchestrates the PydanticAI agent.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(value="What is the secret data?")
-
     # Run the PydanticAI agent
-    agent_results = run_pydanticai_agent(agent_query)
+    agent_results = run_pydanticai_agent(query=query)
 
     # Format the results
     summary = format_pydanticai_response(agent_results)
@@ -91,6 +88,6 @@ def pydanticai_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running PydanticAI pipeline...")
-    run_result = pydanticai_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")
