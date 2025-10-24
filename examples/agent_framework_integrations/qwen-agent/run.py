@@ -7,7 +7,7 @@ for orchestration and artifact management.
 import os
 from typing import Annotated, Any, Dict
 
-from qwen_agent import agent
+from qwen_agent_impl import agent  # Use the local agent implementation
 
 from zenml import ExternalArtifact, pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
@@ -27,18 +27,20 @@ def run_qwen_agent(
 ) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the Qwen-Agent with the given query."""
     try:
-        # Run the agent with the query
-        response = agent.run([{"role": "user", "content": query}])
+        messages = [{"role": "user", "content": query}]
+        last_batch: list[Any] = []
+        for batch in agent.run(messages=messages):
+            # run() yields incremental message lists; keep the latest for the final assistant output
+            last_batch = batch
 
-        # Extract the response content
-        if isinstance(response, list) and len(response) > 0:
-            result_content = response[-1].get("content", str(response))
-        else:
-            result_content = str(response)
+        final_text = ""
+        if last_batch:
+            last_msg = last_batch[-1]
+            final_text = last_msg.get("content", str(last_msg)) if isinstance(last_msg, dict) else str(last_msg)
 
         return {
             "query": query,
-            "response": result_content,
+            "response": final_text,
             "status": "success",
         }
     except Exception as e:

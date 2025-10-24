@@ -4,8 +4,9 @@ This module demonstrates how to create a Qwen-Agent with custom tools
 for use in ZenML pipelines.
 """
 
-from qwen_agent.agents import Agent
-from qwen_agent.llm import get_chat_model
+import os
+import json5
+from qwen_agent.agents import Assistant
 from qwen_agent.tools.base import BaseTool, register_tool
 
 
@@ -36,41 +37,47 @@ class Calculator(BaseTool):
         },
     ]
 
-    def call(self, params: dict, **kwargs) -> str:
-        """Execute the calculator operation."""
-        operation = params.get("operation")
-        a = float(params.get("a", 0))
-        b = float(params.get("b", 0))
+    def call(self, params: str, **kwargs) -> str:
+        # Qwen-Agent passes tool arguments as a JSON string; json5 allows mild deviations the LLM may produce.
+        data = json5.loads(params)
+        operation = data.get("operation")
+        a = float(data.get("a", 0))
+        b = float(data.get("b", 0))
 
-        operations = {
+        if operation == "divide" and b == 0:
+            return "Error: Division by zero"
+
+        ops = {
             "add": lambda x, y: x + y,
             "subtract": lambda x, y: x - y,
             "multiply": lambda x, y: x * y,
-            "divide": lambda x, y: x / y
-            if y != 0
-            else "Error: Division by zero",
+            "divide": lambda x, y: x / y,
         }
-
-        if operation not in operations:
+        if operation not in ops:
             return f"Error: Unknown operation '{operation}'"
 
-        result = operations[operation](a, b)
-        return f"Result: {result}"
+        result = ops[operation](a, b)
+        return str(result)
 
 
 # Initialize the LLM - uses OpenAI API by default
-# You can also use DashScope or other compatible endpoints
-llm = get_chat_model(
-    {
-        "model": "gpt-4o-mini",  # Using OpenAI model
-        "model_server": "openai",  # Or "dashscope" for Qwen models
-    }
+llm_cfg = {
+    "model": "gpt-4o-mini",
+    # Explicit OpenAI base URL ensures consistent behavior across environments
+    "model_server": "https://api.openai.com/v1",
+    "api_key": os.environ.get("OPENAI_API_KEY"),
+    "generate_cfg": {
+        # You can add generation params here, e.g., "top_p": 0.8
+    },
+}
+
+system_instruction = (
+    "You are a helpful math assistant. Use the 'calculator' tool to perform arithmetic. "
+    "Respond with only the final numeric result unless the user requests detailed steps."
 )
 
-# Create the agent with the calculator tool
-agent = Agent(
-    llm=llm,
-    name="MathAssistant",
-    description="An agent that can perform mathematical calculations",
+agent = Assistant(
+    llm=llm_cfg,
+    system_message=system_instruction,
     function_list=["calculator"],
 )
