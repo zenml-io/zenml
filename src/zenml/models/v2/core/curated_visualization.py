@@ -128,7 +128,7 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
             "Identifier of the artifact visualization that is curated for this resource."
         ),
     )
-    artifact_version_id: Optional[UUID] = Field(
+    artifact_version_id: UUID = Field(
         default=None,
         title="The artifact version ID.",
         description=(
@@ -208,7 +208,7 @@ class CuratedVisualizationResponse(
         return self.get_body().artifact_visualization_id
 
     @property
-    def artifact_version_id(self) -> Optional[UUID]:
+    def artifact_version_id(self) -> UUID:
         """The artifact version ID.
 
         Returns:

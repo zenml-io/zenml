@@ -34,7 +34,6 @@ from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
-    build_index,
 )
 from zenml.zen_stores.schemas.utils import jl_arg
 
@@ -49,7 +48,6 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
 
     __tablename__ = "curated_visualization"
     __table_args__ = (
-        build_index(__tablename__, ["artifact_visualization_id"]),
         UniqueConstraint(
             "artifact_visualization_id",
             "resource_id",
@@ -73,6 +71,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
+        custom_constraint_name="fk_curated_visualization_artifact_visualization_id",
     )
 
     display_name: Optional[str] = Field(default=None)
@@ -188,11 +187,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         except ValueError:
             resource_type_enum = VisualizationResourceTypes.PROJECT
 
-        artifact_version_id: Optional[UUID] = None
-        if self.artifact_visualization is not None:
-            artifact_version_id = (
-                self.artifact_visualization.artifact_version_id
-            )
+        artifact_version_id = self.artifact_visualization.artifact_version_id
 
         body = CuratedVisualizationResponseBody(
             project_id=self.project_id,
