@@ -232,7 +232,7 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
 
             model_values[k] = new_value
 
-        return cast(V, type(value).model_validate(model_values))
+        return cast(V, type(value).model_validate(model_values))  # type: ignore[redundant-cast]
     elif isinstance(value, Dict):
         return cast(
             V, {substitute_(k): substitute_(v) for k, v in value.items()}

@@ -26,7 +26,6 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
-from zenml.deployers.server import runtime
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
@@ -424,6 +423,8 @@ class StepLauncher:
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
         """
+        from zenml.deployers.server import runtime
+
         step_run_info = StepRunInfo(
             config=self._step.config,
             pipeline=self._snapshot.pipeline_configuration,

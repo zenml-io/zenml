@@ -15,7 +15,7 @@
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -39,6 +39,10 @@ class BuildConfiguration(BaseModel):
         step_name: Name of the step for which this image will be built.
         entrypoint: Optional entrypoint for the image.
         extra_files: Extra files to include in the Docker image.
+        extra_requirements_files: Extra requirements to install in the
+            Docker image. Each key is the name of a Python requirements file to
+            be created and the value is the list of requirements to be
+            installed.
     """
 
     key: str
@@ -46,6 +50,7 @@ class BuildConfiguration(BaseModel):
     step_name: Optional[str] = None
     entrypoint: Optional[str] = None
     extra_files: Dict[str, str] = {}
+    extra_requirements_files: Dict[str, List[str]] = {}
 
     def compute_settings_checksum(
         self,
@@ -73,6 +78,7 @@ class BuildConfiguration(BaseModel):
             default=json_utils.pydantic_encoder,
         )
         hash_.update(settings_json.encode())
+
         if self.entrypoint:
             hash_.update(self.entrypoint.encode())
 
@@ -93,6 +99,7 @@ class BuildConfiguration(BaseModel):
                 stack=stack,
                 code_repository=code_repository if pass_code_repo else None,
                 log=False,
+                extra_requirements_files=self.extra_requirements_files,
             )
         )
         for _, requirements, _ in requirements_files:

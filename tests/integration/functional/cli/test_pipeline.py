@@ -482,3 +482,16 @@ def test_pipeline_build_delete(clean_client: "Client"):
 
     # this now fails because the build doesn't exist anymore
     assert runner.invoke(delete_command, [str(build_id), "-y"]).exit_code == 1
+
+
+def test_pipeline_snapshot_delete(clean_client: "Client"):
+    """Test that `zenml pipeline snapshots delete` works as expected."""
+    snapshot_id = pipeline_instance.create_snapshot(name="test_snapshot").id
+    runner = CliRunner()
+    delete_command = (
+        cli.commands["pipeline"].commands["snapshot"].commands["delete"]
+    )
+    result = runner.invoke(delete_command, [str(snapshot_id), "-y"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_client.get_snapshot(str(snapshot_id))

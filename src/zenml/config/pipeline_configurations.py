@@ -20,7 +20,11 @@ from uuid import UUID
 from pydantic import SerializeAsAny, field_validator
 
 from zenml.config.cache_policy import CachePolicyWithValidator
-from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.constants import (
+    DEPLOYMENT_SETTINGS_KEY,
+    DOCKER_SETTINGS_KEY,
+    RESOURCE_SETTINGS_KEY,
+)
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
@@ -30,7 +34,11 @@ from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.config import DockerSettings, ResourceSettings
+    from zenml.config import (
+        DeploymentSettings,
+        DockerSettings,
+        ResourceSettings,
+    )
 
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 
@@ -145,3 +153,20 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         if isinstance(model_or_dict, BaseSettings):
             model_or_dict = model_or_dict.model_dump()
         return ResourceSettings.model_validate(model_or_dict)
+
+    @property
+    def deployment_settings(self) -> "DeploymentSettings":
+        """Deployment settings of this pipeline configuration.
+
+        Returns:
+            The deployment settings of this pipeline configuration.
+        """
+        from zenml.config import DeploymentSettings
+
+        model_or_dict: SettingsOrDict = self.settings.get(
+            DEPLOYMENT_SETTINGS_KEY, {}
+        )
+
+        if isinstance(model_or_dict, BaseSettings):
+            model_or_dict = model_or_dict.model_dump()
+        return DeploymentSettings.model_validate(model_or_dict)

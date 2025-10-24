@@ -135,11 +135,12 @@ This approach allows you to use different components for different steps in your
 
 ## Types of Settings
 
-Settings in ZenML are categorized into two main types:
+Settings in ZenML are categorized into three main types:
 
 * **General settings** that can be used on all ZenML pipelines:
   * `DockerSettings` for container configuration
   * `ResourceSettings` for CPU, memory, and GPU allocation
+  * `DeploymentSettings` for pipeline deployment configuration - can only be set at the pipeline level
 
 * **Stack-component-specific settings** for configuring behaviors of components in your stack:
   * These use the pattern `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` as keys
@@ -185,7 +186,7 @@ simple_ml_pipeline.configuration.settings["resources"]
 
 ### Resource Settings
 
-Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps:
+Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps.
 
 ```python
 from zenml.config import ResourceSettings
@@ -211,6 +212,28 @@ When both pipeline and step resource settings are specified, they are merged wit
 Note that `ResourceSettings` are not always applied by all orchestrators. The ability to enforce resource constraints depends on the specific orchestrator being used. Some orchestrators like Kubernetes fully support these settings, while others may ignore them. In order to learn more, read the [individual pages](https://docs.zenml.io/stacks/stack-components/orchestrators) of the orchestrator you are using.
 {% endhint %}
 
+Resource settings also allow you to configure scaling options - including minimum and maximum number of instances, and scaling policy - for your pipeline deployments, when used at the pipeline level:
+
+```python
+from zenml.config import ResourceSettings
+
+@pipeline(settings={"resources": ResourceSettings(
+  cpu_count=2,
+  memory="4GB",
+  min_replicas=0,
+  max_replicas=10,
+  max_concurrency=10
+)}) 
+def simple_llm_pipeline(parameter: int):
+    ...
+```
+
+
+{% hint style="info" %}
+Note that `ResourceSettings` are not always applied exactly as specified by all deployers. Some deployers fully support these settings, while others may adjust them automatically to match a set of predefined static values or simply ignore them. In order to learn more, read the [individual pages](https://docs.zenml.io/stacks/stack-components/deployers) of the deployer you are using.
+{% endhint %}
+
+
 ### Docker Settings
 
 Docker settings allow you to customize the containerization process:
@@ -226,6 +249,50 @@ def my_pipeline():
 ```
 
 For more detailed information on containerization options, see the [containerization guide](../containerization/containerization.md).
+
+### Deployment Settings
+
+Deployment settings allow you to customize the web server and ASGI application used to run your pipeline deployments. You can specify a range of options, including custom endpoints, middleware, extensions and even custom files used to serve an entire single-page application alongside your pipeline:
+
+```python
+from typing import Dict, Any
+import psutil
+from zenml.config import DeploymentSettings, EndpointSpec, EndpointMethod, SecureHeadersConfig
+from zenml import pipeline
+
+async def health_detailed() -> Dict[str, Any]:
+    return {
+        "status": "healthy",
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_percent": psutil.virtual_memory().percent,
+        "disk_percent": psutil.disk_usage("/").percent,
+    }
+
+@pipeline(settings={
+    "deployment": DeploymentSettings(
+      custom_endpoints=[
+          EndpointSpec(
+              path="/health",
+              method=EndpointMethod.GET,
+              handler=health_detailed,
+              auth_required=False,
+          ),
+      ],
+      secure_headers=SecureHeadersConfig(
+        csp=(
+            "default-src 'none'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline'"
+        ),
+      ),
+      dashboard_files_path="my/custom/ui",
+})
+def my_pipeline():
+    ...
+```
+
+For more detailed information on deployment options, see the [pipeline deployment guide](../deployment/deployment.md), particularly the [deployment settings](../deployment/deployment_settings.md) section.
 
 ## Stack Component Configuration
 
@@ -369,6 +436,57 @@ settings:
     cpu_count: Optional[PositiveFloat]
     gpu_count: Optional[NonNegativeInt]
     memory: Optional[ConstrainedStrValue]
+   deployment:
+     api_url_path: str
+     app_description: Union[str, NoneType]
+     app_extensions: Union[List[AppExtensionSpec], NoneType]
+     app_kwargs: Dict[str, Any]
+     app_title: Union[str, NoneType]
+     app_version: Union[str, NoneType]
+     cors:
+       allow_credentials: bool
+       allow_headers: List[str]
+       allow_methods: List[str]
+       allow_origins: List[str]
+     custom_endpoints: Union[List[EndpointSpec], NoneType]
+     custom_middlewares: Union[List[MiddlewareSpec], NoneType]
+     dashboard_files_path: Union[str, NoneType]
+     deployment_app_runner_flavor: Union[Annotated[SourceOrObject, BeforeValidator,
+       PlainSerializer], NoneType]
+     deployment_app_runner_kwargs: Dict[str, Any]
+     deployment_service_class: Union[Annotated[SourceOrObject, BeforeValidator, PlainSerializer],
+       NoneType]
+     deployment_service_kwargs: Dict[str, Any]
+     docs_url_path: str
+     health_url_path: str
+     include_default_endpoints: bool
+     include_default_middleware: bool
+     info_url_path: str
+     invoke_url_path: str
+     log_level: LoggingLevels
+     metrics_url_path: str
+     redoc_url_path: str
+     root_url_path: str
+     secure_headers:
+       cache: Union[bool, str]
+       content: Union[bool, str]
+       csp: Union[bool, str]
+       hsts: Union[bool, str]
+       permissions: Union[bool, str]
+       referrer: Union[bool, str]
+       server: Union[bool, str]
+       xfo: Union[bool, str]
+     shutdown_hook: Union[Annotated[SourceOrObject, BeforeValidator, PlainSerializer],
+       NoneType]
+     shutdown_hook_kwargs: Dict[str, Any]
+     startup_hook: Union[Annotated[SourceOrObject, BeforeValidator, PlainSerializer],
+       NoneType]
+     startup_hook_kwargs: Dict[str, Any]
+     thread_pool_size: int
+     uvicorn_host: str
+     uvicorn_kwargs: Dict[str, Any]
+     uvicorn_port: int
+     uvicorn_workers: int
 steps:
   load_data:
     enable_artifact_metadata: Optional[bool]

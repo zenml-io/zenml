@@ -15,9 +15,10 @@
 
 from typing import Any, List, Optional, Union
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from typing_extensions import Annotated
 
+from zenml.config.source import Source, SourceWithValidator
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -48,6 +49,56 @@ class CachePolicy(BaseModel):
         default=None,
         description="List of input names to ignore in the cache key.",
     )
+    file_dependencies: Optional[List[str]] = Field(
+        default=None,
+        description="List of file paths. The contents of theses files will be "
+        "included in the cache key. Only relative paths within the source root "
+        "are allowed.",
+    )
+    source_dependencies: Optional[List[SourceWithValidator]] = Field(
+        default=None,
+        description="List of Python objects (modules, classes, functions). "
+        "The source code of these objects will be included in the cache key.",
+    )
+    cache_func: Optional[SourceWithValidator] = Field(
+        default=None,
+        description="Function without arguments that returns a string. The "
+        "returned value will be included in the cache key.",
+    )
+    expires_after: Optional[int] = Field(
+        default=None,
+        description="The number of seconds after which the cached result by a "
+        "step with this cache policy will expire. If not set, the result "
+        "will never expire.",
+    )
+
+    @field_validator("source_dependencies", mode="before")
+    def _validate_source_dependencies(
+        cls, v: Optional[List[Any]]
+    ) -> Optional[List[Any]]:
+        from zenml.utils import source_utils
+
+        if v is None:
+            return None
+
+        result = []
+        for obj in v:
+            if isinstance(obj, (str, Source, dict)):
+                result.append(obj)
+            else:
+                result.append(source_utils.resolve(obj))
+        return result
+
+    @field_validator("cache_func", mode="before")
+    def _validate_cache_func(cls, v: Optional[Any]) -> Optional[Any]:
+        from zenml.utils import source_utils
+
+        if v is None or isinstance(v, (str, Source, dict)):
+            return v
+        elif callable(v):
+            return source_utils.resolve(v)
+        else:
+            raise ValueError(f"Invalid cache function: {v}")
 
     @classmethod
     def default(cls) -> "CachePolicy":

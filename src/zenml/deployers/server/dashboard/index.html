@@ -1042,7 +1042,7 @@
         </svg>
       </div>
       <div class="breadcrumbs">
-        <h1 class="breadcrumb-title" id="pipeline-name">{{ pipeline_name }}</h1>
+        <h1 class="breadcrumb-title" id="pipeline-name"></h1>
       </div>
       <div class="top-nav-right">
         <button class="nav-button" onclick="window.open('/docs', '_blank')">API Docs</button>
@@ -1058,7 +1058,7 @@
   <header class="deployment-header">
     <div class="deployment-header-content">
       <div class="deployment-header-left">
-        <h2 class="deployment-title" id="deployment-title">{{ pipeline_name }}</h2>
+        <h2 class="deployment-title" id="deployment-title"></h2>
         <div class="status-badge" id="status-badge">
           <span class="status-dot"></span>
           <span>Running</span>
@@ -1161,13 +1161,13 @@
   </main>
 
   <script>
-    let SERVICE_INFO_BOOT = null;
+    let serviceInfo = null;
     try {
-      SERVICE_INFO_BOOT = {{ service_info_json }};
+      serviceInfo = JSON.parse({{ service_info_json | tojson}});
     } catch (e) {
-      console.warn('No boot service info');
+      console.error('Failed to parse service info: ', e);
     }
-
+    
     let currentInputMode = 'form';
     let currentOutputMode = 'preview';
     let lastResult = null;
@@ -1494,22 +1494,13 @@
       }
     }
 
-    async function loadPipelineInfo(info) {
-      if (!info) {
-        try {
-          info = await getJSON('/info');
-        } catch (e) {
-          console.warn('Info fetch failed', e);
-          return;
-        }
-      }
-      
-      if (info && info.pipeline) {
-        const pipelineName = info.pipeline.name || '{{ pipeline_name }}';
+    async function loadPipelineInfo() {
+      if (serviceInfo && serviceInfo.pipeline) {
+        const pipelineName = serviceInfo.pipeline.name;
         document.getElementById('pipeline-name').textContent = pipelineName;
         document.getElementById('deployment-title').textContent = pipelineName;
         
-        buildFormFields(info.pipeline.input_schema || {});
+        buildFormFields(serviceInfo.pipeline.input_schema);
         
         // Initialize JSON view with default values
         syncFormToJson();
@@ -1711,7 +1702,7 @@
         document.getElementById('run-btn').textContent = 'Running...';
         
         const params = collectFormData();
-        const result = await postJSON('/invoke', { parameters: params, timeout: 300 });
+        const result = await postJSON(serviceInfo.app.invoke_url_path, { parameters: params, timeout: 300 });
 
         lastResult = result;
         displayOutput(result);
@@ -1726,7 +1717,7 @@
     // Event Listeners
     document.getElementById('run-btn').addEventListener('click', runPipeline);
     document.getElementById('reset-btn').addEventListener('click', () => {
-      loadPipelineInfo(SERVICE_INFO_BOOT);
+      loadPipelineInfo();
     });
     
     document.getElementById('rerun-btn').addEventListener('click', runPipeline);
@@ -1779,7 +1770,7 @@
     });
 
     // Initialize
-    loadPipelineInfo(SERVICE_INFO_BOOT);
+    loadPipelineInfo();
   </script>
 </body>
 </html>

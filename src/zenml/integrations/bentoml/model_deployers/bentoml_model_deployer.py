@@ -142,11 +142,11 @@ class BentoMLModelDeployer(BaseModelDeployer):
             )
 
         predictions_apis_urls = ""
-        if service_instance.prediction_apis_urls is not None:  # type: ignore
+        if service_instance.prediction_apis_urls is not None:
             predictions_apis_urls = ", ".join(
                 [
                     api
-                    for api in service_instance.prediction_apis_urls  # type: ignore
+                    for api in service_instance.prediction_apis_urls
                     if api is not None
                 ]
             )
