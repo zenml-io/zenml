@@ -62,7 +62,13 @@ transition period, but new investments will focus on pipeline deployments.
 
 ## How Deployments Work
 
-To deploy a pipeline or snapshot, a **Deployer** stack component needs to be in your active stack:
+To deploy a pipeline or snapshot, a **Deployer** stack component needs to be in your active stack. You can use the default stack, which has a default local deployer that will deploy the pipeline directly on your local machine as a background process:
+
+```bash
+zenml stack set default
+```
+
+or set up a new stack with a deployer in it:
 
 ```bash
 zenml deployer register <DEPLOYER-NAME> --flavor=<DEPLOYER-FLAVOR>

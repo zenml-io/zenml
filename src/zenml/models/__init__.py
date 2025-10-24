@@ -112,6 +112,7 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponse,
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
+    ArtifactVisualizationResponseResources,
 )
 from zenml.models.v2.core.service import (
     ServiceResponse,
@@ -163,6 +164,14 @@ from zenml.models.v2.core.deployment import (
     DeploymentResponseBody,
     DeploymentResponseMetadata,
     DeploymentResponseResources,
+)
+from zenml.models.v2.core.curated_visualization import (
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationResponseBody,
+    CuratedVisualizationResponseMetadata,
+    CuratedVisualizationResponseResources,
+    CuratedVisualizationUpdate,
 )
 from zenml.models.v2.core.device import (
     OAuthDeviceUpdate,
@@ -473,6 +482,10 @@ ArtifactVersionRequest.model_rebuild()
 ArtifactVersionResponseBody.model_rebuild()
 ArtifactVersionResponseMetadata.model_rebuild()
 ArtifactVersionResponseResources.model_rebuild()
+ArtifactVisualizationResponse.model_rebuild()
+ArtifactVisualizationResponseBody.model_rebuild()
+ArtifactVisualizationResponseMetadata.model_rebuild()
+ArtifactVisualizationResponseResources.model_rebuild()
 CodeReferenceResponseBody.model_rebuild()
 CodeRepositoryResponseBody.model_rebuild()
 CodeRepositoryResponseMetadata.model_rebuild()
@@ -484,6 +497,10 @@ DeploymentRequest.model_rebuild()
 DeploymentResponseBody.model_rebuild()
 DeploymentResponseMetadata.model_rebuild()
 DeploymentResponseResources.model_rebuild()
+CuratedVisualizationResponseBody.model_rebuild()
+CuratedVisualizationResponseMetadata.model_rebuild()
+CuratedVisualizationResponseResources.model_rebuild()
+CuratedVisualizationResponse.model_rebuild()
 EventSourceResponseBody.model_rebuild()
 EventSourceResponseMetadata.model_rebuild()
 EventSourceResponseResources.model_rebuild()
@@ -630,6 +647,7 @@ __all__ = [
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",
     "ArtifactVisualizationResponseMetadata",
+    "ArtifactVisualizationResponseResources",
     "CodeReferenceRequest",
     "CodeReferenceResponse",
     "CodeReferenceResponseBody",
@@ -659,6 +677,12 @@ __all__ = [
     "DeploymentResponseBody",
     "DeploymentResponseMetadata",
     "DeploymentResponseResources",
+    "CuratedVisualizationRequest",
+    "CuratedVisualizationResponse",
+    "CuratedVisualizationResponseBody",
+    "CuratedVisualizationResponseMetadata",
+    "CuratedVisualizationResponseResources",
+    "CuratedVisualizationUpdate",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
