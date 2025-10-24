@@ -1,8 +1,8 @@
-"""add visualisations [24552f3be1f2].
+"""add visualisations [7e1e18dced05].
 
-Revision ID: 24552f3be1f2
-Revises: 124b57b8c7b1
-Create Date: 2025-10-24 07:56:57.575675
+Revision ID: 7e1e18dced05
+Revises: 279d55228d28
+Create Date: 2025-10-24 12:50:15.806193
 
 """
 
@@ -11,8 +11,8 @@ import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "24552f3be1f2"
-down_revision = "124b57b8c7b1"
+revision = "7e1e18dced05"
+down_revision = "279d55228d28"
 branch_labels = None
 depends_on = None
 
@@ -62,7 +62,6 @@ def upgrade() -> None:
             name="unique_curated_visualization_resource_link",
         ),
     )
-
     # ### end Alembic commands ###
 
 
