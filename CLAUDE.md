@@ -12,6 +12,16 @@ This document provides guidance for Claude Code when working with the ZenML code
 
 Use filesystem navigation tools to explore the codebase structure as needed.
 
+## Use ZenML Docs via MCP
+Claude Code can query ZenML documentation via the built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. This enables real-time, source-of-truth lookups from the docs while you code, reducing hallucinations and speeding up feature discovery.
+
+Quick setup (CLI):
+```bash
+claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
+```
+
+Note: The MCP server indexes the latest released docs, not the develop branch. For full setup details and editor alternatives, see docs/book/reference/llms-txt.md.
+
 ## Code Style & Quality Standards
 
 ### Formatting and Linting
