@@ -1,0 +1,2 @@
+semantic-kernel>=1.34.0
+zenml[local]

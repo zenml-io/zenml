@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from haystack_agent import pipeline as haystack_pipeline
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -88,19 +88,16 @@ Answer:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def haystack_rag_pipeline() -> str:
+def agent_pipeline(
+    question: str = "What city is home to the Eiffel Tower?",
+) -> str:
     """ZenML pipeline that orchestrates the Haystack RAG system.
 
     Returns:
         Formatted RAG response
     """
-    # External artifact for RAG query
-    rag_query = ExternalArtifact(
-        value="What city is home to the Eiffel Tower?"
-    )
-
     # Run the Haystack RAG pipeline
-    rag_results = run_haystack_rag(rag_query)
+    rag_results = run_haystack_rag(question=question)
 
     # Format the results
     summary = format_rag_response(rag_results)
@@ -110,6 +107,6 @@ def haystack_rag_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running Haystack RAG pipeline...")
-    run_result = haystack_rag_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

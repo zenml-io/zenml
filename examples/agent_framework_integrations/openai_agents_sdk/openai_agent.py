@@ -1,20 +1,36 @@
-from agents import Agent
+"""OpenAI Agents SDK example for PanAgent."""
+
+from openai import OpenAI
+
+# Create client
+client = OpenAI()
 
 
-def get_city_info(city: str) -> str:
-    """Provides a fun fact about a given city."""
-    if "paris" in city.lower():
-        return "Paris is known as the 'City of Light'."
-    elif "tokyo" in city.lower():
-        return "Tokyo is the most populous metropolitan area in the world."
-    else:
-        return f"Sorry, I don't have a fun fact for {city}."
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return f"It's always sunny in {city}!"
 
 
-# PanAgent's adapter will discover this 'agent' variable by convention.
-agent = Agent(
-    name="FactBot",
-    instructions="You are a helpful assistant that provides fun facts about cities using your tools.",
-    tools=[get_city_info],
-    # model="gpt-5-nano" # The SDK defaults to a suitable model.
-)
+# Define the agent
+agent_config = {
+    "model": "gpt-5-nano",
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "description": "Get weather for a given city",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "city": {
+                            "type": "string",
+                            "description": "The city name",
+                        }
+                    },
+                    "required": ["city"],
+                },
+            },
+        }
+    ],
+}

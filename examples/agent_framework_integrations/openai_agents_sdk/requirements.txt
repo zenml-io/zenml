@@ -1,2 +1,2 @@
-openai-agents>=0.1.0
+openai-agents>=0.4.1
 zenml[local]

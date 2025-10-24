@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from openai_agent import agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -75,17 +75,14 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def openai_agent_pipeline() -> str:
+def agent_pipeline(query: str = "Tell me a fun fact about Tokyo") -> str:
     """ZenML pipeline that orchestrates the OpenAI Agents SDK.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(value="Tell me a fun fact about Tokyo")
-
     # Run the OpenAI Agents SDK agent
-    agent_results = run_openai_agent(agent_query)
+    agent_results = run_openai_agent(query=query)
 
     # Format the results
     summary = format_openai_response(agent_results)
@@ -95,6 +92,6 @@ def openai_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running OpenAI Agents SDK pipeline...")
-    run_result = openai_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")
