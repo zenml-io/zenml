@@ -1,6 +1,6 @@
 apiVersion: v2
 name: zenml
-version: "0.90.0"
+version: "0.91.0"
 description: "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 keywords:
 - mlops
