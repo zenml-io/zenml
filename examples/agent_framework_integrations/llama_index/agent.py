@@ -14,5 +14,5 @@ def get_weather(city: str) -> str:
 weather_tool = FunctionTool.from_defaults(fn=get_weather)
 
 # Create the agent
-llm = OpenAI(model="gpt-5-nano")
-agent = ReActAgent.from_tools([weather_tool], llm=llm, verbose=True)
+llm = OpenAI(model="gpt-4o-mini")
+agent = ReActAgent(tools=[weather_tool], llm=llm, verbose=True)

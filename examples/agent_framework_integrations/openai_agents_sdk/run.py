@@ -25,11 +25,35 @@ docker_settings = DockerSettings(
 def run_openai_agent(query: str) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the OpenAI Agents SDK agent and return results."""
     try:
-        import agents
+        import asyncio
 
-        # Use the default agent runner to execute the agent
-        runner = agents.run.DEFAULT_AGENT_RUNNER
-        result = runner.run_sync(agent, query)
+        from agents import Runner
+
+        # Handle event loop properly in threaded environment
+        try:
+            # Try to get the current event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If there's already a running loop, create a new thread
+                import concurrent.futures
+
+                def run_in_new_loop():
+                    new_loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(new_loop)
+                    try:
+                        return Runner.run_sync(agent, query)
+                    finally:
+                        new_loop.close()
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(run_in_new_loop)
+                    result = future.result()
+            else:
+                # No running loop, can use run_sync directly
+                result = Runner.run_sync(agent, query)
+        except RuntimeError:
+            # No event loop exists, can use run_sync directly
+            result = Runner.run_sync(agent, query)
 
         # Extract the final output
         response = result.final_output

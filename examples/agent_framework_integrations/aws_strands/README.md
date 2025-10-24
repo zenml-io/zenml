@@ -1,8 +1,9 @@
 # AWS Strands + ZenML
 
-AWS Strands agent framework integrated with ZenML.
+AWS Strands agent framework integrated with ZenML for mathematical calculations and problem solving.
 
-## Run
+## 🚀 Quick Run
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 uv venv --python 3.11
@@ -11,7 +12,27 @@ uv pip install -r requirements.txt
 python run.py
 ```
 
-## Features
-- Simple agent execution with callable interface
-- Built-in tools using `@tool` decorator
-- Math calculation capabilities
+## 🌐 Pipeline Deployment
+
+Deploy this agent as a real-time HTTP service:
+
+```bash
+# Deploy the pipeline as an HTTP service
+zenml pipeline deploy agent_pipeline --name aws-strands-service
+
+# Invoke via CLI
+zenml deployment invoke aws-strands-service --query="Calculate the square root of 144"
+
+# Invoke via HTTP API
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"query": "What is 15 * 23?"}}'
+```
+
+## ✨ Features
+
+- **Mathematical Calculations**: Built-in arithmetic and advanced math operations
+- **Tool Integration**: Uses `@tool` decorator for seamless function calling
+- **Simple Agent Interface**: Straightforward callable interface for easy integration
+- **Real-time Deployment**: Deploy as HTTP API for instant responses
+- **ZenML Orchestration**: Full pipeline tracking and artifact management

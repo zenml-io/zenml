@@ -19,6 +19,10 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",  # relative to the pipeline directory
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        # Set home directory to a writable location for CrewAI storage
+        "HOME": "/tmp",
+        # Alternative: override the specific appdirs behavior
+        "XDG_DATA_HOME": "/tmp/.local/share",
     },
 )
 

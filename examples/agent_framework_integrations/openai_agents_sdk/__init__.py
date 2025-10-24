@@ -13,3 +13,6 @@
 # permissions and limitations under the License.
 """OpenAI Agents SDK example."""
 
+from openai_agent import agent
+
+__all__ = ["agent"]
