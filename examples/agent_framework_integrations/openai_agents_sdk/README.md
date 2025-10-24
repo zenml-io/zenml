@@ -1,10 +1,9 @@
 # OpenAI Agents SDK + ZenML
 
-This example demonstrates how to integrate the OpenAI Agents SDK with ZenML for building and orchestrating AI agents with function tools.
+OpenAI Agents SDK integrated with ZenML for structured agent execution and function calling.
 
-## Setup
+## 🚀 Quick Run
 
-1. **Install dependencies:**
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 uv venv --python 3.11
@@ -12,12 +11,13 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-2. **Run the standalone example:**
+Initialize ZenML and login:
 ```bash
-python example_usage.py
+zenml init
+zenml login
 ```
 
-3. **Run the ZenML pipeline:**
+Run the pipeline:
 ```bash
 python run.py
 ```
@@ -28,45 +28,21 @@ Deploy this agent as a real-time HTTP service:
 
 ```bash
 # Deploy the pipeline as an HTTP service
-zenml pipeline deploy agent_pipeline --name openai-agents-service
+zenml pipeline deploy run.agent_pipeline --name openai-agents-agent
 
 # Invoke via CLI
-zenml deployment invoke openai-agents-service --query="Tell me a fun fact about Tokyo"
+zenml deployment invoke openai-agents-agent --query="Tell me a fun fact about Tokyo"
 
 # Invoke via HTTP API
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
-  -d '{"parameters": {"query": "What'\''s the weather in Paris and tell me about the city?"}}'
+  -d '{"parameters": {"query": "What are some interesting facts about space exploration?"}}'
 ```
 
 ## ✨ Features
 
-- **Function Tools**: Custom Python functions decorated with `@function_tool` for agent capabilities
-- **GPT-4o Mini Model**: Uses the efficient GPT-4o Mini model for cost-effective operations
-- **ZenML Integration**: Full pipeline orchestration with artifact tracking and monitoring
-- **Error Handling**: Robust error handling and logging for production use
-
-## Agent Capabilities
-
-The agent includes two function tools:
-
-- `get_weather(city: str)`: Returns weather information for a specified city
-- `get_city_info(city: str)`: Provides general facts and information about cities
-
-## Code Structure
-
-- `openai_agent.py`: Contains the agent definition with function tools
-- `run.py`: ZenML pipeline for orchestrated execution
-- `example_usage.py`: Standalone example for direct agent usage
-- `requirements.txt`: Dependencies including `openai-agents>=0.4.1`
-
-## Usage Example
-
-```python
-from agents import Runner
-from openai_agent import agent
-
-# Run the agent with a query
-result = Runner.run_sync(agent, "What's the weather like in Tokyo?")
-print(result.final_output)
-```
+- **OpenAI Agents SDK**: Official SDK for structured agent execution
+- **Function Tools**: Built-in tools with `@function_tool` decorator
+- **Tracing & Monitoring**: Comprehensive execution tracking
+- **Real-time Deployment**: Deploy as HTTP API for instant responses
+- **ZenML Orchestration**: Full pipeline tracking and artifact management
