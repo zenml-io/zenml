@@ -3,6 +3,11 @@ description: Create and run pipeline snapshots.
 icon: print
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Pipeline Snapshots
 
 A **Pipeline Snapshot** is an immutable snapshot of your pipeline that includes the pipeline DAG, code, configuration, and container images. Snapshots can be run from the SDK, CLI, ZenML dashboard or via a REST API. Additionally, snapshots can also be [deployed](../deployment/deployment.md).
