@@ -49,6 +49,14 @@ function initDashboard() {
 
   // Attach event listeners
   attachEventListeners();
+  
+  // Update auth status display
+  updateAuthStatus();
+  
+  // If auth is enabled and no token is set, prompt user
+  if (serviceConfig?.deployment?.auth_enabled && !loadAuthToken()) {
+    setTimeout(() => promptForToken(), 500);
+  }
 }
 
 /* ============================================================================
@@ -93,6 +101,144 @@ function applyAuthHeaders(headers = {}) {
   return { ...headers, ...authHeaders() };
 }
 
+/**
+ * Prompt user to enter API key
+ */
+function promptForToken() {
+  showApiKeyModal();
+}
+
+/**
+ * Update auth status badge
+ */
+function updateAuthStatus() {
+  const authStatusBadge = document.getElementById('auth-status-badge');
+  const authStatusText = document.getElementById('auth-status-text');
+  const setApiKeyBtn = document.getElementById('set-api-key-btn');
+  
+  if (!authStatusBadge) return;
+  
+  const hasToken = !!loadAuthToken();
+  
+  if (hasToken) {
+    authStatusText.textContent = 'Authenticated';
+    authStatusBadge.style.background = 'var(--color-success-50)';
+    authStatusBadge.style.borderColor = 'var(--color-success-200)';
+    authStatusBadge.style.color = 'var(--color-success-800)';
+    if (setApiKeyBtn) {
+      setApiKeyBtn.textContent = 'Update API Key';
+    }
+  } else {
+    authStatusText.textContent = 'Auth Required';
+    authStatusBadge.style.background = 'var(--color-primary-25)';
+    authStatusBadge.style.borderColor = 'var(--button-border-primary-disabled)';
+    authStatusBadge.style.color = 'var(--text-brand)';
+    if (setApiKeyBtn) {
+      setApiKeyBtn.textContent = 'Set API Key';
+    }
+  }
+}
+
+/**
+ * Show modal for entering API key
+ */
+function showApiKeyModal() {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  
+  const header = document.createElement('div');
+  header.className = 'modal-header';
+  
+  const title = document.createElement('h3');
+  title.className = 'modal-title';
+  title.textContent = 'API Key Required';
+  
+  const description = document.createElement('p');
+  description.className = 'modal-description';
+  description.textContent = 'This deployment requires authentication. Please enter your API key to continue.';
+  
+  header.appendChild(title);
+  header.appendChild(description);
+  
+  const content = document.createElement('div');
+  content.className = 'modal-content';
+  
+  const inputField = document.createElement('div');
+  inputField.className = 'form-field';
+  
+  const label = document.createElement('div');
+  label.className = 'field-label';
+  
+  const labelText = document.createElement('span');
+  labelText.className = 'field-name';
+  labelText.textContent = 'API Key';
+  label.appendChild(labelText);
+  
+  const input = document.createElement('input');
+  input.type = 'password';
+  input.className = 'text-input';
+  input.id = 'api-key-input';
+  input.placeholder = 'Enter your API key';
+  input.value = loadAuthToken() || '';
+  
+  inputField.appendChild(label);
+  inputField.appendChild(input);
+  content.appendChild(inputField);
+  
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-secondary';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = () => {
+    document.body.removeChild(overlay);
+  };
+  
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn-primary';
+  saveBtn.textContent = 'Save';
+  saveBtn.onclick = () => {
+    const token = input.value.trim();
+    if (token) {
+      saveAuthToken(token);
+      updateAuthStatus();
+      document.body.removeChild(overlay);
+    } else {
+      alert('Please enter an API key');
+    }
+  };
+  
+  footer.appendChild(cancelBtn);
+  footer.appendChild(saveBtn);
+  
+  modal.appendChild(header);
+  modal.appendChild(content);
+  modal.appendChild(footer);
+  overlay.appendChild(modal);
+  
+  // Close on overlay click
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      document.body.removeChild(overlay);
+    }
+  };
+  
+  // Submit on Enter key
+  input.onkeypress = (e) => {
+    if (e.key === 'Enter') {
+      saveBtn.click();
+    }
+  };
+  
+  document.body.appendChild(overlay);
+  setTimeout(() => input.focus(), 100);
+}
+
 /* ============================================================================
    API Utilities
    ========================================================================= */
@@ -128,6 +274,11 @@ async function postJSON(url, body) {
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
+    // If auth error, prompt for token
+    if (res.status === 401) {
+      promptForToken();
+      throw new Error('Authorization required. Please set your API key.');
+    }
     throw new Error((json && json.detail) ? json.detail : ('HTTP ' + res.status));
   }
   return json;
@@ -871,6 +1022,14 @@ function attachEventListeners() {
   const rerunBtn = document.getElementById('rerun-btn');
   if (rerunBtn) {
     rerunBtn.addEventListener('click', runPipeline);
+  }
+  
+  // Set API Key button
+  const setApiKeyBtn = document.getElementById('set-api-key-btn');
+  if (setApiKeyBtn) {
+    setApiKeyBtn.addEventListener('click', () => {
+      showApiKeyModal();
+    });
   }
   
   // Clear output button (formerly "delete")
