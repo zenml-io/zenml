@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
-from zenml.logger import get_logger
+from zenml.logger import get_logger, simple_warning_format
 from zenml.utils import deprecation_utils
 from zenml.utils.pydantic_utils import before_validator_handler
 
@@ -400,6 +400,38 @@ class DockerSettings(BaseSettings):
             _docker_settings_warnings_logged.append(
                 "replicate_local_python_environment"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _docker_settings_usage_warnings(self) -> "DockerSettings":
+        """Checks active environment and warns for potential issues.
+
+        Returns:
+            The validated settings values.
+        """
+        import warnings
+
+        from zenml.client import Client
+        from zenml.orchestrators import ContainerizedOrchestrator
+
+        warning_tag = "non_containerized_orchestrator"
+
+        active_orchestrator = Client().active_stack.orchestrator
+
+        if (
+            isinstance(active_orchestrator, ContainerizedOrchestrator)
+            or warning_tag in _docker_settings_warnings_logged
+        ):
+            return self
+
+        with simple_warning_format():
+            warnings.warn(
+                f"WARNING: You are specifying docker settings without a containerized orchestrator: "
+                f"{active_orchestrator.__class__.__name__}"
+            )
+
+        _docker_settings_warnings_logged.append(warning_tag)
+
         return self
 
     model_config = ConfigDict(
