@@ -322,9 +322,9 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
 _csp_script_src_urls = ["https://widgets-v3.featureos.app"]
 _csp_connect_src_urls = [
-    "https://sdkdocs.zenml.io",
-    "https://analytics.zenml.io",
-    "https://raw.githubusercontent.com",
+    # We need a wildcard here to allow the dashboard deployment playground
+    # to send requests to deployments on any URL.
+    "*",
 ]
 _csp_img_src_urls = [
     "*"
@@ -403,6 +403,7 @@ PIPELINE_BUILDS = "/pipeline_builds"
 PIPELINE_CONFIGURATION = "/pipeline-configuration"
 PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
 DEPLOYMENTS = "/deployments"
+CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"

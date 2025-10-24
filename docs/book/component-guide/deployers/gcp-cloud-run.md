@@ -114,7 +114,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the GCP Cloud Run deployer:
 
 ```shell
-zenml pipeline deploy my_module.my_pipeline
+zenml pipeline deploy --name my_deployment my_module.my_pipeline
 ```
 
 ### Additional configuration

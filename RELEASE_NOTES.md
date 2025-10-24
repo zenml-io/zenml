@@ -1,5 +1,81 @@
 <!-- markdown-link-check-disable -->
 
+# 0.91.0
+
+This release brings major deployment enhancements (Local Deployer, fully customizable deployment server, and deployment visualizations), powerful caching controls (file/object-based cache invalidation, cache expiration, and custom cache functions), Python 3.13 support, an MLX array materializer, and a new option to customize image tags during builds. It also deprecates legacy model deployers and drops Python 3.9 support.
+
+## ⚠️ Breaking Changes
+
+- Drop Python 3.9 support
+
+## Deprecations
+
+- Model deployers are deprecated; use deployers to deploy entire pipelines instead
+
+## New Features
+
+### Deployment
+- Local Deployer for deploying pipelines locally
+- Deployment server is fully customizable via settings
+- Attach custom visualizations to deployments
+
+### Caching
+- Specify files or Python objects that invalidate a step's cache
+- Cache expiration to bound cache lifetime
+- Custom cache function for advanced invalidation logic
+
+### Other
+- MLX array materializer
+- Python 3.13 support
+- Customize the image tag of built Docker images
+
+## Bug Fixes
+
+- Fix incompatibility of print capturing when using `numba`
+- Fix the mount point configuration in the Hashicorp Vault secrets store
+
+## What's Changed
+* Add version 0.85.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4029
+* Add 0.90.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4031
+* Document pipeline deployments and deployers by @stefannica in https://github.com/zenml-io/zenml/pull/4017
+* Snapshot docs by @schustmi in https://github.com/zenml-io/zenml/pull/4023
+* Update examples for deployed pipelines by @safoinme in https://github.com/zenml-io/zenml/pull/3960
+* Quote helm chart description by @schustmi in https://github.com/zenml-io/zenml/pull/4032
+* Add MLX array materializer by @nicholasjng in https://github.com/zenml-io/zenml/pull/4027
+* Better CLI error messages by @schustmi in https://github.com/zenml-io/zenml/pull/4035
+* Prevent MLX integration install on Intel Macs by @strickvl in https://github.com/zenml-io/zenml/pull/4039
+* Fixes for timestamps in logs by @bcdurak in https://github.com/zenml-io/zenml/pull/4052
+* Fix breaking `mypy` checks by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4051
+* Extend list pipeline filters by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/3990
+* Add image tag docker setting by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4025
+* Small docs improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4041
+* Fix secret tags and logs for the AWS deployer by @stefannica in https://github.com/zenml-io/zenml/pull/4056
+* Fix snapshot exclusive tagging by @schustmi in https://github.com/zenml-io/zenml/pull/4034
+* Removing 3.9 & Adding 3.13 by @bcdurak in https://github.com/zenml-io/zenml/pull/4053
+* Fix for inconsistencies between numba and the wrapped print by @bcdurak in https://github.com/zenml-io/zenml/pull/4060
+* Fix the user avatar URL field length by @stefannica in https://github.com/zenml-io/zenml/pull/4065
+* Additional sorting options for snapshots and deployments by @schustmi in https://github.com/zenml-io/zenml/pull/4033
+* Document how to use Pro API keys to access the Pro workspace API by @stefannica in https://github.com/zenml-io/zenml/pull/4066
+* Upgrading mypy by @bcdurak in https://github.com/zenml-io/zenml/pull/4062
+* Update link for Your First AI Pipeline in README.md by @htahir1 in https://github.com/zenml-io/zenml/pull/4069
+* Add snapshot delete command to CLI by @strickvl in https://github.com/zenml-io/zenml/pull/4059
+* Deprecate model deployer in docs by @htahir1 in https://github.com/zenml-io/zenml/pull/4076
+* Additional caching configurations by @schustmi in https://github.com/zenml-io/zenml/pull/4040
+* Log metadata changes by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4049
+* Customizable Deployment server settings by @stefannica in https://github.com/zenml-io/zenml/pull/4064
+* Add GitBook MCP server documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4080
+* Make sure image and user parameters are propagated by @zavidnyi in https://github.com/zenml-io/zenml/pull/4081
+* Fix image building bug introduced by deployment requirements by @stefannica in https://github.com/zenml-io/zenml/pull/4082
+* Local Deployer implementation by @stefannica in https://github.com/zenml-io/zenml/pull/4085
+* Fix the mount point configuration in the Hashicorp Vault secrets store and add it to helm chart by @stefannica in https://github.com/zenml-io/zenml/pull/4088
+* Deployment custom visualizations by @safoinme in https://github.com/zenml-io/zenml/pull/4016
+
+## New Contributors
+* @zavidnyi made their first contribution in https://github.com/zenml-io/zenml/pull/4081
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.90.0...0.91.0
+
+
 # 0.90.0
 
 This release introduces pipeline snapshots and pipeline deployments, refactors the base package dependencies, and adds runtime environment variable support.
