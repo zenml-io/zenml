@@ -26,39 +26,99 @@ def run_openai_agent(query: str) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the OpenAI Agents SDK agent and return results."""
     try:
         import asyncio
+        import multiprocessing
+        import subprocess
+        import sys
+        import tempfile
+        import json
 
-        from agents import Runner
+        # Create a standalone script to run the agent in a separate process
+        agent_script = '''
+import asyncio
+import sys
+import json
+import os
 
-        # Handle event loop properly in threaded environment
+# Add current directory to path to find openai_agent module
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from openai_agent import agent
+from agents import Runner
+
+async def run_agent(query):
+    """Run the agent asynchronously."""
+    result = await Runner.run(agent, query)
+    return result.final_output
+
+def main():
+    query = sys.argv[1] if len(sys.argv) > 1 else "Hello"
+
+    # Create new event loop for this process
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        response = loop.run_until_complete(run_agent(query))
+        print(json.dumps({"success": True, "response": response}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+    finally:
+        loop.close()
+
+if __name__ == "__main__":
+    main()
+'''
+
+        # Write the script to a temporary file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(agent_script)
+            script_path = f.name
+
         try:
-            # Try to get the current event loop
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If there's already a running loop, create a new thread
-                import concurrent.futures
+            # Determine the correct working directory
+            import os
+            current_file_dir = os.path.dirname(os.path.abspath(__file__))
+            work_dir = '/app/code' if os.path.exists('/app/code') else current_file_dir
 
-                def run_in_new_loop():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    try:
-                        return Runner.run_sync(agent, query)
-                    finally:
-                        new_loop.close()
+            # Run the agent in a separate process
+            result = subprocess.run(
+                [sys.executable, script_path, query],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=work_dir,
+                env={**os.environ, 'PYTHONPATH': work_dir}
+            )
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(run_in_new_loop)
-                    result = future.result()
+            if result.returncode == 0:
+                # Parse the JSON output
+                output_data = json.loads(result.stdout.strip())
+                if output_data.get("success"):
+                    return {
+                        "query": query,
+                        "response": output_data["response"],
+                        "status": "success"
+                    }
+                else:
+                    return {
+                        "query": query,
+                        "response": f"Agent error: {output_data.get('error', 'Unknown error')}",
+                        "status": "error",
+                    }
             else:
-                # No running loop, can use run_sync directly
-                result = Runner.run_sync(agent, query)
-        except RuntimeError:
-            # No event loop exists, can use run_sync directly
-            result = Runner.run_sync(agent, query)
+                return {
+                    "query": query,
+                    "response": f"Process error: {result.stderr}",
+                    "status": "error",
+                }
+        finally:
+            # Clean up the temporary file
+            import os
+            try:
+                os.unlink(script_path)
+            except:
+                pass
 
-        # Extract the final output
-        response = result.final_output
-
-        return {"query": query, "response": response, "status": "success"}
     except Exception as e:
         return {
             "query": query,

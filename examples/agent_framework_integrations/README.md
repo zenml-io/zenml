@@ -51,7 +51,7 @@ python run.py
 
 ### 🌐 Pipeline Deployments
 
-All examples support **real-time deployment as HTTP services** using ZenML's Pipeline Deployment feature:
+All examples support **real-time deployment as HTTP services** using ZenML's [Pipeline Deployment feature](https://docs.zenml.io/concepts/deployment):
 
 ```bash
 # Deploy any agent pipeline as a persistent HTTP service
