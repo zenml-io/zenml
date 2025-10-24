@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, NonNegativeInt
 
 from zenml.enums import CuratedVisualizationSize, VisualizationResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
@@ -62,7 +62,7 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
         default=None,
         title="The display name of the visualization.",
     )
-    display_order: Optional[int] = Field(
+    display_order: Optional[NonNegativeInt] = Field(
         default=None,
         title="The display order of the visualization.",
         description=(
@@ -102,7 +102,7 @@ class CuratedVisualizationUpdate(BaseUpdate):
         default=None,
         title="The new display name of the visualization.",
     )
-    display_order: Optional[int] = Field(
+    display_order: Optional[NonNegativeInt] = Field(
         default=None,
         title="The new display order of the visualization.",
         description=(
@@ -140,7 +140,7 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
         default=None,
         title="The display name of the visualization.",
     )
-    display_order: Optional[int] = Field(
+    display_order: Optional[NonNegativeInt] = Field(
         default=None,
         title="The display order of the visualization.",
         description=(

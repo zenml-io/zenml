@@ -64,6 +64,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
         back_populates="artifact_visualization",
         sa_relationship_kwargs=dict(
             order_by="CuratedVisualizationSchema.display_order",
+            cascade="delete",
         ),
     )
 
