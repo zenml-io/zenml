@@ -17,6 +17,11 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",  # relative to the pipeline directory
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        # Set home directory to a writable location for Haystack storage
+        "HOME": "/tmp",
+        # Override Haystack-specific environment variables
+        "HAYSTACK_CONTENT_TRACING_ENABLED": "false",
+        "HAYSTACK_TELEMETRY_ENABLED": "false",
     },
 )
 
