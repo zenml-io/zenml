@@ -2,6 +2,11 @@
 description: Guides, examples and projects
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Learn ZenML
 
 Discover how to build production-ready ML pipelines with ZenML through our curated learning resources. Whether you're looking for step-by-step instructions, complete project implementations, or specific examples, you'll find resources to accelerate your ML workflow.
