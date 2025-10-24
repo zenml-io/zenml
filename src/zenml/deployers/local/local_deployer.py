@@ -32,7 +32,6 @@ from typing import (
 from uuid import UUID
 
 import psutil
-import requests
 from pydantic import BaseModel
 
 from zenml.config.base_settings import BaseSettings
@@ -112,6 +111,8 @@ class LocalDeployerSettings(BaseDeployerSettings):
         address: Address to bind the server to.
         blocking: Whether to run the deployment in the current process instead
             of running it as a daemon process.
+        auto_reload: Whether to automatically reload the deployment when the
+            code changes.
     """
 
     port: Optional[int] = None
@@ -119,6 +120,7 @@ class LocalDeployerSettings(BaseDeployerSettings):
     port_range: Tuple[int, int] = (8000, 65535)
     address: str = "127.0.0.1"
     blocking: bool = False
+    auto_reload: bool = False
 
 
 class LocalDeployerConfig(BaseDeployerConfig, LocalDeployerSettings):
@@ -230,6 +232,15 @@ class LocalDeployer(BaseDeployer):
 
         existing_meta = LocalDeploymentMetadata.from_deployment(deployment)
 
+        if existing_meta.pid:
+            try:
+                stop_process(existing_meta.pid)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to stop existing daemon process for deployment "
+                    f"'{deployment.name}' with PID {existing_meta.pid}: {e}"
+                )
+
         preferred_ports: List[int] = []
         if settings.port:
             preferred_ports.append(settings.port)
@@ -265,15 +276,6 @@ class LocalDeployer(BaseDeployer):
         if not os.path.exists(runtime_dir):
             os.makedirs(runtime_dir, exist_ok=True)
 
-        if existing_meta.pid:
-            try:
-                stop_process(existing_meta.pid)
-            except Exception as e:
-                logger.warning(
-                    f"Failed to stop existing daemon process for deployment "
-                    f"'{deployment.name}' with PID {existing_meta.pid}: {e}"
-                )
-
         if settings.blocking:
             self._update_deployment(
                 deployment,
@@ -291,6 +293,7 @@ class LocalDeployer(BaseDeployer):
                 deployment_id=deployment.id,
                 host=settings.address,
                 port=port,
+                reload=settings.auto_reload,
             )
             self._update_deployment(
                 deployment,
@@ -319,6 +322,9 @@ class LocalDeployer(BaseDeployer):
             "--port",
             str(port),
         ]
+
+        if settings.auto_reload:
+            cmd.append("--reload")
 
         try:
             os.makedirs(os.path.dirname(log_file), exist_ok=True)
@@ -382,40 +388,11 @@ class LocalDeployer(BaseDeployer):
             return state
 
         # Use pending until we can confirm the daemon is reachable
-        state.status = DeploymentStatus.PENDING
+        state.status = DeploymentStatus.RUNNING
         address = meta.address
         if address == "0.0.0.0":  # nosec
             address = "localhost"
         state.url = f"http://{address}:{meta.port}"
-
-        settings = (
-            deployment.snapshot.pipeline_configuration.deployment_settings
-        )
-        health_check_path = f"{settings.root_url_path}{settings.api_url_path}{settings.health_url_path}"
-        health_check_url = f"{state.url}{health_check_path}"
-
-        # Attempt to connect to the daemon and set the status to RUNNING
-        # if successful
-        try:
-            response = requests.get(health_check_url, timeout=3)
-            if response.status_code == 200:
-                state.status = DeploymentStatus.RUNNING
-            else:
-                logger.debug(
-                    f"Daemon for deployment '{deployment.name}' returned "
-                    f"status code {response.status_code} for health check "
-                    f"at '{health_check_url}'"
-                )
-        except Exception as e:
-            logger.debug(
-                f"Daemon for deployment '{deployment.name}' is not "
-                f"reachable at '{health_check_url}': {e}"
-            )
-            # It can take a long time after the deployment is started until
-            # the deployment is ready to serve requests, but this isn't an
-            # error condition. We return PENDING instead of ERROR here to
-            # signal to the polling in the base deployer class to keep trying.
-            state.status = DeploymentStatus.PENDING
 
         state.metadata = meta.model_dump(exclude_none=True)
 
