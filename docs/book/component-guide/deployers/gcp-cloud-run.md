@@ -111,7 +111,7 @@ zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as a Cloud Run service. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the local deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the GCP Cloud Run deployer:
 
 ```shell
 zenml pipeline deploy --name my_deployment my_module.my_pipeline

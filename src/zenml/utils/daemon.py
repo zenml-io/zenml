@@ -194,6 +194,33 @@ def setup_daemon(
     atexit.register(cleanup)
 
 
+def stop_process(pid: int) -> None:
+    """Stops a process.
+
+    Args:
+        pid: PID of the process to stop.
+    """
+    if not psutil.pid_exists(pid):
+        logger.debug("PID %s does not exist.", pid)
+        return
+
+    process = psutil.Process(pid)
+    process.terminate()
+
+    try:
+        process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+    except psutil.TimeoutExpired:
+        logger.debug("Daemon PID %s did not terminate in time; killing.", pid)
+        try:
+            process.kill()
+            try:
+                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+            except psutil.TimeoutExpired:
+                logger.error("Failed to kill daemon PID %s.", pid)
+        except Exception as e:
+            logger.error("Failed to kill daemon PID %s: %s", pid, e)
+
+
 def stop_daemon(pid_file: str) -> None:
     """Stops a daemon process.
 
@@ -205,30 +232,10 @@ def stop_daemon(pid_file: str) -> None:
         with open(pid_file, "r") as f:
             pid = int(f.read().strip())
     except (IOError, FileNotFoundError):
-        logger.warning("Daemon PID file '%s' does not exist.", pid_file)
+        logger.debug("Daemon PID file '%s' does not exist.", pid_file)
         return
 
-    if not psutil.pid_exists(pid):
-        logger.warning("PID from '%s' does not exist.", pid_file)
-        return
-
-    process = psutil.Process(pid)
-    process.terminate()
-
-    try:
-        process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
-    except psutil.TimeoutExpired:
-        logger.warning(
-            "Daemon PID %s did not terminate in time; killing.", pid
-        )
-        try:
-            process.kill()
-            try:
-                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
-            except psutil.TimeoutExpired:
-                logger.error("Failed to kill daemon PID %s.", pid)
-        except Exception as e:
-            logger.error("Failed to kill daemon PID %s: %s", pid, e)
+    stop_process(pid)
 
 
 def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
@@ -247,14 +254,12 @@ def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
         with open(pid_file, "r") as f:
             pid = int(f.read().strip())
     except (IOError, FileNotFoundError):
-        logger.warning("Daemon PID file '%s' does not exist.", pid_file)
-        return
-    except ValueError:
-        logger.warning("Daemon PID file '%s' contains invalid data.", pid_file)
-        return
         logger.debug(
-            f"Daemon PID file '{pid_file}' does not exist or cannot be read."
+            f"Daemon PID file '{pid_file}' does not exist or cannot be read.",
         )
+        return None
+    except ValueError:
+        logger.debug(f"Daemon PID file '{pid_file}' contains invalid data.")
         return None
 
     if not pid or not psutil.pid_exists(pid):
