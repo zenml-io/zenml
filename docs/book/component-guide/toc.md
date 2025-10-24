@@ -7,6 +7,7 @@
 
 * [Orchestrators](orchestrators/README.md)
   * [Local Orchestrator](orchestrators/local.md)
+  * [Local Threaded Orchestrator](orchestrators/local-threaded.md)
   * [Local Docker Orchestrator](orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](orchestrators/kubernetes.md)

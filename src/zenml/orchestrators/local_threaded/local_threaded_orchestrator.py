@@ -17,7 +17,7 @@ import os
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Type, cast
 from uuid import uuid4
 
 from pydantic import Field
@@ -52,6 +52,15 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
     """
 
     _orchestrator_run_id: Optional[str] = None
+
+    @property
+    def config(self) -> "LocalThreadedOrchestratorConfig":
+        """Returns the `LocalThreadedOrchestratorConfig` config.
+
+        Returns:
+            The configuration.
+        """
+        return cast("LocalThreadedOrchestratorConfig", self._config)
 
     @property
     def run_init_cleanup_at_step_level(self) -> bool:
@@ -121,7 +130,7 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
         failed_steps: Set[str] = set()
         skipped_steps: Set[str] = set()
         step_exception: Optional[Exception] = None
-        futures: Dict[str, Future] = {}
+        futures: Dict[str, Future[Any]] = {}
 
         self.run_init_hook(snapshot=snapshot)
 
@@ -133,8 +142,12 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
         )
 
         def get_ready_steps() -> List[str]:
-            """Get steps that are ready to run (all dependencies completed)."""
-            ready = []
+            """Get steps that are ready to run (all dependencies completed).
+
+            Returns:
+                List of step names that are ready to execute.
+            """
+            ready: List[str] = []
 
             # In FAIL_FAST mode, stop scheduling new steps if we have a failure
             with lock:
@@ -222,7 +235,11 @@ class LocalThreadedOrchestrator(BaseOrchestrator):
             return ready
 
         def run_step_wrapper(step_name: str) -> None:
-            """Wrapper to run a step and handle exceptions."""
+            """Wrapper to run a step and handle exceptions.
+
+            Args:
+                step_name: The name of the step to run.
+            """
             nonlocal step_exception
 
             step = snapshot.step_configurations[step_name]

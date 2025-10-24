@@ -72,12 +72,14 @@ class FlavorRegistry:
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
+            LocalThreadedOrchestratorFlavor,
         )
 
         flavors = [
             LocalArtifactStoreFlavor,
             LocalOrchestratorFlavor,
             LocalDockerOrchestratorFlavor,
+            LocalThreadedOrchestratorFlavor,
             DefaultContainerRegistryFlavor,
             AzureContainerRegistryFlavor,
             DockerHubContainerRegistryFlavor,
