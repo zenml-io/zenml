@@ -1,7 +1,7 @@
 """add visualisations [24552f3be1f2].
 
 Revision ID: 24552f3be1f2
-Revises: 124b57b8c7b1
+Revises: 279d55228d28
 Create Date: 2025-10-24 07:56:57.575675
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "24552f3be1f2"
-down_revision = "124b57b8c7b1"
+down_revision = "279d55228d28"
 branch_labels = None
 depends_on = None
 
