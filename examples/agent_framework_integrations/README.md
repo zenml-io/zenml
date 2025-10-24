@@ -58,7 +58,6 @@ python run.py
 | [CrewAI](crewai/) | 👥 Crews | Agent crews, Task delegation | crewai, openai |
 | [Google ADK](google_adk/) | 🔮 Gemini | Gemini-powered agents with tool calling | google-adk, gemini |
 | [Haystack](haystack/) | 🔍 RAG | Retrieval pipelines, Document processing | haystack, openai |
-| [lagent](lagent/) | 🔄 ReAct | ReAct pattern, Python interpreter, Lightweight | lagent, openai, internlm |
 | [LangChain](langchain/) | 🔗 Chains | Runnable chains, Tool composition | langchain, openai |
 | [LangGraph](langgraph/) | 🕸️ Graphs | ReAct agents, Graph workflows | langgraph, openai |
 | [LlamaIndex](llama_index/) | 📚 Functions | Function agents, Async execution | llama-index, openai |
