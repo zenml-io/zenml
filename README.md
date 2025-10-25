@@ -155,7 +155,7 @@ The MCP (Model Context Protocol) integration transforms your ZenML metadata into
   </a>
 </div>
 
-ZenML is featured in these comprehensive guides to production AI systems.
+[ZenML](https://zenml.io) is featured in these comprehensive guides to production AI systems.
 
 ## 🤝 Join ML Engineers Building the Future of AI
 
