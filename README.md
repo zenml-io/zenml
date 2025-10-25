@@ -81,10 +81,7 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 
 ```bash
 # Install ZenML with server capabilities
-pip install "zenml[server]"
-
-# Install required dependencies
-pip install scikit-learn openai numpy
+pip install "zenml[server]"  # pip install zenml will install a slimmer client
 
 # Initialize your ZenML repository
 zenml init
@@ -99,7 +96,7 @@ You can then explore any of the [examples](examples/) in this repo. We recommend
 
 ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
 
-- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
+- **Local Development**: `pip install "zenml[local]"` - runs both client and server locally
 - **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
 
 ## 🎮 Demo
