@@ -78,13 +78,6 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 
 ## 🚀 Get Started (5 minutes)
 
-### 🏗️ Architecture Overview
-
-ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
-
-- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
-- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
-
 ```bash
 # Install ZenML with server capabilities
 pip install "zenml[server]"
@@ -98,32 +91,33 @@ zenml init
 # Start local server or connect to a remote one
 zenml login
 ```
- 
- ## 📚 Learn More
 
-<<<<<<< HEAD
-### 🖼️ Getting Started Resources
-=======
-You can then begin with any of the [examples](examples/) in this repo, or perhaps
-easiest is to start with the [quickstart](examples/quickstart/).
+You can then explore any of the [examples](examples/) in this repo. We recommend starting with the [quickstart](examples/quickstart/), which demonstrates both classical ML (intent classification) and AI agents, showing how to evolve a generic AI agent into a specialized support system.
 
-## 🎮 Demo
+### 🏗️ Architecture Overview
 
-Here is a brief demo:
->>>>>>> origin/develop
+ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
+
+- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
+- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
+
+## 🖼️ Resources
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
+- **[Documentation](https://docs.zenml.io/)** - Complete product documentation
 - **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
 
+## 🎮 Demo
+
 Here is a short demo:
 
  [![Watch the video](https://img.youtube.com/vi/rzWmaHMaI88/0.jpg)](https://youtu.be/rzWmaHMaI88)
 
-### 📖 Production Examples
+ ## 📚 More examples
 
 1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
 2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
