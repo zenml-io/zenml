@@ -63,6 +63,7 @@ python run.py
 | [LlamaIndex](llama_index/) | 📚 Functions | Function agents, Async execution | llama-index, openai |
 | [OpenAI Agents SDK](openai_agents_sdk/) | 🏗️ Structured | Official OpenAI agents, Structured execution | openai-agents, openai |
 | [PydanticAI](pydanticai/) | ✅ Type-Safe | Type-safe agents, Validation | pydantic-ai, openai |
+| [Qwen-Agent](qwen-agent/) | 🧠 Function Call | Custom tools, MCP integration, Qwen models | qwen-agent, openai |
 | [Semantic Kernel](semantic-kernel/) | 🧩 Plugins | Plugin architecture, Microsoft ecosystem | semantic-kernel, openai |
 
 ## 🎯 Core Patterns
