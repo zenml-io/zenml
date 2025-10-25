@@ -101,7 +101,16 @@ zenml login
  
  ## 📚 Learn More
 
+<<<<<<< HEAD
 ### 🖼️ Getting Started Resources
+=======
+You can then begin with any of the [examples](examples/) in this repo, or perhaps
+easiest is to start with the [quickstart](examples/quickstart/).
+
+## 🎮 Demo
+
+Here is a brief demo:
+>>>>>>> origin/develop
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
 
