@@ -432,7 +432,7 @@
         <div class="endpoint-info">
           <strong>API Endpoint:</strong>
           <span class="url" id="endpoint-url"
-            >http://localhost:8000/invoke</span
+            >http://127.0.0.1:8000/invoke</span
           >
         </div>
 
@@ -581,7 +581,7 @@
       const currentHost = window.location.hostname;
       const apiUrl =
         currentHost === "localhost" || currentHost === "127.0.0.1"
-          ? "http://localhost:8000/invoke"
+          ? "http://127.0.0.1:8000/invoke"
           : `${window.location.protocol}//${window.location.host}/invoke`;
 
       endpointUrl.textContent = apiUrl;
