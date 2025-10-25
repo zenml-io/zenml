@@ -7,7 +7,7 @@
     </a>
   <br />
   <div align="center">
-    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents.</h3>
+    <h3 align="center">One AI Platform From Pipelines to Agents </h3>
   </div>
 
   [![PyPi][pypi-shield]][pypi-url]
@@ -98,10 +98,30 @@ zenml init
 # Start local server or connect to a remote one
 zenml login
 ```
+ 
+ ## 📚 Learn More
 
-Here is a brief demo:
+### 🖼️ Getting Started Resources
 
-https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
+The best way to learn about ZenML is through our comprehensive documentation and tutorials:
+
+- **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
+- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
+- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
+- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
+
+Here is a short demo:
+
+ [![Watch the video](https://img.youtube.com/vi/rzWmaHMaI88/0.jpg)](https://youtu.be/rzWmaHMaI88)
+
+### 📖 Production Examples
+
+1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
+2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
+3. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
+4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
+5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
@@ -120,26 +140,6 @@ Stop clicking through dashboards to understand your ML workflows. The **[ZenML M
 4. Start chatting with your ML infrastructure
 
 The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
-
-## 📚 Learn More
-
-### 🖼️ Getting Started Resources
-
-The best way to learn about ZenML is through our comprehensive documentation and tutorials:
-
-- **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
-- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
-- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
-- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
-
-### 📖 Production Examples
-
-1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
-2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
-3. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
-4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
-5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
-6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ### 🎓 Books & Resources
 
