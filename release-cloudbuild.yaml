@@ -4,7 +4,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.10 \
@@ -27,7 +27,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
@@ -52,7 +52,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.12 \
@@ -75,7 +75,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.13 \
@@ -161,7 +161,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
@@ -179,7 +179,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
@@ -197,7 +197,7 @@ steps:
     args:
       - '-c'
       - |
-        docker build \
+        docker buildx build \
           --platform linux/amd64 \
           --build-arg ZENML_VERSION=$TAG_NAME \
           --build-arg PYTHON_VERSION=3.11 \
