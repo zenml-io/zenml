@@ -102,6 +102,12 @@ ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-star
 - **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
 - **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
 
+## 🎮 Demo
+
+Here is a short demo:
+
+ [![Watch the video](https://img.youtube.com/vi/rzWmaHMaI88/0.jpg)](https://youtu.be/rzWmaHMaI88)
+
 ## 🖼️ Resources
 
 The best way to learn about ZenML is through our comprehensive documentation and tutorials:
@@ -111,12 +117,6 @@ The best way to learn about ZenML is through our comprehensive documentation and
 - **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
 - **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
 - **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
-
-## 🎮 Demo
-
-Here is a short demo:
-
- [![Watch the video](https://img.youtube.com/vi/rzWmaHMaI88/0.jpg)](https://youtu.be/rzWmaHMaI88)
 
  ## 📚 More examples
 
