@@ -252,7 +252,7 @@ if os.getenv("OPENAI_API_KEY"):
         "docker": docker_settings,
         "deployment": deployment_settings,
         "deployer": {
-            "generate_auth_key": True,
+            "generate_auth_key": False,
         },
         "resources": ResourceSettings(
             memory="1GB",
