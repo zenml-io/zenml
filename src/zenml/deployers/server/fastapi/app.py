@@ -213,7 +213,9 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
                 "index.html",
                 dict(
                     request=request,
-                    service_info=self.service.get_service_info().model_dump(),
+                    service_info=self.service.get_service_info().model_dump(
+                        mode="json"
+                    ),
                 ),
             )
 
