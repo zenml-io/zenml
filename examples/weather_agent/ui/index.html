@@ -1,306 +1,574 @@
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-        color: #111827;
-        background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Activity Agent | ZenML</title>
+
+    <!-- ZenML Brand Fonts (Fontsource CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== CSS Variables - ZenML Design System ===== */
+      :root {
+        /* Primary Colors */
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --zenml-purple-mid: #9565f6;
+
+        /* Neutral Colors */
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+
+        /* Semantic Colors */
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+
+        /* Border Colors */
+        --border-moderate: #e5e7eb;
+        --border-bold: #6b7280;
+
+        /* Typography */
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New",
+          monospace;
+
+        /* Spacing Scale (8pt grid) - Default: spacing/4 = 24px */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Shadows */
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-emphasized: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      /* ===== Reset & Base Styles ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        padding: var(--spacing-xl);
+        font-size: 16px;
+        line-height: 24px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-    }
+      }
 
-    .header {
-        color: #2563eb;
-    }
-
-    .section {
-        margin: 20px 0;
-    }
-
-    .status {
-        padding: 5px 10px;
-        border-radius: 4px;
-        background: #10b981;
-        color: white;
-    }
-
-    .form-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .input {
-        flex: 1;
-        padding: 10px 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-size: 14px;
-    }
-
-    .btn {
-        padding: 10px 14px;
-        background: #2563eb;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
-    }
-
-    .btn:hover {
-        background: #1d4ed8;
-    }
-
-    .btn:disabled {
-        background: #93c5fd;
-        cursor: not-allowed;
-    }
-
-    .btn.secondary {
-        background: #ffffff;
-        color: #2563eb;
-        border: 1px solid #bfdbfe;
-    }
-    .btn.secondary:hover { background: #f0f9ff; }
-
-    .message {
-        margin-top: 10px;
-        padding: 8px 10px;
-        border-radius: 6px;
-        display: inline-block;
-    }
-
-    .message.info {
-        background: #e0f2fe;
-        color: #075985;
-    }
-
-    .message.error {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .result {
-        margin-top: 16px;
-        padding: 16px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        background: #fafafa;
-        white-space: pre-wrap;
-    }
-
-    .result:empty {
-        display: none;
-    }
-
-    /* Minimal markdown rendering tweaks */
-    .result h1,
-    .result h2,
-    .result h3 {
-        margin: 16px 0 8px;
-    }
-
-    .result p {
-        margin: 8px 0;
-        line-height: 1.5;
-    }
-
-    .result ul {
-        padding-left: 20px;
-    }
-
-    .result code {
-        background: #f3f4f6;
-        padding: 2px 4px;
-        border-radius: 4px;
-    }
-
-    /* Layout & decoration */
-    .container {
-        max-width: 760px;
+      /* ===== Layout ===== */
+      .container {
+        max-width: 800px;
         margin: 0 auto;
-    }
+      }
 
-    .card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
-            0 4px 6px -4px rgb(0 0 0 / 0.1);
-    }
+      .card {
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow-standard);
+      }
 
-    .hero {
+      /* ===== Hero Section ===== */
+      .hero {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-moderate);
+      }
 
-    .hero-copy {
+      .hero-copy {
         flex: 1;
-    }
+      }
 
-    .title {
-        margin: 0 0 8px 0;
+      .title {
+        margin: 0 0 var(--spacing-sm) 0;
         font-size: 28px;
-        color: #1f2937;
-    }
+        font-weight: 600;
+        line-height: 36px;
+        color: var(--text-primary);
+      }
 
-    .subtitle {
+      .subtitle {
         margin: 0;
-        color: #4b5563;
-    }
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-secondary);
+      }
 
-    .hero-art svg {
+      .hero-art svg {
         display: block;
-        filter: drop-shadow(0 10px 10px rgb(0 0 0 / 0.08));
-    }
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.08));
+      }
 
-    .footer {
-        margin-top: 16px;
-        color: #6b7280;
-        text-align: center;
+      /* ===== Section ===== */
+      .section {
+        margin-top: var(--spacing-lg);
+      }
+
+      .section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* ===== Form ===== */
+      .form-row {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .input {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      /* Primary Button */
+      .btn:not(.secondary) {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+      }
+
+      .btn:not(.secondary):hover:not(:disabled) {
+        background: var(--zenml-purple-dark);
+        box-shadow: var(--shadow-standard);
+      }
+
+      /* Secondary Button */
+      .btn.secondary {
+        background: var(--surface-primary);
+        color: var(--zenml-purple);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .btn.secondary:hover:not(:disabled) {
+        background: var(--surface-tertiary);
+      }
+
+      /* ===== Status Pill ===== */
+      .status-pill {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
         font-size: 12px;
-    }
+        font-weight: 600;
+        line-height: 18px;
+        margin-top: var(--spacing-sm);
+      }
 
-    .status-pill {
-        padding: 6px 10px;
-        border-radius: 9999px;
-        background: #eef2ff;
-        color: #3730a3;
-        font-size: 12px;
-    }
+      .status-pill.auth-set {
+        background: var(--success-light);
+        color: var(--success);
+      }
 
-    /* Metrics */
-    .metrics {
-        margin-top: 16px;
-    }
+      .status-pill.auth-required {
+        background: var(--warning-light);
+        color: var(--warning);
+      }
 
-    .metrics-grid {
+      /* ===== Messages ===== */
+      .message {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .message.info {
+        background: var(--zenml-purple-lighter);
+        color: var(--zenml-purple);
+        border: 1px solid var(--zenml-purple-light);
+      }
+
+      .message.error {
+        background: var(--error-light);
+        color: var(--error);
+        border: 1px solid var(--error);
+      }
+
+      /* ===== Result Display ===== */
+      .result {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        background: var(--surface-secondary);
+        white-space: pre-wrap;
+      }
+
+      .result:empty {
+        display: none;
+      }
+
+      /* Markdown content styling */
+      .result h1,
+      .result h2,
+      .result h3 {
+        color: var(--text-primary);
+        margin: var(--spacing-md) 0 var(--spacing-sm);
+        font-weight: 600;
+      }
+
+      .result h1 {
+        font-size: 24px;
+        line-height: 32px;
+      }
+
+      .result h2 {
+        font-size: 20px;
+        line-height: 28px;
+      }
+
+      .result h3 {
+        font-size: 16px;
+        line-height: 24px;
+      }
+
+      .result p {
+        margin: var(--spacing-sm) 0;
+        line-height: 1.6;
+        color: var(--text-primary);
+      }
+
+      .result ul {
+        padding-left: 20px;
+        margin: var(--spacing-sm) 0;
+      }
+
+      .result li {
+        margin: var(--spacing-xs) 0;
+        color: var(--text-primary);
+      }
+
+      .result code {
+        background: var(--surface-tertiary);
+        padding: 2px 6px;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--zenml-purple);
+      }
+
+      /* ===== Metrics Grid ===== */
+      .metrics {
+        margin-top: var(--spacing-lg);
+      }
+
+      .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-    }
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--spacing-md);
+      }
 
-    .metric-card {
+      .metric-card {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 12px;
-        border-radius: 10px;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
-    }
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        box-shadow: var(--shadow-subtle);
+        transition: box-shadow 0.2s ease;
+      }
 
-    .metric-icon {
-        width: 36px;
-        height: 36px;
-    }
+      .metric-icon {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+      }
 
-    .metric-content {
+      .metric-content {
         display: flex;
         flex-direction: column;
-    }
+        gap: var(--spacing-xs);
+        flex: 1;
+      }
 
-    .metric-label {
-        color: #6b7280;
+      .metric-label {
+        color: var(--text-secondary);
         font-size: 12px;
-    }
-
-    .metric-value {
         font-weight: 600;
-        font-size: 18px;
-        color: #111827;
-    }
+        line-height: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+      }
 
-    .metric-note {
+      .metric-value {
+        font-weight: 600;
+        font-size: 20px;
+        line-height: 28px;
+        color: var(--text-primary);
+      }
+
+      .metric-note {
         font-size: 12px;
-        color: #6b7280;
-    }
+        line-height: 18px;
+        color: var(--text-secondary);
+      }
 
-    .sev-good {
-        background: #f0fdf4;
-        border-color: #bbf7d0;
-    }
+      /* Severity color coding */
+      .sev-good {
+        border-color: var(--success);
+        background: var(--success-light);
+      }
 
-    .sev-info {
-        background: #eff6ff;
-        border-color: #bfdbfe;
-    }
+      .sev-info {
+        border-color: var(--zenml-purple-light);
+        background: var(--zenml-purple-lighter);
+      }
 
-    .sev-warn {
-        background: #fffbeb;
-        border-color: #fde68a;
-    }
+      .sev-warn {
+        border-color: var(--warning);
+        background: var(--warning-light);
+      }
 
-    .sev-bad {
-        background: #fef2f2;
-        border-color: #fecaca;
-    }
-</style>
+      .sev-bad {
+        border-color: var(--error);
+        background: var(--error-light);
+      }
 
-<div class="container">
-    <div class="card">
+      /* ===== Footer ===== */
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        background: var(--surface-secondary);
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 20px;
+        border-top: 1px solid var(--border-moderate);
+        margin: var(--spacing-lg) calc(var(--spacing-lg) * -1)
+          calc(var(--spacing-lg) * -1);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+      }
+
+      .footer strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      /* ===== Responsive Design ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--spacing-md);
+        }
+
+        .hero {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero-art {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .form-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .input {
+          min-width: 100%;
+        }
+
+        .btn {
+          width: 100%;
+        }
+
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <div class="card">
+        <!-- Hero Section -->
         <div class="hero">
-            <div class="hero-copy">
-                <h1 class="title">Weather Activity Agent</h1>
-                <p class="subtitle">Type a city and get curated, weather-aware
-                    activity ideas. Powered by your ZenML deployment.</p>
-            </div>
-            <div class="hero-art" aria-hidden="true">
-                <!-- Simple inline weather illustration -->
-                <svg width="140" height="100" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#93c5fd" />
-                            <stop offset="100%" stop-color="#dbeafe" />
-                        </linearGradient>
-                    </defs>
-                    <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#sky)" />
-                    <!-- Sun -->
-                    <circle cx="30" cy="30" r="16" fill="#fde68a" />
-                    <!-- Cloud -->
-                    <g fill="#e5e7eb">
-                        <ellipse cx="95" cy="40" rx="26" ry="14" />
-                        <ellipse cx="78" cy="44" rx="18" ry="12" />
-                        <ellipse cx="112" cy="44" rx="18" ry="12" />
-                    </g>
-                    <!-- Raindrops -->
-                    <g fill="#60a5fa">
-                        <path d="M78 60 l3 8 l-6 0 z" />
-                        <path d="M95 60 l3 8 l-6 0 z" />
-                        <path d="M112 60 l3 8 l-6 0 z" />
-                    </g>
-                </svg>
-            </div>
+          <div class="hero-copy">
+            <h1 class="title">Weather Activity Agent</h1>
+            <p class="subtitle">
+              Type a city and get curated, weather-aware activity ideas.
+            </p>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <!-- Weather illustration with ZenML purple -->
+            <svg
+              width="140"
+              height="100"
+              viewBox="0 0 140 100"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#cab2fb" />
+                  <stop offset="100%" stop-color="#f1ebfe" />
+                </linearGradient>
+              </defs>
+              <rect
+                x="0"
+                y="0"
+                width="140"
+                height="100"
+                rx="12"
+                fill="url(#sky)"
+              />
+              <!-- Sun -->
+              <circle cx="30" cy="30" r="16" fill="#f98b0a" />
+              <!-- Cloud -->
+              <g fill="#e5e7eb">
+                <ellipse cx="95" cy="40" rx="26" ry="14" />
+                <ellipse cx="78" cy="44" rx="18" ry="12" />
+                <ellipse cx="112" cy="44" rx="18" ry="12" />
+              </g>
+              <!-- Raindrops with ZenML purple -->
+              <g fill="#7a3ef4">
+                <path d="M78 60 l3 8 l-6 0 z" />
+                <path d="M95 60 l3 8 l-6 0 z" />
+                <path d="M112 60 l3 8 l-6 0 z" />
+              </g>
+            </svg>
+          </div>
         </div>
 
+        <!-- Form Section -->
         <div class="section">
-            <h2>Try it</h2>
-            <div class="form-row">
-                <input id="city-input" class="input" type="text" list="city-suggestions"
-                    placeholder="Enter city name" />
-                <datalist id="city-suggestions">
-                    <option value="San Francisco"></option>
-                    <option value="London"></option>
-                    <option value="Berlin"></option>
-                    <option value="New York"></option>
-                    <option value="Tokyo"></option>
-                </datalist>
-                <button id="fetch-btn" class="btn">Get Suggestions</button>
-                <button id="set-key-btn" class="btn secondary" style="display:none">Set API Key</button>
-            </div>
-            <div id="auth-status" class="status-pill" style="display:none">Auth required</div>
-            <div id="message" class="message"></div>
-            <div id="metrics" class="metrics"></div>
-            <div id="result" class="result"></div>
+          <h2>Try it</h2>
+          <div class="form-row">
+            <input
+              id="city-input"
+              class="input"
+              type="text"
+              list="city-suggestions"
+              placeholder="Enter city name"
+            />
+            <datalist id="city-suggestions">
+              <option value="San Francisco"></option>
+              <option value="London"></option>
+              <option value="Berlin"></option>
+              <option value="New York"></option>
+              <option value="Tokyo"></option>
+            </datalist>
+            <button id="fetch-btn" class="btn">Get Suggestions</button>
+            <button
+              id="set-key-btn"
+              class="btn secondary"
+              style="display: none"
+            >
+              Set API Key
+            </button>
+          </div>
+          <div
+            id="auth-status"
+            class="status-pill auth-required"
+            style="display: none"
+          >
+            Auth required
+          </div>
+          <div id="message" class="message"></div>
+
+          <!-- Metrics Display -->
+          <div id="metrics" class="metrics"></div>
+
+          <!-- Result Display -->
+          <div id="result" class="result"></div>
         </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          Powered by <strong>ZenML</strong> Pipeline Deployments | Real-time
+          inference
+        </div>
+      </div>
     </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
