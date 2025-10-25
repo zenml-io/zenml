@@ -39,7 +39,11 @@ def run_qwen_agent(
         final_text = ""
         if last_batch:
             last_msg = last_batch[-1]
-            final_text = last_msg.get("content", str(last_msg)) if isinstance(last_msg, dict) else str(last_msg)
+            final_text = (
+                last_msg.get("content", str(last_msg))
+                if isinstance(last_msg, dict)
+                else str(last_msg)
+            )
 
         return {
             "query": query,
@@ -86,7 +90,9 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def agent_pipeline(query: str = "Calculate the result of 15 multiplied by 7, then add 42 to it.") -> str:
+def agent_pipeline(
+    query: str = "Calculate the result of 15 multiplied by 7, then add 42 to it.",
+) -> str:
     """ZenML pipeline that orchestrates the Qwen-Agent.
 
     Returns:
