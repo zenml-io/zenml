@@ -109,13 +109,13 @@ config:
   theme: mc
 ---
 flowchart TB
-  subgraph TRAIN["Training Pipeline: churn_training_pipeline"]
+  subgraph TRAIN["Training<br/>(churn_training_pipeline)"]
     D["generate_churn_data"]
     T["train_churn_model"]
     D --> T
   end
 
-  subgraph INFER["Inference Pipeline: churn_inference_pipeline<br/>(deployed as HTTP endpoint)"]
+  subgraph INFER["Inference<br/>(churn_inference_pipeline)"]
     P["predict_churn"]
   end
 
@@ -181,15 +181,15 @@ config:
   theme: mc
 ---
 flowchart TB
-  U["Customer Input<br/>(curl / SDK)"] --> SA["Serving Pipeline"]
+  U["Customer Input<br/>(curl / SDK)"] --> SA["Agent Service"]
 
-  subgraph TRAIN["Training Pipeline<br/>(intent_training_pipeline)"]
-    D["load_toy_intent_data"]
-    T["train_classifier_step"]
+  subgraph TRAIN["Training<br/>(intent_training)"]
+    D["load_data"]
+    T["train_classifier"]
     D --> T
   end
 
-  subgraph SERVE["Serving Pipeline<br/>(support_agent)"]
+  subgraph SERVE["Serving<br/>(support_agent)"]
     C["classify_intent"]
     R["generate_response"]
     C --> R
