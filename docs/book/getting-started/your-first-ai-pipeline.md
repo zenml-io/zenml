@@ -255,38 +255,33 @@ All three paths use the same deployment pattern. Configure a remote stack and de
 # Create a remote stack (e.g., AWS)
 zenml stack create my-remote-stack \
   --orchestrator aws-sagemaker \
-  --artifact-store s3-bucket
+  --artifact-store s3-bucket \
+  --deployer aws
 
 # Set it and deploy—your code doesn't change
 zenml stack set my-remote-stack
+```
+
+Run in batch mode with:
+
+```bash
 python run.py
 ```
 
-See [Deploying ZenML](deploying-zenml/README.md) for cloud setup details.
-
-### Enable authentication
-
-Secure your deployed endpoint:
-
-```yaml
-# deploy_config.yaml
-settings:
-  deployer:
-    generate_auth_key: true
-```
-
-Deploy with:
+Deploy as a real-time endpoint with:
 
 ```bash
 zenml pipeline deploy pipelines.my_pipeline.my_pipeline --config deploy_config.yaml
 ```
 
-### Inspect and compare runs
+See [Deploying ZenML](deploying-zenml/README.md) for cloud setup details.
 
-Start the local dashboard to explore your pipeline runs:
+### View the dashboard
+
+Start the dashboard to explore your pipeline runs:
 
 ```bash
-zenml login --local
+zenml login
 ```
 
 In the dashboard, you'll see:
@@ -294,22 +289,6 @@ In the dashboard, you'll see:
 - **Artifacts**: Versioned outputs from each step (models, reports, traces)
 - **Metadata**: Latency, tokens, metrics, or custom metadata you track
 - **Timeline view**: Compare step durations and identify bottlenecks
-
-### Automate triggering
-
-Create snapshots and trigger pipelines from webhooks (ZenML Pro):
-
-```bash
-zenml pipeline snapshot create \
-  pipelines.my_pipeline.my_pipeline \
-  --name my-snapshot
-
-# Then trigger via API from your app or CI/CD
-```
-
-See [Trigger Pipelines from External Systems](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems).
-
----
 
 ## Core Concepts Recap
 
