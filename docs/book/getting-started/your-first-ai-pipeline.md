@@ -206,7 +206,7 @@ flowchart TB
   end
 
   TRAIN --> AR
-  SERVE --> OR
+  TRAIN --> OR
   SERVE --> AR
   SERVE --> DE
 ```
