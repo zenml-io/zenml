@@ -12,8 +12,7 @@ from pipelines.simple_pipeline import simple_pipeline
 def main() -> None:
     """Run the simple pipeline."""
     print("🚀 Running ZenML quickstart pipeline...")
-    result = simple_pipeline()
-    print(f"✅ Pipeline completed! Result: {result}")
+    _ = simple_pipeline()
 
 
 if __name__ == "__main__":

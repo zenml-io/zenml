@@ -2,10 +2,10 @@
 
 from typing import Annotated, Optional
 
+from steps.simple_step import simple_step
+
 from zenml import pipeline
 from zenml.config import CORSConfig, DeploymentSettings, DockerSettings
-
-from ..steps.simple_step import simple_step
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
@@ -35,7 +35,7 @@ def simple_pipeline(name: Optional[str] = None) -> Annotated[str, "greeting"]:
     Supports both batch and deployment modes:
     - Batch: python run.py
     - Deploy: zenml pipeline deploy pipelines.simple_pipeline.simple_pipeline
-    - Invoke: zenml deployment invoke simple_pipeline --name "Alice"
+    - Invoke: zenml deployment invoke simple_pipeline --name="Alice"
 
     Args:
         name: Optional name to personalize the greeting

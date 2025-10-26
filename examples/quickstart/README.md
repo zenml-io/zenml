@@ -78,7 +78,7 @@ Call your deployed pipeline as an HTTP endpoint:
 
 ```bash
 # Using ZenML CLI
-zenml deployment invoke simple_pipeline --name "Alice"
+zenml deployment invoke simple_pipeline --name="Alice"
 
 # Using curl
 ENDPOINT=http://localhost:8000  # Replace with your deployment URL
