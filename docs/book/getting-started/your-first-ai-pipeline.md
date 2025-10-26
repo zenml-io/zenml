@@ -43,7 +43,7 @@ flowchart TB
 
   subgraph PIPE["Pipeline: doc_analyzer"]
     I["ingest_document_step"]
-    A["analyze_document_step<br/>(OpenAI or fallback)"]
+    A["analyze_document_step"]
     R["render_analysis_report_step"]
     I --> A --> R
   end
@@ -109,13 +109,13 @@ config:
   theme: mc
 ---
 flowchart TB
-  subgraph TRAIN["Training<br/>(churn_training_pipeline)"]
+  subgraph TRAIN["Training"]
     D["generate_churn_data"]
     T["train_churn_model"]
     D --> T
   end
 
-  subgraph INFER["Inference<br/>(churn_inference_pipeline)"]
+  subgraph INFER["Inference"]
     P["predict_churn"]
   end
 
@@ -183,13 +183,13 @@ config:
 flowchart TB
   U["Customer Input<br/>(curl / SDK)"] --> SA["Agent Service"]
 
-  subgraph TRAIN["Training<br/>(intent_training)"]
+  subgraph TRAIN["Training"]
     D["load_data"]
     T["train_classifier"]
     D --> T
   end
 
-  subgraph SERVE["Serving<br/>(support_agent)"]
+  subgraph SERVE["Serving"]
     C["classify_intent"]
     R["generate_response"]
     C --> R
