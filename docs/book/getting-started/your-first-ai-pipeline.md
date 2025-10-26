@@ -26,7 +26,9 @@ Choose one of the paths below. The same ZenML pipeline pattern works for all of 
 
 ---
 
-{% details title="Path 1: Build AI Agents" %}
+<details>
+
+<summary><strong>Path 1: Build AI Agents</strong></summary>
 
 ## Path 1: Build AI Agents
 
@@ -90,9 +92,11 @@ flowchart TB
 - **[agent_framework_integrations](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations)**: Integrate with popular agent frameworks
 - **[llm_finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)**: Fine-tune LLMs for specialized tasks
 
-{% enddetails %}
+</details>
 
-{% details title="Path 2: Build Classical ML Pipelines" %}
+<details>
+
+<summary><strong>Path 2: Build Classical ML Pipelines</strong></summary>
 
 ## Path 2: Build Classical ML Pipelines
 
@@ -158,9 +162,11 @@ flowchart TB
 - **[e2e_nlp](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)**: Domain-specific NLP pipeline example
 - **[mlops_starter](https://github.com/zenml-io/zenml/tree/main/examples/mlops_starter)**: Production-ready MLOps setup with monitoring and governance
 
-{% enddetails %}
+</details>
 
-{% details title="Path 3: Build Hybrid Systems" %}
+<details>
+
+<summary><strong>Path 3: Build Hybrid Systems</strong></summary>
 
 ## Path 3: Build Hybrid Systems
 
@@ -229,7 +235,7 @@ flowchart TB
 - **[deploying_agent](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)**: Start here for the agent piece
 - **[deploying_ml_model](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)**: Start here for the ML piece
 
-{% enddetails %}
+</details>
 
 ---
 
