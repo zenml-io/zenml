@@ -68,7 +68,7 @@ flowchart TB
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/deploying_agent
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent):
@@ -140,7 +140,7 @@ flowchart TB
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/deploying_ml_model
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 Then follow the guide in [`examples/deploying_ml_model`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model):
@@ -181,17 +181,17 @@ config:
   theme: mc
 ---
 flowchart TB
-  U["Customer Input<br/>(curl / SDK)"] --> SA["support_agent pipeline"]
+  U["Customer Input<br/>(curl / SDK)"] --> SA["Serving Pipeline"]
 
-  subgraph TRAIN["Training Pipeline: intent_training_pipeline<br/>(trains classifier offline)"]
+  subgraph TRAIN["Training Pipeline<br/>(intent_training_pipeline)"]
     D["load_toy_intent_data"]
     T["train_classifier_step"]
     D --> T
   end
 
-  subgraph SERVE["Agent Pipeline: support_agent<br/>(loaded at init)"]
-    C["classify_intent<br/>(uses trained classifier)"]
-    R["generate_response<br/>(LLM-based)"]
+  subgraph SERVE["Serving Pipeline<br/>(support_agent)"]
+    C["classify_intent"]
+    R["generate_response"]
     C --> R
   end
 
@@ -216,7 +216,7 @@ flowchart TB
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/agent_outer_loop
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop):
