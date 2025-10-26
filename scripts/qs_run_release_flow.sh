@@ -81,7 +81,6 @@ CONFIG="configs/training_${CLOUD}.yaml"
 REQS="requirements_${CLOUD}.txt"
 PARENT_IMAGE="${PARENT_PREFIX}-${NEW_VERSION}"
 ZENML_GIT_SPEC="git+https://github.com/zenml-io/zenml.git@${BRANCH_REF}#egg=zenml[server]"
-BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 _cleanup() {
   # Preserve original exit code from the point of trap invocation
