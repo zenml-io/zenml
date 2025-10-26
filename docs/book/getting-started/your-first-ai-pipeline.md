@@ -5,7 +5,7 @@ icon: rocket
 
 ## Your First AI Pipeline
 
-Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or `curl`, optionally use a Streamlit web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
+Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or `curl`, use the embedded web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
 
 {% hint style="info" %}
 Why pipelines?
@@ -20,7 +20,7 @@ Modeling agents as pipelines makes non-deterministic workflows debuggable and sh
 - **Document analysis pipeline deployed as an HTTP endpoint** managed by ZenML
 - **OpenAI SDK with deterministic fallback**: Uses OpenAI when a key is set, otherwise runs offline via a rule-based analyzer
 - **Tracked artifacts and metadata**: Summary, keywords, sentiment, readability score, plus latency and token usage
-- **Optional Streamlit UI client** to call the deployment from your browser
+- **Embedded web UI** built directly into your deployment with multi-tab interface for different input methods
 
 ### Architecture (at a glance)
 
@@ -32,7 +32,7 @@ config:
 ---
 flowchart TB
   U["CLI / curl / code"] --> D["ZenML Deployment Endpoint (doc_analyzer)"]
-  S["Streamlit UI (optional)"] --> D
+  W["Web UI (embedded)"] --> D
 
   subgraph DEPLOY["Managed Deployment"]
     D --> T["Triggers pipeline run"]
@@ -72,11 +72,11 @@ export OPENAI_API_KEY="your-key"
 
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/minimal_agent_production
+cd zenml/examples/deploying_agent
 pip install -r requirements.txt
 ```
 {% hint style="info" %}
-Already have the repo? Just `cd examples/minimal_agent_production` and continue.
+Already have the repo? Just `cd examples/deploying_agent` and continue.
 {% endhint %}
 
 ### Deploy the pipeline
@@ -142,17 +142,20 @@ Endpoint contract (summary):
   - document: { filename: string, document_type: string, created_at: ISO8601, ... }
   - Note: The exact output key may be namespaced; look for a key containing "document_analysis".
 
-### Use the web interface (optional)
+### Use the web interface
 
-![Streamlit app interface](../.gitbook/assets/minimal_agent_production_streamlit.png)
+The deployment automatically includes an interactive web UI at your deployment URL (e.g., `http://localhost:8000`). The UI provides:
 
-Launch the Streamlit frontend:
+- **Direct Content Tab**: Paste or type content directly
+- **Upload File Tab**: Upload text, markdown, code, or HTML documents
+- **URL Tab**: Analyze content from a web URL
 
-```bash
-streamlit run streamlit_app.py
-```
+No additional setup needed—the UI is embedded and served automatically with your deployment.
 
-Enter your deployment URL (defaults from the `DOCUMENT_ANALYSIS_ENDPOINT` environment variable) and optionally an auth key in the sidebar. The app wraps requests under parameters and POSTs to the `/invoke` endpoint.
+<figure>
+  <img src="../.gitbook/assets/deploying_agent_web_ui.png" alt="Document analysis deployment with embedded web UI">
+  <figcaption>Document analysis deployment with embedded SPA web interface showing direct content input, analysis results with metrics, and keyword extraction.</figcaption>
+</figure>
 
 ### Inspect your pipeline runs
 
@@ -248,4 +251,4 @@ def doc_analyzer(
 - **Introduce retrieval/tooling** steps ahead of analysis for more advanced workflows.
 
 Looking for the code? Browse the complete example at
-[`examples/minimal_agent_production`](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production).
+[`examples/deploying_agent`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent).

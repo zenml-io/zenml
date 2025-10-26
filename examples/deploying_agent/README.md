@@ -30,7 +30,7 @@ export OPENAI_API_KEY=sk-xxx   # Optional: if absent, the pipeline falls back to
 
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/minimal_agent_production
+cd zenml/examples/deploying_agent
 pip install -r requirements.txt
 zenml init
 zenml login
