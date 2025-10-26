@@ -26,28 +26,9 @@ Choose one of the paths below. The same ZenML pipeline pattern works for all of 
 
 ---
 
-<details>
-
-<summary><strong>Path 1: Build AI Agents</strong></summary>
-
 ## Path 1: Build AI Agents
 
 Use large language models, prompts, and tools to build intelligent autonomous agents that can reason, take action, and interact with your systems.
-
-### Quick start
-
-```bash
-git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/deploying_agent
-pip install -r requirements.txt
-```
-
-Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent):
-
-1. **Define your steps**: Use LLM APIs (OpenAI, Claude, etc.) to build reasoning steps
-2. **Deploy as HTTP service**: Turn your agent into a managed endpoint
-3. **Invoke and monitor**: Use the CLI, curl, or the embedded web UI to interact with your agent
-4. **Inspect traces**: View agent reasoning, tool calls, and metadata in the ZenML dashboard
 
 ### Architecture example
 
@@ -78,6 +59,25 @@ flowchart TB
   D --> OR
 ```
 
+<details>
+
+<summary><strong>View Quick Start & Examples</strong></summary>
+
+### Quick start
+
+```bash
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/deploying_agent
+pip install -r requirements.txt
+```
+
+Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent):
+
+1. **Define your steps**: Use LLM APIs (OpenAI, Claude, etc.) to build reasoning steps
+2. **Deploy as HTTP service**: Turn your agent into a managed endpoint
+3. **Invoke and monitor**: Use the CLI, curl, or the embedded web UI to interact with your agent
+4. **Inspect traces**: View agent reasoning, tool calls, and metadata in the ZenML dashboard
+
 ### Example output
 
 - Automated document analysis (see `deploying_agent`)
@@ -94,28 +94,11 @@ flowchart TB
 
 </details>
 
-<details>
-
-<summary><strong>Path 2: Build Classical ML Pipelines</strong></summary>
+---
 
 ## Path 2: Build Classical ML Pipelines
 
 Use scikit-learn, TensorFlow, PyTorch, or other ML frameworks to build data processing, feature engineering, training, and inference pipelines.
-
-### Quick start
-
-```bash
-git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/deploying_ml_model
-pip install -r requirements.txt
-```
-
-Then follow the guide in [`examples/deploying_ml_model`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model):
-
-1. **Build your pipeline**: Data loading → preprocessing → training → evaluation
-2. **Deploy the model**: Serve your trained model as a real-time HTTP endpoint
-3. **Monitor performance**: Track predictions, latency, and data drift in the dashboard
-4. **Iterate**: Retrain and redeploy without code changes—just switch your orchestrator
 
 ### Architecture example
 
@@ -148,6 +131,25 @@ flowchart TB
   INFER --> AR
 ```
 
+<details>
+
+<summary><strong>View Quick Start & Examples</strong></summary>
+
+### Quick start
+
+```bash
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/deploying_ml_model
+pip install -r requirements.txt
+```
+
+Then follow the guide in [`examples/deploying_ml_model`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model):
+
+1. **Build your pipeline**: Data loading → preprocessing → training → evaluation
+2. **Deploy the model**: Serve your trained model as a real-time HTTP endpoint
+3. **Monitor performance**: Track predictions, latency, and data drift in the dashboard
+4. **Iterate**: Retrain and redeploy without code changes—just switch your orchestrator
+
 ### Example output
 
 - Predictive models (regression, classification)
@@ -164,28 +166,11 @@ flowchart TB
 
 </details>
 
-<details>
-
-<summary><strong>Path 3: Build Hybrid Systems</strong></summary>
+---
 
 ## Path 3: Build Hybrid Systems
 
 Combine classical ML models and AI agents in a single pipeline. For example, use a classifier to route requests to specialized agents, or use agents to augment ML predictions.
-
-### Quick start
-
-```bash
-git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/agent_outer_loop
-pip install -r requirements.txt
-```
-
-Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop):
-
-1. **Define both components**: Classical ML classifier + AI agent steps
-2. **Wire them together**: Use the classifier output to influence agent behavior
-3. **Deploy as one service**: The entire hybrid system becomes a single endpoint
-4. **Monitor both**: Track ML metrics and agent traces in the same dashboard
 
 ### Architecture example
 
@@ -221,6 +206,25 @@ flowchart TB
   SERVE --> OR
   SERVE --> AR
 ```
+
+<details>
+
+<summary><strong>View Quick Start & Examples</strong></summary>
+
+### Quick start
+
+```bash
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/agent_outer_loop
+pip install -r requirements.txt
+```
+
+Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop):
+
+1. **Define both components**: Classical ML classifier + AI agent steps
+2. **Wire them together**: Use the classifier output to influence agent behavior
+3. **Deploy as one service**: The entire hybrid system becomes a single endpoint
+4. **Monitor both**: Track ML metrics and agent traces in the same dashboard
 
 ### Example output
 
