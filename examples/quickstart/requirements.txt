@@ -1,6 +1,3 @@
-zenml[server]>=0.91.0
-scikit-learn
-openai>=1.0.0
-matplotlib
-seaborn
-numpy
+# ZenML Quickstart - Minimal Dependencies
+# The quickstart runs with just ZenML installed!
+# Additional dependencies installed via: pip install zenml[server]

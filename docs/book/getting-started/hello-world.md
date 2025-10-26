@@ -54,31 +54,72 @@ Run this pipeline locally with `python run.py`. ZenML automatically tracks the e
 {% endstep %}
 
 {% step %}
-#### Create your ZenML account
+#### Create a Pipeline Snapshot (Optional but Recommended)
 
-Create a [ZenML Pro account](https://zenml.io/pro) with a 14-day free trial (no payment information required). It will provide you with a dashboard to visualize pipelines, manage infrastructure, and collaborate with team members.
-
-<figure><img src="../.gitbook/assets/dcp_walkthrough.gif" alt="ZenML Pro Dashboard"><figcaption><p>The ZenML Pro Dashboard</p></figcaption></figure>
-
-First-time users will need to set up a workspace and project. This process might take a few minutes. In the meanwhile, feel free to check out the [Core Concepts](core-concepts.md) page to get familiar with the main ideas ZenML is built on. Once ready, connect your local environment:
+Before deploying, you can create a **snapshot** - an immutable, reproducible version of your pipeline including code, configuration, and container images:
 
 ```bash
-# Log in and select your workspace
-zenml login
-
-# Activate your project
-zenml project set <PROJECT_NAME>
+# Create a snapshot of your pipeline
+zenml pipeline snapshot create run.basic_pipeline --name my_snapshot
 ```
+
+Snapshots are powerful because they:
+- **Freeze your pipeline state** - Ensure the exact same pipeline always runs
+- **Enable parameterization** - Run the same snapshot with different inputs
+- **Support team collaboration** - Share ready-to-use pipeline configurations
+- **Integrate with automation** - Trigger from dashboards, APIs, or CI/CD systems
+
+[Learn more about Snapshots](../how-to/snapshots/snapshots.md)
 {% endstep %}
 
 {% step %}
-#### Create your first remote stack
+#### Deploy your pipeline as a real-time service
 
-A "stack" in ZenML represents the infrastructure where your pipelines run. Moving from local to cloud resources is where ZenML truly shines.
+ZenML can deploy your pipeline (or snapshot) as a persistent HTTP service for real-time inference:
+
+```bash
+# Deploy your pipeline directly
+zenml pipeline deploy run.basic_pipeline --name my_deployment
+
+# OR deploy a snapshot (if you created one above)
+zenml pipeline snapshot deploy my_snapshot --deployment my_deployment
+```
+
+Your pipeline now runs as a production-ready service! This is perfect for serving predictions to web apps, powering AI agents, or handling real-time requests.
+
+**Key insight**: When you deploy a pipeline directly with `zenml pipeline deploy`, ZenML automatically creates an implicit snapshot behind the scenes, ensuring reproducibility.
+
+[Learn more about Pipeline Deployments](../how-to/deployment/deployment.md)
+{% endstep %}
+
+{% step %}
+#### Set up a ZenML Server (For Remote Infrastructure)
+
+To use remote infrastructure (cloud deployers, orchestrators, artifact stores), you need to deploy a ZenML server to manage your pipelines centrally. You can use [ZenML Pro](https://zenml.io/pro) (managed, 14-day free trial) or [deploy it yourself](../how-to/deploying-zenml/deploying-zenml.md) (self-hosted, open-source).
+
+Connect your local environment:
+
+```bash
+zenml login
+zenml project set <PROJECT_NAME>
+```
+
+Once connected, you'll have a centralized dashboard to manage infrastructure, collaborate with team members, and schedule pipeline runs.
+{% endstep %}
+
+{% step %}
+#### Create your first remote stack (Optional)
+
+A "stack" in ZenML represents the infrastructure where your pipelines run. You can now scale from local development to cloud infrastructure without changing any code.
 
 <figure><img src="../.gitbook/assets/stack-deployment-options.png" alt="ZenML Stack Deployment Options"><figcaption><p>Stack deployment options</p></figcaption></figure>
 
-The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option. This uses Terraform to deploy cloud resources and register them as a ZenML stack.
+Remote stacks can include:
+- **Remote Deployers** (AWS App Runner, GCP Cloud Run, Azure Container Instances) - for deploying your pipelines as scalable HTTP services on the cloud
+- **Remote Orchestrators** (Kubernetes, GCP Vertex AI, AWS SageMaker) - for running batch pipelines at scale
+- **Remote Artifact Stores** (S3, GCS, Azure Blob) - for storing and versioning pipeline artifacts
+
+The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option, which uses Terraform to deploy cloud resources and register them as a ZenML stack.
 
 You'll need:
 
@@ -86,29 +127,37 @@ You'll need:
 * Authentication configured for your preferred cloud provider (AWS, GCP, or Azure)
 * Appropriate permissions to create resources in your cloud account
 
-The deployment wizard will guide you through each step.
+```bash
+# Create a remote stack using the deployment wizard
+zenml stack create <STACK_NAME> \
+  --deployer <DEPLOYER_NAME> \
+  --orchestrator <ORCHESTRATOR_NAME> \
+  --artifact-store <ARTIFACT_STORE_NAME>
+```
+
+The wizard will guide you through each step.
 {% endstep %}
 
 {% step %}
-#### Run your pipeline on the remote stack
+#### Deploy and run on remote infrastructure
 
-Now run your pipeline in the cloud without changing any code.
+Once you have a remote stack, you can:
 
-First, activate your new stack:
-
+1. **Deploy your service to the cloud** - Your deployment runs on managed cloud infrastructure:
 ```bash
-zenml stack set <NAME_OF_YOUR_NEW_STACK>
+zenml stack set <REMOTE_STACK_NAME>
+zenml pipeline deploy run.basic_pipeline --name my_production_deployment
 ```
 
-Then run the exact same script:
-
+2. **Run batch pipelines at scale** - Use the same code with a cloud orchestrator:
 ```bash
-python run.py
+zenml stack set <REMOTE_STACK_NAME>
+python run.py  # Automatically runs on cloud infrastructure
 ```
 
-ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically.
+ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically across all cloud providers.
 
-<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML dashboard</p></figcaption></figure>
+<figure><img src="../.gitbook/assets/pipeline-run-on-the-dashboard.png" alt="Pipeline Run in ZenML Dashboard"><figcaption><p>Your pipeline in the ZenML Pro Dashboard</p></figcaption></figure>
 {% endstep %}
 
 {% step %}

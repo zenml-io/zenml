@@ -1,0 +1,3 @@
+settings:
+  docker:
+    requirements: requirements.txt
