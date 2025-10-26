@@ -315,18 +315,10 @@ See [Trigger Pipelines from External Systems](https://docs.zenml.io/user-guides/
 
 Regardless of which path you choose:
 
-- **Pipelines** orchestrate your workflow steps
-- **Steps** are modular, reusable units (data loading, model training, LLM inference, etc.)
-- **Artifacts** are the outputs—models, predictions, traces, reports—automatically versioned and logged
-- **Stacks** let you switch execution environments (local, remote, cloud) without changing code
-- **Deployments** turn pipelines into HTTP services with built-in UIs and monitoring
+- **[Pipelines](../how-to/steps-pipelines/steps_and_pipelines.md)** - Orchestrate your workflow steps with automatic tracking
+- **[Steps](../how-to/steps-pipelines/steps_and_pipelines.md)** - Modular, reusable units (data loading, model training, LLM inference, etc.)
+- **[Artifacts](../how-to/artifacts/artifacts.md)** - Versioned outputs (models, predictions, traces, reports) with automatic logging
+- **[Stacks](../how-to/stack-components/stack_components.md)** - Switch execution environments (local, remote, cloud) without code changes
+- **[Deployments](../how-to/deployment/deployment.md)** - Turn pipelines into HTTP services with built-in UIs and monitoring
 
-Learn more in [Core Concepts](core-concepts.md).
-
----
-
-## Stuck or want to explore more?
-
-- **Full documentation**: https://docs.zenml.io/
-- **Python SDK reference**: https://sdkdocs.zenml.io/
-- **GitHub discussions**: https://github.com/zenml-io/zenml/discussions
+For deeper dives, explore the [Concepts](../how-to/steps-pipelines/steps_and_pipelines.md) section in the docs.
