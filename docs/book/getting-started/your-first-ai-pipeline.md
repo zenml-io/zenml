@@ -51,7 +51,7 @@ flowchart TB
   D --> PIPE
 
   subgraph STACK["Stack"]
-    OR[("Orchestrator")]
+    OR[("Deployer")]
     AR[("Artifact Store")]
   end
 
