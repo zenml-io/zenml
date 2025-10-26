@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Quickstart Release Flow Runner
-# Orchestrates lightweight Quickstart release validation: local agent batch run and cloud training.
+# Orchestrates lightweight Quickstart release validation: local and cloud execution.
 
 set -euo pipefail
 
@@ -17,8 +17,8 @@ Description:
   Runs the Quickstart release validation flow:
   - Patches the example config's parent_image and requirements to use the branch ref
   - Installs dependencies
-  - Phase 1: Runs the agent locally in batch mode
-  - Phase 2: Trains on the cloud stack
+  - Phase 1: Runs the pipeline locally
+  - Phase 2: Runs the pipeline on the cloud stack
 
 Notes:
   --branch-ref is optional. If not provided, the script falls back to $GITHUB_REF.
@@ -81,6 +81,7 @@ CONFIG="configs/training_${CLOUD}.yaml"
 REQS="requirements_${CLOUD}.txt"
 PARENT_IMAGE="${PARENT_PREFIX}-${NEW_VERSION}"
 ZENML_GIT_SPEC="git+https://github.com/zenml-io/zenml.git@${BRANCH_REF}#egg=zenml[server]"
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 _cleanup() {
   # Preserve original exit code from the point of trap invocation
@@ -130,13 +131,13 @@ sed -i -E "s|^zenml\\[server\\].*|${ZENML_GIT_SPEC}|g" "${REQS}"
 echo "=== Installing dependencies from ${REQS} ==="
 pip install -r "${REQS}"
 
-# Phase 1: Run the agent locally in batch mode
-echo "=== Phase 1: Run agent in batch mode ==="
-python run.py --agent --text "I want to open a savings account"
+# Phase 1: Run the pipeline locally
+echo "=== Phase 1: Run pipeline locally ==="
+python run.py
 
-# Phase 2: Train on the cloud stack
-echo "=== Phase 2: Train classifier on cloud stack ==="
+# Phase 2: Run on the cloud stack
+echo "=== Phase 2: Run pipeline on cloud stack ==="
 zenml stack set "${CLOUD_STACK}"
-python run.py --train
+python run.py
 
 echo "=== Quickstart release flow completed ==="

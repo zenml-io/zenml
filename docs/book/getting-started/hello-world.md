@@ -39,9 +39,10 @@ def basic_step() -> str:
 
 
 @pipeline
-def basic_pipeline():
+def basic_pipeline() -> str:
     """A simple pipeline with just one step."""
-    basic_step()
+    greeting = basic_step()
+    return greeting
 
 
 if __name__ == "__main__":
@@ -95,7 +96,7 @@ Your pipeline now runs as a production-ready service! This is perfect for servin
 {% step %}
 #### Set up a ZenML Server (For Remote Infrastructure)
 
-To use remote infrastructure (cloud deployers, orchestrators, artifact stores), you need to deploy a ZenML server to manage your pipelines centrally. You can use [ZenML Pro](https://zenml.io/pro) (managed, 14-day free trial) or [deploy it yourself](../how-to/deploying-zenml/deploying-zenml.md) (self-hosted, open-source).
+To use remote infrastructure (cloud deployers, orchestrators, artifact stores), you need to deploy a ZenML server to manage your pipelines centrally. You can use [ZenML Pro](https://zenml.io/pro) (managed, 14-day free trial) or [deploy it yourself](../getting-started/deploying-zenml/README.md) (self-hosted, open-source).
 
 Connect your local environment:
 
@@ -115,9 +116,9 @@ A "stack" in ZenML represents the infrastructure where your pipelines run. You c
 <figure><img src="../.gitbook/assets/stack-deployment-options.png" alt="ZenML Stack Deployment Options"><figcaption><p>Stack deployment options</p></figcaption></figure>
 
 Remote stacks can include:
-- **Remote Deployers** (AWS App Runner, GCP Cloud Run, Azure Container Instances) - for deploying your pipelines as scalable HTTP services on the cloud
-- **Remote Orchestrators** (Kubernetes, GCP Vertex AI, AWS SageMaker) - for running batch pipelines at scale
-- **Remote Artifact Stores** (S3, GCS, Azure Blob) - for storing and versioning pipeline artifacts
+- **[Remote Deployers](https://docs.zenml.io/stacks/stack-components/deployers)** ([AWS App Runner](https://docs.zenml.io/stacks/stack-components/deployers/aws-app-runner), [GCP Cloud Run](https://docs.zenml.io/stacks/stack-components/deployers/gcp-cloud-run), [Azure Container Instances](https://docs.zenml.io/stacks/stack-components/container-registries/azure)) - for deploying your pipelines as scalable HTTP services on the cloud
+- **[Remote Orchestrators](https://docs.zenml.io/stacks/stack-components/orchestrators)** ([Kubernetes](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes), [GCP Vertex AI](https://docs.zenml.io/stacks/stack-components/orchestrators/vertex), [AWS SageMaker](https://docs.zenml.io/stacks/stack-components/orchestrators/sagemaker)) - for running batch pipelines at scale
+- **[Remote Artifact Stores](https://docs.zenml.io/stacks/stack-components/artifact-stores)** ([S3](https://docs.zenml.io/stacks/stack-components/artifact-stores/s3), [GCS](https://docs.zenml.io/stacks/stack-components/artifact-stores/gcp), [Azure Blob](https://docs.zenml.io/stacks/stack-components/artifact-stores/azure)) - for storing and versioning pipeline artifacts
 
 The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option, which uses Terraform to deploy cloud resources and register them as a ZenML stack.
 
