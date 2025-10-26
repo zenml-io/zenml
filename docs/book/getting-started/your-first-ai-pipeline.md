@@ -124,10 +124,12 @@ flowchart TB
   subgraph STACK["Stack"]
     OR[("Orchestrator")]
     AR[("Artifact Store")]
+    DE[("Deployer")]
   end
 
   TRAIN --> AR
-  INFER --> OR
+  TRAIN --> OR
+  INFER --> DE
   INFER --> AR
 ```
 
