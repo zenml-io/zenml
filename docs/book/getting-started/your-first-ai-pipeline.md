@@ -200,11 +200,13 @@ flowchart TB
   subgraph STACK["Stack"]
     OR[("Orchestrator")]
     AR[("Artifact Store")]
+    DE[("Deployer")]
   end
 
   TRAIN --> AR
   SERVE --> OR
   SERVE --> AR
+  SERVE --> DE
 ```
 
 <details>
