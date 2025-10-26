@@ -1,18 +1,21 @@
-# Deploying agents with ZenML: Document Analysis Pipeline
+# Deploying Agents with ZenML: Document Analysis Pipeline
 
-This example shows how to build and deploy an **LLM‑powered document analysis** workflow as a **production HTTP endpoint** using ZenML. You’ll get structured insights (summary, keywords, sentiment, readability) from text‑like inputs, and an optional Streamlit UI to interact with the deployment.
+This example shows how to build and deploy a minimal **LLM-powered document analysis** agentic workflow as a **production HTTP endpoint** using ZenML. You'll get structured insights (summary, keywords, sentiment, readability) from text-like inputs via an interactive web UI built directly into your deployment.
 
-## 🎯 What You’ll Build
+## 🎯 What You'll Build
 
-A deployed pipeline that:
+A [deployed ZenML pipeline](https://docs.zenml.io/concepts/deployment) with an embedded frontend application that:
 
-- **Ingests text** from direct input, local files, or URLs (HTML is lightly cleaned)
-- **Extracts structured insights**: summary, top keywords, sentiment, readability
-- **Runs online or offline**: uses OpenAI if `OPENAI_API_KEY` is set, otherwise a rule‑based fallback
-- **Surfaces metrics**: word count, latency, token usage (when in LLM mode)
-- **Returns an HTML report** for the ZenML dashboard
+- **Ingests text** from direct input, file uploads, or URLs (HTML is lightly cleaned)
+- **Extracts structured insights**: summary, top keywords, sentiment, readability score
+- **Runs online or offline**: uses OpenAI if `OPENAI_API_KEY` is set, otherwise a rule-based fallback
+- **Surfaces metrics**: word count, latency, analysis method (AI or Rule-Based)
+- **Provides interactive UI**: modern web interface embedded in the deployment
+- **Returns an HTML report** for the ZenML dashboard.
 
-> ℹ️ **Scope**: Out‑of‑the‑box input types are text/markdown/code and simple web pages. PDF parsing is **not** included by default.
+The deployed pipeline application looks like this:
+
+![Document Analysis UI](assets/minimal_agent_production_app.png)
 
 ## 🚀 Get Started
 
@@ -30,6 +33,7 @@ git clone --depth 1 https://github.com/zenml-io/zenml.git
 cd zenml/examples/minimal_agent_production
 pip install -r requirements.txt
 zenml init
+zenml login
 ```
 
 ### Phase 1: Deploy the Analysis Pipeline
@@ -80,17 +84,20 @@ If your deployment requires auth, include:
 -H "Authorization: Bearer <YOUR_KEY>"
 ```
 
-### Phase 3: Use the Web Interface (optional)
+### Phase 3: Use the Web Interface
 
-![Streamlit app interface](../../docs/book/.gitbook/assets/minimal_agent_production_streamlit.png)
+Visit the interactive UI at your deployment URL:
 
-Launch the Streamlit frontend:
-
-```bash
-streamlit run streamlit_app.py
+```
+http://localhost:8000
 ```
 
-Enter the endpoint URL (e.g., `http://localhost:8000`) and optionally an auth key.
+The UI provides:
+- **Direct Content Tab**: Paste or write content directly in the interface
+- **Upload File Tab**: Upload text files, markdown, code, or HTML documents
+- **URL Tab**: Provide a URL to analyze web pages or remote documents
+
+Select the input method, review your content, and click the analyze button to get insights.
 
 ## 🤖 How It Works
 
@@ -108,18 +115,41 @@ def doc_analyzer(content=None, url=None, path=None, filename=None, document_type
 * **LLM path**: When `OPENAI_API_KEY` is present, `analyze_document_step` calls OpenAI chat completions and parses a structured JSON response.
 * **Fallback path**: A rule‑based analyzer produces a summary, keywords, and readability without external calls.
 
+## 🌐 Embedded Web UI
+
+The example includes a modern, responsive SPA (Single Page Application) that is automatically embedded in your deployment. Key features:
+
+- **Multi-tab interface**: Direct content input, file upload, or URL analysis
+- **Real-time feedback**: Loading states and clear error messages
+- **Metrics display**: Word count, processing time, readability score, analysis method
+- **Rich results**: Summary, sentiment analysis, keyword extraction, document metadata
+- **Responsive design**: Works seamlessly on desktop and mobile devices
+- **Zero configuration**: Automatically served at your deployment URL
+
+The UI is defined in `ui/index.html` and configured via the `DeploymentSettings` in the pipeline. ZenML automatically serves this interface alongside your API endpoint.
+
 ## 🔧 Production Notes
 
-The pipeline comes pre-configured with Docker settings in `pipelines/doc_analyzer.py`:
+The pipeline comes pre-configured with Docker and deployment settings in `pipelines/doc_analyzer.py`:
 
 ```python
 docker_settings = DockerSettings(
     requirements="requirements.txt",
     environment={"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
 )
+
+deployment_settings = DeploymentSettings(
+    app_title="Document Analysis Pipeline",
+    dashboard_files_path="ui",
+    cors=CORSConfig(allow_origins=["*"]),
+)
 ```
 
-These settings are automatically applied when you deploy. If you need to override settings or add deployer-specific options (like authentication), create a YAML config file:
+These settings are automatically applied when you deploy:
+- **Docker**: Installs dependencies and passes the OpenAI API key
+- **Deployment**: Configures the UI title, serves files from the `ui/` directory, and enables CORS for cross-origin requests
+
+If you need to override settings or add deployer-specific options (like authentication), create a YAML config file:
 
 ```yaml
 # my_config.yaml (optional)
@@ -134,14 +164,14 @@ Then deploy with:
 zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config my_config.yaml
 ```
 
-> Scaling & concurrency options vary by orchestrator/deployment target; consult the ZenML deployment docs for deployment configuration options.
+> Scaling & concurrency options vary by orchestrator/deployment target; consult the [ZenML deployment docs](https://docs.zenml.io/how-to/deployment/deployment) for deployment configuration options.
 
 ## 📁 Project Structure
 
 ```
 examples/minimal_agent_production/
 ├── pipelines/
-│   └── doc_analyzer.py          # Pipeline definition and Docker settings
+│   └── doc_analyzer.py          # Pipeline definition with DeploymentSettings
 ├── steps/
 │   ├── analyze.py               # LLM analysis + deterministic fallback
 │   ├── ingest.py                # Text/URL/path ingestion
@@ -150,11 +180,12 @@ examples/minimal_agent_production/
 │   └── templates/
 │       ├── report.css           # Report styling
 │       └── report.html          # Report template
+├── ui/
+│   └── index.html               # Embedded SPA web interface
 ├── constants.py                  # Tunables & UI constants
 ├── models.py                     # Pydantic models for I/O
 ├── prompts.py                    # LLM prompt builder
-├── requirements.txt              # Extra deps (OpenAI, Streamlit)
-└── streamlit_app.py              # Optional web UI client
+└── requirements.txt              # Extra deps (OpenAI)
 ```
 
 ## 🎯 The Big Picture
@@ -163,8 +194,10 @@ This is the same **steps → pipeline → artifacts** pattern you use for classi
 
 ---
 
-**Ready to analyze your documents?**
+**Want to learn more?**
 
 - 📖 [Full ZenML Documentation](https://docs.zenml.io/)
+- 🔗 [ZenML Pipelines](https://docs.zenml.io/concepts/steps_and_pipelines)
+- 🚀 [Pipeline Deployments](https://docs.zenml.io/concepts/deployment)
 - 💬 [Join our Community](https://zenml.io/slack)
-- 🏢 [ZenML Pro](https://zenml.io/pro) for teams
+- 🏢 [ZenML Pro](https://zenml.io/pro)

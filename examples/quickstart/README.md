@@ -48,15 +48,10 @@ pip install -r requirements.txt
 export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ```
 
-**Requirements:**
-- Docker must be installed and running (used for pipeline deployment)
-
 ### Setup
 ```bash
 zenml init
 zenml login  # Choose between running locally or with a deployed ZenML server
-zenml deployer register docker -f docker
-zenml stack register docker-deployer -o default -a default -D docker --set
 ```
 
 ### Phase 1: Run The Agent in Batch Mode
