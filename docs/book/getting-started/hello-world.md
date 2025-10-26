@@ -180,6 +180,8 @@ To continue your ZenML journey, explore these key topics:
 
 **For LLMs and AI Agents:**
 * **LLMOps Guide**: Write your [first AI pipeline](your-first-ai-pipeline.md) for agent development patterns
+* **Deploying Agents**: To see an example of a deployed document extraction agent, see the [deploying agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent) example
+* **Agent Outer Loop**: See the [Agent Outer Loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop) example to learn about training classifiers and improving agents through feedback loops
 * **Agent Evaluation**: Learn to [systematically evaluate](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison) and compare different agent architectures
 * **Prompt Management**: Version and track prompts, tools, and agent configurations as [artifacts](../how-to/artifacts/artifacts.md)
 

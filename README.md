@@ -90,7 +90,7 @@ zenml init
 zenml login
 ```
 
-You can then explore any of the [examples](examples/) in this repo. We recommend starting with the [quickstart](examples/quickstart/), which demonstrates both classical ML (intent classification) and AI agents, showing how to evolve a generic AI agent into a specialized support system.
+You can then explore any of the [examples](examples/) in this repo. We recommend starting with the [quickstart](examples/quickstart/), which demonstrates core ZenML concepts: pipelines, steps, artifacts, snapshots, and deployments.
 
 ### 🏗️ Architecture Overview
 
