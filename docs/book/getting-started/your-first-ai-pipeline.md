@@ -20,7 +20,13 @@ Why ZenML pipelines?
 
 Choose one of the paths below. The same ZenML pipeline pattern works for all of them—the difference is in your steps and how you orchestrate them.
 
+- **[Build AI Agents](#path-1-build-ai-agents)** - Use LLMs and tools to create autonomous agents
+- **[Build Classical ML Pipelines](#path-2-build-classical-ml-pipelines)** - Train and serve ML models with scikit-learn, TensorFlow, or PyTorch
+- **[Build Hybrid Systems](#path-3-build-hybrid-systems)** - Combine ML classifiers with agents
+
 ---
+
+{% details title="Path 1: Build AI Agents" %}
 
 ## Path 1: Build AI Agents
 
@@ -50,14 +56,13 @@ config:
   theme: mc
 ---
 flowchart TB
-  U["CLI / curl / web UI"] --> D["ZenML Deployment<br/>(agent endpoint)"]
+  U["CLI / curl / web UI"] --> D["ZenML Deployment<br/>(doc_analyzer)"]
 
-  subgraph PIPE["Agent Pipeline"]
-    I["Input Processing"]
-    A["LLM Reasoning<br/>(with tools)"]
-    T["Tool Execution"]
-    O["Output Formatting"]
-    I --> A --> T --> O
+  subgraph PIPE["Pipeline: doc_analyzer"]
+    I["ingest_document_step"]
+    A["analyze_document_step<br/>(OpenAI or fallback)"]
+    R["render_analysis_report_step"]
+    I --> A --> R
   end
 
   D --> PIPE
@@ -85,7 +90,9 @@ flowchart TB
 - **[agent_framework_integrations](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations)**: Integrate with popular agent frameworks
 - **[llm_finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)**: Fine-tune LLMs for specialized tasks
 
----
+{% enddetails %}
+
+{% details title="Path 2: Build Classical ML Pipelines" %}
 
 ## Path 2: Build Classical ML Pipelines
 
@@ -115,21 +122,26 @@ config:
   theme: mc
 ---
 flowchart TB
-  D["Input Data"] --> L["Data Loading"]
-  L --> F["Feature Engineering"]
-  F --> T["Model Training"]
-  T --> E["Evaluation"]
-  E --> M["Serve Model<br/>(HTTP endpoint)"]
+  subgraph TRAIN["Training Pipeline: churn_training_pipeline"]
+    D["generate_churn_data"]
+    T["train_churn_model"]
+    D --> T
+  end
 
-  U["Predictions<br/>(curl / SDK)"] --> M
+  subgraph INFER["Inference Pipeline: churn_inference_pipeline<br/>(deployed as HTTP endpoint)"]
+    P["predict_churn"]
+  end
+
+  U["Customer Features<br/>(curl / SDK)"] --> INFER
 
   subgraph STACK["Stack"]
     OR[("Orchestrator")]
     AR[("Artifact Store")]
   end
 
-  M --> OR
-  E --> AR
+  TRAIN --> AR
+  INFER --> OR
+  INFER --> AR
 ```
 
 ### Example output
@@ -146,7 +158,9 @@ flowchart TB
 - **[e2e_nlp](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)**: Domain-specific NLP pipeline example
 - **[mlops_starter](https://github.com/zenml-io/zenml/tree/main/examples/mlops_starter)**: Production-ready MLOps setup with monitoring and governance
 
----
+{% enddetails %}
+
+{% details title="Path 3: Build Hybrid Systems" %}
 
 ## Path 3: Build Hybrid Systems
 
@@ -176,24 +190,30 @@ config:
   theme: mc
 ---
 flowchart TB
-  I["Input"] --> C["ML Classifier<br/>(scikit-learn)"]
-  C --> D{"Route by<br/>Classification"}
-  D -->|Intent A| A1["Specialized Agent 1"]
-  D -->|Intent B| A2["Specialized Agent 2"]
-  A1 --> O["Output"]
-  A2 --> O
+  U["Customer Input<br/>(curl / SDK)"] --> SA["support_agent pipeline"]
 
-  U["HTTP Request"] --> I
-  O --> R["Response<br/>(to client)"]
+  subgraph TRAIN["Training Pipeline: intent_training_pipeline<br/>(trains classifier offline)"]
+    D["load_toy_intent_data"]
+    T["train_classifier_step"]
+    D --> T
+  end
+
+  subgraph SERVE["Agent Pipeline: support_agent<br/>(loaded at init)"]
+    C["classify_intent<br/>(uses trained classifier)"]
+    R["generate_response<br/>(LLM-based)"]
+    C --> R
+  end
+
+  SA --> SERVE
 
   subgraph STACK["Stack"]
     OR[("Orchestrator")]
     AR[("Artifact Store")]
   end
 
-  C --> AR
-  A1 --> AR
-  A2 --> AR
+  TRAIN --> AR
+  SERVE --> OR
+  SERVE --> AR
 ```
 
 ### Example output
@@ -208,6 +228,8 @@ flowchart TB
 - **[agent_outer_loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop)**: Full hybrid example with automatic intent detection
 - **[deploying_agent](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)**: Start here for the agent piece
 - **[deploying_ml_model](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)**: Start here for the ML piece
+
+{% enddetails %}
 
 ---
 
