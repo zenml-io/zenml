@@ -44,10 +44,33 @@ Choose any framework and get started in minutes:
 export OPENAI_API_KEY="your-api-key-here"
 cd framework-name/
 uv venv --python 3.11
-source .venv/bin/activate  
+source .venv/bin/activate
 uv pip install -r requirements.txt
 python run.py
 ```
+
+### 🌐 Pipeline Deployments
+
+All examples support **real-time deployment as HTTP services** using ZenML's [Pipeline Deployment feature](https://docs.zenml.io/concepts/deployment):
+
+```bash
+# Deploy any agent pipeline as a persistent HTTP service
+zenml pipeline deploy agent_pipeline --name my-agent-service
+
+# Invoke via CLI
+zenml deployment invoke my-agent-service --query="Your question here"
+
+# Invoke via HTTP API
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"parameters": {"query": "Your question here"}}'
+```
+
+This transforms batch-style agent workflows into **real-time APIs** perfect for:
+- **Web applications**: Integrate agents directly into your apps
+- **Microservices**: Deploy agents as independent services
+- **Production inference**: Serve models with preprocessing pipelines
+- **Interactive demos**: Create shareable agent endpoints
 
 ## 📊 Frameworks Overview
 
@@ -78,16 +101,13 @@ All examples follow these established patterns:
 ### 📦 Pipeline Architecture
 ```python
 @pipeline
-def agent_pipeline() -> str:
-    # 1. External artifact input
-    query = ExternalArtifact(value="Your query")
-    
-    # 2. Agent execution
+def agent_pipeline(query: str = "Your default query") -> str:
+    # 1. Agent execution with parameterized input
     results = run_agent(query)
-    
-    # 3. Response formatting
+
+    # 2. Response formatting
     summary = format_response(results)
-    
+
     return summary
 ```
 
@@ -124,14 +144,14 @@ def agent_pipeline() -> str:
 
 ## 🔄 Implementation Notes
 
-### Production vs. Demos
-**These examples demonstrate single-query execution for simplicity.** In production, ZenML's value comes from:
+### Production Use Cases
+**These examples support both batch and real-time execution.** ZenML's value in production includes:
 - **Batch processing**: Process hundreds/thousands of queries overnight
-- **Agent evaluation**: Compare different frameworks on test datasets  
+- **Real-time serving**: Deploy agents as HTTP APIs for instant responses
+- **Agent evaluation**: Compare different frameworks on test datasets
 - **Data pipelines**: Use agents to process document collections
 - **A/B testing**: Systematic comparison of agent configurations
-
-For real-time serving, use FastAPI/Flask directly. Use ZenML for the operational layer.
+- **Microservices**: Independent, scalable agent deployments
 
 ### Async Frameworks
 Some frameworks require async handling within ZenML steps:
@@ -174,6 +194,8 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 - 🎯 **Production ready**: Built-in monitoring, logging, and error handling
 - 🔧 **Tool agnostic**: Works with any agent framework
 - ☁️ **Cloud native**: Deploy anywhere with consistent behavior
+- 🌐 **Real-time APIs**: Deploy agents as HTTP services instantly
+- 🚀 **Pipeline deployments**: Transform batch workflows into live services
 
 ## 📖 Learn More
 
