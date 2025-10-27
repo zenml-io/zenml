@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
             try:
                 os.unlink(script_path)
-            except:
+            except Exception:
                 pass
 
     except Exception as e:
