@@ -130,7 +130,7 @@ You'll need:
 
 ```bash
 # Create a remote stack using the deployment wizard
-zenml stack create <STACK_NAME> \
+zenml stack register <STACK_NAME> \
   --deployer <DEPLOYER_NAME> \
   --orchestrator <ORCHESTRATOR_NAME> \
   --artifact-store <ARTIFACT_STORE_NAME>

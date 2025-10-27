@@ -95,7 +95,7 @@ Run the same pipeline on cloud infrastructure without changing any code:
 
 ```bash
 # Create a cloud stack
-zenml stack create my_cloud_stack --orchestrator kubeflow --artifact-store s3 --deployer aws...
+zenml stack register my_cloud_stack --orchestrator kubeflow --artifact-store s3 --deployer aws...
 
 # Activate it
 zenml stack set my_cloud_stack

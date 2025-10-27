@@ -257,7 +257,7 @@ All three paths use the same deployment pattern. Configure a remote stack and de
 
 ```bash
 # Create a remote stack (e.g., AWS)
-zenml stack create my-remote-stack \
+zenml stack register my-remote-stack \
   --orchestrator aws-sagemaker \
   --artifact-store s3-bucket \
   --deployer aws
