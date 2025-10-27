@@ -100,10 +100,6 @@ jobs:
             fi
           done
           git add examples/quickstart
-      - name: Regenerate quickstart cloud requirements
-        run: |
-          scripts/generate_cloud_requirements.sh --zenml-version "${{ needs.fetch-versions.outputs.new_version }}"
-          git add examples/quickstart/requirements_*.txt
       # Generate and append release notes
       - name: Generate release notes
         # Only run this part once when the release branch is created

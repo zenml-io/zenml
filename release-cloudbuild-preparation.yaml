@@ -77,7 +77,6 @@ steps:
           --platform linux/amd64 \
           --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_ZENML_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=gcp \
-          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
           -t $$USERNAME/prepare-release:quickstart-gcp-${_ZENML_NEW_VERSION}
 
@@ -97,7 +96,6 @@ steps:
           --platform linux/amd64 \
           --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_ZENML_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=aws \
-          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
           -t $$USERNAME/prepare-release:quickstart-aws-${_ZENML_NEW_VERSION}
     id: build-quickstart-aws
@@ -116,7 +114,6 @@ steps:
           --platform linux/amd64 \
           --build-arg BASE_IMAGE=$$USERNAME/prepare-release:base-${_ZENML_NEW_VERSION} \
           --build-arg CLOUD_PROVIDER=azure \
-          --build-arg ZENML_BRANCH=${_ZENML_BRANCH} \
           -f docker/zenml-quickstart-dev.Dockerfile \
           -t $$USERNAME/prepare-release:quickstart-azure-${_ZENML_NEW_VERSION}
     id: build-quickstart-azure
