@@ -71,7 +71,11 @@ class StepInvocation:
         self.upstream_steps = upstream_steps
         self.pipeline = pipeline
 
-    def finalize(self, parameters_to_ignore: Set[str]) -> "StepConfiguration":
+    def finalize(
+        self,
+        parameters_to_ignore: Set[str],
+        skip_input_validation: bool = False,
+    ) -> "StepConfiguration":
         """Finalizes a step invocation.
 
         It will validate the upstream steps and run final configurations on the
@@ -80,6 +84,7 @@ class StepInvocation:
         Args:
             parameters_to_ignore: Set of parameters that should not be applied
                 to the step instance.
+            skip_input_validation: If True, will skip the input validation.
 
         Returns:
             The finalized step configuration.
@@ -119,6 +124,5 @@ class StepInvocation:
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata=self.model_artifacts_or_metadata,
             client_lazy_loaders=self.client_lazy_loaders,
-            # Skip input validation for dynamic pipeline step templates
-            skip_input_validation=self.pipeline.is_dynamic,
+            skip_input_validation=skip_input_validation,
         )

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from ast import Dict
 from typing import TYPE_CHECKING, Any, Dict, List
 from uuid import UUID
 
@@ -82,6 +81,8 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
 
         step_run_info = StepRunInfo(
             config=step.config,
+            spec=step.spec,
+            snapshot=snapshot,
             pipeline=snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],

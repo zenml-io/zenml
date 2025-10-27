@@ -10215,6 +10215,12 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if step_run.dynamic_config:
+                if not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
                 step_configuration_schema = StepConfigurationSchema(
                     index=0,
                     name=step_run.name,

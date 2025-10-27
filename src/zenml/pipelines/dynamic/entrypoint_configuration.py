@@ -11,21 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
-"""Abstract base class for entrypoint configurations that run a pipeline."""
+"""Entrypoint configuration to run a dynamic pipeline."""
 
 from typing import Any, Dict, List
 from uuid import UUID
@@ -41,15 +27,14 @@ RUN_ID_OPTION = "run_id"
 
 
 class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
-    """Base class for entrypoint configurations that run an entire pipeline."""
+    """Entrypoint configuration to run a dynamic pipeline."""
 
     @classmethod
     def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
-            The superclass options as well as an option for the name of the
-            step to run.
+            All options required for running with this configuration.
         """
         return super().get_entrypoint_options() | {RUN_ID_OPTION: False}
 
@@ -60,31 +45,19 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
-        The argument list should be something that
-        `argparse.ArgumentParser.parse_args(...)` can handle (e.g.
-        `["--some_option", "some_value"]` or `["--some_option=some_value"]`).
-        It needs to provide values for all options returned by the
-        `get_entrypoint_options()` method of this class.
-
         Args:
-            **kwargs: Kwargs, must include the step name.
+            **kwargs: Keyword arguments.
 
         Returns:
-            The superclass arguments as well as arguments for the name of the
-            step to run.
+            All arguments that the entrypoint command should be called with.
         """
         args = super().get_entrypoint_arguments(**kwargs)
-        if RUN_ID_OPTION in kwargs:
-            args.extend(
-                [
-                    f"--{RUN_ID_OPTION}",
-                    str(kwargs[RUN_ID_OPTION]),
-                ]
-            )
+        if run_id := kwargs.get(RUN_ID_OPTION, None):
+            args.extend([f"--{RUN_ID_OPTION}", str(run_id)])
         return args
 
     def run(self) -> None:
-        """Prepares the environment and runs the configured pipeline."""
+        """Prepares the environment and runs the configured dynamic pipeline."""
         snapshot = self.load_snapshot()
 
         # Activate all the integrations. This makes sure that all materializers

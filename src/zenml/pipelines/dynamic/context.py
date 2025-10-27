@@ -31,7 +31,6 @@ class BaseContext:
 
 
 class DynamicPipelineRunContext(BaseContext):
-    reenterable = False
     __context_var__ = contextvars.ContextVar("dynamic_pipeline_run_context")
 
     def __init__(
@@ -69,3 +68,7 @@ class DynamicPipelineRunContext(BaseContext):
                 "Calling a pipeline within a dynamic pipeline is not allowed."
             )
         return super().__enter__()
+
+
+def executing_dynamic_pipeline() -> bool:
+    return DynamicPipelineRunContext.get() is not None

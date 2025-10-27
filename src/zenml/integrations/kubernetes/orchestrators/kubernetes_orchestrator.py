@@ -74,6 +74,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     job_template_manifest_from_job,
     pod_template_manifest_from_pod,
 )
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.core.schedule import ScheduleUpdate
@@ -659,32 +660,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 )
                 return None
 
-    def submit_dynamic_pipeline(
+    def _launch_job(
         self,
-        snapshot: "PipelineSnapshotResponse",
-        stack: "Stack",
+        name: str,
+        command: List[str],
+        args: List[str],
+        image: str,
         environment: Dict[str, str],
-        placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
-        """Submits a dynamic pipeline to the orchestrator."""
-        from zenml.pipelines.dynamic.entrypoint_configuration import (
-            DynamicPipelineEntrypointConfiguration,
-        )
-
-        pipeline_name = snapshot.pipeline_configuration.name
-        settings = cast(
-            KubernetesOrchestratorSettings, self.get_settings(snapshot)
-        )
-        image = self.get_image(snapshot=snapshot)
-
-        command = (
-            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
-        )
-        args = DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
-            snapshot_id=snapshot.id,
-            run_id=placeholder_run.id if placeholder_run else None,
-        )
-
+        labels: Dict[str, str],
+        annotations: Dict[str, str],
+        settings: KubernetesOrchestratorSettings,
+        pod_settings: Optional[KubernetesPodSettings] = None,
+    ) -> None:
         # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = self._get_service_account_name(settings)
 
@@ -693,44 +680,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # takes up some memory resources itself and, if not specified, the pod
         # will be scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
-        orchestrator_pod_settings = kube_utils.apply_default_resource_requests(
+        pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
             cpu="100m",
-            pod_settings=settings.orchestrator_pod_settings,
+            pod_settings=pod_settings,
         )
-
-        if self.config.pass_zenml_token_as_secret:
-            secret_name = self.get_token_secret_name(snapshot.id)
-            token = environment.pop("ZENML_STORE_API_TOKEN")
-            kube_utils.create_or_update_secret(
-                core_api=self._k8s_core_api,
-                namespace=self.config.kubernetes_namespace,
-                secret_name=secret_name,
-                data={KUBERNETES_SECRET_TOKEN_KEY_NAME: token},
-            )
-            orchestrator_pod_settings.env.append(
-                {
-                    "name": "ZENML_STORE_API_TOKEN",
-                    "valueFrom": {
-                        "secretKeyRef": {
-                            "name": secret_name,
-                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
-                        }
-                    },
-                }
-            )
-
-        orchestrator_pod_labels = {
-            "pipeline": kube_utils.sanitize_label(pipeline_name),
-        }
-
-        if placeholder_run:
-            orchestrator_pod_labels["run_id"] = kube_utils.sanitize_label(
-                str(placeholder_run.id)
-            )
-            orchestrator_pod_labels["run_name"] = kube_utils.sanitize_label(
-                placeholder_run.name
-            )
 
         pod_manifest = build_pod_manifest(
             pod_name=None,
@@ -738,10 +692,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             command=command,
             args=args,
             privileged=False,
-            pod_settings=orchestrator_pod_settings,
+            pod_settings=pod_settings,
             service_account_name=service_account_name,
             env=environment,
-            labels=orchestrator_pod_labels,
+            labels=labels,
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,
         )
@@ -775,6 +729,92 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             ]
         }
 
+        job_manifest = build_job_manifest(
+            job_name=name,
+            pod_template=pod_template_manifest_from_pod(pod_manifest),
+            backoff_limit=settings.orchestrator_job_backoff_limit,
+            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
+            active_deadline_seconds=settings.active_deadline_seconds,
+            pod_failure_policy=pod_failure_policy,
+            labels=labels,
+            annotations=annotations,
+        )
+
+        kube_utils.create_job(
+            batch_api=self._k8s_batch_api,
+            namespace=self.config.kubernetes_namespace,
+            job_manifest=job_manifest,
+        )
+
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator."""
+        from zenml.pipelines.dynamic.entrypoint_configuration import (
+            DynamicPipelineEntrypointConfiguration,
+        )
+
+        if snapshot.schedule:
+            raise RuntimeError("Dynamic pipelines cannot be scheduled yet.")
+
+        pipeline_name = snapshot.pipeline_configuration.name
+        settings = cast(
+            KubernetesOrchestratorSettings, self.get_settings(snapshot)
+        )
+        orchestrator_pod_settings = (
+            settings.orchestrator_pod_settings or KubernetesPodSettings()
+        )
+        image = self.get_image(snapshot=snapshot)
+
+        command = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        )
+        args = DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+            snapshot_id=snapshot.id,
+            run_id=placeholder_run.id if placeholder_run else None,
+        )
+
+        if self.config.pass_zenml_token_as_secret:
+            secret_name = self.get_token_secret_name(snapshot.id)
+            token = environment.pop("ZENML_STORE_API_TOKEN")
+            kube_utils.create_or_update_secret(
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                secret_name=secret_name,
+                data={KUBERNETES_SECRET_TOKEN_KEY_NAME: token},
+            )
+            orchestrator_pod_settings.env.append(
+                {
+                    "name": "ZENML_STORE_API_TOKEN",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": secret_name,
+                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
+                        }
+                    },
+                }
+            )
+
+        labels = {
+            "pipeline": kube_utils.sanitize_label(pipeline_name),
+        }
+
+        if placeholder_run:
+            labels["run_id"] = kube_utils.sanitize_label(
+                str(placeholder_run.id)
+            )
+            labels["run_name"] = kube_utils.sanitize_label(
+                placeholder_run.name
+            )
+
+        annotations = {
+            ORCHESTRATOR_ANNOTATION_KEY: str(self.id),
+        }
+
         job_name = settings.job_name_prefix or ""
         random_prefix = "".join(random.choices("0123456789abcdef", k=8))
         job_name += f"-{random_prefix}-{snapshot.pipeline_configuration.name}"
@@ -782,70 +822,61 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)
 
-        job_manifest = build_job_manifest(
-            job_name=job_name,
-            pod_template=pod_template_manifest_from_pod(pod_manifest),
-            backoff_limit=settings.orchestrator_job_backoff_limit,
-            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
-            active_deadline_seconds=settings.active_deadline_seconds,
-            pod_failure_policy=pod_failure_policy,
-            labels=orchestrator_pod_labels,
-            annotations={
-                ORCHESTRATOR_ANNOTATION_KEY: str(self.id),
-            },
-        )
+        try:
+            self._launch_job(
+                name=job_name,
+                command=command,
+                args=args,
+                image=image,
+                environment=environment,
+                labels=labels,
+                annotations=annotations,
+                settings=settings,
+                pod_settings=orchestrator_pod_settings,
+            )
 
-        if snapshot.schedule:
-            raise RuntimeError("Dynamic pipelines cannot be scheduled yet.")
-        else:
-            try:
-                kube_utils.create_job(
-                    batch_api=self._k8s_batch_api,
-                    namespace=self.config.kubernetes_namespace,
-                    job_manifest=job_manifest,
-                )
-            except Exception as e:
-                if self.config.pass_zenml_token_as_secret:
-                    secret_name = self.get_token_secret_name(snapshot.id)
-                    try:
-                        kube_utils.delete_secret(
-                            core_api=self._k8s_core_api,
-                            namespace=self.config.kubernetes_namespace,
-                            secret_name=secret_name,
-                        )
-                    except Exception as cleanup_error:
-                        logger.error(
-                            "Error cleaning up secret %s: %s",
-                            secret_name,
-                            cleanup_error,
-                        )
-                raise e
-
-            if settings.synchronous:
-
-                def _wait_for_run_to_finish() -> None:
-                    logger.info("Waiting for orchestrator job to finish...")
-                    kube_utils.wait_for_job_to_finish(
-                        batch_api=self._k8s_batch_api,
+        except Exception as e:
+            if self.config.pass_zenml_token_as_secret:
+                secret_name = self.get_token_secret_name(snapshot.id)
+                try:
+                    kube_utils.delete_secret(
                         core_api=self._k8s_core_api,
                         namespace=self.config.kubernetes_namespace,
-                        job_name=job_name,
-                        backoff_interval=settings.job_monitoring_interval,
-                        fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
-                        stream_logs=True,
+                        secret_name=secret_name,
                     )
+                except Exception as cleanup_error:
+                    logger.error(
+                        "Error cleaning up secret %s: %s",
+                        secret_name,
+                        cleanup_error,
+                    )
+            raise e
 
-                return SubmissionResult(
-                    wait_for_completion=_wait_for_run_to_finish,
+        if settings.synchronous:
+
+            def _wait_for_run_to_finish() -> None:
+                logger.info("Waiting for orchestrator job to finish...")
+                kube_utils.wait_for_job_to_finish(
+                    batch_api=self._k8s_batch_api,
+                    core_api=self._k8s_core_api,
+                    namespace=self.config.kubernetes_namespace,
+                    job_name=job_name,
+                    backoff_interval=settings.job_monitoring_interval,
+                    fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                    stream_logs=True,
                 )
-            else:
-                logger.info(
-                    f"Orchestrator job `{job_name}` started. "
-                    f"Run the following command to inspect the logs: "
-                    f"`kubectl -n {self.config.kubernetes_namespace} logs "
-                    f"job/{job_name}`"
-                )
-                return None
+
+            return SubmissionResult(
+                wait_for_completion=_wait_for_run_to_finish,
+            )
+        else:
+            logger.info(
+                f"Orchestrator job `{job_name}` started. "
+                f"Run the following command to inspect the logs: "
+                f"`kubectl -n {self.config.kubernetes_namespace} logs "
+                f"job/{job_name}`"
+            )
+            return None
 
     def run_dynamic_out_of_process_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
@@ -857,15 +888,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(step_run_info)
         )
-        image_name = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
+        image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
         command = StepOperatorEntrypointConfiguration.get_entrypoint_command()
         args = StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_run_info.pipeline_step_name,
-            snapshot_id=step_run_info.snapshot_id,
+            snapshot_id=(step_run_info.snapshot.id),
             step_run_id=str(step_run_info.step_run_id),
         )
 
-        step_labels = {
+        labels = {
             "run_id": kube_utils.sanitize_label(str(step_run_info.run_id)),
             "run_name": kube_utils.sanitize_label(str(step_run_info.run_name)),
             "pipeline": kube_utils.sanitize_label(step_run_info.pipeline.name),
@@ -873,31 +904,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 step_run_info.pipeline_step_name
             ),
         }
-        step_annotations = {
+        annotations = {
             STEP_NAME_ANNOTATION_KEY: step_run_info.pipeline_step_name,
         }
-
-        # We set some default minimum memory resource requests for the step pod
-        # here if the user has not specified any, because the step pod takes up
-        # some memory resources itself and, if not specified, the pod will be
-        # scheduled on any node regardless of available memory and risk
-        # negatively impacting or even crashing the node due to memory pressure.
-        pod_settings = kube_utils.apply_default_resource_requests(
-            memory="400Mi",
-            pod_settings=settings.pod_settings,
-        )
-
-        pod_manifest = build_pod_manifest(
-            pod_name=None,
-            image_name=image_name,
-            command=command,
-            args=args,
-            env=environment,
-            privileged=settings.privileged,
-            pod_settings=pod_settings,
-            service_account_name=settings.service_account_name,
-            labels=step_labels,
-        )
 
         job_name = settings.job_name_prefix or ""
         random_prefix = "".join(random.choices("0123456789abcdef", k=8))
@@ -906,22 +915,16 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)
 
-        job_manifest = build_job_manifest(
-            job_name=job_name,
-            pod_template=pod_template_manifest_from_pod(pod_manifest),
-            # The orchestrator already handles retries, so we don't need to
-            # retry the step operator job.
-            backoff_limit=0,
-            ttl_seconds_after_finished=settings.ttl_seconds_after_finished,
-            active_deadline_seconds=settings.active_deadline_seconds,
-            labels=step_labels,
-            annotations=step_annotations,
-        )
-
-        kube_utils.create_job(
-            batch_api=self._k8s_batch_api,
-            namespace=self.config.kubernetes_namespace,
-            job_manifest=job_manifest,
+        self._launch_job(
+            name=job_name,
+            command=command,
+            args=args,
+            image=image,
+            environment=environment,
+            labels=labels,
+            annotations=annotations,
+            settings=settings,
+            pod_settings=settings.pod_settings,
         )
 
         logger.info(
@@ -977,6 +980,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         try:
             return os.environ[ENV_ZENML_KUBERNETES_RUN_ID]
         except KeyError:
+            import socket
+
+            return socket.gethostname()
+
             raise RuntimeError(
                 "Unable to read run id from environment variable "
                 f"{ENV_ZENML_KUBERNETES_RUN_ID}."

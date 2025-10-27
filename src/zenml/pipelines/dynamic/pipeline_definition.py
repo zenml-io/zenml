@@ -11,17 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Definition of a ZenML pipeline."""
+"""Dynamic pipeline definition."""
 
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
     Set,
-    TypeVar,
     Union,
 )
 
@@ -44,24 +42,35 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., Any])
-
 
 class DynamicPipeline(Pipeline):
-    """ZenML pipeline class."""
+    """Dynamic pipeline class."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the pipeline.
+
+        Args:
+            *args: Pipeline constructor arguments.
+            **kwargs: Pipeline constructor keyword arguments.
+
+        Raises:
+            ValueError: If some of the steps in `depends_on` are duplicated.
+        """
         self._depends_on = kwargs.pop("depends_on", None) or []
         if self._depends_on:
-            # TODO: This doesn't really work, as `step.with_options`
-            sources = [step.resolve().import_path for step in self._depends_on]
-            if len(sources) != len(set(sources)):
+            static_ids = [step._static_id for step in self._depends_on]
+            if len(static_ids) != len(set(static_ids)):
                 raise ValueError("Duplicate steps in depends_on.")
 
         super().__init__(*args, **kwargs)
 
     @property
     def depends_on(self) -> List["BaseStep"]:
+        """The steps that the pipeline depends on.
+
+        Returns:
+            The steps that the pipeline depends on.
+        """
         return self._depends_on
 
     @property
@@ -173,6 +182,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             str, Union[ExternalArtifact, "ArtifactVersionResponse"]
         ] = {},
     ) -> str:
+        """Adds a dynamic invocation to the pipeline.
+
+        Args:
+            step: The step for which to add an invocation.
+            custom_id: Custom ID to use for the invocation.
+            allow_id_suffix: Whether a suffix can be appended to the invocation
+                ID.
+            upstream_steps: The upstream steps for the invocation.
+            input_artifacts: The input artifacts for the invocation.
+            external_artifacts: The external artifacts for the invocation.
+
+        Returns:
+            The invocation ID.
+        """
         invocation_id = self._compute_invocation_id(
             step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
         )
@@ -194,6 +217,19 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def __call__(
         self, *args: Any, **kwargs: Any
     ) -> Optional[PipelineRunResponse]:
+        """Run the pipeline on the active stack.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If the active orchestrator does not support running
+                dynamic pipelines.
+
+        Returns:
+            The pipeline run or `None` if running with a schedule.
+        """
         if should_prevent_pipeline_execution():
             logger.info("Preventing execution of pipeline '%s'.", self.name)
             return
@@ -201,7 +237,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         stack = Client().active_stack
         if not stack.orchestrator.supports_dynamic_pipelines:
             raise RuntimeError(
-                f"The {stack.orchestrator.__class__.__name__} does not support dynamic pipelines. "
+                f"The {stack.orchestrator.__class__.__name__} does not "
+                "support dynamic pipelines. "
             )
 
         self.prepare(*args, **kwargs)

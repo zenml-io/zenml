@@ -107,7 +107,6 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
-        dynamic: bool = False,
     ):
         """Initializes the launcher.
 
@@ -122,7 +121,6 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
-        self._dynamic = dynamic
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -306,9 +304,10 @@ class StepLauncher:
                 pipeline_run=pipeline_run,
                 stack=self._stack,
             )
+            dynamic_config = self._step if self._snapshot.is_dynamic else None
             step_run_request = request_factory.create_request(
                 invocation_id=self._invocation_id,
-                dynamic_config=self._step if self._dynamic else None,
+                dynamic_config=dynamic_config,
             )
             step_run_request.logs = logs_model
 
@@ -461,19 +460,19 @@ class StepLauncher:
                     step_run_info=step_run_info,
                 )
             else:
+                from zenml.pipelines.dynamic.runner import (
+                    should_run_in_process,
+                )
+
                 should_run_out_of_process = (
                     self._snapshot.is_dynamic
                     and self._step.config.in_process is False
                 )
 
-                if (
-                    should_run_out_of_process
-                    and self._stack.orchestrator.supports_dynamic_out_of_process_steps
+                if should_run_in_process(
+                    self._step,
+                    self._snapshot.pipeline_configuration.docker_settings,
                 ):
-                    self._run_step_with_dynamic_orchestrator(
-                        step_run_info=step_run_info
-                    )
-                else:
                     if should_run_out_of_process:
                         logger.warning(
                             "The %s does not support running dynamic out of "
@@ -489,6 +488,10 @@ class StepLauncher:
                         step_run_info=step_run_info,
                         input_artifacts=step_run.regular_inputs,
                         output_artifact_uris=output_artifact_uris,
+                    )
+                else:
+                    self._run_step_with_dynamic_orchestrator(
+                        step_run_info=step_run_info
                     )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(

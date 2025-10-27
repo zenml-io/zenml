@@ -91,7 +91,7 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
-    from zenml.pipelines.dynamic.runner import StepRunResultFuture
+    from zenml.pipelines.dynamic.runner import StepRunOutputsFuture
 
 
 logger = get_logger(__name__)
@@ -459,8 +459,8 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "StepRunResultFuture",
-            Sequence[Union[str, StepArtifact, "StepRunResultFuture"]],
+            "StepRunOutputsFuture",
+            Sequence[Union[str, StepArtifact, "StepRunOutputsFuture"]],
             None,
         ] = None,
         **kwargs: Any,
@@ -598,10 +598,10 @@ class BaseStep:
         *args: Any,
         id: Optional[str] = None,
         after: Union[
-            "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
         ] = None,
         **kwargs: Any,
-    ) -> "StepRunResultFuture":
+    ) -> "StepRunOutputsFuture":
         from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
 
         context = DynamicPipelineRunContext.get()
@@ -927,12 +927,14 @@ class BaseStep:
         logger.debug(self._configuration)
 
     def _apply_dynamic_configuration(self) -> None:
+        """Applies the dynamic configuration to the step configuration."""
         if self._dynamic_configuration:
             self._configuration = pydantic_utils.update_model(
                 self._configuration,
                 update=self._dynamic_configuration,
                 recursive=True,
             )
+            logger.debug("Applied dynamic configuration.")
 
     def _validate_configuration(
         self,

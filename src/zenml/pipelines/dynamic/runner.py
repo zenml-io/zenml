@@ -41,6 +41,7 @@ from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
+    from zenml.config import DockerSettings
     from zenml.config.step_configurations import Step
     from zenml.steps import BaseStep
 
@@ -53,20 +54,20 @@ class DynamicStepRunOutput(ArtifactVersionResponse):
     step_name: str
 
 
-StepRunResult = Union[
+StepRunOutputs = Union[
     None, DynamicStepRunOutput, Tuple[DynamicStepRunOutput, ...]
 ]
 
 
-class StepRunResultFuture:
-    def __init__(self, wrapped: Future[StepRunResult], invocation_id: str):
+class StepRunOutputsFuture:
+    def __init__(self, wrapped: Future[StepRunOutputs], invocation_id: str):
         self._wrapped = wrapped
         self._invocation_id = invocation_id
 
     def wait(self) -> None:
         self._wrapped.wait()
 
-    def result(self) -> StepRunResult:
+    def result(self) -> StepRunOutputs:
         return self._wrapped.result()
 
     def load(self) -> Any:
@@ -79,7 +80,7 @@ class StepRunResultFuture:
         elif isinstance(result, tuple):
             return tuple(item.load() for item in result)
         else:
-            raise ValueError(f"Invalid step run result: {result}")
+            raise ValueError(f"Invalid step run output: {result}")
 
     def __getitem__(self, key: str) -> Any:
         return self.load()[key]
@@ -167,9 +168,9 @@ class DynamicPipelineRunner:
         args: Tuple[Any],
         kwargs: Dict[str, Any],
         after: Union[
-            "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
         ] = None,
-    ) -> StepRunResult:
+    ) -> StepRunOutputs:
         step = step.copy()
         inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
         compiled_step, _ = _compile_step(
@@ -179,10 +180,12 @@ class DynamicPipelineRunner:
             snapshot=self._snapshot,
             step=compiled_step,
             orchestrator_run_id=self._orchestrator_run_id,
-            retry=_should_retry_locally(compiled_step),
-            dynamic=True,
+            retry=_should_retry_locally(
+                compiled_step,
+                self._snapshot.pipeline_configuration.docker_settings,
+            ),
         )
-        return _load_step_result(step_run.id)
+        return _load_step_outputs(step_run.id)
 
     def run_step_in_thread(
         self,
@@ -191,28 +194,32 @@ class DynamicPipelineRunner:
         args: Tuple[Any],
         kwargs: Dict[str, Any],
         after: Union[
-            "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
         ] = None,
-    ) -> StepRunResultFuture:
+    ) -> StepRunOutputsFuture:
         step = step.copy()
         inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
         compiled_step, invocation_id = _compile_step(
             self._snapshot, self.pipeline, step, id, upstream_steps, inputs
         )
 
-        def _run() -> StepRunResult:
+        def _run() -> StepRunOutputs:
             step_run = _run_step_sync(
                 snapshot=self._snapshot,
                 step=compiled_step,
                 orchestrator_run_id=self._orchestrator_run_id,
-                retry=_should_retry_locally(compiled_step),
-                dynamic=True,
+                retry=_should_retry_locally(
+                    compiled_step,
+                    self._snapshot.pipeline_configuration.docker_settings,
+                ),
             )
-            return _load_step_result(step_run.id)
+            return _load_step_outputs(step_run.id)
 
         ctx = contextvars.copy_context()
         future = self._executor.submit(ctx.run, _run)
-        return StepRunResultFuture(wrapped=future, invocation_id=invocation_id)
+        return StepRunOutputsFuture(
+            wrapped=future, invocation_id=invocation_id
+        )
 
 
 def _prepare_step_run(
@@ -220,12 +227,12 @@ def _prepare_step_run(
     args: Tuple[Any],
     kwargs: Dict[str, Any],
     after: Union[
-        "StepRunResultFuture", Sequence["StepRunResultFuture"], None
+        "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
     ] = None,
 ) -> Tuple[Dict[str, Any], Set[str]]:
     upstream_steps = set()
 
-    if isinstance(after, StepRunResultFuture):
+    if isinstance(after, StepRunOutputsFuture):
         after.wait()
         upstream_steps.add(after._invocation_id)
     elif isinstance(after, Sequence):
@@ -234,7 +241,7 @@ def _prepare_step_run(
             upstream_steps.add(item._invocation_id)
 
     def _await_and_validate_input(input: Any):
-        if isinstance(input, StepRunResultFuture):
+        if isinstance(input, StepRunOutputsFuture):
             input = input.result()
 
         if (
@@ -286,11 +293,14 @@ def _compile_step(
         else:
             external_artifacts[name] = ExternalArtifact(value=value)
 
-    if template := get_static_step_template(snapshot, step, pipeline):
-        step._configuration = template.config
-        step._configuration.template = template.spec.invocation_id
+    if template := get_config_template(snapshot, step, pipeline):
+        step._configuration = template.config.model_copy(
+            update={"template": template.spec.invocation_id}
+        )
 
-    step._apply_dynamic_configuration()
+    # TODO:
+    # - differentiate between input artifacts and parameters?
+    # - default parameters
     invocation_id = pipeline.add_dynamic_invocation(
         step=step,
         custom_id=id,
@@ -302,7 +312,7 @@ def _compile_step(
     compiled_step = Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],
         stack=Client().active_stack,
-        step_config=step.configuration,
+        step_config=None,
         pipeline_configuration=pipeline.configuration,
     )
 
@@ -314,14 +324,12 @@ def _run_step_sync(
     step: "Step",
     orchestrator_run_id: str,
     retry: bool = False,
-    dynamic: bool = False,
 ) -> StepRunResponse:
     def _launch_step() -> StepRunResponse:
         launcher = StepLauncher(
             snapshot=snapshot,
             step=step,
             orchestrator_run_id=orchestrator_run_id,
-            dynamic=dynamic,
         )
         return launcher.launch()
 
@@ -364,7 +372,7 @@ def _run_step_sync(
     return step_run
 
 
-def _load_step_result(step_run_id: UUID) -> StepRunResult:
+def _load_step_outputs(step_run_id: UUID) -> StepRunOutputs:
     step_run = Client().zen_store.get_run_step(step_run_id)
 
     def _convert_output_artifact(
@@ -389,11 +397,13 @@ def _load_step_result(step_run_id: UUID) -> StepRunResult:
         )
 
 
-def _should_retry_locally(step: "Step") -> bool:
+def _should_retry_locally(
+    step: "Step", pipeline_docker_settings: "DockerSettings"
+) -> bool:
     if step.config.step_operator:
         return True
 
-    if _runs_in_process(step):
+    if should_run_in_process(step, pipeline_docker_settings):
         return True
     else:
         # Running out of process with the orchestrator
@@ -402,7 +412,9 @@ def _should_retry_locally(step: "Step") -> bool:
         )
 
 
-def _runs_in_process(step: "Step") -> bool:
+def should_run_in_process(
+    step: "Step", pipeline_docker_settings: "DockerSettings"
+) -> bool:
     if step.config.step_operator:
         return False
 
@@ -411,11 +423,17 @@ def _runs_in_process(step: "Step") -> bool:
 
     if step.config.in_process is False:
         return False
+    elif step.config.in_process is None:
+        if not step.config.resource_settings.empty:
+            return False
+
+        if step.config.docker_settings != pipeline_docker_settings:
+            return False
 
     return True
 
 
-def get_static_step_template(
+def get_config_template(
     snapshot: "PipelineSnapshotResponse",
     step: "BaseStep",
     pipeline: "DynamicPipeline",

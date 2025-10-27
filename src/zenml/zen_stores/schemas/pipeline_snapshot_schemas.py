@@ -632,6 +632,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
         CheckConstraint(
             "(snapshot_id IS NULL AND step_run_id IS NOT NULL) OR "
             "(snapshot_id IS NOT NULL AND step_run_id IS NULL)",
+            name="ck_step_configuration_snapshot_step_run_exclusivity",
         ),
     )
 

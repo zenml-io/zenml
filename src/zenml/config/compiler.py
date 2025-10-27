@@ -42,7 +42,6 @@ from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
-from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -127,12 +126,18 @@ class Compiler:
                 merge=False,
             )
 
+        # If we're compiling a dynamic pipeline, the steps are only templates
+        # and might not have all inputs defined, so we skip the input
+        # validation.
+        skip_input_validation = pipeline.is_dynamic
+
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
                 stack=stack,
                 step_config=(run_configuration.steps or {}).get(invocation_id),
                 pipeline_configuration=pipeline.configuration,
+                skip_input_validation=skip_input_validation,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
                 pipeline=pipeline
@@ -465,6 +470,7 @@ class Compiler:
         stack: "Stack",
         step_config: Optional["StepConfigurationUpdate"],
         pipeline_configuration: "PipelineConfiguration",
+        skip_input_validation: bool = False,
     ) -> Step:
         """Compiles a ZenML step.
 
@@ -473,6 +479,7 @@ class Compiler:
             stack: The stack on which the pipeline will be run.
             step_config: Run configuration for the step.
             pipeline_configuration: Configuration for the pipeline.
+            skip_input_validation: If True, will skip the input validation.
 
         Returns:
             The compiled step.
@@ -486,6 +493,10 @@ class Compiler:
             step._apply_configuration(
                 step_config, runtime_parameters=invocation.parameters
             )
+
+        # Apply the dynamic configuration (which happened while executing the
+        # pipeline function) after all other step-specific configurations.
+        step._apply_dynamic_configuration()
 
         convert_component_shortcut_settings_keys(
             step.configuration.settings, stack=stack
@@ -509,7 +520,8 @@ class Compiler:
             set(step_config.parameters or {}) if step_config else set()
         )
         step_configuration_overrides = invocation.finalize(
-            parameters_to_ignore=parameters_to_ignore
+            parameters_to_ignore=parameters_to_ignore,
+            skip_input_validation=skip_input_validation,
         )
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
@@ -535,9 +547,13 @@ class Compiler:
             pipeline: The pipeline of which to sort the invocations
 
         Returns:
-            The sorted steps.
+            The sorted step invocations.
         """
         if pipeline.is_dynamic:
+            # In dynamic pipelines, we require the static invocations to be
+            # sorted the same way they were passed in `pipeline.depends_on`, as
+            # we index this list later to figure out the correct template for
+            # each step invocation.
             return list(pipeline.invocations.items())
 
         from zenml.orchestrators.dag_runner import reverse_dag
