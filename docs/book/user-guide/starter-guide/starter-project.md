@@ -49,7 +49,7 @@ zenml init
 
 ## What you'll learn
 
-You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/README.md).
+You can either follow along in the [accompanying Jupyter notebook](https://github.com/zenml-io/zenml/blob/main/examples/mlops_starter/quickstart.ipynb), or just keep reading the [README file for more instructions](https://github.com/zenml-io/zenml/tree/main/examples/mlops_starter).
 
 Either way, at the end you would run three pipelines that are exemplary:
 

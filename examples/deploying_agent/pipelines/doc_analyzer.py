@@ -2,7 +2,8 @@
 
 This pipeline orchestrates the complete document analysis workflow,
 from ingestion through analysis to report generation, with full
-logging and error handling. Now supports serving deployment.
+logging and error handling. Deployed as a real-time HTTP service with
+an embedded SPA web interface.
 """
 
 from typing import Annotated, Optional
@@ -15,7 +16,7 @@ from steps import (
 )
 
 from zenml import ArtifactConfig, pipeline
-from zenml.config import DockerSettings
+from zenml.config import CORSConfig, DeploymentSettings, DockerSettings
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
@@ -24,9 +25,18 @@ docker_settings = DockerSettings(
     },
 )
 
+deployment_settings = DeploymentSettings(
+    app_title="Document Analysis Pipeline",
+    dashboard_files_path="ui",
+    cors=CORSConfig(allow_origins=["*"]),
+)
+
 
 @pipeline(
-    settings={"docker": docker_settings},
+    settings={
+        "docker": docker_settings,
+        "deployment": deployment_settings,
+    },
     enable_cache=False,  # Disable caching for serving
 )
 def doc_analyzer(
@@ -45,7 +55,7 @@ def doc_analyzer(
     1. Document ingestion from content/URL/path
     2. Content analysis (LLM-based or deterministic fallback)
     3. HTML report generation
-    4. Returns analysis for serving deployment
+    4. Returns analysis for serving deployment via HTTP endpoint
 
     Args:
         content: Direct text content (optional)
