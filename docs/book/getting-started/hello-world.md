@@ -49,9 +49,14 @@ if __name__ == "__main__":
 <strong>    basic_pipeline()
 </strong></code></pre>
 
-{% hint style="success" %}
-Run this pipeline locally with `python run.py`. ZenML automatically tracks the execution and stores artifacts.
-{% endhint %}
+Run this pipeline in batch mode locally:
+
+```bash
+python run.py
+```
+ 
+You will see ZenML automatically tracks the execution and stores artifacts. View these on the CLI or on the dashboard.
+
 {% endstep %}
 
 {% step %}
