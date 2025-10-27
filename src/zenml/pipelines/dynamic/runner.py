@@ -286,8 +286,9 @@ def _compile_step(
         else:
             external_artifacts[name] = ExternalArtifact(value=value)
 
-    if template := get_static_step_template(snapshot, step):
+    if template := get_static_step_template(snapshot, step, pipeline):
         step._configuration = template.config
+        step._configuration.template = template.spec.invocation_id
 
     step._apply_dynamic_configuration()
     invocation_id = pipeline.add_dynamic_invocation(
@@ -417,11 +418,12 @@ def _runs_in_process(step: "Step") -> bool:
 def get_static_step_template(
     snapshot: "PipelineSnapshotResponse",
     step: "BaseStep",
+    pipeline: "DynamicPipeline",
 ) -> Optional["Step"]:
-    step_source = step.resolve().import_path
+    for index, step_ in enumerate(pipeline.depends_on):
+        if step_._static_id == step._static_id:
+            break
+    else:
+        return None
 
-    for compiled_step in snapshot.step_configurations.values():
-        if compiled_step.spec.source.import_path == step_source:
-            return compiled_step
-
-    return None
+    return list(snapshot.step_configurations.values())[index]

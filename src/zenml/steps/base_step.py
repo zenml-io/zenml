@@ -166,6 +166,7 @@ class BaseStep:
             reserved_arguments=["after", "id"],
         )
 
+        self._static_id = id(self)
         name = name or self.__class__.__name__
 
         logger.debug(
@@ -881,7 +882,14 @@ class BaseStep:
         Returns:
             The step copy.
         """
-        return copy.deepcopy(self)
+        copy_ = copy.deepcopy(self)
+
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+
+        if not DynamicPipelineRunContext.get():
+            copy_._static_id = id(copy_)
+
+        return copy_
 
     def _apply_configuration(
         self,

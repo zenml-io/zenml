@@ -261,6 +261,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    template: Optional[str] = None
     parameters: Dict[str, Any] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     environment: Dict[str, str] = {}

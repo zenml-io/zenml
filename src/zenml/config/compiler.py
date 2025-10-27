@@ -42,6 +42,7 @@ from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
+from zenml.steps.step_invocation import StepInvocation
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
 
 if TYPE_CHECKING:
@@ -536,6 +537,9 @@ class Compiler:
         Returns:
             The sorted steps.
         """
+        if pipeline.is_dynamic:
+            return list(pipeline.invocations.items())
+
         from zenml.orchestrators.dag_runner import reverse_dag
         from zenml.orchestrators.topsort import topsorted_layers
 

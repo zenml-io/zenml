@@ -59,18 +59,8 @@ class StepRunInfo(FrozenBaseModel):
             )
 
         if self.snapshot.is_dynamic:
-            # TODO: better way for this
-            for (
-                invocation_id,
-                compiled_step,
-            ) in self.snapshot.step_configurations.values():
-                if (
-                    compiled_step.spec.source.import_path
-                    == self.spec.source.import_path
-                ):
-                    step_key = invocation_id
-                    break
-            else:
+            step_key = self.config.template
+            if not step_key:
                 logger.warning(
                     "Unable to find config template for step %s. Falling "
                     "back to the pipeline image.",
