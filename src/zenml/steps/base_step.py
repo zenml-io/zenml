@@ -201,6 +201,7 @@ class BaseStep:
             )
 
         self._configuration = PartialStepConfiguration(name=name)
+        self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -897,7 +898,18 @@ class BaseStep:
                 or not. See the `BaseStep.configure(...)` method for a detailed
                 explanation.
         """
+        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+
         self._validate_configuration(config, runtime_parameters)
+
+        if DynamicPipelineRunContext.get():
+            if self._dynamic_configuration is None:
+                self._dynamic_configuration = config
+            else:
+                self._dynamic_configuration = pydantic_utils.update_model(
+                    self._dynamic_configuration, update=config, recursive=merge
+                )
+            return
 
         self._configuration = pydantic_utils.update_model(
             self._configuration, update=config, recursive=merge
@@ -905,6 +917,14 @@ class BaseStep:
 
         logger.debug("Updated step configuration:")
         logger.debug(self._configuration)
+
+    def _apply_dynamic_configuration(self) -> None:
+        if self._dynamic_configuration:
+            self._configuration = pydantic_utils.update_model(
+                self._configuration,
+                update=self._dynamic_configuration,
+                recursive=True,
+            )
 
     def _validate_configuration(
         self,

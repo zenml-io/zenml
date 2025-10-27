@@ -50,17 +50,19 @@ F = TypeVar("F", bound=Callable[..., Any])
 class DynamicPipeline(Pipeline):
     """ZenML pipeline class."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._depends_on = kwargs.pop("depends_on", None) or []
+        if self._depends_on:
+            # TODO: This doesn't really work, as `step.with_options`
+            sources = [step.resolve().import_path for step in self._depends_on]
+            if len(sources) != len(set(sources)):
+                raise ValueError("Duplicate steps in depends_on.")
+
+        super().__init__(*args, **kwargs)
+
     @property
     def depends_on(self) -> List["BaseStep"]:
-        # TODO: Even with this, it will not be possible to define all potential
-        # docker builds:
-        # If a step will be called multiple times, once without step operator
-        # and once with, it might require multiple docker images. Even if this
-        # list had two copies of the same step, how would we map at runtime
-        # which one to use?
-        # TODO: maybe this needs to be a dict, and steps can select which
-        # "template" config (including the docker image) to use?
-        return getattr(self, "_depends_on", [])
+        return self._depends_on
 
     @property
     def is_dynamic(self) -> bool:
@@ -148,7 +150,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._parameters = validated_args
         self._invocations = {}
         with self:
-            for step in self.depends_on:
+            for step in self._depends_on:
                 self.add_step_invocation(
                     step,
                     input_artifacts={},
@@ -181,7 +183,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             external_artifacts=external_artifacts,
             model_artifacts_or_metadata={},
             client_lazy_loaders={},
-            parameters={},
+            parameters=step.configuration.parameters,
             default_parameters={},
             upstream_steps=upstream_steps or set(),
             pipeline=self,

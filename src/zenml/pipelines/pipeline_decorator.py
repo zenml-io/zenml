@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
+    from zenml.steps.base_step import BaseStep
     from zenml.types import HookSpecification, InitHookSpecification
     from zenml.utils.tag_utils import Tag
 
@@ -51,6 +52,7 @@ def pipeline(_func: "F") -> "Pipeline": ...
 def pipeline(
     *,
     name: Optional[str] = None,
+    depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
@@ -77,6 +79,7 @@ def pipeline(
     _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
+    depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
@@ -142,6 +145,7 @@ def pipeline(
 
         p = DynamicPipeline(
             name=name or func.__name__,
+            depends_on=depends_on,
             entrypoint=func,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,

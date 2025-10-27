@@ -18,7 +18,7 @@ from uuid import UUID
 from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
-from zenml.config.step_configurations import Step, StepConfiguration
+from zenml.config.step_configurations import Step
 from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
@@ -281,14 +281,15 @@ def _compile_step(
                 annotation=Any,
                 pipeline=pipeline,
             )
-        elif isinstance(value, ArtifactVersionResponse):
+        elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
         else:
             external_artifacts[name] = ExternalArtifact(value=value)
 
-    if config := get_dynamic_step_configuration(snapshot, step):
-        step._configuration = config
+    if template := get_static_step_template(snapshot, step):
+        step._configuration = template.config
 
+    step._apply_dynamic_configuration()
     invocation_id = pipeline.add_dynamic_invocation(
         step=step,
         custom_id=id,
@@ -413,14 +414,14 @@ def _runs_in_process(step: "Step") -> bool:
     return True
 
 
-def get_dynamic_step_configuration(
+def get_static_step_template(
     snapshot: "PipelineSnapshotResponse",
     step: "BaseStep",
-) -> Optional["StepConfiguration"]:
+) -> Optional["Step"]:
     step_source = step.resolve().import_path
 
     for compiled_step in snapshot.step_configurations.values():
         if compiled_step.spec.source.import_path == step_source:
-            return compiled_step.config
+            return compiled_step
 
     return None
