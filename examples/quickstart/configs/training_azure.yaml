@@ -1,5 +1,0 @@
-settings:
-  docker:
-    parent_image: "zenmldocker/prepare-release:quickstart-azure-0.91.0"
-    skip_build: true
-    requirements: requirements_azure.txt

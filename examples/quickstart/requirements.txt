@@ -1,3 +1,1 @@
-# ZenML Quickstart - Minimal Dependencies
-# The quickstart runs with just ZenML installed!
-# Additional dependencies installed via: pip install zenml[server]
+zenml[server]>=0.91.0
