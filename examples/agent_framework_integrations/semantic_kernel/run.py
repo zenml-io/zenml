@@ -10,7 +10,7 @@ from typing import Annotated, Any, Dict
 
 from semantic_kernel_agent import kernel
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -107,17 +107,14 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def semantic_kernel_agent_pipeline() -> str:
+def agent_pipeline(query: str = "What is the weather in Tokyo?") -> str:
     """ZenML pipeline that orchestrates the Semantic Kernel agent.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(value="What is the weather in Tokyo?")
-
     # Run the Semantic Kernel agent
-    agent_results = run_semantic_kernel_agent(agent_query)
+    agent_results = run_semantic_kernel_agent(query=query)
 
     # Format the results
     summary = format_semantic_kernel_response(agent_results)
@@ -127,6 +124,6 @@ def semantic_kernel_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running Semantic Kernel pipeline...")
-    run_result = semantic_kernel_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

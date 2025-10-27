@@ -1,2 +1,4 @@
-pydantic-ai>=0.4.3
+pydantic-ai>=0.0.13
 zenml[local]
+jinja2>=3.1.0
+secure>=0.3.0

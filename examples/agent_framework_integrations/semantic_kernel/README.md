@@ -1,6 +1,6 @@
-# Autogen + ZenML
+# Semantic Kernel + ZenML
 
-Multi-agent conversation framework integrated with ZenML for travel planning with collaborative agents.
+Microsoft Semantic Kernel integrated with ZenML for plugin-based AI applications.
 
 ## 🚀 Quick Run
 
@@ -28,21 +28,21 @@ Deploy this agent as a real-time HTTP service:
 
 ```bash
 # Deploy the pipeline as an HTTP service
-zenml pipeline deploy run.agent_pipeline --name autogen-agent
+zenml pipeline deploy run.agent_pipeline --name semantic-kernel-agent
 
 # Invoke via CLI
-zenml deployment invoke autogen-agent --destination="Tokyo" --days=3
+zenml deployment invoke semantic-kernel-agent --query="What's the weather forecast for this week?"
 
 # Invoke via HTTP API
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
-  -d '{"parameters": {"destination": "Tokyo", "days": 3}}'
+  -d '{"parameters": {"query": "Calculate compound interest on $1000 at 5% for 10 years"}}'
 ```
 
 ## ✨ Features
 
-- **Multi-Agent Collaboration**: Weather specialist and travel advisor agents
-- **Async Runtime Management**: Proper agent lifecycle with cleanup
-- **Travel Planning**: Comprehensive itinerary generation with weather integration
+- **Plugin Architecture**: Modular design with `@kernel_function` decorators
+- **Automatic Function Calling**: Seamless tool integration and invocation
+- **Async Chat Completion**: OpenAI integration with async support
 - **Real-time Deployment**: Deploy as HTTP API for instant responses
 - **ZenML Orchestration**: Full pipeline tracking and artifact management
