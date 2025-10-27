@@ -1,3 +1,2 @@
 openai>=1.0.0
 requests
-streamlit>=1.30.0

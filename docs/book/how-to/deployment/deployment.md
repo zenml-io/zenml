@@ -19,7 +19,7 @@ Pipeline deployments are ideal for scenarios requiring real-time, on-demand exec
 
 **Online ML Inference**: Deploy trained models as HTTP services for real-time predictions, such as fraud detection in payment systems, recommendation engines for e-commerce, or image classification APIs. Pipeline deployments handle feature preprocessing, model loading, and prediction logic while managing concurrent requests efficiently.
 
-**LLM Agent Workflows**: Build intelligent agents that combine multiple AI capabilities like intent analysis, retrieval-augmented generation (RAG), and response synthesis. These deployments can power chatbots, customer support systems, or document analysis services that require multi-step reasoning and context retrieval.
+**LLM Agent Workflows**: Build intelligent agents that combine multiple AI capabilities like intent analysis, retrieval-augmented generation (RAG), and response synthesis. These deployments can power chatbots, customer support systems, or document analysis services that require multi-step reasoning and context retrieval. See the [Agent Outer Loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop) and [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent) examples for practical implementations.
 
 **Real-time Data Processing**: Process streaming events or user interactions that require immediate analysis and response, such as real-time analytics dashboards, anomaly detection systems, or personalization engines.
 
