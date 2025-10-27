@@ -244,9 +244,7 @@ class DeploymentSchema(NamedSchema, table=True):
                 pipeline=self.snapshot.pipeline.to_model()
                 if self.snapshot and self.snapshot.pipeline
                 else None,
-                stack=self.snapshot.stack.to_model(
-                    include_metadata=True,
-                )
+                stack=self.snapshot.stack.to_model()
                 if self.snapshot and self.snapshot.stack
                 else None,
                 visualizations=[
