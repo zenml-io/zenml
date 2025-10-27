@@ -43,7 +43,9 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.steps import StepHeartBeatTerminationException, StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
+from zenml.utils.exception_utils import ContextReraise
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -167,7 +169,6 @@ class StepLauncher:
 
             try:
                 client = Client()
-                pipeline_run = None
 
                 if self._step_run:
                     pipeline_run = client.get_pipeline_run(
@@ -443,35 +444,58 @@ class StepLauncher:
         )
 
         start_time = time.time()
-        try:
-            if self._step.config.step_operator:
-                step_operator_name = None
-                if isinstance(self._step.config.step_operator, str):
-                    step_operator_name = self._step.config.step_operator
 
-                self._run_step_with_step_operator(
-                    step_operator_name=step_operator_name,
-                    step_run_info=step_run_info,
+        # To have a cross-platform compatible handling of main thread termination
+        # we use Python's interrupt_main instead of termination signals (not Windows supported).
+        # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
+        # and handle it as a custom exception.
+
+        with ContextReraise(
+            source_exceptions=[KeyboardInterrupt],
+            target_exception=StepHeartBeatTerminationException,
+            message=f"Step {self._invocation_id} has been remotely stopped - terminating",
+            propagate_traceback=False,
+        ) as ctx_reraise:
+
+            logger.info(f"Initiating heartbeat for step {self._invocation_id}")
+
+            StepHeartbeatWorker(step_id=step_run.id).start()
+            
+            try:
+                if self._step.config.step_operator:
+                    step_operator_name = None
+                    if isinstance(self._step.config.step_operator, str):
+                        step_operator_name = self._step.config.step_operator
+
+                    self._run_step_with_step_operator(
+                        step_operator_name=step_operator_name,
+                        step_run_info=step_run_info,
+                    )
+                else:
+                    self._run_step_without_step_operator(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        step_run_info=step_run_info,
+                        input_artifacts=step_run.regular_inputs,
+                        output_artifact_uris=output_artifact_uris,
+                    )
+            except StepHeartBeatTerminationException:
+                logger.info(ctx_reraise.message)
+                output_utils.remove_artifact_dirs(
+                    artifact_uris=list(output_artifact_uris.values())
                 )
-            else:
-                self._run_step_without_step_operator(
-                    pipeline_run=pipeline_run,
-                    step_run=step_run,
-                    step_run_info=step_run_info,
-                    input_artifacts=step_run.regular_inputs,
-                    output_artifact_uris=output_artifact_uris,
+                raise
+            except:  # noqa: E722
+                output_utils.remove_artifact_dirs(
+                    artifact_uris=list(output_artifact_uris.values())
                 )
-        except:  # noqa: E722
-            output_utils.remove_artifact_dirs(
-                artifact_uris=list(output_artifact_uris.values())
+                raise
+
+            duration = time.time() - start_time
+            logger.info(
+                f"Step `{self._invocation_id}` has finished in "
+                f"`{string_utils.get_human_readable_time(duration)}`."
             )
-            raise
-
-        duration = time.time() - start_time
-        logger.info(
-            f"Step `{self._invocation_id}` has finished in "
-            f"`{string_utils.get_human_readable_time(duration)}`."
-        )
 
     def _run_step_with_step_operator(
         self,

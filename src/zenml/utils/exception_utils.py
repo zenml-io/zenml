@@ -18,7 +18,9 @@ import os
 import re
 import textwrap
 import traceback
-from typing import TYPE_CHECKING, Optional
+from contextlib import ContextDecorator
+from types import TracebackType
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.logger import get_logger
@@ -91,3 +93,41 @@ def collect_exception_information(
         traceback=tb_bytes.decode(errors="ignore"),
         step_code_line=line_number,
     )
+
+
+class ContextReraise(ContextDecorator):
+    def __init__(
+        self,
+        source_exceptions: list[Type[BaseException]],
+        target_exception: Type[BaseException],
+        message: str,
+        propagate_traceback: bool = True,
+    ) -> None:
+        self._source_exceptions = source_exceptions
+        self._target_exception = target_exception
+        self._message = message
+        self._propagate_traceback = propagate_traceback
+
+    @property
+    def message(self) -> str:
+        return self._message
+
+    def __enter__(self) -> "ContextReraise":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException] | None,
+        exc_value: BaseException | None,
+        trace: TracebackType | None,
+    ) -> bool:
+        if exc_type is None:
+            return False
+        if any(isinstance(exc_value, exc) for exc in self._source_exceptions):
+            if self._propagate_traceback:
+                raise self._target_exception(self._message).with_traceback(
+                    trace
+                )
+            else:
+                raise self._target_exception(self._message)
+        return False

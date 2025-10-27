@@ -17,10 +17,7 @@ import _thread
 import logging
 import threading
 import time
-from typing import Annotated
 from uuid import UUID
-
-from pydantic import BaseModel, conint, model_validator
 
 from zenml.enums import ExecutionStatus
 
@@ -33,36 +30,19 @@ class StepHeartBeatTerminationException(Exception):
     pass
 
 
-class StepHeartBeatOptions(BaseModel):
-    """Options group for step heartbeat execution."""
-
-    step_id: UUID
-    interval: Annotated[int, conint(ge=10, le=60)]
-    name: str | None = None
-
-    @model_validator(mode="after")
-    def set_default_name(self) -> "StepHeartBeatOptions":
-        """Model validator - set name value if missing.
-
-        Returns:
-            The validated step heartbeat options.
-        """
-        if not self.name:
-            self.name = f"HeartBeatWorker-{self.step_id}"
-
-        return self
-
-
-class HeartbeatWorker:
+class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    def __init__(self, options: StepHeartBeatOptions):
+    STEP_HEARTBEAT_INTERVAL_SECONDS = 30
+
+    def __init__(self, step_id: UUID):
         """Heartbeat worker constructor.
 
         Args:
             options: Parameter group - polling interval, step id, etc.
         """
-        self.options = options
+
+        self._step_id = step_id
 
         self._thread: threading.Thread | None = None
         self._running: bool = False
@@ -79,7 +59,7 @@ class HeartbeatWorker:
         Returns:
             The heartbeat polling interval value.
         """
-        return self.options.interval
+        return self.STEP_HEARTBEAT_INTERVAL_SECONDS
 
     @property
     def name(self) -> str:
@@ -88,7 +68,7 @@ class HeartbeatWorker:
         Returns:
             The name of the heartbeat worker.
         """
-        return str(self.options.name)
+        return f"HeartBeatWorker-{self.step_id}"
 
     @property
     def step_id(self) -> UUID:
@@ -97,7 +77,7 @@ class HeartbeatWorker:
         Returns:
             The id of the step heartbeat is running for.
         """
-        return self.options.step_id
+        return self.step_id
 
     # public functions
 

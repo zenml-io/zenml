@@ -407,6 +407,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             is_retriable=self.is_retriable,
             start_time=self.start_time,
             end_time=self.end_time,
+            latest_heartbeat=self.latest_heartbeat,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
