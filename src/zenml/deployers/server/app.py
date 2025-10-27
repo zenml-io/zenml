@@ -1015,6 +1015,10 @@ def build_asgi_app() -> ASGIApplication:
 
     Returns:
         The ASGI application.
+
+    Raises:
+        RuntimeError: If the deployment ID is not set in the
+            ZENML_DEPLOYMENT_ID environment variable.
     """
     deployment_id = os.getenv(ZENML_DEPLOYMENT_ID_ENV_VAR)
     if not deployment_id:
