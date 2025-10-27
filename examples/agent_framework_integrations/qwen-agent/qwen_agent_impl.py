@@ -39,7 +39,7 @@ class Calculator(BaseTool):
     ]
 
     def call(self, params: str, **kwargs) -> str:
-        # Qwen-Agent passes tool arguments as a JSON string; json5 allows mild deviations the LLM may produce.
+        """Call the calculator tool."""
         data = json5.loads(params)
         operation = data.get("operation")
         a = float(data.get("a", 0))
