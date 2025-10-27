@@ -49,6 +49,7 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.misc.exception_info import ExceptionInfo
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -91,9 +92,8 @@ class StepRunRequest(ProjectScopedRequest):
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    start_time: Optional[datetime] = Field(
+    start_time: datetime = Field(
         title="The start time of the step run.",
-        default=None,
     )
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
@@ -104,6 +104,11 @@ class StepRunRequest(ProjectScopedRequest):
         title="The cache key of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    cache_expires_at: Optional[datetime] = Field(
+        title="The time at which this step run should not be used for cached "
+        "results anymore. If not set, the result will never expire.",
+        default=None,
     )
     code_hash: Optional[str] = Field(
         title="The code hash of the step run.",
@@ -182,6 +187,11 @@ class StepRunUpdate(BaseUpdate):
         default=None,
         title="The exception information of the step run.",
     )
+    cache_expires_at: Optional[datetime] = Field(
+        title="The time at which this step run should not be used for cached "
+        "results anymore.",
+        default=None,
+    )
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -234,6 +244,11 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
         title="The cache key of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    cache_expires_at: Optional[datetime] = Field(
+        title="The time at which this step run should not be used for cached "
+        "results anymore. If not set, the result will never expire.",
+        default=None,
     )
     code_hash: Optional[str] = Field(
         title="The code hash of the step run.",
@@ -525,6 +540,15 @@ class StepRunResponse(
         return self.get_metadata().cache_key
 
     @property
+    def cache_expires_at(self) -> Optional[datetime]:
+        """The `cache_expires_at` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().cache_expires_at
+
+    @property
     def code_hash(self) -> Optional[str]:
         """The `code_hash` property.
 
@@ -644,6 +668,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
         "exclude_retried",
+        "cache_expired",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -712,6 +737,16 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Whether to exclude retried step runs.",
     )
+    cache_expires_at: Optional[Union[datetime, str]] = Field(
+        default=None,
+        description="Cache expiration time of the step run.",
+        union_mode="left_to_right",
+    )
+    cache_expired: Optional[bool] = Field(
+        default=None,
+        description="Whether the cache expiration time of the step run has "
+        "passed.",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -727,7 +762,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, col
+        from sqlmodel import and_, col, or_
 
         from zenml.zen_stores.schemas import (
             ModelSchema,
@@ -749,5 +784,18 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
             custom_filters.append(
                 col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
             )
+
+        if self.cache_expired is True:
+            cache_expiration_filter = and_(
+                col(StepRunSchema.cache_expires_at).is_not(None),
+                col(StepRunSchema.cache_expires_at) < utc_now(),
+            )
+            custom_filters.append(cache_expiration_filter)
+        elif self.cache_expired is False:
+            cache_expiration_filter = or_(
+                col(StepRunSchema.cache_expires_at) > utc_now(),
+                col(StepRunSchema.cache_expires_at).is_(None),
+            )
+            custom_filters.append(cache_expiration_filter)
 
         return custom_filters

@@ -90,6 +90,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
+    cache_expires_at: Optional[datetime] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
     version: int = Field(nullable=False)
@@ -329,6 +330,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_run_id=request.pipeline_run_id,
             docstring=request.docstring,
             cache_key=request.cache_key,
+            cache_expires_at=request.cache_expires_at,
             code_hash=request.code_hash,
             source_code=request.source_code,
             version=version,
@@ -418,6 +420,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,
+                cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
@@ -491,6 +494,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.end_time = value
             if key == "exception_info":
                 self.exception_info = json.dumps(value)
+            if key == "cache_expires_at":
+                self.cache_expires_at = value
 
         self.updated = utc_now()
 

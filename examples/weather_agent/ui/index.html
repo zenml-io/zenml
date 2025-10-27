@@ -1,0 +1,533 @@
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        color: #111827;
+        background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .header {
+        color: #2563eb;
+    }
+
+    .section {
+        margin: 20px 0;
+    }
+
+    .status {
+        padding: 5px 10px;
+        border-radius: 4px;
+        background: #10b981;
+        color: white;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .btn {
+        padding: 10px 14px;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+    }
+
+    .btn:hover {
+        background: #1d4ed8;
+    }
+
+    .btn:disabled {
+        background: #93c5fd;
+        cursor: not-allowed;
+    }
+
+    .btn.secondary {
+        background: #ffffff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+    .btn.secondary:hover { background: #f0f9ff; }
+
+    .message {
+        margin-top: 10px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .message.info {
+        background: #e0f2fe;
+        color: #075985;
+    }
+
+    .message.error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .result {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fafafa;
+        white-space: pre-wrap;
+    }
+
+    .result:empty {
+        display: none;
+    }
+
+    /* Minimal markdown rendering tweaks */
+    .result h1,
+    .result h2,
+    .result h3 {
+        margin: 16px 0 8px;
+    }
+
+    .result p {
+        margin: 8px 0;
+        line-height: 1.5;
+    }
+
+    .result ul {
+        padding-left: 20px;
+    }
+
+    .result code {
+        background: #f3f4f6;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    /* Layout & decoration */
+    .container {
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    .card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+            0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    .hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .hero-copy {
+        flex: 1;
+    }
+
+    .title {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        color: #1f2937;
+    }
+
+    .subtitle {
+        margin: 0;
+        color: #4b5563;
+    }
+
+    .hero-art svg {
+        display: block;
+        filter: drop-shadow(0 10px 10px rgb(0 0 0 / 0.08));
+    }
+
+    .footer {
+        margin-top: 16px;
+        color: #6b7280;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .status-pill {
+        padding: 6px 10px;
+        border-radius: 9999px;
+        background: #eef2ff;
+        color: #3730a3;
+        font-size: 12px;
+    }
+
+    /* Metrics */
+    .metrics {
+        margin-top: 16px;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .metric-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+    }
+
+    .metric-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .metric-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .metric-label {
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    .metric-value {
+        font-weight: 600;
+        font-size: 18px;
+        color: #111827;
+    }
+
+    .metric-note {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .sev-good {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .sev-info {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .sev-warn {
+        background: #fffbeb;
+        border-color: #fde68a;
+    }
+
+    .sev-bad {
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+</style>
+
+<div class="container">
+    <div class="card">
+        <div class="hero">
+            <div class="hero-copy">
+                <h1 class="title">Weather Activity Agent</h1>
+                <p class="subtitle">Type a city and get curated, weather-aware
+                    activity ideas. Powered by your ZenML deployment.</p>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <!-- Simple inline weather illustration -->
+                <svg width="140" height="100" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#93c5fd" />
+                            <stop offset="100%" stop-color="#dbeafe" />
+                        </linearGradient>
+                    </defs>
+                    <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#sky)" />
+                    <!-- Sun -->
+                    <circle cx="30" cy="30" r="16" fill="#fde68a" />
+                    <!-- Cloud -->
+                    <g fill="#e5e7eb">
+                        <ellipse cx="95" cy="40" rx="26" ry="14" />
+                        <ellipse cx="78" cy="44" rx="18" ry="12" />
+                        <ellipse cx="112" cy="44" rx="18" ry="12" />
+                    </g>
+                    <!-- Raindrops -->
+                    <g fill="#60a5fa">
+                        <path d="M78 60 l3 8 l-6 0 z" />
+                        <path d="M95 60 l3 8 l-6 0 z" />
+                        <path d="M112 60 l3 8 l-6 0 z" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Try it</h2>
+            <div class="form-row">
+                <input id="city-input" class="input" type="text" list="city-suggestions"
+                    placeholder="Enter city name" />
+                <datalist id="city-suggestions">
+                    <option value="San Francisco"></option>
+                    <option value="London"></option>
+                    <option value="Berlin"></option>
+                    <option value="New York"></option>
+                    <option value="Tokyo"></option>
+                </datalist>
+                <button id="fetch-btn" class="btn">Get Suggestions</button>
+                <button id="set-key-btn" class="btn secondary" style="display:none">Set API Key</button>
+            </div>
+            <div id="auth-status" class="status-pill" style="display:none">Auth required</div>
+            <div id="message" class="message"></div>
+            <div id="metrics" class="metrics"></div>
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+<script>
+    if (typeof marked !== 'undefined' && typeof marked.setOptions === 'function') {
+        marked.setOptions({ gfm: true, breaks: true });
+    }
+    const INVOKE_URL = "{{ service_info.app.invoke_url_path }}";
+    const AUTH_ENABLED = {{ 'true' if service_info.deployment.auth_enabled else 'false' }};
+    const cityInput = document.getElementById('city-input');
+    const fetchBtn = document.getElementById('fetch-btn');
+    const messageEl = document.getElementById('message');
+    const metricsEl = document.getElementById('metrics');
+    const setKeyBtn = document.getElementById('set-key-btn');
+    const authStatus = document.getElementById('auth-status');
+    const API_KEY_STORAGE = 'weather_agent_api_key';
+    const resultEl = document.getElementById('result');
+
+    function setLoading(isLoading) {
+        fetchBtn.disabled = isLoading;
+        fetchBtn.textContent = isLoading ? 'Fetching...' : 'Get Suggestions';
+        if (isLoading) {
+            messageEl.textContent = 'Fetching suggestions...';
+            messageEl.className = 'message info';
+        }
+    }
+
+    function showError(text) {
+        messageEl.textContent = text;
+        messageEl.className = 'message error';
+    }
+
+    function clearMessage() {
+        messageEl.textContent = '';
+        messageEl.className = 'message';
+    }
+
+    initAuthUI();
+
+    async function fetchSuggestions() {
+        const city = cityInput.value.trim();
+        if (!city) {
+            showError('Please enter a city name.');
+            return;
+        }
+        if (AUTH_ENABLED && !getApiKey()) {
+            await promptForApiKey();
+            if (!getApiKey()) {
+                showError('API key is required to call the service.');
+                return;
+            }
+        }
+        setLoading(true);
+        resultEl.innerHTML = '';
+        metricsEl.innerHTML = '';
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            const key = getApiKey();
+            if (AUTH_ENABLED && key) headers['Authorization'] = `Bearer ${key}`;
+            const res = await fetch(INVOKE_URL, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ parameters: { city: city } })
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error('Request failed: ' + res.status + ' ' + text);
+            }
+            const data = await res.json();
+            if (!data.success) {
+                const err = data.error || 'Unknown error from service.';
+                throw new Error(err);
+            }
+            const outputs = data.outputs || {};
+            const weather = outputs.weather_data || null;
+            const md = outputs.weather_analysis;
+            if (!md) {
+                messageEl.textContent = 'No analysis returned.';
+                messageEl.className = 'message info';
+                return;
+            }
+            if (weather) {
+                renderMetrics(weather);
+            }
+            const html = marked.parse(md);
+            resultEl.innerHTML = DOMPurify.sanitize(html);
+            clearMessage();
+        } catch (e) {
+            showError(e.message || String(e));
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    fetchBtn.addEventListener('click', fetchSuggestions);
+    cityInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { fetchSuggestions(); }
+    });
+
+    function initAuthUI() {
+        if (!AUTH_ENABLED) return;
+        setKeyBtn.style.display = '';
+        authStatus.style.display = '';
+        updateAuthStatus();
+        setKeyBtn.addEventListener('click', promptForApiKey);
+    }
+
+    async function promptForApiKey() {
+        const current = getApiKey() || '';
+        const entered = prompt('Enter API Key (Bearer token):', current ? '********' : '');
+        if (entered === null) return; // canceled
+        if (entered === '********') return; // keep existing
+        const trimmed = (entered || '').trim();
+        if (!trimmed) {
+            localStorage.removeItem(API_KEY_STORAGE);
+        } else {
+            localStorage.setItem(API_KEY_STORAGE, trimmed);
+        }
+        updateAuthStatus();
+    }
+
+    function getApiKey() { return localStorage.getItem(API_KEY_STORAGE); }
+
+    function updateAuthStatus() {
+        const hasKey = !!getApiKey();
+        authStatus.textContent = hasKey ? 'API key set' : 'Auth required';
+        authStatus.style.background = hasKey ? '#ecfdf5' : '#eef2ff';
+        authStatus.style.color = hasKey ? '#065f46' : '#3730a3';
+        setKeyBtn.textContent = hasKey ? 'Update API Key' : 'Set API Key';
+    }
+
+    function renderMetrics(weather) {
+        const tiles = [];
+        tiles.push(renderMetricTile('Temperature', `${formatTemp(weather.temperature)}`,
+            tempIcon(), tempSeverity(weather.temperature), tempNote(weather.temperature)));
+        tiles.push(renderMetricTile('Humidity', `${formatPercent(weather.humidity)}`,
+            humidityIcon(), humiditySeverity(weather.humidity), humidityNote(weather.humidity)));
+        tiles.push(renderMetricTile('Wind Speed', `${formatWind(weather.wind_speed)}`,
+            windIcon(), windSeverity(weather.wind_speed), windNote(weather.wind_speed)));
+        metricsEl.innerHTML = `
+            <div class="metrics-grid">
+                ${tiles.join('')}
+            </div>
+        `;
+    }
+
+    function renderMetricTile(label, value, iconSvg, sevClass, note) {
+        const classes = `metric-card ${sevClass}`;
+        return `
+            <div class="${classes}">
+                <div class="metric-icon">${iconSvg}</div>
+                <div class="metric-content">
+                    <div class="metric-label">${label}</div>
+                    <div class="metric-value">${value}</div>
+                    ${note ? `<div class="metric-note">${note}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // Formatters
+    function formatTemp(t) { return `${t.toFixed(1)}°C`; }
+    function formatPercent(p) { return `${Number(p).toFixed(0)}%`; }
+    function formatWind(w) { return `${Number(w).toFixed(0)} km/h`; }
+
+    // Severity helpers
+    function tempSeverity(t) {
+        if (t < 0) return 'sev-bad';
+        if (t < 10) return 'sev-warn';
+        if (t <= 25) return 'sev-good';
+        if (t <= 32) return 'sev-warn';
+        return 'sev-bad';
+    }
+    function humiditySeverity(h) {
+        if (h < 20) return 'sev-warn';
+        if (h <= 60) return 'sev-good';
+        if (h <= 80) return 'sev-warn';
+        return 'sev-bad';
+    }
+    function windSeverity(w) {
+        if (w < 10) return 'sev-good';
+        if (w <= 20) return 'sev-info';
+        if (w <= 35) return 'sev-warn';
+        return 'sev-bad';
+    }
+
+    // Notes
+    function tempNote(t) {
+        if (t < 0) return 'Freezing. Dress in heavy layers.';
+        if (t < 10) return 'Chilly. Bring a jacket.';
+        if (t <= 25) return 'Comfortable range for most.';
+        if (t <= 32) return 'Warm. Hydrate and seek shade.';
+        return 'Hot. Limit strenuous activity.';
+    }
+    function humidityNote(h) {
+        if (h < 20) return 'Dry air; consider moisturizing.';
+        if (h <= 60) return 'Comfortable humidity.';
+        if (h <= 80) return 'Humid; may feel muggy.';
+        return 'Very humid; watch for discomfort.';
+    }
+    function windNote(w) {
+        if (w < 10) return 'Calm to gentle breeze.';
+        if (w <= 20) return 'Breezy; hold onto hats.';
+        if (w <= 35) return 'Windy; secure loose items.';
+        return 'Strong winds; take caution.';
+    }
+
+    // Icons (inline SVG)
+    function tempIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 14.5a4.5 4.5 0 1 0 4 0V5a2 2 0 1 0-4 0v9.5z" stroke="#ef4444" stroke-width="1.5"/>
+          <path d="M10 10h4" stroke="#ef4444" stroke-width="1.5"/>
+          <circle cx="12" cy="18" r="3" fill="#fecaca" />
+        </svg>`;
+    }
+    function humidityIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3s5 5.2 5 9a5 5 0 0 1-10 0c0-3.8 5-9 5-9z" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.5"/>
+        </svg>`;
+    }
+    function windIcon() {
+        return `
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 8h10a3 3 0 1 0-3-3" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M3 12h14a3 3 0 1 1-3 3" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>`;
+    }
+</script>

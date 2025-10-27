@@ -222,6 +222,32 @@ def clean_client(
         yield client
 
 
+@pytest.fixture
+def clean_client_with_repo(
+    clean_client: Client,
+    tmp_path: Path,
+) -> Generator[Client, None, None]:
+    """Fixture to get and use a clean local client with its own global
+    configuration as well as a local repository.
+
+    The working directory is changed to the local repository path.
+
+    Args:
+        clean_client: A clean ZenML client.
+        tmp_path: A temporary path to create a new repository.
+
+    Yields:
+        A clean ZenML client with its own local repository.
+    """
+    try:
+        cwd = os.getcwd()
+        os.chdir(tmp_path)
+        clean_client.initialize(root=tmp_path)
+        yield clean_client
+    finally:
+        os.chdir(cwd)
+
+
 @pytest.fixture(scope="module")
 def module_clean_client(
     tmp_path_factory: pytest.TempPathFactory,

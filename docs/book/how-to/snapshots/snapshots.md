@@ -83,13 +83,9 @@ snapshot = my_pipeline.create_snapshot(name="<NAME>")
 
 ### Using the CLI
 
-You can create a snapshot using the ZenML CLI:
+You can create a snapshot using the ZenML CLI, by passing the [source path](../steps-pipelines/sources.md#source-paths) of your pipeline: 
 
 ```bash
-# The <PIPELINE-SOURCE-PATH> will be `run.my_pipeline` if you defined a
-# pipeline with name `my_pipeline` in a file called `run.py`. This will be either relative
-# to your ZenML repository (that you created by running `zenml init`) or your current working
-# directory.
 zenml pipeline snapshot create <PIPELINE-SOURCE-PATH> --name=<SNAPSHOT-NAME>
 ```
 
@@ -196,6 +192,20 @@ Learn how to get a bearer token for the curl commands:
 - For Workspace/OSS API: use [temporary API tokens](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token) or [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 - For Pro management API (`cloudapi.zenml.io`): use [Pro API tokens](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
 {% endhint %}
+
+## Deleting Pipeline Snapshots
+
+You can delete a snapshot using the CLI:
+```bash
+zenml pipeline snapshot delete <SNAPSHOT-NAME-OR-ID>
+```
+
+You can also delete a snapshot using the Python SDK:
+```python
+from zenml.client import Client
+
+Client().delete_snapshot(name_id_or_prefix=<SNAPSHOT-NAME-OR-ID>)
+```
 
 ## Advanced Usage: Running Snapshots from Other Pipelines
 

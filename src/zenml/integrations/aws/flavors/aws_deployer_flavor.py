@@ -65,11 +65,6 @@ class AWSDeployerSettings(BaseDeployerSettings):
         description="Interval between health checks in seconds. Range: 1-20.",
     )
 
-    health_check_path: str = Field(
-        default="/health",
-        description="Health check path for the App Runner service.",
-    )
-
     health_check_protocol: str = Field(
         default="TCP",
         description="Health check protocol. Options: 'TCP', 'HTTP'.",
@@ -119,14 +114,6 @@ class AWSDeployerSettings(BaseDeployerSettings):
     tags: Dict[str, str] = Field(
         default_factory=dict,
         description="Tags to apply to the App Runner service.",
-    )
-
-    # App Runner specific settings
-    port: int = Field(
-        default=8080,
-        ge=1,
-        le=65535,
-        description="Port on which the container listens for requests.",
     )
 
     # Secret management configuration

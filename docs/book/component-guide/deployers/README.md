@@ -25,10 +25,11 @@ Use deployers when you need request-response patterns, and orchestrators for sch
 
 ### Deployer Flavors
 
-ZenML provides deployer implementations for different deployment environments:
+Out of the box, ZenML comes with a `local` deployer already part of the default stack that deploys pipelines on your local machine in the form of background processes. Additional Deployers are provided by integrations:
 
 | Deployer                           | Flavor    | Integration   | Notes                                                                        |
 |------------------------------------|-----------|---------------|------------------------------------------------------------------------------|
+| [Local](local.md)                  | `local`  | _built-in_  | This is the default Deployer. It deploys pipelines on your local machine in the form of background processes. Should be used only for running ZenML locally. |
 | [Docker](docker.md)                | `docker`   | Built-in      | Deploys pipelines as locally running Docker containers                                |
 | [GCP Cloud Run](gcp-cloud-run.md)            | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
 | [AWS App Runner](aws-app-runner.md)           | `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |
@@ -43,9 +44,15 @@ zenml deployer flavor list
 
 You don't need to directly interact with the ZenML deployer stack component in your code. As long as the deployer that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK. The resulting deployment can be managed using the ZenML CLI or the ZenML SDK.
 
-Example:
+Examples:
 
-* set up a stack with a deployer:
+* just use the default stack - it has a default local deployer that will deploy the pipeline on your local machine in the form of a background process:
+
+```bash
+zenml stack set default
+```
+
+* or set up a new stack with a deployer in it:
 
 ```bash
 zenml deployer register docker --flavor=local
@@ -129,7 +136,7 @@ def weather_pipeline(city: str = "Paris", temperature: float = 20.0) -> str:
     return analysis
 ```
 
-For more information, see the [Deployable Pipeline Requirements](../../how-to/deployment/deployment.md#deployable-pipeline-requirements) section of the tutorial.
+For more information, see the [Deployable Pipeline Requirements](https://docs.zenml.io/concepts/deployment#deployable-pipeline-requirements) section of the tutorial.
 
 #### Deployment Lifecycle Management
 

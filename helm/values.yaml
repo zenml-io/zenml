@@ -702,6 +702,8 @@ zenml:
       vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
       vault_namespace:
+      # The mount point to use (defaults to "secret" if not set)
+      mount_point:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
@@ -962,6 +964,8 @@ zenml:
       vault_token:
       # The Vault Enterprise namespace. Not required for Vault OSS.
       vault_namespace:
+      # The mount point to use (defaults to "secret" if not set)
+      mount_point:
       # The maximum number of secret versions to keep. If not set, the default
       # value of 1 will be used (only the latest version will be kept).
       max_versions:
@@ -1004,10 +1008,6 @@ zenml:
     hsts: enabled
     # The `X-Frame-Options` HTTP header value. The default value is `SAMEORIGIN`.
     xfo: enabled
-    # The `X-XSS-Protection` HTTP header value. The default value is `0`.
-    # NOTE: this header is deprecated and should not be customized anymore. The
-    # `Content-Security-Policy` header should be used instead.
-    xxp: enabled
     # The `X-Content-Type-Options` HTTP header value. The default value is
     # `nosniff`.
     content: enabled

@@ -44,9 +44,7 @@ from zenml.deployers.exceptions import (
     DeploymentProvisionError,
 )
 from zenml.deployers.server.entrypoint_configuration import (
-    AUTH_KEY_OPTION,
     DEPLOYMENT_ID_OPTION,
-    PORT_OPTION,
     DeploymentEntrypointConfiguration,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
@@ -254,8 +252,6 @@ class AppRunnerDeploymentMetadata(BaseModel):
 
 class AWSDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines on AWS App Runner."""
-
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 
     _boto_session: Optional[boto3.Session] = None
     _region: Optional[str] = None
@@ -1285,8 +1281,6 @@ class AWSDeployer(ContainerizedDeployer):
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 DEPLOYMENT_ID_OPTION: deployment.id,
-                PORT_OPTION: settings.port,
-                AUTH_KEY_OPTION: deployment.auth_key,
             }
         )
 
@@ -1312,8 +1306,11 @@ class AWSDeployer(ContainerizedDeployer):
                 f"deploying to App Runner."
             )
 
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
         image_config: Dict[str, Any] = {
-            "Port": str(settings.port),
+            "Port": str(container_port),
             "StartCommand": " ".join(entrypoint + arguments),
         }
 
@@ -1385,8 +1382,15 @@ class AWSDeployer(ContainerizedDeployer):
             "UnhealthyThreshold": settings.health_check_unhealthy_threshold,
         }
 
+        deployment_settings = (
+            snapshot.pipeline_configuration.deployment_settings
+        )
+
         if settings.health_check_protocol.upper() == "HTTP":
-            health_check_configuration["Path"] = settings.health_check_path
+            root_path = deployment_settings.root_url_path
+            api_url_path = deployment_settings.api_url_path
+            health_check_path = f"{root_path}{api_url_path}{deployment_settings.health_url_path}"
+            health_check_configuration["Path"] = health_check_path
 
         network_configuration = {
             "IngressConfiguration": {

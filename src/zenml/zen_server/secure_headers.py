@@ -71,23 +71,17 @@ def initialize_secure_headers() -> None:
         if isinstance(config.secure_headers_xfo, str):
             xfo.set(config.secure_headers_xfo)
 
-    xxp: Optional[secure.XXSSProtection] = None
-    if config.secure_headers_xxp:
-        xxp = secure.XXSSProtection()
-        if isinstance(config.secure_headers_xxp, str):
-            xxp.set(config.secure_headers_xxp)
-
     csp: Optional[secure.ContentSecurityPolicy] = None
     if config.secure_headers_csp:
         csp = secure.ContentSecurityPolicy()
         if isinstance(config.secure_headers_csp, str):
             csp.set(config.secure_headers_csp)
 
-    content: Optional[secure.XContentTypeOptions] = None
+    xcto: Optional[secure.XContentTypeOptions] = None
     if config.secure_headers_content:
-        content = secure.XContentTypeOptions()
+        xcto = secure.XContentTypeOptions()
         if isinstance(config.secure_headers_content, str):
-            content.set(config.secure_headers_content)
+            xcto.set(config.secure_headers_content)
 
     referrer: Optional[secure.ReferrerPolicy] = None
     if config.secure_headers_referrer:
@@ -105,15 +99,18 @@ def initialize_secure_headers() -> None:
     if config.secure_headers_permissions:
         permissions = secure.PermissionsPolicy()
         if isinstance(config.secure_headers_permissions, str):
-            permissions.value = config.secure_headers_permissions
+            # This one is special, because it doesn't allow setting the
+            # value as a string, but rather as a list of directives, so we
+            # hack our way around it by setting the private _default_value
+            # attribute.
+            permissions._default_value = config.secure_headers_permissions
 
     _secure_headers = secure.Secure(
         server=server,
         hsts=hsts,
         xfo=xfo,
-        xxp=xxp,
         csp=csp,
-        content=content,
+        xcto=xcto,
         referrer=referrer,
         cache=cache,
         permissions=permissions,

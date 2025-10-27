@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "zenml"
-version = "0.90.0"
+version = "0.91.0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -28,6 +28,7 @@ classifiers = [
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
+    "asgiref~=3.10.0",
     "click>=8.0.1,<=8.2.1",
     "cloudpickle>=2.0.0",
     "distro>=1.6.0,<2.0.0",
@@ -72,7 +73,7 @@ server = [
     "orjson~=3.10.0",
     "Jinja2",
     "ipinfo>=4.4.3",
-    "secure~=0.3.0",
+    "secure~=1.0.1",
     "tldextract~=5.1.0",
     "itsdangerous~=2.2.0",
 ]
@@ -121,7 +122,7 @@ dev = [
     "yamlfix>=1.16.0",
     "coverage[toml]>=5.5,<6.0.0",
     "pytest>=7.4.0,<8.0.0",
-    "mypy==1.7.1",
+    "mypy==1.18.1",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
     "tox>=3.24.3",

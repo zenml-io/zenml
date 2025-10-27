@@ -235,6 +235,7 @@ class DockerSettings(BaseSettings):
     )
     required_integrations: List[str] = []
     install_stack_requirements: bool = True
+    install_deployment_requirements: bool = True
     local_project_install_command: Optional[str] = None
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
