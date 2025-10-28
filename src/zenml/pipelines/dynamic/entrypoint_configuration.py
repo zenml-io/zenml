@@ -58,13 +58,13 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def run(self) -> None:
         """Prepares the environment and runs the configured dynamic pipeline."""
-        snapshot = self.load_snapshot()
+        snapshot = self.snapshot
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
         integration_registry.activate_integrations()
 
-        self.download_code_if_necessary(snapshot=snapshot)
+        self.download_code_if_necessary()
 
         run = None
         if run_id := self.entrypoint_args.get(RUN_ID_OPTION, None):

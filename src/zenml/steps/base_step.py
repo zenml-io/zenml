@@ -125,6 +125,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        in_process: Optional[bool] = None,
     ) -> None:
         """Initializes a step.
 
@@ -158,6 +159,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
+            in_process: Whether to run the step in process. This is only
+                applicable for dynamic pipelines.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -222,6 +225,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
+            in_process=in_process,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -661,6 +665,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        in_process: Optional[bool] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -704,6 +709,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
+            in_process: Whether to run the step in process. This is only
+                applicable for dynamic pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -782,6 +789,7 @@ class BaseStep:
                 "retry": retry,
                 "substitutions": substitutions,
                 "cache_policy": cache_policy,
+                "in_process": in_process,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -810,6 +818,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        in_process: Optional[bool] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -843,6 +852,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
             cache_policy: Cache policy for this step.
+            in_process: Whether to run the step in process. This is only
+                applicable for dynamic pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -872,6 +883,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
+            in_process=in_process,
             merge=merge,
         )
         return step_copy

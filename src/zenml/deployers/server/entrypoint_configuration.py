@@ -113,7 +113,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
             raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
 
         # Download code if necessary (for remote execution environments)
-        self.download_code_if_necessary(snapshot=deployment.snapshot)
+        self.download_code_if_necessary()
 
         app_runner = BaseDeploymentAppRunner.load_app_runner(deployment)
         app_runner.run()

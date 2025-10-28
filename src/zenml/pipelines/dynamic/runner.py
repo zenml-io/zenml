@@ -7,6 +7,7 @@ from typing import (
     Any,
     Dict,
     Iterator,
+    List,
     Optional,
     Sequence,
     Set,
@@ -65,7 +66,7 @@ class StepRunOutputsFuture:
         self._invocation_id = invocation_id
 
     def wait(self) -> None:
-        self._wrapped.wait()
+        self._wrapped.result()
 
     def result(self) -> StepRunOutputs:
         return self._wrapped.result()
@@ -103,12 +104,13 @@ class DynamicPipelineRunner:
     ) -> None:
         self._snapshot = snapshot
         self._run = run
-        self._executor = ThreadPoolExecutor(max_workers=3)
+        self._executor = ThreadPoolExecutor(max_workers=10)
         self._pipeline: Optional["DynamicPipeline"] = None
         self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
         self._orchestrator_run_id = (
             self._orchestrator.get_orchestrator_run_id()
         )
+        self._futures: List[StepRunOutputsFuture] = []
 
     @property
     def pipeline(self) -> "DynamicPipeline":
@@ -159,6 +161,7 @@ class DynamicPipelineRunner:
                     self._orchestrator.run_cleanup_hook(
                         snapshot=self._snapshot
                     )
+                self.await_all_futures()
                 publish_successful_pipeline_run(run.id)
 
     def run_step_sync(
@@ -217,9 +220,16 @@ class DynamicPipelineRunner:
 
         ctx = contextvars.copy_context()
         future = self._executor.submit(ctx.run, _run)
-        return StepRunOutputsFuture(
+        step_run_future = StepRunOutputsFuture(
             wrapped=future, invocation_id=invocation_id
         )
+        self._futures.append(step_run_future)
+        return step_run_future
+
+    def await_all_futures(self) -> None:
+        for future in self._futures:
+            future.wait()
+        self._futures = []
 
 
 def _prepare_step_run(
@@ -419,7 +429,7 @@ def should_run_in_process(
         return False
 
     if not Client().active_stack.orchestrator.supports_dynamic_out_of_process_steps:
-        return False
+        return True
 
     if step.config.in_process is False:
         return False

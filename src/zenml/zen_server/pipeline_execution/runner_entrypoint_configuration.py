@@ -65,7 +65,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         This method runs the pipeline defined by the snapshot given as input
         to the entrypoint configuration.
         """
-        snapshot = self.load_snapshot()
+        snapshot = self.snapshot
         placeholder_run_id = UUID(
             self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
         )

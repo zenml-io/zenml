@@ -238,11 +238,10 @@ def get_pipeline_run_status(
         or ExecutionStatus.RETRYING in step_statuses
     ):
         return ExecutionStatus.RUNNING
-
-    # If there are less steps than the total number of steps, it is running
-    elif is_dynamic_pipeline or len(step_statuses) < num_steps:
+    elif is_dynamic_pipeline:
+        return run_status
+    elif len(step_statuses) < num_steps:
         return ExecutionStatus.RUNNING
-
     # Any other state is completed
     else:
         return ExecutionStatus.COMPLETED

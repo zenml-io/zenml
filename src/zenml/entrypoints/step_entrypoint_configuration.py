@@ -27,6 +27,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
+    from zenml.config import DockerSettings
     from zenml.config.step_configurations import Step
     from zenml.models import PipelineSnapshotResponse
 
@@ -149,7 +150,26 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             kwargs[STEP_NAME_OPTION],
         ]
 
-    def load_snapshot(self) -> "PipelineSnapshotResponse":
+    @property
+    def docker_settings(self) -> "DockerSettings":
+        """The Docker settings configured for this entrypoint configuration.
+
+        Returns:
+            The Docker settings.
+        """
+        return self.step.config.docker_settings
+
+    @property
+    def step(self) -> "Step":
+        """The step configured for this entrypoint configuration.
+
+        Returns:
+            The step.
+        """
+        step_name = self.entrypoint_args[STEP_NAME_OPTION]
+        return self.snapshot.step_configurations[step_name]
+
+    def _load_snapshot(self) -> "PipelineSnapshotResponse":
         """Loads the snapshot.
 
         Returns:
@@ -163,7 +183,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def run(self) -> None:
         """Prepares the environment and runs the configured step."""
-        snapshot = self.load_snapshot()
+        snapshot = self.snapshot
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
@@ -178,7 +198,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         os.makedirs("/app", exist_ok=True)
         os.chdir("/app")
 
-        self.download_code_if_necessary(snapshot=snapshot, step_name=step_name)
+        self.download_code_if_necessary()
 
         # If the working directory is not in the sys.path, we include it to make
         # sure user code gets correctly imported.
@@ -188,8 +208,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         pipeline_name = snapshot.pipeline_configuration.name
 
-        step = snapshot.step_configurations[step_name]
-        self._run_step(step, snapshot=snapshot)
+        self._run_step(step=self.step, snapshot=snapshot)
 
         self.post_run(
             pipeline_name=pipeline_name,

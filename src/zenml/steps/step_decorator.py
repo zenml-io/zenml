@@ -80,6 +80,7 @@ def step(
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
+    in_process: Optional[bool] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -104,6 +105,7 @@ def step(
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
+    in_process: Optional[bool] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -139,7 +141,8 @@ def step(
         retry: configuration of step retry in case of step failure.
         substitutions: Extra placeholders for the step name.
         cache_policy: Cache policy for this step.
-
+        in_process: Whether to run the step in process. This is only
+            applicable for dynamic pipelines.
     Returns:
         The step instance.
     """
@@ -176,6 +179,7 @@ def step(
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
+            in_process=in_process,
         )
 
         return step_instance
