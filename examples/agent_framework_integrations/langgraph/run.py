@@ -9,7 +9,7 @@ from typing import Annotated, Any, Dict
 
 from langgraph_agent import agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -83,19 +83,16 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def langgraph_agent_pipeline() -> str:
+def agent_pipeline(
+    query: str = "What is the weather in San Francisco?",
+) -> str:
     """ZenML pipeline that orchestrates the LangGraph ReAct agent.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(
-        value="What is the weather in San Francisco?"
-    )
-
     # Run the LangGraph agent
-    agent_results = run_langgraph_agent(agent_query)
+    agent_results = run_langgraph_agent(query)
 
     # Format the results
     summary = format_langgraph_response(agent_results)
@@ -105,6 +102,6 @@ def langgraph_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running LangGraph ReAct agent pipeline...")
-    run_result = langgraph_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

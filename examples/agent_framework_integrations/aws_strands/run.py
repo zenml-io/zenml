@@ -10,7 +10,7 @@ from typing import Annotated
 
 from agent import agent
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -48,17 +48,14 @@ Powered by AWS Strands Agent
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def strands_weather_pipeline() -> str:
+def agent_pipeline(query: str = "What's the weather like in Tokyo?") -> str:
     """ZenML pipeline that orchestrates the AWS Strands weather agent.
 
     Returns:
         Formatted weather response
     """
-    # External artifact for weather query
-    weather_query = ExternalArtifact(value="What's the weather like in Tokyo?")
-
     # Run the agent
-    response = run_strands_agent(weather_query)
+    response = run_strands_agent(query=query)
 
     # Format the results
     summary = format_weather_response(response)
@@ -68,6 +65,6 @@ def strands_weather_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running AWS Strands weather pipeline...")
-    run_result = strands_weather_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

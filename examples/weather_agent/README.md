@@ -25,7 +25,7 @@ Deploy the agent pipeline as a real-time service ([see code](pipelines/weather_a
 
 ```bash
 # See service at http://localhost:8000
-zenml pipeline deploy pipelines.weather_agent.weather_agent_pipeline
+zenml pipeline deploy pipelines.weather_agent.weather_agent
 ```
 
 **Make predictions via API**

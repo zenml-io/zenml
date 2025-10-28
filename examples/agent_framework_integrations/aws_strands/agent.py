@@ -1,3 +1,5 @@
+"""AWS Strands agent example for PanAgent."""
+
 import os  # Added for env var lookup
 
 from strands import Agent, tool
@@ -6,8 +8,7 @@ from strands.models.openai import OpenAIModel
 
 @tool
 def get_weather(city: str) -> str:
-    """
-    Very naive weather lookup that *always* returns a sunny forecast.
+    """Very naive weather lookup that *always* returns a sunny forecast.
 
     Args:
         city: Name of the city.
