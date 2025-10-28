@@ -318,7 +318,7 @@ def _prepare_step_run(
 
     # TODO: we can validate the type of the inputs that are passed as raw data
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
-    validated_args = signature.bind(*args, **kwargs).arguments
+    validated_args = signature.bind_partial(*args, **kwargs).arguments
 
     return validated_args, upstream_steps
 
@@ -351,16 +351,18 @@ def _compile_step(
             update={"template": template.spec.invocation_id}
         )
 
-    # TODO:
-    # - differentiate between input artifacts and parameters?
-    # - default parameters
-    invocation_id = pipeline.add_dynamic_invocation(
+    _, _, _, _, _, default_parameters = step._parse_call_args(**inputs)
+    invocation_id = pipeline.add_step_invocation(
         step=step,
         custom_id=id,
         allow_id_suffix=not id,
         input_artifacts=input_artifacts,
         external_artifacts=external_artifacts,
         upstream_steps=upstream_steps,
+        parameters={},
+        default_parameters=default_parameters,
+        model_artifacts_or_metadata={},
+        client_lazy_loaders={},
     )
     compiled_step = Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],

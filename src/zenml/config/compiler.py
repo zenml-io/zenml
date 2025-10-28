@@ -489,40 +489,41 @@ class Compiler:
         invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
-        if step_config:
-            step._apply_configuration(
-                step_config, runtime_parameters=invocation.parameters
+        with step._skip_dynamic_configuration():
+            if step_config:
+                step._apply_configuration(
+                    step_config, runtime_parameters=invocation.parameters
+                )
+
+            # Apply the dynamic configuration (which happened while executing the
+            # pipeline function) after all other step-specific configurations.
+            step._apply_dynamic_configuration()
+
+            convert_component_shortcut_settings_keys(
+                step.configuration.settings, stack=stack
+            )
+            step_spec = self._get_step_spec(invocation=invocation)
+            step_secrets = secret_utils.resolve_and_verify_secrets(
+                step.configuration.secrets
+            )
+            step_settings = self._filter_and_validate_settings(
+                settings=step.configuration.settings,
+                configuration_level=ConfigurationLevel.STEP,
+                stack=stack,
+            )
+            step.configure(
+                secrets=step_secrets,
+                settings=step_settings,
+                merge=False,
             )
 
-        # Apply the dynamic configuration (which happened while executing the
-        # pipeline function) after all other step-specific configurations.
-        step._apply_dynamic_configuration()
-
-        convert_component_shortcut_settings_keys(
-            step.configuration.settings, stack=stack
-        )
-        step_spec = self._get_step_spec(invocation=invocation)
-        step_secrets = secret_utils.resolve_and_verify_secrets(
-            step.configuration.secrets
-        )
-        step_settings = self._filter_and_validate_settings(
-            settings=step.configuration.settings,
-            configuration_level=ConfigurationLevel.STEP,
-            stack=stack,
-        )
-        step.configure(
-            secrets=step_secrets,
-            settings=step_settings,
-            merge=False,
-        )
-
-        parameters_to_ignore = (
-            set(step_config.parameters or {}) if step_config else set()
-        )
-        step_configuration_overrides = invocation.finalize(
-            parameters_to_ignore=parameters_to_ignore,
-            skip_input_validation=skip_input_validation,
-        )
+            parameters_to_ignore = (
+                set(step_config.parameters or {}) if step_config else set()
+            )
+            step_configuration_overrides = invocation.finalize(
+                parameters_to_ignore=parameters_to_ignore,
+                skip_input_validation=skip_input_validation,
+            )
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
                 pipeline_configuration=pipeline_configuration

@@ -18,10 +18,12 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Generator,
     List,
     Mapping,
     Optional,
@@ -207,6 +209,7 @@ class BaseStep:
 
         self._configuration = PartialStepConfiguration(name=name)
         self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
+        self._should_skip_dynamic_configuration = False
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -492,7 +495,9 @@ class BaseStep:
         if context := DynamicPipelineRunContext.get():
             after = cast(
                 Union[
-                    "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
+                    "StepRunOutputsFuture",
+                    Sequence["StepRunOutputsFuture"],
+                    None,
                 ],
                 after,
             )
@@ -910,6 +915,13 @@ class BaseStep:
 
         return copy_
 
+    @contextmanager
+    def _skip_dynamic_configuration(self) -> Generator[None, None, None]:
+        """Context manager to skip the dynamic configuration."""
+        self._should_skip_dynamic_configuration = True
+        yield
+        self._should_skip_dynamic_configuration = False
+
     def _apply_configuration(
         self,
         config: "StepConfigurationUpdate",
@@ -929,7 +941,10 @@ class BaseStep:
 
         self._validate_configuration(config, runtime_parameters)
 
-        if DynamicPipelineRunContext.get():
+        if (
+            DynamicPipelineRunContext.get()
+            and not self._should_skip_dynamic_configuration
+        ):
             if self._dynamic_configuration is None:
                 self._dynamic_configuration = config
             else:

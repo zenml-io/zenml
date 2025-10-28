@@ -1361,7 +1361,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The step invocation ID.
         """
-        if Pipeline.ACTIVE_PIPELINE != self:
+        if not self.is_dynamic and Pipeline.ACTIVE_PIPELINE != self:
             raise RuntimeError(
                 "A step invocation can only be added to an active pipeline."
             )
