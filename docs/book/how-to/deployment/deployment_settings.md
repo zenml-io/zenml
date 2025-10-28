@@ -241,6 +241,27 @@ A rudimentary playground dashboard is included with the ZenML python package tha
 When supplying your own custom dashboard, you may also need to [customize the security headers](./deployment_settings#secure-headers) to allow the dashboard to access various resources. For example, you may want to tweak the `Content-Security-Policy` header to allow the dashboard to access external javascript libraries, images, etc.
 {% endhint %}
 
+#### Jinja2 templates
+
+You can use a Jinja2 template to dynamically generate the `index.html` file that hosts the single-page application. This is useful if you want to dynamically generate the dashboard files based on the pipeline configuration, step configuration or stack configuration. A `service_info` variable is passed to the template that contains the service information, such as the service name, version, and description. This variable has the same structure as the `zenml.deployers.server.models.ServiceInfo` model.
+
+Example:
+
+```jinja2
+<html>
+<head>
+    <title>Pipeline: {{ service_info.pipeline.pipeline_name }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css">
+</head>
+<body>
+    <h1>Pipeline: {{ service_info.pipeline.pipeline_name }}</h1>
+    <p>Deployment: {{ service_info.deployment.name }}</p>
+</body>
+</html>
+```
+
 ### CORS
 
 Fine-tune cross-origin access:
@@ -362,6 +383,17 @@ settings:
 ### Uvicorn and threading
 
 Tune server runtime parameters for performance and topology:
+
+The following settings are available for tuning the uvicorn server:
+* `thread_pool_size`: the size of the thread pool for CPU-bound work offload.
+* `uvicorn_host`: the host to bind the uvicorn server to.
+* `uvicorn_port`: the port to bind the uvicorn server to.
+* `uvicorn_workers`: the number of workers to use for the uvicorn server.
+* `log_level`: the log level to use for the uvicorn server.
+* `uvicorn_reload`: whether to enable auto-reload for the uvicorn server. This is useful when using [the local Deployer stack component](https://docs.zenml.io/stacks/stack-components/deployers/docker) to speed up local development by automatically restarting the server when code changes are detected. NOTE: the `uvicorn_reload` setting has no effect on changes in the pipeline configuration, step configuration or stack configuration.
+* `uvicorn_kwargs`: a dictionary of keyword arguments to pass to the uvicorn server.
+
+The following settings are available:
 
 ```python
 from zenml.config import DeploymentSettings
