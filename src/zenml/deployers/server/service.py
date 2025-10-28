@@ -317,6 +317,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
         self.total_executions = 0
+        self.orchestrator_class = SharedLocalOrchestrator
 
         try:
             # Execute init hook
@@ -554,7 +555,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         """
         active_stack: Stack = self._client.active_stack
 
-        orchestrator = SharedLocalOrchestrator(
+        orchestrator = self.orchestrator_class(
             name="deployment-local",
             id=uuid4(),
             config=LocalOrchestratorConfig(),
