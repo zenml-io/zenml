@@ -14,8 +14,6 @@ ARG CLOUD_PROVIDER
 # Install the Python requirements
 RUN pip install uv
 
-RUN uv pip install zenml${ZENML_VERSION:+==$ZENML_VERSION} notebook pyarrow datasets transformers transformers[torch] torch sentencepiece
-
 RUN echo "Cloud Provider: $CLOUD_PROVIDER";
 # Install cloud-specific ZenML integrations
 RUN if [ "$CLOUD_PROVIDER" = "aws" ]; then \
