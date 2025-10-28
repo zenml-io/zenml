@@ -30,6 +30,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -489,6 +490,12 @@ class BaseStep:
         from zenml.pipelines.pipeline_definition import Pipeline
 
         if context := DynamicPipelineRunContext.get():
+            after = cast(
+                Union[
+                    "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
+                ],
+                after,
+            )
             return context.runner.run_step_sync(self, id, args, kwargs, after)
 
         if not Pipeline.ACTIVE_PIPELINE:

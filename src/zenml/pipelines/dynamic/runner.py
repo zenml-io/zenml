@@ -39,6 +39,7 @@ from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
+from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
@@ -51,6 +52,8 @@ logger = get_logger(__name__)
 
 
 class DynamicStepRunOutput(ArtifactVersionResponse):
+    """Dynamic step run output artifact."""
+
     output_name: str
     step_name: str
 
@@ -61,17 +64,41 @@ StepRunOutputs = Union[
 
 
 class StepRunOutputsFuture:
-    def __init__(self, wrapped: Future[StepRunOutputs], invocation_id: str):
+    """Future for a step run output."""
+
+    def __init__(
+        self, wrapped: Future[StepRunOutputs], invocation_id: str
+    ) -> None:
+        """Initialize the future.
+
+        Args:
+            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
+        """
         self._wrapped = wrapped
         self._invocation_id = invocation_id
 
     def wait(self) -> None:
+        """Wait for the future to complete."""
         self._wrapped.result()
 
     def result(self) -> StepRunOutputs:
+        """Get the step run output artifacts.
+
+        Returns:
+            The step run output artifacts.
+        """
         return self._wrapped.result()
 
     def load(self) -> Any:
+        """Get the step run output artifact data.
+
+        Raises:
+            ValueError: If the step run output is invalid.
+
+        Returns:
+            The step run output artifact data.
+        """
         result = self.result()
 
         if result is None:
@@ -153,6 +180,7 @@ class DynamicPipelineRunner:
             ):
                 self._orchestrator.run_init_hook(snapshot=self._snapshot)
                 try:
+                    # TODO: step logging isn't threadsafe
                     self.pipeline._call_entrypoint(**pipeline_parameters)
                 except:
                     publish_failed_pipeline_run(run.id)
@@ -240,6 +268,20 @@ def _prepare_step_run(
         "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
     ] = None,
 ) -> Tuple[Dict[str, Any], Set[str]]:
+    """Prepare a step run.
+
+    Args:
+        step: The step to prepare.
+        args: The arguments for the step function.
+        kwargs: The keyword arguments for the step function.
+        after: The step run output futures to wait for.
+
+    Returns:
+        A tuple containing the inputs and the upstream steps.
+
+    Raises:
+        ValueError: If an invalid step function input was passed.
+    """
     upstream_steps = set()
 
     if isinstance(after, StepRunOutputsFuture):
@@ -250,7 +292,7 @@ def _prepare_step_run(
             item.wait()
             upstream_steps.add(item._invocation_id)
 
-    def _await_and_validate_input(input: Any):
+    def _await_and_validate_input(input: Any) -> Any:
         if isinstance(input, StepRunOutputsFuture):
             input = input.result()
 
@@ -260,7 +302,8 @@ def _prepare_step_run(
             and isinstance(input[0], DynamicStepRunOutput)
         ):
             raise ValueError(
-                "Passing multiple step run outputs to another step is not allowed."
+                "Passing multiple step run outputs to another step is not "
+                "allowed."
             )
 
         if isinstance(input, DynamicStepRunOutput):
@@ -268,7 +311,7 @@ def _prepare_step_run(
 
         return input
 
-    args = [_await_and_validate_input(arg) for arg in args]
+    args = tuple(_await_and_validate_input(arg) for arg in args)
     kwargs = {
         key: _await_and_validate_input(value) for key, value in kwargs.items()
     }
@@ -295,7 +338,7 @@ def _compile_step(
             input_artifacts[name] = StepArtifact(
                 invocation_id=value.step_name,
                 output_name=value.output_name,
-                annotation=Any,
+                annotation=OutputSignature(resolved_annotation=Any),
                 pipeline=pipeline,
             )
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
@@ -335,6 +378,18 @@ def _run_step_sync(
     orchestrator_run_id: str,
     retry: bool = False,
 ) -> StepRunResponse:
+    """Run a step in the active thread.
+
+    Args:
+        snapshot: The snapshot.
+        step: The step to run.
+        orchestrator_run_id: The orchestrator run ID.
+        retry: Whether to retry the step if it fails.
+
+    Returns:
+        The step run response.
+    """
+
     def _launch_step() -> StepRunResponse:
         launcher = StepLauncher(
             snapshot=snapshot,
@@ -383,6 +438,14 @@ def _run_step_sync(
 
 
 def _load_step_outputs(step_run_id: UUID) -> StepRunOutputs:
+    """Load the outputs of a step run.
+
+    Args:
+        step_run_id: The ID of the step run.
+
+    Returns:
+        The outputs of the step run.
+    """
     step_run = Client().zen_store.get_run_step(step_run_id)
 
     def _convert_output_artifact(
@@ -410,6 +473,15 @@ def _load_step_outputs(step_run_id: UUID) -> StepRunOutputs:
 def _should_retry_locally(
     step: "Step", pipeline_docker_settings: "DockerSettings"
 ) -> bool:
+    """Determine if a step should be retried locally.
+
+    Args:
+        step: The step.
+        pipeline_docker_settings: The Docker settings of the parent pipeline.
+
+    Returns:
+        Whether the step should be retried locally.
+    """
     if step.config.step_operator:
         return True
 
@@ -425,6 +497,15 @@ def _should_retry_locally(
 def should_run_in_process(
     step: "Step", pipeline_docker_settings: "DockerSettings"
 ) -> bool:
+    """Determine if a step should be run in process.
+
+    Args:
+        step: The step.
+        pipeline_docker_settings: The Docker settings of the parent pipeline.
+
+    Returns:
+        Whether the step should be run in process.
+    """
     if step.config.step_operator:
         return False
 
@@ -448,6 +529,16 @@ def get_config_template(
     step: "BaseStep",
     pipeline: "DynamicPipeline",
 ) -> Optional["Step"]:
+    """Get the config template for a step executed in a dynamic pipeline.
+
+    Args:
+        snapshot: The snapshot of the pipeline.
+        step: The step to get the config template for.
+        pipeline: The dynamic pipeline that the step is being executed in.
+
+    Returns:
+        The config template for the step.
+    """
     for index, step_ in enumerate(pipeline.depends_on):
         if step_._static_id == step._static_id:
             break

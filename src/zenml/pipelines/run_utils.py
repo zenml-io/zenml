@@ -2,7 +2,16 @@
 
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -60,7 +69,7 @@ def should_prevent_pipeline_execution() -> bool:
 
 
 @contextmanager
-def prevent_pipeline_execution():
+def prevent_pipeline_execution() -> Generator[None, None, None]:
     """Context manager to prevent pipeline execution."""
     with env_utils.temporary_environment(
         {ENV_ZENML_PREVENT_PIPELINE_EXECUTION: "True"}

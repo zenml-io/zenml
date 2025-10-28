@@ -459,21 +459,26 @@ class StepLauncher:
                     step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
                 )
+            elif not self._snapshot.is_dynamic:
+                self._run_step_in_current_thread(
+                    pipeline_run=pipeline_run,
+                    step_run=step_run,
+                    step_run_info=step_run_info,
+                    input_artifacts=step_run.regular_inputs,
+                    output_artifact_uris=output_artifact_uris,
+                )
             else:
                 from zenml.pipelines.dynamic.runner import (
                     should_run_in_process,
-                )
-
-                should_run_out_of_process = (
-                    self._snapshot.is_dynamic
-                    and self._step.config.in_process is False
                 )
 
                 if should_run_in_process(
                     self._step,
                     self._snapshot.pipeline_configuration.docker_settings,
                 ):
-                    if should_run_out_of_process:
+                    if self._step.config.in_process is False:
+                        # The step was configured to run out of process, but
+                        # the orchestrator doesn't support it.
                         logger.warning(
                             "The %s does not support running dynamic out of "
                             "process steps. Running step `%s` in current "

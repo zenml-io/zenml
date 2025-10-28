@@ -236,7 +236,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         if should_prevent_pipeline_execution():
             logger.info("Preventing execution of pipeline '%s'.", self.name)
-            return
+            return None
 
         stack = Client().active_stack
         if not stack.orchestrator.supports_dynamic_pipelines:
@@ -286,7 +286,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         """
         try:
             outputs = parse_return_type_annotations(self.entrypoint)
-            model_fields = {
+            model_fields: Dict[str, Any] = {
                 name: (output.resolved_annotation, ...)
                 for name, output in outputs.items()
             }
