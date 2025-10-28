@@ -14,7 +14,7 @@ def get_weather(city: str) -> str:
         A string describing the weather conditions
     """
     return (
-        f"It's always sunny in {city}! Temperature is 72°F with clear skies."
+        f"It's always sunny in {city}! Temperature is 27°C with clear skies."
     )
 
 
@@ -48,6 +48,6 @@ agent = Agent(
     instructions="""You are a helpful travel assistant. You can provide weather information
     and general facts about cities around the world. When users ask about cities, use your
     available tools to get specific information. Be friendly and informative in your responses.""",
-    model="gpt-4o-mini",
+    model="gpt-5-nano",
     tools=[get_weather, get_city_info],
 )
