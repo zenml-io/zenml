@@ -6053,6 +6053,7 @@ class SqlZenStore(BaseZenStore):
         """
         helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
+            # TODO: better loads for dynamic/static pipelines
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
@@ -6060,6 +6061,7 @@ class SqlZenStore(BaseZenStore):
                 query_options=[
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                        jl_arg(PipelineSnapshotSchema.is_dynamic),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.snapshot)
@@ -6072,6 +6074,9 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
                     selectinload(jl_arg(PipelineRunSchema.step_runs))
                     .selectinload(jl_arg(StepRunSchema.triggered_runs))
                     .load_only(
@@ -6098,13 +6103,23 @@ class SqlZenStore(BaseZenStore):
                 start_time=run.start_time, inplace=True
             )
 
-            steps = {
-                config_table.name: Step.from_dict(
-                    json.loads(config_table.config),
-                    pipeline_configuration=pipeline_configuration,
-                )
-                for config_table in snapshot.step_configurations
-            }
+            if snapshot.is_dynamic:
+                # Ignore static config templates for dynamic pipeline DAGs
+                steps = {
+                    name: Step.from_dict(
+                        json.loads(step_run.dynamic_config.config),
+                        pipeline_configuration=pipeline_configuration,
+                    )
+                    for name, step_run in step_runs.items()
+                }
+            else:
+                steps = {
+                    config_table.name: Step.from_dict(
+                        json.loads(config_table.config),
+                        pipeline_configuration=pipeline_configuration,
+                    )
+                    for config_table in snapshot.step_configurations
+                }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)

@@ -178,7 +178,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "order_by": "asc(StepRunSchema.start_time)",
+        },
     )
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="pipeline_runs",
