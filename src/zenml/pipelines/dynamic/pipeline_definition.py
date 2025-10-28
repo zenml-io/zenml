@@ -20,10 +20,11 @@ from typing import (
     List,
     Optional,
     Set,
+    Type,
     Union,
 )
 
-from pydantic import ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 from zenml import ExternalArtifact
 from zenml.client import Client
@@ -34,6 +35,9 @@ from zenml.pipelines.run_utils import (
     should_prevent_pipeline_execution,
 )
 from zenml.steps.step_invocation import StepInvocation
+from zenml.steps.utils import (
+    parse_return_type_annotations,
+)
 from zenml.utils import dict_utils, pydantic_utils
 
 if TYPE_CHECKING:
@@ -280,4 +284,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The output schema for the pipeline.
         """
-        return None
+        try:
+            outputs = parse_return_type_annotations(self.entrypoint)
+            model_fields = {
+                name: (output.resolved_annotation, ...)
+                for name, output in outputs.items()
+            }
+            output_model: Type[BaseModel] = create_model(
+                "PipelineOutput",
+                __config__=ConfigDict(extra="forbid"),
+                **model_fields,
+            )
+            return output_model.model_json_schema(mode="serialization")
+        except Exception as e:
+            logger.debug(
+                f"Failed to generate the output schema for pipeline "
+                f"`{self.name}: {e}. This means that the pipeline cannot be "
+                "deployed.",
+            )
+            return None
