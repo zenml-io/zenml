@@ -14,7 +14,7 @@ def get_weather(city: str) -> str:
         A string describing the weather conditions
     """
     return (
-        f"It's always sunny in {city}! Temperature is 27°C with clear skies."
+        f"It's always sunny in {city}! Temperature is 72°F with clear skies."
     )
 
 
@@ -33,6 +33,7 @@ def get_city_info(city: str) -> str:
         "paris": "Paris is the capital of France, famous for the Eiffel Tower, art museums, and cuisine.",
         "new york": "New York City is the most populous city in the United States, known for its skyline, culture, and diversity.",
         "london": "London is the capital of England and the United Kingdom, famous for its history, architecture, and royal heritage.",
+        "munich": "Munich is the capital of Bavaria, Germany's third-largest city, famous for Oktoberfest, beer gardens, BMW headquarters, and its proximity to the Alps.",
     }
 
     city_lower = city.lower()
