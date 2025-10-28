@@ -76,7 +76,8 @@
 ## Examples
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
-* [Agent Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production)
+* [Deploying ML Models](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)
+* [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [Forecasting time-series prediction](https://github.com/zenml-io/zenml-projects/tree/main/floracasts)

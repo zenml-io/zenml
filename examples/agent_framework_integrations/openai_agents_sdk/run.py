@@ -7,9 +7,7 @@ for orchestration and artifact management.
 import os
 from typing import Annotated, Any, Dict
 
-from openai_agent import agent
-
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -25,16 +23,106 @@ docker_settings = DockerSettings(
 def run_openai_agent(query: str) -> Annotated[Dict[str, Any], "agent_results"]:
     """Execute the OpenAI Agents SDK agent and return results."""
     try:
-        import agents
+        import json
+        import subprocess
+        import sys
+        import tempfile
 
-        # Use the default agent runner to execute the agent
-        runner = agents.run.DEFAULT_AGENT_RUNNER
-        result = runner.run_sync(agent, query)
+        # Create a standalone script to run the agent in a separate process
+        agent_script = '''
+import asyncio
+import sys
+import json
+import os
 
-        # Extract the final output
-        response = result.final_output
+# Add current directory to path to find openai_agent module
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-        return {"query": query, "response": response, "status": "success"}
+from openai_agent import agent
+from agents import Runner
+
+async def run_agent(query):
+    """Run the agent asynchronously."""
+    result = await Runner.run(agent, query)
+    return result.final_output
+
+def main():
+    query = sys.argv[1] if len(sys.argv) > 1 else "Hello"
+
+    # Create new event loop for this process
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        response = loop.run_until_complete(run_agent(query))
+        print(json.dumps({"success": True, "response": response}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+    finally:
+        loop.close()
+
+if __name__ == "__main__":
+    main()
+'''
+
+        # Write the script to a temporary file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as f:
+            f.write(agent_script)
+            script_path = f.name
+
+        try:
+            # Determine the correct working directory
+            import os
+
+            current_file_dir = os.path.dirname(os.path.abspath(__file__))
+            work_dir = (
+                "/app/code"
+                if os.path.exists("/app/code")
+                else current_file_dir
+            )
+
+            # Run the agent in a separate process
+            result = subprocess.run(
+                [sys.executable, script_path, query],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=work_dir,
+                env={**os.environ, "PYTHONPATH": work_dir},
+            )
+
+            if result.returncode == 0:
+                # Parse the JSON output
+                output_data = json.loads(result.stdout.strip())
+                if output_data.get("success"):
+                    return {
+                        "query": query,
+                        "response": output_data["response"],
+                        "status": "success",
+                    }
+                else:
+                    return {
+                        "query": query,
+                        "response": f"Agent error: {output_data.get('error', 'Unknown error')}",
+                        "status": "error",
+                    }
+            else:
+                return {
+                    "query": query,
+                    "response": f"Process error: {result.stderr}",
+                    "status": "error",
+                }
+        finally:
+            # Clean up the temporary file
+            import os
+
+            try:
+                os.unlink(script_path)
+            except Exception:
+                pass
+
     except Exception as e:
         return {
             "query": query,
@@ -75,17 +163,14 @@ Response:
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def openai_agent_pipeline() -> str:
+def agent_pipeline(query: str = "Tell me a fun fact about Tokyo") -> str:
     """ZenML pipeline that orchestrates the OpenAI Agents SDK.
 
     Returns:
         Formatted agent response
     """
-    # External artifact for agent query
-    agent_query = ExternalArtifact(value="Tell me a fun fact about Tokyo")
-
     # Run the OpenAI Agents SDK agent
-    agent_results = run_openai_agent(agent_query)
+    agent_results = run_openai_agent(query=query)
 
     # Format the results
     summary = format_openai_response(agent_results)
@@ -95,6 +180,6 @@ def openai_agent_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running OpenAI Agents SDK pipeline...")
-    run_result = openai_agent_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

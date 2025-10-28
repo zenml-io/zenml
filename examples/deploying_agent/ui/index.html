@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Analysis | ZenML</title>
+
+    <!-- ZenML Brand Fonts (Fontsource CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== CSS Variables - ZenML Design System ===== */
+      :root {
+        /* Primary Colors */
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --zenml-purple-mid: #9565f6;
+
+        /* Neutral Colors */
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+
+        /* Semantic Colors */
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+
+        /* Border Colors */
+        --border-moderate: #e5e7eb;
+        --border-bold: #6b7280;
+
+        /* Typography */
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New",
+          monospace;
+
+        /* Spacing Scale (8pt grid) */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Shadows */
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-emphasized: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      /* ===== Reset & Base Styles ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        padding: var(--spacing-lg);
+        font-size: 16px;
+        line-height: 24px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* ===== Layout ===== */
+      .container {
+        width: 80%;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow-standard);
+      }
+
+      /* ===== Hero Section ===== */
+      .hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-moderate);
+      }
+
+      .hero-copy {
+        flex: 1;
+      }
+
+      .title {
+        margin: 0 0 var(--spacing-sm) 0;
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 40px;
+        color: var(--text-primary);
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-secondary);
+      }
+
+      .hero-art {
+        width: 120px;
+        height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+      }
+
+      /* ===== Section ===== */
+      .section {
+        margin-top: var(--spacing-xl);
+      }
+
+      .section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* ===== Tabs ===== */
+      .tabs-header {
+        display: flex;
+        gap: var(--spacing-sm);
+        border-bottom: 1px solid var(--border-moderate);
+        margin-bottom: var(--spacing-lg);
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        padding: var(--spacing-md) var(--spacing-lg);
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+        font-family: var(--font-ui);
+      }
+
+      .tab-btn:hover {
+        color: var(--text-primary);
+      }
+
+      .tab-btn.active {
+        color: var(--zenml-purple);
+        border-bottom-color: var(--zenml-purple);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* ===== Form ===== */
+      .form-row {
+        display: flex;
+        gap: var(--spacing-md);
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .form-group {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 20px;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .input {
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      textarea.input {
+        min-height: 200px;
+        font-family: var(--font-mono);
+        resize: vertical;
+      }
+
+      .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+      }
+
+      .file-input-wrapper input[type="file"] {
+        position: absolute;
+        left: -9999px;
+      }
+
+      .file-input-label {
+        display: block;
+        padding: 12px 16px;
+        border: 2px dashed var(--border-moderate);
+        border-radius: var(--radius-md);
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--surface-tertiary);
+        color: var(--text-secondary);
+      }
+
+      .file-input-label:hover {
+        border-color: var(--zenml-purple);
+        color: var(--zenml-purple);
+        background: var(--zenml-purple-lighter);
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease,
+          box-shadow 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      .btn:not(.secondary) {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+      }
+
+      .btn:not(.secondary):hover:not(:disabled) {
+        background: var(--zenml-purple-dark);
+        box-shadow: var(--shadow-standard);
+      }
+
+      .btn.secondary {
+        background: var(--surface-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .btn.secondary:hover:not(:disabled) {
+        background: var(--border-moderate);
+      }
+
+      /* ===== Loading Spinner ===== */
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(122, 62, 244, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--zenml-purple);
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== Messages ===== */
+      .message {
+        margin-top: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 20px;
+        display: none;
+      }
+
+      .message.show {
+        display: block;
+      }
+
+      .message.info {
+        background: var(--zenml-purple-lighter);
+        color: var(--zenml-purple);
+        border: 1px solid var(--zenml-purple-light);
+      }
+
+      .message.error {
+        background: var(--error-light);
+        color: var(--error);
+        border: 1px solid var(--error);
+      }
+
+      .message.success {
+        background: var(--success-light);
+        color: var(--success);
+        border: 1px solid var(--success);
+      }
+
+      /* ===== Metrics Grid ===== */
+      .metrics {
+        margin-top: var(--spacing-lg);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--spacing-md);
+      }
+
+      .metric-card {
+        background: var(--surface-secondary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        text-align: center;
+      }
+
+      .metric-label {
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .metric-value {
+        color: var(--text-primary);
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 32px;
+      }
+
+      /* ===== Results Section ===== */
+      .results {
+        margin-top: var(--spacing-xl);
+        display: none;
+      }
+
+      .results.show {
+        display: block;
+      }
+
+      .results h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: var(--spacing-md);
+        color: var(--text-primary);
+      }
+
+      .result-card {
+        background: var(--surface-secondary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .result-card h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: var(--spacing-sm);
+        color: var(--text-primary);
+      }
+
+      .result-card p {
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+
+      .keywords-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+      }
+
+      .keyword-tag {
+        background: var(--zenml-purple-light);
+        color: var(--zenml-purple);
+        padding: 4px 12px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .sentiment-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: var(--radius-full);
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: var(--spacing-sm);
+      }
+
+      .sentiment-positive {
+        background: var(--success-light);
+        color: var(--success);
+      }
+
+      .sentiment-negative {
+        background: var(--error-light);
+        color: var(--error);
+      }
+
+      .sentiment-neutral {
+        background: var(--warning-light);
+        color: var(--warning);
+      }
+
+      /* ===== Footer ===== */
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        background: var(--surface-secondary);
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 20px;
+        border-top: 1px solid var(--border-moderate);
+        margin: var(--spacing-xl) calc(var(--spacing-lg) * -1)
+          calc(var(--spacing-lg) * -1);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+      }
+
+      .footer strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      /* ===== Responsive Design ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--spacing-md);
+        }
+
+        .hero {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero-art {
+          align-self: center;
+        }
+
+        .card {
+          padding: var(--spacing-md);
+        }
+
+        .title {
+          font-size: 24px;
+          line-height: 32px;
+        }
+
+        .form-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .form-group {
+          min-width: 100%;
+        }
+
+        .input {
+          width: 100%;
+        }
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .tabs-header {
+          gap: var(--spacing-xs);
+        }
+
+        .tab-btn {
+          padding: var(--spacing-md);
+          font-size: 12px;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <!-- Hero Section -->
+        <div class="hero">
+          <div class="hero-copy">
+            <h1 class="title">📄 Document Analysis</h1>
+            <p class="subtitle">
+              Analyze documents and extract key insights using AI-powered analysis.
+            </p>
+          </div>
+          <div class="hero-art" aria-hidden="true">📊</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="section">
+          <!-- Tabs Header -->
+          <div class="tabs-header">
+            <button class="tab-btn active" data-tab="direct">
+              ✏️ Direct Content
+            </button>
+            <button class="tab-btn" data-tab="upload">📁 Upload File</button>
+            <button class="tab-btn" data-tab="url">🌐 URL</button>
+          </div>
+
+          <!-- Tab: Direct Content -->
+          <div class="tab-content active" id="tab-direct">
+            <h2>Paste or write content</h2>
+            <div class="form-row">
+              <div class="form-group" style="width: 100%">
+                <label for="direct-content">Content</label>
+                <textarea
+                  id="direct-content"
+                  class="input"
+                  placeholder="Enter or paste your content here..."
+                ></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="direct-filename">Filename (optional)</label>
+                <input
+                  type="text"
+                  id="direct-filename"
+                  class="input"
+                  placeholder="document.txt"
+                  value="document.txt"
+                />
+              </div>
+              <div class="form-group">
+                <label for="direct-type">Document Type</label>
+                <select id="direct-type" class="input">
+                  <option value="text">Text</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="report">Report</option>
+                  <option value="article">Article</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn" id="analyze-direct-btn">
+              🔍 Analyze Content
+            </button>
+          </div>
+
+          <!-- Tab: Upload File -->
+          <div class="tab-content" id="tab-upload">
+            <h2>Upload a document</h2>
+            <div class="form-row">
+              <div class="file-input-wrapper">
+                <input
+                  type="file"
+                  id="file-input"
+                  accept=".txt,.md,.csv,.json,.py,.js,.html,.xml"
+                />
+                <label for="file-input" class="file-input-label">
+                  📂 Click to upload or drag and drop
+                </label>
+              </div>
+            </div>
+            <div id="file-info" style="margin-top: var(--spacing-md); display: none">
+              <p id="file-name" style="color: var(--text-secondary); font-size: 14px">
+              </p>
+              <button class="btn" id="analyze-upload-btn">
+                📊 Analyze Uploaded File
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab: URL -->
+          <div class="tab-content" id="tab-url">
+            <h2>Analyze from URL</h2>
+            <div class="form-row">
+              <div class="form-group" style="flex: 1">
+                <label for="url-input">Document URL</label>
+                <input
+                  type="url"
+                  id="url-input"
+                  class="input"
+                  placeholder="https://example.com/document"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="url-filename">Filename (optional)</label>
+                <input
+                  type="text"
+                  id="url-filename"
+                  class="input"
+                  placeholder="document.txt"
+                  value="document.txt"
+                />
+              </div>
+              <div class="form-group">
+                <label for="url-type">Document Type</label>
+                <select id="url-type" class="input">
+                  <option value="text">Text</option>
+                  <option value="markdown">Markdown</option>
+                  <option value="report">Report</option>
+                  <option value="article">Article</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn" id="analyze-url-btn">📄 Analyze URL</button>
+          </div>
+
+          <!-- Messages -->
+          <div id="message" class="message"></div>
+
+          <!-- Results -->
+          <div id="results" class="results">
+            <h3>📊 Analysis Results</h3>
+
+            <!-- Metrics -->
+            <div class="metrics">
+              <div class="metric-card">
+                <div class="metric-label">Word Count</div>
+                <div class="metric-value" id="result-word-count">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Processing Time</div>
+                <div class="metric-value" id="result-latency">0ms</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Readability Score</div>
+                <div class="metric-value" id="result-readability">0.0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Analysis Method</div>
+                <div class="metric-value" style="font-size: 14px" id="result-method">
+                  N/A
+                </div>
+              </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="result-card">
+              <h4>📝 Summary</h4>
+              <p id="result-summary">No summary available.</p>
+            </div>
+
+            <!-- Sentiment -->
+            <div class="result-card">
+              <h4>💭 Sentiment</h4>
+              <p id="result-sentiment-text">N/A</p>
+              <span id="result-sentiment-badge" class="sentiment-badge"></span>
+            </div>
+
+            <!-- Keywords -->
+            <div class="result-card">
+              <h4>🔑 Keywords</h4>
+              <div class="keywords-list" id="result-keywords"></div>
+            </div>
+
+            <!-- Document Info -->
+            <div class="result-card">
+              <h4>📄 Document Information</h4>
+              <div class="metrics" style="grid-template-columns: 1fr 1fr">
+                <div class="metric-card">
+                  <div class="metric-label">Filename</div>
+                  <div
+                    class="metric-value"
+                    style="font-size: 14px"
+                    id="result-filename"
+                  >
+                    N/A
+                  </div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Document Type</div>
+                  <div
+                    class="metric-value"
+                    style="font-size: 14px"
+                    id="result-doc-type"
+                  >
+                    N/A
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          Powered by <strong>ZenML</strong> Pipeline Deployments | Real-time
+          inference
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration
+      const INVOKE_URL = "{{ service_info.app.invoke_url_path }}";
+
+      // DOM Elements
+      const tabBtns = document.querySelectorAll(".tab-btn");
+      const tabContents = document.querySelectorAll(".tab-content");
+      const messageEl = document.getElementById("message");
+      const resultsEl = document.getElementById("results");
+
+      // Tab switching
+      tabBtns.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const tabId = e.target.dataset.tab;
+
+          // Update active tab button
+          tabBtns.forEach((b) => b.classList.remove("active"));
+          e.target.classList.add("active");
+
+          // Update visible content
+          tabContents.forEach((content) => {
+            content.classList.remove("active");
+          });
+          document.getElementById(`tab-${tabId}`).classList.add("active");
+        });
+      });
+
+      // Message display helpers
+      function showMessage(text, type = "info") {
+        messageEl.textContent = text;
+        messageEl.className = `message show ${type}`;
+      }
+
+      function clearMessage() {
+        messageEl.className = "message";
+        messageEl.textContent = "";
+      }
+
+      function hideResults() {
+        resultsEl.classList.remove("show");
+      }
+
+      function showResults() {
+        resultsEl.classList.add("show");
+      }
+
+      // API call
+      async function analyzeContent(payload) {
+        clearMessage();
+        hideResults();
+        showMessage("⏳ Analyzing document...", "info");
+
+        try {
+          const response = await fetch(INVOKE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ parameters: payload }),
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            throw new Error(
+              `Request failed: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const data = await response.json();
+
+          if (!data.success && !data.outputs) {
+            throw new Error(data.error || "No output returned from pipeline");
+          }
+
+          const outputs = data.outputs || {};
+          const analysisKey = Object.keys(outputs).find((k) =>
+            k.includes("document_analysis")
+          );
+
+          if (!analysisKey) {
+            throw new Error("No analysis output found in response");
+          }
+
+          const analysis = outputs[analysisKey];
+          displayResults(analysis);
+          clearMessage();
+        } catch (error) {
+          showMessage(`❌ ${error.message}`, "error");
+        }
+      }
+
+      function displayResults(analysis) {
+        document.getElementById("result-word-count").textContent = (
+          analysis.word_count || 0
+        ).toLocaleString();
+        document.getElementById("result-latency").textContent =
+          `${analysis.latency_ms || 0}ms`;
+        document.getElementById("result-readability").textContent = (
+          analysis.readability_score || 0
+        ).toFixed(2);
+
+        const method =
+          analysis.metadata?.analysis_method === "llm"
+            ? "🤖 AI-Powered"
+            : "🔧 Rule-Based";
+        document.getElementById("result-method").textContent = method;
+
+        document.getElementById("result-summary").textContent =
+          analysis.summary || "No summary available.";
+
+        // Sentiment
+        const sentiment = (analysis.sentiment || "neutral").toLowerCase();
+        const sentimentEmoji = {
+          positive: "😊",
+          negative: "😞",
+          neutral: "😐",
+        }[sentiment] || "😐";
+        document.getElementById("result-sentiment-text").textContent =
+          `${sentimentEmoji} ${sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}`;
+
+        const badge = document.getElementById("result-sentiment-badge");
+        badge.textContent = sentiment.charAt(0).toUpperCase() + sentiment.slice(1);
+        badge.className = `sentiment-badge sentiment-${sentiment}`;
+
+        // Keywords
+        const keywordsEl = document.getElementById("result-keywords");
+        keywordsEl.innerHTML = "";
+        (analysis.keywords || []).forEach((keyword) => {
+          const tag = document.createElement("span");
+          tag.className = "keyword-tag";
+          tag.textContent = keyword;
+          keywordsEl.appendChild(tag);
+        });
+
+        // Document info
+        const doc = analysis.document || {};
+        document.getElementById("result-filename").textContent =
+          doc.filename || "N/A";
+        document.getElementById("result-doc-type").textContent =
+          doc.document_type || "N/A";
+
+        showResults();
+      }
+
+      // Tab: Direct Content
+      document
+        .getElementById("analyze-direct-btn")
+        .addEventListener("click", async () => {
+          const content = document.getElementById("direct-content").value.trim();
+          if (!content) {
+            showMessage("Please provide content to analyze.", "error");
+            return;
+          }
+
+          const filename =
+            document.getElementById("direct-filename").value || "document.txt";
+          const docType = document.getElementById("direct-type").value;
+
+          await analyzeContent({
+            content: content,
+            url: null,
+            path: null,
+            filename: filename,
+            document_type: docType,
+          });
+        });
+
+      // Tab: Upload File
+      const fileInput = document.getElementById("file-input");
+      const fileInfo = document.getElementById("file-info");
+      const fileNameEl = document.getElementById("file-name");
+      let uploadedFileContent = null;
+      let uploadedFileName = null;
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          uploadedFileName = file.name;
+          fileNameEl.textContent = `✅ File selected: ${file.name} (${(
+            file.size / 1024
+          ).toFixed(2)} KB)`;
+          fileInfo.style.display = "block";
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            uploadedFileContent = event.target.result;
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      // Drag and drop
+      const fileLabel = document.querySelector(".file-input-label");
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        fileLabel.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        fileLabel.addEventListener(eventName, () => {
+          fileLabel.style.borderColor = "var(--zenml-purple)";
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        fileLabel.addEventListener(eventName, () => {
+          fileLabel.style.borderColor = "var(--border-moderate)";
+        });
+      });
+
+      fileLabel.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        const changeEvent = new Event("change", { bubbles: true });
+        fileInput.dispatchEvent(changeEvent);
+      });
+
+      document
+        .getElementById("analyze-upload-btn")
+        .addEventListener("click", async () => {
+          if (!uploadedFileContent) {
+            showMessage("Please select a file to analyze.", "error");
+            return;
+          }
+
+          // Auto-detect type from filename
+          const ext = uploadedFileName.split(".").pop().toLowerCase();
+          const extMap = {
+            md: "markdown",
+            txt: "text",
+            py: "text",
+            js: "text",
+            html: "text",
+            xml: "text",
+            csv: "text",
+            json: "text",
+          };
+          const docType = extMap[ext] || "text";
+
+          await analyzeContent({
+            content: uploadedFileContent,
+            url: null,
+            path: null,
+            filename: uploadedFileName,
+            document_type: docType,
+          });
+        });
+
+      // Tab: URL
+      document.getElementById("analyze-url-btn").addEventListener("click", async () => {
+        const url = document.getElementById("url-input").value.trim();
+        if (!url) {
+          showMessage("Please provide a URL to analyze.", "error");
+          return;
+        }
+
+        const filename =
+          document.getElementById("url-filename").value || "document.txt";
+        const docType = document.getElementById("url-type").value;
+
+        await analyzeContent({
+          content: null,
+          url: url,
+          path: null,
+          filename: filename,
+          document_type: docType,
+        });
+      });
+
+      // Enter key support
+      document
+        .getElementById("direct-content")
+        .addEventListener("keydown", (e) => {
+          if (e.ctrlKey && e.key === "Enter") {
+            document.getElementById("analyze-direct-btn").click();
+          }
+        });
+
+      document.getElementById("url-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          document.getElementById("analyze-url-btn").click();
+        }
+      });
+    </script>
+  </body>
+</html>
