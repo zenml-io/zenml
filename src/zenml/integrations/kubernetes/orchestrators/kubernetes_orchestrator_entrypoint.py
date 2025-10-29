@@ -315,10 +315,7 @@ def main() -> None:
             logger.warning(f"Failed to get pod owner references: {str(e)}")
             owner_references = []
         else:
-            # Make sure None of the owner references are marked as controllers of
-            # the created pod, which messes with the garbage collection logic.
-            for owner_reference in owner_references:
-                owner_reference.controller = False
+            owner_references = None
 
         step_run_request_factory = StepRunRequestFactory(
             snapshot=snapshot,
