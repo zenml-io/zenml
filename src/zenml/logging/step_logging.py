@@ -41,7 +41,6 @@ from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
-    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     LOGS_MERGE_INTERVAL_SECONDS,
     LOGS_STORAGE_MAX_QUEUE_SIZE,
     LOGS_STORAGE_QUEUE_TIMEOUT,
@@ -50,16 +49,14 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
+from zenml.log_stores.default_log_store import DefaultLogStore
 from zenml.logger import (
     get_logger,
     get_storage_log_level,
-    logging_handlers,
-    step_names_in_console,
 )
 from zenml.models import (
     LogsRequest,
     LogsResponse,
-    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.utils.io_utils import sanitize_remote_path
@@ -729,78 +726,55 @@ class PipelineLogsStorage:
         self.merge_event.set()
 
 
-class PipelineLogsStorageContext:
-    """Context manager which collects logs during pipeline run execution."""
+class LoggingContext:
+    """Context manager which collects logs using a LogStore."""
 
-    def __init__(
-        self,
-        logs_uri: str,
-        artifact_store: "BaseArtifactStore",
-        prepend_step_name: bool = True,
-    ) -> None:
-        """Initializes and prepares a storage object.
+    def __init__(self, source: str = "step") -> None:
+        """Initialize the logging context.
 
         Args:
-            logs_uri: the URI of the logs file.
-            artifact_store: Artifact Store from the current pipeline run context.
-            prepend_step_name: Whether to prepend the step name to the logs.
+            source: An identifier for the source of the logs (e.g., "step", "orchestrator")
         """
-        # Create the storage object
-        self.storage = PipelineLogsStorage(
-            logs_uri=logs_uri, artifact_store=artifact_store
-        )
+        self.source = source
 
-        # Create the handler object
-        self.artifact_store_handler: ArtifactStoreHandler = (
-            ArtifactStoreHandler(self.storage)
-        )
+        self.log_request_id = uuid4()
 
-        # Additional configuration
-        self.prepend_step_name = prepend_step_name
-        self.original_step_names_in_console: Optional[bool] = None
-        self._original_root_level: Optional[int] = None
+        try:
+            self.log_store = Client().active_stack.log_store
+        except AttributeError:
+            from zenml.log_stores.default_log_store import DefaultLogStore
 
-    def __enter__(self) -> "PipelineLogsStorageContext":
-        """Enter condition of the context manager.
+            self.log_store = DefaultLogStore()
 
-        Registers an ArtifactStoreHandler for log storage.
+    def create_log_request(self) -> "LogsRequest":
+        """Create a log request model.
+
+        In their structure, LogRequest objects do not feature an entity ID or type, they
+        are rather used within other request model that does the assignment automatically.
+        That's why everytime we start a context, we need to be able to create the
+        corresponding LogRequest object.
+        """
+        if isinstance(self.log_store, DefaultLogStore):
+            return LogsRequest(
+                id=self.log_request_id,
+                source=self.source,
+                uri=self.log_store.uri,
+                artifact_store_id=self.log_store.artifact_store_id,
+            )
+        else:
+            return LogsRequest(
+                id=self.log_request_id,
+                source=self.source,
+                log_store_id=self.log_store.id,
+            )
+
+    def __enter__(self) -> "LoggingContext":
+        """Enter the context and activate log collection.
 
         Returns:
             self
         """
-        # Add handler to root logger
-        root_logger = logging.getLogger()
-        root_logger.addHandler(self.artifact_store_handler)
-
-        # Set root logger level to minimum of all active handlers
-        # This ensures records can reach any handler that needs them
-        self._original_root_level = root_logger.level
-        handler_levels = [handler.level for handler in root_logger.handlers]
-
-        # Set root logger to the minimum level among all handlers
-        min_level = min(handler_levels)
-        if min_level < root_logger.level:
-            root_logger.setLevel(min_level)
-
-        # Add handler to context variables for print() capture
-        logging_handlers.add(self.artifact_store_handler)
-
-        # Save the current step names context variable state
-        self.original_step_names_in_console = step_names_in_console.get()
-
-        # Set the step names context variable
-        step_names_disabled = handle_bool_env_var(
-            ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
-        )
-
-        if step_names_disabled or not self.prepend_step_name:
-            # Step names are disabled through the env or they are disabled in the config
-            step_names_in_console.set(False)
-        else:
-            # Otherwise, set it True (default)
-            step_names_in_console.set(True)
-
-        redirected.set(True)
+        self.log_store.activate(source=self.source)
         return self
 
     def __exit__(
@@ -809,52 +783,20 @@ class PipelineLogsStorageContext:
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        """Exit condition of the context manager.
+        """Exit the context and deactivate log collection.
 
         Args:
-            exc_type: The class of the exception
-            exc_val: The instance of the exception
-            exc_tb: The traceback of the exception
-
-        Removes the handler from loggers and context variables.
+            exc_type: The class of the exception.
+            exc_val: The instance of the exception.
+            exc_tb: The traceback of the exception.
         """
         if exc_type is not None:
-            # Write the exception and its traceback to the logs
-            self.artifact_store_handler.emit(
-                logging.LogRecord(
-                    name="exception",
-                    level=logging.ERROR,
-                    pathname="",
-                    lineno=0,
-                    msg="An exception has occurred.",
-                    args=(),
-                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
-                )
+            logger.error(
+                "An exception has occurred.",
+                exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
             )
 
-        # Remove handler from root logger and restore original level
-        root_logger = logging.getLogger()
-
-        # Check if handler is still in the root logger before removing
-        if self.artifact_store_handler in root_logger.handlers:
-            root_logger.removeHandler(self.artifact_store_handler)
-
-        # Restore original root logger level
-        if self._original_root_level is not None:
-            root_logger.setLevel(self._original_root_level)
-
-        # Remove handler from context variables
-        logging_handlers.remove(self.artifact_store_handler)
-
-        # Shutdown thread (it will automatically drain queue and merge files)
-        try:
-            self.storage._shutdown_log_storage_thread()
-        except Exception:
-            pass
-
-        # Restore the original step names context variable state
-        if self.original_step_names_in_console is not None:
-            step_names_in_console.set(self.original_step_names_in_console)
+        self.log_store.deactivate()
 
 
 def setup_orchestrator_logging(
@@ -873,7 +815,7 @@ def setup_orchestrator_logging(
         logs_response: The logs response to continue from.
 
     Returns:
-        The logs context (PipelineLogsStorageContext)
+        The logs context
     """
     try:
         logging_enabled = True
@@ -892,39 +834,7 @@ def setup_orchestrator_logging(
         if not logging_enabled:
             return nullcontext()
 
-        # Fetch the active stack
-        client = Client()
-        active_stack = client.active_stack
-
-        if logs_response:
-            logs_uri = logs_response.uri
-        else:
-            logs_uri = prepare_logs_uri(
-                artifact_store=active_stack.artifact_store,
-            )
-            logs_model = LogsRequest(
-                uri=logs_uri,
-                source="orchestrator",
-                artifact_store_id=active_stack.artifact_store.id,
-            )
-
-            # Add orchestrator logs to the pipeline run
-            try:
-                run_update = PipelineRunUpdate(add_logs=[logs_model])
-                client.zen_store.update_run(
-                    run_id=run_id, run_update=run_update
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to add orchestrator logs to the run {run_id}: {e}"
-                )
-                raise e
-
-        return PipelineLogsStorageContext(
-            logs_uri=logs_uri,
-            artifact_store=active_stack.artifact_store,
-            prepend_step_name=False,
-        )
+        return LoggingContext(source="orchestrator")
     except Exception as e:
         logger.error(
             f"Failed to setup orchestrator logging for run {run_id}: {e}"

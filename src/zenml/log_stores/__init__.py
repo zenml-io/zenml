@@ -17,8 +17,8 @@ ZenML log stores provide different backends for storing pipeline and step logs.
 """
 
 from zenml.log_stores.base_log_store import BaseLogStore, BaseLogStoreConfig
-from zenml.log_stores.datadog_flavor import DatadogLogStoreFlavor
-from zenml.log_stores.otel_flavor import OtelLogStoreFlavor
+from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreFlavor
+from zenml.log_stores.otel.otel_flavor import OtelLogStoreFlavor
 from zenml.log_stores.utils import fetch_logs
 
 __all__ = [

@@ -6237,12 +6237,14 @@ class SqlZenStore(BaseZenStore):
             )
 
             log_entry = LogsSchema(
+                id=pipeline_run.logs.id,
                 uri=pipeline_run.logs.uri,
                 # TODO: Remove fallback when not supporting
                 # clients <0.84.0 anymore
                 source=pipeline_run.logs.source or "client",
                 pipeline_run_id=new_run.id,
                 artifact_store_id=pipeline_run.logs.artifact_store_id,
+                log_store_id=pipeline_run.logs.log_store_id,
             )
             try:
                 session.add(log_entry)
@@ -6721,12 +6723,14 @@ class SqlZenStore(BaseZenStore):
 
                         # Create the log entry
                         log_entry = LogsSchema(
+                            id=log_request.id,
                             uri=log_request.uri,
                             # TODO: Remove fallback when not supporting
                             # clients <0.84.0 anymore
                             source=log_request.source or "orchestrator",
                             pipeline_run_id=existing_run.id,
                             artifact_store_id=log_request.artifact_store_id,
+                            log_store_id=log_request.log_store_id,
                         )
                         session.add(log_entry)
 
@@ -9758,12 +9762,14 @@ class SqlZenStore(BaseZenStore):
                 )
 
                 log_entry = LogsSchema(
+                    id=step_run.logs.id,
                     uri=step_run.logs.uri,
                     # TODO: Remove fallback when not supporting
                     # clients <0.84.0 anymore
                     source=step_run.logs.source or "execution",
                     step_run_id=step_schema.id,
                     artifact_store_id=step_run.logs.artifact_store_id,
+                    log_store_id=step_run.logs.log_store_id,
                 )
                 try:
                     session.add(log_entry)
