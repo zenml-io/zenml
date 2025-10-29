@@ -424,7 +424,7 @@ def build_job_manifest(
         name=job_name,
         labels=labels,
         annotations=annotations,
-        owner_references=owner_references,
+        owner_references=None,
     )
 
     return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)
