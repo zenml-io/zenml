@@ -107,32 +107,6 @@ class KubernetesComponentMixin:
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
-    @property
-    def config(self) -> KubernetesComponentConfig:
-        """Get the component config.
-
-        This property must be implemented by subclasses.
-
-        Raises:
-            NotImplementedError: If the subclass does not implement the config property.
-        """
-        raise NotImplementedError(
-            "Subclasses must implement the config property"
-        )
-
-    @property
-    def name(self) -> str:
-        """Get the component name.
-
-        This property must be implemented by subclasses.
-
-        Raises:
-            NotImplementedError: If the subclass does not implement the name property.
-        """
-        raise NotImplementedError(
-            "Subclasses must implement the name property"
-        )
-
     def get_kube_client(
         self, incluster: Optional[bool] = None
     ) -> k8s_client.ApiClient:
