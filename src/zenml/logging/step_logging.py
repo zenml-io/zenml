@@ -739,11 +739,9 @@ class LoggingContext:
 
         self.log_request_id = uuid4()
 
-        try:
+        if Client().active_stack.log_store:
             self.log_store = Client().active_stack.log_store
-        except AttributeError:
-            from zenml.log_stores.default_log_store import DefaultLogStore
-
+        else:
             self.log_store = DefaultLogStore()
 
     def create_log_request(self) -> "LogsRequest":

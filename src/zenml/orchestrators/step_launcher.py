@@ -272,9 +272,7 @@ class StepLauncher:
             from zenml.enums import LoggableEntityType
 
             logs_context = step_logging.LoggingContext(
-                entity_type=LoggableEntityType.PIPELINE_RUN,
-                entity_id=pipeline_run.id,
-                source="execution",
+                source="step",
             )  # type: ignore[assignment]
 
             logs_model = logs_context.create_log_request()

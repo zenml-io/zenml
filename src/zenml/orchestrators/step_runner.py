@@ -38,7 +38,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.deployers.server import runtime
-from zenml.enums import ArtifactSaveType, LoggableEntityType
+from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
@@ -151,9 +151,7 @@ class StepRunner:
         logs_context = nullcontext()
         if step_logging_enabled and not redirected.get():
             if step_run.logs:
-                logs_context = LoggingContext(  # type: ignore[assignment]
-                    entity_type=LoggableEntityType.STEP_RUN,
-                    entity_id=step_run.id,
+                logs_context = LoggingContext(
                     source="step",
                 )
             else:

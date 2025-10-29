@@ -962,7 +962,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             if logging_enabled:
                 logs_context = LoggingContext()
-                logs_request = logs_context.generate_logs_request()
+                logs_request = logs_context.create_log_request()
 
             with logs_context:
                 snapshot = self._create_snapshot(**self._run_args)
