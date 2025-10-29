@@ -78,6 +78,7 @@ DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS = 2
 
 POD_RESTART_ERROR_THRESHOLD = 2
 
+
 class KubernetesDeploymentMetadata(BaseModel):
     """Metadata for a Kubernetes deployment."""
 
@@ -744,7 +745,9 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
                             and ingress.spec.rules[0].http
                             and ingress.spec.rules[0].http.paths
                         ):
-                            path = ingress.spec.rules[0].http.paths[0].path or "/"
+                            path = (
+                                ingress.spec.rules[0].http.paths[0].path or "/"
+                            )
                         return f"{protocol}://{host}{path}"
 
             # Ingress exists but not ready yet
@@ -925,7 +928,9 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
 
             # Prefer running pods (for log access during rolling updates)
             running_pods = [
-                p for p in pods.items if p.status and p.status.phase == "Running"
+                p
+                for p in pods.items
+                if p.status and p.status.phase == "Running"
             ]
             if running_pods:
                 # Return most recent running pod
