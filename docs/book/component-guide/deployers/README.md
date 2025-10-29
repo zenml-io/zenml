@@ -31,8 +31,9 @@ Out of the box, ZenML comes with a `local` deployer already part of the default 
 |------------------------------------|-----------|---------------|------------------------------------------------------------------------------|
 | [Local](local.md)                  | `local`  | _built-in_  | This is the default Deployer. It deploys pipelines on your local machine in the form of background processes. Should be used only for running ZenML locally. |
 | [Docker](docker.md)                | `docker`   | Built-in      | Deploys pipelines as locally running Docker containers                                |
-| [GCP Cloud Run](gcp-cloud-run.md)            | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
-| [AWS App Runner](aws-app-runner.md)           | `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |
+| [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | Deploys pipelines to a Kubernetes cluster with customizable services, replicas, and pod settings |
+| [GCP Cloud Run](gcp-cloud-run.md)  | `gcp`     | `gcp`         | Deploys pipelines to Google Cloud Run for serverless execution             |
+| [AWS App Runner](aws-app-runner.md)| `aws`     | `aws`         | Deploys pipelines to AWS App Runner for serverless execution                       |
 
 If you would like to see the available flavors of deployers, you can use the command:
 

@@ -1,0 +1,14 @@
+# Simple Kubernetes Deployment Configuration for Weather Agent
+# This configuration provides a basic deployment setup with minimal settings.
+
+# Override default pipeline parameters
+parameters:
+  city: "London"
+
+# Basic Kubernetes deployer configuration
+settings:
+  deployer:
+    namespace: weather-demo
+    replicas: 1
+    service_type: ClusterIP
+

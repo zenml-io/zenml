@@ -28,6 +28,20 @@ Deploy the agent pipeline as a real-time service ([see code](pipelines/weather_a
 zenml pipeline deploy pipelines.weather_agent.weather_agent
 ```
 
+For Kubernetes deployments, use the provided configuration files:
+
+```bash
+# Simple Kubernetes deployment with basic settings
+zenml pipeline deploy pipelines.weather_agent.weather_agent \
+  --name weather-simple \
+  --config k8s_deploy_simple.yaml
+
+# Advanced Kubernetes deployment with production-ready configuration
+zenml pipeline deploy pipelines.weather_agent.weather_agent \
+  --name weather-advanced \
+  --config k8s_deploy_advanced.yaml
+```
+
 **Make predictions via API**
 
 ```bash
@@ -66,6 +80,8 @@ weather_agent/
 │   └── weather_agent.py        - Weather data fetching and analysis steps
 ├── ui/
 │   └── index.html              - Interactive web interface (optional)
+├── k8s_deploy_simple.yaml      - Simple Kubernetes deployment config
+├── k8s_deploy_advanced.yaml    - Advanced Kubernetes deployment config
 ├── run.py                      - CLI for batch and real-time execution
 └── requirements.txt            - Dependencies
 ```
@@ -122,6 +138,28 @@ def weather_agent_pipeline(city: str) -> Dict[str, Any]:
 ```
 
 This makes agents reproducible, versionable, and observable—the same as classical ML pipelines.
+
+### **Kubernetes Deployment Configurations**
+
+Two deployment configurations are provided for Kubernetes:
+
+**Simple Configuration** (`k8s_deploy_simple.yaml`):
+- Single replica deployment
+- ClusterIP service (internal access only)
+- Minimal resource allocation
+- Ideal for development and testing
+
+**Advanced Configuration** (`k8s_deploy_advanced.yaml`):
+- High availability with 3 replicas
+- LoadBalancer service for external access
+- Resource requests and limits (500m-1000m CPU, 512Mi-2Gi memory)
+- Health check configuration (readiness and liveness probes)
+- Node selectors and tolerations for targeted scheduling
+- Service annotations for cloud provider integrations (e.g., AWS NLB)
+- Pod labels and annotations for monitoring and organization
+- CORS configuration for cross-origin requests
+
+These configurations demonstrate how to deploy the same pipeline with different operational characteristics based on your environment and requirements.
 
 ### **Graceful Fallback Logic**
 

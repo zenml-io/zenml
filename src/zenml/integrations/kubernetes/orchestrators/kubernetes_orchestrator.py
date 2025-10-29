@@ -44,7 +44,6 @@ from typing import (
 from uuid import UUID
 
 from kubernetes import client as k8s_client
-from kubernetes import config as k8s_config
 
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
@@ -61,6 +60,9 @@ from zenml.integrations.kubernetes.constants import (
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorSettings,
+)
+from zenml.integrations.kubernetes.kubernetes_component_mixin import (
+    KubernetesComponentMixin,
 )
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
@@ -91,7 +93,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class KubernetesOrchestrator(ContainerizedOrchestrator):
+class KubernetesOrchestrator(
+    ContainerizedOrchestrator, KubernetesComponentMixin
+):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
@@ -112,81 +116,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
         return settings.always_build_pipeline_image
 
-    def get_kube_client(
-        self, incluster: Optional[bool] = None
-    ) -> k8s_client.ApiClient:
-        """Getter for the Kubernetes API client.
-
-        Args:
-            incluster: Whether to use the in-cluster config or not. Overrides
-                the `incluster` setting in the config.
-
-        Returns:
-            The Kubernetes API client.
-
-        Raises:
-            RuntimeError: if the Kubernetes connector behaves unexpectedly.
-        """
-        if incluster is None:
-            incluster = self.config.incluster
-
-        if incluster:
-            kube_utils.load_kube_config(
-                incluster=incluster,
-                context=self.config.kubernetes_context,
-            )
-            self._k8s_client = k8s_client.ApiClient()
-            return self._k8s_client
-
-        # Refresh the client also if the connector has expired
-        if self._k8s_client and not self.connector_has_expired():
-            return self._k8s_client
-
-        connector = self.get_connector()
-        if connector:
-            client = connector.connect()
-            if not isinstance(client, k8s_client.ApiClient):
-                raise RuntimeError(
-                    f"Expected a k8s_client.ApiClient while trying to use the "
-                    f"linked connector, but got {type(client)}."
-                )
-            self._k8s_client = client
-        else:
-            kube_utils.load_kube_config(
-                incluster=incluster,
-                context=self.config.kubernetes_context,
-            )
-            self._k8s_client = k8s_client.ApiClient()
-
-        return self._k8s_client
-
-    @property
-    def _k8s_core_api(self) -> k8s_client.CoreV1Api:
-        """Getter for the Kubernetes Core API client.
-
-        Returns:
-            The Kubernetes Core API client.
-        """
-        return k8s_client.CoreV1Api(self.get_kube_client())
-
-    @property
-    def _k8s_batch_api(self) -> k8s_client.BatchV1Api:
-        """Getter for the Kubernetes Batch API client.
-
-        Returns:
-            The Kubernetes Batch API client.
-        """
-        return k8s_client.BatchV1Api(self.get_kube_client())
-
-    @property
-    def _k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
-        """Getter for the Kubernetes RBAC API client.
-
-        Returns:
-            The Kubernetes RBAC API client.
-        """
-        return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
-
     @property
     def config(self) -> KubernetesOrchestratorConfig:
         """Returns the `KubernetesOrchestratorConfig` config.
@@ -204,27 +133,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return KubernetesOrchestratorSettings
-
-    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
-        """Get list of configured Kubernetes contexts and the active context.
-
-        Raises:
-            RuntimeError: if the Kubernetes configuration cannot be loaded.
-
-        Returns:
-            context_name: List of configured Kubernetes contexts
-            active_context_name: Name of the active Kubernetes context.
-        """
-        try:
-            contexts, active_context = k8s_config.list_kube_config_contexts()
-        except k8s_config.config_exception.ConfigException as e:
-            raise RuntimeError(
-                "Could not load the Kubernetes configuration"
-            ) from e
-
-        context_names = [c["name"] for c in contexts]
-        active_context_name = active_context["name"]
-        return context_names, active_context_name
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -486,7 +394,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             secret_name = self.get_token_secret_name(snapshot.id)
             token = base_environment.pop("ZENML_STORE_API_TOKEN")
             kube_utils.create_or_update_secret(
-                core_api=self._k8s_core_api,
+                core_api=self.k8s_core_api,
                 namespace=self.config.kubernetes_namespace,
                 secret_name=secret_name,
                 data={KUBERNETES_SECRET_TOKEN_KEY_NAME: token},
@@ -593,7 +501,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 failed_jobs_history_limit=settings.failed_jobs_history_limit,
             )
 
-            cron_job = self._k8s_batch_api.create_namespaced_cron_job(
+            cron_job = self.k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest,
                 namespace=self.config.kubernetes_namespace,
             )
@@ -609,7 +517,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         else:
             try:
                 kube_utils.create_job(
-                    batch_api=self._k8s_batch_api,
+                    batch_api=self.k8s_batch_api,
                     namespace=self.config.kubernetes_namespace,
                     job_manifest=job_manifest,
                 )
@@ -618,7 +526,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     secret_name = self.get_token_secret_name(snapshot.id)
                     try:
                         kube_utils.delete_secret(
-                            core_api=self._k8s_core_api,
+                            core_api=self.k8s_core_api,
                             namespace=self.config.kubernetes_namespace,
                             secret_name=secret_name,
                         )
@@ -635,8 +543,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 def _wait_for_run_to_finish() -> None:
                     logger.info("Waiting for orchestrator job to finish...")
                     kube_utils.wait_for_job_to_finish(
-                        batch_api=self._k8s_batch_api,
-                        core_api=self._k8s_core_api,
+                        batch_api=self.k8s_batch_api,
+                        core_api=self.k8s_core_api,
                         namespace=self.config.kubernetes_namespace,
                         job_name=job_name,
                         backoff_interval=settings.job_monitoring_interval,
@@ -675,8 +583,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         else:
             service_account_name = "zenml-service-account"
             kube_utils.create_edit_service_account(
-                core_api=self._k8s_core_api,
-                rbac_api=self._k8s_rbac_api,
+                core_api=self.k8s_core_api,
+                rbac_api=self.k8s_rbac_api,
                 service_account_name=service_account_name,
                 namespace=self.config.kubernetes_namespace,
             )
@@ -728,7 +636,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
             job_list = kube_utils.list_jobs(
-                batch_api=self._k8s_batch_api,
+                batch_api=self.k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
             )
@@ -757,7 +665,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         continue
 
             try:
-                self._k8s_batch_api.delete_namespaced_job(
+                self.k8s_batch_api.delete_namespaced_job(
                     name=job.metadata.name,
                     namespace=self.config.kubernetes_namespace,
                     propagation_policy="Foreground",
@@ -820,7 +728,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         label_selector = f"run_id={kube_utils.sanitize_label(str(run.id))}"
         try:
             job_list = kube_utils.list_jobs(
-                batch_api=self._k8s_batch_api,
+                batch_api=self.k8s_batch_api,
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
             )
@@ -922,7 +830,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError("Unable to find cron job name for schedule.")
 
         if update.cron_expression:
-            self._k8s_batch_api.patch_namespaced_cron_job(
+            self.k8s_batch_api.patch_namespaced_cron_job(
                 name=cron_job_name,
                 namespace=self.config.kubernetes_namespace,
                 body={"spec": {"schedule": update.cron_expression}},
@@ -943,7 +851,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if not cron_job_name:
             raise RuntimeError("Unable to find cron job name for schedule.")
 
-        self._k8s_batch_api.delete_namespaced_cron_job(
+        self.k8s_batch_api.delete_namespaced_cron_job(
             name=cron_job_name,
             namespace=self.config.kubernetes_namespace,
         )

@@ -1,0 +1,343 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Kubernetes deployer flavor."""
+
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
+
+from pydantic import Field
+
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
+from zenml.deployers.base_deployer import (
+    BaseDeployerConfig,
+    BaseDeployerFlavor,
+    BaseDeployerSettings,
+)
+from zenml.integrations.kubernetes import KUBERNETES_DEPLOYER_FLAVOR
+from zenml.integrations.kubernetes.kubernetes_component_mixin import (
+    KubernetesComponentConfig,
+)
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.models import ServiceConnectorRequirements
+
+if TYPE_CHECKING:
+    from zenml.integrations.kubernetes.deployers import KubernetesDeployer
+
+
+class ServiceType(str, Enum):
+    """Kubernetes Service types."""
+
+    LOAD_BALANCER = "LoadBalancer"
+    NODE_PORT = "NodePort"
+    CLUSTER_IP = "ClusterIP"
+
+
+class KubernetesDeployerSettings(BaseDeployerSettings):
+    """Settings for the Kubernetes deployer.
+
+    Attributes:
+        namespace: Kubernetes namespace for deployments.
+        service_type: Type of Kubernetes Service (LoadBalancer, NodePort, ClusterIP).
+        service_port: Port to expose on the service.
+        node_port: Specific NodePort (only for NodePort service type).
+        cpu_request: CPU resource request (e.g., "100m").
+        cpu_limit: CPU resource limit (e.g., "1000m").
+        memory_request: Memory resource request (e.g., "256Mi").
+        memory_limit: Memory resource limit (e.g., "2Gi").
+        replicas: Number of pod replicas.
+        image_pull_policy: Kubernetes image pull policy.
+        labels: Labels to apply to all resources.
+        annotations: Annotations to apply to pod resources.
+        service_annotations: Annotations to apply to Service resources.
+        session_affinity: Session affinity for the Service (ClientIP or None).
+        load_balancer_ip: Static IP for LoadBalancer service type.
+        load_balancer_source_ranges: CIDR blocks allowed to access LoadBalancer.
+        pod_settings: Advanced pod configuration settings.
+    """
+
+    namespace: Optional[str] = Field(
+        default=None,
+        description="Kubernetes namespace for deployments. "
+        "If not provided, the namespace will be determined by the orchestrator. "
+        "If the namespace is not provided, the deployer will use the namespace "
+        "specified in the stack component configuration.",
+    )
+    service_type: ServiceType = Field(
+        default=ServiceType.LOAD_BALANCER,
+        description=(
+            "Type of Kubernetes Service: LoadBalancer, NodePort, or ClusterIP. "
+            "LoadBalancer is recommended for production (requires cloud provider support). "
+            "NodePort has limitations: nodes may lack external IPs or be behind firewalls, "
+            "making the service unreachable. For production with custom domains and TLS, "
+            "consider using ClusterIP with a manually configured Ingress resource."
+        ),
+    )
+    service_port: int = Field(
+        default=8000,
+        description="Port to expose on the service.",
+    )
+    node_port: Optional[int] = Field(
+        default=None,
+        description="Specific port on each node (NodePort type only). "
+        "Must be in range 30000-32767. If not specified, Kubernetes assigns one.",
+    )
+    cpu_request: str = Field(
+        default="100m",
+        description="Minimum CPU units to reserve (e.g., '100m' = 0.1 CPU core).",
+    )
+    cpu_limit: str = Field(
+        default="1000m",
+        description="Maximum CPU units allowed (e.g., '1000m' = 1 CPU core).",
+    )
+    memory_request: str = Field(
+        default="256Mi",
+        description="Minimum memory to reserve (e.g., '256Mi').",
+    )
+    memory_limit: str = Field(
+        default="2Gi",
+        description="Maximum memory allowed (e.g., '2Gi').",
+    )
+    replicas: int = Field(
+        default=1,
+        description="Number of pod replicas to run.",
+    )
+    image_pull_policy: str = Field(
+        default="IfNotPresent",
+        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    )
+    labels: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional labels to apply to all Kubernetes resources.",
+    )
+    annotations: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Annotations to apply to pod resources.",
+    )
+    service_annotations: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Annotations to apply to Service resources. "
+        "Useful for cloud provider-specific configurations.",
+    )
+    session_affinity: Optional[str] = Field(
+        default=None,
+        description="Session affinity for the Service. Set to 'ClientIP' to enable.",
+    )
+    load_balancer_ip: Optional[str] = Field(
+        default=None,
+        description="Static IP address for LoadBalancer type Services. "
+        "Cloud provider must support this feature.",
+    )
+    load_balancer_source_ranges: List[str] = Field(
+        default_factory=list,
+        description="CIDR blocks allowed to access LoadBalancer. "
+        "Example: ['10.0.0.0/8', '192.168.0.0/16']",
+    )
+
+    # Container configuration
+    command: Optional[List[str]] = Field(
+        default=None,
+        description="Override container command (entrypoint). "
+        "If not set, uses the image's default CMD/ENTRYPOINT.",
+    )
+    args: Optional[List[str]] = Field(
+        default=None,
+        description="Override container args. "
+        "If not set, uses the image's default CMD.",
+    )
+
+    # Probe configuration
+    readiness_probe_initial_delay: int = Field(
+        default=10,
+        description="Seconds before first readiness probe after container start.",
+    )
+    readiness_probe_period: int = Field(
+        default=10,
+        description="Seconds between readiness probe checks.",
+    )
+    readiness_probe_timeout: int = Field(
+        default=5,
+        description="Seconds before readiness probe times out.",
+    )
+    readiness_probe_failure_threshold: int = Field(
+        default=3,
+        description="Failed probes before marking container as not ready.",
+    )
+    liveness_probe_initial_delay: int = Field(
+        default=30,
+        description="Seconds before first liveness probe after container start.",
+    )
+    liveness_probe_period: int = Field(
+        default=10,
+        description="Seconds between liveness probe checks.",
+    )
+    liveness_probe_timeout: int = Field(
+        default=5,
+        description="Seconds before liveness probe times out.",
+    )
+    liveness_probe_failure_threshold: int = Field(
+        default=3,
+        description="Failed probes before restarting container.",
+    )
+
+    # Security and access control
+    service_account_name: Optional[str] = Field(
+        default=None,
+        description="Kubernetes service account for the deployment pods. "
+        "If not set, uses the default service account in the namespace.",
+    )
+    image_pull_secrets: List[str] = Field(
+        default_factory=list,
+        description="Names of Kubernetes secrets for pulling private images. "
+        "Example: ['my-registry-secret', 'dockerhub-secret']",
+    )
+
+    pod_settings: Optional[KubernetesPodSettings] = Field(
+        default=None,
+        description="Advanced pod configuration: volumes, affinity, tolerations, etc.",
+    )
+
+    # Ingress configuration
+    ingress_enabled: bool = Field(
+        default=False,
+        description="Enable Ingress resource creation for external access. "
+        "When enabled, an Ingress will be created in addition to the Service. "
+        "Requires an Ingress Controller (nginx, traefik, etc.) in the cluster.",
+    )
+    ingress_class: Optional[str] = Field(
+        default=None,
+        description="Ingress class name to use (e.g., 'nginx', 'traefik'). "
+        "If not specified, uses the cluster's default Ingress class. "
+        "The Ingress Controller for this class must be installed in the cluster.",
+    )
+    ingress_host: Optional[str] = Field(
+        default=None,
+        description="Hostname for the Ingress (e.g., 'my-app.example.com'). "
+        "If not specified, the Ingress will match all hosts. "
+        "Required for TLS configuration.",
+    )
+    ingress_path: str = Field(
+        default="/",
+        description="Path prefix for the Ingress rule (e.g., '/', '/api'). "
+        "Defaults to '/' (match all paths).",
+    )
+    ingress_path_type: str = Field(
+        default="Prefix",
+        description="Path matching type: 'Prefix', 'Exact', or 'ImplementationSpecific'. "
+        "Defaults to 'Prefix' (matches the path and all sub-paths).",
+    )
+    ingress_tls_enabled: bool = Field(
+        default=False,
+        description="Enable TLS/HTTPS for the Ingress. "
+        "Requires 'ingress_tls_secret_name' to be set.",
+    )
+    ingress_tls_secret_name: Optional[str] = Field(
+        default=None,
+        description="Name of the Kubernetes Secret containing TLS certificate and key. "
+        "Required when 'ingress_tls_enabled' is True. "
+        "The secret must exist in the same namespace and contain 'tls.crt' and 'tls.key'.",
+    )
+    ingress_annotations: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Annotations for the Ingress resource. "
+        "Use controller-specific annotations for advanced configuration. "
+        "Examples:\n"
+        "  nginx: {'nginx.ingress.kubernetes.io/rewrite-target': '/'}\n"
+        "  traefik: {'traefik.ingress.kubernetes.io/router.entrypoints': 'web'}\n"
+        "  AWS ALB: {'alb.ingress.kubernetes.io/scheme': 'internet-facing'}",
+    )
+
+
+class KubernetesDeployerConfig(
+    BaseDeployerConfig, KubernetesDeployerSettings, KubernetesComponentConfig
+):
+    """Configuration for the Kubernetes deployer.
+
+    This config combines deployer-specific settings with Kubernetes
+    component configuration (context, namespace, in-cluster mode).
+    """
+
+
+class KubernetesDeployerFlavor(BaseDeployerFlavor):
+    """Flavor for the Kubernetes deployer."""
+
+    @property
+    def name(self) -> str:
+        """The name of the flavor.
+
+        Returns:
+            The flavor name.
+        """
+        return KUBERNETES_DEPLOYER_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector requirements for the Kubernetes deployer.
+
+        Returns:
+            Service connector requirements.
+        """
+        return ServiceConnectorRequirements(
+            resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE,
+        )
+
+    @property
+    def docs_url(self) -> Optional[str]:
+        """A URL to docs about this flavor.
+
+        Returns:
+            The documentation URL.
+        """
+        return self.generate_default_docs_url()
+
+    @property
+    def sdk_docs_url(self) -> Optional[str]:
+        """A URL to SDK docs about this flavor.
+
+        Returns:
+            The SDK documentation URL.
+        """
+        return self.generate_default_sdk_docs_url()
+
+    @property
+    def logo_url(self) -> str:
+        """The logo URL for the flavor.
+
+        Returns:
+            The logo URL.
+        """
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png"
+
+    @property
+    def config_class(self) -> Type[KubernetesDeployerConfig]:
+        """Returns `KubernetesDeployerConfig` config class.
+
+        Returns:
+            The config class.
+        """
+        return KubernetesDeployerConfig
+
+    @property
+    def implementation_class(self) -> Type["KubernetesDeployer"]:
+        """Returns the implementation class for this flavor.
+
+        Returns:
+            The implementation class.
+        """
+        from zenml.integrations.kubernetes.deployers import (
+            KubernetesDeployer,
+        )
+
+        return KubernetesDeployer
