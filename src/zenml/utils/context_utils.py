@@ -13,11 +13,62 @@
 #  permissions and limitations under the License.
 """Context variable utilities."""
 
+import contextvars
 import threading
 from contextvars import ContextVar
-from typing import Generic, List, Optional, TypeVar
+from typing import Any, ClassVar, Generic, List, Optional, Self, TypeVar, cast
 
 T = TypeVar("T")
+
+
+class BaseContext:
+    """Base context class."""
+
+    __context_var__: ClassVar[contextvars.ContextVar[Self]]
+
+    def __init__(self) -> None:
+        """Initialize the context."""
+        self._token: Optional[contextvars.Token[Any]] = None
+
+    @classmethod
+    def get(cls: type[Self]) -> Optional[Self]:
+        """Get the active context for the current thread.
+
+        Returns:
+            The active context for the current thread.
+        """
+        return cast(Optional[Self], cls.__context_var__.get(None))
+
+    @classmethod
+    def is_active(cls: type[Self]) -> bool:
+        """Check if the context is active.
+
+        Returns:
+            True if the context is active, False otherwise.
+        """
+        return cls.get() is not None
+
+    def __enter__(self) -> Self:
+        """Enter the context.
+
+        Returns:
+            The context object.
+        """
+        self._token = self.__context_var__.set(self)
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        """Exit the context.
+
+        Raises:
+            RuntimeError: If the context has not been entered.
+        """
+        if not self._token:
+            raise RuntimeError(
+                f"Can't exit {self.__class__.__name__} because it has not been "
+                "entered."
+            )
+        self.__context_var__.reset(self._token)
 
 
 class ContextVarList(Generic[T]):

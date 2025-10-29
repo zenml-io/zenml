@@ -22,7 +22,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    ClassVar,
     Dict,
     Iterator,
     List,
@@ -81,6 +80,7 @@ from zenml.models import (
     ScheduleRequest,
 )
 from zenml.pipelines import build_utils
+from zenml.pipelines.compilation_context import PipelineCompilationContext
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
     should_prevent_pipeline_execution,
@@ -130,11 +130,6 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 class Pipeline:
     """ZenML pipeline class."""
-
-    # The active pipeline is the pipeline to which step invocations will be
-    # added when a step is called. It is set using a context manager when a
-    # pipeline is called (see Pipeline.__call__ for more context)
-    ACTIVE_PIPELINE: ClassVar[Optional["Pipeline"]] = None
 
     def __init__(
         self,
@@ -627,10 +622,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 if k not in kwargs:
                     kwargs[k] = v_config
 
-        with self:
-            # Enter the context manager, so we become the active pipeline. This
-            # means that all steps that get called while the entrypoint function
-            # is executed will be added as invocation to this pipeline instance.
+        with PipelineCompilationContext(pipeline=self):
             self._call_entrypoint(*args, **kwargs)
 
     def register(self) -> "PipelineResponse":
@@ -1361,7 +1353,15 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The step invocation ID.
         """
-        if not self.is_dynamic and Pipeline.ACTIVE_PIPELINE != self:
+        from zenml.pipelines.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        context = (
+            PipelineCompilationContext.get() or DynamicPipelineRunContext.get()
+        )
+
+        if not context or context.pipeline != self:
             raise RuntimeError(
                 "A step invocation can only be added to an active pipeline."
             )
@@ -1428,32 +1428,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 return id_
 
         raise RuntimeError("Unable to find step ID")
-
-    def __enter__(self) -> Self:
-        """Activate the pipeline context.
-
-        Raises:
-            RuntimeError: If a different pipeline is already active.
-
-        Returns:
-            The pipeline instance.
-        """
-        if Pipeline.ACTIVE_PIPELINE:
-            raise RuntimeError(
-                "Unable to enter pipeline context. A different pipeline "
-                f"{Pipeline.ACTIVE_PIPELINE.name} is already active."
-            )
-
-        Pipeline.ACTIVE_PIPELINE = self
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        """Deactivates the pipeline context.
-
-        Args:
-            *args: The arguments passed to the context exit handler.
-        """
-        Pipeline.ACTIVE_PIPELINE = None
 
     def _parse_config_file(
         self, config_path: Optional[str], matcher: List[str]
@@ -1590,7 +1564,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             `entrypoint` method. Otherwise, returns the pipeline run or `None`
             if running with a schedule.
         """
-        if Pipeline.ACTIVE_PIPELINE:
+        if PipelineCompilationContext.is_active():
             # Calling a pipeline inside a pipeline, we return the potential
             # outputs of the entrypoint function
 

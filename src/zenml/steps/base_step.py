@@ -489,10 +489,14 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
-        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
-        from zenml.pipelines.pipeline_definition import Pipeline
+        from zenml.pipelines.compilation_context import (
+            PipelineCompilationContext,
+        )
+        from zenml.pipelines.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
 
-        if context := DynamicPipelineRunContext.get():
+        if run_context := DynamicPipelineRunContext.get():
             after = cast(
                 Union[
                     "StepRunOutputsFuture",
@@ -501,9 +505,12 @@ class BaseStep:
                 ],
                 after,
             )
-            return context.runner.run_step_sync(self, id, args, kwargs, after)
+            return run_context.runner.run_step_sync(
+                self, id, args, kwargs, after
+            )
 
-        if not Pipeline.ACTIVE_PIPELINE:
+        compilation_context = PipelineCompilationContext.get()
+        if not compilation_context:
             from zenml import get_step_context
             from zenml.pipelines.run_utils import (
                 should_prevent_pipeline_execution,
@@ -556,7 +563,7 @@ class BaseStep:
                 elif isinstance(item, StepArtifact):
                     upstream_steps.add(item.invocation_id)
 
-        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
+        invocation_id = compilation_context.pipeline.add_step_invocation(
             step=self,
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
@@ -575,7 +582,7 @@ class BaseStep:
                 invocation_id=invocation_id,
                 output_name=key,
                 annotation=annotation,
-                pipeline=Pipeline.ACTIVE_PIPELINE,
+                pipeline=compilation_context.pipeline,
             )
             outputs.append(output)
         return outputs[0] if len(outputs) == 1 else outputs
@@ -618,7 +625,9 @@ class BaseStep:
         ] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
-        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+        from zenml.pipelines.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
 
         context = DynamicPipelineRunContext.get()
         if not context:
@@ -906,21 +915,28 @@ class BaseStep:
         Returns:
             The step copy.
         """
-        copy_ = copy.deepcopy(self)
+        from zenml.pipelines.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
 
-        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+        step_copy = copy.deepcopy(self)
 
-        if not DynamicPipelineRunContext.get():
-            copy_._static_id = id(copy_)
+        if not DynamicPipelineRunContext.is_active():
+            # If we're not in a dynamic pipeline, we generate a new static ID
+            # for the step copy
+            step_copy._static_id = id(step_copy)
 
-        return copy_
+        return step_copy
 
     @contextmanager
     def _skip_dynamic_configuration(self) -> Generator[None, None, None]:
         """Context manager to skip the dynamic configuration."""
+        previous_value = self._should_skip_dynamic_configuration
         self._should_skip_dynamic_configuration = True
-        yield
-        self._should_skip_dynamic_configuration = False
+        try:
+            yield
+        finally:
+            self._should_skip_dynamic_configuration = previous_value
 
     def _apply_configuration(
         self,
@@ -937,12 +953,14 @@ class BaseStep:
                 or not. See the `BaseStep.configure(...)` method for a detailed
                 explanation.
         """
-        from zenml.pipelines.dynamic.context import DynamicPipelineRunContext
+        from zenml.pipelines.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
 
         self._validate_configuration(config, runtime_parameters)
 
         if (
-            DynamicPipelineRunContext.get()
+            DynamicPipelineRunContext.is_active()
             and not self._should_skip_dynamic_configuration
         ):
             if self._dynamic_configuration is None:
@@ -963,11 +981,10 @@ class BaseStep:
     def _apply_dynamic_configuration(self) -> None:
         """Applies the dynamic configuration to the step configuration."""
         if self._dynamic_configuration:
-            self._configuration = pydantic_utils.update_model(
-                self._configuration,
-                update=self._dynamic_configuration,
-                recursive=True,
-            )
+            with self._skip_dynamic_configuration():
+                self._apply_configuration(
+                    config=self._dynamic_configuration, merge=True
+                )
             logger.debug("Applied dynamic configuration.")
 
     def _validate_configuration(

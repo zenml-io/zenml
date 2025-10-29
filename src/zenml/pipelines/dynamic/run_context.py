@@ -1,5 +1,22 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Dynamic pipeline run context."""
+
 import contextvars
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Self, cast
+from typing import TYPE_CHECKING, Self
+
+from zenml.utils import context_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
@@ -7,48 +24,7 @@ if TYPE_CHECKING:
     from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
 
 
-class BaseContext:
-    """Base context class."""
-
-    __context_var__: ClassVar[contextvars.ContextVar[Self]]
-
-    def __init__(self) -> None:
-        """Initialize the context."""
-        self._token: Optional[contextvars.Token[Any]] = None
-
-    @classmethod
-    def get(cls: type[Self]) -> Optional[Self]:
-        """Get the active context for the current thread.
-
-        Returns:
-            The active context for the current thread.
-        """
-        return cast(Optional[Self], cls.__context_var__.get(None))
-
-    def __enter__(self) -> Self:
-        """Enter the context.
-
-        Returns:
-            The context object.
-        """
-        self._token = self.__context_var__.set(self)
-        return self
-
-    def __exit__(self, *_: Any) -> None:
-        """Exit the context.
-
-        Raises:
-            RuntimeError: If the context has not been entered.
-        """
-        if not self._token:
-            raise RuntimeError(
-                f"Can't exit {self.__class__.__name__} because it has not been "
-                "entered."
-            )
-        self.__context_var__.reset(self._token)
-
-
-class DynamicPipelineRunContext(BaseContext):
+class DynamicPipelineRunContext(context_utils.BaseContext):
     """Dynamic pipeline run context."""
 
     __context_var__ = contextvars.ContextVar("dynamic_pipeline_run_context")
@@ -76,18 +52,38 @@ class DynamicPipelineRunContext(BaseContext):
 
     @property
     def pipeline(self) -> "DynamicPipeline":
+        """The pipeline that is being executed.
+
+        Returns:
+            The pipeline that is being executed.
+        """
         return self._pipeline
 
     @property
     def run(self) -> "PipelineRunResponse":
+        """The pipeline run.
+
+        Returns:
+            The pipeline run.
+        """
         return self._run
 
     @property
     def snapshot(self) -> "PipelineSnapshotResponse":
+        """The snapshot of the pipeline.
+
+        Returns:
+            The snapshot of the pipeline.
+        """
         return self._snapshot
 
     @property
     def runner(self) -> "DynamicPipelineRunner":
+        """The runner executing the pipeline.
+
+        Returns:
+            The runner executing the pipeline.
+        """
         return self._runner
 
     def __enter__(self) -> Self:
@@ -105,7 +101,3 @@ class DynamicPipelineRunContext(BaseContext):
                 "Calling a pipeline within a dynamic pipeline is not allowed."
             )
         return super().__enter__()
-
-
-def executing_dynamic_pipeline() -> bool:
-    return DynamicPipelineRunContext.get() is not None
