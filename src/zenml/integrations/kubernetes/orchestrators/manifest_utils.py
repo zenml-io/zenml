@@ -420,6 +420,8 @@ def build_job_manifest(
         active_deadline_seconds=active_deadline_seconds,
         pod_failure_policy=pod_failure_policy,
     )
+    owner_references.block_owner_deletion = False
+
     job_metadata = k8s_client.V1ObjectMeta(
         name=job_name,
         labels=labels,
