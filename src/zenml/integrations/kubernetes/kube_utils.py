@@ -46,7 +46,7 @@ from kubernetes.client.rest import ApiException
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
     build_secret_manifest,

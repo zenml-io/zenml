@@ -45,6 +45,7 @@ from zenml.deployers.server.entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
+from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
@@ -52,8 +53,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 from zenml.integrations.kubernetes.kubernetes_component_mixin import (
     KubernetesComponentMixin,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     add_pod_settings,
 )
 from zenml.logger import get_logger

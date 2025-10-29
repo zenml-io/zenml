@@ -20,7 +20,7 @@ from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 from pydantic import BaseModel, Field
 
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes import kube_utils
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
