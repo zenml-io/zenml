@@ -16,16 +16,8 @@
 from zenml.integrations.kubernetes.deployers.kubernetes_deployer import (  # noqa
     KubernetesDeployer,
 )
-from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (  # noqa
-    KubernetesDeployerConfig,
-    KubernetesDeployerFlavor,
-    KubernetesDeployerSettings,
-)
 
 __all__ = [
     "KubernetesDeployer",
-    "KubernetesDeployerConfig",
-    "KubernetesDeployerFlavor",
-    "KubernetesDeployerSettings",
 ]
 
