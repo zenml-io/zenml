@@ -315,8 +315,6 @@ class Pipeline:
         Raises:
             RuntimeError: If the pipeline has not been registered yet.
         """
-        self._prepare_if_possible()
-
         pipelines = Client().list_pipelines(name=self.name)
         if len(pipelines) == 1:
             return pipelines.items[0]
@@ -576,25 +574,70 @@ class Pipeline:
         Args:
             *args: Pipeline entrypoint input arguments.
             **kwargs: Pipeline entrypoint input keyword arguments.
+        """
+        self._clear_state()
+
+        kwargs = self._apply_config_parameters(kwargs)
+        self._parameters = self._validate_entrypoint_args(*args, **kwargs)
+
+        with PipelineCompilationContext(pipeline=self):
+            self._prepare_invocations(**self._parameters)
+
+    def _validate_entrypoint_args(
+        self, *args: Any, **kwargs: Any
+    ) -> Dict[str, Any]:
+        """Validates the arguments for the pipeline entrypoint.
+
+        Args:
+            *args: Entrypoint function arguments.
+            **kwargs: Entrypoint function keyword arguments.
+        """
+        try:
+            validated_args = pydantic_utils.validate_function_args(
+                self.entrypoint,
+                ConfigDict(arbitrary_types_allowed=False),
+                *args,
+                **kwargs,
+            )
+        except ValidationError as e:
+            raise ValueError(
+                "Invalid or missing pipeline function entrypoint arguments. "
+                "Only JSON serializable inputs are allowed as pipeline inputs. "
+                "Check out the pydantic error above for more details."
+            ) from e
+
+        return validated_args
+
+    def _apply_config_parameters(
+        self, kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Applies the configuration parameters to the code arguments.
+
+        Args:
+            kwargs: The code arguments to apply the configuration parameters to.
 
         Raises:
-            RuntimeError: If the pipeline has parameters configured differently in
-                configuration file and code.
-        """
-        self._parameters = {}
-        self._invocations = {}
-        self._output_artifacts = []
+            RuntimeError: If different values for the same key are passed in
+                code and configuration.
 
+        Returns:
+            The merged arguments.
+        """
+        kwargs = kwargs.copy()
         conflicting_parameters = {}
-        parameters_ = (self.configuration.parameters or {}).copy()
+        config_parameters = self.configuration.parameters or {}
         if from_file_ := self._from_config_file.get("parameters", None):
-            parameters_ = dict_utils.recursive_update(parameters_, from_file_)
-        if parameters_:
+            config_parameters = dict_utils.recursive_update(
+                config_parameters, from_file_
+            )
+
+        if config_parameters:
             for k, v_runtime in kwargs.items():
-                if k in parameters_:
-                    v_config = parameters_[k]
+                if k in config_parameters:
+                    v_config = config_parameters[k]
                     if v_config != v_runtime:
                         conflicting_parameters[k] = (v_config, v_runtime)
+
             if conflicting_parameters:
                 is_plural = "s" if len(conflicting_parameters) > 1 else ""
                 msg = f"Configured parameter{is_plural} for the pipeline `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
@@ -618,12 +661,31 @@ if __name__=="__main__":
 To avoid this consider setting pipeline parameters only in one place (config or code).
 """
                 raise RuntimeError(msg)
-            for k, v_config in parameters_.items():
+
+            for k, v_config in config_parameters.items():
                 if k not in kwargs:
                     kwargs[k] = v_config
 
-        with PipelineCompilationContext(pipeline=self):
-            self._call_entrypoint(*args, **kwargs)
+        return kwargs
+
+    def _prepare_invocations(self, **kwargs: Any) -> None:
+        """Prepares the invocations of the pipeline."""
+        outputs = self._call_entrypoint(**kwargs)
+
+        output_artifacts = []
+        if isinstance(outputs, StepArtifact):
+            output_artifacts = [outputs]
+        elif isinstance(outputs, tuple):
+            for v in outputs:
+                if isinstance(v, StepArtifact):
+                    output_artifacts.append(v)
+                else:
+                    logger.debug(
+                        "Ignore pipeline output that is not a step artifact: %s",
+                        v,
+                    )
+
+        self._output_artifacts = output_artifacts
 
     def register(self) -> "PipelineResponse":
         """Register the pipeline in the server.
@@ -631,25 +693,39 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The registered pipeline model.
         """
-        # Activating the built-in integrations to load all materializers
-        from zenml.integrations.registry import integration_registry
+        client = Client()
 
-        self._prepare_if_possible()
-        integration_registry.activate_integrations()
-
-        if self.configuration.model_dump(
-            exclude_defaults=True, exclude={"name"}
-        ):
-            logger.warning(
-                f"The pipeline `{self.name}` that you're registering has "
-                "custom configurations applied to it. These will not be "
-                "registered with the pipeline and won't be set when you build "
-                "images or run the pipeline from the CLI. To provide these "
-                "configurations, use the `--config` option of the `zenml "
-                "pipeline build/run` commands."
+        def _get() -> PipelineResponse:
+            matching_pipelines = client.list_pipelines(
+                name=self.name,
+                size=1,
+                sort_by="desc:created",
             )
 
-        return self._register()
+            if matching_pipelines.total:
+                registered_pipeline = matching_pipelines.items[0]
+                return registered_pipeline
+            raise RuntimeError("No matching pipelines found.")
+
+        try:
+            return _get()
+        except RuntimeError:
+            request = PipelineRequest(
+                project=client.active_project.id,
+                name=self.name,
+            )
+
+            try:
+                registered_pipeline = client.zen_store.create_pipeline(
+                    pipeline=request
+                )
+                logger.info(
+                    "Registered new pipeline: `%s`.",
+                    registered_pipeline.name,
+                )
+                return registered_pipeline
+            except EntityExistsError:
+                return _get()
 
     def build(
         self,
@@ -687,7 +763,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 compile_args["settings"] = settings
 
             snapshot, _, _ = self._compile(**compile_args)
-            pipeline_id = self._register().id
+            pipeline_id = self.register().id
 
             local_repo = code_repository_utils.find_active_code_repository()
             code_repository = build_utils.verify_local_repository_context(
@@ -803,7 +879,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             extra=extra,
         )
 
-        pipeline_id = self._register().id
+        pipeline_id = self.register().id
         stack = Client().active_stack
         stack.validate()
 
@@ -1249,46 +1325,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         return snapshot, run_config.schedule, run_config.build
 
-    def _register(self) -> "PipelineResponse":
-        """Register the pipeline in the server.
-
-        Returns:
-            The registered pipeline model.
-        """
-        client = Client()
-
-        def _get() -> PipelineResponse:
-            matching_pipelines = client.list_pipelines(
-                name=self.name,
-                size=1,
-                sort_by="desc:created",
-            )
-
-            if matching_pipelines.total:
-                registered_pipeline = matching_pipelines.items[0]
-                return registered_pipeline
-            raise RuntimeError("No matching pipelines found.")
-
-        try:
-            return _get()
-        except RuntimeError:
-            request = PipelineRequest(
-                project=client.active_project.id,
-                name=self.name,
-            )
-
-            try:
-                registered_pipeline = client.zen_store.create_pipeline(
-                    pipeline=request
-                )
-                logger.info(
-                    "Registered new pipeline: `%s`.",
-                    registered_pipeline.name,
-                )
-                return registered_pipeline
-            except EntityExistsError:
-                return _get()
-
     def _compute_unique_identifier(self, pipeline_spec: PipelineSpec) -> str:
         """Computes a unique identifier from the pipeline spec and steps.
 
@@ -1576,7 +1612,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self.prepare(*args, **kwargs)
         return self._run()
 
-    def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
+    def _call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the pipeline entrypoint function with the given arguments.
 
         Args:
@@ -1587,37 +1623,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ValueError: If an input argument is missing or not JSON
                 serializable.
         """
-        try:
-            validated_args = pydantic_utils.validate_function_args(
-                self.entrypoint,
-                ConfigDict(arbitrary_types_allowed=False),
-                *args,
-                **kwargs,
-            )
-        except ValidationError as e:
-            raise ValueError(
-                "Invalid or missing pipeline function entrypoint arguments. "
-                "Only JSON serializable inputs are allowed as pipeline inputs. "
-                "Check out the pydantic error above for more details."
-            ) from e
-
-        self._parameters = validated_args
-        return_value = self.entrypoint(**validated_args)
-
-        output_artifacts = []
-        if isinstance(return_value, StepArtifact):
-            output_artifacts = [return_value]
-        elif isinstance(return_value, tuple):
-            for v in return_value:
-                if isinstance(v, StepArtifact):
-                    output_artifacts.append(v)
-                else:
-                    logger.debug(
-                        "Ignore pipeline output that is not a step artifact: %s",
-                        v,
-                    )
-
-        self._output_artifacts = output_artifacts
+        self._clear_state()
+        self._parameters = self._validate_entrypoint_args(*args, **kwargs)
+        return self.entrypoint(**self._parameters)
 
     def _prepare_if_possible(self) -> None:
         """Prepares the pipeline if possible.
@@ -1831,3 +1839,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         return None
+
+    def _clear_state(self) -> None:
+        """Clears the state of the pipeline."""
+        self._invocations = {}
+        self._parameters = {}
+        self._output_artifacts = []

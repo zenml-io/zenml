@@ -209,7 +209,8 @@ class BaseStep:
 
         self._configuration = PartialStepConfiguration(name=name)
         self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
-        self._should_skip_dynamic_configuration = False
+        self._capture_dynamic_configuration = True
+
         self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -489,12 +490,24 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
+        from zenml import get_step_context
         from zenml.pipelines.compilation_context import (
             PipelineCompilationContext,
         )
         from zenml.pipelines.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
+
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            step_context = None
+
+        if step_context:
+            # We're currently inside the execution of a different step
+            # -> We don't want to launch another single step pipeline here,
+            # but instead just call the step function
+            return self.call_entrypoint(*args, **kwargs)
 
         if run_context := DynamicPipelineRunContext.get():
             after = cast(
@@ -505,13 +518,17 @@ class BaseStep:
                 ],
                 after,
             )
-            return run_context.runner.run_step_sync(
-                self, id, args, kwargs, after
+            return run_context.runner.launch_step(
+                step=self,
+                id=id,
+                args=args,
+                kwargs=kwargs,
+                after=after,
+                concurrent=False,
             )
 
         compilation_context = PipelineCompilationContext.get()
         if not compilation_context:
-            from zenml import get_step_context
             from zenml.pipelines.run_utils import (
                 should_prevent_pipeline_execution,
             )
@@ -522,16 +539,6 @@ class BaseStep:
                 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK, default=False
             )
             if run_without_stack:
-                return self.call_entrypoint(*args, **kwargs)
-
-            try:
-                get_step_context()
-            except RuntimeError:
-                pass
-            else:
-                # We're currently inside the execution of a different step
-                # -> We don't want to launch another single step pipeline here,
-                # but instead just call the step function
                 return self.call_entrypoint(*args, **kwargs)
 
             if should_prevent_pipeline_execution():
@@ -635,7 +642,14 @@ class BaseStep:
                 "Submitting a step is only possible within a dynamic pipeline."
             )
 
-        return context.runner.run_step_in_thread(self, id, args, kwargs, after)
+        return context.runner.launch_step(
+            step=self,
+            id=id,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+            concurrent=True,
+        )
 
     @property
     def name(self) -> str:
@@ -929,14 +943,14 @@ class BaseStep:
         return step_copy
 
     @contextmanager
-    def _skip_dynamic_configuration(self) -> Generator[None, None, None]:
-        """Context manager to skip the dynamic configuration."""
-        previous_value = self._should_skip_dynamic_configuration
-        self._should_skip_dynamic_configuration = True
+    def _suspend_dynamic_configuration(self) -> Generator[None, None, None]:
+        """Context manager to suspend applying to the dynamic configuration."""
+        previous_value = self._capture_dynamic_configuration
+        self._capture_dynamic_configuration = False
         try:
             yield
         finally:
-            self._should_skip_dynamic_configuration = previous_value
+            self._capture_dynamic_configuration = previous_value
 
     def _apply_configuration(
         self,
@@ -960,8 +974,8 @@ class BaseStep:
         self._validate_configuration(config, runtime_parameters)
 
         if (
-            DynamicPipelineRunContext.is_active()
-            and not self._should_skip_dynamic_configuration
+            self._capture_dynamic_configuration
+            and DynamicPipelineRunContext.is_active()
         ):
             if self._dynamic_configuration is None:
                 self._dynamic_configuration = config
@@ -978,14 +992,14 @@ class BaseStep:
         logger.debug("Updated step configuration:")
         logger.debug(self._configuration)
 
-    def _apply_dynamic_configuration(self) -> None:
-        """Applies the dynamic configuration to the step configuration."""
+    def _merge_dynamic_configuration(self) -> None:
+        """Merges the dynamic configuration into the static configuration."""
         if self._dynamic_configuration:
-            with self._skip_dynamic_configuration():
+            with self._suspend_dynamic_configuration():
                 self._apply_configuration(
                     config=self._dynamic_configuration, merge=True
                 )
-            logger.debug("Applied dynamic configuration.")
+            logger.debug("Merged dynamic configuration.")
 
     def _validate_configuration(
         self,

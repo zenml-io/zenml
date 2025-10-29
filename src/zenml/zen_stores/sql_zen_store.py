@@ -6107,7 +6107,7 @@ class SqlZenStore(BaseZenStore):
                 # Ignore static config templates for dynamic pipeline DAGs
                 steps = {
                     name: Step.from_dict(
-                        json.loads(step_run.dynamic_config.config),
+                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
                         pipeline_configuration=pipeline_configuration,
                     )
                     for name, step_run in step_runs.items()
@@ -10230,7 +10230,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if step_run.dynamic_config:
-                if not run.snapshot.is_dynamic:
+                if not run.snapshot or not run.snapshot.is_dynamic:
                     raise IllegalOperationError(
                         "Dynamic step configurations are not allowed for "
                         "static pipelines."

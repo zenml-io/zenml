@@ -481,8 +481,7 @@ class StepLauncher:
                         # the orchestrator doesn't support it.
                         logger.warning(
                             "The %s does not support running dynamic out of "
-                            "process steps. Running step `%s` in current "
-                            "thread instead.",
+                            "process steps. Running step `%s` locally instead.",
                             self._stack.orchestrator.__class__.__name__,
                             self._invocation_id,
                         )
@@ -574,7 +573,7 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.run_dynamic_out_of_process_step(
+        self._stack.orchestrator.launch_dynamic_step(
             step_run_info=step_run_info,
             environment=environment,
         )

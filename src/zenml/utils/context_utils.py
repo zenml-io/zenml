@@ -16,7 +16,7 @@
 import contextvars
 import threading
 from contextvars import ContextVar
-from typing import Any, ClassVar, Generic, List, Optional, Self, TypeVar, cast
+from typing import Any, ClassVar, Generic, List, Optional, Self, TypeVar
 
 T = TypeVar("T")
 
@@ -32,12 +32,12 @@ class BaseContext:
 
     @classmethod
     def get(cls: type[Self]) -> Optional[Self]:
-        """Get the active context for the current thread.
+        """Get the active context.
 
         Returns:
-            The active context for the current thread.
+            The active context.
         """
-        return cast(Optional[Self], cls.__context_var__.get(None))
+        return cls.__context_var__.get(None)
 
     @classmethod
     def is_active(cls: type[Self]) -> bool:

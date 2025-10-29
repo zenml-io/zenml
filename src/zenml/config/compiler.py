@@ -489,7 +489,7 @@ class Compiler:
         invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
-        with step._skip_dynamic_configuration():
+        with step._suspend_dynamic_configuration():
             if step_config:
                 step._apply_configuration(
                     step_config, runtime_parameters=invocation.parameters
@@ -497,7 +497,7 @@ class Compiler:
 
             # Apply the dynamic configuration (which happened while executing the
             # pipeline function) after all other step-specific configurations.
-            step._apply_dynamic_configuration()
+            step._merge_dynamic_configuration()
 
             convert_component_shortcut_settings_keys(
                 step.configuration.settings, stack=stack

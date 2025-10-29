@@ -19,30 +19,24 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Type,
-    Union,
 )
 
-from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from pydantic import BaseModel, ConfigDict, create_model
 
-from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.models import ArtifactVersionResponse, PipelineRunResponse
+from zenml.models import PipelineRunResponse
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.pipelines.run_utils import (
     should_prevent_pipeline_execution,
 )
-from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import (
     parse_return_type_annotations,
 )
-from zenml.utils import dict_utils, pydantic_utils
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
-    from zenml.steps.entrypoint_function_utils import StepArtifact
 
 logger = get_logger(__name__)
 
@@ -50,23 +44,45 @@ logger = get_logger(__name__)
 class DynamicPipeline(Pipeline):
     """Dynamic pipeline class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        depends_on: Optional[List["BaseStep"]] = None,
+        **kwargs: Any,
+    ) -> None:
         """Initialize the pipeline.
 
         Args:
             *args: Pipeline constructor arguments.
+            depends_on: The steps that the pipeline depends on.
             **kwargs: Pipeline constructor keyword arguments.
+        """
+        super().__init__(*args, **kwargs)
+        self._depends_on = depends_on or []
+        self._validate_depends_on(self._depends_on)
+
+    def _validate_depends_on(self, depends_on: List["BaseStep"]) -> None:
+        """Validates the steps that the pipeline depends on.
+
+        Args:
+            depends_on: The steps that the pipeline depends on.
 
         Raises:
-            ValueError: If some of the steps in `depends_on` are duplicated.
+            RuntimeError: If some of the steps in `depends_on` are duplicated.
         """
-        self._depends_on = kwargs.pop("depends_on", None) or []
-        if self._depends_on:
-            static_ids = [step._static_id for step in self._depends_on]
-            if len(static_ids) != len(set(static_ids)):
-                raise ValueError("Duplicate steps in depends_on.")
+        static_ids = set()
+        for step in depends_on:
+            static_id = step._static_id
+            if static_id in static_ids:
+                raise RuntimeError(
+                    f"The pipeline {self.name} depends on the same step "
+                    f"({step.name}) multiple times. To fix this, remove the "
+                    "duplicate from the `depends_on` list. You can pass the "
+                    "same step function with multiple configurations by using "
+                    "the `step.with_options(...)` method."
+                )
 
-        super().__init__(*args, **kwargs)
+            static_ids.add(static_id)
 
     @property
     def depends_on(self) -> List["BaseStep"]:
@@ -86,137 +102,19 @@ class DynamicPipeline(Pipeline):
         """
         return True
 
-    @property
-    def is_prepared(self) -> bool:
-        """If the pipeline is prepared.
-
-        Prepared means that the pipeline entrypoint has been called and the
-        pipeline is fully defined.
-
-        Returns:
-            If the pipeline is prepared.
-        """
-        return False
-
-    def prepare(self, *args: Any, **kwargs: Any) -> None:
-        """Prepares the pipeline.
-
-        Args:
-            *args: Pipeline entrypoint input arguments.
-            **kwargs: Pipeline entrypoint input keyword arguments.
-
-        Raises:
-            RuntimeError: If the pipeline has parameters configured differently in
-                configuration file and code.
-        """
-        conflicting_parameters = {}
-        parameters_ = (self.configuration.parameters or {}).copy()
-        if from_file_ := self._from_config_file.get("parameters", None):
-            parameters_ = dict_utils.recursive_update(parameters_, from_file_)
-        if parameters_:
-            for k, v_runtime in kwargs.items():
-                if k in parameters_:
-                    v_config = parameters_[k]
-                    if v_config != v_runtime:
-                        conflicting_parameters[k] = (v_config, v_runtime)
-            if conflicting_parameters:
-                is_plural = "s" if len(conflicting_parameters) > 1 else ""
-                msg = f"Configured parameter{is_plural} for the pipeline `{self.name}` conflict{'' if not is_plural else 's'} with parameter{is_plural} passed in runtime:\n"
-                for key, values in conflicting_parameters.items():
-                    msg += f"`{key}`: config=`{values[0]}` | runtime=`{values[1]}`\n"
-                msg += """This happens, if you define values for pipeline parameters in configuration file and pass same parameters from the code. Example:
-```
-# config.yaml
-    parameters:
-        param_name: value1
-            
-            
-# pipeline.py
-@pipeline
-def pipeline_(param_name: str):
-    step_name()
-
-if __name__=="__main__":
-    pipeline_.with_options(config_path="config.yaml")(param_name="value2")
-```
-To avoid this consider setting pipeline parameters only in one place (config or code).
-"""
-                raise RuntimeError(msg)
-            for k, v_config in parameters_.items():
-                if k not in kwargs:
-                    kwargs[k] = v_config
-
-        try:
-            validated_args = pydantic_utils.validate_function_args(
-                self.entrypoint,
-                ConfigDict(arbitrary_types_allowed=False),
-                *args,
-                **kwargs,
+    def _prepare_invocations(self, **kwargs: Any) -> None:
+        """Prepares the invocations of the pipeline."""
+        for step in self._depends_on:
+            self.add_step_invocation(
+                step,
+                input_artifacts={},
+                external_artifacts={},
+                model_artifacts_or_metadata={},
+                client_lazy_loaders={},
+                parameters={},
+                default_parameters={},
+                upstream_steps=set(),
             )
-        except ValidationError as e:
-            raise ValueError(
-                "Invalid or missing pipeline function entrypoint arguments. "
-                "Only JSON serializable inputs are allowed as pipeline inputs. "
-                "Check out the pydantic error above for more details."
-            ) from e
-
-        self._parameters = validated_args
-        self._invocations = {}
-        with self:
-            for step in self._depends_on:
-                self.add_step_invocation(
-                    step,
-                    input_artifacts={},
-                    external_artifacts={},
-                    model_artifacts_or_metadata={},
-                    client_lazy_loaders={},
-                    parameters={},
-                    default_parameters={},
-                    upstream_steps=set(),
-                )
-
-    def add_dynamic_invocation(
-        self,
-        step: "BaseStep",
-        custom_id: Optional[str] = None,
-        allow_id_suffix: bool = True,
-        upstream_steps: Optional[Set[str]] = None,
-        input_artifacts: Dict[str, "StepArtifact"] = {},
-        external_artifacts: Dict[
-            str, Union[ExternalArtifact, "ArtifactVersionResponse"]
-        ] = {},
-    ) -> str:
-        """Adds a dynamic invocation to the pipeline.
-
-        Args:
-            step: The step for which to add an invocation.
-            custom_id: Custom ID to use for the invocation.
-            allow_id_suffix: Whether a suffix can be appended to the invocation
-                ID.
-            upstream_steps: The upstream steps for the invocation.
-            input_artifacts: The input artifacts for the invocation.
-            external_artifacts: The external artifacts for the invocation.
-
-        Returns:
-            The invocation ID.
-        """
-        invocation_id = self._compute_invocation_id(
-            step=step, custom_id=custom_id, allow_suffix=allow_id_suffix
-        )
-        invocation = StepInvocation(
-            id=invocation_id,
-            step=step,
-            input_artifacts=input_artifacts,
-            external_artifacts=external_artifacts,
-            model_artifacts_or_metadata={},
-            client_lazy_loaders={},
-            parameters=step.configuration.parameters,
-            default_parameters={},
-            upstream_steps=upstream_steps or set(),
-            pipeline=self,
-        )
-        self._invocations[invocation_id] = invocation
-        return invocation_id
 
     def __call__(
         self, *args: Any, **kwargs: Any
@@ -247,36 +145,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         self.prepare(*args, **kwargs)
         return self._run()
-
-    def _call_entrypoint(self, *args: Any, **kwargs: Any) -> None:
-        """Calls the pipeline entrypoint function with the given arguments.
-
-        Args:
-            *args: Entrypoint function arguments.
-            **kwargs: Entrypoint function keyword arguments.
-
-        Raises:
-            ValueError: If an input argument is missing or not JSON
-                serializable.
-        """
-        try:
-            validated_args = pydantic_utils.validate_function_args(
-                self.entrypoint,
-                ConfigDict(arbitrary_types_allowed=False),
-                *args,
-                **kwargs,
-            )
-        except ValidationError as e:
-            raise ValueError(
-                "Invalid or missing pipeline function entrypoint arguments. "
-                "Only JSON serializable inputs are allowed as pipeline inputs. "
-                "Check out the pydantic error above for more details."
-            ) from e
-
-        # Clear the invocations as they might still contain invocations from
-        # the compilation phase.
-        self._invocations = {}
-        self.entrypoint(**validated_args)
 
     def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
         """Computes the output schema for the pipeline.

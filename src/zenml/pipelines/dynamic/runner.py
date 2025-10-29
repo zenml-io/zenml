@@ -15,19 +15,18 @@
 
 import contextvars
 import inspect
-import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterator,
     List,
+    Literal,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Union,
+    overload,
 )
 from uuid import UUID
 
@@ -35,7 +34,7 @@ from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
-from zenml.exceptions import RunStoppedException
+from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
 from zenml.models import (
@@ -43,12 +42,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
 )
-from zenml.models.v2.core.step_run import StepRunResponse
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_successful_pipeline_run,
 )
-from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.dynamic.run_context import DynamicPipelineRunContext
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -78,6 +75,8 @@ StepRunOutputs = Union[
 ]
 
 
+# TODO: maybe one future per artifact? But for a step that doesn't return anything, the user wouldn't have a future to wait for.
+# Or that step returns a future that returns None? Would be similar to a python function.
 class StepRunOutputsFuture:
     """Future for a step run output."""
 
@@ -125,27 +124,29 @@ class StepRunOutputsFuture:
         else:
             raise ValueError(f"Invalid step run output: {result}")
 
-    def __getitem__(self, key: str) -> Any:
-        return self.load()[key]
-
-    def __iter__(self) -> Iterator[Any]:
-        return iter(self.load())
-
-    def __len__(self) -> int:
-        return len(self.load())
-
-    def __contains__(self, item: Any) -> bool:
-        return item in self.load()
-
 
 class DynamicPipelineRunner:
+    """Dynamic pipeline runner."""
+
     def __init__(
         self,
         snapshot: "PipelineSnapshotResponse",
         run: Optional["PipelineRunResponse"],
     ) -> None:
+        """Initialize the dynamic pipeline runner.
+
+        Args:
+            snapshot: The snapshot of the pipeline.
+            run: The pipeline run.
+
+        Raises:
+            RuntimeError: If the snapshot has no associated stack.
+        """
+        if not snapshot.stack:
+            raise RuntimeError("Missing stack for snapshot.")
         self._snapshot = snapshot
         self._run = run
+        # TODO: make this configurable
         self._executor = ThreadPoolExecutor(max_workers=10)
         self._pipeline: Optional["DynamicPipeline"] = None
         self._orchestrator = Stack.from_model(snapshot.stack).orchestrator
@@ -156,25 +157,32 @@ class DynamicPipelineRunner:
 
     @property
     def pipeline(self) -> "DynamicPipeline":
+        """The pipeline that the runner is executing.
+
+        Raises:
+            RuntimeError: If the pipeline can't be loaded.
+
+        Returns:
+            The pipeline that the runner is executing.
+        """
         if self._pipeline is None:
-            self._pipeline = self._load_pipeline()
+            if (
+                not self._snapshot.pipeline_spec
+                or not self._snapshot.pipeline_spec.source
+            ):
+                raise RuntimeError("Missing pipeline source for snapshot.")
+
+            pipeline = source_utils.load(self._snapshot.pipeline_spec.source)
+            if not isinstance(pipeline, DynamicPipeline):
+                raise RuntimeError(
+                    f"Invalid pipeline source: {self._snapshot.pipeline_spec.source}"
+                )
+            self._pipeline = pipeline
+
         return self._pipeline
 
-    def _load_pipeline(self) -> "DynamicPipeline":
-        if (
-            not self._snapshot.pipeline_spec
-            or not self._snapshot.pipeline_spec.source
-        ):
-            raise RuntimeError("Missing pipeline source for snapshot.")
-
-        pipeline = source_utils.load(self._snapshot.pipeline_spec.source)
-        if not isinstance(pipeline, DynamicPipeline):
-            raise RuntimeError(
-                f"Invalid pipeline source: {self._snapshot.pipeline_spec.source}"
-            )
-        return pipeline
-
     def run_pipeline(self) -> None:
+        """Run the pipeline."""
         with setup_pipeline_logging(
             source="orchestrator",
             snapshot=self._snapshot,
@@ -185,6 +193,10 @@ class DynamicPipelineRunner:
                 orchestrator_run_id=self._orchestrator_run_id,
                 logs=logs_request,
             )
+
+            assert (
+                self._snapshot.pipeline_spec
+            )  # Always exists for new snapshots
             pipeline_parameters = self._snapshot.pipeline_spec.parameters
 
             with DynamicPipelineRunContext(
@@ -204,10 +216,11 @@ class DynamicPipelineRunner:
                     self._orchestrator.run_cleanup_hook(
                         snapshot=self._snapshot
                     )
-                self.await_all_futures()
+                self.await_all_step_run_futures()
                 publish_successful_pipeline_run(run.id)
 
-    def run_step_sync(
+    @overload
+    def launch_step(
         self,
         step: "BaseStep",
         id: Optional[str],
@@ -216,41 +229,59 @@ class DynamicPipelineRunner:
         after: Union[
             "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
         ] = None,
-    ) -> StepRunOutputs:
+        concurrent: Literal[False] = False,
+    ) -> StepRunOutputs: ...
+
+    @overload
+    def launch_step(
+        self,
+        step: "BaseStep",
+        id: Optional[str],
+        args: Tuple[Any],
+        kwargs: Dict[str, Any],
+        after: Union[
+            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
+        ] = None,
+        concurrent: Literal[True] = True,
+    ) -> "StepRunOutputsFuture": ...
+
+    def launch_step(
+        self,
+        step: "BaseStep",
+        id: Optional[str],
+        args: Tuple[Any],
+        kwargs: Dict[str, Any],
+        after: Union[
+            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
+        ] = None,
+        concurrent: bool = False,
+    ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
+        """Launch a step.
+
+        Args:
+            step: The step to launch.
+            id: The invocation ID of the step.
+            args: The arguments for the step function.
+            kwargs: The keyword arguments for the step function.
+            after: The step run output futures to wait for.
+            concurrent: Whether to launch the step concurrently.
+
+        Returns:
+            The step run outputs or a future for the step run outputs.
+        """
         step = step.copy()
-        inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
-        compiled_step, _ = _compile_step(
-            self._snapshot, self.pipeline, step, id, upstream_steps, inputs
-        )
-        step_run = _run_step_sync(
+        compiled_step = compile_dynamic_step_invocation(
             snapshot=self._snapshot,
-            step=compiled_step,
-            orchestrator_run_id=self._orchestrator_run_id,
-            retry=_should_retry_locally(
-                compiled_step,
-                self._snapshot.pipeline_configuration.docker_settings,
-            ),
-        )
-        return _load_step_outputs(step_run.id)
-
-    def run_step_in_thread(
-        self,
-        step: "BaseStep",
-        id: Optional[str],
-        args: Tuple[Any],
-        kwargs: Dict[str, Any],
-        after: Union[
-            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-        ] = None,
-    ) -> StepRunOutputsFuture:
-        step = step.copy()
-        inputs, upstream_steps = _prepare_step_run(step, args, kwargs, after)
-        compiled_step, invocation_id = _compile_step(
-            self._snapshot, self.pipeline, step, id, upstream_steps, inputs
+            pipeline=self.pipeline,
+            step=step,
+            id=id,
+            args=args,
+            kwargs=kwargs,
+            after=after,
         )
 
-        def _run() -> StepRunOutputs:
-            step_run = _run_step_sync(
+        def _launch() -> StepRunOutputs:
+            step_run = launch_step(
                 snapshot=self._snapshot,
                 step=compiled_step,
                 orchestrator_run_id=self._orchestrator_run_id,
@@ -259,43 +290,50 @@ class DynamicPipelineRunner:
                     self._snapshot.pipeline_configuration.docker_settings,
                 ),
             )
-            return _load_step_outputs(step_run.id)
+            return _load_step_run_outputs(step_run.id)
 
-        ctx = contextvars.copy_context()
-        future = self._executor.submit(ctx.run, _run)
-        step_run_future = StepRunOutputsFuture(
-            wrapped=future, invocation_id=invocation_id
-        )
-        self._futures.append(step_run_future)
-        return step_run_future
+        if concurrent:
+            ctx = contextvars.copy_context()
+            future = self._executor.submit(ctx.run, _launch)
+            step_run_future = StepRunOutputsFuture(
+                wrapped=future, invocation_id=compiled_step.spec.invocation_id
+            )
+            self._futures.append(step_run_future)
+            return step_run_future
+        else:
+            return _launch()
 
-    def await_all_futures(self) -> None:
+    def await_all_step_run_futures(self) -> None:
+        """Await all step run output futures."""
         for future in self._futures:
             future.wait()
         self._futures = []
 
 
-def _prepare_step_run(
+def compile_dynamic_step_invocation(
+    snapshot: "PipelineSnapshotResponse",
+    pipeline: "DynamicPipeline",
     step: "BaseStep",
+    id: Optional[str],
     args: Tuple[Any],
     kwargs: Dict[str, Any],
     after: Union[
         "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
     ] = None,
-) -> Tuple[Dict[str, Any], Set[str]]:
-    """Prepare a step run.
+) -> "Step":
+    """Compile a dynamic step invocation.
 
     Args:
-        step: The step to prepare.
-        args: The arguments for the step function.
-        kwargs: The keyword arguments for the step function.
-        after: The step run output futures to wait for.
+        snapshot: The snapshot.
+        pipeline: The dynamic pipeline.
+        step: The step to compile.
+        id: Custom invocation ID.
+        upstream_steps: The upstream steps.
+        inputs: Inputs to the step function.
+        default_parameters: Default parameters of the step function.
 
     Returns:
-        A tuple containing the inputs and the upstream steps.
-
-    Raises:
-        ValueError: If an invalid step function input was passed.
+        The compiled step.
     """
     upstream_steps = set()
 
@@ -333,22 +371,18 @@ def _prepare_step_run(
 
     # TODO: we can validate the type of the inputs that are passed as raw data
     signature = inspect.signature(step.entrypoint, follow_wrapped=True)
-    validated_args = signature.bind_partial(*args, **kwargs).arguments
+    bound_args = signature.bind_partial(*args, **kwargs)
+    validated_args = bound_args.arguments
+    bound_args.apply_defaults()
+    default_parameters = {
+        key: value
+        for key, value in bound_args.arguments.items()
+        if key not in validated_args
+    }
 
-    return validated_args, upstream_steps
-
-
-def _compile_step(
-    snapshot: "PipelineSnapshotResponse",
-    pipeline: "DynamicPipeline",
-    step: "BaseStep",
-    id: Optional[str],
-    upstream_steps: Optional[Set[str]],
-    inputs: Dict[str, Any],
-) -> Tuple["Step", str]:
     input_artifacts = {}
     external_artifacts = {}
-    for name, value in inputs.items():
+    for name, value in validated_args.items():
         if isinstance(value, DynamicStepRunOutput):
             input_artifacts[name] = StepArtifact(
                 invocation_id=value.step_name,
@@ -359,6 +393,7 @@ def _compile_step(
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
         else:
+            # TODO: should some of these be parameters?
             external_artifacts[name] = ExternalArtifact(value=value)
 
     if template := get_config_template(snapshot, step, pipeline):
@@ -366,7 +401,6 @@ def _compile_step(
             update={"template": template.spec.invocation_id}
         )
 
-    _, _, _, _, _, default_parameters = step._parse_call_args(**inputs)
     invocation_id = pipeline.add_step_invocation(
         step=step,
         custom_id=id,
@@ -374,87 +408,20 @@ def _compile_step(
         input_artifacts=input_artifacts,
         external_artifacts=external_artifacts,
         upstream_steps=upstream_steps,
-        parameters={},
         default_parameters=default_parameters,
+        parameters={},
         model_artifacts_or_metadata={},
         client_lazy_loaders={},
     )
-    compiled_step = Compiler()._compile_step_invocation(
+    return Compiler()._compile_step_invocation(
         invocation=pipeline.invocations[invocation_id],
         stack=Client().active_stack,
         step_config=None,
         pipeline_configuration=pipeline.configuration,
     )
 
-    return compiled_step, invocation_id
 
-
-def _run_step_sync(
-    snapshot: "PipelineSnapshotResponse",
-    step: "Step",
-    orchestrator_run_id: str,
-    retry: bool = False,
-) -> StepRunResponse:
-    """Run a step in the active thread.
-
-    Args:
-        snapshot: The snapshot.
-        step: The step to run.
-        orchestrator_run_id: The orchestrator run ID.
-        retry: Whether to retry the step if it fails.
-
-    Returns:
-        The step run response.
-    """
-
-    def _launch_step() -> StepRunResponse:
-        launcher = StepLauncher(
-            snapshot=snapshot,
-            step=step,
-            orchestrator_run_id=orchestrator_run_id,
-        )
-        return launcher.launch()
-
-    if not retry:
-        step_run = _launch_step()
-    else:
-        retries = 0
-        retry_config = step.config.retry
-        max_retries = retry_config.max_retries if retry_config else 0
-        delay = retry_config.delay if retry_config else 0
-        backoff = retry_config.backoff if retry_config else 1
-
-        while retries <= max_retries:
-            try:
-                step_run = _launch_step()
-            except RunStoppedException:
-                # Don't retry if the run was stopped
-                raise
-            except BaseException:
-                retries += 1
-                if retries <= max_retries:
-                    logger.info(
-                        "Sleeping for %d seconds before retrying step `%s`.",
-                        delay,
-                        step.config.name,
-                    )
-                    time.sleep(delay)
-                    delay *= backoff
-                else:
-                    if max_retries > 0:
-                        logger.error(
-                            "Failed to run step `%s` after %d retries.",
-                            step.config.name,
-                            max_retries,
-                        )
-                    raise
-            else:
-                break
-
-    return step_run
-
-
-def _load_step_outputs(step_run_id: UUID) -> StepRunOutputs:
+def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
     """Load the outputs of a step run.
 
     Args:
@@ -526,7 +493,7 @@ def should_run_in_process(
     if step.config.step_operator:
         return False
 
-    if not Client().active_stack.orchestrator.supports_dynamic_out_of_process_steps:
+    if not Client().active_stack.orchestrator.can_launch_dynamic_steps:
         return True
 
     if step.config.in_process is False:

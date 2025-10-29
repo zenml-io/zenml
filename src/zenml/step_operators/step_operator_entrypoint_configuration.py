@@ -87,7 +87,11 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         Returns:
             The step.
         """
-        return Step(spec=self.step_run.spec, config=self.step_run.config)
+        return Step(
+            spec=self.step_run.spec,
+            config=self.step_run.config,
+            step_config_overrides=self.step_run.config,
+        )
 
     def _run_step(
         self,

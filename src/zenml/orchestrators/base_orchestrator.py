@@ -213,7 +213,18 @@ class BaseOrchestrator(StackComponent, ABC):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Submits a dynamic pipeline to the orchestrator."""
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Returns:
+            Optional submission result.
+        """
         return None
 
     def prepare_or_run_pipeline(
@@ -427,9 +438,11 @@ class BaseOrchestrator(StackComponent, ABC):
             RunStoppedException: If the run was stopped.
             BaseException: If the step failed all retries.
         """
-        from zenml.pipelines.dynamic.runner import _run_step_sync
+        from zenml.execution.step.utils import launch_step
 
-        _run_step_sync(
+        assert self._active_snapshot
+
+        launch_step(
             snapshot=self._active_snapshot,
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
@@ -438,23 +451,41 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @property
     def supports_dynamic_pipelines(self) -> bool:
+        """Whether the orchestrator supports dynamic pipelines.
+
+        Returns:
+            Whether the orchestrator supports dynamic pipelines.
+        """
         return (
             getattr(self.submit_dynamic_pipeline, "__func__", None)
             is not BaseOrchestrator.submit_dynamic_pipeline
         )
 
     @property
-    def supports_dynamic_out_of_process_steps(self) -> bool:
+    def can_launch_dynamic_steps(self) -> bool:
+        """Whether the orchestrator can launch dynamic steps.
+
+        Returns:
+            Whether the orchestrator can launch dynamic steps.
+        """
         return (
-            getattr(self.run_dynamic_out_of_process_step, "__func__", None)
-            is not BaseOrchestrator.run_dynamic_out_of_process_step
+            getattr(self.launch_dynamic_step, "__func__", None)
+            is not BaseOrchestrator.launch_dynamic_step
         )
 
-    def run_dynamic_out_of_process_step(
+    def launch_dynamic_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
+        """Launch a dynamic step.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
+        """
         raise NotImplementedError(
-            "Running dynamic out of process steps is not implemented for the orchestrator."
+            "Launching dynamic steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
         )
 
     @staticmethod
