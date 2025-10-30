@@ -14,6 +14,7 @@
 """Implementation of the ZenML Kubernetes deployer."""
 
 import re
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -94,6 +95,9 @@ logger = get_logger(__name__)
 
 # Resource constants
 MAX_K8S_NAME_LENGTH = 63
+
+# Minimum datetime for pod creation timestamp comparisons
+MIN_DATETIME = datetime.min.replace(tzinfo=timezone.utc)
 
 SERVICE_DELETION_TIMEOUT_SECONDS = 60
 DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS = 2
@@ -640,15 +644,15 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment.
             environment: Environment variables.
-            sanitized_secrets: Secret environment variables (keys already sanitized).
+            sanitized_secrets: Pre-sanitized secret environment variables.
 
         Returns:
             List of Kubernetes environment variables.
 
         Note:
             Secrets are stored as Kubernetes Secret resources and referenced
-            via secretKeyRef for better security. Keys should be pre-sanitized
-            using _sanitize_secrets() to avoid duplicate processing.
+            via secretKeyRef for better security. Secret keys must be
+            pre-sanitized to valid Kubernetes environment variable names.
         """
         env_vars = []
 
@@ -679,7 +683,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         labels: Dict[str, str],
         image: str,
         environment: Dict[str, str],
-        secrets: Dict[str, str],
+        sanitized_secrets: Dict[str, str],
         settings: KubernetesDeployerSettings,
         resource_requests: Dict[str, str],
         resource_limits: Dict[str, str],
@@ -693,7 +697,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             labels: Labels to apply to the deployment resources.
             image: Container image URI.
             environment: Environment variables.
-            secrets: Secret environment variables (already sanitized).
+            sanitized_secrets: Pre-sanitized secret environment variables.
             settings: Deployer settings.
             resource_requests: Resource requests (cpu, memory, gpu).
             resource_limits: Resource limits (cpu, memory, gpu).
@@ -704,7 +708,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         deployment_name = self._get_resource_base_name(deployment)
 
-        env_vars = self._prepare_environment(deployment, environment, secrets)
+        env_vars = self._prepare_environment(
+            deployment, environment, sanitized_secrets
+        )
 
         command = settings.command or [
             "python",
@@ -882,10 +888,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             if not pods.items:
                 return None
 
-            from datetime import datetime, timezone
-
-            sentinel = datetime.min.replace(tzinfo=timezone.utc)
-
             running_pods = [
                 p
                 for p in pods.items
@@ -894,12 +896,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             if running_pods:
                 return max(
                     running_pods,
-                    key=lambda p: p.metadata.creation_timestamp or sentinel,
+                    key=lambda p: p.metadata.creation_timestamp
+                    or MIN_DATETIME,
                 )
 
             return max(
                 pods.items,
-                key=lambda p: p.metadata.creation_timestamp or sentinel,
+                key=lambda p: p.metadata.creation_timestamp or MIN_DATETIME,
             )
         except ApiException:
             pass
@@ -1124,7 +1127,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         namespace: str,
-        deployment_name: str,
         settings: KubernetesDeployerSettings,
     ) -> None:
         """Manage HorizontalPodAutoscaler resource.
@@ -1132,7 +1134,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment.
             namespace: Kubernetes namespace.
-            deployment_name: Name of the Kubernetes Deployment.
             settings: Deployer settings.
         """
         hpa_name = self._get_hpa_name(deployment)
@@ -1148,7 +1149,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 hpa_manifest=settings.hpa_manifest,
             )
         else:
-            # Delete HPA if removed from settings
             existing_hpa = get_hpa(
                 autoscaling_api=self.k8s_autoscaling_api,
                 name=hpa_name,
@@ -1226,12 +1226,12 @@ class KubernetesDeployer(ContainerizedDeployer):
             image = self.get_image(snapshot)
             self.ensure_namespace_exists(namespace)
 
-            # Manage secrets
+            # Create/update Kubernetes Secret resource and get sanitized keys
             sanitized_secrets = self._manage_deployment_secrets(
                 deployment, namespace, secrets
             )
 
-            # Build manifests
+            # Build Kubernetes Deployment and Service manifests
             deployment_manifest = self._build_deployment_manifest(
                 deployment,
                 namespace,
@@ -1248,7 +1248,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 deployment_name, service_name, namespace, labels, settings
             )
 
-            # Manage Kubernetes resources
+            # Create or update Kubernetes Deployment resource
             self._manage_deployment_resource(
                 namespace,
                 deployment_name,
@@ -1271,11 +1271,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             self._manage_ingress_resource(
                 deployment, namespace, labels, settings
             )
-            self._manage_hpa_resource(
-                deployment, namespace, deployment_name, settings
-            )
+            self._manage_hpa_resource(deployment, namespace, settings)
 
-            # Wait for deployment to be ready
             if timeout > 0:
                 try:
                     wait_for_deployment_ready(
@@ -1288,7 +1285,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 except RuntimeError as e:
                     raise DeploymentProvisionError(str(e)) from e
 
-                # Wait for LoadBalancer IP if applicable
                 if settings.service_type == "LoadBalancer":
                     lb_timeout = min(timeout, 150)
                     wait_for_loadbalancer_ip(

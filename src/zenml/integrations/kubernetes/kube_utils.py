@@ -73,6 +73,8 @@ logger = get_logger(__name__)
 
 R = TypeVar("R")
 
+MIB_TO_GIB = 1024  # MiB to GiB conversion factor
+
 
 # This is to fix a bug in the kubernetes client which has some wrong
 # client-side validations that means the `on_exit_codes` field is
@@ -1897,8 +1899,12 @@ def delete_hpa(
             fail_on_status_codes=(404,),
         )(name=name, namespace=namespace)
     except ApiException as e:
-        if e.status != 404:
-            logger.debug(f"Could not delete HPA '{name}': {e}")
+        if e.status == 404:
+            logger.debug(
+                f"HPA '{name}' not found (expected if not configured)"
+            )
+        else:
+            logger.warning(f"Failed to delete HPA '{name}': {e}")
 
 
 # ============================================================================
@@ -1956,14 +1962,15 @@ def convert_resource_settings_to_k8s_format(
 
     if resource_settings.cpu_count is not None:
         cpu_value = resource_settings.cpu_count
-        # Convert fractional CPUs to millicores (e.g., 0.5 -> "500m")
+        # Kubernetes accepts CPU as whole numbers (e.g., "2") or millicores (e.g., "500m")
         if cpu_value < 1:
+            # Fractional CPUs: 0.5 → "500m"
             cpu_str = f"{int(cpu_value * 1000)}m"
         else:
             if cpu_value == int(cpu_value):
-                cpu_str = str(int(cpu_value))
+                cpu_str = str(int(cpu_value))  # 2.0 → "2"
             else:
-                cpu_str = f"{int(cpu_value * 1000)}m"
+                cpu_str = f"{int(cpu_value * 1000)}m"  # 1.5 → "1500m"
 
         requests["cpu"] = cpu_str
         limits["cpu"] = cpu_str
@@ -1972,8 +1979,8 @@ def convert_resource_settings_to_k8s_format(
         memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
         if memory_value is not None:
             # Use Gi only for clean conversions to avoid precision loss
-            if memory_value >= 1024 and memory_value % 1024 == 0:
-                memory_str = f"{int(memory_value / 1024)}Gi"
+            if memory_value >= MIB_TO_GIB and memory_value % MIB_TO_GIB == 0:
+                memory_str = f"{int(memory_value / MIB_TO_GIB)}Gi"
             else:
                 memory_str = f"{int(memory_value)}Mi"
 

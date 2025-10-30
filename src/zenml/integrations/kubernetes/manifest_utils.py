@@ -497,7 +497,7 @@ def _build_container_spec(
     liveness_probe_path: str,
     readiness_probe_path: str,
 ) -> k8s_client.V1Container:
-    """Build container specification for a Kubernetes deployment.
+    """Build a Kubernetes container specification.
 
     Args:
         image: Container image URI.
@@ -554,9 +554,9 @@ def _build_pod_spec(
     container: k8s_client.V1Container,
     service_account_name: Optional[str],
     image_pull_secrets: List[str],
-    pod_settings: Optional[Any],
+    pod_settings: Optional[KubernetesPodSettings],
 ) -> k8s_client.V1PodSpec:
-    """Build pod specification for a Kubernetes deployment.
+    """Build a Kubernetes pod specification.
 
     Args:
         container: Container specification.
@@ -590,7 +590,7 @@ def _build_pod_template(
     annotations: Optional[Dict[str, str]],
     pod_spec: k8s_client.V1PodSpec,
 ) -> k8s_client.V1PodTemplateSpec:
-    """Build pod template for a Kubernetes deployment.
+    """Build a Kubernetes pod template.
 
     Args:
         deployment_name: Name of the deployment.
@@ -601,9 +601,8 @@ def _build_pod_template(
     Returns:
         Kubernetes pod template specification.
     """
-    # Pod template labels must include the selector label
+    # Labels must include the selector label
     pod_labels = {**labels, "app": deployment_name}
-
     return k8s_client.V1PodTemplateSpec(
         metadata=k8s_client.V1ObjectMeta(
             labels=pod_labels,
@@ -633,7 +632,7 @@ def build_deployment_manifest(
     readiness_probe_config: Dict[str, Any],
     liveness_probe_path: str = "/api/health",
     readiness_probe_path: str = "/api/health",
-    pod_settings: Optional[Any] = None,
+    pod_settings: Optional[KubernetesPodSettings] = None,
 ) -> k8s_client.V1Deployment:
     """Build a Kubernetes Deployment manifest.
 
@@ -662,6 +661,7 @@ def build_deployment_manifest(
     Returns:
         Kubernetes Deployment manifest.
     """
+    # Build container specification
     container = _build_container_spec(
         image=image,
         command=command,
@@ -677,6 +677,7 @@ def build_deployment_manifest(
         readiness_probe_path=readiness_probe_path,
     )
 
+    # Build pod specification
     pod_spec = _build_pod_spec(
         container=container,
         service_account_name=service_account_name,
@@ -684,6 +685,7 @@ def build_deployment_manifest(
         pod_settings=pod_settings,
     )
 
+    # Build pod template
     pod_template = _build_pod_template(
         deployment_name=deployment_name,
         labels=labels,
@@ -691,6 +693,7 @@ def build_deployment_manifest(
         pod_spec=pod_spec,
     )
 
+    # Build deployment manifest
     return k8s_client.V1Deployment(
         api_version="apps/v1",
         kind="Deployment",
