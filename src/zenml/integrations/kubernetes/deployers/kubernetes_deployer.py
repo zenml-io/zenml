@@ -51,31 +51,6 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
 )
-from zenml.integrations.kubernetes.kube_utils import (
-    build_service_url,
-    check_pod_failure_status,
-    convert_resource_settings_to_k8s_format,
-    create_deployment,
-    create_ingress,
-    create_or_update_hpa,
-    create_service,
-    delete_deployment,
-    delete_hpa,
-    delete_ingress,
-    delete_service,
-    get_deployment,
-    get_hpa,
-    get_ingress,
-    get_service,
-    list_pods,
-    service_needs_recreate,
-    update_deployment,
-    update_ingress,
-    update_service,
-    wait_for_deployment_ready,
-    wait_for_loadbalancer_ip,
-    wait_for_service_deletion,
-)
 from zenml.integrations.kubernetes.manifest_utils import (
     build_deployment_manifest,
     build_ingress_manifest,
@@ -877,7 +852,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         label_selector = f"zenml-deployment-id={deployment.id}"
 
         try:
-            pods = list_pods(
+            pods = kube_utils.list_pods(
                 core_api=self.k8s_core_api,
                 namespace=namespace,
                 label_selector=label_selector,
@@ -973,7 +948,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Updating Kubernetes Deployment '{deployment_name}' "
                 f"in namespace '{namespace}'."
             )
-            update_deployment(
+            kube_utils.update_deployment(
                 apps_api=self.k8s_apps_api,
                 name=deployment_name,
                 namespace=namespace,
@@ -984,7 +959,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Creating Kubernetes Deployment '{deployment_name}' "
                 f"in namespace '{namespace}'."
             )
-            create_deployment(
+            kube_utils.create_deployment(
                 apps_api=self.k8s_apps_api,
                 namespace=namespace,
                 deployment_manifest=deployment_manifest,
@@ -1009,7 +984,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentProvisionError: If service deletion times out.
         """
         if existing_service:
-            needs_recreate = service_needs_recreate(
+            needs_recreate = kube_utils.service_needs_recreate(
                 existing_service, service_manifest
             )
 
@@ -1018,13 +993,13 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"Service '{service_name}' has immutable field changes. "
                     f"Deleting and recreating..."
                 )
-                delete_service(
+                kube_utils.delete_service(
                     core_api=self.k8s_core_api,
                     name=service_name,
                     namespace=namespace,
                 )
                 try:
-                    wait_for_service_deletion(
+                    kube_utils.wait_for_service_deletion(
                         core_api=self.k8s_core_api,
                         service_name=service_name,
                         namespace=namespace,
@@ -1033,7 +1008,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 except RuntimeError as e:
                     raise DeploymentProvisionError(str(e)) from e
 
-                create_service(
+                kube_utils.create_service(
                     core_api=self.k8s_core_api,
                     namespace=namespace,
                     service_manifest=service_manifest,
@@ -1043,7 +1018,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"Updating Kubernetes Service '{service_name}' "
                     f"in namespace '{namespace}'."
                 )
-                update_service(
+                kube_utils.update_service(
                     core_api=self.k8s_core_api,
                     name=service_name,
                     namespace=namespace,
@@ -1054,7 +1029,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Creating Kubernetes Service '{service_name}' "
                 f"in namespace '{namespace}'."
             )
-            create_service(
+            kube_utils.create_service(
                 core_api=self.k8s_core_api,
                 namespace=namespace,
                 service_manifest=service_manifest,
@@ -1076,7 +1051,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             settings: Deployer settings.
         """
         ingress_name = self._get_ingress_name(deployment)
-        existing_ingress = get_ingress(
+        existing_ingress = kube_utils.get_ingress(
             networking_api=self.k8s_networking_api,
             name=ingress_name,
             namespace=namespace,
@@ -1092,7 +1067,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"Updating Kubernetes Ingress '{ingress_name}' "
                     f"in namespace '{namespace}'."
                 )
-                update_ingress(
+                kube_utils.update_ingress(
                     networking_api=self.k8s_networking_api,
                     name=ingress_name,
                     namespace=namespace,
@@ -1103,7 +1078,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"Creating Kubernetes Ingress '{ingress_name}' "
                     f"in namespace '{namespace}'."
                 )
-                create_ingress(
+                kube_utils.create_ingress(
                     networking_api=self.k8s_networking_api,
                     namespace=namespace,
                     ingress_manifest=ingress_manifest,
@@ -1114,7 +1089,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Ingress disabled, deleting existing Kubernetes Ingress '{ingress_name}' "
                 f"in namespace '{namespace}'."
             )
-            delete_ingress(
+            kube_utils.delete_ingress(
                 networking_api=self.k8s_networking_api,
                 name=ingress_name,
                 namespace=namespace,
@@ -1140,13 +1115,13 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Creating/updating HorizontalPodAutoscaler "
                 f"in namespace '{namespace}'."
             )
-            create_or_update_hpa(
+            kube_utils.create_or_update_hpa(
                 autoscaling_api=self.k8s_autoscaling_api,
                 namespace=namespace,
                 hpa_manifest=settings.hpa_manifest,
             )
         else:
-            existing_hpa = get_hpa(
+            existing_hpa = kube_utils.get_hpa(
                 autoscaling_api=self.k8s_autoscaling_api,
                 name=hpa_name,
                 namespace=namespace,
@@ -1156,7 +1131,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"HPA manifest removed, deleting existing HorizontalPodAutoscaler '{hpa_name}' "
                     f"in namespace '{namespace}'."
                 )
-                delete_hpa(
+                kube_utils.delete_hpa(
                     autoscaling_api=self.k8s_autoscaling_api,
                     name=hpa_name,
                     namespace=namespace,
@@ -1199,7 +1174,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         # Convert resource settings to Kubernetes format
         try:
             resource_requests, resource_limits, replicas = (
-                convert_resource_settings_to_k8s_format(
+                kube_utils.convert_resource_settings_to_k8s_format(
                     snapshot.pipeline_configuration.resource_settings
                 )
             )
@@ -1212,7 +1187,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         )
         labels = self._get_deployment_labels(deployment, settings)
 
-        existing_deployment = get_deployment(
+        existing_deployment = kube_utils.get_deployment(
             apps_api=self.k8s_apps_api,
             name=deployment_name,
             namespace=namespace,
@@ -1253,7 +1228,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 existing_deployment,
             )
 
-            existing_service = get_service(
+            existing_service = kube_utils.get_service(
                 core_api=self.k8s_core_api,
                 name=service_name,
                 namespace=namespace,
@@ -1272,7 +1247,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             if timeout > 0:
                 try:
-                    wait_for_deployment_ready(
+                    kube_utils.wait_for_deployment_ready(
                         apps_api=self.k8s_apps_api,
                         deployment_name=deployment_name,
                         namespace=namespace,
@@ -1284,7 +1259,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
                 if settings.service_type == "LoadBalancer":
                     lb_timeout = min(timeout, 150)
-                    wait_for_loadbalancer_ip(
+                    kube_utils.wait_for_loadbalancer_ip(
                         core_api=self.k8s_core_api,
                         service_name=service_name,
                         namespace=namespace,
@@ -1371,7 +1346,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         if status != DeploymentStatus.RUNNING:
             pod = self._get_pod_for_deployment(deployment)
             if pod:
-                error_reason = check_pod_failure_status(
+                error_reason = kube_utils.check_pod_failure_status(
                     pod, restart_error_threshold=POD_RESTART_ERROR_THRESHOLD
                 )
                 if error_reason:
@@ -1476,19 +1451,19 @@ class KubernetesDeployer(ContainerizedDeployer):
         labels = self._get_deployment_labels(deployment, settings)
 
         try:
-            k8s_deployment = get_deployment(
+            k8s_deployment = kube_utils.get_deployment(
                 apps_api=self.k8s_apps_api,
                 name=deployment_name,
                 namespace=namespace,
             )
-            k8s_service = get_service(
+            k8s_service = kube_utils.get_service(
                 core_api=self.k8s_core_api,
                 name=service_name,
                 namespace=namespace,
             )
             k8s_ingress = None
             if settings.ingress_enabled:
-                k8s_ingress = get_ingress(
+                k8s_ingress = kube_utils.get_ingress(
                     networking_api=self.k8s_networking_api,
                     name=ingress_name,
                     namespace=namespace,
@@ -1504,7 +1479,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 k8s_deployment, deployment
             )
 
-            url = build_service_url(
+            url = kube_utils.build_service_url(
                 core_api=self.k8s_core_api,
                 service=k8s_service,
                 namespace=namespace,
@@ -1643,7 +1618,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         hpa_name = self._get_hpa_name(deployment)
 
         try:
-            delete_hpa(
+            kube_utils.delete_hpa(
                 autoscaling_api=self.k8s_autoscaling_api,
                 name=hpa_name,
                 namespace=namespace,
@@ -1653,7 +1628,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            delete_ingress(
+            kube_utils.delete_ingress(
                 networking_api=self.k8s_networking_api,
                 name=ingress_name,
                 namespace=namespace,
@@ -1663,7 +1638,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            delete_service(
+            kube_utils.delete_service(
                 core_api=self.k8s_core_api,
                 name=service_name,
                 namespace=namespace,
@@ -1673,7 +1648,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            delete_deployment(
+            kube_utils.delete_deployment(
                 apps_api=self.k8s_apps_api,
                 name=deployment_name,
                 namespace=namespace,
