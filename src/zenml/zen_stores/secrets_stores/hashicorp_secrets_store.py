@@ -138,7 +138,6 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
     _client: Optional[hvac.Client] = None
     _expires_at: Optional[datetime] = None
     _renew_at: Optional[datetime] = None
-    _renewable: bool = False
 
     @property
     def client(self) -> hvac.Client:
@@ -146,6 +145,9 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         Returns:
             The HashiCorp Vault client.
+
+        Raises:
+            ValueError: If the configuration is invalid.
         """
 
         def update_ttls(response: Dict[str, Any]) -> None:
@@ -157,11 +159,13 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             expires_in = response.get("auth", {}).get("lease_duration")
             renewable = response.get("auth", {}).get("renewable", False)
 
+            self._expires_at = None
             if expires_in:
                 self._expires_at = datetime.now() + timedelta(
                     seconds=expires_in * 0.8  # 80% of the lease duration
                 )
 
+            self._renew_at = None
             if renewable and expires_in:
                 self._renew_at = datetime.now() + timedelta(
                     seconds=expires_in * 0.5  # 50% of the lease duration
@@ -172,11 +176,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             and self._expires_at
             and self._expires_at < datetime.now()
         ):
-            if (
-                self._renewable
-                and self._renew_at
-                and self._renew_at < datetime.now()
-            ):
+            if self._renew_at and self._renew_at < datetime.now():
                 logger.debug("Renewing token")
                 try:
                     response = self._client.auth.token.renew_self()
