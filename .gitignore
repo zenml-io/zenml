@@ -202,3 +202,9 @@ zenml_tutorial/
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow
 
+# Computer vision example
+examples/computer_vision/*.jpg
+examples/computer_vision/*.jpeg
+examples/computer_vision/*.pt
+examples/computer_vision/data
+examples/computer_vision/runs
