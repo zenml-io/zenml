@@ -1481,6 +1481,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentProvisionError: If Service is not deleted within timeout.
+            ApiException: If an API error occurs.
         """
         if timeout is None:
             timeout = SERVICE_DELETION_TIMEOUT_SECONDS
