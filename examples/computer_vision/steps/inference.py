@@ -16,10 +16,13 @@
 
 """Inference step for object detection."""
 
+import base64
 import os
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List
 
+import cv2
 from materializers import UltralyticsYOLOMaterializer
 from ultralytics import YOLO
 
@@ -44,7 +47,7 @@ def run_detection(
     reused for all inference requests, making this very fast.
 
     Args:
-        image_path: Path to the image file (local path or URL)
+        image_path: Path to the image file (local path, URL, or base64 data URI)
         confidence_threshold: Minimum confidence score for detections
 
     Returns:
@@ -87,11 +90,49 @@ def run_detection(
             "num_detections": 0,
         }
 
-    # Check if image exists or is a URL
-    if not os.path.exists(image_path) and not image_path.startswith(
-        ("http://", "https://")
-    ):
-        error_msg = f"Image not found: {image_path}"
+    # Handle different image input types
+    temp_image_path = None
+    try:
+        if image_path.startswith("data:image"):
+            # Handle base64 encoded image
+            logger.info("Processing base64 encoded image")
+
+            # Extract base64 data from data URI
+            _, encoded = image_path.split(',', 1)
+            image_data = base64.b64decode(encoded)
+
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                temp_file.write(image_data)
+                temp_image_path = temp_file.name
+
+            input_path = temp_image_path
+
+        elif image_path.startswith(("http://", "https://")):
+            # Handle URL
+            logger.info(f"Processing image from URL: {image_path}")
+            input_path = image_path
+
+        elif os.path.exists(image_path):
+            # Handle local file path
+            logger.info(f"Processing local image: {image_path}")
+            input_path = image_path
+
+        else:
+            error_msg = f"Image not found or invalid format: {image_path}"
+            logger.error(error_msg)
+            return {
+                "error": error_msg,
+                "detections": [],
+                "num_detections": 0,
+            }
+
+        # Run inference
+        logger.info("Running YOLO inference...")
+        results = model(input_path, conf=confidence_threshold)
+
+    except Exception as e:
+        error_msg = f"Error processing image: {str(e)}"
         logger.error(error_msg)
         return {
             "error": error_msg,
@@ -99,9 +140,13 @@ def run_detection(
             "num_detections": 0,
         }
 
-    # Run inference
-    logger.info("Running YOLO inference...")
-    results = model(image_path, conf=confidence_threshold)
+    finally:
+        # Clean up temporary file if created
+        if temp_image_path and os.path.exists(temp_image_path):
+            try:
+                os.unlink(temp_image_path)
+            except OSError:
+                logger.warning(f"Failed to delete temporary file: {temp_image_path}")
 
     # Parse results
     detections: List[Dict[str, Any]] = []
@@ -138,9 +183,6 @@ def run_detection(
         annotated_img = result.plot()
 
         # Save using cv2
-        import cv2
-        import base64
-
         cv2.imwrite(str(annotated_image_path), annotated_img)
 
         logger.info(

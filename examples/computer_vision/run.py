@@ -228,19 +228,16 @@ including training, inference, and deployment as an HTTP service.
   1️⃣  Train a model:
      python run.py --train --samples 50 --epochs 3
 
-  2️⃣  Tag the model for deployment:
-     zenml artifact update <artifact-id> --name yolo-model
-
-  3️⃣  Run batch inference:
+  2️⃣  Run batch inference:
      python run.py --predict --image path/to/image.jpg
 
-  4️⃣  Deploy as HTTP service:
+  3️⃣  Deploy as HTTP service:
      zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
 
-  5️⃣  Use the web interface:
+  4️⃣  Use the web interface:
      Open http://localhost:8000 in your browser
 
-  6️⃣  Test the API:
+  5️⃣  Test the API:
      curl -X POST http://localhost:8000/invoke \\
        -H "Content-Type: application/json" \\
        -d '{"parameters": {"image_path": "https://ultralytics.com/images/bus.jpg"}}'

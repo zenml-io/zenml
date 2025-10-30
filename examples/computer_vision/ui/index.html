@@ -173,6 +173,42 @@
         margin-bottom: var(--spacing-md);
       }
 
+      /* ===== Toggle Buttons ===== */
+      .input-toggle {
+        display: flex;
+        background: var(--surface-tertiary);
+        border-radius: var(--radius-md);
+        padding: 4px;
+        margin-bottom: var(--spacing-lg);
+        gap: 2px;
+      }
+
+      .toggle-option {
+        flex: 1;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .toggle-option:hover {
+        color: var(--text-primary);
+        background: var(--surface-primary);
+      }
+
+      .toggle-option.active {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+        box-shadow: var(--shadow-subtle);
+      }
+
       .form-group label {
         color: var(--text-primary);
         font-weight: 500;
@@ -181,7 +217,8 @@
         margin-bottom: var(--spacing-sm);
       }
 
-      .form-group input {
+      .form-group input[type="text"],
+      .form-group input[type="number"] {
         width: 100%;
         padding: 12px 16px;
         border: 1px solid var(--border-moderate);
@@ -194,6 +231,25 @@
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
+      .form-group input[type="file"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px dashed var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-secondary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+      }
+
+      .form-group input[type="file"]:hover {
+        border-color: var(--zenml-purple);
+        background: var(--surface-primary);
+      }
+
       .form-group input::placeholder {
         color: var(--text-tertiary);
       }
@@ -202,6 +258,19 @@
         outline: none;
         border-color: var(--zenml-purple);
         box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      .upload-preview {
+        margin-top: var(--spacing-sm);
+        text-align: center;
+      }
+
+      .upload-preview img {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+        box-shadow: var(--shadow-subtle);
       }
 
       .form-group input:disabled {
@@ -507,7 +576,19 @@
           <!-- Image Input -->
           <div class="form-section">
             <h2>Image Detection</h2>
-            <div class="form-group">
+
+            <!-- Image Source Selection -->
+            <div class="input-toggle">
+              <button type="button" class="toggle-option active" id="toggle_url">
+                🔗 From URL
+              </button>
+              <button type="button" class="toggle-option" id="toggle_upload">
+                📁 Upload Image
+              </button>
+            </div>
+
+            <!-- URL Input -->
+            <div class="form-group" id="url_input_group">
               <label for="image_path">Image Path or URL</label>
               <input
                 type="text"
@@ -515,13 +596,26 @@
                 name="image_path"
                 value="https://ultralytics.com/images/bus.jpg"
                 placeholder="https://example.com/image.jpg or /path/to/image.jpg"
-                required
               />
               <div class="examples">
                 <strong>Try these examples:</strong>
                 <a class="example-link" onclick="setExample('https://ultralytics.com/images/bus.jpg')">Bus Scene</a>
                 <a class="example-link" onclick="setExample('https://ultralytics.com/images/zidane.jpg')">Zidane</a>
                 <a class="example-link" onclick="setExample('https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg')">Street View</a>
+              </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group" id="upload_input_group" style="display: none;">
+              <label for="image_upload">Upload Image File</label>
+              <input
+                type="file"
+                id="image_upload"
+                name="image_upload"
+                accept="image/*"
+              />
+              <div id="upload_preview" class="upload-preview" style="display: none;">
+                <img id="preview_img" src="" alt="Preview" />
               </div>
             </div>
 
@@ -569,6 +663,18 @@
       const detectBtn = document.getElementById("detect-btn");
       const endpointUrl = document.getElementById("endpoint-url");
 
+      // Image source elements
+      const toggleUrl = document.getElementById("toggle_url");
+      const toggleUpload = document.getElementById("toggle_upload");
+      const urlInputGroup = document.getElementById("url_input_group");
+      const uploadInputGroup = document.getElementById("upload_input_group");
+      const imageUpload = document.getElementById("image_upload");
+      const uploadPreview = document.getElementById("upload_preview");
+      const previewImg = document.getElementById("preview_img");
+
+      // Track current mode
+      let currentMode = "url";
+
       // Auto-detect API endpoint - use the same host and port as the UI
       const apiUrl = `${window.location.protocol}//${window.location.host}/invoke`;
       endpointUrl.textContent = apiUrl;
@@ -576,7 +682,65 @@
       // Set example image
       function setExample(url) {
         document.getElementById("image_path").value = url;
+        // Switch to URL mode if not already selected
+        setMode("url");
       }
+
+      // Set the current mode and update UI
+      function setMode(mode) {
+        currentMode = mode;
+
+        // Update button states
+        if (mode === "url") {
+          toggleUrl.classList.add("active");
+          toggleUpload.classList.remove("active");
+          urlInputGroup.style.display = "block";
+          uploadInputGroup.style.display = "none";
+          document.getElementById("image_path").required = true;
+          imageUpload.required = false;
+        } else {
+          toggleUpload.classList.add("active");
+          toggleUrl.classList.remove("active");
+          urlInputGroup.style.display = "none";
+          uploadInputGroup.style.display = "block";
+          document.getElementById("image_path").required = false;
+          imageUpload.required = true;
+        }
+      }
+
+      // Handle image upload preview
+      function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            uploadPreview.style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        } else {
+          uploadPreview.style.display = "none";
+        }
+      }
+
+      // Convert file to base64 for API
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            // Remove the data:image/type;base64, prefix
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Event listeners
+      toggleUrl.addEventListener('click', () => setMode("url"));
+      toggleUpload.addEventListener('click', () => setMode("upload"));
+      imageUpload.addEventListener('change', handleImageUpload);
 
       // Form submission handler
       form.addEventListener("submit", async (e) => {
@@ -589,16 +753,50 @@
         resultDiv.style.display = "none";
 
         // Collect form data
-        const imagePath = document.getElementById("image_path").value;
         const confidence = parseFloat(document.getElementById("confidence").value);
+        let payload;
 
-        // Prepare request payload
-        const payload = {
-          parameters: {
-            image_path: imagePath,
-            confidence_threshold: confidence,
-          },
-        };
+        if (currentMode === "upload") {
+          // Handle uploaded image
+          const file = imageUpload.files[0];
+          if (!file) {
+            displayError("Please select an image file to upload.");
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+
+          try {
+            const imageBase64 = await fileToBase64(file);
+            payload = {
+              parameters: {
+                image_path: `data:image/${file.type.split('/')[1]};base64,${imageBase64}`,
+                confidence_threshold: confidence,
+              },
+            };
+          } catch (error) {
+            displayError("Error reading image file: " + error.message);
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+        } else {
+          // Handle URL input
+          const imagePath = document.getElementById("image_path").value;
+          if (!imagePath.trim()) {
+            displayError("Please enter an image URL or path.");
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+
+          payload = {
+            parameters: {
+              image_path: imagePath,
+              confidence_threshold: confidence,
+            },
+          };
+        }
 
         try {
           const response = await fetch(apiUrl, {
