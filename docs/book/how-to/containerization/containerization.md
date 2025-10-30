@@ -354,7 +354,16 @@ you already want this automatic detection in current versions of ZenML, set `dis
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
-7.  **Install Local Projects**:
+7.  **Control Deployment Requirements**:
+    By default, if you have a Deployer stack component in your active stack, ZenML installs the requirements needed by the deployment application configured in your deployment settings. You can disable this behavior if needed:
+
+    ```python
+    from zenml.config import DockerSettings
+    
+    docker_settings = DockerSettings(install_deployment_requirements=False)
+    ```
+
+8.  **Install Local Projects**:
     If your code requires the installation of some local code files as a python package, you can specify a command
     that installs it as follows:
     ```python

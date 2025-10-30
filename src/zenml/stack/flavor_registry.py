@@ -67,7 +67,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
-        from zenml.deployers import DockerDeployerFlavor
+        from zenml.deployers import DockerDeployerFlavor, LocalDeployerFlavor
         from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.log_stores import (
             DatadogLogStoreFlavor,
@@ -93,6 +93,7 @@ class FlavorRegistry:
             DefaultLogStoreFlavor,
             OtelLogStoreFlavor,
             DatadogLogStoreFlavor,
+            LocalDeployerFlavor,
         ]
         return flavors
 

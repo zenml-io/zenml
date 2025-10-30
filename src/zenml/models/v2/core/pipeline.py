@@ -46,7 +46,11 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunResponse, UserResponse
+    from zenml.models import (
+        CuratedVisualizationResponse,
+        PipelineRunResponse,
+        UserResponse,
+    )
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -126,6 +130,10 @@ class PipelineResponseResources(ProjectScopedResponseResources):
     )
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline.",
+    )
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default=[],
+        title="Curated visualizations associated with the pipeline.",
     )
 
 

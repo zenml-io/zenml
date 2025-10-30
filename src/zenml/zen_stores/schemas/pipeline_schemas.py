@@ -17,11 +17,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.models import (
     PipelineRequest,
     PipelineResponse,
@@ -38,6 +38,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.pipeline_build_schemas import (
         PipelineBuildSchema,
     )
@@ -104,6 +107,18 @@ class PipelineSchema(NamedSchema, table=True):
             overlaps="tags",
         ),
     )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.PIPELINE.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==PipelineSchema.id)"
+            ),
+            overlaps="visualizations",
+            cascade="delete",
+            order_by="CuratedVisualizationSchema.display_order",
+        ),
+    )
 
     @property
     def latest_run(self) -> Optional["PipelineRunSchema"]:
@@ -159,6 +174,7 @@ class PipelineSchema(NamedSchema, table=True):
                 [
                     joinedload(jl_arg(PipelineSchema.user)),
                     # joinedload(jl_arg(PipelineSchema.tags)),
+                    selectinload(jl_arg(PipelineSchema.visualizations)),
                 ]
             )
 
@@ -226,6 +242,13 @@ class PipelineSchema(NamedSchema, table=True):
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
                 tags=[tag.to_model() for tag in self.tags],
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in self.visualizations
+                ],
             )
 
         return PipelineResponse(

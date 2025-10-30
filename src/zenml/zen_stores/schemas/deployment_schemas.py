@@ -24,7 +24,11 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, String
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.enums import DeploymentStatus, TaggableResourceTypes
+from zenml.enums import (
+    DeploymentStatus,
+    TaggableResourceTypes,
+    VisualizationResourceTypes,
+)
 from zenml.logger import get_logger
 from zenml.models.v2.core.deployment import (
     DeploymentRequest,
@@ -46,6 +50,9 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 logger = get_logger(__name__)
@@ -133,6 +140,19 @@ class DeploymentSchema(NamedSchema, table=True):
         ),
     )
 
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.DEPLOYMENT.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==DeploymentSchema.id)"
+            ),
+            overlaps="visualizations",
+            cascade="delete",
+            order_by="CuratedVisualizationSchema.display_order",
+        ),
+    )
+
     @classmethod
     def get_query_options(
         cls,
@@ -162,6 +182,7 @@ class DeploymentSchema(NamedSchema, table=True):
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
                     ),
+                    selectinload(jl_arg(DeploymentSchema.visualizations)),
                 ]
             )
 
@@ -220,6 +241,13 @@ class DeploymentSchema(NamedSchema, table=True):
                 pipeline=self.snapshot.pipeline.to_model()
                 if self.snapshot and self.snapshot.pipeline
                 else None,
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in self.visualizations
+                ],
             )
 
         return DeploymentResponse(

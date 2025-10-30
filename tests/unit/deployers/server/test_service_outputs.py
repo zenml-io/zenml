@@ -14,14 +14,26 @@
 """Unit tests for PipelineDeploymentService output mapping with in-memory mode."""
 
 from types import SimpleNamespace
-from typing import Generator
+from typing import Generator, List
 from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
+from typing_extensions import Type
 
+from zenml.config import (
+    AppExtensionSpec,
+    DeploymentSettings,
+    EndpointSpec,
+    MiddlewareSpec,
+)
 from zenml.deployers.server import runtime
+from zenml.deployers.server.adapters import EndpointAdapter, MiddlewareAdapter
+from zenml.deployers.server.app import (
+    BaseDeploymentAppRunner,
+    BaseDeploymentAppRunnerFlavor,
+)
 from zenml.deployers.server.models import BaseDeploymentInvocationRequest
 from zenml.deployers.server.service import PipelineDeploymentService
 
@@ -42,6 +54,7 @@ class _DummySnapshot:
             init_hook_source=None,
             init_hook_kwargs=None,
             cleanup_hook_source=None,
+            deployment_settings=DeploymentSettings(),
         )
         self.pipeline_spec = SimpleNamespace(
             parameters={},
@@ -64,6 +77,47 @@ class _DummyRun:
     def __init__(self) -> None:
         self.id = uuid4()
         self.name = "test-run"
+
+
+class _DummyDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
+    @property
+    def name(self) -> str:
+        return "dummy"
+
+    @property
+    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+        return _DummyDeploymentAppRunner
+
+
+class _DummyDeploymentAppRunner(BaseDeploymentAppRunner):
+    @property
+    def flavor(cls) -> "BaseDeploymentAppRunnerFlavor":
+        return _DummyDeploymentAppRunnerFlavor()
+
+    def _create_endpoint_adapter(self) -> EndpointAdapter:
+        return None
+
+    def _create_middleware_adapter(self) -> MiddlewareAdapter:
+        return None
+
+    def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
+        return []
+
+    def _build_cors_middleware(self) -> MiddlewareSpec:
+        return None
+
+    def build(
+        self,
+        middlewares: List[MiddlewareSpec],
+        endpoints: List[EndpointSpec],
+        extensions: List[AppExtensionSpec],
+    ):
+        return None
+
+
+class _DummyOrchestrator:
+    def run(self, snapshot, stack, placeholder_run):  # noqa: D401
+        runtime.record_step_outputs("step1", {"result": "fast_value"})
 
 
 @pytest.fixture(autouse=True)
@@ -111,9 +165,14 @@ def _make_service(
             return _DummyRun()
 
     monkeypatch.setattr("zenml.deployers.server.service.Client", DummyClient)
+    monkeypatch.setattr("zenml.deployers.server.app.Client", DummyClient)
 
-    service = PipelineDeploymentService(uuid4())
+    service = PipelineDeploymentService(
+        _DummyDeploymentAppRunner(deployment.id)
+    )
+    service.initialize()
     service.params_model = _DummyParams
+    service._orchestrator = _DummyOrchestrator()
     return service
 
 
@@ -133,12 +192,6 @@ def test_service_captures_in_memory_outputs(
         "zenml.deployers.server.service.deployment_snapshot_request_from_source_snapshot",
         lambda source_snapshot, deployment_parameters: SimpleNamespace(),
     )
-
-    class _DummyOrchestrator:
-        def run(self, snapshot, stack, placeholder_run):  # noqa: D401
-            runtime.record_step_outputs("step1", {"result": "fast_value"})
-
-    service._orchestrator = _DummyOrchestrator()
 
     request = BaseDeploymentInvocationRequest(
         parameters=_DummyParams(),

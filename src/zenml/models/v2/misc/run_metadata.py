@@ -14,6 +14,7 @@
 """Utility classes for modeling run metadata."""
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -27,6 +28,29 @@ class RunMetadataResource(BaseModel):
 
     id: UUID = Field(title="The ID of the resource.")
     type: MetadataResourceTypes = Field(title="The type of the resource.")
+
+    def __eq__(self, other: Any) -> bool:
+        """Overrides equality operator.
+
+        Args:
+            other: The object to compare.
+
+        Returns:
+            True if the object is equal to the given object. Will always return False if compared to a different type.
+
+        """
+        if not isinstance(other, RunMetadataResource):
+            return False
+
+        return hash(other) == hash(self)
+
+    def __hash__(self) -> int:
+        """Overrides hash operator.
+
+        Returns:
+            The hash value of the object.
+        """
+        return hash(f"{str(self.id)}_{self.type.value}")
 
 
 class RunMetadataEntry(BaseModel):

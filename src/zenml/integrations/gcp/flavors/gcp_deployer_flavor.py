@@ -101,13 +101,6 @@ class GCPDeployerSettings(BaseDeployerSettings):
         description="Execution environment generation. Options: 'gen1', 'gen2'.",
     )
 
-    port: int = Field(
-        default=8080,
-        ge=1,
-        le=65535,
-        description="Port on which the container listens for requests.",
-    )
-
     # Deployment configuration
     traffic_allocation: Dict[str, int] = Field(
         default_factory=lambda: {"LATEST": 100},

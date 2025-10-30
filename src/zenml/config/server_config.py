@@ -55,7 +55,6 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
-    DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
     ENV_ZENML_SERVER_PRO_PREFIX,
@@ -186,15 +185,6 @@ class ServerConfiguration(BaseModel):
             one of the reserved values `disabled`, `no`, `none`, `false`, `off`
             or to an empty string, the `X-Frame-Options` header will not be
             included in responses.
-        secure_headers_xxp: The server header value to be set in the HTTP
-            header `X-XSS-Protection`. If not specified, or if set to one of the
-            reserved values `enabled`, `yes`, `true`, `on`, the `X-XSS-Protection`
-            header will be set to the default value (`0`). If set to one of the
-            reserved values `disabled`, `no`, `none`, `false`, `off` or
-            to an empty string, the `X-XSS-Protection` header will not be
-            included in responses. NOTE: this header is deprecated and should
-            always be set to `0`. The `Content-Security-Policy` header should be
-            used instead.
         secure_headers_content: The server header value to be set in the HTTP
             header `X-Content-Type-Options`. If not specified, or if set to one
             of the reserved values `enabled`, `yes`, `true`, `on`, the
@@ -323,10 +313,6 @@ class ServerConfiguration(BaseModel):
     )
     secure_headers_xfo: Union[bool, str] = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
-        union_mode="left_to_right",
-    )
-    secure_headers_xxp: Union[bool, str] = Field(
-        default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
         union_mode="left_to_right",
     )
     secure_headers_content: Union[bool, str] = Field(
