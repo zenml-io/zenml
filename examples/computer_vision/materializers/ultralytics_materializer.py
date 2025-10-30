@@ -21,7 +21,6 @@ and allowing them to be reconstructed in subsequent pipeline steps.
 """
 
 import os
-from pathlib import Path
 from typing import Any, ClassVar, Tuple, Type
 
 from ultralytics import YOLO
@@ -103,4 +102,3 @@ class UltralyticsYOLOMaterializer(BaseMaterializer):
             raise FileNotFoundError(
                 f"Could not find YOLO model weights at {source_weights_path}"
             )
-

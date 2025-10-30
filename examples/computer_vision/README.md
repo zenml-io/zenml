@@ -1,111 +1,53 @@
-# Computer Vision Object Detection with ZenML
+# Train and deploy a YOLO Object Detection
 
-Build production-ready computer vision pipelines with ZenML, Ultralytics YOLO, and FiftyOne. This example demonstrates:
+Learn how to build a production-ready computer vision pipeline with YOLOv8, FiftyOne dataset management, and deploy it as a warm HTTP service with an interactive web interface. This example showcases the complete **FiftyOne annotation workflow loop**: export → train → predict → import → analyze → visualize.
 
-- 🎯 **Training Pipeline**: Load COCO dataset and train a YOLO model
-- 🚀 **Inference Pipeline**: Deploy as a real-time HTTP service with warm model loading
-- 🖼️ **Web Interface**: Interactive UI for testing object detection
-- 📊 **FiftyOne Integration**: Dataset visualization and management
-- 🔄 **Full Lineage**: Track all artifacts, datasets, and model versions
+## 🎯 What You'll Build
 
-## 🎬 Quick Start
+![Interactive Web UI](assets/app.png)
 
-### Prerequisites
+- **Complete FiftyOne Annotation Workflow**: Export COCO data → Train YOLO → Run inference on original FiftyOne dataset → Import predictions back → Analyze performance → Interactive dashboard visualization
+- **Production-Ready Training**: YOLOv8 model training with automatic artifact versioning and performance tracking via ZenML
+- **Real-Time Inference Service**: Deploy as warm HTTP service with sub-second latency using ZenML's deployment system
+- **Interactive Web UI**: Upload images or use URLs for instant object detection testing with visual results
+- **Dataset-Model Lineage**: Full traceability linking FiftyOne datasets to ZenML model artifacts and predictions
+- **Visual Performance Analysis**: Side-by-side comparison of predictions vs ground truth in FiftyOne's interactive dashboard
+
+## 🏃 Quickstart
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Initialize ZenML (if not already done)
 zenml init
-zenml login  # Optional: connect to ZenML Cloud or deployed server
+zenml login
 ```
 
-### 1️⃣ Train a Model
-
-Train a YOLOv8 nano model on a subset of the COCO dataset:
+**Train with FiftyOne analysis** ([see code](pipelines/training_pipeline.py)):
 
 ```bash
+# Full workflow: training + FiftyOne analysis
 python run.py --train --samples 50 --epochs 3
+
+# Fast training (skip FiftyOne analysis)
+python run.py --train --samples 50 --epochs 3 --disable-fiftyone-analysis
 ```
 
-This will:
-- Download 50 images from COCO validation set using FiftyOne
-- Train a YOLOv8n model for 3 epochs
-- Create visualizations with FiftyOne
-- Save the trained model as a ZenML artifact
+This downloads 50 COCO validation images via FiftyOne, trains a YOLOv8 nano model for 3 epochs, runs inference on the original FiftyOne dataset, and provides interactive analysis capabilities.
 
-**Output:**
-```
-Training YOLO Object Detection Model
-=====================================
-Dataset: COCO validation subset (50 samples)
-Model: yolov8n.pt
-Epochs: 3
-=====================================
-...
-✅ Training Complete!
-Model artifact ID: abc-123-def-456
-```
-
-### 2️⃣ Test Inference Locally
-
-Run object detection on an image in batch mode:
-
-```bash
-# Test with a URL
-python run.py --predict --image https://ultralytics.com/images/bus.jpg
-
-# Test with a local file
-python run.py --predict --image path/to/your/image.jpg
-
-# Adjust confidence threshold
-python run.py --predict --image https://ultralytics.com/images/bus.jpg --confidence 0.5
-```
-
-**Output:**
-```
-🎯 Detection Results
-====================
-Objects detected: 4
-Image size: 640 x 480
-
-📦 Detected Objects:
-  1. bus (confidence: 89.23%)
-     BBox: [50, 100, 500, 400]
-  2. person (confidence: 76.45%)
-     BBox: [200, 150, 250, 350]
-  ...
-```
-
-### 3️⃣ Deploy as HTTP Service
-
-Deploy the inference pipeline as a real-time HTTP service:
+**Deploy as a real-time service** ([see code](pipelines/inference_pipeline.py)):
 
 ```bash
 zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
 ```
 
-This creates a long-running service with:
-- ⚡ **Warm model loading**: Model loaded once at startup for fast inference
-- 🌐 **HTTP API**: RESTful endpoint for predictions
-- 🖼️ **Web UI**: Interactive interface at `http://localhost:8000`
-- 📊 **Full tracking**: All predictions tracked as ZenML artifacts
+Visit `http://localhost:8000` for the interactive UI ([see code](ui/index.html)).
 
-### 4️⃣ Use the Deployed Service
+**Test batch inference locally**:
 
-#### Interactive Web UI
+```bash
+python run.py --predict --image https://ultralytics.com/images/bus.jpg
+```
 
-Open your browser to `http://localhost:8000`:
-
-1. Enter an image URL (or upload a local file in future versions)
-2. Adjust confidence threshold
-3. Click "Detect Objects"
-4. View results with bounding boxes and labels
-
-#### REST API
-
-Call the API programmatically:
+**Make predictions via API**:
 
 ```bash
 curl -X POST http://localhost:8000/invoke \
@@ -118,380 +60,101 @@ curl -X POST http://localhost:8000/invoke \
   }'
 ```
 
-**Response:**
-```json
-{
-  "detections": [
-    {
-      "bbox": [50.2, 100.5, 500.8, 400.3],
-      "label": "bus",
-      "confidence": 0.8923,
-      "class_id": 5
-    },
-    {
-      "bbox": [200.1, 150.2, 250.5, 350.8],
-      "label": "person",
-      "confidence": 0.7645,
-      "class_id": 0
-    }
-  ],
-  "num_detections": 2,
-  "annotated_image_path": "/path/to/annotated_image.jpg",
-  "image_size": {"width": 640, "height": 480},
-  "model_version": "1.0.0"
-}
+**Explore with FiftyOne Dashboard**:
+
+![FiftyOne dashboard](assets/fiftyone_dashboard.png)
+
+After training, the pipeline creates persistent FiftyOne datasets linked to your ZenML model artifacts. Launch the dashboard to analyze results:
+
+```bash
+# Easy way - automatically finds datasets with predictions
+python launch_fiftyone.py
+
+# Manual way
+fiftyone app launch
+# Then in Python: fo.load_dataset('coco-2017-validation-50samples')
 ```
 
-#### ZenML Dashboard Playground
+**Dataset-Artifact Connection**: Each FiftyOne dataset (named by parameters like `coco-2017-validation-50samples`) stores predictions from your latest ZenML run. Re-running pipelines overwrites predictions while preserving ground truth, so the dashboard always shows your current model's performance.
 
-The ZenML dashboard includes a built-in playground for testing deployed pipelines:
+In the FiftyOne dashboard you can:
+- Compare predictions vs ground truth side-by-side
+- Filter by confidence levels and object classes
+- Analyze per-class performance metrics
+- Identify false positives and negatives
+- Export problematic samples for retraining
 
-1. Navigate to your deployment in the dashboard
-2. Fill in the input parameters interactively
-3. Send requests and see real-time results
-4. Share working examples with your team
+**Use the ZenML Deployment Playground**
 
-## 📁 Project Structure
+The ZenML dashboard includes a built-in playground for deployed pipelines, allowing you to test your service directly from the UI. Navigate to your deployment in the dashboard, fill in the image URL and confidence threshold, and see real-time detection results with visualizations.
+
+## 🏗️ What's Inside
 
 ```
 computer_vision/
-├── README.md                          # This file
-├── requirements.txt                   # Python dependencies
-├── run.py                            # CLI entry point
 ├── pipelines/
-│   ├── __init__.py
-│   ├── training_pipeline.py          # Train YOLO on COCO dataset
-│   ├── inference_pipeline.py         # Deployable inference service
-│   └── hooks.py                      # Warm model loading hooks
+│   ├── training_pipeline.py      - Train YOLO + optional FiftyOne analysis
+│   ├── inference_pipeline.py     - Real-time detection service
+│   └── hooks.py                  - Warm model loading at startup/shutdown
 ├── steps/
-│   ├── __init__.py
-│   ├── data_loader.py                # Load COCO with FiftyOne
-│   ├── model_trainer.py              # Train YOLO model
-│   ├── evaluate.py                   # Evaluate model performance
-│   └── inference.py                  # Run object detection
+│   ├── data_loader.py            - COCO dataset loading via FiftyOne
+│   ├── model_trainer.py          - YOLO model training
+│   ├── evaluate.py               - Model evaluation metrics
+│   ├── inference.py              - Fast object detection (supports base64 uploads)
+│   └── fiftyone_analysis.py      - Complete annotation workflow loop
 ├── materializers/
-│   ├── __init__.py
-│   └── ultralytics_materializer.py   # Custom YOLO model materializer
-└── ui/
-    └── index.html                     # Interactive web interface
+│   └── ultralytics_materializer.py  - Custom YOLO model serialization
+├── ui/
+│   └── index.html                - Interactive web interface with image upload
+├── run.py                        - CLI for training and testing
+├── launch_fiftyone.py            - Easy FiftyOne dashboard launcher
+└── requirements.txt              - Dependencies
 ```
 
-## 🔑 Key Concepts
+## 🔑 Important Notes
 
-### Pipeline Deployments
+### **Custom Materializers**
 
-ZenML allows you to deploy pipelines as real-time HTTP services. Just add `DeploymentSettings` to your pipeline:
+This example features a [custom ZenML materializer](https://docs.zenml.io/how-to/types-and-materializers/materializers) for YOLO models that handles model weight serialization and artifact versioning, ensuring seamless model tracking across pipeline runs. ZenML automatically manages and version-controls model artifacts, making them accessible throughout your pipeline lifecycle.
 
-```python
-from zenml import pipeline
-from zenml.config import DeploymentSettings, CORSConfig
+- 📖 [ZenML Materializers Documentation](https://docs.zenml.io/concepts/artifacts/materializers)
+- 📄 [View YOLO model materializer code](./materializers/yolo_materializer.py)
 
-@pipeline(
-    settings={
-        "deployment": DeploymentSettings(
-            app_title="YOLO Object Detection Service",
-            dashboard_files_path="ui",  # Serve web UI
-            cors=CORSConfig(allow_origins=["*"]),
-        ),
-    }
-)
-def object_detection_inference_pipeline(image_path: str) -> dict:
-    return run_detection(image_path)
-```
+### 🎨 Customization
 
-Deploy with: `zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline`
+**Use a different dataset**: To use your own dataset (in YOLO format), modify the dataset loading logic in [`run.py`](./run.py) and/or the relevant pipeline step (e.g., `load_coco_dataset` in [`pipelines/data_loader.py`](./pipelines/data_loader.py)) to point to your images, labels, and `data.yaml`.
 
-### Warm Container Pattern
-
-The `on_init` hook loads the model once at deployment startup, keeping it warm in memory for all requests:
-
-```python
-@pipeline(
-    on_init=init_model,        # Load model at startup
-    on_cleanup=cleanup_model,  # Clean shutdown
-)
-def object_detection_inference_pipeline(image_path: str) -> dict:
-    return run_detection(image_path)
-```
-
-This eliminates cold-start delays and provides sub-second inference times.
-
-### Artifacts and Materializers
-
-ZenML automatically tracks all data flowing through your pipelines:
-
-- **Datasets**: Dataset paths (directories) stored with built-in `PathMaterializer`
-- **Images**: Using PathMaterializer to handle image directories
-- **Models**: YOLO model weights tracked as versioned artifacts
-- **Predictions**: Detection results stored for reproducibility
-
-Example from training pipeline:
-
-```python
-@step
-def train_yolo_model(
-    dataset_path: Path,
-    epochs: int = 3,
-) -> Annotated[Path, "model_path"]:
-    """Train YOLO and return model path as a tracked artifact."""
-    model = YOLO("yolov8n.pt")
-    results = model.train(data=str(dataset_path), epochs=epochs)
-    return Path("runs/detect/coco_training/weights/best.pt")
-```
-
-ZenML automatically:
-- Stores the model file in the artifact store
-- Versions it with the pipeline run
-- Makes it available for loading in other pipelines
-
-### FiftyOne Integration
-
-FiftyOne provides powerful dataset management and visualization:
-
-```python
-@step
-def load_coco_dataset(max_samples: int = 50) -> Tuple[Path, str]:
-    """Load COCO dataset using FiftyOne."""
-    dataset = foz.load_zoo_dataset(
-        "coco-2017",
-        split="validation",
-        max_samples=max_samples,
-    )
-    # Export to YOLO format
-    dataset.export(export_dir="data/coco", dataset_type=fo.types.YOLOv5Dataset)
-    return Path("data/coco"), dataset.name
-```
-
-View the dataset in FiftyOne App:
-
-```bash
-python -c "import fiftyone as fo; fo.launch_app(fo.load_dataset('coco-2017-detection-subset'))"
-```
-
-## 🎨 Customization
-
-### Use a Different Dataset
-
-Replace the COCO loader with your own dataset:
-
-```python
-@step
-def load_custom_dataset() -> Path:
-    """Load your custom dataset in YOLO format."""
-    # Your dataset should have this structure:
-    # dataset/
-    #   ├── images/
-    #   │   └── train/
-    #   ├── labels/
-    #   │   └── train/
-    #   └── data.yaml
-    return Path("path/to/your/dataset")
-```
-
-### Use a Larger Model
-
-For better accuracy, use a larger YOLO model:
+**Use a larger model**: For better accuracy, use `yolov8s.pt`, `yolov8m.pt`, `yolov8l.pt`, or `yolov8x.pt`:
 
 ```bash
 python run.py --train --model yolov8m.pt --epochs 10
 ```
 
-Available models: `yolov8n.pt`, `yolov8s.pt`, `yolov8m.pt`, `yolov8l.pt`, `yolov8x.pt`
+**Run training on cloud**: Use ZenML's remote orchestrators for scalable training:
 
-### Add Custom Post-Processing
+```bash
+# Kubernetes orchestrator
+zenml orchestrator register k8s --flavor=kubernetes
+zenml stack update -o k8s
 
-Extend the inference step with custom logic:
-
-```python
-@step
-def run_detection_with_tracking(
-    image_path: str,
-    confidence_threshold: float = 0.25,
-) -> Dict[str, Any]:
-    """Run detection with object tracking."""
-    results = run_detection(image_path, confidence_threshold)
-    
-    # Add your custom logic here
-    # e.g., object tracking, filtering, aggregation
-    
-    return results
+# Then run training remotely
+python run.py --train --samples 500 --epochs 20 --model yolov8m.pt
 ```
 
-### Deploy to Cloud
-
-Use ZenML's cloud deployers to deploy to AWS, GCP, or Azure:
+**Deploy inference to cloud**: Use ZenML's cloud deployers:
 
 ```bash
 # AWS App Runner
 zenml deployer register aws --flavor=aws-app-runner --region=us-east-1
 zenml stack update -d aws
-
-# GCP Cloud Run
-zenml deployer register gcp --flavor=gcp-cloud-run --project=my-project
-zenml stack update -d gcp
-
-# Then deploy as usual
 zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
-```
-
-## 🔧 Advanced Usage
-
-### Batch Processing
-
-Process multiple images in a batch:
-
-```python
-@pipeline
-def batch_detection_pipeline(image_dir: str) -> List[Dict]:
-    """Process all images in a directory."""
-    images = list_images(image_dir)
-    results = []
-    for image_path in images:
-        result = run_detection(image_path)
-        results.append(result)
-    return results
-```
-
-### Model Comparison
-
-Compare different YOLO models:
-
-```bash
-# Train multiple models
-python run.py --train --model yolov8n.pt --epochs 3
-python run.py --train --model yolov8s.pt --epochs 3
-
-# Compare in ZenML dashboard
-# Navigate to Artifacts → yolo-model → Compare Versions
-```
-
-### A/B Testing
-
-Deploy multiple model versions and route traffic:
-
-```python
-@step
-def run_ab_test(image_path: str) -> Dict:
-    """Run A/B test between model versions."""
-    import random
-    
-    # Load two model versions
-    model_a = Client().get_artifact_version("yolo-model", "1.0.0").load()
-    model_b = Client().get_artifact_version("yolo-model", "2.0.0").load()
-    
-    # Route 50/50
-    model = model_a if random.random() < 0.5 else model_b
-    return run_detection_with_model(image_path, model)
-```
-
-## 📊 Monitoring and Debugging
-
-### View Pipeline Runs
-
-```bash
-# List all runs
-zenml pipeline runs list
-
-# Get details of a specific run
-zenml pipeline runs describe <run-id>
-
-# View artifacts produced
-zenml artifact list --pipeline-name object_detection_training_pipeline
-```
-
-### Check Deployment Status
-
-```bash
-# List deployments
-zenml deployment list
-
-# Get deployment details
-zenml deployment describe object_detection_inference_pipeline
-
-# View deployment logs
-zenml deployment logs object_detection_inference_pipeline
-```
-
-### Visualize with FiftyOne
-
-View your training data and predictions in FiftyOne:
-
-```python
-import fiftyone as fo
-
-# Load the training dataset
-dataset = fo.load_dataset("coco-2017-detection-subset")
-
-# Launch the FiftyOne app
-session = fo.launch_app(dataset)
-```
-
-## 🐛 Troubleshooting
-
-### Model Not Found Error
-
-If you see "No production model found":
-
-1. Make sure you've trained a model: `python run.py --train`
-2. The model is automatically tagged as 'production' during training
-3. Verify the artifact exists: `zenml artifact list --name yolo-model --tag production`
-
-### Image Not Found Error
-
-The deployed pipeline requires image paths that are accessible:
-
-- ✅ **URLs**: `https://example.com/image.jpg`
-- ✅ **Absolute paths**: `/home/user/images/photo.jpg`
-- ❌ **Relative paths**: `./images/photo.jpg` (may not work in deployment)
-
-### FiftyOne Dataset Errors
-
-If FiftyOne datasets are not persisting:
-
-```bash
-# Check FiftyOne database
-fiftyone datasets list
-
-# Delete and recreate if needed
-fiftyone datasets delete coco-2017-detection-subset
-python run.py --train
-```
-
-### Deployment Port Already in Use
-
-If port 8000 is already in use, modify the deployment settings:
-
-```python
-DeploymentSettings(
-    uvicorn_port=8001,  # Use a different port
-    ...
-)
 ```
 
 ## 📚 Learn More
 
-- [ZenML Documentation](https://docs.zenml.io/)
 - [Pipeline Deployments Guide](https://docs.zenml.io/how-to/deployment/deployment)
 - [Deployment Settings](https://docs.zenml.io/how-to/deployment/deployment_settings)
-- [Artifacts and Materializers](https://docs.zenml.io/how-to/artifacts)
+- [Pipeline Hooks](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#pipeline-and-step-hooks)
 - [Ultralytics Documentation](https://docs.ultralytics.com/)
 - [FiftyOne Documentation](https://docs.voxel51.com/)
-
-## 🤝 Related Examples
-
-- **Quickstart**: [examples/quickstart](../quickstart) - Basic ZenML pipeline
-- **Deploying ML Models**: [examples/deploying_ml_model](../deploying_ml_model) - Classical ML deployment
-- **E2E Example**: [examples/e2e](../e2e) - End-to-end ML workflow
-
-## 💡 Tips
-
-1. **Start small**: Begin with 50 samples and 3 epochs to test the pipeline quickly
-2. **Use pretrained models**: YOLO models are pretrained on COCO, so even 3 epochs shows results
-3. **Monitor resources**: Object detection can be memory-intensive, adjust `ResourceSettings` if needed
-4. **Cache wisely**: Disable caching in inference pipeline to always use latest inputs
-5. **Version everything**: Use ZenML's tagging to track production models
-
----
-
-Built with ❤️ using [ZenML](https://zenml.io), [Ultralytics](https://ultralytics.com), and [FiftyOne](https://voxel51.com/fiftyone)
-
+- [Related Example: Deploying ML Models](../deploying_ml_model/README.md)

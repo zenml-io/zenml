@@ -16,14 +16,14 @@
 
 """Training pipeline for object detection with YOLO."""
 
-from typing import Annotated
+from typing import Annotated, Any, Dict
 
 from steps import (
+    complete_fiftyone_analysis,
     evaluate_model,
     load_coco_dataset,
     train_yolo_model,
 )
-from ultralytics import YOLO
 
 from zenml import pipeline
 from zenml.config import DockerSettings
@@ -38,35 +38,40 @@ docker_settings = DockerSettings(
 
 
 @pipeline(
+    enable_cache=False,
     settings={
         "docker": docker_settings,
-    }
+    },
 )
 def object_detection_training_pipeline(
     max_samples: int = 50,
     epochs: int = 1,
     model_name: str = "yolov8n.pt",
-) -> Annotated[YOLO, "trained_model"]:
-    """Training pipeline for object detection using YOLO and COCO dataset.
+    confidence_threshold: float = 0.25,
+    enable_fiftyone_analysis: bool = True,
+) -> Annotated[Dict[str, Any], "training_results"]:
+    """Complete computer vision pipeline with optional FiftyOne annotation workflow.
 
-    This pipeline demonstrates how to build a complete computer vision training
-    workflow with ZenML. It:
-    1. Loads a subset of the COCO dataset using FiftyOne
-    2. Trains a YOLOv8 model on the dataset
-    3. Creates visualizations with FiftyOne
-    4. Tags the trained model for deployment
-
-    The pipeline uses ZenML's artifact tracking to manage all intermediate
-    outputs (datasets, models, metrics) with full lineage tracking.
+    This pipeline provides flexible computer vision training with ZenML:
+    1. Loads COCO dataset using FiftyOne
+    2. Exports annotations to YOLO format
+    3. Trains YOLOv8 model on the dataset
+    4. Evaluates model performance
+    5. OPTIONAL: Complete FiftyOne annotation workflow (if enabled):
+       - Runs inference on original FiftyOne dataset
+       - Imports predictions back into FiftyOne
+       - Analyzes predictions vs ground truth
+       - Creates FiftyOne App session for interactive exploration
 
     Args:
         max_samples: Number of images to use from COCO validation set
         epochs: Number of training epochs
         model_name: YOLO model architecture to use (e.g., 'yolov8n.pt')
+        confidence_threshold: Minimum confidence for predictions
+        enable_fiftyone_analysis: Whether to run the complete FiftyOne workflow
 
     Returns:
-        The trained YOLO model, ready to be used for inference or deployment.
-        Tag this artifact as 'yolo-model' for deployment.
+        Dictionary containing trained model and optional analysis results
     """
     # Step 1: Load COCO dataset using FiftyOne
     # This downloads a subset of COCO and exports it in YOLO format
@@ -90,5 +95,28 @@ def object_detection_training_pipeline(
         dataset_path=dataset_path,
     )
 
-    return trained_model
+    # === OPTIONAL: FiftyOne Annotation Workflow Loop ===
 
+    # Step 4: Complete FiftyOne analysis (if enabled)
+    if enable_fiftyone_analysis:
+        fiftyone_results = complete_fiftyone_analysis(
+            fiftyone_dataset_name=fiftyone_dataset_name,
+            trained_model=trained_model,
+            confidence_threshold=confidence_threshold,
+        )
+
+        # Return comprehensive results with FiftyOne analysis
+        return {
+            "trained_model": trained_model,
+            "training_metrics": metrics,
+            "fiftyone_results": fiftyone_results,
+            "workflow_type": "complete_with_fiftyone_analysis",
+        }
+    else:
+        # Return basic training results without FiftyOne analysis
+        return {
+            "trained_model": trained_model,
+            "training_metrics": metrics,
+            "dataset_name": fiftyone_dataset_name,
+            "workflow_type": "basic_training_only",
+        }

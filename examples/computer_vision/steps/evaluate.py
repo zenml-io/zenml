@@ -17,9 +17,8 @@
 """Model evaluation step using YOLO validation."""
 
 from pathlib import Path
-from typing import Annotated, Dict, Tuple
+from typing import Annotated, Dict
 
-from materializers import UltralyticsYOLOMaterializer
 from ultralytics import YOLO
 
 from zenml import step
@@ -85,4 +84,3 @@ def evaluate_model(
             "mAP50": 0.0,
             "mAP50-95": 0.0,
         }
-

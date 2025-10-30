@@ -18,6 +18,7 @@
 
 from steps.data_loader import load_coco_dataset
 from steps.evaluate import evaluate_model
+from steps.fiftyone_analysis import complete_fiftyone_analysis
 from steps.inference import run_detection
 from steps.model_trainer import train_yolo_model
 
@@ -26,5 +27,6 @@ __all__ = [
     "train_yolo_model",
     "evaluate_model",
     "run_detection",
+    "complete_fiftyone_analysis",
 ]
 

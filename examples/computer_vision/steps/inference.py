@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import cv2
-from materializers import UltralyticsYOLOMaterializer
 from ultralytics import YOLO
 
 from zenml import step
@@ -81,7 +80,9 @@ def run_detection(
 
         model_artifact = model_artifacts.items[0]
         model: YOLO = model_artifact.load()
-        logger.info(f"Loaded YOLO model from artifact: {model_artifact.version}")
+        logger.info(
+            f"Loaded YOLO model from artifact: {model_artifact.version}"
+        )
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
         return {
@@ -98,11 +99,13 @@ def run_detection(
             logger.info("Processing base64 encoded image")
 
             # Extract base64 data from data URI
-            _, encoded = image_path.split(',', 1)
+            _, encoded = image_path.split(",", 1)
             image_data = base64.b64decode(encoded)
 
             # Create temporary file
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(
+                suffix=".jpg", delete=False
+            ) as temp_file:
                 temp_file.write(image_data)
                 temp_image_path = temp_file.name
 
@@ -146,7 +149,9 @@ def run_detection(
             try:
                 os.unlink(temp_image_path)
             except OSError:
-                logger.warning(f"Failed to delete temporary file: {temp_image_path}")
+                logger.warning(
+                    f"Failed to delete temporary file: {temp_image_path}"
+                )
 
     # Parse results
     detections: List[Dict[str, Any]] = []
@@ -192,14 +197,14 @@ def run_detection(
         # Convert images to base64 for web display
         # Get the original image
         original_img = result.orig_img
-        
+
         # Encode original image to base64
-        _, original_buffer = cv2.imencode('.jpg', original_img)
-        original_base64 = base64.b64encode(original_buffer).decode('utf-8')
-        
+        _, original_buffer = cv2.imencode(".jpg", original_img)
+        original_base64 = base64.b64encode(original_buffer).decode("utf-8")
+
         # Encode annotated image to base64
-        _, annotated_buffer = cv2.imencode('.jpg', annotated_img)
-        annotated_base64 = base64.b64encode(annotated_buffer).decode('utf-8')
+        _, annotated_buffer = cv2.imencode(".jpg", annotated_img)
+        annotated_base64 = base64.b64encode(annotated_buffer).decode("utf-8")
 
         return {
             "detections": detections,
@@ -217,4 +222,3 @@ def run_detection(
         "num_detections": 0,
         "error": "No detections found",
     }
-

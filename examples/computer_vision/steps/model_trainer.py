@@ -34,7 +34,9 @@ def train_yolo_model(
     model_name: str = "yolov8n.pt",
     epochs: int = 1,
     image_size: int = 640,
-) -> Annotated[YOLO, ArtifactConfig(name="yolo-model", tags=["computer-vision"])]:
+) -> Annotated[
+    YOLO, ArtifactConfig(name="yolo-model", tags=["computer-vision"])
+]:
     """Train a YOLO model on the provided dataset.
 
     This step uses Ultralytics YOLO to train (or fine-tune) an object detection
@@ -99,10 +101,11 @@ def train_yolo_model(
     logger.info(f"Best weights saved at: {model.trainer.best}")
 
     # Tag the trained model artifact as 'production' for deployment
-    add_tags(tags=["production"], artifact_name="yolo-model", infer_artifact=True)
+    add_tags(
+        tags=["production"], artifact_name="yolo-model", infer_artifact=True
+    )
     logger.info("Tagged model artifact as 'production'")
 
     # The model object already has the best weights loaded
     # The UltralyticsYOLOMaterializer will handle saving the weights to artifact store
     return model
-

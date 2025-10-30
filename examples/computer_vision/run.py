@@ -106,63 +106,60 @@ def main() -> None:
         help="Confidence threshold for detections (default: 0.25)",
     )
 
+    parser.add_argument(
+        "--disable-fiftyone-analysis",
+        action="store_true",
+        help="Disable the complete FiftyOne annotation workflow (faster training)",
+    )
+
     args = parser.parse_args()
 
     if args.train:
-        logger.info("=" * 60)
-        logger.info("Training YOLO Object Detection Model")
-        logger.info("=" * 60)
-        logger.info(f"Dataset: COCO validation subset ({args.samples} samples)")
-        logger.info(f"Model: {args.model}")
-        logger.info(f"Epochs: {args.epochs}")
-        logger.info("=" * 60)
+        logger.info(
+            f"Training {args.model} on {args.samples} COCO samples for {args.epochs} epochs..."
+        )
 
         # Run training pipeline
+        enable_fiftyone_analysis = not args.disable_fiftyone_analysis
         run = object_detection_training_pipeline(
             max_samples=args.samples,
             epochs=args.epochs,
             model_name=args.model,
+            confidence_threshold=args.confidence,
+            enable_fiftyone_analysis=enable_fiftyone_analysis,
         )
 
-        logger.info("\n" + "=" * 60)
-        logger.info("✅ Training Complete!")
-        logger.info("=" * 60)
-
-        # Get the trained model artifact
+        # Get model artifact info
         client = Client()
         pipeline_run = client.get_pipeline_run(run.id)
-
-        # Get the model artifact from the training step
-        # outputs returns a list of ArtifactVersionResponses, get the first one
         model_outputs = pipeline_run.steps["train_yolo_model"].outputs[
             "yolo-model"
         ]
-        model_output = model_outputs[0] if isinstance(model_outputs, list) else model_outputs
-        
-        logger.info(f"Model artifact ID: {model_output.id}")
-        logger.info(f"Model artifact version: {model_output.version}")
-        logger.info(
-            f"Model tags: {[tag.name for tag in model_output.tags]}"
+        model_output = (
+            model_outputs[0]
+            if isinstance(model_outputs, list)
+            else model_outputs
         )
 
-        logger.info("\n📝 Next Steps:")
-        logger.info("1. Test inference locally:")
-        logger.info("   python run.py --predict --image path/to/image.jpg")
-        logger.info("\n2. Deploy as HTTP service:")
         logger.info(
-            "   zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline"
+            f"\n✅ Training complete! Model: {model_output.version} (tagged as 'production')"
         )
-        logger.info("\n3. Open web UI:")
-        logger.info("   http://localhost:8000")
-        logger.info("\n💡 Model is automatically tagged as 'production' and ready for deployment!")
+
+        if enable_fiftyone_analysis:
+            logger.info(
+                "\n📊 FiftyOne dashboard ready. Launch with: python launch_fiftyone.py"
+            )
+
+        logger.info("\n📝 Next steps:")
+        logger.info(
+            "  • Test: python run.py --predict --image path/to/image.jpg"
+        )
+        logger.info(
+            "  • Deploy: zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline"
+        )
 
     elif args.predict:
-        logger.info("=" * 60)
-        logger.info("Running Object Detection Inference")
-        logger.info("=" * 60)
-        logger.info(f"Image: {args.image}")
-        logger.info(f"Confidence threshold: {args.confidence}")
-        logger.info("=" * 60)
+        logger.info(f"Running inference on {args.image}...")
 
         # Run inference pipeline
         run = object_detection_inference_pipeline(
@@ -175,88 +172,41 @@ def main() -> None:
         pipeline_run = client.get_pipeline_run(run.id)
         results = pipeline_run.steps["run_detection"].output.load()
 
-        logger.info("\n" + "=" * 60)
-        logger.info("🎯 Detection Results")
-        logger.info("=" * 60)
-
         if "error" in results:
             logger.error(f"Error: {results['error']}")
             return
 
-        logger.info(f"Objects detected: {results['num_detections']}")
-
-        if results.get("image_size"):
-            logger.info(
-                f"Image size: {results['image_size']['width']} x {results['image_size']['height']}"
-            )
-
-        if results.get("model_version"):
-            logger.info(f"Model version: {results['model_version']}")
-
-        if results.get("annotated_image_path"):
-            logger.info(
-                f"Annotated image saved to: {results['annotated_image_path']}"
-            )
-
-        logger.info("\n📦 Detected Objects:")
+        logger.info(f"\n🎯 Detected {results['num_detections']} objects:")
         for i, detection in enumerate(results.get("detections", []), 1):
             logger.info(
-                f"  {i}. {detection['label']} "
-                f"(confidence: {detection['confidence']:.2%})"
+                f"  {i}. {detection['label']} ({detection['confidence']:.1%})"
             )
-            bbox = detection["bbox"]
-            logger.info(
-                f"     BBox: [{bbox[0]:.0f}, {bbox[1]:.0f}, "
-                f"{bbox[2]:.0f}, {bbox[3]:.0f}]"
-            )
+
+        if results.get("annotated_image_path"):
+            logger.info(f"\n📸 Saved to: {results['annotated_image_path']}")
 
     else:
-        # Show usage information
-        print(
-            """
-╔══════════════════════════════════════════════════════════════════════╗
-║                                                                      ║
-║         🎯 Computer Vision Object Detection with ZenML 🎯            ║
-║                                                                      ║
-╚══════════════════════════════════════════════════════════════════════╝
+        print("""
+🎯 Computer Vision Object Detection with ZenML
 
-This example demonstrates end-to-end computer vision pipelines with ZenML,
-including training, inference, and deployment as an HTTP service.
+USAGE:
+  python run.py --train --samples 50 --epochs 3
+  python run.py --predict --image path/to/image.jpg
+  zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
 
-📚 USAGE:
+OPTIONS:
+  --train                         Train YOLO model on COCO dataset
+  --predict                       Run inference on an image
+  --image PATH                    Image path or URL (default: ultralytics bus.jpg)
+  --samples N                     COCO samples for training (default: 50)
+  --epochs N                      Training epochs (default: 1)
+  --model NAME                    YOLO model (default: yolov8n.pt)
+  --confidence FLOAT              Detection threshold (default: 0.25)
+  --disable-fiftyone-analysis     Skip FiftyOne for faster training
 
-  1️⃣  Train a model:
-     python run.py --train --samples 50 --epochs 3
-
-  2️⃣  Run batch inference:
-     python run.py --predict --image path/to/image.jpg
-
-  3️⃣  Deploy as HTTP service:
-     zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
-
-  4️⃣  Use the web interface:
-     Open http://localhost:8000 in your browser
-
-  5️⃣  Test the API:
-     curl -X POST http://localhost:8000/invoke \\
-       -H "Content-Type: application/json" \\
-       -d '{"parameters": {"image_path": "https://ultralytics.com/images/bus.jpg"}}'
-
-🔧 OPTIONS:
-
-  --train                Train a YOLO model on COCO dataset
-  --predict              Run inference on an image
-  --image PATH/URL       Image path or URL (for prediction)
-  --samples N            Number of COCO samples for training (default: 50)
-  --epochs N             Training epochs (default: 3)
-  --model NAME           YOLO model (default: yolov8n.pt)
-  --confidence FLOAT     Detection confidence threshold (default: 0.25)
-
-📖 For more information, see README.md
-"""
-        )
+See README.md for more details.
+""")
 
 
 if __name__ == "__main__":
     main()
-

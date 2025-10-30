@@ -18,9 +18,9 @@
 
 from typing import Any, Dict
 
-from pipelines.hooks import cleanup_model, init_model
 from steps import run_detection
 
+from pipelines.hooks import cleanup_model, init_model
 from zenml import pipeline
 from zenml.config import (
     CORSConfig,

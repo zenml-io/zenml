@@ -98,4 +98,3 @@ def cleanup_model() -> None:
     logger.info("Cleaning up YOLO model resources")
     # YOLO models don't require explicit cleanup, but this hook is available
     # if needed (e.g., closing file handles, releasing GPU memory, etc.)
-

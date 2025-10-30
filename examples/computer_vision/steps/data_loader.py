@@ -67,10 +67,16 @@ def load_coco_dataset(
         max_samples=max_samples,
         dataset_name=dataset_name,
         shuffle=True,
+        persistent=True,  # Ensure dataset is persisted to MongoDB
     )
 
     logger.info(f"Loaded {len(dataset)} samples from COCO dataset")
     logger.info(f"Dataset info: {dataset}")
+
+    # Ensure dataset is persisted
+    dataset.persistent = True
+    dataset.save()
+    logger.info(f"Dataset '{dataset_name}' persisted to FiftyOne database")
 
     # Export dataset to YOLO format for training
     # This creates a directory structure that YOLO expects
@@ -109,4 +115,3 @@ def load_coco_dataset(
     # 2. Make it available to subsequent steps in other pods
     # 3. Download it to a temp location when loaded
     return export_dir, dataset_name
-
