@@ -13,14 +13,39 @@
 #  permissions and limitations under the License.
 """Datadog log store flavor."""
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Dict, Type
+
+from pydantic import Field, SecretStr
 
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
+from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
 
-if TYPE_CHECKING:
-    pass
+
+
+class DatadogLogStoreConfig(OtelLogStoreConfig):
+    """Configuration for Datadog log store.
+
+    This extends OtelLogStoreConfig with Datadog-specific settings.
+
+    Attributes:
+        api_key: Datadog API key for log ingestion.
+        site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
+        additional_tags: Additional tags to add to all logs.
+    """
+
+    api_key: SecretStr = Field(
+        description="Datadog API key for log ingestion",
+    )
+    site: str = Field(
+        default="datadoghq.com",
+        description="Datadog site (e.g., datadoghq.com, datadoghq.eu)",
+    )
+    additional_tags: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional tags to add to all logs",
+    )
 
 
 class DatadogLogStoreFlavor(Flavor):

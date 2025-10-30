@@ -40,7 +40,6 @@ from zenml.logger import (
 )
 from zenml.models import (
     LogsRequest,
-    LogsResponse,
     PipelineSnapshotResponse,
 )
 from zenml.utils.io_utils import sanitize_remote_path

@@ -16,12 +16,10 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
-from pydantic import Field
-
-from zenml.log_stores.base_log_store import BaseLogStore, BaseLogStoreConfig
+from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.logger import get_logger, get_storage_log_level, logging_handlers
 from zenml.utils.string_utils import random_str
 
@@ -33,59 +31,6 @@ if TYPE_CHECKING:
     from zenml.models import LogsResponse
 
 logger = get_logger(__name__)
-
-
-class OtelLogStoreConfig(BaseLogStoreConfig):
-    """Configuration for OpenTelemetry log store.
-
-    Attributes:
-        service_name: Name of the service (defaults to "zenml").
-        service_version: Version of the service.
-        deployment_environment: Deployment environment (e.g., "production").
-        max_queue_size: Maximum queue size for batch processor.
-        schedule_delay_millis: Delay between batch exports in milliseconds.
-        max_export_batch_size: Maximum batch size for exports.
-        endpoint: Optional OTLP endpoint URL (for HTTP/gRPC exporters).
-        headers: Optional headers for OTLP exporter.
-        insecure: Whether to use insecure connection for OTLP.
-    """
-
-    service_name: str = Field(
-        default="zenml",
-        description="Name of the service for telemetry",
-    )
-    service_version: str = Field(
-        default="1.0.0",
-        description="Version of the service",
-    )
-    deployment_environment: str = Field(
-        default="production",
-        description="Deployment environment",
-    )
-    max_queue_size: int = Field(
-        default=2048,
-        description="Maximum queue size for batch log processor",
-    )
-    schedule_delay_millis: int = Field(
-        default=1000,
-        description="Export interval in milliseconds",
-    )
-    max_export_batch_size: int = Field(
-        default=512,
-        description="Maximum batch size for exports",
-    )
-    endpoint: Optional[str] = Field(
-        default=None,
-        description="OTLP endpoint URL",
-    )
-    headers: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Headers for OTLP exporter",
-    )
-    insecure: bool = Field(
-        default=False,
-        description="Whether to use insecure connection",
-    )
 
 
 class OtelLogStore(BaseLogStore):

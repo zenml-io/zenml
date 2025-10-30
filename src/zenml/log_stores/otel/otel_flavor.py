@@ -13,11 +13,61 @@
 #  permissions and limitations under the License.
 """OpenTelemetry log store flavor."""
 
-from typing import Type
+from typing import Dict, Optional, Type
+
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.stack.flavor import Flavor
+
+
+class OtelLogStoreConfig(BaseLogStoreConfig):
+    """Configuration for OpenTelemetry log store.
+
+    Attributes:
+        service_name: Name of the service (defaults to "zenml").
+        service_version: Version of the service.
+        deployment_environment: Deployment environment (e.g., "production").
+        max_queue_size: Maximum queue size for batch processor.
+        schedule_delay_millis: Delay between batch exports in milliseconds.
+        max_export_batch_size: Maximum batch size for exports.
+        endpoint: Optional OTLP endpoint URL (for HTTP/gRPC exporters).
+        headers: Optional headers for OTLP exporter.
+        insecure: Whether to use insecure connection for OTLP.
+    """
+    service_name: str = Field(
+        default="zenml",
+        description="Name of the service for telemetry",
+    )
+    service_version: str = Field(
+        default="1.0.0",
+        description="Version of the service",
+    )
+    max_queue_size: int = Field(
+        default=2048,
+        description="Maximum queue size for batch log processor",
+    )
+    schedule_delay_millis: int = Field(
+        default=1000,
+        description="Export interval in milliseconds",
+    )
+    max_export_batch_size: int = Field(
+        default=512,
+        description="Maximum batch size for exports",
+    )
+    endpoint: Optional[str] = Field(
+        default=None,
+        description="OTLP endpoint URL",
+    )
+    headers: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Headers for OTLP exporter",
+    )
+    insecure: bool = Field(
+        default=False,
+        description="Whether to use insecure connection",
+    )
 
 
 class OtelLogStoreFlavor(Flavor):
@@ -57,6 +107,7 @@ class OtelLogStoreFlavor(Flavor):
         Returns:
             The URL to the flavor logo.
         """
+        # TODO: Add a logo for the OpenTelemetry log store
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/log_store/otel.png"
 
     @property
@@ -75,8 +126,6 @@ class OtelLogStoreFlavor(Flavor):
         Returns:
             The config class.
         """
-        from zenml.log_stores.otel.otel_log_store import OtelLogStoreConfig
-
         return OtelLogStoreConfig
 
     @property

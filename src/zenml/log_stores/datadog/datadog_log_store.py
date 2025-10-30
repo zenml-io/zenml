@@ -16,12 +16,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from pydantic import Field, SecretStr
-
-from zenml.log_stores.otel.otel_log_store import (
-    OtelLogStore,
-    OtelLogStoreConfig,
-)
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -31,30 +26,6 @@ if TYPE_CHECKING:
     from zenml.models import LogsResponse
 
 logger = get_logger(__name__)
-
-
-class DatadogLogStoreConfig(OtelLogStoreConfig):
-    """Configuration for Datadog log store.
-
-    This extends OtelLogStoreConfig with Datadog-specific settings.
-
-    Attributes:
-        api_key: Datadog API key for log ingestion.
-        site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
-        additional_tags: Additional tags to add to all logs.
-    """
-
-    api_key: SecretStr = Field(
-        description="Datadog API key for log ingestion",
-    )
-    site: str = Field(
-        default="datadoghq.com",
-        description="Datadog site (e.g., datadoghq.com, datadoghq.eu)",
-    )
-    additional_tags: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Additional tags to add to all logs",
-    )
 
 
 class DatadogLogExporter:
@@ -77,8 +48,7 @@ class DatadogLogExporter:
             site: Datadog site domain.
             additional_tags: Additional tags to add to all logs.
         """
-        self.api_key = api_key
-        self.endpoint = f"https://http-intake.logs.{site}/v1/input"
+
         self.headers = {
             "DD-API-KEY": api_key,
             "Content-Type": "application/json",
