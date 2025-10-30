@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Datadog log store flavor."""
 
-from typing import Dict, Type
+from typing import Type
 
 from pydantic import Field, SecretStr
 
@@ -31,7 +31,6 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
     Attributes:
         api_key: Datadog API key for log ingestion.
         site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
-        additional_tags: Additional tags to add to all logs.
     """
 
     api_key: SecretStr = Field(
@@ -40,10 +39,6 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
     site: str = Field(
         default="datadoghq.com",
         description="Datadog site (e.g., datadoghq.com, datadoghq.eu)",
-    )
-    additional_tags: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Additional tags to add to all logs",
     )
 
 

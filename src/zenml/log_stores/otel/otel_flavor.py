@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """OpenTelemetry log store flavor."""
 
-from typing import Dict, Optional, Type
+from typing import Type
 
 from pydantic import Field
 
@@ -41,10 +41,6 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
         default="zenml",
         description="Name of the service for telemetry",
     )
-    service_version: str = Field(
-        default="1.0.0",
-        description="Version of the service",
-    )
     max_queue_size: int = Field(
         default=2048,
         description="Maximum queue size for batch log processor",
@@ -56,18 +52,6 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
     max_export_batch_size: int = Field(
         default=512,
         description="Maximum batch size for exports",
-    )
-    endpoint: Optional[str] = Field(
-        default=None,
-        description="OTLP endpoint URL",
-    )
-    headers: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Headers for OTLP exporter",
-    )
-    insecure: bool = Field(
-        default=False,
-        description="Whether to use insecure connection",
     )
 
 

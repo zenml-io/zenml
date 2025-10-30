@@ -14,22 +14,23 @@
 """Datadog log store implementation."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
+import requests
+from opentelemetry.sdk._logs import LogData
+from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
+
+from zenml.enums import LoggingLevels
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
-
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs.export import LogExporter
-
-    from zenml.logging.step_logging import LogEntry
-    from zenml.models import LogsResponse
+from zenml.logging.step_logging import LogEntry
+from zenml.models import LogsResponse
 
 logger = get_logger(__name__)
 
 
-class DatadogLogExporter:
+class DatadogLogExporter(LogExporter):
     """Custom log exporter that sends logs to Datadog's HTTP intake API.
 
     This exporter transforms OpenTelemetry log records into Datadog's format
@@ -40,23 +41,20 @@ class DatadogLogExporter:
         self,
         api_key: str,
         site: str = "datadoghq.com",
-        additional_tags: Optional[Dict[str, str]] = None,
     ):
         """Initialize the Datadog log exporter.
 
         Args:
             api_key: Datadog API key.
             site: Datadog site domain.
-            additional_tags: Additional tags to add to all logs.
         """
-
+        self.endpoint = f"https://http-intake.logs.{site}/v1/input"
         self.headers = {
             "DD-API-KEY": api_key,
             "Content-Type": "application/json",
         }
-        self.additional_tags = additional_tags or {}
 
-    def export(self, batch: List[Any]) -> Any:
+    def export(self, batch: List[LogData]) -> Any:
         """Export a batch of log records to Datadog.
 
         Args:
@@ -65,21 +63,6 @@ class DatadogLogExporter:
         Returns:
             LogExportResult indicating success or failure.
         """
-        try:
-            import requests
-            from opentelemetry.sdk._logs.export import LogExportResult
-        except ImportError:
-            logger.error(
-                "Required packages not installed. Install with: "
-                "pip install requests opentelemetry-sdk"
-            )
-            from opentelemetry.sdk._logs.export import LogExportResult
-
-            return LogExportResult.FAILURE
-
-        if not batch:
-            return LogExportResult.SUCCESS
-
         logs = []
         for log_data in batch:
             log_record = log_data.log_record
@@ -95,16 +78,11 @@ class DatadogLogExporter:
                 log_attrs = dict(log_record.attributes)
 
             # Combine attributes with additional tags
-            all_attrs = {**resource_attrs, **log_attrs, **self.additional_tags}
+            all_attrs = {**resource_attrs, **log_attrs}
 
             # Build Datadog log entry
             log_entry = {
                 "message": str(log_record.body),
-                "ddsource": "zenml",
-                "service": resource_attrs.get("service.name", "zenml"),
-                "hostname": resource_attrs.get(
-                    "service.instance.id", "unknown"
-                ),
             }
 
             # Add severity if available
@@ -184,7 +162,6 @@ class DatadogLogStore(OtelLogStore):
         return DatadogLogExporter(
             api_key=self.config.api_key.get_secret_value(),
             site=self.config.site,
-            additional_tags=self.config.additional_tags,
         )
 
     def fetch(
@@ -209,16 +186,6 @@ class DatadogLogStore(OtelLogStore):
         Returns:
             List of log entries from Datadog.
         """
-        try:
-            import requests
-        except ImportError:
-            logger.error(
-                "requests package not installed. Install with: pip install requests"
-            )
-            return []
-
-        from zenml.logging.step_logging import LogEntry
-
         # Build query
         query_parts = [
             f"service:{self.config.service_name}",

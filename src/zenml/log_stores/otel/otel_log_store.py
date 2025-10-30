@@ -94,7 +94,7 @@ class OtelLogStore(BaseLogStore):
         otel_resource = Resource.create(
             {
                 "service.name": self.config.service_name,
-                "service.version": self.config.service_version,
+                "service.version": "0.91.0",  # TODO: Fetch this
                 "zenml.log_id": str(log_request.id),
             }
         )
