@@ -31,6 +31,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import ZENML_PRO_API_KEY_PREFIX
 from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
@@ -333,7 +334,7 @@ def connect_to_pro_server(
     login = False
     credentials_store = get_credentials_store()
 
-    if api_key and api_key.startswith("ZENPROKEY_"):
+    if api_key and api_key.startswith(ZENML_PRO_API_KEY_PREFIX):
         if not pro_server:
             raise ValueError(
                 "You must provide the name of the ZenML Pro server when "
@@ -875,7 +876,9 @@ def login(
             type=str,
             hide_input=True,
         )
-        if api_key_value and api_key_value.startswith("ZENPROKEY_"):
+        if api_key_value and api_key_value.startswith(
+            ZENML_PRO_API_KEY_PREFIX
+        ):
             pro = True
 
     if pro:
