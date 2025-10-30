@@ -583,9 +583,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Returns:
             Sanitized key that is valid as a Kubernetes env var name.
-
-        Raises:
-            DeployerError: If the key cannot be sanitized to a valid name.
         """
         original_key = key
 

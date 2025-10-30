@@ -346,6 +346,9 @@ def _if_not_exists(create_fn: FuncT) -> FuncT:
 
     Returns:
         Wrapped Kubernetes function.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
 
     def create_if_not_exists(*args: Any, **kwargs: Any) -> None:
@@ -1462,6 +1465,9 @@ def get_deployment(
 
     Returns:
         The Deployment object, or None if not found.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         return retry_on_api_exception(
@@ -1531,6 +1537,9 @@ def delete_deployment(
         name: Name of the deployment.
         namespace: Kubernetes namespace.
         propagation_policy: Deletion propagation policy.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         retry_on_api_exception(
@@ -1565,6 +1574,9 @@ def get_service(
 
     Returns:
         The Service object, or None if not found.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         return retry_on_api_exception(
@@ -1632,6 +1644,9 @@ def delete_service(
         core_api: Kubernetes Core V1 API client.
         name: Name of the service.
         namespace: Kubernetes namespace.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         retry_on_api_exception(
@@ -1730,6 +1745,9 @@ def get_ingress(
 
     Returns:
         The Ingress object, or None if not found.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         return retry_on_api_exception(
@@ -1797,6 +1815,9 @@ def delete_ingress(
         networking_api: Kubernetes Networking V1 API client.
         name: Name of the ingress.
         namespace: Kubernetes namespace.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         retry_on_api_exception(
@@ -1827,6 +1848,10 @@ def get_hpa(
 
     Returns:
         The HPA object, or None if not found.
+
+    Raises:
+        ApiException: If an API error occurs.
+
     """
     try:
         return retry_on_api_exception(
@@ -1850,6 +1875,9 @@ def create_or_update_hpa(
         autoscaling_api: Kubernetes Autoscaling V2 API client.
         namespace: Kubernetes namespace.
         hpa_manifest: The HPA manifest as a dictionary.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     hpa_name = hpa_manifest.get("metadata", {}).get("name")
     if not hpa_name:
@@ -1892,6 +1920,9 @@ def delete_hpa(
         autoscaling_api: Kubernetes Autoscaling V2 API client.
         name: Name of the HPA.
         namespace: Kubernetes namespace.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
     try:
         retry_on_api_exception(
