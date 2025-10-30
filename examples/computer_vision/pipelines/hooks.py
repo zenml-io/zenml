@@ -29,7 +29,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def init_model(model_tag: str = "production") -> YOLO:
+def init_model(model_name: str = "yolo-model") -> YOLO:
     """Initialize and load the YOLO model at deployment startup.
 
     This function runs once when the deployment starts and loads the YOLO model
@@ -37,7 +37,7 @@ def init_model(model_tag: str = "production") -> YOLO:
     The model stays "warm" throughout the deployment lifetime.
 
     Args:
-        model_tag: Tag to filter model artifacts (default: "production")
+        model_name: Name of the model artifact to load
 
     Returns:
         Loaded YOLO model instance
@@ -45,42 +45,24 @@ def init_model(model_tag: str = "production") -> YOLO:
     Raises:
         Exception: If model loading fails
     """
-    logger.info(f"Initializing YOLO model with tag: {model_tag}")
+    logger.info(f"Initializing YOLO model: {model_name}")
 
     try:
         client = Client()
-
-        # Load the latest model artifact tagged with the specified tag
-        # This retrieves the trained model from the training pipeline
-        model_artifacts = client.list_artifact_versions(
-            name="yolo-model",
-            tag=model_tag,
-            sort_by="created",
-            size=1,
+        model_artifact = client.get_artifact_version(
+            name_id_or_prefix=model_name
         )
-
-        if not model_artifacts.items:
-            raise ValueError(
-                f"No model artifacts found with name 'yolo-model' and tag '{model_tag}'. "
-                f"Train a model first with: python run.py --train"
-            )
-
-        model_artifact = model_artifacts.items[0]
-
-        # Load the YOLO model directly
-        # The UltralyticsYOLOMaterializer handles converting the stored weights to a YOLO object
         model: YOLO = model_artifact.load()
 
         logger.info(
             f"Successfully loaded YOLO model version: {model_artifact.version}"
         )
-        logger.info(f"Model tags: {[tag.name for tag in model_artifact.tags]}")
         logger.info("Model is warm and ready for inference!")
 
         return model
 
     except Exception as e:
-        logger.error(f"Failed to initialize model with tag '{model_tag}': {e}")
+        logger.error(f"Failed to initialize model '{model_name}': {e}")
         logger.error(
             "Make sure you've trained the model with: python run.py --train"
         )
@@ -96,5 +78,3 @@ def cleanup_model() -> None:
     Note: The cleanup hook takes no arguments according to ZenML's hook specification.
     """
     logger.info("Cleaning up YOLO model resources")
-    # YOLO models don't require explicit cleanup, but this hook is available
-    # if needed (e.g., closing file handles, releasing GPU memory, etc.)

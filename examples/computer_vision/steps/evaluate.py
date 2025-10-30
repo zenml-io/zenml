@@ -17,7 +17,7 @@
 """Model evaluation step using YOLO validation."""
 
 from pathlib import Path
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Union
 
 from ultralytics import YOLO
 
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 def evaluate_model(
     trained_model: YOLO,
     dataset_path: Path,
-) -> Annotated[Dict[str, float], "metrics"]:
+) -> Annotated[Dict[str, Union[float, str]], "metrics"]:
     """Evaluate the trained YOLO model on the validation dataset.
 
     This step runs validation on the trained model to get performance metrics

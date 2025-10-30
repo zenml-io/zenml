@@ -26,7 +26,7 @@ def list_available_datasets():
     for i, name in enumerate(datasets, 1):
         dataset = fo.load_dataset(name)
         sample_count = len(dataset)
-        has_predictions = "predictions" in dataset.get_field_schema()
+        has_predictions = "predictions" in dataset.get_field_schema().keys()
         pred_status = (
             "✅ Has predictions" if has_predictions else "❌ No predictions"
         )
@@ -43,7 +43,7 @@ def launch_dataset(dataset_name: str):
         logger.info(f"Samples: {len(dataset)}")
 
         # Check if it has predictions
-        has_predictions = "predictions" in dataset.get_field_schema()
+        has_predictions = "predictions" in dataset.get_field_schema().keys()
         if has_predictions:
             logger.info(
                 "✅ Dataset has predictions - you can compare with ground truth!"

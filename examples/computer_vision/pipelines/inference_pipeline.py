@@ -57,7 +57,7 @@ deployment_settings = DeploymentSettings(
         allow_origins=["*"],
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
-        allow_credentials=True,
+        allow_credentials=False,  # Cannot be True with wildcard origins
     ),
     secure_headers=SecureHeadersConfig(
         csp=CUSTOM_CSP,

@@ -152,19 +152,28 @@ def analyze_predictions_with_fiftyone(
 
     logger.info(f"Comparing {gt_field} vs {pred_field}")
 
-    # Evaluate predictions against ground truth
-    results = dataset.evaluate_detections(
+    # Evaluate predictions against ground truth at IoU 0.5
+    results_50 = dataset.evaluate_detections(
         pred_field,
         gt_field=gt_field,
-        eval_key="eval",
+        eval_key="eval_50",
+        iou=0.5,
+        compute_mAP=True,
+    )
+
+    # Evaluate at IoU 0.75 for mAP_75
+    results_75 = dataset.evaluate_detections(
+        pred_field,
+        gt_field=gt_field,
+        eval_key="eval_75",
+        iou=0.75,
         compute_mAP=True,
     )
 
     # Extract key metrics
     analysis = {
-        "mAP": results.mAP(),
-        "mAP_50": results.mAP(),  # mAP is computed at 0.5 IoU by default
-        "mAP_75": None,  # Would need separate evaluation at 0.75 IoU
+        "mAP_50": results_50.mAP(),
+        "mAP_75": results_75.mAP(),
         "num_samples": len(dataset),
         "num_ground_truth": len(
             dataset.values(f"{gt_field}.detections", unwind=True)
@@ -174,10 +183,10 @@ def analyze_predictions_with_fiftyone(
         ),
     }
 
-    # Get overall precision and recall
+    # Get overall precision and recall (from IoU 0.5 evaluation)
     try:
-        analysis["precision"] = results.precision()
-        analysis["recall"] = results.recall()
+        analysis["precision"] = results_50.precision()
+        analysis["recall"] = results_50.recall()
     except Exception as e:
         logger.warning(f"Could not get precision/recall: {e}")
         analysis["precision"] = None
@@ -195,7 +204,8 @@ def analyze_predictions_with_fiftyone(
                     class_results = class_view.evaluate_detections(
                         pred_field,
                         gt_field=gt_field,
-                        eval_key=f"eval_{class_name}",
+                        eval_key=f"eval_50_{class_name}",
+                        iou=0.5,
                         compute_mAP=True,
                     )
                     class_metrics[class_name] = {
@@ -238,33 +248,27 @@ def analyze_predictions_with_fiftyone(
         analysis["confidence_stats"] = {"num_detections": 0}
 
     # Find samples with false positives and false negatives
+    # The eval attribute is attached to prediction labels, not as a top-level field
     try:
-        if "eval" in dataset.get_field_schema():
-            fp_view = dataset.filter_labels("eval", F("eval") == "fp")
-            analysis["samples_with_most_fps"] = len(fp_view)
+        fp_view = dataset.filter_labels(pred_field, F("eval_50") == "fp")
+        analysis["samples_with_most_fps"] = len(fp_view)
 
-            fn_view = dataset.filter_labels("eval", F("eval") == "fn")
-            analysis["samples_with_most_fns"] = len(fn_view)
-        else:
-            logger.warning(
-                "Evaluation field 'eval' not found, skipping FP/FN analysis"
-            )
-            analysis["samples_with_most_fps"] = 0
-            analysis["samples_with_most_fns"] = 0
+        fn_view = dataset.filter_labels(pred_field, F("eval_50") == "fn")
+        analysis["samples_with_most_fns"] = len(fn_view)
     except Exception as e:
         logger.warning(f"Could not compute FP/FN analysis: {e}")
         analysis["samples_with_most_fps"] = 0
         analysis["samples_with_most_fns"] = 0
 
     logger.info("Analysis complete!")
-    mAP = analysis.get("mAP")
     mAP_50 = analysis.get("mAP_50")
+    mAP_75 = analysis.get("mAP_75")
 
-    mAP_str = f"{mAP:.3f}" if mAP is not None else "N/A"
     mAP_50_str = f"{mAP_50:.3f}" if mAP_50 is not None else "N/A"
+    mAP_75_str = f"{mAP_75:.3f}" if mAP_75 is not None else "N/A"
 
-    logger.info(f"Overall mAP: {mAP_str}")
     logger.info(f"mAP@0.5: {mAP_50_str}")
+    logger.info(f"mAP@0.75: {mAP_75_str}")
     logger.info(f"Per-class performance:")
 
     for class_name, metrics in class_metrics.items():
@@ -327,14 +331,13 @@ def create_fiftyone_dashboard_session(
         f"Low confidence predictions ({len(low_conf_view)})"
     )
 
-    # View 4: False positives
+    # View 4: False positives and false negatives
     try:
-        if "eval" in dataset.get_field_schema():
-            fp_view = dataset.filter_labels("eval", F("eval") == "fp")
-            views["false_positives"] = f"False positives ({len(fp_view)})"
+        fp_view = dataset.filter_labels("predictions", F("eval_50") == "fp")
+        views["false_positives"] = f"False positives ({len(fp_view)})"
 
-            fn_view = dataset.filter_labels("eval", F("eval") == "fn")
-            views["false_negatives"] = f"False negatives ({len(fn_view)})"
+        fn_view = dataset.filter_labels("predictions", F("eval_50") == "fn")
+        views["false_negatives"] = f"False negatives ({len(fn_view)})"
     except Exception as e:
         logger.warning(f"Could not create FP/FN views: {e}")
 
@@ -343,8 +346,8 @@ def create_fiftyone_dashboard_session(
         "total_samples": len(dataset),
         "available_views": views,
         "analysis_summary": {
-            "mAP": analysis_results.get("mAP", "N/A"),
             "mAP_50": analysis_results.get("mAP_50", "N/A"),
+            "mAP_75": analysis_results.get("mAP_75", "N/A"),
             "num_predictions": analysis_results.get("num_predictions", 0),
         },
         "instructions": [

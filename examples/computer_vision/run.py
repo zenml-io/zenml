@@ -121,7 +121,7 @@ def main() -> None:
 
         # Run training pipeline
         enable_fiftyone_analysis = not args.disable_fiftyone_analysis
-        run = object_detection_training_pipeline(
+        object_detection_training_pipeline(
             max_samples=args.samples,
             epochs=args.epochs,
             model_name=args.model,
@@ -129,20 +129,18 @@ def main() -> None:
             enable_fiftyone_analysis=enable_fiftyone_analysis,
         )
 
-        # Get model artifact info
+        # Get latest model version for logging
         client = Client()
-        pipeline_run = client.get_pipeline_run(run.id)
-        model_outputs = pipeline_run.steps["train_yolo_model"].outputs[
-            "yolo-model"
-        ]
-        model_output = (
-            model_outputs[0]
-            if isinstance(model_outputs, list)
-            else model_outputs
-        )
+        try:
+            latest_model = client.get_artifact_version(
+                name_id_or_prefix="yolo-model"
+            )
+            model_version = latest_model.version
+        except Exception:
+            model_version = "unknown"
 
         logger.info(
-            f"\n✅ Training complete! Model: {model_output.version} (tagged as 'production')"
+            f"\n✅ Training complete! Model version: {model_version} (tagged as 'production')"
         )
 
         if enable_fiftyone_analysis:
@@ -161,22 +159,19 @@ def main() -> None:
     elif args.predict:
         logger.info(f"Running inference on {args.image}...")
 
-        # Run inference pipeline
-        run = object_detection_inference_pipeline(
+        # Run inference pipeline - returns the detection results directly
+        results = object_detection_inference_pipeline(
             image_path=args.image,
             confidence_threshold=args.confidence,
         )
 
-        # Get results
-        client = Client()
-        pipeline_run = client.get_pipeline_run(run.id)
-        results = pipeline_run.steps["run_detection"].output.load()
-
-        if "error" in results:
+        if isinstance(results, dict) and "error" in results:
             logger.error(f"Error: {results['error']}")
             return
 
-        logger.info(f"\n🎯 Detected {results['num_detections']} objects:")
+        logger.info(
+            f"\n🎯 Detected {results.get('num_detections', 0)} objects:"
+        )
         for i, detection in enumerate(results.get("detections", []), 1):
             logger.info(
                 f"  {i}. {detection['label']} ({detection['confidence']:.1%})"

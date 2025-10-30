@@ -118,11 +118,11 @@ computer_vision/
 This example features a [custom ZenML materializer](https://docs.zenml.io/how-to/types-and-materializers/materializers) for YOLO models that handles model weight serialization and artifact versioning, ensuring seamless model tracking across pipeline runs. ZenML automatically manages and version-controls model artifacts, making them accessible throughout your pipeline lifecycle.
 
 - 📖 [ZenML Materializers Documentation](https://docs.zenml.io/concepts/artifacts/materializers)
-- 📄 [View YOLO model materializer code](./materializers/yolo_materializer.py)
+- 📄 [View YOLO model materializer code](./materializers/ultralytics_materializer.py)
 
 ### 🎨 Customization
 
-**Use a different dataset**: To use your own dataset (in YOLO format), modify the dataset loading logic in [`run.py`](./run.py) and/or the relevant pipeline step (e.g., `load_coco_dataset` in [`pipelines/data_loader.py`](./pipelines/data_loader.py)) to point to your images, labels, and `data.yaml`.
+**Use a different dataset**: To use your own dataset (in YOLO format), modify the dataset loading logic in [`run.py`](./run.py) and/or the relevant pipeline step (e.g., `load_coco_dataset` in [`steps/data_loader.py`](./steps/data_loader.py)) to point to your images, labels, and `data.yaml`.
 
 **Use a larger model**: For better accuracy, use `yolov8s.pt`, `yolov8m.pt`, `yolov8l.pt`, or `yolov8x.pt`:
 

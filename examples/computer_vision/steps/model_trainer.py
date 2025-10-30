@@ -82,7 +82,7 @@ def train_yolo_model(
 
     # Train the model
     # Ultralytics handles all the training details and returns the results
-    results = model.train(
+    model.train(
         data=str(data_yaml),
         epochs=epochs,
         imgsz=image_size,

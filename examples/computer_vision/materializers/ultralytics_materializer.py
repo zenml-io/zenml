@@ -21,7 +21,7 @@ and allowing them to be reconstructed in subsequent pipeline steps.
 """
 
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar, Optional, Tuple, Type
 
 from ultralytics import YOLO
 
@@ -41,6 +41,35 @@ class UltralyticsYOLOMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (YOLO,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     MODEL_FILENAME: ClassVar[str] = "model.pt"
+
+    def _get_best_weights_path(self, model: YOLO) -> Optional[str]:
+        """Get the best weights path from a trained YOLO model.
+
+        Args:
+            model: The YOLO model
+
+        Returns:
+            Path to the best weights if available, None otherwise
+        """
+        # Prefer trained best weights from trainer
+        if (
+            hasattr(model, "trainer")
+            and model.trainer
+            and hasattr(model.trainer, "best")
+        ):
+            best_path = getattr(model.trainer, "best", None)
+            if best_path and os.path.exists(best_path):
+                return best_path
+
+        # Fallback to ckpt_path if it exists
+        if (
+            hasattr(model, "ckpt_path")
+            and model.ckpt_path
+            and os.path.exists(model.ckpt_path)
+        ):
+            return model.ckpt_path
+
+        return None
 
     def load(self, data_type: Type[YOLO]) -> YOLO:
         """Load a YOLO model from the artifact store.
@@ -78,14 +107,10 @@ class UltralyticsYOLOMaterializer(BaseMaterializer):
         Args:
             model: The YOLO model to save
         """
-        # Get the model weights file path
-        # YOLO models have a 'ckpt_path' attribute pointing to their weights
-        if hasattr(model, "ckpt_path") and model.ckpt_path:
-            source_weights_path = model.ckpt_path
-        elif hasattr(model, "model_name"):
-            # For models loaded from pretrained weights
-            source_weights_path = model.model_name
-        else:
+        # Try to get the best weights path from trained model
+        source_weights_path = self._get_best_weights_path(model)
+
+        if not source_weights_path:
             # Fallback: export the model to get weights
             with self.get_temporary_directory(delete_at_exit=True) as temp_dir:
                 temp_weights = os.path.join(temp_dir, self.MODEL_FILENAME)
@@ -93,12 +118,15 @@ class UltralyticsYOLOMaterializer(BaseMaterializer):
                 model.save(temp_weights)
                 source_weights_path = temp_weights
 
+        if not source_weights_path or not os.path.exists(source_weights_path):
+            raise FileNotFoundError(
+                "Could not locate or create YOLO model weights. "
+                "Ensure the model has been trained or weights are available."
+            )
+
+        # Ensure destination directory exists
+        fileio.makedirs(self.uri, exist_ok=True)
+
         # Copy weights to artifact store
         destination_path = os.path.join(self.uri, self.MODEL_FILENAME)
-
-        if os.path.exists(source_weights_path):
-            fileio.copy(source_weights_path, destination_path)
-        else:
-            raise FileNotFoundError(
-                f"Could not find YOLO model weights at {source_weights_path}"
-            )
+        fileio.copy(source_weights_path, destination_path)

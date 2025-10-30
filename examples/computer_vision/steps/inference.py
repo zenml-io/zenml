@@ -23,9 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import cv2
-from ultralytics import YOLO
 
-from zenml import step
+from zenml import get_step_context, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -58,31 +57,43 @@ def run_detection(
     """
     logger.info(f"Running detection on image: {image_path}")
 
-    # Get the pre-loaded model from the deployment hook
-    # This is passed via the pipeline context
-    from zenml.client import Client
-
-    # Load the latest production model artifact
-    # The UltralyticsYOLOMaterializer handles loading the YOLO model
     try:
-        client = Client()
-        model_artifacts = client.list_artifact_versions(
-            name="yolo-model",
-            tag="production",
-            sort_by="created",
-            size=1,
-        )
+        # Get the pre-loaded model from pipeline state (warm path)
+        step_context = get_step_context()
+        model = step_context.pipeline_state
 
-        if not model_artifacts.items:
-            raise ValueError(
-                "No production model found. Train a model first with: python run.py --train"
+        if model is None:
+            # Fallback: load model from artifact store (cold path)
+            logger.info(
+                "Model not found in pipeline state, loading from artifact store..."
             )
+            from zenml.client import Client
 
-        model_artifact = model_artifacts.items[0]
-        model: YOLO = model_artifact.load()
-        logger.info(
-            f"Loaded YOLO model from artifact: {model_artifact.version}"
-        )
+            client = Client()
+            model_artifact = client.get_artifact_version(
+                name_id_or_prefix="yolo-model"
+            )
+            model = model_artifact.load()
+            logger.info(
+                f"Loaded YOLO model from artifact (cold path): {model_artifact.version}"
+            )
+            model_version = model_artifact.version
+        else:
+            logger.info(
+                "Using pre-warmed model from pipeline state (fast path)"
+            )
+            # For warm models, try to get version info
+            try:
+                from zenml.client import Client
+
+                client = Client()
+                latest_artifact = client.get_artifact_version(
+                    name_id_or_prefix="yolo-model"
+                )
+                model_version = latest_artifact.version
+            except:
+                model_version = "unknown"
+
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
         return {
@@ -211,7 +222,7 @@ def run_detection(
             "num_detections": len(detections),
             "annotated_image_path": str(annotated_image_path.absolute()),
             "image_size": {"width": image_width, "height": image_height},
-            "model_version": model_artifact.version,
+            "model_version": model_version,
             "original_image_base64": original_base64,
             "annotated_image_base64": annotated_base64,
         }
