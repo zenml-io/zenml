@@ -1,4 +1,4 @@
-# Train and deploy a YOLO Object Detection
+# Train and deploy YOLO Object Detection with ZenML, Ultralytics, and FiftyOne
 
 Learn how to build a production-ready computer vision pipeline with YOLOv8, FiftyOne dataset management, and deploy it as a warm HTTP service with an interactive web interface. This example showcases the complete **FiftyOne annotation workflow loop**: export → train → predict → import → analyze → visualize.
 
