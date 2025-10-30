@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """ZenML logging handler."""
 
+import os
 import re
 from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
 from typing import (
+    TYPE_CHECKING,
     Any,
     Optional,
     Type,
@@ -41,7 +43,11 @@ from zenml.models import (
     LogsResponse,
     PipelineSnapshotResponse,
 )
+from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
 
 logger = get_logger(__name__)
 
@@ -57,6 +63,44 @@ PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
 MAX_ENTRIES_PER_REQUEST = 20000
 # Maximum size of a single log message in bytes (5KB)
 DEFAULT_MESSAGE_SIZE = 5 * 1024
+
+
+def prepare_logs_uri(
+    artifact_store: "BaseArtifactStore",
+    log_id: UUID,
+) -> str:
+    """Generates and prepares a URI for the log file or folder for a step.
+
+    Args:
+        artifact_store: The artifact store on which the artifact will be stored.
+        log_id: The ID of the logs entity
+
+    Returns:
+        The URI of the log storage (file or folder).
+    """
+    logs_base_uri = os.path.join(artifact_store.path, "logs")
+
+    if not artifact_store.exists(logs_base_uri):
+        artifact_store.makedirs(logs_base_uri)
+
+    if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+        logs_uri = os.path.join(logs_base_uri, log_id)
+        if artifact_store.exists(logs_uri):
+            logger.warning(
+                f"Logs directory {logs_uri} already exists! Removing old log directory..."
+            )
+            artifact_store.rmtree(logs_uri)
+
+        artifact_store.makedirs(logs_uri)
+    else:
+        logs_uri = os.path.join(logs_base_uri, f"{log_id}{LOGS_EXTENSION}")
+        if artifact_store.exists(logs_uri):
+            logger.warning(
+                f"Logs file {logs_uri} already exists! Removing old log file..."
+            )
+            artifact_store.remove(logs_uri)
+
+    return sanitize_remote_path(logs_uri)
 
 
 class LogEntry(BaseModel):
@@ -146,11 +190,17 @@ class LoggingContext:
         from zenml.log_stores.default.default_log_store import DefaultLogStore
 
         if isinstance(self.log_store, DefaultLogStore):
+            log_id = uuid4()
+            artifact_store = Client().active_stack.artifact_store
+
             return LogsRequest(
-                id=uuid4(),
+                id=log_id,
                 source=self.source,
-                uri=self.log_store.uri,
-                artifact_store_id=self.log_store.artifact_store_id,
+                uri=prepare_logs_uri(
+                    artifact_store=artifact_store,
+                    log_id=log_id,
+                ),
+                artifact_store_id=artifact_store.id,
             )
         else:
             return LogsRequest(
@@ -193,7 +243,6 @@ class LoggingContext:
 def setup_orchestrator_logging(
     run_id: UUID,
     snapshot: "PipelineSnapshotResponse",
-    logs_response: Optional[LogsResponse] = None,
 ) -> Any:
     """Set up logging for an orchestrator environment.
 
@@ -208,6 +257,7 @@ def setup_orchestrator_logging(
     Returns:
         The logs context
     """
+    # TODO: we need to establish the connection here again.
     try:
         logging_enabled = True
 

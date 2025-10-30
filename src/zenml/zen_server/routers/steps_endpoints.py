@@ -21,7 +21,6 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     LOGS,
-    MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
@@ -30,6 +29,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.log_stores import fetch_logs
 from zenml.logging.step_logging import (
+    MAX_ENTRIES_PER_REQUEST,
     LogEntry,
 )
 from zenml.models import (

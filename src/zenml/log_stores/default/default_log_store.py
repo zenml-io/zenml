@@ -61,7 +61,6 @@ from zenml.models import (
     LogsRequest,
     LogsResponse,
 )
-from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -91,44 +90,6 @@ def remove_ansi_escape_codes(text: str) -> str:
         the version of the input string where the escape codes are removed.
     """
     return ansi_escape.sub("", text)
-
-
-def prepare_logs_uri(
-    artifact_store: "BaseArtifactStore",
-    log_id: UUID,
-) -> str:
-    """Generates and prepares a URI for the log file or folder for a step.
-
-    Args:
-        artifact_store: The artifact store on which the artifact will be stored.
-        log_id: The ID of the logs entity
-
-    Returns:
-        The URI of the log storage (file or folder).
-    """
-    logs_base_uri = os.path.join(artifact_store.path, "logs")
-
-    if not artifact_store.exists(logs_base_uri):
-        artifact_store.makedirs(logs_base_uri)
-
-    if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-        logs_uri = os.path.join(logs_base_uri, log_id)
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs directory {logs_uri} already exists! Removing old log directory..."
-            )
-            artifact_store.rmtree(logs_uri)
-
-        artifact_store.makedirs(logs_uri)
-    else:
-        logs_uri = os.path.join(logs_base_uri, f"{log_id}{LOGS_EXTENSION}")
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs file {logs_uri} already exists! Removing old log file..."
-            )
-            artifact_store.remove(logs_uri)
-
-    return sanitize_remote_path(logs_uri)
 
 
 def fetch_log_records(
@@ -253,7 +214,7 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
     )
 
 
-class PipelineLogsStorage:
+class LogsStorage:
     """Helper class which buffers and stores logs to a given URI using a background thread."""
 
     def __init__(
@@ -696,14 +657,8 @@ class DefaultLogStore(BaseLogStore):
             *args: Positional arguments for the base class.
             **kwargs: Keyword arguments for the base class.
         """
-        client = Client()
-        self._artifact_store = client.active_stack.artifact_store
-
-        self.storage: Optional["PipelineLogsStorage"] = None
+        self.storage: Optional["LogsStorage"] = None
         self.handler: Optional["ArtifactStoreHandler"] = None
-
-        self.uri: Optional[str] = None
-        self.artifact_store_id: Optional[UUID] = None
 
         self._original_root_level: Optional[int] = None
 
@@ -716,24 +671,16 @@ class DefaultLogStore(BaseLogStore):
         """
         return cast(DefaultLogStoreConfig, self._config)
 
-    def activate(
-        self,
-        log_request: "LogsRequest",
-    ) -> None:
+    def activate(self, log_request: "LogsRequest") -> None:
         """Activate log collection to the artifact store.
 
         Args:
             log_request: The log request model.
         """
-        logs_uri = prepare_logs_uri(
-            log_id=log_request.id,
-            artifact_store=self._artifact_store,
-        )
-
         # Create storage and handler
-        self.storage = PipelineLogsStorage(
-            logs_uri=logs_uri,
-            artifact_store=self._artifact_store,
+        self.storage = LogsStorage(
+            logs_uri=log_request.uri,
+            artifact_store=Client().active_stack.artifact_store,
         )
         self.handler = ArtifactStoreHandler(self.storage)
 
