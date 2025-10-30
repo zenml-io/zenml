@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Kubernetes deployer flavor."""
 
-from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import Field
@@ -24,23 +23,13 @@ from zenml.deployers.base_deployer import (
     BaseDeployerFlavor,
     BaseDeployerSettings,
 )
+from zenml.enums import KubernetesServiceType
 from zenml.integrations.kubernetes import KUBERNETES_DEPLOYER_FLAVOR
-from zenml.integrations.kubernetes.kubernetes_component_mixin import (
-    KubernetesComponentConfig,
-)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.deployers import KubernetesDeployer
-
-
-class ServiceType(str, Enum):
-    """Kubernetes Service types."""
-
-    LOAD_BALANCER = "LoadBalancer"
-    NODE_PORT = "NodePort"
-    CLUSTER_IP = "ClusterIP"
 
 
 class KubernetesDeployerSettings(BaseDeployerSettings):
@@ -51,11 +40,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         service_type: Type of Kubernetes Service (LoadBalancer, NodePort, ClusterIP).
         service_port: Port to expose on the service.
         node_port: Specific NodePort (only for NodePort service type).
-        cpu_request: CPU resource request (e.g., "100m").
-        cpu_limit: CPU resource limit (e.g., "1000m").
-        memory_request: Memory resource request (e.g., "256Mi").
-        memory_limit: Memory resource limit (e.g., "2Gi").
-        replicas: Number of pod replicas.
         image_pull_policy: Kubernetes image pull policy.
         labels: Labels to apply to all resources.
         annotations: Annotations to apply to pod resources.
@@ -69,12 +53,11 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     namespace: Optional[str] = Field(
         default=None,
         description="Kubernetes namespace for deployments. "
-        "If not provided, the namespace will be determined by the orchestrator. "
-        "If the namespace is not provided, the deployer will use the namespace "
-        "specified in the stack component configuration.",
+        "If not provided, uses the `kubernetes_namespace` from the deployer "
+        "component configuration (defaults to 'zenml').",
     )
-    service_type: ServiceType = Field(
-        default=ServiceType.LOAD_BALANCER,
+    service_type: KubernetesServiceType = Field(
+        default=KubernetesServiceType.LOAD_BALANCER,
         description=(
             "Type of Kubernetes Service: LoadBalancer, NodePort, or ClusterIP. "
             "LoadBalancer is recommended for production (requires cloud provider support). "
@@ -91,26 +74,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         default=None,
         description="Specific port on each node (NodePort type only). "
         "Must be in range 30000-32767. If not specified, Kubernetes assigns one.",
-    )
-    cpu_request: str = Field(
-        default="100m",
-        description="Minimum CPU units to reserve (e.g., '100m' = 0.1 CPU core).",
-    )
-    cpu_limit: str = Field(
-        default="1000m",
-        description="Maximum CPU units allowed (e.g., '1000m' = 1 CPU core).",
-    )
-    memory_request: str = Field(
-        default="256Mi",
-        description="Minimum memory to reserve (e.g., '256Mi').",
-    )
-    memory_limit: str = Field(
-        default="2Gi",
-        description="Maximum memory allowed (e.g., '2Gi').",
-    )
-    replicas: int = Field(
-        default=1,
-        description="Number of pod replicas to run.",
     )
     image_pull_policy: str = Field(
         default="IfNotPresent",
@@ -258,14 +221,74 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     )
 
 
-class KubernetesDeployerConfig(
-    BaseDeployerConfig, KubernetesDeployerSettings, KubernetesComponentConfig
-):
+class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
     """Configuration for the Kubernetes deployer.
 
     This config combines deployer-specific settings with Kubernetes
     component configuration (context, namespace, in-cluster mode).
     """
+
+    incluster: bool = Field(
+        False,
+        description="If `True`, the deployer will run inside the "
+        "same cluster in which it itself is running. This requires the client "
+        "to run in a Kubernetes pod itself. If set, the `kubernetes_context` "
+        "config option is ignored. If the stack component is linked to a "
+        "Kubernetes service connector, this field is ignored.",
+    )
+
+    kubernetes_context: Optional[str] = Field(
+        None,
+        description="Name of a Kubernetes context to run deployments in. "
+        "If the stack component is linked to a Kubernetes service connector, "
+        "this field is ignored. Otherwise, it is mandatory.",
+    )
+
+    kubernetes_namespace: str = Field(
+        "zenml-deployments",
+        description="Default Kubernetes namespace for deployments. "
+        "Can be overridden per-deployment using the `namespace` setting. "
+        "Defaults to 'zenml-deployments'.",
+    )
+
+    local: bool = Field(
+        False,
+        description="If `True`, the deployer will assume it is connected to a "
+        "local kubernetes cluster and will perform additional validations.",
+    )
+
+    @property
+    def is_local(self) -> bool:
+        """Checks if this is a local Kubernetes cluster.
+
+        Returns:
+            True if using a local Kubernetes cluster, False otherwise.
+        """
+        # Check if context indicates a local cluster
+        if self.kubernetes_context:
+            local_context_indicators = [
+                "k3d-",
+                "kind-",
+                "minikube",
+                "docker-desktop",
+                "colima",
+                "rancher-desktop",
+            ]
+            context_lower = self.kubernetes_context.lower()
+            return any(
+                indicator in context_lower
+                for indicator in local_context_indicators
+            )
+        return self.local
+
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        Returns:
+            True if this config is for a remote component, False otherwise.
+        """
+        return not self.is_local
 
 
 class KubernetesDeployerFlavor(BaseDeployerFlavor):

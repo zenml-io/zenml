@@ -27,10 +27,12 @@ from typing import (
 )
 
 from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
 from kubernetes import watch as k8s_watch
 from kubernetes.client.rest import ApiException
 from pydantic import BaseModel, Field
 
+from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.deployers.containerized_deployer import (
     ContainerizedDeployer,
 )
@@ -49,9 +51,6 @@ from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
-)
-from zenml.integrations.kubernetes.kubernetes_component_mixin import (
-    KubernetesComponentMixin,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
     add_pod_settings,
@@ -121,10 +120,254 @@ class KubernetesDeploymentMetadata(BaseModel):
             )
 
 
-class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
+class KubernetesDeployer(ContainerizedDeployer):
     """Deployer for running pipelines in Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+
+    def get_kube_client(
+        self, incluster: Optional[bool] = None
+    ) -> k8s_client.ApiClient:
+        """Get authenticated Kubernetes client.
+
+        This method handles:
+        - In-cluster authentication
+        - Service connector authentication
+        - Local kubeconfig authentication
+        - Client caching and expiration
+
+        Args:
+            incluster: Whether to use in-cluster config. Overrides
+                the config setting if provided.
+
+        Returns:
+            Authenticated Kubernetes API client.
+
+        Raises:
+            RuntimeError: If connector behaves unexpectedly.
+        """
+        if incluster is None:
+            incluster = self.config.incluster
+
+        if incluster:
+            kube_utils.load_kube_config(
+                incluster=incluster,
+                context=self.config.kubernetes_context,
+            )
+            self._k8s_client = k8s_client.ApiClient()
+            return self._k8s_client
+
+        connector_has_expired = self.connector_has_expired()
+        if self._k8s_client and not connector_has_expired:
+            return self._k8s_client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, k8s_client.ApiClient):
+                raise RuntimeError(
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
+                )
+            self._k8s_client = client
+        else:
+            kube_utils.load_kube_config(
+                incluster=incluster,
+                context=self.config.kubernetes_context,
+            )
+            self._k8s_client = k8s_client.ApiClient()
+
+        return self._k8s_client
+
+    @property
+    def k8s_core_api(self) -> k8s_client.CoreV1Api:
+        """Get Kubernetes Core V1 API client.
+
+        Returns:
+            Kubernetes Core V1 API client.
+        """
+        return k8s_client.CoreV1Api(self.get_kube_client())
+
+    @property
+    def k8s_apps_api(self) -> k8s_client.AppsV1Api:
+        """Get Kubernetes Apps V1 API client.
+
+        Returns:
+            Kubernetes Apps V1 API client.
+        """
+        return k8s_client.AppsV1Api(self.get_kube_client())
+
+    @property
+    def k8s_batch_api(self) -> k8s_client.BatchV1Api:
+        """Get Kubernetes Batch V1 API client.
+
+        Returns:
+            Kubernetes Batch V1 API client.
+        """
+        return k8s_client.BatchV1Api(self.get_kube_client())
+
+    @property
+    def k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
+        """Get Kubernetes RBAC Authorization V1 API client.
+
+        Returns:
+            Kubernetes RBAC Authorization V1 API client.
+        """
+        return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
+
+    @property
+    def k8s_networking_api(self) -> k8s_client.NetworkingV1Api:
+        """Get Kubernetes Networking V1 API client.
+
+        Returns:
+            Kubernetes Networking V1 API client.
+        """
+        return k8s_client.NetworkingV1Api(self.get_kube_client())
+
+    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+        """Get list of configured Kubernetes contexts and the active context.
+
+        Returns:
+            Tuple of (context_names, active_context_name).
+
+        Raises:
+            RuntimeError: If Kubernetes configuration cannot be loaded.
+        """
+        try:
+            contexts, active_context = k8s_config.list_kube_config_contexts()
+        except k8s_config.config_exception.ConfigException as e:
+            raise RuntimeError(
+                "Could not load the Kubernetes configuration"
+            ) from e
+
+        context_names = [c["name"] for c in contexts]
+        active_context_name = active_context["name"]
+        return context_names, active_context_name
+
+    def ensure_namespace_exists(self, namespace: str) -> None:
+        """Ensure a Kubernetes namespace exists.
+
+        Args:
+            namespace: The namespace name.
+
+        Raises:
+            RuntimeError: If namespace creation fails due to permissions
+                or other non-conflict errors.
+        """
+        try:
+            kube_utils.create_namespace(
+                core_api=self.k8s_core_api,
+                namespace=namespace,
+            )
+            logger.debug(f"Created namespace '{namespace}'.")
+        except ApiException as e:
+            # 409 Conflict means namespace already exists, which is fine
+            if e.status == 409:
+                logger.debug(f"Namespace '{namespace}' already exists.")
+            else:
+                # Re-raise RBAC/permission errors or other API failures
+                raise RuntimeError(
+                    f"Failed to ensure namespace '{namespace}' exists: {e}. "
+                    f"This may be due to insufficient permissions (RBAC) or "
+                    f"cluster configuration issues."
+                ) from e
+
+    def create_or_get_service_account(
+        self,
+        service_account_name: str,
+        namespace: str,
+        role_binding_name: str = "zenml-edit",
+    ) -> str:
+        """Create or get a Kubernetes service account with edit permissions.
+
+        Args:
+            service_account_name: Name of the service account.
+            namespace: Kubernetes namespace.
+            role_binding_name: Name of the role binding.
+
+        Returns:
+            The service account name.
+        """
+        kube_utils.create_edit_service_account(
+            core_api=self.k8s_core_api,
+            rbac_api=self.k8s_rbac_api,
+            service_account_name=service_account_name,
+            namespace=namespace,
+            role_binding_name=role_binding_name,
+        )
+        return service_account_name
+
+    def validate_kubernetes_context(
+        self, stack: "Stack", component_type: str
+    ) -> Tuple[bool, str]:
+        """Validate Kubernetes context configuration.
+
+        Args:
+            stack: The stack to validate.
+            component_type: Type of component (e.g., "orchestrator", "deployer").
+
+        Returns:
+            Tuple of (is_valid, error_message).
+        """
+        container_registry = stack.container_registry
+        assert container_registry is not None
+
+        kubernetes_context = self.config.kubernetes_context
+        msg = f"'{self.name}' Kubernetes {component_type} error: "
+
+        if not self.connector:
+            if kubernetes_context:
+                try:
+                    contexts, active_context = self.get_kubernetes_contexts()
+
+                    if kubernetes_context not in contexts:
+                        return False, (
+                            f"{msg}could not find a Kubernetes context named "
+                            f"'{kubernetes_context}' in the local "
+                            "Kubernetes configuration. Please make sure that "
+                            "the Kubernetes cluster is running and that the "
+                            "kubeconfig file is configured correctly. To list "
+                            "all configured contexts, run:\n\n"
+                            "  `kubectl config get-contexts`\n"
+                        )
+                    if kubernetes_context != active_context:
+                        logger.warning(
+                            f"{msg}the Kubernetes context '{kubernetes_context}' "
+                            f"configured for the Kubernetes {component_type} is not "
+                            f"the same as the active context in the local Kubernetes "
+                            f"configuration. To set the active context, run:\n\n"
+                            f"  `kubectl config use-context {kubernetes_context}`\n"
+                        )
+                except Exception:
+                    # If we can't load kube config, that's okay - might be in-cluster
+                    pass
+            elif self.config.incluster:
+                # No service connector or kubernetes_context needed when
+                # running from within a Kubernetes cluster
+                pass
+            else:
+                return False, (
+                    f"{msg}you must either link this {component_type} to a "
+                    "Kubernetes service connector (see the 'zenml "
+                    f"{component_type} connect' CLI command), explicitly set "
+                    "the `kubernetes_context` attribute to the name of the "
+                    "Kubernetes config context pointing to the cluster "
+                    "where you would like to run operations, or set the "
+                    "`incluster` attribute to `True`."
+                )
+
+        # If the component is remote, the container registry must also be remote
+        if not self.config.is_local and container_registry.config.is_local:
+            return False, (
+                f"{msg}the Kubernetes {component_type} is configured to "
+                "run in a remote Kubernetes cluster but the "
+                f"'{container_registry.name}' container registry URI "
+                f"'{container_registry.config.uri}' points to a local "
+                f"container registry. Please ensure that you use a remote "
+                f"container registry with a remote Kubernetes {component_type}."
+            )
+
+        return True, ""
 
     @property
     def config(self) -> KubernetesDeployerConfig:
@@ -392,6 +635,95 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
 
         return env_vars
 
+    def _convert_resource_settings_to_k8s_format(
+        self,
+        resource_settings: ResourceSettings,
+    ) -> Tuple[Dict[str, str], Dict[str, str], int]:
+        """Convert ResourceSettings to Kubernetes resource format.
+
+        Args:
+            resource_settings: The resource settings from pipeline configuration.
+
+        Returns:
+            Tuple of (requests, limits, replicas) in Kubernetes format.
+            - requests: Dict with 'cpu' and 'memory' keys for resource requests
+            - limits: Dict with 'cpu' and 'memory' keys for resource limits
+            - replicas: Number of replicas
+        """
+        # Default resource values
+        cpu_request = "100m"
+        cpu_limit = "1000m"
+        memory_request = "256Mi"
+        memory_limit = "2Gi"
+
+        # Convert CPU if specified
+        if resource_settings.cpu_count is not None:
+            cpu_value = resource_settings.cpu_count
+            # Kubernetes accepts fractional CPUs as millicores or as decimal
+            # We'll use string format for consistency
+            if cpu_value < 1:
+                # Convert to millicores for values < 1
+                cpu_str = f"{int(cpu_value * 1000)}m"
+            else:
+                # For >= 1, use the number directly or as millicores
+                if cpu_value == int(cpu_value):
+                    cpu_str = str(int(cpu_value))
+                else:
+                    cpu_str = f"{int(cpu_value * 1000)}m"
+
+            # Use same value for request and limit if only one is specified
+            cpu_request = cpu_str
+            cpu_limit = cpu_str
+
+        # Convert memory if specified
+        if resource_settings.memory is not None:
+            # ResourceSettings uses formats like "2GB", "512Mi" etc.
+            # Kubernetes prefers Mi, Gi format
+            memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
+            if memory_value is not None:
+                if memory_value >= 1024:
+                    # Convert to Gi for readability
+                    memory_str = f"{memory_value / 1024:.0f}Gi"
+                else:
+                    memory_str = f"{memory_value:.0f}Mi"
+
+                # Use same value for request and limit
+                memory_request = memory_str
+                memory_limit = memory_str
+
+        # Determine replicas from min_replicas/max_replicas
+        # For Kubernetes Deployment (non-autoscaling), we use a fixed replica count
+        # If min_replicas == max_replicas, use that value
+        # Otherwise, use min_replicas as the baseline (HPA would handle max)
+        replicas = 1  # Default
+        if resource_settings.min_replicas is not None:
+            if resource_settings.max_replicas is not None and (
+                resource_settings.min_replicas
+                == resource_settings.max_replicas
+            ):
+                # Fixed scaling
+                replicas = resource_settings.min_replicas
+            else:
+                # Variable scaling - use min_replicas as baseline
+                # (HPA would be needed for actual autoscaling)
+                replicas = resource_settings.min_replicas
+        elif resource_settings.max_replicas is not None:
+            # Only max specified - use it as fixed value
+            if resource_settings.max_replicas > 0:
+                replicas = resource_settings.max_replicas
+
+        requests = {
+            "cpu": cpu_request,
+            "memory": memory_request,
+        }
+
+        limits = {
+            "cpu": cpu_limit,
+            "memory": memory_limit,
+        }
+
+        return requests, limits, replicas
+
     def _build_deployment_manifest(
         self,
         deployment: DeploymentResponse,
@@ -399,6 +731,9 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
         environment: Dict[str, str],
         secrets: Dict[str, str],
         settings: KubernetesDeployerSettings,
+        resource_requests: Dict[str, str],
+        resource_limits: Dict[str, str],
+        replicas: int,
     ) -> k8s_client.V1Deployment:
         """Build Kubernetes Deployment manifest.
 
@@ -408,6 +743,9 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
             environment: Environment variables.
             secrets: Secret environment variables.
             settings: Deployer settings.
+            resource_requests: Resource requests (cpu, memory).
+            resource_limits: Resource limits (cpu, memory).
+            replicas: Number of pod replicas.
 
         Returns:
             Kubernetes Deployment manifest.
@@ -442,14 +780,8 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
                 )
             ],
             resources=k8s_client.V1ResourceRequirements(
-                requests={
-                    "cpu": settings.cpu_request,
-                    "memory": settings.memory_request,
-                },
-                limits={
-                    "cpu": settings.cpu_limit,
-                    "memory": settings.memory_limit,
-                },
+                requests=resource_requests,
+                limits=resource_limits,
             ),
             liveness_probe=k8s_client.V1Probe(
                 http_get=k8s_client.V1HTTPGetAction(
@@ -512,7 +844,7 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
                 labels=labels,
             ),
             spec=k8s_client.V1DeploymentSpec(
-                replicas=settings.replicas,
+                replicas=replicas,
                 selector=k8s_client.V1LabelSelector(
                     match_labels={
                         "zenml-deployment-id": str(deployment.id),
@@ -1251,6 +1583,15 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
             KubernetesDeployerSettings,
             self.get_settings(snapshot),
         )
+
+        # Get resource settings from pipeline configuration
+        resource_settings = snapshot.pipeline_configuration.resource_settings
+
+        # Convert resource settings to Kubernetes format
+        resource_requests, resource_limits, replicas = (
+            self._convert_resource_settings_to_k8s_format(resource_settings)
+        )
+
         namespace = self._get_namespace(deployment)
         deployment_name = self._get_deployment_name(deployment)
         service_name = self._get_service_name(deployment)
@@ -1289,7 +1630,14 @@ class KubernetesDeployer(ContainerizedDeployer, KubernetesComponentMixin):
 
             # Build manifests
             deployment_manifest = self._build_deployment_manifest(
-                deployment, image, environment, secrets, settings
+                deployment,
+                image,
+                environment,
+                secrets,
+                settings,
+                resource_requests,
+                resource_limits,
+                replicas,
             )
             service_manifest = self._build_service_manifest(
                 deployment, settings

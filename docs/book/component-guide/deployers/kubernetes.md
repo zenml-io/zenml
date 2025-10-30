@@ -8,17 +8,22 @@ The Kubernetes deployer is a [deployer](./) flavor provided by the Kubernetes
 integration. It provisions ZenML pipeline deployments as long-running services
 inside a Kubernetes cluster.
 
+{% hint style="warning" %}
+This component is only meant to be used within the context of a [remote ZenML installation](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML setup may lead to unexpected behavior!
+{% endhint %}
+
 ## When to use it
 
 Reach for the Kubernetes deployer when you need:
 
-- **Production-grade serving** with managed Kubernetes clusters (EKS, GKE, AKS,
+* you're already using Kubernetes.
+* **Production-grade serving** with managed Kubernetes clusters (EKS, GKE, AKS,
   etc.) or self-hosted clusters.
-- **Multi-replica deployments** and load-balanced access to your pipeline
+* **Multi-replica deployments** and load-balanced access to your pipeline
   service.
-- **Fine-grained pod customization** (resources, tolerations, secrets,
+* **Fine-grained pod customization** (resources, tolerations, secrets,
   affinity, custom command/args, probes).
-- **Cluster networking integrations** (e.g., exposing services via
+* **Cluster networking integrations** (e.g., exposing services via
   LoadBalancer, NodePort, or internal ClusterIP plus your own Ingress/mesh).
 
 If you only need local development or single-node deployments, consider the
@@ -47,11 +52,10 @@ If you only need local development or single-node deployments, consider the
    zenml deployer register k8s-deployer \
      --flavor=kubernetes \
      --kubernetes_namespace=zenml-deployments \
-     --kubernetes_context=minikube
 
    zenml stack register prod-stack \
-     -o <orchestrator> -a <artifact-store> \
-     -c <container-registry> -i <image-builder> \
+     -o default -a default \
+     -c dockerhub \
      -D k8s-deployer \
      --set
    ```
@@ -102,19 +106,127 @@ def greeting_pipeline(name: str = "ZenML") -> str:
     return greet(name=name)
 ```
 
+## Configuration reference
+
+The deployer combines two configuration layers:
+
+- `KubernetesDeployerConfig` (component-level configuration):
+  - `kubernetes_context`: kubeconfig context to use when no connector is
+    linked. Required for out-of-cluster clients.
+  - `incluster`: set to `True` if the client runs inside the target cluster.
+  - `kubernetes_namespace`: default namespace for deployments (default
+    `zenml-deployments`).
+- `KubernetesDeployerSettings` (pipeline/deployment-level overrides):
+  - **Networking**
+    - `namespace`: override namespace per deployment.
+    - `service_type`: `LoadBalancer`, `NodePort`, or `ClusterIP`.
+    - `service_port`: exposed container port (default `8000`).
+    - `node_port`: explicit NodePort (30000–32767) when using `NodePort`.
+    - `session_affinity`: set to `ClientIP` for sticky sessions.
+    - `load_balancer_ip`: pre-allocated LoadBalancer IP.
+    - `load_balancer_source_ranges`: CIDR ranges allowed to reach the service.
+    - `service_annotations`: attach provider-specific annotations (e.g. ALB,
+      firewall rules).
+  - **Ingress** (for production HTTP/HTTPS access)
+    - `ingress_enabled`: create an Ingress resource (default `False`).
+    - `ingress_class`: ingress controller class name (e.g., `nginx`, `traefik`).
+    - `ingress_host`: hostname for the Ingress (e.g., `app.example.com`).
+    - `ingress_path`: path prefix (default `/`).
+    - `ingress_path_type`: `Prefix`, `Exact`, or `ImplementationSpecific`.
+    - `ingress_tls_enabled`: enable TLS/HTTPS (default `False`).
+    - `ingress_tls_secret_name`: Kubernetes Secret containing TLS certificate.
+    - `ingress_annotations`: controller-specific annotations (rewrite rules, rate limits, etc.).
+  - **Image & command**
+    - `image_pull_policy`: `IfNotPresent`, `Always`, or `Never`.
+    - `image_pull_secrets`: reference Kubernetes image pull secrets.
+    - `command` / `args`: override container entrypoint/arguments.
+  - **Health probes**
+    - `readiness_probe_*` and `liveness_probe_*`: tune probe timings, thresholds,
+      and timeouts.
+  - **Authorization & customization**
+    - `service_account_name`: run pods under a specific service account.
+    - `labels` / `annotations`: attach metadata to all managed resources.
+    - `pod_settings`: use
+      [`KubernetesPodSettings`](../../orchestrators/kubernetes.md#customize-pod-specs)
+      to mount volumes, set node selectors, tolerations, affinity rules, etc.
+
+## Resource Configuration
+
+You can specify the resource and scaling requirements for your pipeline deployment using the `ResourceSettings` class at the pipeline level:
+
+```python
+from zenml import pipeline, step
+from zenml.config import ResourceSettings
+
+
+@step
+def greet(name: str) -> str:
+    return f"Hello {name}!"
+
+
+resource_settings = ResourceSettings(
+    cpu_count=2,           # 2 CPU cores
+    memory="4GB",          # 4 GB RAM
+    min_replicas=1,        # Minimum 1 pod
+    max_replicas=5,        # Maximum 5 pods (for autoscaling)
+)
+
+@pipeline(settings={"resources": resource_settings})
+def greeting_pipeline(name: str = "ZenML") -> str:
+    return greet(name=name)
+```
+
+If resource settings are not specified, the default values are:
+* `cpu_count` defaults to 1 CPU core
+* `memory` defaults to 2 GiB
+* `min_replicas` defaults to 1
+* `max_replicas` defaults to 1 (fixed scaling)
+
+### Resource Mapping
+
+The Kubernetes deployer converts `ResourceSettings` to Kubernetes resource requests and limits:
+
+- **CPU**: The `cpu_count` value is used for both requests and limits. For values < 1, it's converted to millicores (e.g., 0.5 = "500m"). For values >= 1, integer values are used directly.
+- **Memory**: The `memory` value is used for both requests and limits. ResourceSettings accepts formats like "2GB", "512Mi", etc. The deployer converts these to Kubernetes-native formats (Mi, Gi).
+- **Replicas**: 
+  - If `min_replicas` == `max_replicas`, a fixed number of pods is deployed
+  - If they differ, `min_replicas` is used as the baseline (Horizontal Pod Autoscaler would be needed for actual autoscaling)
+  - If only `max_replicas` is specified, it's used as a fixed value
+
+### Additional Resource Settings
+
+ResourceSettings also supports autoscaling configuration (though you'll need to configure HPA separately):
+
+- `autoscaling_metric`: Metric to scale on ("cpu", "memory", "concurrency", or "rps")
+- `autoscaling_target`: Target value for the metric (e.g., 70.0 for 70% CPU)
+- `max_concurrency`: Maximum concurrent requests per pod
+
+## RBAC requirements
+
+The deployer (either via the service connector or the client credentials) must
+be able to:
+
+- Read, create, patch, and delete `Deployments`, `Services`, and `Pods` in the
+  target namespace.
+- Create, patch, and delete `Secrets` (used for environment variables and
+  auth keys).
+- Create, patch, and delete `Ingresses` when `ingress_enabled=True`
+  (requires permissions on `networking.k8s.io/v1/Ingress` resources).
+- Create namespaces when they do not exist, unless you pre-create them.
+- If you rely on automatic service-account provisioning, create service
+  accounts and role bindings (`create`, `patch`, `get`, `list` on
+  `ServiceAccount` and `RoleBinding`).
+- Read cluster nodes when using the `NodePort` service type (to expose IPs).
+
+For production environments we recommend creating a dedicated service account
+with minimal permissions scoped to the deployer namespace.
+
 ## Using Ingress Controllers
 
 For production deployments, you can configure an Ingress resource to provide
 HTTP/HTTPS access with custom domains, TLS termination, and advanced routing.
 The Kubernetes deployer supports standard Kubernetes Ingress resources and works
 with popular ingress controllers like nginx, Traefik, and cloud provider solutions.
-
-### Prerequisites
-
-- An ingress controller must be installed in your cluster (e.g., nginx-ingress,
-  Traefik, AWS ALB Ingress Controller)
-- For TLS: a Kubernetes Secret containing your TLS certificate and key must exist
-- DNS records should point your domain to the ingress controller's load balancer
 
 ### Basic Ingress Configuration
 
@@ -234,107 +346,12 @@ settings={
 }
 ```
 
-### Complete Example
-
-See the [weather_agent example](https://github.com/zenml-io/zenml/tree/main/examples/weather_agent/k8s_deploy_advanced.yaml)
-for a production-ready configuration with ingress, TLS, and nginx annotations.
-
 ### Limitations
 
 The deployer currently creates standard Kubernetes Ingress resources
 (networking.k8s.io/v1). For service mesh solutions like Istio that use different
 APIs (Gateway/VirtualService), you'll need to create those resources separately
 and use `service_type="ClusterIP"` to expose the service internally.
-
-## Configuration reference
-
-The deployer combines two configuration layers:
-
-- `KubernetesDeployerConfig` (component-level) inherits from
-  `KubernetesComponentConfig`:
-  - `kubernetes_context`: kubeconfig context to use when no connector is
-    linked. Required for out-of-cluster clients.
-  - `incluster`: set to `True` if the client runs inside the target cluster.
-  - `kubernetes_namespace`: default namespace for deployments (default
-    `zenml-deployments`).
-- `KubernetesDeployerSettings` (pipeline/deployment-level overrides):
-  - **Networking**
-    - `namespace`: override namespace per deployment.
-    - `service_type`: `LoadBalancer`, `NodePort`, or `ClusterIP`.
-    - `service_port`: exposed container port (default `8000`).
-    - `node_port`: explicit NodePort (30000–32767) when using `NodePort`.
-    - `session_affinity`: set to `ClientIP` for sticky sessions.
-    - `load_balancer_ip`: pre-allocated LoadBalancer IP.
-    - `load_balancer_source_ranges`: CIDR ranges allowed to reach the service.
-    - `service_annotations`: attach provider-specific annotations (e.g. ALB,
-      firewall rules).
-  - **Ingress** (for production HTTP/HTTPS access)
-    - `ingress_enabled`: create an Ingress resource (default `False`).
-    - `ingress_class`: ingress controller class name (e.g., `nginx`, `traefik`).
-    - `ingress_host`: hostname for the Ingress (e.g., `app.example.com`).
-    - `ingress_path`: path prefix (default `/`).
-    - `ingress_path_type`: `Prefix`, `Exact`, or `ImplementationSpecific`.
-    - `ingress_tls_enabled`: enable TLS/HTTPS (default `False`).
-    - `ingress_tls_secret_name`: Kubernetes Secret containing TLS certificate.
-    - `ingress_annotations`: controller-specific annotations (rewrite rules, rate limits, etc.).
-  - **Resources & scaling**
-    - `replicas`: number of pods (default `1`).
-    - `cpu_request` / `cpu_limit`: container CPU reservations/limits.
-    - `memory_request` / `memory_limit`: container memory reservations/limits.
-  - **Image & command**
-    - `image_pull_policy`: `IfNotPresent`, `Always`, or `Never`.
-    - `image_pull_secrets`: reference Kubernetes image pull secrets.
-    - `command` / `args`: override container entrypoint/arguments.
-  - **Health probes**
-    - `readiness_probe_*` and `liveness_probe_*`: tune probe timings, thresholds,
-      and timeouts.
-  - **Authorization & customization**
-    - `service_account_name`: run pods under a specific service account.
-    - `labels` / `annotations`: attach metadata to all managed resources.
-    - `pod_settings`: use
-      [`KubernetesPodSettings`](../../orchestrators/kubernetes.md#customize-pod-specs)
-      to mount volumes, set node selectors, tolerations, affinity rules, etc.
-
-> ℹ️ The per-deployment settings take precedence over component-level defaults.
-
-## RBAC requirements
-
-The deployer (either via the service connector or the client credentials) must
-be able to:
-
-- Read, create, patch, and delete `Deployments`, `Services`, and `Pods` in the
-  target namespace.
-- Create, patch, and delete `Secrets` (used for environment variables and
-  auth keys).
-- Create, patch, and delete `Ingresses` when `ingress_enabled=True`
-  (requires permissions on `networking.k8s.io/v1/Ingress` resources).
-- Create namespaces when they do not exist, unless you pre-create them.
-- If you rely on automatic service-account provisioning, create service
-  accounts and role bindings (`create`, `patch`, `get`, `list` on
-  `ServiceAccount` and `RoleBinding`).
-- Read cluster nodes when using the `NodePort` service type (to expose IPs).
-
-For production environments we recommend creating a dedicated service account
-with minimal permissions scoped to the deployer namespace.
-
-## Best practices
-
-- **Remote clusters**: ensure the stack's container registry is reachable from
-  the cluster (the deployer validates this).
-- **Ingress for production**: use `ingress_enabled=True` with `ClusterIP` service
-  for production deployments. This provides better control over TLS, custom domains,
-  and advanced routing compared to LoadBalancer.
-- **TLS certificates**: use cert-manager for automatic certificate provisioning
-  and renewal instead of manually managing TLS secrets.
-- **Ingress controller**: ensure your ingress controller is properly installed
-  and configured before enabling ingress. Test with a simple service first.
-- **Secrets**: pipeline secret keys are sanitized to meet Kubernetes
-  environment-variable naming rules. Avoid keys that differ only by special
-  characters or leading digits to prevent collisions.
-- **Namespace management**: either pre-create namespaces and assign RBAC, or
-  allow the deployer to create them automatically.
-- **Monitoring**: rely on the readiness/liveness probe settings to align with
-  your service-level objectives and alerting.
 
 For end-to-end deployment workflows, see the
 [deployment user guide](../../user-guide/production-guide/deployment.md).

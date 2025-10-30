@@ -26,9 +26,6 @@ from pydantic import (
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
-from zenml.integrations.kubernetes.kubernetes_component_mixin import (
-    KubernetesComponentConfig,
-)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -237,12 +234,29 @@ class KubernetesOrchestratorSettings(BaseSettings):
 
 
 class KubernetesOrchestratorConfig(
-    BaseOrchestratorConfig,
-    KubernetesOrchestratorSettings,
-    KubernetesComponentConfig,
+    BaseOrchestratorConfig, KubernetesOrchestratorSettings
 ):
     """Configuration for the Kubernetes orchestrator."""
 
+    incluster: bool = Field(
+        False,
+        description="If `True`, the orchestrator will run the pipeline inside the "
+        "same cluster in which it itself is running. This requires the client "
+        "to run in a Kubernetes pod itself. If set, the `kubernetes_context` "
+        "config option is ignored. If the stack component is linked to a "
+        "Kubernetes service connector, this field is ignored.",
+    )
+    kubernetes_context: Optional[str] = Field(
+        None,
+        description="Name of a Kubernetes context to run pipelines in. "
+        "If the stack component is linked to a Kubernetes service connector, "
+        "this field is ignored. Otherwise, it is mandatory.",
+    )
+    kubernetes_namespace: str = Field(
+        "zenml",
+        description="Name of the Kubernetes namespace to be used. "
+        "If not provided, `zenml` namespace will be used.",
+    )
     local: bool = Field(
         False,
         description="If `True`, the orchestrator will assume it is connected to a "
