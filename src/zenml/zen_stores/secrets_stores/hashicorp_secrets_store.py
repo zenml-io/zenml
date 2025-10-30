@@ -14,7 +14,6 @@
 """HashiCorp Vault Secrets Store implementation."""
 
 from datetime import datetime, timedelta
-from enum import StrEnum
 from typing import (
     Any,
     ClassVar,
@@ -40,6 +39,7 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
