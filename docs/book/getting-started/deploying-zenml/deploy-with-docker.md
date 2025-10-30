@@ -193,9 +193,15 @@ These configuration options are only relevant if you're using Hashicorp Vault as
 
 * **ZENML\_SECRETS\_STORE\_TYPE:** Set this to `hashicorp` in order to set this type of secret store.
 * **ZENML\_SECRETS\_STORE\_VAULT\_ADDR**: The URL of the HashiCorp Vault server to connect to. NOTE: this is the same as setting the `VAULT_ADDR` environment variable.
-* **ZENML\_SECRETS\_STORE\_VAULT\_TOKEN**: The token to use to authenticate with the HashiCorp Vault server. NOTE: this is the same as setting the `VAULT_TOKEN` environment variable.
 * **ZENML\_SECRETS\_STORE\_VAULT\_NAMESPACE**: The Vault Enterprise namespace. Not required for Vault OSS. NOTE: this is the same as setting the `VAULT_NAMESPACE` environment variable.
 * **ZENML\_SECRETS\_STORE\_MOUNT\_POINT**: The mount point to use for the HashiCorp Vault secrets store. If not set, the default value of `secret` will be used.
+* **ZENML\_SECRETS\_STORE\_VAULT\_AUTH_METHOD**: The authentication method to use to authenticate with the HashiCorp Vault server. One of: `token`, `app_role`, `aws`. Defaults to `token` if not set.
+* **ZENML\_SECRETS\_STORE\_VAULT\_AUTH\_MOUNT\_POINT**: The mount point to use for the authentication method. If not set, the default value specific to the authentication method will be used.
+* **ZENML\_SECRETS\_STORE\_VAULT\_TOKEN**: The token to use to authenticate with the HashiCorp Vault server. Mandatory if the authentication method is `token`. NOTE: this is the same as setting the `VAULT_TOKEN` environment variable.
+* **ZENML\_SECRETS\_STORE\_VAULT\_APP\_ROLE\_ID**: The role ID to use for the app role authentication method. Mandatory if the authentication method is `app_role`.
+* **ZENML\_SECRETS\_STORE\_VAULT\_APP\_SECRET\_ID**: The secret ID to use for the app role authentication method. Mandatory if the authentication method is `app_role`.
+* **ZENML\_SECRETS\_STORE\_VAULT\_AWS\_ROLE**: The AWS role to use for the AWS authentication method. Only relevant if the authentication method is `aws`.
+* **ZENML\_SECRETS\_STORE\_VAULT\_AWS\_HEADER\_VALUE**: The AWS header value to use for the AWS authentication method. Only relevant if the authentication method is `aws`.
 * **ZENML\_SECRETS\_STORE\_MAX\_VERSIONS**: The maximum number of secret versions to keep for each Vault secret. If not set, the default value of 1 will be used (only the latest version will be kept).
 {% endtab %}
 
