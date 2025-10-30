@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Datadog log store flavor."""
 
-from typing import TYPE_CHECKING, Dict, Type
+from typing import Dict, Type
 
 from pydantic import Field, SecretStr
 
@@ -21,7 +21,6 @@ from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
-
 
 
 class DatadogLogStoreConfig(OtelLogStoreConfig):

@@ -36,6 +36,7 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
         headers: Optional headers for OTLP exporter.
         insecure: Whether to use insecure connection for OTLP.
     """
+
     service_name: str = Field(
         default="zenml",
         description="Name of the service for telemetry",
