@@ -197,12 +197,15 @@ def build_pod_manifest(
 def add_pod_settings(
     pod_spec: k8s_client.V1PodSpec,
     settings: KubernetesPodSettings,
+    skip_resources: bool = False,
 ) -> None:
     """Updates pod `spec` fields in place if passed in orchestrator settings.
 
     Args:
         pod_spec: Pod spec to update.
         settings: Pod settings to apply.
+        skip_resources: If True, skip applying resource settings. This is useful
+            when resources are already set explicitly on containers.
     """
     if settings.node_selectors:
         pod_spec.node_selector = settings.node_selectors
@@ -215,7 +218,8 @@ def add_pod_settings(
 
     for container in pod_spec.containers:
         assert isinstance(container, k8s_client.V1Container)
-        container._resources = settings.resources
+        if not skip_resources and settings.resources:
+            container._resources = settings.resources
         if settings.volume_mounts:
             if container.volume_mounts:
                 container.volume_mounts.extend(settings.volume_mounts)
@@ -568,9 +572,8 @@ def build_deployment_manifest(
         else None,
     )
 
-    # Apply pod settings if provided
     if pod_settings:
-        add_pod_settings(pod_spec, pod_settings)
+        add_pod_settings(pod_spec, pod_settings, skip_resources=True)
 
     # Pod template labels must include the selector label
     pod_labels = {**labels, "app": deployment_name}

@@ -31,7 +31,6 @@ from kubernetes import watch as k8s_watch
 from kubernetes.client.rest import ApiException
 from pydantic import BaseModel, Field
 
-from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.deployers.containerized_deployer import (
     ContainerizedDeployer,
 )
@@ -52,7 +51,26 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerSettings,
 )
 from zenml.integrations.kubernetes.kube_utils import (
+    build_service_url,
     check_pod_failure_status,
+    convert_resource_settings_to_k8s_format,
+    create_deployment,
+    create_ingress,
+    create_or_update_hpa,
+    create_service,
+    delete_deployment,
+    delete_hpa,
+    delete_ingress,
+    delete_service,
+    get_deployment,
+    get_hpa,
+    get_ingress,
+    get_service,
+    list_pods,
+    service_needs_recreate,
+    update_deployment,
+    update_ingress,
+    update_service,
     wait_for_deployment_ready,
     wait_for_loadbalancer_ip,
     wait_for_service_deletion,
@@ -256,6 +274,15 @@ class KubernetesDeployer(ContainerizedDeployer):
             Kubernetes Networking V1 API client.
         """
         return k8s_client.NetworkingV1Api(self.get_kube_client())
+
+    @property
+    def k8s_autoscaling_api(self) -> k8s_client.AutoscalingV2Api:
+        """Get Kubernetes Autoscaling V2 API client.
+
+        Returns:
+            Kubernetes Autoscaling V2 API client.
+        """
+        return k8s_client.AutoscalingV2Api(self.get_kube_client())
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -492,17 +519,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         name = f"zenml-deployment-{deployment.id}"
         return kube_utils.sanitize_label(name)[:MAX_K8S_NAME_LENGTH]
 
-    def _get_service_name(self, deployment: DeploymentResponse) -> str:
-        """Generate Kubernetes service name.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Service name (same as deployment name).
-        """
-        return self._get_deployment_name(deployment)
-
     def _get_secret_name(self, deployment: DeploymentResponse) -> str:
         """Generate Kubernetes secret name for deployment secrets.
 
@@ -541,29 +557,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             labels.update(settings.labels)
 
         return labels
-
-    def _ensure_namespace(self, namespace: str) -> None:
-        """Ensure namespace exists. Delegates to mixin method.
-
-        Args:
-            namespace: Namespace name.
-        """
-        self.ensure_namespace_exists(namespace)
-
-    def _get_log_context(self, namespace: str) -> str:
-        """Get context string for log messages.
-
-        Args:
-            namespace: Kubernetes namespace.
-
-        Returns:
-            Formatted context string for logging (e.g., "[context=my-cluster, namespace=default]").
-        """
-        context_parts = []
-        if self.config.kubernetes_context:
-            context_parts.append(f"context={self.config.kubernetes_context}")
-        context_parts.append(f"namespace={namespace}")
-        return f"[{', '.join(context_parts)}]"
 
     def _sanitize_secret_key(self, key: str) -> str:
         """Sanitize a secret key to be a valid Kubernetes environment variable name.
@@ -678,107 +671,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return env_vars
 
-    def _convert_resource_settings_to_k8s_format(
-        self,
-        resource_settings: ResourceSettings,
-    ) -> Tuple[Dict[str, str], Dict[str, str], int]:
-        """Convert ResourceSettings to Kubernetes resource format.
-
-        Args:
-            resource_settings: The resource settings from pipeline configuration.
-
-        Returns:
-            Tuple of (requests, limits, replicas) in Kubernetes format.
-            - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
-            - limits: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
-            - replicas: Number of replicas
-
-        Raises:
-            DeployerError: If replica configuration is invalid.
-        """
-        requests: Dict[str, str] = {}
-        limits: Dict[str, str] = {}
-
-        if resource_settings.cpu_count is not None:
-            cpu_value = resource_settings.cpu_count
-            # Convert fractional CPUs to millicores (e.g., 0.5 -> "500m")
-            if cpu_value < 1:
-                cpu_str = f"{int(cpu_value * 1000)}m"
-            else:
-                if cpu_value == int(cpu_value):
-                    cpu_str = str(int(cpu_value))
-                else:
-                    cpu_str = f"{int(cpu_value * 1000)}m"
-
-            requests["cpu"] = cpu_str
-            limits["cpu"] = cpu_str
-
-        if resource_settings.memory is not None:
-            memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
-            if memory_value is not None:
-                # Use Gi only for clean conversions to avoid precision loss
-                if memory_value >= 1024 and memory_value % 1024 == 0:
-                    memory_str = f"{int(memory_value / 1024)}Gi"
-                else:
-                    memory_str = f"{int(memory_value)}Mi"
-
-                requests["memory"] = memory_str
-                limits["memory"] = memory_str
-
-        # Determine replica count from min/max settings
-        # For standard K8s Deployments, we use min_replicas as the baseline
-        # (autoscaling requires a separate HPA resource)
-        min_r = resource_settings.min_replicas
-        max_r = resource_settings.max_replicas
-
-        if (
-            min_r is not None
-            and max_r is not None
-            and max_r > 0
-            and min_r > max_r
-        ):
-            raise DeployerError(
-                f"min_replicas ({min_r}) cannot be greater than max_replicas ({max_r})"
-            )
-
-        if min_r is not None and max_r is not None and min_r == max_r:
-            replicas = min_r
-        elif min_r is not None:
-            replicas = min_r
-        elif max_r is not None and max_r > 0:
-            replicas = max_r
-        else:
-            replicas = 1
-
-        if replicas == 0:
-            logger.warning(
-                "Deploying with 0 replicas. The deployment will not serve traffic "
-                "until scaled up. Standard K8s Deployments don't support scale-to-zero; "
-                "consider Knative or similar platforms for that use case."
-            )
-        if min_r is not None and max_r is not None and min_r != max_r:
-            logger.info(
-                f"Deploying with {replicas} replicas (min={min_r}, max={max_r}). "
-                f"For autoscaling, create a Horizontal Pod Autoscaler (HPA) manually."
-            )
-
-        if (
-            resource_settings.gpu_count is not None
-            and resource_settings.gpu_count > 0
-        ):
-            # GPU requests must be integers; Kubernetes auto-sets requests=limits for GPUs
-            gpu_str = str(resource_settings.gpu_count)
-            requests["nvidia.com/gpu"] = gpu_str
-            limits["nvidia.com/gpu"] = gpu_str
-            logger.info(
-                f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
-                f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
-                f"You may need to install the NVIDIA device plugin: "
-                f"https://github.com/NVIDIA/k8s-device-plugin"
-            )
-
-        return requests, limits, replicas
-
     def _build_deployment_manifest(
         self,
         deployment: DeploymentResponse,
@@ -869,7 +761,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Returns:
             Kubernetes Service manifest.
         """
-        service_name = self._get_service_name(deployment)
+        service_name = self._get_deployment_name(deployment)
         namespace = self._get_namespace(deployment)
         labels = self._get_deployment_labels(deployment, settings)
 
@@ -903,7 +795,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeployerError: If TLS is enabled but secret name is not provided.
         """
-        service_name = self._get_service_name(deployment)
+        service_name = self._get_deployment_name(deployment)
         namespace = self._get_namespace(deployment)
         labels = self._get_deployment_labels(deployment, settings)
         ingress_name = f"{service_name}-ingress"
@@ -940,206 +832,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         Returns:
             Ingress name.
         """
-        service_name = self._get_service_name(deployment)
+        service_name = self._get_deployment_name(deployment)
         return f"{service_name}-ingress"
-
-    def _build_deployment_url(
-        self,
-        service: k8s_client.V1Service,
-        namespace: str,
-        ingress: Optional[k8s_client.V1Ingress] = None,
-    ) -> Optional[str]:
-        """Build the URL for accessing the deployment.
-
-        Args:
-            service: Kubernetes service.
-            namespace: Namespace name.
-            ingress: Kubernetes Ingress (if enabled).
-
-        Returns:
-            Deployment URL or None if not yet available.
-        """
-        if ingress:
-            protocol = "https" if ingress.spec.tls else "http"
-
-            if ingress.spec.rules:
-                rule = ingress.spec.rules[0]
-                if rule.host and rule.http and rule.http.paths:
-                    path = rule.http.paths[0].path or "/"
-                    return f"{protocol}://{rule.host}{path}"
-
-            if ingress.status and ingress.status.load_balancer:
-                if ingress.status.load_balancer.ingress:
-                    lb_ingress = ingress.status.load_balancer.ingress[0]
-                    host = lb_ingress.ip or lb_ingress.hostname
-                    if host:
-                        path = "/"
-                        if (
-                            ingress.spec.rules
-                            and ingress.spec.rules[0].http
-                            and ingress.spec.rules[0].http.paths
-                        ):
-                            path = (
-                                ingress.spec.rules[0].http.paths[0].path or "/"
-                            )
-                        return f"{protocol}://{host}{path}"
-
-            return None
-
-        service_type = service.spec.type
-        service_port = service.spec.ports[0].port
-
-        if service_type == "LoadBalancer":
-            if (
-                service.status.load_balancer
-                and service.status.load_balancer.ingress
-            ):
-                ingress = service.status.load_balancer.ingress[0]
-                host = ingress.ip or ingress.hostname
-                if host:
-                    return f"http://{host}:{service_port}"
-            return None
-
-        elif service_type == "NodePort":
-            node_port = service.spec.ports[0].node_port
-            if not node_port:
-                return None
-
-            try:
-                nodes = self.k8s_core_api.list_node()
-
-                # Try to find a node with external IP first
-                for node in nodes.items:
-                    if node.status and node.status.addresses:
-                        for address in node.status.addresses:
-                            if address.type == "ExternalIP":
-                                logger.info(
-                                    f"NodePort service accessible at: http://{address.address}:{node_port}"
-                                )
-                                return f"http://{address.address}:{node_port}"
-
-                # No external IPs found - return internal IP with strong warning
-                for node in nodes.items:
-                    if node.status and node.status.addresses:
-                        for address in node.status.addresses:
-                            if address.type == "InternalIP":
-                                logger.warning(
-                                    f"NodePort service '{service.metadata.name}' has no nodes with ExternalIP. "
-                                    f"The returned InternalIP URL is likely NOT accessible from outside the cluster. "
-                                    f"For local access, use: kubectl port-forward -n {namespace} "
-                                    f"service/{service.metadata.name} 8080:{service_port} "
-                                    f"Or use service_type='LoadBalancer' or enable Ingress for external access."
-                                )
-                                return f"http://{address.address}:{node_port}"
-
-                # No nodes found at all
-                logger.error(
-                    f"NodePort service '{service.metadata.name}' deployed, but no node IPs available. "
-                    f"Use: kubectl port-forward -n {namespace} service/{service.metadata.name} 8080:{service_port}"
-                )
-                return None
-
-            except Exception as e:
-                logger.error(
-                    f"Failed to get node IPs for NodePort service: {e}. "
-                    f"Use: kubectl port-forward -n {namespace} service/{service.metadata.name} 8080:{service_port}"
-                )
-                return None
-
-        elif service_type == "ClusterIP":
-            # ClusterIP services are only accessible from within the cluster
-            # Return internal DNS name for in-cluster communication
-            logger.warning(
-                f"Service '{service.metadata.name}' uses ClusterIP, which is only "
-                f"accessible from within the Kubernetes cluster. "
-                f"For local access, use: kubectl port-forward -n {namespace} "
-                f"service/{service.metadata.name} 8080:{service_port} "
-                f"Or change service_type to 'LoadBalancer' or enable Ingress."
-            )
-            return f"http://{service.metadata.name}.{namespace}.svc.cluster.local:{service_port}"
-
-        return None
-
-    def _get_k8s_deployment(
-        self, deployment: DeploymentResponse
-    ) -> Optional[k8s_client.V1Deployment]:
-        """Get Kubernetes Deployment resource.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Kubernetes Deployment or None if not found.
-
-        Raises:
-            ApiException: If the deployment is not found.
-        """
-        deployment_name = self._get_deployment_name(deployment)
-        namespace = self._get_namespace(deployment)
-
-        try:
-            return self.k8s_apps_api.read_namespaced_deployment(
-                name=deployment_name,
-                namespace=namespace,
-            )
-        except ApiException as e:
-            if e.status == 404:
-                return None
-            raise
-
-    def _get_k8s_service(
-        self, deployment: DeploymentResponse
-    ) -> Optional[k8s_client.V1Service]:
-        """Get Kubernetes Service resource.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Kubernetes Service or None if not found.
-
-        Raises:
-            ApiException: If the service is not found.
-        """
-        service_name = self._get_service_name(deployment)
-        namespace = self._get_namespace(deployment)
-
-        try:
-            return self.k8s_core_api.read_namespaced_service(
-                name=service_name,
-                namespace=namespace,
-            )
-        except ApiException as e:
-            if e.status == 404:
-                return None
-            raise
-
-    def _get_k8s_ingress(
-        self, deployment: DeploymentResponse
-    ) -> Optional[k8s_client.V1Ingress]:
-        """Get Kubernetes Ingress resource.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Kubernetes Ingress or None if not found.
-
-        Raises:
-            ApiException: If the ingress is not found.
-        """
-        ingress_name = self._get_ingress_name(deployment)
-        namespace = self._get_namespace(deployment)
-
-        try:
-            return self.k8s_networking_api.read_namespaced_ingress(
-                name=ingress_name,
-                namespace=namespace,
-            )
-        except ApiException as e:
-            if e.status == 404:
-                return None
-            raise
 
     def _get_pod_for_deployment(
         self, deployment: DeploymentResponse
@@ -1158,7 +852,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         label_selector = f"zenml-deployment-id={deployment.id}"
 
         try:
-            pods = self.k8s_core_api.list_namespaced_pod(
+            pods = list_pods(
+                core_api=self.k8s_core_api,
                 namespace=namespace,
                 label_selector=label_selector,
             )
@@ -1189,73 +884,266 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return None
 
-    def _service_needs_recreate(
+    def _manage_deployment_secrets(
         self,
-        existing_service: k8s_client.V1Service,
-        new_manifest: k8s_client.V1Service,
-    ) -> bool:
-        """Check if a Service needs to be recreated due to immutable field changes.
+        deployment: DeploymentResponse,
+        namespace: str,
+        secrets: Dict[str, str],
+    ) -> Dict[str, str]:
+        """Manage Kubernetes secrets for deployment.
 
         Args:
-            existing_service: The existing Service from the cluster.
-            new_manifest: The new Service manifest to apply.
+            deployment: The deployment.
+            namespace: Kubernetes namespace.
+            secrets: Secret environment variables.
 
         Returns:
-            True if the Service needs to be deleted and recreated, False otherwise.
+            Sanitized secrets dictionary.
         """
-        existing_type = existing_service.spec.type
-        new_type = new_manifest.spec.type
-        if existing_type != new_type:
-            logger.debug(
-                f"Service type changed from {existing_type} to {new_type}, "
-                f"requires recreate"
+        sanitized_secrets = self._sanitize_secrets(secrets) if secrets else {}
+        secret_name = self._get_secret_name(deployment)
+
+        if sanitized_secrets:
+            logger.info(
+                f"Creating/updating Kubernetes Secret '{secret_name}' "
+                f"in namespace '{namespace}'."
             )
-            return True
-
-        # ClusterIP is immutable (except for "None" for headless services)
-        existing_cluster_ip = existing_service.spec.cluster_ip
-        new_cluster_ip = new_manifest.spec.cluster_ip
-        if (
-            existing_cluster_ip
-            and new_cluster_ip
-            and existing_cluster_ip != new_cluster_ip
-            and existing_cluster_ip != "None"
-            and new_cluster_ip != "None"
-        ):
-            logger.debug(
-                f"Service clusterIP changed from {existing_cluster_ip} to "
-                f"{new_cluster_ip}, requires recreate"
+            kube_utils.create_or_update_secret(
+                core_api=self.k8s_core_api,
+                namespace=namespace,
+                secret_name=secret_name,
+                data=cast(Dict[str, Optional[str]], sanitized_secrets),
             )
-            return True
+        else:
+            # Clean up Secret if all secrets were removed
+            try:
+                kube_utils.delete_secret(
+                    core_api=self.k8s_core_api,
+                    namespace=namespace,
+                    secret_name=secret_name,
+                )
+                logger.debug(
+                    f"Deleted empty Kubernetes Secret '{secret_name}' "
+                    f"in namespace '{namespace}'."
+                )
+            except Exception:
+                pass
 
-        # NodePort values are immutable once assigned
-        if existing_type == "NodePort" or new_type == "NodePort":
-            existing_ports = existing_service.spec.ports or []
-            new_ports = new_manifest.spec.ports or []
+        return sanitized_secrets
 
-            # Build maps keyed by (port name/number, target port) -> node port
-            existing_node_ports = {
-                (p.name or str(p.port), p.target_port): p.node_port
-                for p in existing_ports
-                if p.node_port
-            }
-            new_node_ports = {
-                (p.name or str(p.port), p.target_port): p.node_port
-                for p in new_ports
-                if p.node_port
-            }
+    def _manage_deployment_resource(
+        self,
+        deployment: DeploymentResponse,
+        namespace: str,
+        deployment_name: str,
+        deployment_manifest: k8s_client.V1Deployment,
+        existing_deployment: Optional[k8s_client.V1Deployment],
+    ) -> None:
+        """Create or update Kubernetes Deployment resource.
 
-            for key, existing_node_port in existing_node_ports.items():
-                if (
-                    key in new_node_ports
-                    and new_node_ports[key] != existing_node_port
-                ):
-                    logger.debug(
-                        f"Service nodePort changed for {key}, requires recreate"
+        Args:
+            deployment: The deployment.
+            namespace: Kubernetes namespace.
+            deployment_name: Name of the Kubernetes Deployment.
+            deployment_manifest: Deployment manifest.
+            existing_deployment: Existing deployment if updating.
+        """
+        if existing_deployment:
+            logger.info(
+                f"Updating Kubernetes Deployment '{deployment_name}' "
+                f"in namespace '{namespace}'."
+            )
+            update_deployment(
+                apps_api=self.k8s_apps_api,
+                name=deployment_name,
+                namespace=namespace,
+                deployment_manifest=deployment_manifest,
+            )
+        else:
+            logger.info(
+                f"Creating Kubernetes Deployment '{deployment_name}' "
+                f"in namespace '{namespace}'."
+            )
+            create_deployment(
+                apps_api=self.k8s_apps_api,
+                namespace=namespace,
+                deployment_manifest=deployment_manifest,
+            )
+
+    def _manage_service_resource(
+        self,
+        deployment: DeploymentResponse,
+        namespace: str,
+        service_name: str,
+        service_manifest: k8s_client.V1Service,
+        existing_service: Optional[k8s_client.V1Service],
+    ) -> None:
+        """Create or update Kubernetes Service resource.
+
+        Args:
+            deployment: The deployment.
+            namespace: Kubernetes namespace.
+            service_name: Name of the Kubernetes Service.
+            service_manifest: Service manifest.
+            existing_service: Existing service if updating.
+
+        Raises:
+            DeploymentProvisionError: If service deletion times out.
+        """
+        if existing_service:
+            needs_recreate = service_needs_recreate(
+                existing_service, service_manifest
+            )
+
+            if needs_recreate:
+                logger.info(
+                    f"Service '{service_name}' has immutable field changes. "
+                    f"Deleting and recreating..."
+                )
+                delete_service(
+                    core_api=self.k8s_core_api,
+                    name=service_name,
+                    namespace=namespace,
+                )
+                try:
+                    wait_for_service_deletion(
+                        core_api=self.k8s_core_api,
+                        service_name=service_name,
+                        namespace=namespace,
+                        timeout=SERVICE_DELETION_TIMEOUT_SECONDS,
                     )
-                    return True
+                except RuntimeError as e:
+                    raise DeploymentProvisionError(str(e)) from e
 
-        return False
+                create_service(
+                    core_api=self.k8s_core_api,
+                    namespace=namespace,
+                    service_manifest=service_manifest,
+                )
+            else:
+                logger.info(
+                    f"Updating Kubernetes Service '{service_name}' "
+                    f"in namespace '{namespace}'."
+                )
+                update_service(
+                    core_api=self.k8s_core_api,
+                    name=service_name,
+                    namespace=namespace,
+                    service_manifest=service_manifest,
+                )
+        else:
+            logger.info(
+                f"Creating Kubernetes Service '{service_name}' "
+                f"in namespace '{namespace}'."
+            )
+            create_service(
+                core_api=self.k8s_core_api,
+                namespace=namespace,
+                service_manifest=service_manifest,
+            )
+
+    def _manage_ingress_resource(
+        self,
+        deployment: DeploymentResponse,
+        namespace: str,
+        settings: KubernetesDeployerSettings,
+    ) -> None:
+        """Manage Kubernetes Ingress resource.
+
+        Args:
+            deployment: The deployment.
+            namespace: Kubernetes namespace.
+            settings: Deployer settings.
+        """
+        ingress_name = self._get_ingress_name(deployment)
+        existing_ingress = get_ingress(
+            networking_api=self.k8s_networking_api,
+            name=ingress_name,
+            namespace=namespace,
+        )
+
+        if settings.ingress_enabled:
+            ingress_manifest = self._build_ingress_manifest(
+                deployment, settings
+            )
+
+            if existing_ingress:
+                logger.info(
+                    f"Updating Kubernetes Ingress '{ingress_name}' "
+                    f"in namespace '{namespace}'."
+                )
+                update_ingress(
+                    networking_api=self.k8s_networking_api,
+                    name=ingress_name,
+                    namespace=namespace,
+                    ingress_manifest=ingress_manifest,
+                )
+            else:
+                logger.info(
+                    f"Creating Kubernetes Ingress '{ingress_name}' "
+                    f"in namespace '{namespace}'."
+                )
+                create_ingress(
+                    networking_api=self.k8s_networking_api,
+                    namespace=namespace,
+                    ingress_manifest=ingress_manifest,
+                )
+        elif existing_ingress:
+            # Delete Ingress if disabled
+            logger.info(
+                f"Ingress disabled, deleting existing Kubernetes Ingress '{ingress_name}' "
+                f"in namespace '{namespace}'."
+            )
+            delete_ingress(
+                networking_api=self.k8s_networking_api,
+                name=ingress_name,
+                namespace=namespace,
+            )
+
+    def _manage_hpa_resource(
+        self,
+        deployment: DeploymentResponse,
+        namespace: str,
+        deployment_name: str,
+        settings: KubernetesDeployerSettings,
+    ) -> None:
+        """Manage HorizontalPodAutoscaler resource.
+
+        Args:
+            deployment: The deployment.
+            namespace: Kubernetes namespace.
+            deployment_name: Name of the Kubernetes Deployment.
+            settings: Deployer settings.
+        """
+        hpa_name = f"{deployment_name}-hpa"
+
+        if settings.hpa_manifest:
+            logger.info(
+                f"Creating/updating HorizontalPodAutoscaler "
+                f"in namespace '{namespace}'."
+            )
+            create_or_update_hpa(
+                autoscaling_api=self.k8s_autoscaling_api,
+                namespace=namespace,
+                hpa_manifest=settings.hpa_manifest,
+            )
+        else:
+            # Delete HPA if removed from settings
+            existing_hpa = get_hpa(
+                autoscaling_api=self.k8s_autoscaling_api,
+                name=hpa_name,
+                namespace=namespace,
+            )
+            if existing_hpa:
+                logger.info(
+                    f"HPA manifest removed, deleting existing HorizontalPodAutoscaler '{hpa_name}' "
+                    f"in namespace '{namespace}'."
+                )
+                delete_hpa(
+                    autoscaling_api=self.k8s_autoscaling_api,
+                    name=hpa_name,
+                    namespace=namespace,
+                )
 
     def do_provision_deployment(
         self,
@@ -1291,58 +1179,37 @@ class KubernetesDeployer(ContainerizedDeployer):
             self.get_settings(snapshot),
         )
 
-        # Get resource settings from pipeline configuration
-        resource_settings = snapshot.pipeline_configuration.resource_settings
-
         # Convert resource settings to Kubernetes format
-        resource_requests, resource_limits, replicas = (
-            self._convert_resource_settings_to_k8s_format(resource_settings)
-        )
+        try:
+            resource_requests, resource_limits, replicas = (
+                convert_resource_settings_to_k8s_format(
+                    snapshot.pipeline_configuration.resource_settings
+                )
+            )
+        except ValueError as e:
+            raise DeploymentProvisionError(str(e)) from e
 
         namespace = self._get_namespace(deployment)
         deployment_name = self._get_deployment_name(deployment)
-        service_name = self._get_service_name(deployment)
+        service_name = deployment_name
 
-        existing_deployment = self._get_k8s_deployment(deployment)
+        existing_deployment = get_deployment(
+            apps_api=self.k8s_apps_api,
+            name=deployment_name,
+            namespace=namespace,
+        )
         is_new_deployment = existing_deployment is None
 
         try:
             image = self.get_image(snapshot)
+            self.ensure_namespace_exists(namespace)
 
-            self._ensure_namespace(namespace)
-
-            sanitized_secrets = (
-                self._sanitize_secrets(secrets) if secrets else {}
+            # Manage secrets
+            sanitized_secrets = self._manage_deployment_secrets(
+                deployment, namespace, secrets
             )
 
-            if sanitized_secrets:
-                secret_name = self._get_secret_name(deployment)
-                logger.info(
-                    f"Creating/updating Kubernetes Secret '{secret_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                kube_utils.create_or_update_secret(
-                    core_api=self.k8s_core_api,
-                    namespace=namespace,
-                    secret_name=secret_name,
-                    data=cast(Dict[str, Optional[str]], sanitized_secrets),
-                )
-            elif not secrets:
-                # Clean up Secret if all secrets were removed (prevent dangling resources)
-                secret_name = self._get_secret_name(deployment)
-                try:
-                    kube_utils.delete_secret(
-                        core_api=self.k8s_core_api,
-                        namespace=namespace,
-                        secret_name=secret_name,
-                    )
-                    logger.debug(
-                        f"Deleted empty Kubernetes Secret '{secret_name}' "
-                        f"in namespace '{namespace}'."
-                    )
-                except Exception:
-                    pass
-
+            # Build manifests
             deployment_manifest = self._build_deployment_manifest(
                 deployment,
                 image,
@@ -1357,131 +1224,35 @@ class KubernetesDeployer(ContainerizedDeployer):
                 deployment, settings
             )
 
-            existing_service = self._get_k8s_service(deployment)
+            # Manage Kubernetes resources
+            self._manage_deployment_resource(
+                deployment,
+                namespace,
+                deployment_name,
+                deployment_manifest,
+                existing_deployment,
+            )
 
-            if existing_deployment:
-                logger.info(
-                    f"Updating Kubernetes Deployment '{deployment_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                self.k8s_apps_api.patch_namespaced_deployment(
-                    name=deployment_name,
-                    namespace=namespace,
-                    body=deployment_manifest,
-                )
-            else:
-                logger.info(
-                    f"Creating Kubernetes Deployment '{deployment_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                self.k8s_apps_api.create_namespaced_deployment(
-                    namespace=namespace,
-                    body=deployment_manifest,
-                )
+            existing_service = get_service(
+                core_api=self.k8s_core_api,
+                name=service_name,
+                namespace=namespace,
+            )
+            self._manage_service_resource(
+                deployment,
+                namespace,
+                service_name,
+                service_manifest,
+                existing_service,
+            )
 
-            if existing_service:
-                # Check for immutable field changes (type, clusterIP, nodePorts)
-                needs_recreate = self._service_needs_recreate(
-                    existing_service, service_manifest
-                )
+            self._manage_ingress_resource(deployment, namespace, settings)
+            self._manage_hpa_resource(
+                deployment, namespace, deployment_name, settings
+            )
 
-                if needs_recreate:
-                    logger.info(
-                        f"Service '{service_name}' has immutable field changes. "
-                        f"Deleting and recreating..."
-                    )
-                    self.k8s_core_api.delete_namespaced_service(
-                        name=service_name,
-                        namespace=namespace,
-                    )
-                    # Wait for deletion to complete before recreating (prevents 409 Conflict)
-                    try:
-                        wait_for_service_deletion(
-                            core_api=self.k8s_core_api,
-                            service_name=service_name,
-                            namespace=namespace,
-                            timeout=SERVICE_DELETION_TIMEOUT_SECONDS,
-                        )
-                    except RuntimeError as e:
-                        raise DeploymentProvisionError(str(e)) from e
-                    self.k8s_core_api.create_namespaced_service(
-                        namespace=namespace,
-                        body=service_manifest,
-                    )
-                else:
-                    logger.info(
-                        f"Updating Kubernetes Service '{service_name}' "
-                        f"in namespace '{namespace}'."
-                    )
-                    self.k8s_core_api.patch_namespaced_service(
-                        name=service_name,
-                        namespace=namespace,
-                        body=service_manifest,
-                    )
-            else:
-                logger.info(
-                    f"Creating Kubernetes Service '{service_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                self.k8s_core_api.create_namespaced_service(
-                    namespace=namespace,
-                    body=service_manifest,
-                )
-
-            if settings.ingress_enabled:
-                ingress_name = self._get_ingress_name(deployment)
-                ingress_manifest = self._build_ingress_manifest(
-                    deployment, settings
-                )
-                existing_ingress = self._get_k8s_ingress(deployment)
-
-                if existing_ingress:
-                    logger.info(
-                        f"Updating Kubernetes Ingress '{ingress_name}' "
-                        f"in namespace '{namespace}'."
-                    )
-                    self.k8s_networking_api.patch_namespaced_ingress(
-                        name=ingress_name,
-                        namespace=namespace,
-                        body=ingress_manifest,
-                    )
-                else:
-                    logger.info(
-                        f"Creating Kubernetes Ingress '{ingress_name}' "
-                        f"in namespace '{namespace}'."
-                    )
-                    self.k8s_networking_api.create_namespaced_ingress(
-                        namespace=namespace,
-                        body=ingress_manifest,
-                    )
-            else:
-                # Delete Ingress if it was disabled (prevents dangling public endpoints)
-                ingress_name = self._get_ingress_name(deployment)
-                existing_ingress = self._get_k8s_ingress(deployment)
-
-                if existing_ingress:
-                    logger.info(
-                        f"Ingress disabled, deleting existing Kubernetes Ingress '{ingress_name}' "
-                        f"in namespace '{namespace}'."
-                    )
-                    try:
-                        self.k8s_networking_api.delete_namespaced_ingress(
-                            name=ingress_name,
-                            namespace=namespace,
-                        )
-                        logger.info(
-                            f"Deleted Kubernetes Ingress '{ingress_name}' "
-                            f"in namespace '{namespace}'."
-                        )
-                    except ApiException as e:
-                        if e.status != 404:  # Ignore if already deleted
-                            logger.warning(
-                                f"Failed to delete Ingress '{ingress_name}': {e}"
-                            )
-
+            # Wait for deployment to be ready
             if timeout > 0:
-                deployment_name = self._get_deployment_name(deployment)
-                namespace = self._get_namespace(deployment)
                 try:
                     wait_for_deployment_ready(
                         apps_api=self.k8s_apps_api,
@@ -1492,24 +1263,22 @@ class KubernetesDeployer(ContainerizedDeployer):
                     )
                 except RuntimeError as e:
                     raise DeploymentProvisionError(str(e)) from e
+
+                # Wait for LoadBalancer IP if applicable
+                if settings.service_type == "LoadBalancer":
+                    lb_timeout = min(timeout, 150)
+                    wait_for_loadbalancer_ip(
+                        core_api=self.k8s_core_api,
+                        service_name=service_name,
+                        namespace=namespace,
+                        timeout=lb_timeout,
+                        check_interval=DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS,
+                    )
             else:
                 logger.info(
                     f"Deployment '{deployment_name}' created. "
                     f"No timeout specified, not waiting for readiness. "
                     f"Poll deployment state to check readiness."
-                )
-
-            if settings.service_type == "LoadBalancer" and timeout > 0:
-                # Use remaining timeout or reasonable default for LoadBalancer IP assignment
-                lb_timeout = min(timeout, 150)
-                service_name = self._get_service_name(deployment)
-                namespace = self._get_namespace(deployment)
-                wait_for_loadbalancer_ip(
-                    core_api=self.k8s_core_api,
-                    service_name=service_name,
-                    namespace=namespace,
-                    timeout=lb_timeout,
-                    check_interval=DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS,
                 )
 
             return self.do_get_deployment_state(deployment)
@@ -1547,6 +1316,114 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"'{deployment.name}': {e}"
             ) from e
 
+    def _determine_deployment_status(
+        self,
+        k8s_deployment: k8s_client.V1Deployment,
+        deployment: DeploymentResponse,
+    ) -> DeploymentStatus:
+        """Determine deployment status from Kubernetes Deployment.
+
+        Args:
+            k8s_deployment: Kubernetes Deployment resource.
+            deployment: ZenML deployment.
+
+        Returns:
+            Deployment status.
+        """
+        status = DeploymentStatus.PENDING
+
+        if k8s_deployment.status:
+            available_replicas = k8s_deployment.status.available_replicas or 0
+            replicas = k8s_deployment.spec.replicas or 0
+
+            if available_replicas == replicas and replicas > 0:
+                status = DeploymentStatus.RUNNING
+            elif k8s_deployment.status.ready_replicas:
+                status = DeploymentStatus.PENDING
+            elif k8s_deployment.status.conditions:
+                for condition in k8s_deployment.status.conditions:
+                    if (
+                        condition.type == "Progressing"
+                        and condition.status == "False"
+                    ):
+                        status = DeploymentStatus.ERROR
+                        break
+
+        # Check pod-level failures
+        if status != DeploymentStatus.RUNNING:
+            pod = self._get_pod_for_deployment(deployment)
+            if pod:
+                error_reason = check_pod_failure_status(
+                    pod, restart_error_threshold=POD_RESTART_ERROR_THRESHOLD
+                )
+                if error_reason:
+                    logger.warning(
+                        f"Deployment '{deployment.name}' pod failure detected: {error_reason}"
+                    )
+                    status = DeploymentStatus.ERROR
+
+        return status
+
+    def _extract_resource_info(
+        self, k8s_deployment: k8s_client.V1Deployment
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Extract resource information from Kubernetes Deployment.
+
+        Args:
+            k8s_deployment: Kubernetes Deployment resource.
+
+        Returns:
+            Tuple of (cpu, memory, image) as strings or None.
+        """
+        cpu_str = None
+        memory_str = None
+        image_str = None
+
+        if (
+            k8s_deployment.spec.template.spec.containers
+            and k8s_deployment.spec.template.spec.containers[0]
+        ):
+            container = k8s_deployment.spec.template.spec.containers[0]
+
+            if container.resources:
+                if container.resources.requests:
+                    cpu_str = container.resources.requests.get("cpu")
+                    memory_str = container.resources.requests.get("memory")
+                # Fall back to limits if requests not set
+                if not cpu_str and container.resources.limits:
+                    cpu_str = container.resources.limits.get("cpu")
+                if not memory_str and container.resources.limits:
+                    memory_str = container.resources.limits.get("memory")
+
+            if container.image:
+                image_str = container.image
+
+        return cpu_str, memory_str, image_str
+
+    def _enrich_metadata_with_service_info(
+        self,
+        metadata: KubernetesDeploymentMetadata,
+        k8s_service: k8s_client.V1Service,
+        settings: KubernetesDeployerSettings,
+    ) -> None:
+        """Enrich metadata with service-specific information.
+
+        Args:
+            metadata: Deployment metadata to enrich.
+            k8s_service: Kubernetes Service resource.
+            settings: Deployer settings.
+        """
+        if settings.service_type == "LoadBalancer":
+            if (
+                k8s_service.status.load_balancer
+                and k8s_service.status.load_balancer.ingress
+            ):
+                lb_ingress = k8s_service.status.load_balancer.ingress[0]
+                metadata.external_ip = lb_ingress.ip or lb_ingress.hostname
+        elif settings.service_type == "NodePort":
+            if k8s_service.spec.ports:
+                metadata.node_port = k8s_service.spec.ports[0].node_port
+
     def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
@@ -1574,14 +1451,28 @@ class KubernetesDeployer(ContainerizedDeployer):
             self.get_settings(snapshot),
         )
         namespace = self._get_namespace(deployment)
+        deployment_name = self._get_deployment_name(deployment)
+        ingress_name = self._get_ingress_name(deployment)
 
         try:
             # Get Kubernetes resources
-            k8s_deployment = self._get_k8s_deployment(deployment)
-            k8s_service = self._get_k8s_service(deployment)
+            k8s_deployment = get_deployment(
+                apps_api=self.k8s_apps_api,
+                name=deployment_name,
+                namespace=namespace,
+            )
+            k8s_service = get_service(
+                core_api=self.k8s_core_api,
+                name=deployment_name,
+                namespace=namespace,
+            )
             k8s_ingress = None
             if settings.ingress_enabled:
-                k8s_ingress = self._get_k8s_ingress(deployment)
+                k8s_ingress = get_ingress(
+                    networking_api=self.k8s_networking_api,
+                    name=ingress_name,
+                    namespace=namespace,
+                )
 
             if not k8s_deployment or not k8s_service:
                 raise DeploymentNotFoundError(
@@ -1589,77 +1480,33 @@ class KubernetesDeployer(ContainerizedDeployer):
                     "not found"
                 )
 
-            # Determine status from Deployment-level conditions
-            status = DeploymentStatus.PENDING
-            if k8s_deployment.status:
-                available_replicas = (
-                    k8s_deployment.status.available_replicas or 0
-                )
-                replicas = k8s_deployment.spec.replicas or 0
+            # Determine status
+            status = self._determine_deployment_status(
+                k8s_deployment, deployment
+            )
 
-                if available_replicas == replicas and replicas > 0:
-                    status = DeploymentStatus.RUNNING
-                elif k8s_deployment.status.ready_replicas:
-                    status = DeploymentStatus.PENDING
-                elif k8s_deployment.status.conditions:
-                    for condition in k8s_deployment.status.conditions:
-                        if (
-                            condition.type == "Progressing"
-                            and condition.status == "False"
-                        ):
-                            status = DeploymentStatus.ERROR
-                            break
+            # Build URL
+            url = build_service_url(
+                core_api=self.k8s_core_api,
+                service=k8s_service,
+                namespace=namespace,
+                ingress=k8s_ingress,
+            )
 
+            # Extract resource info
+            cpu_str, memory_str, image_str = self._extract_resource_info(
+                k8s_deployment
+            )
+
+            # Get pod name
             pod = self._get_pod_for_deployment(deployment)
             pod_name = pod.metadata.name if pod else None
 
-            # Check pod-level failures (CrashLoopBackOff, ImagePullBackOff, etc.)
-            # These may not be reflected in Deployment-level conditions
-            if status != DeploymentStatus.RUNNING and pod:
-                error_reason = check_pod_failure_status(
-                    pod, restart_error_threshold=POD_RESTART_ERROR_THRESHOLD
-                )
-                if error_reason:
-                    logger.warning(
-                        f"Deployment '{deployment.name}' pod failure detected: {error_reason}"
-                    )
-                    status = DeploymentStatus.ERROR
-
-            url = self._build_deployment_url(
-                k8s_service, namespace, k8s_ingress
-            )
-
-            cpu_str = None
-            memory_str = None
-            if (
-                k8s_deployment.spec.template.spec.containers
-                and k8s_deployment.spec.template.spec.containers[0].resources
-            ):
-                resources = k8s_deployment.spec.template.spec.containers[
-                    0
-                ].resources
-                if resources.requests:
-                    cpu_str = resources.requests.get("cpu")
-                    memory_str = resources.requests.get("memory")
-                # Fall back to limits if requests not set
-                if not cpu_str and resources.limits:
-                    cpu_str = resources.limits.get("cpu")
-                if not memory_str and resources.limits:
-                    memory_str = resources.limits.get("memory")
-
-            image_str = None
-            if (
-                k8s_deployment.spec.template.spec.containers
-                and k8s_deployment.spec.template.spec.containers[0].image
-            ):
-                image_str = k8s_deployment.spec.template.spec.containers[
-                    0
-                ].image
-
+            # Build metadata
             metadata = KubernetesDeploymentMetadata(
                 deployment_name=self._get_deployment_name(deployment),
                 namespace=namespace,
-                service_name=self._get_service_name(deployment),
+                service_name=self._get_deployment_name(deployment),
                 pod_name=pod_name,
                 port=settings.service_port,
                 service_type=settings.service_type,
@@ -1673,16 +1520,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 labels=self._get_deployment_labels(deployment, settings),
             )
 
-            if settings.service_type == "LoadBalancer":
-                if (
-                    k8s_service.status.load_balancer
-                    and k8s_service.status.load_balancer.ingress
-                ):
-                    ingress = k8s_service.status.load_balancer.ingress[0]
-                    metadata.external_ip = ingress.ip or ingress.hostname
-            elif settings.service_type == "NodePort":
-                if k8s_service.spec.ports:
-                    metadata.node_port = k8s_service.spec.ports[0].node_port
+            # Enrich metadata with service-specific info
+            self._enrich_metadata_with_service_info(
+                metadata, k8s_service, settings
+            )
 
             return DeploymentOperationalState(
                 status=status,
@@ -1781,50 +1622,57 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         namespace = self._get_namespace(deployment)
         deployment_name = self._get_deployment_name(deployment)
-        service_name = self._get_service_name(deployment)
+        service_name = self._get_deployment_name(deployment)
         ingress_name = self._get_ingress_name(deployment)
 
         try:
-            try:
-                self.k8s_networking_api.delete_namespaced_ingress(
-                    name=ingress_name,
-                    namespace=namespace,
-                )
-                logger.info(
-                    f"Deleted Kubernetes Ingress '{ingress_name}' "
-                    f"in namespace '{namespace}'."
-                )
-            except ApiException as e:
-                if e.status != 404:
-                    raise
+            # Delete HPA if it exists
+            hpa_name = f"{deployment_name}-hpa"
+            delete_hpa(
+                autoscaling_api=self.k8s_autoscaling_api,
+                name=hpa_name,
+                namespace=namespace,
+            )
+            logger.info(
+                f"Deleted HorizontalPodAutoscaler '{hpa_name}' "
+                f"in namespace '{namespace}'."
+            )
 
-            try:
-                self.k8s_core_api.delete_namespaced_service(
-                    name=service_name,
-                    namespace=namespace,
-                )
-                logger.info(
-                    f"Deleted Kubernetes Service '{service_name}' "
-                    f"in namespace '{namespace}'."
-                )
-            except ApiException as e:
-                if e.status != 404:
-                    raise
+            # Delete Ingress
+            delete_ingress(
+                networking_api=self.k8s_networking_api,
+                name=ingress_name,
+                namespace=namespace,
+            )
+            logger.info(
+                f"Deleted Kubernetes Ingress '{ingress_name}' "
+                f"in namespace '{namespace}'."
+            )
 
-            try:
-                self.k8s_apps_api.delete_namespaced_deployment(
-                    name=deployment_name,
-                    namespace=namespace,
-                    propagation_policy="Foreground",  # Wait for pods to be deleted
-                )
-                logger.info(
-                    f"Deleted Kubernetes Deployment '{deployment_name}' "
-                    f"in namespace '{namespace}'."
-                )
-            except ApiException as e:
-                if e.status != 404:
-                    raise
+            # Delete Service
+            delete_service(
+                core_api=self.k8s_core_api,
+                name=service_name,
+                namespace=namespace,
+            )
+            logger.info(
+                f"Deleted Kubernetes Service '{service_name}' "
+                f"in namespace '{namespace}'."
+            )
 
+            # Delete Deployment
+            delete_deployment(
+                apps_api=self.k8s_apps_api,
+                name=deployment_name,
+                namespace=namespace,
+                propagation_policy="Foreground",  # Wait for pods to be deleted
+            )
+            logger.info(
+                f"Deleted Kubernetes Deployment '{deployment_name}' "
+                f"in namespace '{namespace}'."
+            )
+
+            # Delete Secret
             try:
                 secret_name = self._get_secret_name(deployment)
                 kube_utils.delete_secret(

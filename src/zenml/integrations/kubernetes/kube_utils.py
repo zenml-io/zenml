@@ -37,7 +37,17 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -55,6 +65,9 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.config.resource_settings import ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -1173,6 +1186,11 @@ def apply_default_resource_requests(
     return pod_settings
 
 
+# ============================================================================
+# Waiting and Monitoring Functions
+# ============================================================================
+
+
 def wait_for_service_deletion(
     core_api: k8s_client.CoreV1Api,
     service_name: str,
@@ -1419,5 +1437,772 @@ def check_pod_failure_status(
                 )
                 exit_code = container_status.last_state.terminated.exit_code
                 return f"Container restarting ({restart_count} restarts): {reason} (exit code {exit_code})"
+
+    return None
+
+
+# ============================================================================
+# Deployment Management Functions
+# ============================================================================
+
+
+def get_deployment(
+    apps_api: k8s_client.AppsV1Api,
+    name: str,
+    namespace: str,
+) -> Optional[k8s_client.V1Deployment]:
+    """Get a Kubernetes Deployment.
+
+    Args:
+        apps_api: Kubernetes Apps V1 API client.
+        name: Name of the deployment.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        The Deployment object, or None if not found.
+    """
+    try:
+        return retry_on_api_exception(
+            apps_api.read_namespaced_deployment,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def create_deployment(
+    apps_api: k8s_client.AppsV1Api,
+    namespace: str,
+    deployment_manifest: k8s_client.V1Deployment,
+) -> k8s_client.V1Deployment:
+    """Create a Kubernetes Deployment.
+
+    Args:
+        apps_api: Kubernetes Apps V1 API client.
+        namespace: Kubernetes namespace.
+        deployment_manifest: The Deployment manifest.
+
+    Returns:
+        The created Deployment.
+    """
+    return retry_on_api_exception(
+        apps_api.create_namespaced_deployment,
+        fail_on_status_codes=(404, 409),
+    )(namespace=namespace, body=deployment_manifest)
+
+
+def update_deployment(
+    apps_api: k8s_client.AppsV1Api,
+    name: str,
+    namespace: str,
+    deployment_manifest: k8s_client.V1Deployment,
+) -> k8s_client.V1Deployment:
+    """Update a Kubernetes Deployment.
+
+    Args:
+        apps_api: Kubernetes Apps V1 API client.
+        name: Name of the deployment.
+        namespace: Kubernetes namespace.
+        deployment_manifest: The updated Deployment manifest.
+
+    Returns:
+        The updated Deployment.
+    """
+    return retry_on_api_exception(
+        apps_api.patch_namespaced_deployment,
+        fail_on_status_codes=(404,),
+    )(name=name, namespace=namespace, body=deployment_manifest)
+
+
+def delete_deployment(
+    apps_api: k8s_client.AppsV1Api,
+    name: str,
+    namespace: str,
+    propagation_policy: str = "Foreground",
+) -> None:
+    """Delete a Kubernetes Deployment.
+
+    Args:
+        apps_api: Kubernetes Apps V1 API client.
+        name: Name of the deployment.
+        namespace: Kubernetes namespace.
+        propagation_policy: Deletion propagation policy.
+    """
+    try:
+        retry_on_api_exception(
+            apps_api.delete_namespaced_deployment,
+            fail_on_status_codes=(404,),
+        )(
+            name=name,
+            namespace=namespace,
+            propagation_policy=propagation_policy,
+        )
+    except ApiException as e:
+        if e.status != 404:
+            raise
+
+
+# ============================================================================
+# Service Management Functions
+# ============================================================================
+
+
+def get_service(
+    core_api: k8s_client.CoreV1Api,
+    name: str,
+    namespace: str,
+) -> Optional[k8s_client.V1Service]:
+    """Get a Kubernetes Service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        name: Name of the service.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        The Service object, or None if not found.
+    """
+    try:
+        return retry_on_api_exception(
+            core_api.read_namespaced_service,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def create_service(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    service_manifest: k8s_client.V1Service,
+) -> k8s_client.V1Service:
+    """Create a Kubernetes Service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        namespace: Kubernetes namespace.
+        service_manifest: The Service manifest.
+
+    Returns:
+        The created Service.
+    """
+    return retry_on_api_exception(
+        core_api.create_namespaced_service,
+        fail_on_status_codes=(404, 409),
+    )(namespace=namespace, body=service_manifest)
+
+
+def update_service(
+    core_api: k8s_client.CoreV1Api,
+    name: str,
+    namespace: str,
+    service_manifest: k8s_client.V1Service,
+) -> k8s_client.V1Service:
+    """Update a Kubernetes Service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        name: Name of the service.
+        namespace: Kubernetes namespace.
+        service_manifest: The updated Service manifest.
+
+    Returns:
+        The updated Service.
+    """
+    return retry_on_api_exception(
+        core_api.patch_namespaced_service,
+        fail_on_status_codes=(404,),
+    )(name=name, namespace=namespace, body=service_manifest)
+
+
+def delete_service(
+    core_api: k8s_client.CoreV1Api,
+    name: str,
+    namespace: str,
+) -> None:
+    """Delete a Kubernetes Service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        name: Name of the service.
+        namespace: Kubernetes namespace.
+    """
+    try:
+        retry_on_api_exception(
+            core_api.delete_namespaced_service,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status != 404:
+            raise
+
+
+def service_needs_recreate(
+    existing_service: k8s_client.V1Service,
+    new_manifest: k8s_client.V1Service,
+) -> bool:
+    """Check if a Service needs to be recreated due to immutable field changes.
+
+    Args:
+        existing_service: The existing Service from the cluster.
+        new_manifest: The new Service manifest to apply.
+
+    Returns:
+        True if the Service needs to be deleted and recreated, False otherwise.
+    """
+    existing_type = existing_service.spec.type
+    new_type = new_manifest.spec.type
+    if existing_type != new_type:
+        logger.debug(
+            f"Service type changed from {existing_type} to {new_type}, "
+            f"requires recreate"
+        )
+        return True
+
+    # ClusterIP is immutable (except for "None" for headless services)
+    existing_cluster_ip = existing_service.spec.cluster_ip
+    new_cluster_ip = new_manifest.spec.cluster_ip
+    if (
+        existing_cluster_ip
+        and new_cluster_ip
+        and existing_cluster_ip != new_cluster_ip
+        and existing_cluster_ip != "None"
+        and new_cluster_ip != "None"
+    ):
+        logger.debug(
+            f"Service clusterIP changed from {existing_cluster_ip} to "
+            f"{new_cluster_ip}, requires recreate"
+        )
+        return True
+
+    # NodePort values are immutable once assigned
+    if existing_type == "NodePort" or new_type == "NodePort":
+        existing_ports = existing_service.spec.ports or []
+        new_ports = new_manifest.spec.ports or []
+
+        # Build maps keyed by (port name/number, target port) -> node port
+        existing_node_ports = {
+            (p.name or str(p.port), p.target_port): p.node_port
+            for p in existing_ports
+            if p.node_port
+        }
+        new_node_ports = {
+            (p.name or str(p.port), p.target_port): p.node_port
+            for p in new_ports
+            if p.node_port
+        }
+
+        for key, existing_node_port in existing_node_ports.items():
+            if (
+                key in new_node_ports
+                and new_node_ports[key] != existing_node_port
+            ):
+                logger.debug(
+                    f"Service nodePort changed for {key}, requires recreate"
+                )
+                return True
+
+    return False
+
+
+# ============================================================================
+# Ingress Management Functions
+# ============================================================================
+
+
+def get_ingress(
+    networking_api: k8s_client.NetworkingV1Api,
+    name: str,
+    namespace: str,
+) -> Optional[k8s_client.V1Ingress]:
+    """Get a Kubernetes Ingress.
+
+    Args:
+        networking_api: Kubernetes Networking V1 API client.
+        name: Name of the ingress.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        The Ingress object, or None if not found.
+    """
+    try:
+        return retry_on_api_exception(
+            networking_api.read_namespaced_ingress,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def create_ingress(
+    networking_api: k8s_client.NetworkingV1Api,
+    namespace: str,
+    ingress_manifest: k8s_client.V1Ingress,
+) -> k8s_client.V1Ingress:
+    """Create a Kubernetes Ingress.
+
+    Args:
+        networking_api: Kubernetes Networking V1 API client.
+        namespace: Kubernetes namespace.
+        ingress_manifest: The Ingress manifest.
+
+    Returns:
+        The created Ingress.
+    """
+    return retry_on_api_exception(
+        networking_api.create_namespaced_ingress,
+        fail_on_status_codes=(404, 409),
+    )(namespace=namespace, body=ingress_manifest)
+
+
+def update_ingress(
+    networking_api: k8s_client.NetworkingV1Api,
+    name: str,
+    namespace: str,
+    ingress_manifest: k8s_client.V1Ingress,
+) -> k8s_client.V1Ingress:
+    """Update a Kubernetes Ingress.
+
+    Args:
+        networking_api: Kubernetes Networking V1 API client.
+        name: Name of the ingress.
+        namespace: Kubernetes namespace.
+        ingress_manifest: The updated Ingress manifest.
+
+    Returns:
+        The updated Ingress.
+    """
+    return retry_on_api_exception(
+        networking_api.patch_namespaced_ingress,
+        fail_on_status_codes=(404,),
+    )(name=name, namespace=namespace, body=ingress_manifest)
+
+
+def delete_ingress(
+    networking_api: k8s_client.NetworkingV1Api,
+    name: str,
+    namespace: str,
+) -> None:
+    """Delete a Kubernetes Ingress.
+
+    Args:
+        networking_api: Kubernetes Networking V1 API client.
+        name: Name of the ingress.
+        namespace: Kubernetes namespace.
+    """
+    try:
+        retry_on_api_exception(
+            networking_api.delete_namespaced_ingress,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status != 404:
+            raise
+
+
+# ============================================================================
+# HorizontalPodAutoscaler Management Functions
+# ============================================================================
+
+
+def get_hpa(
+    autoscaling_api: k8s_client.AutoscalingV2Api,
+    name: str,
+    namespace: str,
+) -> Optional[k8s_client.V1HorizontalPodAutoscaler]:
+    """Get a Kubernetes HorizontalPodAutoscaler.
+
+    Args:
+        autoscaling_api: Kubernetes Autoscaling V2 API client.
+        name: Name of the HPA.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        The HPA object, or None if not found.
+    """
+    try:
+        return retry_on_api_exception(
+            autoscaling_api.read_namespaced_horizontal_pod_autoscaler,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def create_or_update_hpa(
+    autoscaling_api: k8s_client.AutoscalingV2Api,
+    namespace: str,
+    hpa_manifest: Dict[str, Any],
+) -> None:
+    """Create or update a Kubernetes HorizontalPodAutoscaler.
+
+    Args:
+        autoscaling_api: Kubernetes Autoscaling V2 API client.
+        namespace: Kubernetes namespace.
+        hpa_manifest: The HPA manifest as a dictionary.
+    """
+    hpa_name = hpa_manifest.get("metadata", {}).get("name")
+    if not hpa_name:
+        logger.warning(
+            "HPA manifest is missing 'metadata.name'. Skipping HPA creation."
+        )
+        return
+
+    try:
+        retry_on_api_exception(
+            autoscaling_api.create_namespaced_horizontal_pod_autoscaler,
+            fail_on_status_codes=(404,),
+        )(namespace=namespace, body=hpa_manifest)
+        logger.info(f"Created HorizontalPodAutoscaler '{hpa_name}'.")
+    except ApiException as e:
+        if e.status == 409:
+            # HPA already exists, update it
+            try:
+                retry_on_api_exception(
+                    autoscaling_api.patch_namespaced_horizontal_pod_autoscaler,
+                    fail_on_status_codes=(404,),
+                )(name=hpa_name, namespace=namespace, body=hpa_manifest)
+                logger.info(f"Updated HorizontalPodAutoscaler '{hpa_name}'.")
+            except ApiException as patch_error:
+                logger.warning(
+                    f"Failed to update HPA '{hpa_name}': {patch_error}"
+                )
+        else:
+            logger.warning(f"Failed to create HPA '{hpa_name}': {e}")
+
+
+def delete_hpa(
+    autoscaling_api: k8s_client.AutoscalingV2Api,
+    name: str,
+    namespace: str,
+) -> None:
+    """Delete a Kubernetes HorizontalPodAutoscaler.
+
+    Args:
+        autoscaling_api: Kubernetes Autoscaling V2 API client.
+        name: Name of the HPA.
+        namespace: Kubernetes namespace.
+    """
+    try:
+        retry_on_api_exception(
+            autoscaling_api.delete_namespaced_horizontal_pod_autoscaler,
+            fail_on_status_codes=(404,),
+        )(name=name, namespace=namespace)
+    except ApiException as e:
+        if e.status != 404:
+            logger.debug(f"Could not delete HPA '{name}': {e}")
+
+
+# ============================================================================
+# Pod Management Functions
+# ============================================================================
+
+
+def list_pods(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    label_selector: Optional[str] = None,
+) -> k8s_client.V1PodList:
+    """List pods in a namespace.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        namespace: Kubernetes namespace.
+        label_selector: Optional label selector to filter pods.
+
+    Returns:
+        List of pods.
+    """
+    return retry_on_api_exception(
+        core_api.list_namespaced_pod,
+        fail_on_status_codes=(404,),
+    )(namespace=namespace, label_selector=label_selector)
+
+
+# ============================================================================
+# Resource Conversion Utilities
+# ============================================================================
+
+
+def convert_resource_settings_to_k8s_format(
+    resource_settings: "ResourceSettings",
+) -> Tuple[Dict[str, str], Dict[str, str], int]:
+    """Convert ZenML ResourceSettings to Kubernetes resource format.
+
+    Args:
+        resource_settings: The resource settings from pipeline configuration.
+
+    Returns:
+        Tuple of (requests, limits, replicas) in Kubernetes format.
+        - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - limits: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - replicas: Number of replicas
+
+    Raises:
+        ValueError: If replica configuration is invalid.
+    """
+    from zenml.config.resource_settings import ByteUnit
+
+    requests: Dict[str, str] = {}
+    limits: Dict[str, str] = {}
+
+    if resource_settings.cpu_count is not None:
+        cpu_value = resource_settings.cpu_count
+        # Convert fractional CPUs to millicores (e.g., 0.5 -> "500m")
+        if cpu_value < 1:
+            cpu_str = f"{int(cpu_value * 1000)}m"
+        else:
+            if cpu_value == int(cpu_value):
+                cpu_str = str(int(cpu_value))
+            else:
+                cpu_str = f"{int(cpu_value * 1000)}m"
+
+        requests["cpu"] = cpu_str
+        limits["cpu"] = cpu_str
+
+    if resource_settings.memory is not None:
+        memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
+        if memory_value is not None:
+            # Use Gi only for clean conversions to avoid precision loss
+            if memory_value >= 1024 and memory_value % 1024 == 0:
+                memory_str = f"{int(memory_value / 1024)}Gi"
+            else:
+                memory_str = f"{int(memory_value)}Mi"
+
+            requests["memory"] = memory_str
+            limits["memory"] = memory_str
+
+    # Determine replica count from min/max settings
+    # For standard K8s Deployments, we use min_replicas as the baseline
+    # (autoscaling requires a separate HPA resource)
+    min_r = resource_settings.min_replicas or 0
+    max_r = resource_settings.max_replicas or 0
+
+    if max_r > 0 and min_r > max_r:
+        raise ValueError(
+            f"min_replicas ({min_r}) cannot be greater than max_replicas ({max_r})"
+        )
+
+    replicas = min_r if min_r > 0 else (max_r if max_r > 0 else 1)
+
+    if (
+        resource_settings.gpu_count is not None
+        and resource_settings.gpu_count > 0
+    ):
+        # GPU requests must be integers; Kubernetes auto-sets requests=limits for GPUs
+        gpu_str = str(resource_settings.gpu_count)
+        requests["nvidia.com/gpu"] = gpu_str
+        limits["nvidia.com/gpu"] = gpu_str
+        logger.info(
+            f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
+            f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
+            f"You may need to install the NVIDIA device plugin: "
+            f"https://github.com/NVIDIA/k8s-device-plugin"
+        )
+
+    return requests, limits, replicas
+
+
+# ============================================================================
+# URL Building Utilities
+# ============================================================================
+
+
+def build_url_from_ingress(ingress: k8s_client.V1Ingress) -> Optional[str]:
+    """Extract URL from Kubernetes Ingress resource.
+
+    Args:
+        ingress: Kubernetes Ingress resource.
+
+    Returns:
+        URL from ingress rules or load balancer, or None if not available.
+    """
+    protocol = "https" if ingress.spec.tls else "http"
+
+    # Try to get URL from ingress rules
+    if ingress.spec.rules:
+        rule = ingress.spec.rules[0]
+        if rule.host and rule.http and rule.http.paths:
+            path = rule.http.paths[0].path or "/"
+            return f"{protocol}://{rule.host}{path}"
+
+    # Try to get URL from load balancer status
+    if (
+        ingress.status
+        and ingress.status.load_balancer
+        and ingress.status.load_balancer.ingress
+    ):
+        lb_ingress = ingress.status.load_balancer.ingress[0]
+        host = lb_ingress.ip or lb_ingress.hostname
+        if host:
+            path = "/"
+            if (
+                ingress.spec.rules
+                and ingress.spec.rules[0].http
+                and ingress.spec.rules[0].http.paths
+            ):
+                path = ingress.spec.rules[0].http.paths[0].path or "/"
+            return f"{protocol}://{host}{path}"
+
+    return None
+
+
+def build_url_from_loadbalancer_service(
+    service: k8s_client.V1Service,
+) -> Optional[str]:
+    """Get URL from LoadBalancer service.
+
+    Args:
+        service: Kubernetes Service resource.
+
+    Returns:
+        LoadBalancer URL or None if IP not yet assigned.
+    """
+    if not service.spec.ports:
+        return None
+
+    service_port = service.spec.ports[0].port
+
+    if service.status.load_balancer and service.status.load_balancer.ingress:
+        lb_ingress = service.status.load_balancer.ingress[0]
+        host = lb_ingress.ip or lb_ingress.hostname
+        if host:
+            return f"http://{host}:{service_port}"
+    return None
+
+
+def build_url_from_nodeport_service(
+    core_api: k8s_client.CoreV1Api,
+    service: k8s_client.V1Service,
+    namespace: str,
+) -> Optional[str]:
+    """Get URL from NodePort service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        NodePort URL or None if not accessible.
+    """
+    if not service.spec.ports:
+        return None
+
+    node_port = service.spec.ports[0].node_port
+    service_port = service.spec.ports[0].port
+    service_name = service.metadata.name
+
+    if not node_port:
+        return None
+
+    try:
+        nodes = core_api.list_node()
+
+        # Try to find external IP first
+        for node in nodes.items:
+            if node.status and node.status.addresses:
+                for address in node.status.addresses:
+                    if address.type == "ExternalIP":
+                        logger.info(
+                            f"NodePort service accessible at: http://{address.address}:{node_port}"
+                        )
+                        return f"http://{address.address}:{node_port}"
+
+        # Fall back to internal IP with warning
+        for node in nodes.items:
+            if node.status and node.status.addresses:
+                for address in node.status.addresses:
+                    if address.type == "InternalIP":
+                        logger.warning(
+                            f"NodePort service '{service_name}' has no nodes with ExternalIP. "
+                            f"The returned InternalIP URL is likely NOT accessible from outside the cluster. "
+                            f"For local access, use: kubectl port-forward -n {namespace} "
+                            f"service/{service_name} 8080:{service_port}"
+                        )
+                        return f"http://{address.address}:{node_port}"
+
+        logger.error(
+            f"NodePort service '{service_name}' deployed, but no node IPs available. "
+            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
+        )
+        return None
+
+    except Exception as e:
+        logger.error(
+            f"Failed to get node IPs for NodePort service: {e}. "
+            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
+        )
+        return None
+
+
+def build_url_from_clusterip_service(
+    service: k8s_client.V1Service,
+    namespace: str,
+) -> str:
+    """Get internal DNS URL from ClusterIP service.
+
+    Args:
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        Internal cluster DNS URL.
+    """
+    if not service.spec.ports:
+        return f"http://{service.metadata.name}.{namespace}.svc.cluster.local"
+
+    service_name = service.metadata.name
+    service_port = service.spec.ports[0].port
+
+    logger.warning(
+        f"Service '{service_name}' uses ClusterIP, which is only "
+        f"accessible from within the Kubernetes cluster. "
+        f"For local access, use: kubectl port-forward -n {namespace} "
+        f"service/{service_name} 8080:{service_port}"
+    )
+    return (
+        f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
+    )
+
+
+def build_service_url(
+    core_api: k8s_client.CoreV1Api,
+    service: k8s_client.V1Service,
+    namespace: str,
+    ingress: Optional[k8s_client.V1Ingress] = None,
+) -> Optional[str]:
+    """Build URL for accessing a Kubernetes service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+        ingress: Optional Kubernetes Ingress resource.
+
+    Returns:
+        Service URL or None if not yet available.
+    """
+    # If ingress is configured, use it
+    if ingress:
+        return build_url_from_ingress(ingress)
+
+    # Otherwise, build URL based on service type
+    service_type = service.spec.type
+
+    if service_type == "LoadBalancer":
+        return build_url_from_loadbalancer_service(service)
+    elif service_type == "NodePort":
+        return build_url_from_nodeport_service(core_api, service, namespace)
+    elif service_type == "ClusterIP":
+        return build_url_from_clusterip_service(service, namespace)
 
     return None

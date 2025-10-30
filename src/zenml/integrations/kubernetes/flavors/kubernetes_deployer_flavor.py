@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pydantic import Field, PositiveInt
 
@@ -238,6 +238,35 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "  nginx: {'nginx.ingress.kubernetes.io/rewrite-target': '/'}\n"
         "  traefik: {'traefik.ingress.kubernetes.io/router.entrypoints': 'web'}\n"
         "  AWS ALB: {'alb.ingress.kubernetes.io/scheme': 'internet-facing'}",
+    )
+
+    # Autoscaling configuration
+    hpa_manifest: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional HorizontalPodAutoscaler (HPA) manifest for autoscaling. "
+        "If provided, ZenML will create/update this HPA alongside the Deployment. "
+        "The HPA must target the deployment created by this deployer. "
+        "Use the autoscaling/v2 API. "
+        "Example:\n"
+        "  {\n"
+        '    "apiVersion": "autoscaling/v2",\n'
+        '    "kind": "HorizontalPodAutoscaler",\n'
+        '    "metadata": {"name": "my-hpa"},\n'
+        '    "spec": {\n'
+        '      "scaleTargetRef": {\n'
+        '        "apiVersion": "apps/v1",\n'
+        '        "kind": "Deployment",\n'
+        '        "name": "<deployment-name>"\n'
+        "      },\n"
+        '      "minReplicas": 2,\n'
+        '      "maxReplicas": 10,\n'
+        '      "metrics": [\n'
+        '        {"type": "Resource", "resource": {"name": "cpu", '
+        '"target": {"type": "Utilization", "averageUtilization": 75}}}\n'
+        "      ]\n"
+        "    }\n"
+        "  }\n"
+        "See: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/",
     )
 
 

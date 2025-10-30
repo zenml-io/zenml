@@ -149,6 +149,8 @@ The deployer combines two configuration layers:
     - `pod_settings`: use
       [`KubernetesPodSettings`](../../orchestrators/kubernetes.md#customize-pod-specs)
       to mount volumes, set node selectors, tolerations, affinity rules, etc.
+    - `hpa_manifest`: optional HorizontalPodAutoscaler manifest (dict) for automatic scaling.
+      See [Horizontal Pod Autoscaling](#horizontal-pod-autoscaling-hpa).
 
 ## Resource Configuration
 
@@ -195,11 +197,13 @@ The Kubernetes deployer converts `ResourceSettings` to Kubernetes resource reque
 
 ### Additional Resource Settings
 
-ResourceSettings also supports autoscaling configuration (though you'll need to configure HPA separately):
+ResourceSettings also supports autoscaling configuration:
 
 - `autoscaling_metric`: Metric to scale on ("cpu", "memory", "concurrency", or "rps")
 - `autoscaling_target`: Target value for the metric (e.g., 70.0 for 70% CPU)
 - `max_concurrency`: Maximum concurrent requests per pod
+
+To enable actual autoscaling, see the [Horizontal Pod Autoscaling](#horizontal-pod-autoscaling-hpa) section below.
 
 ## RBAC requirements
 
@@ -212,6 +216,8 @@ be able to:
   auth keys).
 - Create, patch, and delete `Ingresses` when `ingress_enabled=True`
   (requires permissions on `networking.k8s.io/v1/Ingress` resources).
+- Create, patch, and delete `HorizontalPodAutoscalers` when `hpa_manifest` is provided
+  (requires permissions on `autoscaling/v2/HorizontalPodAutoscaler` resources).
 - Create namespaces when they do not exist, unless you pre-create them.
 - If you rely on automatic service-account provisioning, create service
   accounts and role bindings (`create`, `patch`, `get`, `list` on
@@ -352,6 +358,76 @@ The deployer currently creates standard Kubernetes Ingress resources
 (networking.k8s.io/v1). For service mesh solutions like Istio that use different
 APIs (Gateway/VirtualService), you'll need to create those resources separately
 and use `service_type="ClusterIP"` to expose the service internally.
+
+## Horizontal Pod Autoscaling (HPA)
+
+The Kubernetes deployer supports HPA by passing autoscaling/v2 manifests via the `hpa_manifest` setting. The deployer handles lifecycle management (create/update/delete).
+
+### Example
+
+```python
+from zenml import pipeline
+from zenml.integrations.kubernetes.flavors import KubernetesDeployerSettings
+
+# Define your HPA manifest
+hpa_manifest = {
+    "apiVersion": "autoscaling/v2",
+    "kind": "HorizontalPodAutoscaler",
+    "metadata": {"name": "my-pipeline-hpa"},
+    "spec": {
+        "scaleTargetRef": {
+            "apiVersion": "apps/v1",
+            "kind": "Deployment",
+            "name": "zenml-deployment-<id>",
+        },
+        "minReplicas": 2,
+        "maxReplicas": 10,
+        "metrics": [
+            # CPU-based scaling
+            {
+                "type": "Resource",
+                "resource": {
+                    "name": "cpu",
+                    "target": {"type": "Utilization", "averageUtilization": 75},
+                },
+            },
+            # Memory-based scaling (optional)
+            {
+                "type": "Resource",
+                "resource": {
+                    "name": "memory",
+                    "target": {"type": "Utilization", "averageUtilization": 80},
+                },
+            },
+        ],
+        # Optional: scaling behavior policies
+        "behavior": {
+            "scaleDown": {"stabilizationWindowSeconds": 300},
+            "scaleUp": {"stabilizationWindowSeconds": 0},
+        },
+    },
+}
+
+@pipeline(settings={"deployer": KubernetesDeployerSettings(hpa_manifest=hpa_manifest)})
+def my_pipeline():
+    ...
+```
+
+### Requirements
+
+- **Metrics Server**: Required for CPU/memory metrics
+  ```bash
+  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+  ```
+- **Resource requests**: Set via `ResourceSettings` (ZenML does this automatically)
+- **Custom Metrics API**: Optional, for application-specific metrics (Prometheus Adapter, cloud provider solutions)
+
+### Monitoring
+
+```bash
+kubectl get hpa -n zenml-deployments --watch
+kubectl describe hpa <name> -n zenml-deployments
+```
 
 For end-to-end deployment workflows, see the
 [deployment user guide](../../user-guide/production-guide/deployment.md).
