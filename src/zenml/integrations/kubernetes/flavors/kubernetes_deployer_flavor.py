@@ -68,6 +68,9 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         ingress_tls_enabled: Enable TLS/HTTPS for the Ingress.
         ingress_tls_secret_name: Name of the Kubernetes Secret containing TLS certificate and key.
         ingress_annotations: Annotations for the Ingress resource.
+        service_deletion_timeout: Timeout in seconds to wait for service deletion.
+        deployment_ready_check_interval: Interval in seconds between deployment readiness checks.
+        pod_restart_error_threshold: Number of pod restarts before marking a deployment as failed.
     """
 
     namespace: Optional[str] = Field(
@@ -275,6 +278,25 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "    }\n"
         "  }\n"
         "See: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/",
+    )
+
+    # Operational timeouts and thresholds
+    service_deletion_timeout: PositiveInt = Field(
+        default=60,
+        description="Timeout in seconds to wait for service deletion when recreating services "
+        "with immutable field changes. Defaults to 60 seconds.",
+    )
+
+    deployment_ready_check_interval: PositiveInt = Field(
+        default=2,
+        description="Interval in seconds between deployment readiness checks. "
+        "Lower values provide faster feedback but increase API calls. Defaults to 2 seconds.",
+    )
+
+    pod_restart_error_threshold: PositiveInt = Field(
+        default=2,
+        description="Number of pod restarts before marking a deployment as failed. "
+        "Helps detect crashloop backoffs early. Defaults to 2 restarts.",
     )
 
 

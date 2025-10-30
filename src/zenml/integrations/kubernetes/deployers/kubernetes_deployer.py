@@ -74,11 +74,6 @@ MAX_K8S_NAME_LENGTH = 63
 # Minimum datetime for pod creation timestamp comparisons
 MIN_DATETIME = datetime.min.replace(tzinfo=timezone.utc)
 
-SERVICE_DELETION_TIMEOUT_SECONDS = 60
-DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS = 2
-
-POD_RESTART_ERROR_THRESHOLD = 2
-
 
 class KubernetesDeploymentMetadata(BaseModel):
     """Metadata for a Kubernetes deployment.
@@ -971,6 +966,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         service_name: str,
         service_manifest: k8s_client.V1Service,
         existing_service: Optional[k8s_client.V1Service],
+        settings: KubernetesDeployerSettings,
     ) -> None:
         """Create or update Kubernetes Service resource.
 
@@ -979,6 +975,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             service_name: Name of the Kubernetes Service.
             service_manifest: Service manifest.
             existing_service: Existing service if updating.
+            settings: Deployer settings.
 
         Raises:
             DeploymentProvisionError: If service deletion times out.
@@ -1003,7 +1000,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                         core_api=self.k8s_core_api,
                         service_name=service_name,
                         namespace=namespace,
-                        timeout=SERVICE_DELETION_TIMEOUT_SECONDS,
+                        timeout=settings.service_deletion_timeout,
                     )
                 except RuntimeError as e:
                     raise DeploymentProvisionError(str(e)) from e
@@ -1238,6 +1235,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 service_name,
                 service_manifest,
                 existing_service,
+                settings,
             )
 
             self._manage_ingress_resource(
@@ -1252,7 +1250,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                         deployment_name=deployment_name,
                         namespace=namespace,
                         timeout=timeout,
-                        check_interval=DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS,
+                        check_interval=settings.deployment_ready_check_interval,
                     )
                 except RuntimeError as e:
                     raise DeploymentProvisionError(str(e)) from e
@@ -1264,7 +1262,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                         service_name=service_name,
                         namespace=namespace,
                         timeout=lb_timeout,
-                        check_interval=DEPLOYMENT_READY_CHECK_INTERVAL_SECONDS,
+                        check_interval=settings.deployment_ready_check_interval,
                     )
             else:
                 logger.info(
@@ -1287,7 +1285,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
                 try:
                     self.do_deprovision_deployment(
-                        deployment, timeout=SERVICE_DELETION_TIMEOUT_SECONDS
+                        deployment, timeout=settings.service_deletion_timeout
                     )
                     logger.info(
                         f"Successfully cleaned up partial resources for deployment '{deployment.name}'."
@@ -1313,12 +1311,14 @@ class KubernetesDeployer(ContainerizedDeployer):
         self,
         k8s_deployment: k8s_client.V1Deployment,
         deployment: DeploymentResponse,
+        settings: KubernetesDeployerSettings,
     ) -> DeploymentStatus:
         """Determine deployment status from Kubernetes Deployment.
 
         Args:
             k8s_deployment: Kubernetes Deployment resource.
             deployment: ZenML deployment.
+            settings: Deployer settings.
 
         Returns:
             Deployment status.
@@ -1347,7 +1347,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             pod = self._get_pod_for_deployment(deployment)
             if pod:
                 error_reason = kube_utils.check_pod_failure_status(
-                    pod, restart_error_threshold=POD_RESTART_ERROR_THRESHOLD
+                    pod,
+                    restart_error_threshold=settings.pod_restart_error_threshold,
                 )
                 if error_reason:
                     logger.warning(
@@ -1476,7 +1477,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
 
             status = self._determine_deployment_status(
-                k8s_deployment, deployment
+                k8s_deployment, deployment, settings
             )
 
             url = kube_utils.build_service_url(
