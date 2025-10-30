@@ -52,7 +52,7 @@ def fetch_logs(
         log_store_model = zen_store.get_stack_component(logs.log_store_id)
         log_store = StackComponent.from_model(log_store_model)
     else:
-        from zenml.log_stores.default_log_store import (
+        from zenml.log_stores.default.default_log_store import (
             DefaultLogStore,
             DefaultLogStoreConfig,
         )

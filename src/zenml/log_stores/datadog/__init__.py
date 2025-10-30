@@ -12,16 +12,3 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Datadog log store implementation."""
-
-from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreFlavor
-from zenml.log_stores.datadog.datadog_log_store import (
-    DatadogLogStore,
-    DatadogLogStoreConfig,
-)
-
-__all__ = [
-    "DatadogLogStore",
-    "DatadogLogStoreConfig",
-    "DatadogLogStoreFlavor",
-]
-

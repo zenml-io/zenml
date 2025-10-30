@@ -15,13 +15,14 @@
 
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, Type, cast
 
-from zenml.stack import StackComponent, StackComponentConfig
+from zenml.enums import StackComponentType
+from zenml.stack import Flavor, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
     from zenml.logging.step_logging import LogEntry
-    from zenml.models import LogsResponse
+    from zenml.models import LogsRequest, LogsResponse
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -46,10 +47,7 @@ class BaseLogStore(StackComponent):
         return cast(BaseLogStoreConfig, self._config)
 
     @abstractmethod
-    def activate(
-        self,
-        source: str = "step",
-    ) -> None:
+    def activate(self, log_request: "LogsRequest") -> None:
         """Activate the log store for log collection.
 
         This method is called when ZenML needs to start collecting and storing
@@ -57,9 +55,7 @@ class BaseLogStore(StackComponent):
         handlers, threads, or connections.
 
         Args:
-            pipeline_run_id: The ID of the pipeline run.
-            step_id: The ID of the step (if collecting step logs).
-            source: The source of the logs (e.g., "step", "orchestrator").
+            log_request: The log request model.
         """
 
     @abstractmethod
@@ -99,4 +95,35 @@ class BaseLogStore(StackComponent):
 
         Returns:
             List of log entries matching the query.
+        """
+
+
+class BaseLogStoreFlavor(Flavor):
+    """Base class for all ZenML log store flavors."""
+
+    @property
+    def type(self) -> StackComponentType:
+        """Type of the flavor.
+
+        Returns:
+            The type of the flavor.
+        """
+        return StackComponentType.LOG_STORE
+
+    @property
+    def config_class(self) -> Type[BaseLogStoreConfig]:
+        """Config class for the base log store flavor.
+
+        Returns:
+            The config class.
+        """
+        return BaseLogStoreConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type["BaseLogStore"]:
+        """Implementation class for the base log store flavor.
+
+        Returns:
+            The implementation class.
         """

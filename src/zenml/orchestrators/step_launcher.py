@@ -269,13 +269,8 @@ class StepLauncher:
         logs_model = None
 
         if step_logging_enabled:
-            from zenml.enums import LoggableEntityType
-
-            logs_context = step_logging.LoggingContext(
-                source="step",
-            )  # type: ignore[assignment]
-
-            logs_model = logs_context.create_log_request()
+            logs_context = step_logging.LoggingContext(source="step")
+            logs_model = logs_context.log_request
 
         with logs_context:
             if run_was_created:
@@ -333,7 +328,8 @@ class StepLauncher:
                         step_logging.LoggingContext,
                     ):
                         # For LoggingContext using DefaultLogStore, trigger merge
-                        from zenml.log_stores.default_log_store import (
+                        # TODO: investigate
+                        from zenml.log_stores.default.default_log_store import (
                             DefaultLogStore,
                         )
 
