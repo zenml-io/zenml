@@ -7,8 +7,17 @@ parameters:
 
 # Basic Kubernetes deployer configuration
 settings:
+  docker:
+    parent_image: safoinme/zenml:deployer-0.4
+    # For local testing: force code inclusion in image
+    allow_download_from_artifact_store: false
+    allow_including_files_in_images: true
+  # Resource configuration
+  resources:
+    cpu_count: 1
+    memory: "2GB"
+    min_replicas: 1
+    max_replicas: 1
   deployer:
     namespace: weather-demo
-    replicas: 1
-    service_type: ClusterIP
-
+    service_type: LoadBalancer

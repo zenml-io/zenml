@@ -7,22 +7,24 @@ parameters:
   city: "San Francisco"
 
 settings:
+  docker:
+    parent_image: safoinme/zenml:deployer-0.4
+    # For local testing: force code inclusion in image
+    allow_download_from_artifact_store: false
+    allow_including_files_in_images: true
+  # Resource configuration with high availability
+  resources:
+    cpu_count: 1
+    memory: "2GB"
+    min_replicas: 3  # Run 3 replicas for redundancy
+    max_replicas: 3  # Fixed scaling (no autoscaling)
   # Advanced Kubernetes deployer configuration
   deployer:
     # Namespace for isolation and organization
     namespace: weather-prod
     
-    # High availability: run 3 replicas for redundancy
-    replicas: 3
-    
-    # Use ClusterIP with Ingress for production-grade external access
-    service_type: ClusterIP
-    
-    # Resource requests and limits
-    cpu_request: "500m"
-    cpu_limit: "1000m"
-    memory_request: "512Mi"
-    memory_limit: "2Gi"
+    # Use LoadBalancer for external access
+    service_type: LoadBalancer
     
     # Health check configuration
     readiness_probe_initial_delay: 5
@@ -30,30 +32,8 @@ settings:
     liveness_probe_initial_delay: 20
     liveness_probe_period: 15
     
-    # Service annotations (useful for cloud provider-specific configurations)
-    service_annotations:
-      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-    
     # Advanced pod placement and scheduling
     pod_settings:
-      # Node selectors to run on specific node pools
-      node_selectors:
-        workload: realtime
-        tier: production
-      
-      # Tolerations to run on tainted nodes
-      tolerations:
-        - key: workload
-          operator: Equal
-          value: realtime
-          effect: NoSchedule
-      
-      # Pod annotations for additional metadata
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
-        prometheus.io/path: "/health"
       
       # Pod labels for organization and filtering
       labels:
@@ -63,20 +43,3 @@ settings:
     
     # Image pull policy
     image_pull_policy: IfNotPresent
-    
-    # Ingress configuration for external access via nginx
-    ingress_enabled: true
-    ingress_class: nginx
-    ingress_host: weather-agent.example.com
-    ingress_path: /
-    ingress_path_type: Prefix
-    
-    # Enable TLS/HTTPS (requires TLS secret to be created separately)
-    ingress_tls_enabled: true
-    ingress_tls_secret_name: weather-agent-tls
-    
-    # Nginx-specific ingress annotations
-    ingress_annotations:
-      nginx.ingress.kubernetes.io/rewrite-target: /
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      cert-manager.io/cluster-issuer: letsencrypt-prod
