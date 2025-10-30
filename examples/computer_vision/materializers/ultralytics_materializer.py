@@ -125,8 +125,9 @@ class UltralyticsYOLOMaterializer(BaseMaterializer):
             )
 
         # Ensure destination directory exists
-        fileio.makedirs(self.uri, exist_ok=True)
+        if not fileio.exists(self.uri):
+            fileio.makedirs(self.uri)
 
         # Copy weights to artifact store
         destination_path = os.path.join(self.uri, self.MODEL_FILENAME)
-        fileio.copy(source_weights_path, destination_path)
+        fileio.copy(str(source_weights_path), destination_path)
