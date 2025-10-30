@@ -29,7 +29,7 @@
 
 import re
 from threading import Lock
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
 
@@ -45,10 +45,10 @@ class FileIORegistry:
 
     def __init__(self) -> None:
         """Initialize the registry."""
-        self._filesystems: Dict["PathType", Type["BaseFilesystem"]] = {}
+        self._filesystems: dict["PathType", type["BaseFilesystem"]] = {}
         self._registration_lock = Lock()
 
-    def register(self, filesystem_cls: Type["BaseFilesystem"]) -> None:
+    def register(self, filesystem_cls: type["BaseFilesystem"]) -> None:
         """Register a filesystem implementation.
 
         Args:
@@ -70,7 +70,7 @@ class FileIORegistry:
 
     def get_filesystem_for_scheme(
         self, scheme: "PathType"
-    ) -> Type["BaseFilesystem"]:
+    ) -> type["BaseFilesystem"]:
         """Get filesystem plugin for given scheme string.
 
         Args:
@@ -96,7 +96,7 @@ class FileIORegistry:
 
     def get_filesystem_for_path(
         self, path: "PathType"
-    ) -> Type["BaseFilesystem"]:
+    ) -> type["BaseFilesystem"]:
         """Get filesystem plugin for given path.
 
         Args:

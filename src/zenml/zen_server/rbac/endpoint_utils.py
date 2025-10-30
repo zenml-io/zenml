@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """High-level helper functions to write endpoints with RBAC."""
 
-from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
+from typing import Any, TypeVar, Union
+from collections.abc import Callable
 from uuid import UUID
 
 from zenml.models import (
@@ -58,7 +59,7 @@ UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 def verify_permissions_and_create_entity(
     request_model: AnyRequest,
     create_method: Callable[[AnyRequest], AnyResponse],
-    surrogate_models: Optional[List[AnyOtherResponse]] = None,
+    surrogate_models: list[AnyOtherResponse] | None = None,
     skip_entitlements: bool = False,
 ) -> AnyResponse:
     """Verify permissions and create the entity if authorized.
@@ -110,9 +111,9 @@ def verify_permissions_and_create_entity(
 
 
 def verify_permissions_and_batch_create_entity(
-    batch: List[AnyRequest],
-    create_method: Callable[[List[AnyRequest]], List[AnyResponse]],
-) -> List[AnyResponse]:
+    batch: list[AnyRequest],
+    create_method: Callable[[list[AnyRequest]], list[AnyResponse]],
+) -> list[AnyResponse]:
     """Verify permissions and create a batch of entities if authorized.
 
     Args:
@@ -156,9 +157,9 @@ def verify_permissions_and_batch_create_entity(
 def verify_permissions_and_get_or_create_entity(
     request_model: AnyRequest,
     get_or_create_method: Callable[
-        [AnyRequest, Optional[Callable[[], None]]], Tuple[AnyResponse, bool]
+        [AnyRequest, Callable[[], None] | None], tuple[AnyResponse, bool]
     ],
-) -> Tuple[AnyResponse, bool]:
+) -> tuple[AnyResponse, bool]:
     """Verify permissions and create the entity if authorized.
 
     Args:
@@ -240,7 +241,7 @@ def verify_permissions_and_list_entities(
     auth_context = get_auth_context()
     assert auth_context
 
-    project_id: Optional[UUID] = None
+    project_id: UUID | None = None
     if isinstance(filter_model, ProjectScopedFilter):
         # A project scoped filter must always be scoped to a specific
         # project. This is required for the RBAC check to work.
@@ -320,7 +321,7 @@ def verify_permissions_and_delete_entity(
 def verify_permissions_and_prune_entities(
     resource_type: ResourceType,
     prune_method: Callable[..., None],
-    project_id: Optional[UUID] = None,
+    project_id: UUID | None = None,
     **kwargs: Any,
 ) -> None:
     """Verify permissions and prune entities of certain type.

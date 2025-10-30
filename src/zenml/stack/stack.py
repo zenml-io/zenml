@@ -21,13 +21,8 @@ from typing import (
     TYPE_CHECKING,
     AbstractSet,
     Any,
-    Dict,
-    List,
     NoReturn,
     Optional,
-    Set,
-    Tuple,
-    Type,
 )
 from uuid import UUID
 
@@ -79,7 +74,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-_STACK_CACHE: Dict[Tuple[UUID, Optional[datetime]], "Stack"] = {}
+_STACK_CACHE: dict[tuple[UUID, datetime | None], "Stack"] = {}
 
 
 class Stack:
@@ -97,8 +92,8 @@ class Stack:
         id: UUID,
         name: str,
         *,
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[List[UUID]] = None,
+        environment: dict[str, str] | None = None,
+        secrets: list[UUID] | None = None,
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
@@ -206,9 +201,9 @@ class Stack:
         cls,
         id: UUID,
         name: str,
-        components: Dict[StackComponentType, "StackComponent"],
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[List[UUID]] = None,
+        components: dict[StackComponentType, "StackComponent"],
+        environment: dict[str, str] | None = None,
+        secrets: list[UUID] | None = None,
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
@@ -245,7 +240,7 @@ class Stack:
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
-            component: Optional["StackComponent"], expected_class: Type[Any]
+            component: Optional["StackComponent"], expected_class: type[Any]
         ) -> NoReturn:
             """Raises a TypeError that the component has an unexpected type.
 
@@ -355,7 +350,7 @@ class Stack:
         )
 
     @property
-    def components(self) -> Dict[StackComponentType, "StackComponent"]:
+    def components(self) -> dict[StackComponentType, "StackComponent"]:
         """All components of the stack.
 
         Returns:
@@ -517,7 +512,7 @@ class Stack:
         """
         return self._deployer
 
-    def dict(self) -> Dict[str, str]:
+    def dict(self) -> dict[str, str]:
         """Converts the stack into a dictionary.
 
         Returns:
@@ -534,8 +529,8 @@ class Stack:
 
     def requirements(
         self,
-        exclude_components: Optional[AbstractSet[StackComponentType]] = None,
-    ) -> Set[str]:
+        exclude_components: AbstractSet[StackComponentType] | None = None,
+    ) -> set[str]:
         """Set of PyPI requirements for the stack.
 
         This method combines the requirements of all stack components (except
@@ -557,7 +552,7 @@ class Stack:
         return set.union(*requirements) if requirements else set()
 
     @property
-    def apt_packages(self) -> List[str]:
+    def apt_packages(self) -> list[str]:
         """List of APT package requirements for the stack.
 
         Returns:
@@ -570,7 +565,7 @@ class Stack:
         ]
 
     @property
-    def environment(self) -> Dict[str, str]:
+    def environment(self) -> dict[str, str]:
         """Environment variables to set when running on this stack.
 
         Returns:
@@ -579,7 +574,7 @@ class Stack:
         return self._environment
 
     @property
-    def secrets(self) -> List[UUID]:
+    def secrets(self) -> list[UUID]:
         """Secrets to set as environment variables when running on this stack.
 
         Returns:
@@ -623,7 +618,7 @@ class Stack:
         return has_local_paths
 
     @property
-    def required_secrets(self) -> Set["secret_utils.SecretReference"]:
+    def required_secrets(self) -> set["secret_utils.SecretReference"]:
         """All required secrets for this stack.
 
         Returns:
@@ -636,7 +631,7 @@ class Stack:
         return set.union(*secrets) if secrets else set()
 
     @property
-    def setting_classes(self) -> Dict[str, Type["BaseSettings"]]:
+    def setting_classes(self) -> dict[str, type["BaseSettings"]]:
         """Setting classes of all components of this stack.
 
         Returns:
@@ -850,7 +845,7 @@ class Stack:
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the stack.
 
         Args:
@@ -885,7 +880,7 @@ class Stack:
         self,
         snapshot: "PipelineSnapshotResponse",
         deployment_name: str,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> "DeploymentResponse":
         """Deploys a pipeline on this stack.
 
@@ -916,7 +911,7 @@ class Stack:
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"
-    ) -> Dict[StackComponentType, "StackComponent"]:
+    ) -> dict[StackComponentType, "StackComponent"]:
         """Gets all the active stack components for a stack.
 
         Args:
@@ -963,7 +958,7 @@ class Stack:
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[UUID, Dict[str, MetadataType]]:
+    ) -> dict[UUID, dict[str, MetadataType]]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:
@@ -972,7 +967,7 @@ class Stack:
         Returns:
             A dictionary mapping component IDs to the metadata they created.
         """
-        pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        pipeline_run_metadata: dict[UUID, dict[str, MetadataType]] = {}
         for component in self.components.values():
             try:
                 component_metadata = component.get_pipeline_run_metadata(
@@ -989,7 +984,7 @@ class Stack:
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[UUID, Dict[str, MetadataType]]:
+    ) -> dict[UUID, dict[str, MetadataType]]:
         """Get component-specific metadata for a step run.
 
         Args:
@@ -998,7 +993,7 @@ class Stack:
         Returns:
             A dictionary mapping component IDs to the metadata they created.
         """
-        step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
+        step_run_metadata: dict[UUID, dict[str, MetadataType]] = {}
         for component in self._get_active_components_for_step(
             info.config
         ).values():

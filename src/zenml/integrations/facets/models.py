@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models used by the Facets integration."""
 
-from typing import Dict, List, Union
 
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
@@ -30,5 +29,5 @@ class FacetsComparison(BaseModel):
             `[{"name": "dataset_name", "table": pd.DataFrame}, ...]`.
     """
 
-    datasets: List[Dict[str, Union[str, pd.DataFrame]]]
+    datasets: list[dict[str, str | pd.DataFrame]]
     model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Model Deployer."""
 
-from typing import ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -45,7 +45,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
     """Hugging Face endpoint model deployer."""
 
     NAME: ClassVar[str] = "HuggingFace"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = (
         HuggingFaceModelDeployerFlavor
     )
 
@@ -59,7 +59,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
         return cast(HuggingFaceModelDeployerConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -69,7 +69,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
 
         def _validate_if_secret_or_token_is_present(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             """Check if secret or token is present in the stack.
 
             Args:
@@ -232,7 +232,7 @@ class HuggingFaceModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "HuggingFaceDeploymentService",
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information that might be relevant to the user.
 
         Args:

@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import Any, Dict, Optional, Sequence, cast
+from typing import Any, cast
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint
@@ -72,7 +73,7 @@ class SecretSchema(NamedSchema, table=True):
 
     internal: bool = Field(default=False)
 
-    values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
+    values: bytes | None = Field(sa_column=Column(TEXT, nullable=True))
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -112,7 +113,7 @@ class SecretSchema(NamedSchema, table=True):
 
     @classmethod
     def _dump_secret_values(
-        cls, values: Dict[str, str], encryption_engine: Optional[AesGcmEngine]
+        cls, values: dict[str, str], encryption_engine: AesGcmEngine | None
     ) -> bytes:
         """Dump the secret values to a string.
 
@@ -149,8 +150,8 @@ class SecretSchema(NamedSchema, table=True):
     def _load_secret_values(
         cls,
         encrypted_values: bytes,
-        encryption_engine: Optional[AesGcmEngine] = None,
-    ) -> Dict[str, str]:
+        encryption_engine: AesGcmEngine | None = None,
+    ) -> dict[str, str]:
         """Load the secret values from a base64 encoded byte string.
 
         Args:
@@ -183,7 +184,7 @@ class SecretSchema(NamedSchema, table=True):
 
         try:
             return cast(
-                Dict[str, str],
+                dict[str, str],
                 json.loads(serialized_values),
             )
         except json.JSONDecodeError as e:
@@ -288,8 +289,8 @@ class SecretSchema(NamedSchema, table=True):
 
     def get_secret_values(
         self,
-        encryption_engine: Optional[AesGcmEngine] = None,
-    ) -> Dict[str, str]:
+        encryption_engine: AesGcmEngine | None = None,
+    ) -> dict[str, str]:
         """Get the secret values for this secret.
 
         This method is used by the SQL secrets store to load the secret values
@@ -315,8 +316,8 @@ class SecretSchema(NamedSchema, table=True):
 
     def set_secret_values(
         self,
-        secret_values: Dict[str, str],
-        encryption_engine: Optional[AesGcmEngine] = None,
+        secret_values: dict[str, str],
+        encryption_engine: AesGcmEngine | None = None,
     ) -> None:
         """Create a `SecretSchema` from a `SecretRequest`.
 

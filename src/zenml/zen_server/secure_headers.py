@@ -13,13 +13,12 @@
 #  permissions and limitations under the License.
 """Secure headers for the ZenML Server."""
 
-from typing import Optional
 
 import secure
 
 from zenml.zen_server.utils import server_config
 
-_secure_headers: Optional[secure.Secure] = None
+_secure_headers: secure.Secure | None = None
 
 
 def secure_headers() -> secure.Secure:
@@ -51,7 +50,7 @@ def initialize_secure_headers() -> None:
     # - if set to a string, we use the string as the value for the header
     # - if set to `False`, we don't set the header
 
-    server: Optional[secure.Server] = None
+    server: secure.Server | None = None
     if config.secure_headers_server:
         server = secure.Server()
         if isinstance(config.secure_headers_server, str):
@@ -59,43 +58,43 @@ def initialize_secure_headers() -> None:
         else:
             server.set(str(config.deployment_id))
 
-    hsts: Optional[secure.StrictTransportSecurity] = None
+    hsts: secure.StrictTransportSecurity | None = None
     if config.secure_headers_hsts:
         hsts = secure.StrictTransportSecurity()
         if isinstance(config.secure_headers_hsts, str):
             hsts.set(config.secure_headers_hsts)
 
-    xfo: Optional[secure.XFrameOptions] = None
+    xfo: secure.XFrameOptions | None = None
     if config.secure_headers_xfo:
         xfo = secure.XFrameOptions()
         if isinstance(config.secure_headers_xfo, str):
             xfo.set(config.secure_headers_xfo)
 
-    csp: Optional[secure.ContentSecurityPolicy] = None
+    csp: secure.ContentSecurityPolicy | None = None
     if config.secure_headers_csp:
         csp = secure.ContentSecurityPolicy()
         if isinstance(config.secure_headers_csp, str):
             csp.set(config.secure_headers_csp)
 
-    xcto: Optional[secure.XContentTypeOptions] = None
+    xcto: secure.XContentTypeOptions | None = None
     if config.secure_headers_content:
         xcto = secure.XContentTypeOptions()
         if isinstance(config.secure_headers_content, str):
             xcto.set(config.secure_headers_content)
 
-    referrer: Optional[secure.ReferrerPolicy] = None
+    referrer: secure.ReferrerPolicy | None = None
     if config.secure_headers_referrer:
         referrer = secure.ReferrerPolicy()
         if isinstance(config.secure_headers_referrer, str):
             referrer.set(config.secure_headers_referrer)
 
-    cache: Optional[secure.CacheControl] = None
+    cache: secure.CacheControl | None = None
     if config.secure_headers_cache:
         cache = secure.CacheControl()
         if isinstance(config.secure_headers_cache, str):
             cache.set(config.secure_headers_cache)
 
-    permissions: Optional[secure.PermissionsPolicy] = None
+    permissions: secure.PermissionsPolicy | None = None
     if config.secure_headers_permissions:
         permissions = secure.PermissionsPolicy()
         if isinstance(config.secure_headers_permissions, str):

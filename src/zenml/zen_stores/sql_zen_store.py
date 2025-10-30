@@ -41,24 +41,17 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
-    Dict,
     ForwardRef,
-    List,
     Literal,
     NoReturn,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
     get_origin,
     overload,
 )
+from collections.abc import Callable, Sequence
 from uuid import UUID
 
 from packaging import version
@@ -463,7 +456,7 @@ def exponential_backoff_with_jitter(
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
 
-    def _get_metrics(self) -> Dict[str, Any]:
+    def _get_metrics(self) -> dict[str, Any]:
         """Get the metrics for the session.
 
         Returns:
@@ -548,9 +541,9 @@ class Session(SqlModelSession):
 
     def __exit__(
         self,
-        exc_type: Optional[Any],
-        exc_val: Optional[Any],
-        exc_tb: Optional[Any],
+        exc_type: Any | None,
+        exc_val: Any | None,
+        exc_tb: Any | None,
     ) -> None:
         """Exit the context manager.
 
@@ -621,19 +614,19 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.SQL
 
-    secrets_store: Optional[SerializeAsAny[SecretsStoreConfiguration]] = None
-    backup_secrets_store: Optional[
+    secrets_store: SerializeAsAny[SecretsStoreConfiguration] | None = None
+    backup_secrets_store: None | (
         SerializeAsAny[SecretsStoreConfiguration]
-    ] = None
+    ) = None
 
-    driver: Optional[SQLDatabaseDriver] = None
-    database: Optional[str] = None
-    username: Optional[PlainSerializedSecretStr] = None
-    password: Optional[PlainSerializedSecretStr] = None
+    driver: SQLDatabaseDriver | None = None
+    database: str | None = None
+    username: PlainSerializedSecretStr | None = None
+    password: PlainSerializedSecretStr | None = None
     ssl: bool = False
-    ssl_ca: Optional[PlainSerializedSecretStr] = None
-    ssl_cert: Optional[PlainSerializedSecretStr] = None
-    ssl_key: Optional[PlainSerializedSecretStr] = None
+    ssl_ca: PlainSerializedSecretStr | None = None
+    ssl_cert: PlainSerializedSecretStr | None = None
+    ssl_key: PlainSerializedSecretStr | None = None
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
@@ -647,12 +640,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             SQL_STORE_BACKUP_DIRECTORY_NAME,
         )
     )
-    backup_database: Optional[str] = None
+    backup_database: str | None = None
 
     @field_validator("secrets_store")
     @classmethod
     def validate_secrets_store(
-        cls, secrets_store: Optional[SecretsStoreConfiguration]
+        cls, secrets_store: SecretsStoreConfiguration | None
     ) -> SecretsStoreConfiguration:
         """Ensures that the secrets store is initialized with a default SQL secrets store.
 
@@ -762,8 +755,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if sql_url.query:
 
                 def _get_query_result(
-                    result: Union[str, Tuple[str, ...]],
-                ) -> Optional[str]:
+                    result: str | tuple[str, ...],
+                ) -> str | None:
                     """Returns the only or the first result of a query.
 
                     Args:
@@ -875,8 +868,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     def get_sqlalchemy_config(
         self,
-        database: Optional[str] = None,
-    ) -> Tuple[URL, Dict[str, Any], Dict[str, Any]]:
+        database: str | None = None,
+    ) -> tuple[URL, dict[str, Any], dict[str, Any]]:
         """Get the SQLAlchemy engine configuration for the SQL ZenML store.
 
         Args:
@@ -890,7 +883,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             NotImplementedError: If the SQL driver is not supported.
         """
         sql_url = make_url(self.url)
-        sqlalchemy_connect_args: Dict[str, Any] = {}
+        sqlalchemy_connect_args: dict[str, Any] = {}
         engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
@@ -922,7 +915,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 database=database,
             )
 
-            sqlalchemy_ssl_args: Dict[str, Any] = {}
+            sqlalchemy_ssl_args: dict[str, Any] = {}
 
             # Handle SSL params
             if self.ssl:
@@ -973,16 +966,16 @@ class SqlZenStore(BaseZenStore):
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
     TYPE: ClassVar[StoreType] = StoreType.SQL
-    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
+    CONFIG_TYPE: ClassVar[type[StoreConfiguration]] = SqlZenStoreConfiguration
 
-    _engine: Optional[Engine] = None
-    _migration_utils: Optional[MigrationUtils] = None
-    _alembic: Optional[Alembic] = None
-    _secrets_store: Optional[BaseSecretsStore] = None
-    _backup_secrets_store: Optional[BaseSecretsStore] = None
+    _engine: Engine | None = None
+    _migration_utils: MigrationUtils | None = None
+    _alembic: Alembic | None = None
+    _secrets_store: BaseSecretsStore | None = None
+    _backup_secrets_store: BaseSecretsStore | None = None
     _should_send_user_enriched_events: bool = False
-    _cached_onboarding_state: Optional[Set[str]] = None
-    _default_user: Optional[UserResponse] = None
+    _cached_onboarding_state: set[str] | None = None
+    _default_user: UserResponse | None = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1108,22 +1101,22 @@ class SqlZenStore(BaseZenStore):
     def filter_and_paginate(
         cls,
         session: Session,
-        query: Union[Select[Any], SelectOfScalar[Any]],
-        table: Type[AnySchema],
+        query: Select[Any] | SelectOfScalar[Any],
+        table: type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: Optional[
+        custom_schema_to_model_conversion: None | (
             Callable[..., AnyResponse]
-        ] = None,
-        custom_fetch: Optional[
+        ) = None,
+        custom_fetch: None | (
             Callable[
                 [
                     Session,
-                    Union[Select[Any], SelectOfScalar[Any]],
+                    Select[Any] | SelectOfScalar[Any],
                     BaseFilter,
                 ],
                 Sequence[Any],
             ]
-        ] = None,
+        ) = None,
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
     ) -> Page[AnyResponse]:
@@ -1161,7 +1154,7 @@ class SqlZenStore(BaseZenStore):
         query = query.distinct()
 
         # Get the total amount of items in the database for a given query
-        custom_fetch_result: Optional[Sequence[Any]] = None
+        custom_fetch_result: Sequence[Any] | None = None
         if custom_fetch:
             custom_fetch_result = custom_fetch(session, query, filter_model)
             total = len(custom_fetch_result)
@@ -1213,7 +1206,7 @@ class SqlZenStore(BaseZenStore):
             item_schemas = query_result.all()
 
         # Convert this page of items from schemas to models.
-        items: List[AnyResponse] = []
+        items: list[AnyResponse] = []
         for schema in item_schemas:
             # If a custom conversion function is provided, use it.
             if custom_schema_to_model_conversion:
@@ -1377,10 +1370,10 @@ class SqlZenStore(BaseZenStore):
 
     def backup_database(
         self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[str] = None,
+        strategy: DatabaseBackupStrategy | None = None,
+        location: str | None = None,
         overwrite: bool = False,
-    ) -> Tuple[str, Any]:
+    ) -> tuple[str, Any]:
         """Backup the database.
 
         Args:
@@ -1450,8 +1443,8 @@ class SqlZenStore(BaseZenStore):
 
     def restore_database(
         self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[Any] = None,
+        strategy: DatabaseBackupStrategy | None = None,
+        location: Any | None = None,
         cleanup: bool = False,
     ) -> None:
         """Restore the database.
@@ -1506,8 +1499,8 @@ class SqlZenStore(BaseZenStore):
 
     def cleanup_database_backup(
         self,
-        strategy: Optional[DatabaseBackupStrategy] = None,
-        location: Optional[Any] = None,
+        strategy: DatabaseBackupStrategy | None = None,
+        location: Any | None = None,
     ) -> None:
         """Delete the database backup.
 
@@ -1615,8 +1608,8 @@ class SqlZenStore(BaseZenStore):
                 self.config.backup_strategy != DatabaseBackupStrategy.DISABLED
                 and set(current_revisions) != set(head_revisions)
             )
-            backup_location: Optional[Any] = None
-            backup_location_msg: Optional[str] = None
+            backup_location: Any | None = None
+            backup_location_msg: str | None = None
 
             if backup_enabled:
                 try:
@@ -1919,7 +1912,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(settings)
 
-    def get_onboarding_state(self) -> List[str]:
+    def get_onboarding_state(self) -> list[str]:
         """Get the server onboarding state.
 
         Returns:
@@ -1936,7 +1929,7 @@ class SqlZenStore(BaseZenStore):
                 return []
 
     def _update_onboarding_state(
-        self, completed_steps: Set[str], session: Session
+        self, completed_steps: set[str], session: Session
     ) -> None:
         """Update the server onboarding state.
 
@@ -1962,7 +1955,7 @@ class SqlZenStore(BaseZenStore):
             json.loads(settings.onboarding_state)
         )
 
-    def update_onboarding_state(self, completed_steps: Set[str]) -> None:
+    def update_onboarding_state(self, completed_steps: set[str]) -> None:
         """Update the server onboarding state.
 
         Args:
@@ -1975,7 +1968,7 @@ class SqlZenStore(BaseZenStore):
 
     def activate_server(
         self, request: ServerActivationRequest
-    ) -> Optional[UserResponse]:
+    ) -> UserResponse | None:
         """Activate the server and optionally create the default admin user.
 
         Args:
@@ -2212,7 +2205,7 @@ class SqlZenStore(BaseZenStore):
     def _get_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         session: Session,
     ) -> APIKeySchema:
         """Helper method to fetch an API key by name or ID.
@@ -2311,7 +2304,7 @@ class SqlZenStore(BaseZenStore):
     def get_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key for a service account.
@@ -2400,7 +2393,7 @@ class SqlZenStore(BaseZenStore):
     def update_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         api_key_update: APIKeyUpdate,
     ) -> APIKeyResponse:
         """Update an API key for a service account.
@@ -2490,7 +2483,7 @@ class SqlZenStore(BaseZenStore):
     def rotate_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         rotate_request: APIKeyRotateRequest,
     ) -> APIKeyResponse:
         """Rotate an API key for a service account.
@@ -2529,7 +2522,7 @@ class SqlZenStore(BaseZenStore):
     def delete_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
     ) -> None:
         """Delete an API key for a service account.
 
@@ -2554,8 +2547,8 @@ class SqlZenStore(BaseZenStore):
         self,
         api_transaction_id: UUID,
         session: Session,
-        method: Optional[str] = None,
-        url: Optional[str] = None,
+        method: str | None = None,
+        url: str | None = None,
     ) -> ApiTransactionSchema:
         """Retrieve or create a new API transaction.
 
@@ -2627,7 +2620,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
-    ) -> Tuple[ApiTransactionResponse, bool]:
+    ) -> tuple[ApiTransactionResponse, bool]:
         """Retrieve or create a new API transaction.
 
         Args:
@@ -3177,7 +3170,7 @@ class SqlZenStore(BaseZenStore):
 
             assert artifact_version.artifact_id
 
-            artifact_version_schema: Optional[ArtifactVersionSchema] = None
+            artifact_version_schema: ArtifactVersionSchema | None = None
 
             if artifact_version.version is None:
                 # No explicit version in the request -> We will try to
@@ -3274,8 +3267,8 @@ class SqlZenStore(BaseZenStore):
 
             # Save metadata of the artifact
             if artifact_version.metadata:
-                values: Dict[str, "MetadataType"] = {}
-                types: Dict[str, "MetadataTypeEnum"] = {}
+                values: dict[str, "MetadataType"] = {}
+                types: dict[str, "MetadataTypeEnum"] = {}
                 for key, value in artifact_version.metadata.items():
                     # Skip metadata that is too large to be stored in the DB.
                     if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -3317,8 +3310,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def batch_create_artifact_versions(
-        self, artifact_versions: List[ArtifactVersionRequest]
-    ) -> List[ArtifactVersionResponse]:
+        self, artifact_versions: list[ArtifactVersionRequest]
+    ) -> list[ArtifactVersionResponse]:
         """Creates a batch of artifact versions.
 
         Args:
@@ -3449,7 +3442,7 @@ class SqlZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: str | UUID,
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
@@ -4012,7 +4005,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def count_stack_components(
-        self, filter_model: Optional[ComponentFilter] = None
+        self, filter_model: ComponentFilter | None = None
     ) -> int:
         """Count all components.
 
@@ -4136,8 +4129,8 @@ class SqlZenStore(BaseZenStore):
 
     def get_internal_authorized_device(
         self,
-        device_id: Optional[UUID] = None,
-        client_id: Optional[UUID] = None,
+        device_id: UUID | None = None,
+        client_id: UUID | None = None,
         hydrate: bool = True,
     ) -> OAuthDeviceInternalResponse:
         """Gets a specific OAuth 2.0 authorized device for internal use.
@@ -4842,7 +4835,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         project_id: UUID,
         code_reference: Optional["CodeReferenceRequest"],
-    ) -> Optional[UUID]:
+    ) -> UUID | None:
         """Creates or reuses a code reference.
 
         Args:
@@ -5063,8 +5056,8 @@ class SqlZenStore(BaseZenStore):
         self,
         snapshot_id: UUID,
         hydrate: bool = True,
-        step_configuration_filter: Optional[List[str]] = None,
-        include_config_schema: Optional[bool] = None,
+        step_configuration_filter: list[str] | None = None,
+        include_config_schema: bool | None = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -5464,8 +5457,8 @@ class SqlZenStore(BaseZenStore):
         *,
         resource_id: UUID,
         resource_type: VisualizationResourceTypes,
-        display_order: Optional[int],
-        exclude_visualization_id: Optional[UUID] = None,
+        display_order: int | None,
+        exclude_visualization_id: UUID | None = None,
     ) -> None:
         """Ensure curated visualizations per resource use unique display orders.
 
@@ -5542,8 +5535,8 @@ class SqlZenStore(BaseZenStore):
                 )
             project_id = visualization.project
 
-            resource_schema_map: Dict[
-                VisualizationResourceTypes, Type[BaseSchema]
+            resource_schema_map: dict[
+                VisualizationResourceTypes, type[BaseSchema]
             ] = {
                 VisualizationResourceTypes.DEPLOYMENT: DeploymentSchema,
                 VisualizationResourceTypes.MODEL: ModelSchema,
@@ -5873,7 +5866,7 @@ class SqlZenStore(BaseZenStore):
     def run_template(
         self,
         template_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
+        run_configuration: PipelineRunConfiguration | None = None,
     ) -> NoReturn:
         """Run a template.
 
@@ -6105,8 +6098,8 @@ class SqlZenStore(BaseZenStore):
                 )
                 for config_table in snapshot.step_configurations
             }
-            regular_output_artifact_nodes: Dict[
-                str, Dict[str, PipelineRunDAG.Node]
+            regular_output_artifact_nodes: dict[
+                str, dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
 
             def _get_regular_output_artifact_node(
@@ -6124,7 +6117,7 @@ class SqlZenStore(BaseZenStore):
                 upstream_steps = set(step.spec.upstream_steps)
 
                 step_id = None
-                metadata: Dict[str, Any] = {}
+                metadata: dict[str, Any] = {}
 
                 step_run = step_runs.get(step_name)
                 if step_run:
@@ -6297,7 +6290,7 @@ class SqlZenStore(BaseZenStore):
                         ] = artifact_node
 
                     for triggered_run in step_run.triggered_runs:
-                        triggered_run_metadata: Dict[str, Any] = {
+                        triggered_run_metadata: dict[str, Any] = {
                             "status": triggered_run.status,
                         }
 
@@ -6637,7 +6630,7 @@ class SqlZenStore(BaseZenStore):
 
     def _check_if_run_in_progress(
         self, run_id: UUID
-    ) -> Tuple[bool, Optional[datetime]]:
+    ) -> tuple[bool, datetime | None]:
         """Check if a pipeline run is in progress.
 
         Args:
@@ -6659,7 +6652,7 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         session: Session,
-        pre_replacement_hook: Optional[Callable[[], None]] = None,
+        pre_replacement_hook: Callable[[], None] | None = None,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
@@ -6784,8 +6777,8 @@ class SqlZenStore(BaseZenStore):
     def get_or_create_run(
         self,
         pipeline_run: PipelineRunRequest,
-        pre_creation_hook: Optional[Callable[[], None]] = None,
-    ) -> Tuple[PipelineRunResponse, bool]:
+        pre_creation_hook: Callable[[], None] | None = None,
+    ) -> tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -7116,7 +7109,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             for resource in run_metadata.resources:
-                reference_schema: Type[BaseSchema]
+                reference_schema: type[BaseSchema]
                 if resource.type == MetadataResourceTypes.PIPELINE_RUN:
                     reference_schema = PipelineRunSchema
                 elif resource.type == MetadataResourceTypes.STEP_RUN:
@@ -7324,8 +7317,8 @@ class SqlZenStore(BaseZenStore):
         secret_name: str,
         private: bool,
         user: UUID,
-        exclude_secret_id: Optional[UUID] = None,
-    ) -> Tuple[bool, str]:
+        exclude_secret_id: UUID | None = None,
+    ) -> tuple[bool, str]:
         """Checks if a secret with the given name already exists with the given private status.
 
         This method enforces the following private status rules:
@@ -7381,7 +7374,7 @@ class SqlZenStore(BaseZenStore):
         return False, ""
 
     def _set_secret_values(
-        self, secret_id: UUID, values: Dict[str, str], backup: bool = True
+        self, secret_id: UUID, values: dict[str, str], backup: bool = True
     ) -> None:
         """Sets the values of a secret in the configured secrets store.
 
@@ -7430,7 +7423,7 @@ class SqlZenStore(BaseZenStore):
             do_backup()
 
     def _backup_secret_values(
-        self, secret_id: UUID, values: Dict[str, str]
+        self, secret_id: UUID, values: dict[str, str]
     ) -> None:
         """Backs up the values of a secret in the configured backup secrets store.
 
@@ -7458,7 +7451,7 @@ class SqlZenStore(BaseZenStore):
 
     def _get_secret_values(
         self, secret_id: UUID, use_backup: bool = True
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Gets the values of a secret from the configured secrets store.
 
         Args:
@@ -7511,7 +7504,7 @@ class SqlZenStore(BaseZenStore):
                     )
             raise
 
-    def _get_backup_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def _get_backup_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Gets the backup values of a secret from the configured backup secrets store.
 
         Args:
@@ -7535,10 +7528,10 @@ class SqlZenStore(BaseZenStore):
     def _update_secret_values(
         self,
         secret_id: UUID,
-        values: Dict[str, Optional[str]],
+        values: dict[str, str | None],
         overwrite: bool = False,
         backup: bool = True,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Updates the values of a secret in the configured secrets store.
 
         This method will update the existing values with the new values
@@ -7574,7 +7567,7 @@ class SqlZenStore(BaseZenStore):
             # store backend or when the secrets store backend is reconfigured to
             # a different account, provider, region etc. without migrating
             # the actual existing secrets themselves.
-            new_values: Dict[str, str] = {
+            new_values: dict[str, str] = {
                 k: v for k, v in values.items() if v is not None
             }
             self._set_secret_values(
@@ -7705,7 +7698,7 @@ class SqlZenStore(BaseZenStore):
 
     def _link_secrets_to_resource(
         self,
-        secrets: Optional[Sequence[Union[str, UUID]]],
+        secrets: Sequence[str | UUID] | None,
         resource: BaseSchema,
         session: Session,
     ) -> None:
@@ -7749,11 +7742,10 @@ class SqlZenStore(BaseZenStore):
                 # The secret resource already exists, so we rollback the session
                 # and do nothing.
                 session.rollback()
-                pass
 
     def _unlink_secrets_from_resource(
         self,
-        secrets: Optional[Sequence[Union[str, UUID]]],
+        secrets: Sequence[str | UUID] | None,
         resource: BaseSchema,
         session: Session,
     ) -> None:
@@ -7917,7 +7909,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_secret_by_name_or_id(
         self,
-        secret_name_or_id: Union[str, UUID],
+        secret_name_or_id: str | UUID,
         include_secret_values: bool = False,
     ) -> SecretResponse:
         """Get a secret by name or ID.
@@ -8249,7 +8241,7 @@ class SqlZenStore(BaseZenStore):
             try:
                 self._update_secret_values(
                     secret_id=secret.id,
-                    values=cast(Dict[str, Optional[str]], values),
+                    values=cast(dict[str, Optional[str]], values),
                     overwrite=True,
                     backup=False,
                 )
@@ -8279,9 +8271,9 @@ class SqlZenStore(BaseZenStore):
     @track_decorator(AnalyticsEvent.CREATED_SERVICE_ACCOUNT)
     def create_service_account(
         self,
-        service_account: Union[
-            ServiceAccountRequest, ServiceAccountInternalRequest
-        ],
+        service_account: (
+            ServiceAccountRequest | ServiceAccountInternalRequest
+        ),
     ) -> ServiceAccountResponse:
         """Creates a new service account.
 
@@ -8325,7 +8317,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a specific service account.
@@ -8386,7 +8378,7 @@ class SqlZenStore(BaseZenStore):
 
     def update_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         service_account_update: ServiceAccountUpdate,
     ) -> ServiceAccountResponse:
         """Updates an existing service account.
@@ -8444,7 +8436,7 @@ class SqlZenStore(BaseZenStore):
 
     def delete_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
     ) -> None:
         """Delete a service account.
 
@@ -8621,10 +8613,10 @@ class SqlZenStore(BaseZenStore):
 
         def fetch_connectors(
             session: Session,
-            query: Union[
-                Select[ServiceConnectorSchema],
-                SelectOfScalar[ServiceConnectorSchema],
-            ],
+            query: (
+                Select[ServiceConnectorSchema] |
+                SelectOfScalar[ServiceConnectorSchema]
+            ),
             filter_model: BaseFilter,
         ) -> Sequence[ServiceConnectorSchema]:
             """Custom fetch function for connector filtering and pagination.
@@ -8879,9 +8871,9 @@ class SqlZenStore(BaseZenStore):
     def _create_connector_secret(
         self,
         connector_name: str,
-        secrets: Dict[str, PlainSerializedSecretStr],
+        secrets: dict[str, PlainSerializedSecretStr],
         session: Session,
-    ) -> Optional[UUID]:
+    ) -> UUID | None:
         """Creates a new secret to store the service connector secret credentials.
 
         Args:
@@ -8954,10 +8946,10 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _list_filtered_service_connectors(
         session: Session,
-        query: Union[
-            Select[ServiceConnectorSchema],
-            SelectOfScalar[ServiceConnectorSchema],
-        ],
+        query: (
+            Select[ServiceConnectorSchema] |
+            SelectOfScalar[ServiceConnectorSchema]
+        ),
         filter_model: ServiceConnectorFilter,
     ) -> Sequence[ServiceConnectorSchema]:
         """Refine a service connector query.
@@ -8993,10 +8985,10 @@ class SqlZenStore(BaseZenStore):
     def _update_connector_secret(
         self,
         connector_name: str,
-        existing_secret_id: Optional[UUID],
-        secrets: Dict[str, PlainSerializedSecretStr],
+        existing_secret_id: UUID | None,
+        secrets: dict[str, PlainSerializedSecretStr],
         session: Session,
-    ) -> Optional[UUID]:
+    ) -> UUID | None:
         """Updates the secret for a service connector.
 
         Args:
@@ -9062,8 +9054,8 @@ class SqlZenStore(BaseZenStore):
     def verify_service_connector(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
@@ -9097,8 +9089,8 @@ class SqlZenStore(BaseZenStore):
     def get_service_connector_client(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
     ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
@@ -9139,7 +9131,7 @@ class SqlZenStore(BaseZenStore):
     def list_service_connector_resources(
         self,
         filter_model: ServiceConnectorFilter,
-    ) -> List[ServiceConnectorResourcesModel]:
+    ) -> list[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -9160,7 +9152,7 @@ class SqlZenStore(BaseZenStore):
             filter_model=filter_model
         ).items
 
-        resource_list: List[ServiceConnectorResourcesModel] = []
+        resource_list: list[ServiceConnectorResourcesModel] = []
 
         for connector in service_connectors:
             if not service_connector_registry.is_registered(connector.type):
@@ -9223,10 +9215,10 @@ class SqlZenStore(BaseZenStore):
 
     def list_service_connector_types(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-    ) -> List[ServiceConnectorTypeModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+    ) -> list[ServiceConnectorTypeModel]:
         """Get a list of service connector types.
 
         Args:
@@ -9285,8 +9277,8 @@ class SqlZenStore(BaseZenStore):
                 self._set_request_user_id(request_model=stack, session=session)
 
             # For clean-up purposes, each created entity is tracked here
-            service_connectors_created_ids: List[UUID] = []
-            components_created_ids: List[UUID] = []
+            service_connectors_created_ids: list[UUID] = []
+            components_created_ids: list[UUID] = []
 
             try:
                 # Validate the name of the new stack
@@ -9296,7 +9288,7 @@ class SqlZenStore(BaseZenStore):
                     stack.labels = {}
 
                 # Service Connectors
-                service_connectors: List[ServiceConnectorResponse] = []
+                service_connectors: list[ServiceConnectorResponse] = []
 
                 orchestrator_components = stack.components[
                     StackComponentType.ORCHESTRATOR
@@ -9386,7 +9378,7 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                components_mapping: dict[StackComponentType, list[UUID]] = {}
                 for (
                     component_type,
                     components,
@@ -9672,7 +9664,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            components: List["StackComponentSchema"] = []
+            components: list["StackComponentSchema"] = []
             if stack_update.components:
                 for (
                     component_type,
@@ -9734,7 +9726,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(stack)
             session.commit()
 
-    def count_stacks(self, filter_model: Optional[StackFilter]) -> int:
+    def count_stacks(self, filter_model: StackFilter | None) -> int:
         """Count all stacks.
 
         Args:
@@ -9853,7 +9845,7 @@ class SqlZenStore(BaseZenStore):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> StackDeploymentConfig:
         """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
@@ -9874,9 +9866,9 @@ class SqlZenStore(BaseZenStore):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
-        date_start: Optional[datetime] = None,
-    ) -> Optional[DeployedStack]:
+        location: str | None = None,
+        date_start: datetime | None = None,
+    ) -> DeployedStack | None:
         """Return a matching ZenML stack that was deployed and registered.
 
         Args:
@@ -10688,7 +10680,7 @@ class SqlZenStore(BaseZenStore):
                     **stack_metadata,
                 }
 
-            completed_onboarding_steps: Set[str] = {
+            completed_onboarding_steps: set[str] = {
                 OnboardingStep.PIPELINE_RUN,
                 OnboardingStep.OSS_ONBOARDING_COMPLETED,
             }
@@ -10991,7 +10983,7 @@ class SqlZenStore(BaseZenStore):
     @lru_cache(maxsize=1)
     def _get_resource_references(
         cls,
-    ) -> List[Tuple[Type[SQLModel], str]]:
+    ) -> list[tuple[type[SQLModel], str]]:
         """Get a list of all other table columns that reference the user table.
 
         Given that this list doesn't change at runtime, we cache it.
@@ -11024,7 +11016,7 @@ class SqlZenStore(BaseZenStore):
 
         # To create this query, we need a list of all tables and their foreign
         # keys that point to the user table.
-        foreign_keys: List[Tuple[Type[SQLModel], str]] = []
+        foreign_keys: list[tuple[type[SQLModel], str]] = []
         for resource_attr in resource_attrs:
             # Extract the target schema from the annotation
             annotation = UserSchema.__annotations__[resource_attr]
@@ -11220,7 +11212,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_user(
         self,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: str | UUID | None = None,
         include_private: bool = False,
         hydrate: bool = True,
     ) -> UserResponse:
@@ -11252,7 +11244,7 @@ class SqlZenStore(BaseZenStore):
 
             # If a UUID is passed, we also allow fetching service accounts
             # with that ID.
-            service_account: Optional[bool] = False
+            service_account: bool | None = False
             if uuid_utils.is_valid_uuid(user_name_or_id):
                 service_account = None
             user = self._get_account_schema(
@@ -11268,7 +11260,7 @@ class SqlZenStore(BaseZenStore):
             )
 
     def get_auth_user(
-        self, user_name_or_id: Union[str, UUID]
+        self, user_name_or_id: str | UUID
     ) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
@@ -11425,7 +11417,7 @@ class SqlZenStore(BaseZenStore):
 
             return updated_user
 
-    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+    def delete_user(self, user_name_or_id: str | UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -11573,7 +11565,7 @@ class SqlZenStore(BaseZenStore):
         return project_model
 
     def get_project(
-        self, project_name_or_id: Union[str, UUID], hydrate: bool = True
+        self, project_name_or_id: str | UUID, hydrate: bool = True
     ) -> ProjectResponse:
         """Get an existing project by name or ID.
 
@@ -11670,7 +11662,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+    def delete_project(self, project_name_or_id: str | UUID) -> None:
         """Deletes a project.
 
         Args:
@@ -11698,7 +11690,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def count_projects(
-        self, filter_model: Optional[ProjectFilter] = None
+        self, filter_model: ProjectFilter | None = None
     ) -> int:
         """Count all projects.
 
@@ -11715,7 +11707,7 @@ class SqlZenStore(BaseZenStore):
     def set_filter_project_id(
         self,
         filter_model: ProjectScopedFilter,
-        project_name_or_id: Optional[Union[UUID, str]] = None,
+        project_name_or_id: UUID | str | None = None,
     ) -> None:
         """Set the project ID on a filter model.
 
@@ -11777,8 +11769,8 @@ class SqlZenStore(BaseZenStore):
 
     def _count_entity(
         self,
-        schema: Type[BaseSchema],
-        filter_model: Optional[BaseFilter] = None,
+        schema: type[BaseSchema],
+        filter_model: BaseFilter | None = None,
     ) -> int:
         """Return count of a given entity.
 
@@ -11806,7 +11798,7 @@ class SqlZenStore(BaseZenStore):
         return int(entity_count) if entity_count else 0
 
     def entity_exists(
-        self, entity_id: UUID, schema_class: Type[AnySchema]
+        self, entity_id: UUID, schema_class: type[AnySchema]
     ) -> bool:
         """Check whether an entity exists in the database.
 
@@ -11825,8 +11817,8 @@ class SqlZenStore(BaseZenStore):
             return False if schema is None else True
 
     def get_entity_by_id(
-        self, entity_id: UUID, schema_class: Type[AnySchema]
-    ) -> Optional[AnyIdentifiedResponse]:
+        self, entity_id: UUID, schema_class: type[AnySchema]
+    ) -> AnyIdentifiedResponse | None:
         """Get an entity by ID.
 
         Args:
@@ -11859,11 +11851,11 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _get_schema_by_id(
         resource_id: UUID,
-        schema_class: Type[AnySchema],
+        schema_class: type[AnySchema],
         session: Session,
-        resource_type: Optional[str] = None,
-        project_id: Optional[UUID] = None,
-        query_options: Optional[Sequence[ExecutableOption]] = None,
+        resource_type: str | None = None,
+        project_id: UUID | None = None,
+        query_options: Sequence[ExecutableOption] | None = None,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
@@ -11911,10 +11903,10 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _get_schema_by_name_or_id(
-        object_name_or_id: Union[str, UUID],
-        schema_class: Type[AnyNamedSchema],
+        object_name_or_id: str | UUID,
+        schema_class: type[AnyNamedSchema],
         session: Session,
-        project_name_or_id: Optional[Union[UUID, str]] = None,
+        project_name_or_id: UUID | str | None = None,
     ) -> AnyNamedSchema:
         """Query a schema by its 'name' or 'id' field.
 
@@ -11972,30 +11964,30 @@ class SqlZenStore(BaseZenStore):
     def _get_reference_schema_by_id(
         self,
         session: Session,
-        resource: Union[BaseRequest, BaseSchema],
-        reference_schema: Type[AnySchema],
+        resource: BaseRequest | BaseSchema,
+        reference_schema: type[AnySchema],
         reference_id: UUID,
-        reference_type: Optional[str] = None,
+        reference_type: str | None = None,
     ) -> AnySchema: ...
 
     @overload
     def _get_reference_schema_by_id(
         self,
         session: Session,
-        resource: Union[BaseRequest, BaseSchema],
-        reference_schema: Type[AnySchema],
+        resource: BaseRequest | BaseSchema,
+        reference_schema: type[AnySchema],
         reference_id: None,
-        reference_type: Optional[str] = None,
+        reference_type: str | None = None,
     ) -> None: ...
 
     def _get_reference_schema_by_id(
         self,
         session: Session,
-        resource: Union[BaseRequest, BaseSchema],
-        reference_schema: Type[AnySchema],
-        reference_id: Optional[UUID] = None,
-        reference_type: Optional[str] = None,
-    ) -> Optional[AnySchema]:
+        resource: BaseRequest | BaseSchema,
+        reference_schema: type[AnySchema],
+        reference_id: UUID | None = None,
+        reference_type: str | None = None,
+    ) -> AnySchema | None:
         """Fetch a referenced resource and verify scope relationship rules.
 
         This helper function is used for two things:
@@ -12051,8 +12043,8 @@ class SqlZenStore(BaseZenStore):
         if isinstance(resource, BaseSchema):
             operation = "updated"
 
-        resource_project_id: Optional[UUID] = None
-        resource_project_name: Optional[str] = None
+        resource_project_id: UUID | None = None
+        resource_project_name: str | None = None
         if isinstance(resource, ProjectScopedRequest):
             resource_project_id = resource.project
             resource_project_name = str(resource.project)
@@ -12121,7 +12113,7 @@ class SqlZenStore(BaseZenStore):
         self,
         filter_model: ProjectScopedFilter,
         session: Session,
-        project_name_or_id: Optional[Union[UUID, str]] = None,
+        project_name_or_id: UUID | str | None = None,
     ) -> None:
         """Set the project ID on a filter model.
 
@@ -12167,8 +12159,8 @@ class SqlZenStore(BaseZenStore):
 
     def _verify_name_uniqueness(
         self,
-        resource: Union[BaseRequest, BaseUpdate],
-        schema: Union[Type[AnyNamedSchema], AnyNamedSchema],
+        resource: BaseRequest | BaseUpdate,
+        schema: type[AnyNamedSchema] | AnyNamedSchema,
         session: Session,
     ) -> None:
         """Check the name uniqueness constraint for a given entity.
@@ -12216,7 +12208,7 @@ class SqlZenStore(BaseZenStore):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
 
         operation: Literal["create", "update"] = "create"
-        project_id: Optional[UUID] = None
+        project_id: UUID | None = None
         if isinstance(resource, BaseRequest):
             # Create operation
             if isinstance(resource, ProjectScopedRequest):
@@ -12273,9 +12265,9 @@ class SqlZenStore(BaseZenStore):
 
     def _get_account_schema(
         self,
-        account_name_or_id: Union[str, UUID],
+        account_name_or_id: str | UUID,
         session: Session,
-        service_account: Optional[bool] = None,
+        service_account: bool | None = None,
     ) -> UserSchema:
         """Gets a user account or a service account schema by name or ID.
 
@@ -12410,7 +12402,7 @@ class SqlZenStore(BaseZenStore):
 
     def get_model_by_name_or_id(
         self,
-        model_name_or_id: Union[str, UUID],
+        model_name_or_id: str | UUID,
         project: UUID,
         hydrate: bool = True,
     ) -> ModelResponse:
@@ -12543,7 +12535,7 @@ class SqlZenStore(BaseZenStore):
 
     def _get_or_create_model(
         self, model_request: ModelRequest
-    ) -> Tuple[bool, ModelResponse]:
+    ) -> tuple[bool, ModelResponse]:
         """Get or create a model.
 
         Args:
@@ -12588,8 +12580,8 @@ class SqlZenStore(BaseZenStore):
         self,
         session: Session,
         model_id: UUID,
-        version: Optional[str] = None,
-        producer_run_id: Optional[UUID] = None,
+        version: str | None = None,
+        producer_run_id: UUID | None = None,
     ) -> bool:
         """Check if a model version with a certain version exists.
 
@@ -12622,8 +12614,8 @@ class SqlZenStore(BaseZenStore):
     def _get_model_version(
         self,
         model_id: UUID,
-        version_name: Optional[str] = None,
-        producer_run_id: Optional[UUID] = None,
+        version_name: str | None = None,
+        producer_run_id: UUID | None = None,
     ) -> ModelVersionResponse:
         """Get a model version.
 
@@ -12700,8 +12692,8 @@ class SqlZenStore(BaseZenStore):
     def _get_or_create_model_version(
         self,
         model_version_request: ModelVersionRequest,
-        producer_run_id: Optional[UUID] = None,
-    ) -> Tuple[bool, ModelVersionResponse]:
+        producer_run_id: UUID | None = None,
+    ) -> tuple[bool, ModelVersionResponse]:
         """Get or create a model version.
 
         Args:
@@ -12741,8 +12733,8 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _get_or_create_model_version_for_run(
-        self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
-    ) -> Optional[UUID]:
+        self, pipeline_or_step_run: PipelineRunSchema | StepRunSchema
+    ) -> UUID | None:
         """Get or create a model version for a pipeline or step run.
 
         Args:
@@ -12821,7 +12813,7 @@ class SqlZenStore(BaseZenStore):
     def _create_model_version(
         self,
         model_version: ModelVersionRequest,
-        producer_run_id: Optional[UUID] = None,
+        producer_run_id: UUID | None = None,
     ) -> ModelVersionResponse:
         """Creates a new model version.
 
@@ -12870,7 +12862,7 @@ class SqlZenStore(BaseZenStore):
             )
             assert model is not None
 
-            model_version_schema: Optional[ModelVersionSchema] = None
+            model_version_schema: ModelVersionSchema | None = None
 
             remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
             while remaining_tries > 0:
@@ -13215,7 +13207,7 @@ class SqlZenStore(BaseZenStore):
     def delete_model_version_artifact_link(
         self,
         model_version_id: UUID,
-        model_version_artifact_link_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to artifact link.
 
@@ -13380,7 +13372,7 @@ class SqlZenStore(BaseZenStore):
     def delete_model_version_pipeline_run_link(
         self,
         model_version_id: UUID,
-        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to pipeline run link.
 
@@ -13444,7 +13436,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If the resource type is not taggable.
         """
-        resource_types: Dict[Type[BaseSchema], TaggableResourceTypes] = {
+        resource_types: dict[type[BaseSchema], TaggableResourceTypes] = {
             ArtifactSchema: TaggableResourceTypes.ARTIFACT,
             ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
             ModelSchema: TaggableResourceTypes.MODEL,
@@ -13485,8 +13477,8 @@ class SqlZenStore(BaseZenStore):
             RunTemplateSchema,
         )
 
-        resource_type_to_schema_mapping: Dict[
-            TaggableResourceTypes, Type[BaseSchema]
+        resource_type_to_schema_mapping: dict[
+            TaggableResourceTypes, type[BaseSchema]
         ] = {
             TaggableResourceTypes.ARTIFACT: ArtifactSchema,
             TaggableResourceTypes.ARTIFACT_VERSION: ArtifactVersionSchema,
@@ -13503,7 +13495,7 @@ class SqlZenStore(BaseZenStore):
 
     def _get_tag_schema(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_name_or_id: str | UUID,
         session: Session,
     ) -> TagSchema:
         """Gets a tag schema by name or ID.
@@ -13526,8 +13518,8 @@ class SqlZenStore(BaseZenStore):
 
     def _attach_tags_to_resources(
         self,
-        tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
-        resources: Union[BaseSchema, Sequence[BaseSchema]],
+        tags: Sequence[str | tag_utils.Tag] | None,
+        resources: BaseSchema | Sequence[BaseSchema],
         session: Session,
     ) -> None:
         """Attaches multiple tags to multiple resources.
@@ -13592,8 +13584,8 @@ class SqlZenStore(BaseZenStore):
             [resources] if isinstance(resources, BaseSchema) else resources
         )
 
-        tag_resources: List[
-            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        tag_resources: list[
+            tuple[TagSchema, TaggableResourceTypes, BaseSchema]
         ] = []
 
         for resource in resources:
@@ -13607,8 +13599,8 @@ class SqlZenStore(BaseZenStore):
 
     def _detach_tags_from_resources(
         self,
-        tags: Optional[Sequence[Union[str, UUID, tag_utils.Tag]]],
-        resources: Union[BaseSchema, List[BaseSchema]],
+        tags: Sequence[str | UUID | tag_utils.Tag] | None,
+        resources: BaseSchema | list[BaseSchema],
         session: Session,
     ) -> None:
         """Detaches multiple tags from multiple resources.
@@ -13928,7 +13920,7 @@ class SqlZenStore(BaseZenStore):
         resource_type: TaggableResourceTypes,
         resource_id_column: Any,
         scope_id_column: Any,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         query = (
             select(scope_id_column, func.count().label("count"))
             .join(
@@ -13994,11 +13986,11 @@ class SqlZenStore(BaseZenStore):
 
     def _create_tag_resource_schemas(
         self,
-        tag_resources: List[
-            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        tag_resources: list[
+            tuple[TagSchema, TaggableResourceTypes, BaseSchema]
         ],
         session: Session,
-    ) -> List[TagResourceSchema]:
+    ) -> list[TagResourceSchema]:
         """Creates a set of tag resource relationships.
 
         Args:
@@ -14017,8 +14009,8 @@ class SqlZenStore(BaseZenStore):
 
         for _ in range(max_retries):
             tag_resource_schemas = []
-            tag_resources_to_create: Set[
-                Tuple[UUID, UUID, TaggableResourceTypes]
+            tag_resources_to_create: set[
+                tuple[UUID, UUID, TaggableResourceTypes]
             ] = set()
 
             for tag_schema, resource_type, resource in tag_resources:
@@ -14059,10 +14051,10 @@ class SqlZenStore(BaseZenStore):
 
                 # If the tag is an exclusive tag, apply the check and attach/detach accordingly
                 if tag_schema.exclusive:
-                    scope_ids: Dict[
-                        TaggableResourceTypes, List[Union[UUID, int]]
+                    scope_ids: dict[
+                        TaggableResourceTypes, list[UUID | int]
                     ] = defaultdict(list)
-                    detach_resources: List[TagResourceRequest] = []
+                    detach_resources: list[TagResourceRequest] = []
 
                     if isinstance(resource, PipelineRunSchema):
                         if resource.pipeline_id:
@@ -14249,8 +14241,8 @@ class SqlZenStore(BaseZenStore):
         return self.batch_create_tag_resource(tag_resources=[tag_resource])[0]
 
     def batch_create_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
-    ) -> List[TagResourceResponse]:
+        self, tag_resources: list[TagResourceRequest]
+    ) -> list[TagResourceResponse]:
         """Create a batch of tag resource relationships.
 
         Args:
@@ -14260,8 +14252,8 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
         """
         with Session(self.engine) as session:
-            resources: List[
-                Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+            resources: list[
+                tuple[TagSchema, TaggableResourceTypes, BaseSchema]
             ] = []
             for tag_resource in tag_resources:
                 resource_schema = self._get_schema_from_resource_type(
@@ -14292,7 +14284,7 @@ class SqlZenStore(BaseZenStore):
 
     def _delete_tag_resource_schemas(
         self,
-        tag_resources: List[TagResourceRequest],
+        tag_resources: list[TagResourceRequest],
         session: Session,
         commit: bool = True,
     ) -> None:
@@ -14335,7 +14327,7 @@ class SqlZenStore(BaseZenStore):
         self.batch_delete_tag_resource(tag_resources=[tag_resource])
 
     def batch_delete_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
+        self, tag_resources: list[TagResourceRequest]
     ) -> None:
         """Delete a batch of tag resource relationships.
 

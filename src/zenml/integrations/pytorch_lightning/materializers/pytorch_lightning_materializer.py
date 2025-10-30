@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the PyTorch Lightning Materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from torch.nn import Module
 
@@ -28,6 +28,6 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write PyTorch models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Module,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     FILENAME: ClassVar[str] = CHECKPOINT_NAME

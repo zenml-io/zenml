@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Argilla integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import ARGILLA
 from zenml.integrations.integration import Integration
@@ -30,7 +29,7 @@ class ArgillaIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Argilla integration.
 
         Returns:

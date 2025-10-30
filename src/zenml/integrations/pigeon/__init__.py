@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Pigeon integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import PIGEON
 from zenml.integrations.integration import Integration
@@ -28,7 +27,7 @@ class PigeonIntegration(Integration):
     REQUIREMENTS = ["ipywidgets>=8.0.0"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Pigeon integration.
 
         Returns:

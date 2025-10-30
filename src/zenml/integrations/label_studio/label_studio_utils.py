@@ -14,7 +14,7 @@
 """Utility functions for the Label Studio annotator integration."""
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 from urllib.parse import quote, urlparse
 
 
@@ -39,9 +39,9 @@ def clean_url(url: str) -> str:
 
 
 def convert_pred_filenames_to_task_ids(
-    preds: List[Dict[str, Any]],
-    tasks: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    preds: list[dict[str, Any]],
+    tasks: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Converts a list of predictions from local file references to task id.
 
     Args:

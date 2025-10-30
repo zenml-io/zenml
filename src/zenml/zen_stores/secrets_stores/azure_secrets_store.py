@@ -18,8 +18,6 @@ import logging
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    Type,
     cast,
 )
 from uuid import UUID
@@ -69,7 +67,7 @@ class AzureSecretsStoreConfiguration(
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def populate_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
@@ -126,7 +124,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
 
     config: AzureSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AZURE
-    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+    CONFIG_TYPE: ClassVar[type[ServiceConnectorSecretsStoreConfiguration]] = (
         AzureSecretsStoreConfiguration
     )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = AZURE_CONNECTOR_TYPE
@@ -197,7 +195,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -227,7 +225,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
 
         logger.debug(f"Created Azure secret: {azure_secret_id}")
 
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -283,7 +281,7 @@ class AzureSecretsStore(ServiceConnectorSecretsStore):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

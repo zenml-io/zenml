@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the langchain vector store materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from langchain.vectorstores.base import VectorStore
 
@@ -27,4 +27,4 @@ class LangchainVectorStoreMaterializer(CloudpickleMaterializer):
     """Handle langchain vector store objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (VectorStore,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (VectorStore,)

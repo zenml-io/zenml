@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Huggingface integration."""
-import sys
-from typing import List, Type, Optional
 
 from zenml.integrations.constants import HUGGINGFACE
 from zenml.integrations.integration import Integration
@@ -34,11 +32,10 @@ class HuggingfaceIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.huggingface import materializers  # noqa
-        from zenml.integrations.huggingface import services
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+    def get_requirements(cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Defines platform specific requirements for the integration.
 
         Args:
@@ -64,7 +61,7 @@ class HuggingfaceIntegration(Integration):
             PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Huggingface integration.
 
         Returns:

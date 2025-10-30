@@ -15,7 +15,7 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
@@ -35,7 +35,7 @@ HTML_FILENAME = "results.html"
 class DeepchecksResultMaterializer(BaseMaterializer):
     """Materializer to read data to and from CheckResult and SuiteResult objects."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         CheckResult,
         SuiteResult,
     )
@@ -43,7 +43,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         ArtifactType.DATA_ANALYSIS
     )
 
-    def load(self, data_type: Type[Any]) -> Union[CheckResult, SuiteResult]:
+    def load(self, data_type: type[Any]) -> CheckResult | SuiteResult:
         """Reads a Deepchecks check or suite result from a serialized JSON file.
 
         Args:
@@ -66,7 +66,7 @@ class DeepchecksResultMaterializer(BaseMaterializer):
             raise RuntimeError(f"Unknown data type: {data_type}")
         return res
 
-    def save(self, result: Union[CheckResult, SuiteResult]) -> None:
+    def save(self, result: CheckResult | SuiteResult) -> None:
         """Creates a JSON serialization for a CheckResult or SuiteResult.
 
         Args:
@@ -77,8 +77,8 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         io_utils.write_file_contents_as_string(filepath, serialized_json)
 
     def save_visualizations(
-        self, result: Union[CheckResult, SuiteResult]
-    ) -> Dict[str, VisualizationType]:
+        self, result: CheckResult | SuiteResult
+    ) -> dict[str, VisualizationType]:
         """Saves visualizations for the given Deepchecks result.
 
         Args:
@@ -94,8 +94,8 @@ class DeepchecksResultMaterializer(BaseMaterializer):
         return {visualization_path: VisualizationType.HTML}
 
     def extract_metadata(
-        self, result: Union[CheckResult, SuiteResult]
-    ) -> Dict[str, "MetadataType"]:
+        self, result: CheckResult | SuiteResult
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given Deepchecks result.
 
         Args:

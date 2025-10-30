@@ -14,7 +14,7 @@
 """Base model definitions."""
 
 from datetime import datetime
-from typing import Any, Dict, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -453,7 +453,7 @@ class BaseIdentifiedResponse(
         return super().get_metadata()
 
     # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for base response models.
 
         Returns:

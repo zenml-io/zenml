@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Runner entrypoint configuration."""
 
-from typing import Any, List, Set
+from typing import Any
 from uuid import UUID
 
 from zenml.client import Client
@@ -29,7 +29,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     """Runner entrypoint configuration."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -42,7 +42,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     def get_entrypoint_arguments(
         cls,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

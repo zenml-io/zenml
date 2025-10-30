@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing curated visualizations."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import Field, NonNegativeInt
@@ -58,11 +58,11 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
             "for the target resource."
         ),
     )
-    display_name: Optional[str] = Field(
+    display_name: str | None = Field(
         default=None,
         title="The display name of the visualization.",
     )
-    display_order: Optional[NonNegativeInt] = Field(
+    display_order: NonNegativeInt | None = Field(
         default=None,
         title="The display order of the visualization.",
         description=(
@@ -98,11 +98,11 @@ class CuratedVisualizationRequest(ProjectScopedRequest):
 class CuratedVisualizationUpdate(BaseUpdate):
     """Update model for curated visualizations."""
 
-    display_name: Optional[str] = Field(
+    display_name: str | None = Field(
         default=None,
         title="The new display name of the visualization.",
     )
-    display_order: Optional[NonNegativeInt] = Field(
+    display_order: NonNegativeInt | None = Field(
         default=None,
         title="The new display order of the visualization.",
         description=(
@@ -110,7 +110,7 @@ class CuratedVisualizationUpdate(BaseUpdate):
             "the combination of resource type and resource ID."
         ),
     )
-    layout_size: Optional[CuratedVisualizationSize] = Field(
+    layout_size: CuratedVisualizationSize | None = Field(
         default=None,
         title="The updated layout size of the visualization.",
     )
@@ -135,11 +135,11 @@ class CuratedVisualizationResponseBody(ProjectScopedResponseBody):
             "Provided for read-only context when available."
         ),
     )
-    display_name: Optional[str] = Field(
+    display_name: str | None = Field(
         default=None,
         title="The display name of the visualization.",
     )
-    display_order: Optional[NonNegativeInt] = Field(
+    display_order: NonNegativeInt | None = Field(
         default=None,
         title="The display order of the visualization.",
         description=(
@@ -216,7 +216,7 @@ class CuratedVisualizationResponse(
         return self.get_body().artifact_version_id
 
     @property
-    def display_name(self) -> Optional[str]:
+    def display_name(self) -> str | None:
         """The display name of the visualization.
 
         Returns:
@@ -225,7 +225,7 @@ class CuratedVisualizationResponse(
         return self.get_body().display_name
 
     @property
-    def display_order(self) -> Optional[int]:
+    def display_order(self) -> int | None:
         """The display order of the visualization.
 
         Returns:

@@ -14,7 +14,7 @@
 """Implementation of the VertexAI experiment tracker for ZenML."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from google.api_core import exceptions
 from google.cloud import aiplatform
@@ -54,7 +54,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         return cast(VertexExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[VertexExperimentTrackerSettings]:
+    def settings_class(self) -> type[VertexExperimentTrackerSettings]:
         """Returns the `BaseSettings` settings class.
 
         Returns:
@@ -74,7 +74,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -138,7 +138,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         resource = aiplatform.Experiment(experiment_name=experiment)
         return cast(str, resource.dashboard_url)
 
-    def _get_tensorboard_resource_name(self, experiment: str) -> Optional[str]:
+    def _get_tensorboard_resource_name(self, experiment: str) -> str | None:
         resource = aiplatform.Experiment(
             experiment_name=experiment
         ).get_backing_tensorboard_resource()

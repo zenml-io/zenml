@@ -16,14 +16,8 @@
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
 )
+from collections.abc import Sequence
 
 import pandas as pd
 from deepchecks.core.checks import BaseCheck
@@ -61,14 +55,14 @@ class DeepchecksDataValidator(BaseDataValidator):
     """Deepchecks data validator stack component."""
 
     NAME: ClassVar[str] = "Deepchecks"
-    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+    FLAVOR: ClassVar[type[BaseDataValidatorFlavor]] = (
         DeepchecksDataValidatorFlavor
     )
 
     @staticmethod
     def _split_checks(
         check_list: Sequence[str],
-    ) -> Tuple[Sequence[str], Sequence[str]]:
+    ) -> tuple[Sequence[str], Sequence[str]]:
         """Split a list of check identifiers in two lists, one for tabular and one for computer vision checks.
 
         Args:
@@ -97,16 +91,16 @@ class DeepchecksDataValidator(BaseDataValidator):
     @classmethod
     def _create_and_run_check_suite(
         cls,
-        check_enum: Type[DeepchecksValidationCheck],
-        reference_dataset: Union[pd.DataFrame, DataLoader[Any]],
-        comparison_dataset: Optional[
-            Union[pd.DataFrame, DataLoader[Any]]
-        ] = None,
-        models: Optional[List[Union[ClassifierMixin, Module]]] = None,
-        check_list: Optional[Sequence[str]] = None,
-        dataset_kwargs: Dict[str, Any] = {},
-        check_kwargs: Dict[str, Dict[str, Any]] = {},
-        run_kwargs: Dict[str, Any] = {},
+        check_enum: type[DeepchecksValidationCheck],
+        reference_dataset: pd.DataFrame | DataLoader[Any],
+        comparison_dataset: None | (
+            pd.DataFrame | DataLoader[Any]
+        ) = None,
+        models: list[ClassifierMixin | Module] | None = None,
+        check_list: Sequence[str] | None = None,
+        dataset_kwargs: dict[str, Any] = {},
+        check_kwargs: dict[str, dict[str, Any]] = {},
+        run_kwargs: dict[str, Any] = {},
     ) -> SuiteResult:
         """Create and run a Deepchecks check suite corresponding to the input parameters.
 
@@ -171,7 +165,7 @@ class DeepchecksDataValidator(BaseDataValidator):
                 is_multi_model = True
             # if the models are of different types, raise an error
             # only the same type of models can be used for comparison
-            if len(set(type(model) for model in models)) > 1:
+            if len({type(model) for model in models}) > 1:
                 raise TypeError(
                     "Models used for comparison checks must be of the same type."
                 )
@@ -345,12 +339,12 @@ class DeepchecksDataValidator(BaseDataValidator):
 
     def data_validation(
         self,
-        dataset: Union[pd.DataFrame, DataLoader[Any]],
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
-        dataset_kwargs: Dict[str, Any] = {},
-        check_kwargs: Dict[str, Dict[str, Any]] = {},
-        run_kwargs: Dict[str, Any] = {},
+        dataset: pd.DataFrame | DataLoader[Any],
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[str] | None = None,
+        dataset_kwargs: dict[str, Any] = {},
+        check_kwargs: dict[str, dict[str, Any]] = {},
+        run_kwargs: dict[str, Any] = {},
         **kwargs: Any,
     ) -> SuiteResult:
         """Run one or more Deepchecks data validation checks on a dataset.
@@ -400,7 +394,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         Returns:
             A Deepchecks SuiteResult with the results of the validation.
         """
-        check_enum: Type[DeepchecksValidationCheck]
+        check_enum: type[DeepchecksValidationCheck]
         if comparison_dataset is None:
             check_enum = DeepchecksDataIntegrityCheck
         else:
@@ -418,13 +412,13 @@ class DeepchecksDataValidator(BaseDataValidator):
 
     def model_validation(
         self,
-        dataset: Union[pd.DataFrame, DataLoader[Any]],
-        model: Union[ClassifierMixin, Module],
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
-        dataset_kwargs: Dict[str, Any] = {},
-        check_kwargs: Dict[str, Dict[str, Any]] = {},
-        run_kwargs: Dict[str, Any] = {},
+        dataset: pd.DataFrame | DataLoader[Any],
+        model: ClassifierMixin | Module,
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[str] | None = None,
+        dataset_kwargs: dict[str, Any] = {},
+        check_kwargs: dict[str, dict[str, Any]] = {},
+        run_kwargs: dict[str, Any] = {},
         **kwargs: Any,
     ) -> Any:
         """Run one or more Deepchecks model validation checks.
@@ -475,7 +469,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         Returns:
             A Deepchecks SuiteResult with the results of the validation.
         """
-        check_enum: Type[DeepchecksValidationCheck]
+        check_enum: type[DeepchecksValidationCheck]
         if comparison_dataset is None:
             check_enum = DeepchecksModelValidationCheck
         else:

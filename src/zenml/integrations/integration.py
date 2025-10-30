@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Base and meta classes for ZenML integrations."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from packaging.requirements import Requirement
 
@@ -33,7 +33,7 @@ class IntegrationMeta(type):
     """Metaclass responsible for registering different Integration subclasses."""
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: tuple[type[Any], ...], dct: dict[str, Any]
     ) -> "IntegrationMeta":
         """Hook into creation of an Integration class.
 
@@ -45,7 +45,7 @@ class IntegrationMeta(type):
         Returns:
             The newly created class.
         """
-        cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
+        cls = cast(type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
             integration_registry.register_integration(cls.NAME, cls)
         return cls
@@ -56,9 +56,9 @@ class Integration(metaclass=IntegrationMeta):
 
     NAME = "base_integration"
 
-    REQUIREMENTS: List[str] = []
-    APT_PACKAGES: List[str] = []
-    REQUIREMENTS_IGNORED_ON_UNINSTALL: List[str] = []
+    REQUIREMENTS: list[str] = []
+    APT_PACKAGES: list[str] = []
+    REQUIREMENTS_IGNORED_ON_UNINSTALL: list[str] = []
 
     @classmethod
     def check_installation(cls) -> bool:
@@ -100,9 +100,9 @@ class Integration(metaclass=IntegrationMeta):
     @classmethod
     def get_requirements(
         cls,
-        target_os: Optional[str] = None,
-        python_version: Optional[str] = None,
-    ) -> List[str]:
+        target_os: str | None = None,
+        python_version: str | None = None,
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:
@@ -116,8 +116,8 @@ class Integration(metaclass=IntegrationMeta):
 
     @classmethod
     def get_uninstall_requirements(
-        cls, target_os: Optional[str] = None
-    ) -> List[str]:
+        cls, target_os: str | None = None
+    ) -> list[str]:
         """Method to get the uninstall requirements for the integration.
 
         Args:
@@ -142,7 +142,7 @@ class Integration(metaclass=IntegrationMeta):
         """Abstract method to activate the integration."""
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Abstract method to declare new stack component flavors.
 
         Returns:
@@ -151,7 +151,7 @@ class Integration(metaclass=IntegrationMeta):
         return []
 
     @classmethod
-    def plugin_flavors(cls) -> List[Type["BasePluginFlavor"]]:
+    def plugin_flavors(cls) -> list[type["BasePluginFlavor"]]:
         """Abstract method to declare new plugin flavors.
 
         Returns:

@@ -16,7 +16,7 @@
 import json
 import logging
 import os
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 from zenml.enums import AuthScheme
 
@@ -25,8 +25,8 @@ T = TypeVar("T")
 
 def handle_json_env_var(
     var: str,
-    expected_type: Type[T],
-    default: Optional[List[str]] = None,
+    expected_type: type[T],
+    default: list[str] | None = None,
 ) -> Any:
     """Converts a json env var into a Python object.
 

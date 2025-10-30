@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML server deployer singleton implementation."""
 
-from typing import ClassVar, Dict, Generator, Optional, Type
+from typing import ClassVar
+from collections.abc import Generator
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ServerProviderType, StoreType
@@ -44,10 +45,10 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
     server providers.
     """
 
-    _providers: ClassVar[Dict[ServerProviderType, BaseServerProvider]] = {}
+    _providers: ClassVar[dict[ServerProviderType, BaseServerProvider]] = {}
 
     @classmethod
-    def register_provider(cls, provider: Type[BaseServerProvider]) -> None:
+    def register_provider(cls, provider: type[BaseServerProvider]) -> None:
         """Register a server provider.
 
         Args:
@@ -93,7 +94,7 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
     def deploy_server(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         restart: bool = False,
     ) -> LocalServerDeployment:
         """Deploy the local ZenML server or update the existing deployment.
@@ -131,7 +132,7 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
     def update_server(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         restart: bool = False,
     ) -> LocalServerDeployment:
         """Update an existing local ZenML server deployment.
@@ -169,7 +170,7 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
 
     def remove_server(
         self,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Tears down and removes all resources and files associated with the local ZenML server deployment.
 
@@ -312,7 +313,7 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
     def get_server_logs(
         self,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Retrieve the logs for the local ZenML server.
 

@@ -14,7 +14,7 @@
 """Implementation of the a Skypilot based AWS VM orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import sky
 
@@ -62,7 +62,7 @@ class SkypilotAWSOrchestrator(SkypilotBaseOrchestrator):
         return cast(SkypilotAWSOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Skypilot orchestrator.
 
         Returns:

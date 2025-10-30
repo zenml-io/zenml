@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
 from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource
@@ -37,8 +37,8 @@ class ZenMLCloudRBAC(RBACInterface):
         self._connection = cloud_connection()
 
     def check_permissions(
-        self, user: "UserResponse", resources: Set[Resource], action: Action
-    ) -> Dict[Resource, bool]:
+        self, user: "UserResponse", resources: set[Resource], action: Action
+    ) -> dict[Resource, bool]:
         """Checks if a user has permissions to perform an action on resources.
 
         Args:
@@ -80,7 +80,7 @@ class ZenMLCloudRBAC(RBACInterface):
 
     def list_allowed_resource_ids(
         self, user: "UserResponse", resource: Resource, action: Action
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 
         Args:
@@ -117,7 +117,7 @@ class ZenMLCloudRBAC(RBACInterface):
         response_json = response.json()
 
         full_resource_access: bool = response_json["full_access"]
-        allowed_ids: List[str] = response_json["ids"]
+        allowed_ids: list[str] = response_json["ids"]
 
         return full_resource_access, allowed_ids
 
@@ -125,9 +125,9 @@ class ZenMLCloudRBAC(RBACInterface):
         self,
         sharing_user: "UserResponse",
         resource: Resource,
-        actions: List[Action],
-        user_id: Optional[str] = None,
-        team_id: Optional[str] = None,
+        actions: list[Action],
+        user_id: str | None = None,
+        team_id: str | None = None,
     ) -> None:
         """Update the resource membership of a user.
 
@@ -149,7 +149,7 @@ class ZenMLCloudRBAC(RBACInterface):
         }
         self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
 
-    def delete_resources(self, resources: List[Resource]) -> None:
+    def delete_resources(self, resources: list[Resource]) -> None:
         """Delete resource membership information for a list of resources.
 
         Args:

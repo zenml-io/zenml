@@ -32,7 +32,8 @@ from ipaddress import (
 from pathlib import Path
 from re import Pattern
 from types import GeneratorType
-from typing import Any, Callable, Dict, Type, Union
+from typing import Any
+from collections.abc import Callable
 from uuid import UUID
 
 from pydantic import NameEmail, SecretBytes, SecretStr
@@ -41,7 +42,7 @@ from pydantic.color import Color
 __all__ = "pydantic_encoder"
 
 
-def isoformat(obj: Union[datetime.date, datetime.time]) -> str:
+def isoformat(obj: datetime.date | datetime.time) -> str:
     """Function to convert a datetime into iso format.
 
     Args:
@@ -53,7 +54,7 @@ def isoformat(obj: Union[datetime.date, datetime.time]) -> str:
     return obj.isoformat()
 
 
-def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
+def decimal_encoder(dec_value: Decimal) -> int | float:
     """Encodes a Decimal as int of there's no exponent, otherwise float.
 
     This is useful when we use ConstrainedDecimal to represent Numeric(x,0)
@@ -79,7 +80,7 @@ def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
         return float(dec_value)
 
 
-ENCODERS_BY_TYPE: Dict[Type[Any], Callable[[Any], Any]] = {
+ENCODERS_BY_TYPE: dict[type[Any], Callable[[Any], Any]] = {
     bytes: lambda obj: obj.decode(),
     Color: str,
     datetime.date: isoformat,

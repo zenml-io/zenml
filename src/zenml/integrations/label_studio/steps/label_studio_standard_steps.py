@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of standard steps for the Label Studio annotator integration."""
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from pydantic import BaseModel
@@ -65,22 +65,22 @@ class LabelStudioDatasetSyncParameters(BaseModel):
     storage_type: str = "local"
     label_config_type: str
 
-    prefix: Optional[str] = None
-    regex_filter: Optional[str] = ".*"
-    use_blob_urls: Optional[bool] = True
-    presign: Optional[bool] = True
-    presign_ttl: Optional[int] = 1
-    description: Optional[str] = ""
+    prefix: str | None = None
+    regex_filter: str | None = ".*"
+    use_blob_urls: bool | None = True
+    presign: bool | None = True
+    presign_ttl: int | None = 1
+    description: str | None = ""
 
     # credentials specific to the main cloud providers
-    azure_account_name: Optional[str] = None
-    azure_account_key: Optional[str] = None
-    google_application_credentials: Optional[str] = None
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
-    aws_session_token: Optional[str] = None
-    s3_region_name: Optional[str] = None
-    s3_endpoint: Optional[str] = None
+    azure_account_name: str | None = None
+    azure_account_key: str | None = None
+    google_application_credentials: str | None = None
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_session_token: str | None = None
+    s3_region_name: str | None = None
+    s3_endpoint: str | None = None
 
 
 @step(enable_cache=False)
@@ -127,7 +127,7 @@ def get_or_create_dataset(
 
 
 @step(enable_cache=False)
-def get_labeled_data(dataset_name: str) -> List:  # type: ignore[type-arg]
+def get_labeled_data(dataset_name: str) -> list:  # type: ignore[type-arg]
     """Gets labeled data from the dataset.
 
     Args:
@@ -166,7 +166,7 @@ def get_labeled_data(dataset_name: str) -> List:  # type: ignore[type-arg]
 def sync_new_data_to_label_studio(
     uri: str,
     dataset_name: str,
-    predictions: List[Dict[str, Any]],
+    predictions: list[dict[str, Any]],
     params: LabelStudioDatasetSyncParameters,
 ) -> None:
     """Syncs new data to Label Studio.

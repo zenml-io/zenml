@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow experiment tracker flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, model_validator
 
@@ -61,7 +61,7 @@ def is_databricks_tracking_uri(tracking_uri: str) -> bool:
 class MLFlowExperimentTrackerSettings(BaseSettings):
     """Settings for the MLflow experiment tracker."""
 
-    experiment_name: Optional[str] = Field(
+    experiment_name: str | None = Field(
         None,
         description="The MLflow experiment name to use for tracking runs.",
     )
@@ -69,7 +69,7 @@ class MLFlowExperimentTrackerSettings(BaseSettings):
         False,
         description="If `True`, will create a nested sub-run for the step.",
     )
-    tags: Dict[str, Any] = Field(
+    tags: dict[str, Any] = Field(
         default_factory=dict,
         description="Tags to attach to the MLflow run for categorization and filtering.",
     )
@@ -80,23 +80,23 @@ class MLFlowExperimentTrackerConfig(
 ):
     """Config for the MLflow experiment tracker."""
 
-    tracking_uri: Optional[str] = Field(
+    tracking_uri: str | None = Field(
         None,
         description="The URI of the MLflow tracking server. If no URI is set, "
         "your stack must contain a LocalArtifactStore and ZenML will point "
         "MLflow to a subdirectory of your artifact store instead.",
     )
-    tracking_username: Optional[str] = SecretField(
+    tracking_username: str | None = SecretField(
         default=None,
         description="Username for authenticating with the MLflow tracking server. "
         "Required when using a remote tracking URI along with tracking_password.",
     )
-    tracking_password: Optional[str] = SecretField(
+    tracking_password: str | None = SecretField(
         default=None,
         description="Password for authenticating with the MLflow tracking server. "
         "Required when using a remote tracking URI along with tracking_username.",
     )
-    tracking_token: Optional[str] = SecretField(
+    tracking_token: str | None = SecretField(
         default=None,
         description="Token for authenticating with the MLflow tracking server. "
         "Alternative to username/password authentication for remote tracking URIs.",
@@ -106,7 +106,7 @@ class MLFlowExperimentTrackerConfig(
         description="Skips verification of TLS connection to the MLflow tracking "
         "server if set to `True`. Use with caution in production environments.",
     )
-    databricks_host: Optional[str] = Field(
+    databricks_host: str | None = Field(
         None,
         description="The host of the Databricks workspace with the MLflow managed "
         "server to connect to. Required when tracking_uri is set to 'databricks'.",
@@ -194,7 +194,7 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -203,7 +203,7 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -221,7 +221,7 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/mlflow.png"
 
     @property
-    def config_class(self) -> Type[MLFlowExperimentTrackerConfig]:
+    def config_class(self) -> type[MLFlowExperimentTrackerConfig]:
         """Returns `MLFlowExperimentTrackerConfig` config class.
 
         Returns:
@@ -230,7 +230,7 @@ class MLFlowExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return MLFlowExperimentTrackerConfig
 
     @property
-    def implementation_class(self) -> Type["MLFlowExperimentTracker"]:
+    def implementation_class(self) -> type["MLFlowExperimentTracker"]:
         """Implementation class for this flavor.
 
         Returns:

@@ -16,8 +16,9 @@
 import time
 from collections import OrderedDict
 from threading import Lock
-from typing import Any, Callable, Optional
-from typing import OrderedDict as OrderedDictType
+from typing import Any
+from collections.abc import Callable
+from collections import OrderedDict as OrderedDictType
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -95,7 +96,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
         self.default_expiry = default_expiry
         self._lock = Lock()
 
-    def set(self, key: UUID, value: Any, expiry: Optional[int] = None) -> None:
+    def set(self, key: UUID, value: Any, expiry: int | None = None) -> None:
         """Insert value into cache with optional custom expiry time in seconds.
 
         Args:
@@ -109,7 +110,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
             )
             self._cleanup()
 
-    def get(self, key: UUID) -> Optional[Any]:
+    def get(self, key: UUID) -> Any | None:
         """Retrieve value if it's still valid; otherwise, return None.
 
         Args:
@@ -121,7 +122,7 @@ class MemoryCache(metaclass=SingletonMetaClass):
         with self._lock:
             return self._get_internal(key)
 
-    def _get_internal(self, key: UUID) -> Optional[Any]:
+    def _get_internal(self, key: UUID) -> Any | None:
         """Helper to retrieve a value without lock (internal use only).
 
         Args:
@@ -153,7 +154,7 @@ F = Callable[[UUID], Any]
 
 
 def cache_result(
-    expiry: Optional[int] = None,
+    expiry: int | None = None,
 ) -> Callable[[F], F]:
     """A decorator to cache the result of a function based on a UUID key argument.
 

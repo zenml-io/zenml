@@ -15,7 +15,7 @@
 
 import shutil
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from zenml.image_builders import (
     BaseImageBuilder,
@@ -93,7 +93,7 @@ class LocalImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Optional[Dict[str, Any]] = None,
+        docker_build_options: dict[str, Any] | None = None,
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and optionally pushes an image using the local Docker client.
@@ -147,7 +147,7 @@ class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
         return "local"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -156,7 +156,7 @@ class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -174,7 +174,7 @@ class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/local.svg"
 
     @property
-    def config_class(self) -> Type[LocalImageBuilderConfig]:
+    def config_class(self) -> type[LocalImageBuilderConfig]:
         """Config class.
 
         Returns:
@@ -183,7 +183,7 @@ class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
         return LocalImageBuilderConfig
 
     @property
-    def implementation_class(self) -> Type[LocalImageBuilder]:
+    def implementation_class(self) -> type[LocalImageBuilder]:
         """Implementation class.
 
         Returns:

@@ -15,7 +15,6 @@
 
 import platform
 import sys
-from typing import List, Optional
 
 from zenml.integrations.constants import MLX
 from zenml.integrations.integration import Integration
@@ -51,9 +50,9 @@ class MLXIntegration(Integration):
     @classmethod
     def get_requirements(
         cls,
-        target_os: Optional[str] = None,
-        python_version: Optional[str] = None,
-    ) -> List[str]:
+        target_os: str | None = None,
+        python_version: str | None = None,
+    ) -> list[str]:
         # sys.platform is "darwin", while platform.system() is "Darwin",
         # similarly on Linux.
         target_os = (target_os or sys.platform).lower()

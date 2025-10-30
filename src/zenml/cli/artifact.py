@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import click
 
@@ -80,9 +80,9 @@ def list_artifacts(**kwargs: Any) -> None:
 )
 def update_artifact(
     artifact_name_or_id: str,
-    name: Optional[str] = None,
-    tag: Optional[List[str]] = None,
-    remove_tag: Optional[List[str]] = None,
+    name: str | None = None,
+    tag: list[str] | None = None,
+    remove_tag: list[str] | None = None,
 ) -> None:
     """Update an artifact by ID or name.
 
@@ -164,9 +164,9 @@ def list_artifact_versions(**kwargs: Any) -> None:
 )
 def update_artifact_version(
     name_id_or_prefix: str,
-    version: Optional[str] = None,
-    tag: Optional[List[str]] = None,
-    remove_tag: Optional[List[str]] = None,
+    version: str | None = None,
+    tag: list[str] | None = None,
+    remove_tag: list[str] | None = None,
 ) -> None:
     """Update an artifact version by ID or artifact name.
 
@@ -298,7 +298,7 @@ def prune_artifacts(
 
 def _artifact_version_to_print(
     artifact_version: ArtifactVersionResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "id": artifact_version.id,
         "name": artifact_version.artifact.name,
@@ -313,7 +313,7 @@ def _artifact_version_to_print(
 
 def _artifact_to_print(
     artifact_version: ArtifactResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "id": artifact_version.id,
         "name": artifact_version.name,

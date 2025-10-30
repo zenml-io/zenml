@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Feast Feature Store for ZenML."""
 
-from typing import Any, Dict, List, Union, cast
+from typing import Any, cast
 
 import pandas as pd
 from feast import FeatureService, FeatureStore  # type: ignore
@@ -42,8 +42,8 @@ class FeastFeatureStore(BaseFeatureStore):
 
     def get_historical_features(
         self,
-        entity_df: Union[pd.DataFrame, str],
-        features: Union[List[str], FeatureService],
+        entity_df: pd.DataFrame | str,
+        features: list[str] | FeatureService,
         full_feature_names: bool = False,
     ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
@@ -69,10 +69,10 @@ class FeastFeatureStore(BaseFeatureStore):
 
     def get_online_features(
         self,
-        entity_rows: List[Dict[str, Any]],
-        features: Union[List[str], FeatureService],
+        entity_rows: list[dict[str, Any]],
+        features: list[str] | FeatureService,
         full_feature_names: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Returns the latest online feature data.
 
         Args:
@@ -94,7 +94,7 @@ class FeastFeatureStore(BaseFeatureStore):
             full_feature_names=full_feature_names,
         ).to_dict()
 
-    def get_data_sources(self) -> List[str]:
+    def get_data_sources(self) -> list[str]:
         """Returns the data sources' names.
 
         Raise:
@@ -106,7 +106,7 @@ class FeastFeatureStore(BaseFeatureStore):
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_data_sources()]
 
-    def get_entities(self) -> List[str]:
+    def get_entities(self) -> list[str]:
         """Returns the entity names.
 
         Raise:
@@ -118,7 +118,7 @@ class FeastFeatureStore(BaseFeatureStore):
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_entities()]
 
-    def get_feature_services(self) -> List[FeatureService]:
+    def get_feature_services(self) -> list[FeatureService]:
         """Returns the feature services.
 
         Raise:
@@ -128,13 +128,13 @@ class FeastFeatureStore(BaseFeatureStore):
             The feature services.
         """
         fs = FeatureStore(repo_path=self.config.feast_repo)
-        feature_services: List[FeatureService] = list(
+        feature_services: list[FeatureService] = list(
             fs.list_feature_services()
         )
 
         return feature_services
 
-    def get_feature_views(self) -> List[str]:
+    def get_feature_views(self) -> list[str]:
         """Returns the feature view names.
 
         Raise:

@@ -16,7 +16,8 @@
 import os
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
-from typing import Any, AsyncGenerator, Dict, List, Optional, cast
+from typing import Any, cast
+from collections.abc import AsyncGenerator
 
 from anyio import to_thread
 from asgiref.typing import (
@@ -103,7 +104,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             native=True,
         )
 
-    def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
+    def _get_dashboard_endpoints(self) -> list[EndpointSpec]:
         """Get the dashboard endpoints specs.
 
         This is called if the dashboard files path is set to construct the
@@ -120,7 +121,7 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
         if not dashboard_files_path or not os.path.isdir(dashboard_files_path):
             return []
 
-        endpoints: List[EndpointSpec] = []
+        endpoints: list[EndpointSpec] = []
 
         async def catch_invalid_api(invalid_api_path: str) -> None:
             """Invalid API endpoint.
@@ -247,9 +248,9 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
 
     def build(
         self,
-        middlewares: List[MiddlewareSpec],
-        endpoints: List[EndpointSpec],
-        extensions: List[AppExtensionSpec],
+        middlewares: list[MiddlewareSpec],
+        endpoints: list[EndpointSpec],
+        extensions: list[AppExtensionSpec],
     ) -> ASGIApplication:
         """Build the FastAPI app for the deployment.
 
@@ -270,14 +271,14 @@ class FastAPIDeploymentAppRunner(BaseDeploymentAppRunner):
             or f"ZenML pipeline deployment server for the "
             f"{self.deployment.name} deployment"
         )
-        docs_url_path: Optional[str] = None
-        redoc_url_path: Optional[str] = None
+        docs_url_path: str | None = None
+        redoc_url_path: str | None = None
         if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.DOCS):
             docs_url_path = self.settings.docs_url_path
         if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.REDOC):
             redoc_url_path = self.settings.redoc_url_path
 
-        fastapi_kwargs: Dict[str, Any] = dict(
+        fastapi_kwargs: dict[str, Any] = dict(
             title=title,
             description=description,
             version=self.settings.app_version

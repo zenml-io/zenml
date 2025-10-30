@@ -20,7 +20,7 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Dict, Generator, List, Optional, Tuple
+from collections.abc import Generator
 
 import psutil
 from psutil import NoSuchProcess
@@ -63,7 +63,7 @@ class LocalDaemonServiceConfig(ServiceConfig):
     """
 
     silent_daemon: bool = False
-    root_runtime_path: Optional[str] = None
+    root_runtime_path: str | None = None
     singleton: bool = False
     blocking: bool = False
 
@@ -79,14 +79,14 @@ class LocalDaemonServiceStatus(ServiceStatus):
             is suppressed (redirected to /dev/null).
     """
 
-    runtime_path: Optional[str] = None
+    runtime_path: str | None = None
     # TODO [ENG-704]: remove field duplication between XServiceStatus and
     #   XServiceConfig (e.g. keep a private reference to the config in the
     #   status)
     silent_daemon: bool = False
 
     @property
-    def config_file(self) -> Optional[str]:
+    def config_file(self) -> str | None:
         """Get the path to the configuration file used to start the service daemon.
 
         Returns:
@@ -98,7 +98,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
         return os.path.join(self.runtime_path, SERVICE_DAEMON_CONFIG_FILE_NAME)
 
     @property
-    def log_file(self) -> Optional[str]:
+    def log_file(self) -> str | None:
         """Get the path to the log file where the service output is/has been logged.
 
         Returns:
@@ -110,7 +110,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
         return os.path.join(self.runtime_path, SERVICE_DAEMON_LOG_FILE_NAME)
 
     @property
-    def pid_file(self) -> Optional[str]:
+    def pid_file(self) -> str | None:
         """Get the path to a daemon PID file.
 
         This is where the last known PID of the daemon process is stored.
@@ -124,7 +124,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
         return os.path.join(self.runtime_path, SERVICE_DAEMON_PID_FILE_NAME)
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         """Return the PID of the currently running daemon.
 
         Returns:
@@ -250,7 +250,7 @@ class LocalDaemonService(BaseService):
         default_factory=LocalDaemonServiceStatus
     )
     # TODO [ENG-705]: allow multiple endpoints per service
-    endpoint: Optional[LocalDaemonServiceEndpoint] = None
+    endpoint: LocalDaemonServiceEndpoint | None = None
 
     def get_service_status_message(self) -> str:
         """Get a message about the current operational state of the service.
@@ -270,7 +270,7 @@ class LocalDaemonService(BaseService):
             )
         return msg
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the daemon process.
 
         Returns:
@@ -284,7 +284,7 @@ class LocalDaemonService(BaseService):
         # the daemon is running
         return ServiceState.ACTIVE, ""
 
-    def _get_daemon_cmd(self) -> Tuple[List[str], Dict[str, str]]:
+    def _get_daemon_cmd(self) -> tuple[list[str], dict[str, str]]:
         """Get the command to run the service daemon.
 
         The default implementation provided by this class is the following:
@@ -449,7 +449,7 @@ class LocalDaemonService(BaseService):
             self.run()
 
     def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
+        self, follow: bool = False, tail: int | None = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 
@@ -465,7 +465,7 @@ class LocalDaemonService(BaseService):
         ):
             return
 
-        with open(self.status.log_file, "r") as f:
+        with open(self.status.log_file) as f:
             if tail:
                 # TODO[ENG-864]: implement a more efficient tailing mechanism that
                 #   doesn't read the entire file

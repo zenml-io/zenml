@@ -37,7 +37,8 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -126,7 +127,7 @@ def is_inside_kubernetes() -> bool:
 
 
 def load_kube_config(
-    incluster: bool = False, context: Optional[str] = None
+    incluster: bool = False, context: str | None = None
 ) -> None:
     """Load the Kubernetes client config.
 
@@ -200,7 +201,7 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
 
 def get_pod(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
-) -> Optional[k8s_client.V1Pod]:
+) -> k8s_client.V1Pod | None:
     """Get a pod from Kubernetes metadata API.
 
     Args:
@@ -396,7 +397,7 @@ def create_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     secret_name: str,
-    data: Dict[str, Optional[str]],
+    data: dict[str, str | None],
 ) -> None:
     """Create a Kubernetes secret.
 
@@ -416,7 +417,7 @@ def update_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     secret_name: str,
-    data: Dict[str, Optional[str]],
+    data: dict[str, str | None],
 ) -> None:
     """Update a Kubernetes secret.
 
@@ -438,7 +439,7 @@ def create_or_update_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     secret_name: str,
-    data: Dict[str, Optional[str]],
+    data: dict[str, str | None],
 ) -> None:
     """Create a Kubernetes secret if it doesn't exist, or update it if it does.
 
@@ -583,7 +584,7 @@ def create_and_wait_for_pod_to_start(
 
 def get_pod_owner_references(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
-) -> List[k8s_client.V1OwnerReference]:
+) -> list[k8s_client.V1OwnerReference]:
     """Get owner references for a pod.
 
     Args:
@@ -600,7 +601,7 @@ def get_pod_owner_references(
         return []
 
     return cast(
-        List[k8s_client.V1OwnerReference], pod.metadata.owner_references
+        list[k8s_client.V1OwnerReference], pod.metadata.owner_references
     )
 
 
@@ -609,7 +610,7 @@ def retry_on_api_exception(
     max_retries: int = 3,
     delay: float = 1,
     backoff: float = 1,
-    fail_on_status_codes: Tuple[int, ...] = (404,),
+    fail_on_status_codes: tuple[int, ...] = (404,),
 ) -> Callable[..., R]:
     """Retry a function on API exceptions.
 
@@ -691,7 +692,7 @@ def get_job(
 def list_jobs(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
-    label_selector: Optional[str] = None,
+    label_selector: str | None = None,
 ) -> k8s_client.V1JobList:
     """List jobs in a namespace.
 
@@ -713,7 +714,7 @@ def update_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_name: str,
-    annotations: Dict[str, str],
+    annotations: dict[str, str],
 ) -> k8s_client.V1Job:
     """Update a job.
 
@@ -750,7 +751,7 @@ def is_step_job(job: k8s_client.V1Job) -> bool:
 
 def get_container_status(
     pod: k8s_client.V1Pod, container_name: str
-) -> Optional[k8s_client.V1ContainerState]:
+) -> k8s_client.V1ContainerState | None:
     """Get the status of a container.
 
     Args:
@@ -772,7 +773,7 @@ def get_container_status(
 
 def get_container_termination_reason(
     pod: k8s_client.V1Pod, container_name: str
-) -> Optional[Tuple[int, str]]:
+) -> tuple[int, str] | None:
     """Get the termination reason for a container.
 
     Args:
@@ -800,9 +801,9 @@ def wait_for_job_to_finish(
     backoff_interval: float = 1,
     maximum_backoff: float = 32,
     exponential_backoff: bool = False,
-    fail_on_container_waiting_reasons: Optional[List[str]] = None,
+    fail_on_container_waiting_reasons: list[str] | None = None,
     stream_logs: bool = True,
-    container_name: Optional[str] = None,
+    container_name: str | None = None,
 ) -> None:
     """Wait for a job to finish.
 
@@ -823,7 +824,7 @@ def wait_for_job_to_finish(
     Raises:
         RuntimeError: If the job failed or timed out.
     """
-    logged_lines_per_pod: Dict[str, int] = defaultdict(int)
+    logged_lines_per_pod: dict[str, int] = defaultdict(int)
     finished_pods = set()
 
     while True:
@@ -939,9 +940,9 @@ def check_job_status(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     job_name: str,
-    fail_on_container_waiting_reasons: Optional[List[str]] = None,
-    container_name: Optional[str] = None,
-) -> Tuple[JobStatus, Optional[str]]:
+    fail_on_container_waiting_reasons: list[str] | None = None,
+    container_name: str | None = None,
+) -> tuple[JobStatus, str | None]:
     """Check the status of a job.
 
     Args:
@@ -1031,7 +1032,7 @@ def create_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
-    data: Dict[str, str],
+    data: dict[str, str],
 ) -> None:
     """Create a Kubernetes config map.
 
@@ -1051,7 +1052,7 @@ def update_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
-    data: Dict[str, str],
+    data: dict[str, str],
 ) -> None:
     """Update a Kubernetes config map.
 
@@ -1111,7 +1112,7 @@ def get_parent_job_name(
     core_api: k8s_client.CoreV1Api,
     pod_name: str,
     namespace: str,
-) -> Optional[str]:
+) -> str | None:
     """Get the name of the job that created a pod.
 
     Args:
@@ -1137,8 +1138,8 @@ def get_parent_job_name(
 
 def apply_default_resource_requests(
     memory: str,
-    cpu: Optional[str] = None,
-    pod_settings: Optional[KubernetesPodSettings] = None,
+    cpu: str | None = None,
+    pod_settings: KubernetesPodSettings | None = None,
 ) -> KubernetesPodSettings:
     """Applies default resource requests to a pod settings object.
 

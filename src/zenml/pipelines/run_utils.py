@@ -1,7 +1,7 @@
 """Utility functions for running pipelines."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
-        Dict[str, Any], StepConfigurationUpdate
+        dict[str, Any], StepConfigurationUpdate
     ]
 
 logger = get_logger(__name__)
@@ -52,9 +52,9 @@ def get_default_run_name(pipeline_name: str) -> str:
 
 def create_placeholder_run(
     snapshot: "PipelineSnapshotResponse",
-    orchestrator_run_id: Optional[str] = None,
+    orchestrator_run_id: str | None = None,
     logs: Optional["LogsRequest"] = None,
-    trigger_info: Optional[PipelineRunTriggerInfo] = None,
+    trigger_info: PipelineRunTriggerInfo | None = None,
 ) -> "PipelineRunResponse":
     """Create a placeholder run for the snapshot.
 
@@ -335,7 +335,7 @@ def upload_notebook_cell_code_if_necessary(
         logger.info("Upload finished.")
 
 
-def get_all_sources_from_value(value: Any) -> List[Source]:
+def get_all_sources_from_value(value: Any) -> list[Source]:
     """Get all source objects from a value.
 
     Args:
@@ -350,10 +350,10 @@ def get_all_sources_from_value(value: Any) -> List[Source]:
     elif isinstance(value, BaseModel):
         for v in value.__dict__.values():
             sources.extend(get_all_sources_from_value(v))
-    elif isinstance(value, Dict):
+    elif isinstance(value, dict):
         for v in value.values():
             sources.extend(get_all_sources_from_value(v))
-    elif isinstance(value, (List, Set, tuple)):
+    elif isinstance(value, (list, set, tuple)):
         for v in value:
             sources.extend(get_all_sources_from_value(v))
 

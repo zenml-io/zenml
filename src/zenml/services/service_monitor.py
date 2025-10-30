@@ -14,7 +14,7 @@
 """Implementation of the service health monitor."""
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import requests
 from pydantic import Field
@@ -57,7 +57,7 @@ class BaseServiceEndpointHealthMonitor(BaseTypedModel):
     @abstractmethod
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
-    ) -> Tuple[ServiceState, str]:
+    ) -> tuple[ServiceState, str]:
         """Check the the current operational state of the external service endpoint.
 
         Args:
@@ -106,7 +106,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
 
     def get_healthcheck_uri(
         self, endpoint: "BaseServiceEndpoint"
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the healthcheck URI for the given service endpoint.
 
         Args:
@@ -127,7 +127,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
 
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
-    ) -> Tuple[ServiceState, str]:
+    ) -> tuple[ServiceState, str]:
         """Run a HTTP endpoint API healthcheck.
 
         Args:
@@ -199,7 +199,7 @@ class TCPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
 
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
-    ) -> Tuple[ServiceState, str]:
+    ) -> tuple[ServiceState, str]:
         """Run a TCP endpoint healthcheck.
 
         Args:

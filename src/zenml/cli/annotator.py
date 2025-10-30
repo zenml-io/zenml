@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality for annotator CLI subcommands."""
 
-from typing import TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 
@@ -161,7 +161,7 @@ def register_annotator_subcommands() -> None:
     def dataset_annotate(
         annotator: "BaseAnnotator",
         dataset_name: str,
-        kwargs: Tuple[str, ...],
+        kwargs: tuple[str, ...],
     ) -> None:
         """Command to launch the annotation interface for a dataset.
 

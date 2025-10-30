@@ -18,10 +18,6 @@ from abc import ABC
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
 )
 from uuid import UUID
 
@@ -73,12 +69,12 @@ class BaseZenStore(
     config: StoreConfiguration
 
     TYPE: ClassVar[StoreType]
-    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]]
+    CONFIG_TYPE: ClassVar[type[StoreConfiguration]]
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def convert_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Method to infer the correct type of the config and convert.
 
         Args:
@@ -142,7 +138,7 @@ class BaseZenStore(
             logger.debug("Skipping database initialization")
 
     @staticmethod
-    def get_store_class(store_type: StoreType) -> Type["BaseZenStore"]:
+    def get_store_class(store_type: StoreType) -> type["BaseZenStore"]:
         """Returns the class of the given store type.
 
         Args:
@@ -178,7 +174,7 @@ class BaseZenStore(
     @staticmethod
     def get_store_config_class(
         store_type: StoreType,
-    ) -> Type["StoreConfiguration"]:
+    ) -> type["StoreConfiguration"]:
         """Returns the store config class of the given store type.
 
         Args:
@@ -294,10 +290,10 @@ class BaseZenStore(
 
     def validate_active_config(
         self,
-        active_project_id: Optional[UUID] = None,
-        active_stack_id: Optional[UUID] = None,
+        active_project_id: UUID | None = None,
+        active_stack_id: UUID | None = None,
         config_name: str = "",
-    ) -> Tuple[Optional[ProjectResponse], StackResponse]:
+    ) -> tuple[ProjectResponse | None, StackResponse]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active project and active
@@ -317,7 +313,7 @@ class BaseZenStore(
         Returns:
             A tuple containing the active project and active stack.
         """
-        active_project: Optional[ProjectResponse] = None
+        active_project: ProjectResponse | None = None
 
         if active_project_id:
             try:

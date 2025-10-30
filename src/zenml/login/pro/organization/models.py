@@ -14,7 +14,6 @@
 """ZenML Pro organization models."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from zenml.login.pro.models import BaseRestAPIModel
@@ -26,7 +25,7 @@ class OrganizationRead(BaseRestAPIModel):
     id: UUID
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     created: datetime
     updated: datetime

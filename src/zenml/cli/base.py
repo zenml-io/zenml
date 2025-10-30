@@ -17,7 +17,6 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
 
 import click
 from packaging import version
@@ -135,9 +134,9 @@ ZENML_PROJECT_TEMPLATES = dict(
     hidden=True,
 )
 def init(
-    path: Optional[Path],
-    template: Optional[str] = None,
-    template_tag: Optional[str] = None,
+    path: Path | None,
+    template: str | None = None,
+    template_tag: str | None = None,
     template_with_defaults: bool = False,
     test: bool = False,
 ) -> None:
@@ -214,7 +213,7 @@ def init(
                 console.print(prompt_message, width=80)
 
             # Check if template is a URL or a preset template name
-            vcs_ref: Optional[str] = None
+            vcs_ref: str | None = None
             if template in ZENML_PROJECT_TEMPLATES:
                 declare(f"Using the {template} template...")
                 zenml_project_template = ZENML_PROJECT_TEMPLATES[template]
@@ -591,7 +590,7 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
     type=bool,
 )
 def info(
-    packages: Tuple[str],
+    packages: tuple[str],
     all: bool = False,
     file: str = "",
     stack: bool = False,
@@ -731,8 +730,8 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     type=bool,
 )
 def backup_database(
-    strategy: Optional[str] = None,
-    location: Optional[str] = None,
+    strategy: str | None = None,
+    location: str | None = None,
     overwrite: bool = False,
 ) -> None:
     """Backup the ZenML database.
@@ -795,8 +794,8 @@ def backup_database(
     type=bool,
 )
 def restore_database(
-    strategy: Optional[str] = None,
-    location: Optional[str] = None,
+    strategy: str | None = None,
+    location: str | None = None,
     cleanup: bool = False,
 ) -> None:
     """Restore the ZenML database.

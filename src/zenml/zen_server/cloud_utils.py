@@ -4,7 +4,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 from threading import RLock
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -33,16 +33,16 @@ class ZenMLCloudConnection:
     def __init__(self) -> None:
         """Initialize the RBAC component."""
         self._config = ServerProConfiguration.get_server_config()
-        self._session: Optional[requests.Session] = None
-        self._token: Optional[str] = None
-        self._token_expires_at: Optional[datetime] = None
+        self._session: requests.Session | None = None
+        self._token: str | None = None
+        self._token_expires_at: datetime | None = None
         self._lock = RLock()
 
     def request(
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         data: Any = None,
     ) -> requests.Response:
         """Send a request using the active session.
@@ -81,7 +81,7 @@ class ZenMLCloudConnection:
             )
             start_time = time.time()
 
-        status_code: Optional[int] = None
+        status_code: int | None = None
         try:
             response = self.session.request(
                 method=method,
@@ -126,7 +126,7 @@ class ZenMLCloudConnection:
         return response
 
     def get(
-        self, endpoint: str, params: Optional[Dict[str, Any]]
+        self, endpoint: str, params: dict[str, Any] | None
     ) -> requests.Response:
         """Send a GET request using the active session.
 
@@ -143,7 +143,7 @@ class ZenMLCloudConnection:
     def post(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         data: Any = None,
     ) -> requests.Response:
         """Send a POST request using the active session.
@@ -164,8 +164,8 @@ class ZenMLCloudConnection:
     def patch(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
     ) -> requests.Response:
         """Send a PATCH request using the active session.
 
@@ -185,8 +185,8 @@ class ZenMLCloudConnection:
     def delete(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
     ) -> requests.Response:
         """Send a DELETE request using the active session.
 

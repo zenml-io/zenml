@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """External artifact definition."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator
@@ -30,12 +30,12 @@ class ExternalArtifactConfiguration(BaseModel):
     Lightweight class to pass in the steps for runtime inference.
     """
 
-    id: Optional[UUID] = None
+    id: UUID | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _remove_old_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _remove_old_attributes(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Remove old attributes that are not used anymore.
 
         Args:

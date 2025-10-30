@@ -15,7 +15,7 @@
 
 import os
 import shutil
-from typing import ClassVar, Dict, Optional, Type, cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -40,9 +40,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer."""
 
     NAME: ClassVar[str] = "MLflow"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = MLFlowModelDeployerFlavor
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = MLFlowModelDeployerFlavor
 
-    _service_path: Optional[str] = None
+    _service_path: str | None = None
 
     @property
     def config(self) -> MLFlowModelDeployerConfig:
@@ -100,7 +100,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "MLFlowDeploymentService",
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information relevant to the user.
 
         Args:

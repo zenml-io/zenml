@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import click
 
@@ -92,7 +92,7 @@ def pipeline() -> None:
     help="Path to JSON file containing parameters for the pipeline function.",
 )
 def register_pipeline(
-    source: str, parameters_path: Optional[str] = None
+    source: str, parameters_path: str | None = None
 ) -> None:
     """Register a pipeline.
 
@@ -118,9 +118,9 @@ def register_pipeline(
 
     pipeline_instance = _import_pipeline(source=source)
 
-    parameters: Dict[str, Any] = {}
+    parameters: dict[str, Any] = {}
     if parameters_path:
-        with open(parameters_path, "r") as f:
+        with open(parameters_path) as f:
             parameters = json.load(f)
 
     try:
@@ -170,9 +170,9 @@ def register_pipeline(
 )
 def build_pipeline(
     source: str,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
-    output_path: Optional[str] = None,
+    config_path: str | None = None,
+    stack_name_or_id: str | None = None,
+    output_path: str | None = None,
 ) -> None:
     """Build Docker images for a pipeline.
 
@@ -252,9 +252,9 @@ def build_pipeline(
 )
 def run_pipeline(
     source: str,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
-    build_path_or_id: Optional[str] = None,
+    config_path: str | None = None,
+    stack_name_or_id: str | None = None,
+    build_path_or_id: str | None = None,
     prevent_build_reuse: bool = False,
 ) -> None:
     """Run a pipeline.
@@ -281,7 +281,7 @@ def run_pipeline(
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
 
-        build: Union[str, PipelineBuildBase, None] = None
+        build: str | PipelineBuildBase | None = None
         if build_path_or_id:
             if uuid_utils.is_valid_uuid(build_path_or_id):
                 build = build_path_or_id
@@ -389,15 +389,15 @@ def run_pipeline(
 )
 def deploy_pipeline(
     source: str,
-    deployment_name: Optional[str] = None,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
-    build_path_or_id: Optional[str] = None,
+    deployment_name: str | None = None,
+    config_path: str | None = None,
+    stack_name_or_id: str | None = None,
+    build_path_or_id: str | None = None,
     prevent_build_reuse: bool = False,
     update: bool = False,
     overtake: bool = False,
     attach: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
 ) -> None:
     """Deploy a pipeline for online inference.
 
@@ -431,7 +431,7 @@ def deploy_pipeline(
     with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
 
-        build: Union[str, PipelineBuildBase, None] = None
+        build: str | PipelineBuildBase | None = None
         if build_path_or_id:
             if uuid_utils.is_valid_uuid(build_path_or_id):
                 build = build_path_or_id
@@ -529,8 +529,8 @@ def deploy_pipeline(
 def create_run_template(
     source: str,
     name: str,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
+    config_path: str | None = None,
+    stack_name_or_id: str | None = None,
 ) -> None:
     """DEPRECATED: Create a run template for a pipeline.
 
@@ -663,7 +663,7 @@ def list_schedules(**kwargs: Any) -> None:
     help="The cron expression to update the schedule with.",
 )
 def update_schedule(
-    schedule_name_or_id: str, cron_expression: Optional[str] = None
+    schedule_name_or_id: str, cron_expression: str | None = None
 ) -> None:
     """Update a pipeline schedule.
 
@@ -995,11 +995,11 @@ def snapshot() -> None:
 def create_pipeline_snapshot(
     source: str,
     name: str,
-    description: Optional[str] = None,
-    replace: Optional[bool] = None,
-    tags: Optional[List[str]] = None,
-    config_path: Optional[str] = None,
-    stack_name_or_id: Optional[str] = None,
+    description: str | None = None,
+    replace: bool | None = None,
+    tags: list[str] | None = None,
+    config_path: str | None = None,
+    stack_name_or_id: str | None = None,
 ) -> None:
     """Create a snapshot of a pipeline.
 
@@ -1075,8 +1075,8 @@ def create_pipeline_snapshot(
 )
 def run_snapshot(
     snapshot_name_or_id: str,
-    pipeline_name_or_id: Optional[str] = None,
-    config_path: Optional[str] = None,
+    pipeline_name_or_id: str | None = None,
+    config_path: str | None = None,
 ) -> None:
     """Run a snapshot.
 
@@ -1147,11 +1147,11 @@ def run_snapshot(
 )
 def deploy_snapshot(
     snapshot_name_or_id: str,
-    pipeline_name_or_id: Optional[str] = None,
-    deployment_name_or_id: Optional[str] = None,
+    pipeline_name_or_id: str | None = None,
+    deployment_name_or_id: str | None = None,
     update: bool = False,
     overtake: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
 ) -> None:
     """Deploy a pipeline for online inference.
 

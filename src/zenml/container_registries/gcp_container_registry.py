@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a GCP Container Registry class."""
 
-from typing import Optional
 
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
@@ -38,7 +37,7 @@ class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -55,7 +54,7 @@ class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -64,7 +63,7 @@ class GCPContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:

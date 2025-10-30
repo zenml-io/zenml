@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -66,10 +67,10 @@ class StackComponentSchema(NamedSchema, table=True):
     type: str
     flavor: str
     configuration: bytes
-    labels: Optional[bytes]
-    environment: Optional[bytes] = Field(default=None)
+    labels: bytes | None
+    environment: bytes | None = Field(default=None)
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -79,14 +80,14 @@ class StackComponentSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="components")
 
-    stacks: List["StackSchema"] = Relationship(
+    stacks: list["StackSchema"] = Relationship(
         back_populates="components", link_model=StackCompositionSchema
     )
-    schedules: List["ScheduleSchema"] = Relationship(
+    schedules: list["ScheduleSchema"] = Relationship(
         back_populates="orchestrator",
     )
 
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         back_populates="stack_component",
     )
     flavor_schema: Optional["FlavorSchema"] = Relationship(
@@ -97,12 +98,12 @@ class StackComponentSchema(NamedSchema, table=True):
         },
     )
 
-    run_or_step_logs: List["LogsSchema"] = Relationship(
+    run_or_step_logs: list["LogsSchema"] = Relationship(
         back_populates="artifact_store",
         sa_relationship_kwargs={"cascade": "delete", "uselist": True},
     )
 
-    connector_id: Optional[UUID] = build_foreign_key_field(
+    connector_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=ServiceConnectorSchema.__tablename__,
         source_column="connector_id",
@@ -114,8 +115,8 @@ class StackComponentSchema(NamedSchema, table=True):
         back_populates="components"
     )
 
-    connector_resource_id: Optional[str]
-    secrets: List["SecretSchema"] = Relationship(
+    connector_resource_id: str | None
+    secrets: list["SecretSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK_COMPONENT.value}', foreign(SecretResourceSchema.resource_id)==StackComponentSchema.id)",
             secondary="secret_resource",
@@ -166,7 +167,7 @@ class StackComponentSchema(NamedSchema, table=True):
     def from_request(
         cls,
         request: "ComponentRequest",
-        service_connector: Optional[ServiceConnectorSchema] = None,
+        service_connector: ServiceConnectorSchema | None = None,
     ) -> "StackComponentSchema":
         """Create a component schema from a request.
 

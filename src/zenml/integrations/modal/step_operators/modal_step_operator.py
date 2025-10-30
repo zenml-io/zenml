@@ -14,7 +14,7 @@
 """Modal step operator implementation."""
 
 import asyncio
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import modal
 from modal_proto import api_pb2
@@ -43,7 +43,7 @@ MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 
 def get_gpu_values(
     settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
-) -> Optional[str]:
+) -> str | None:
     """Get the GPU values for the Modal step operator.
 
     Args:
@@ -76,7 +76,7 @@ class ModalStepOperator(BaseStepOperator):
         return cast(ModalStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Get the settings class for the Modal step operator.
 
         Returns:
@@ -85,14 +85,14 @@ class ModalStepOperator(BaseStepOperator):
         return ModalStepOperatorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Get the stack validator for the Modal step operator.
 
         Returns:
             The stack validator.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The Modal step operator runs code remotely and "
@@ -128,7 +128,7 @@ class ModalStepOperator(BaseStepOperator):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Get the Docker build configurations for the Modal step operator.
 
         Args:
@@ -152,8 +152,8 @@ class ModalStepOperator(BaseStepOperator):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launch a step run on Modal.
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Internal BaseStep subclass used by the step decorator."""
 
-from typing import Any, Optional
+from typing import Any
 
 from zenml.config.source import Source
 from zenml.steps import BaseStep, step
@@ -84,7 +84,7 @@ def remove_decorator_from_source_code(
 class _DecoratedStep(BaseStep):
     """Internal BaseStep subclass used by the step decorator."""
 
-    def _get_step_decorator_name(self) -> Optional[str]:
+    def _get_step_decorator_name(self) -> str | None:
         """The name of the step decorator.
 
         Returns:

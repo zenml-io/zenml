@@ -14,7 +14,7 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from pyspark.conf import SparkConf
 
@@ -49,7 +49,7 @@ class SparkStepOperator(BaseStepOperator):
         return cast(SparkStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Spark step operator.
 
         Returns:
@@ -58,7 +58,7 @@ class SparkStepOperator(BaseStepOperator):
         return SparkStepOperatorSettings
 
     @property
-    def application_path(self) -> Optional[str]:
+    def application_path(self) -> str | None:
         """Optional method for providing the application path.
 
         This is especially critical when using 'spark-submit' as it defines the
@@ -111,7 +111,7 @@ class SparkStepOperator(BaseStepOperator):
         self,
         spark_config: SparkConf,
         info: "StepRunInfo",
-        environment: Dict[str, str],
+        environment: dict[str, str],
     ) -> None:
         """Configures Spark to handle backends like YARN, Mesos or Kubernetes.
 
@@ -215,7 +215,7 @@ class SparkStepOperator(BaseStepOperator):
         self,
         spark_config: SparkConf,
         deploy_mode: str,
-        entrypoint_command: List[str],
+        entrypoint_command: list[str],
     ) -> None:
         """Generates and executes a spark-submit command.
 
@@ -269,8 +269,8 @@ class SparkStepOperator(BaseStepOperator):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launches a step on Spark.
 

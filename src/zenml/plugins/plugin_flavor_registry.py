@@ -14,7 +14,8 @@
 """Registry for all plugins."""
 
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,8 +35,8 @@ if TYPE_CHECKING:
 class RegistryEntry(BaseModel):
     """Registry Entry Class for the Plugin Registry."""
 
-    flavor_class: Type[BasePluginFlavor]
-    plugin_instance: Optional[BasePlugin] = None
+    flavor_class: type[BasePluginFlavor]
+    plugin_instance: BasePlugin | None = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -44,13 +45,13 @@ class PluginFlavorRegistry:
 
     def __init__(self) -> None:
         """Initialize the event flavor registry."""
-        self.plugin_flavors: Dict[
-            PluginType, Dict[PluginSubType, Dict[str, RegistryEntry]]
+        self.plugin_flavors: dict[
+            PluginType, dict[PluginSubType, dict[str, RegistryEntry]]
         ] = {}
         self.register_plugin_flavors()
 
     @property
-    def _types(self) -> List[PluginType]:
+    def _types(self) -> list[PluginType]:
         """Returns all available types.
 
         Returns:
@@ -60,7 +61,7 @@ class PluginFlavorRegistry:
 
     def list_subtypes_within_type(
         self, _type: PluginType
-    ) -> List[PluginSubType]:
+    ) -> list[PluginSubType]:
         """Returns all available subtypes for a given type.
 
         Args:
@@ -73,7 +74,7 @@ class PluginFlavorRegistry:
 
     def _flavor_entries(
         self, _type: PluginType, subtype: PluginSubType
-    ) -> Dict[str, RegistryEntry]:
+    ) -> dict[str, RegistryEntry]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
@@ -95,7 +96,7 @@ class PluginFlavorRegistry:
         self,
         _type: PluginType,
         subtype: PluginSubType,
-    ) -> List[Type[BasePluginFlavor]]:
+    ) -> list[type[BasePluginFlavor]]:
         """Get a list of all subtypes for a specific flavor and type.
 
         Args:
@@ -173,7 +174,7 @@ class PluginFlavorRegistry:
         )
 
     @property
-    def _builtin_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
+    def _builtin_flavors(self) -> Sequence[type["BasePluginFlavor"]]:
         """A list of all default in-built flavors.
 
         Returns:
@@ -187,7 +188,7 @@ class PluginFlavorRegistry:
         return flavors
 
     @property
-    def _integration_flavors(self) -> Sequence[Type["BasePluginFlavor"]]:
+    def _integration_flavors(self) -> Sequence[type["BasePluginFlavor"]]:
         """A list of all integration event flavors.
 
         Returns:
@@ -227,7 +228,7 @@ class PluginFlavorRegistry:
             self.register_plugin_flavor(flavor_class=flavor)
 
     def register_plugin_flavor(
-        self, flavor_class: Type[BasePluginFlavor]
+        self, flavor_class: type[BasePluginFlavor]
     ) -> None:
         """Registers a new event_source.
 
@@ -267,7 +268,7 @@ class PluginFlavorRegistry:
         _type: PluginType,
         subtype: PluginSubType,
         name: str,
-    ) -> Type[BasePluginFlavor]:
+    ) -> type[BasePluginFlavor]:
         """Get a single event_source based on the key.
 
         Args:

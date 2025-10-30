@@ -6,7 +6,6 @@ Create Date: 2023-01-24 12:54:29.192057
 
 """
 
-from typing import Set
 
 import sqlalchemy as sa
 from alembic import op
@@ -31,7 +30,7 @@ def _fk_constraint_name(table: str, column: str) -> str:
     return f"fk_{table}_{column}_workspace"
 
 
-def _get_changed_tables() -> Set[str]:
+def _get_changed_tables() -> set[str]:
     return {
         "artifact",
         "flavor",

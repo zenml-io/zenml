@@ -16,7 +16,7 @@
 import importlib
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import pandas as pd
@@ -77,7 +77,7 @@ class MLFlowDeploymentEndpoint(LocalDaemonServiceEndpoint):
     monitor: HTTPEndpointHealthMonitor
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -106,9 +106,9 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
     model_uri: str
     model_name: str
-    registry_model_name: Optional[str] = None
-    registry_model_version: Optional[str] = None
-    registry_model_stage: Optional[str] = None
+    registry_model_name: str | None = None
+    registry_model_version: str | None = None
+    registry_model_stage: str | None = None
     workers: int = 1
     mlserver: bool = False
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -178,7 +178,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
 
     def __init__(
         self,
-        config: Union[MLFlowDeploymentConfig, Dict[str, Any]],
+        config: MLFlowDeploymentConfig | dict[str, Any],
         **attrs: Any,
     ) -> None:
         """Initialize the MLflow deployment service.
@@ -232,8 +232,8 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
 
         self.endpoint.prepare_for_start()
         try:
-            backend_kwargs: Dict[str, Any] = {}
-            serve_kwargs: Dict[str, Any] = {}
+            backend_kwargs: dict[str, Any] = {}
+            serve_kwargs: dict[str, Any] = {}
             mlflow_version = MLFLOW_VERSION.split(".")
             # MLflow version 1.26 introduces an additional mandatory
             # `timeout` argument to the `PyFuncBackend.serve` function
@@ -271,7 +271,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             )
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Get the URI where the prediction service is answering requests.
 
         Returns:

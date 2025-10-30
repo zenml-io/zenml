@@ -15,7 +15,7 @@
 
 import argparse
 import os
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
@@ -59,7 +59,7 @@ class VLLMDeploymentEndpoint(LocalDaemonServiceEndpoint):
     monitor: HTTPEndpointHealthMonitor
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -76,20 +76,20 @@ class VLLMServiceConfig(LocalDaemonServiceConfig):
 
     model: str
     port: int
-    host: Optional[str] = None
+    host: str | None = None
     blocking: bool = True
     # If unspecified, model name or path will be used.
-    tokenizer: Optional[str] = None
-    served_model_name: Optional[Union[str, List[str]]] = None
+    tokenizer: str | None = None
+    served_model_name: str | list[str] | None = None
     # Trust remote code from huggingface.
-    trust_remote_code: Optional[bool] = False
+    trust_remote_code: bool | None = False
     # ['auto', 'slow', 'mistral']
-    tokenizer_mode: Optional[str] = "auto"
+    tokenizer_mode: str | None = "auto"
     # ['auto', 'half', 'float16', 'bfloat16', 'float', 'float32']
-    dtype: Optional[str] = "auto"
+    dtype: str | None = "auto"
     # The specific model version to use. It can be a branch name, a tag name, or a commit id.
     # If unspecified, will use the default version.
-    revision: Optional[str] = None
+    revision: str | None = None
 
 
 class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
@@ -167,7 +167,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             logger.info("Stopping vLLM prediction service...")
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:

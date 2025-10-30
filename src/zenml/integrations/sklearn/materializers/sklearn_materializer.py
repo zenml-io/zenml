@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the sklearn materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from sklearn.base import (
     BaseEstimator,
@@ -37,7 +37,7 @@ from zenml.materializers.cloudpickle_materializer import (
 class SklearnMaterializer(CloudpickleMaterializer):
     """Materializer to read data to and from sklearn."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         BaseEstimator,
         ClassifierMixin,
         ClusterMixin,

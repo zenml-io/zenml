@@ -34,11 +34,7 @@ import os
 import random
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     cast,
 )
 from uuid import UUID
@@ -94,7 +90,7 @@ logger = get_logger(__name__)
 class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
-    _k8s_client: Optional[k8s_client.ApiClient] = None
+    _k8s_client: k8s_client.ApiClient | None = None
 
     def should_build_pipeline_image(
         self, snapshot: "PipelineSnapshotBase"
@@ -113,7 +109,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return settings.always_build_pipeline_image
 
     def get_kube_client(
-        self, incluster: Optional[bool] = None
+        self, incluster: bool | None = None
     ) -> k8s_client.ApiClient:
         """Getter for the Kubernetes API client.
 
@@ -197,7 +193,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return cast(KubernetesOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Kubernetes orchestrator.
 
         Returns:
@@ -205,7 +201,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
-    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+    def get_kubernetes_contexts(self) -> tuple[list[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
         Raises:
@@ -227,14 +223,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return context_names, active_context_name
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Defines the validator that checks whether the stack is valid.
 
         Returns:
             Stack validator.
         """
 
-        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_local_requirements(stack: "Stack") -> tuple[bool, str]:
             """Validates that the stack contains no local components.
 
             Args:
@@ -381,7 +377,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return f"zenml-token-{snapshot_id}"
 
     @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
+    def supported_execution_modes(self) -> list[ExecutionMode]:
         """Returns the supported execution modes for this flavor.
 
         Returns:
@@ -397,10 +393,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -800,8 +796,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -869,7 +865,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
-    ) -> Optional[ExecutionStatus]:
+    ) -> ExecutionStatus | None:
         """Map Kubernetes job status to ZenML execution status.
 
         Args:
@@ -890,7 +886,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:

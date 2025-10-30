@@ -14,7 +14,7 @@
 """Deprecation utilities."""
 
 import warnings
-from typing import Any, Dict, Set, Tuple, Type, Union
+from typing import Any
 
 from pydantic import BaseModel, model_validator
 
@@ -27,7 +27,7 @@ PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE = "__previous_deprecation_warnings"
 
 
 def deprecate_pydantic_attributes(
-    *attributes: Union[str, Tuple[str, str]],
+    *attributes: str | tuple[str, str],
 ) -> Any:
     """Utility function for deprecating and migrating pydantic attributes.
 
@@ -64,8 +64,8 @@ def deprecate_pydantic_attributes(
     @classmethod
     @before_validator_handler
     def _deprecation_validator(
-        cls: Type[BaseModel], data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls: type[BaseModel], data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Pydantic validator function for deprecating pydantic attributes.
 
         Args:
@@ -82,7 +82,7 @@ def deprecate_pydantic_attributes(
         Returns:
             Input values with potentially migrated values.
         """
-        previous_deprecation_warnings: Set[str] = getattr(
+        previous_deprecation_warnings: set[str] = getattr(
             cls, PREVIOUS_DEPRECATION_WARNINGS_ATTRIBUTE, set()
         )
 

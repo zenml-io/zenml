@@ -18,7 +18,7 @@ from importlib.metadata import (
     distribution,
     distributions,
 )
-from typing import Dict, List, Optional, Union, cast
+from typing import cast
 
 import requests
 from packaging import version
@@ -59,7 +59,7 @@ def is_latest_zenml_version() -> bool:
         return True
 
 
-def clean_requirements(requirements: List[str]) -> List[str]:
+def clean_requirements(requirements: list[str]) -> list[str]:
     """Clean requirements list from redundant requirements.
 
     Args:
@@ -96,7 +96,7 @@ def clean_requirements(requirements: List[str]) -> List[str]:
     return sorted(cleaned.values())
 
 
-def requirement_installed(requirement: Union[str, Requirement]) -> bool:
+def requirement_installed(requirement: str | Requirement) -> bool:
     """Check if a requirement is installed.
 
     Args:
@@ -118,7 +118,7 @@ def requirement_installed(requirement: Union[str, Requirement]) -> bool:
 
 def get_dependencies(
     requirement: Requirement, recursive: bool = False
-) -> List[Requirement]:
+) -> list[Requirement]:
     """Get the dependencies of a requirement.
 
     Args:
@@ -129,7 +129,7 @@ def get_dependencies(
         A list of requirements.
     """
     dist = distribution(requirement.name)
-    marker_environment = cast(Dict[str, str], default_environment())
+    marker_environment = cast(dict[str, str], default_environment())
 
     dependencies = []
 
@@ -168,8 +168,8 @@ def get_dependencies(
 
 
 def get_package_information(
-    package_names: Optional[List[str]] = None,
-) -> Dict[str, str]:
+    package_names: list[str] | None = None,
+) -> dict[str, str]:
     """Get package information.
 
     Args:

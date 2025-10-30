@@ -18,12 +18,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -81,11 +77,11 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 class PipelineRunTriggerInfo(BaseZenModel):
     """Trigger information model."""
 
-    step_run_id: Optional[UUID] = Field(
+    step_run_id: UUID | None = Field(
         default=None,
         title="The ID of the step run that triggered the pipeline run.",
     )
-    deployment_id: Optional[UUID] = Field(
+    deployment_id: UUID | None = Field(
         default=None,
         title="The ID of the deployment that triggered the pipeline run.",
     )
@@ -101,51 +97,51 @@ class PipelineRunRequest(ProjectScopedRequest):
     snapshot: UUID = Field(
         title="The snapshot associated with the pipeline run."
     )
-    pipeline: Optional[UUID] = Field(
+    pipeline: UUID | None = Field(
         title="The pipeline associated with the pipeline run.",
         default=None,
     )
-    orchestrator_run_id: Optional[str] = Field(
+    orchestrator_run_id: str | None = Field(
         title="The orchestrator run ID.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    start_time: Optional[datetime] = Field(
+    start_time: datetime | None = Field(
         title="The start time of the pipeline run.",
         default=None,
     )
-    end_time: Optional[datetime] = Field(
+    end_time: datetime | None = Field(
         title="The end time of the pipeline run.",
         default=None,
     )
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
     )
-    status_reason: Optional[str] = Field(
+    status_reason: str | None = Field(
         title="The reason for the status of the pipeline run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    orchestrator_environment: Dict[str, Any] = Field(
+    orchestrator_environment: dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    trigger_execution_id: Optional[UUID] = Field(
+    trigger_execution_id: UUID | None = Field(
         default=None,
         title="ID of the trigger execution that triggered this run.",
     )
-    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+    trigger_info: PipelineRunTriggerInfo | None = Field(
         default=None,
         title="Trigger information for the pipeline run.",
     )
-    tags: Optional[List[Union[str, Tag]]] = Field(
+    tags: list[str | Tag] | None = Field(
         default=None,
         title="Tags of the pipeline run.",
     )
-    logs: Optional[LogsRequest] = Field(
+    logs: LogsRequest | None = Field(
         default=None,
         title="Logs of the pipeline run.",
     )
@@ -171,23 +167,23 @@ class PipelineRunRequest(ProjectScopedRequest):
 class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
-    status: Optional[ExecutionStatus] = None
-    status_reason: Optional[str] = Field(
+    status: ExecutionStatus | None = None
+    status_reason: str | None = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    end_time: Optional[datetime] = None
-    orchestrator_run_id: Optional[str] = None
+    end_time: datetime | None = None
+    orchestrator_run_id: str | None = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         default=None, title="New tags to add to the pipeline run."
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         default=None, title="Tags to remove from the pipeline run."
     )
-    add_logs: Optional[List[LogsRequest]] = Field(
+    add_logs: list[LogsRequest] | None = Field(
         default=None, title="New logs to add to the pipeline run."
     )
 
@@ -206,7 +202,7 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     in_progress: bool = Field(
         title="Whether the pipeline run is in progress.",
     )
-    status_reason: Optional[str] = Field(
+    status_reason: str | None = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
     )
@@ -217,52 +213,52 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
 class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline runs."""
 
-    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+    __zenml_skip_dehydration__: ClassVar[list[str]] = [
         "run_metadata",
         "config",
         "client_environment",
         "orchestrator_environment",
     ]
 
-    run_metadata: Dict[str, MetadataType] = Field(
+    run_metadata: dict[str, MetadataType] = Field(
         default={},
         title="Metadata associated with this pipeline run.",
     )
     config: PipelineConfiguration = Field(
         title="The pipeline configuration used for this pipeline run.",
     )
-    start_time: Optional[datetime] = Field(
+    start_time: datetime | None = Field(
         title="The start time of the pipeline run.",
         default=None,
     )
-    end_time: Optional[datetime] = Field(
+    end_time: datetime | None = Field(
         title="The end time of the pipeline run.",
         default=None,
     )
-    client_environment: Dict[str, Any] = Field(
+    client_environment: dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the client that initiated this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    orchestrator_environment: Dict[str, Any] = Field(
+    orchestrator_environment: dict[str, Any] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    orchestrator_run_id: Optional[str] = Field(
+    orchestrator_run_id: str | None = Field(
         title="The orchestrator run ID.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    code_path: Optional[str] = Field(
+    code_path: str | None = Field(
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    template_id: Optional[UUID] = Field(
+    template_id: UUID | None = Field(
         default=None,
         description="DEPRECATED: Template used for the pipeline run.",
         deprecated=True,
@@ -271,7 +267,7 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=False,
         description="Whether a template can be created from this run.",
     )
-    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+    trigger_info: PipelineRunTriggerInfo | None = Field(
         default=None,
         title="Trigger information for the pipeline run.",
     )
@@ -300,19 +296,19 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     trigger_execution: Optional["TriggerExecutionResponse"] = Field(
         default=None, title="The trigger execution that triggered this run."
     )
-    model_version: Optional[ModelVersionResponse] = None
-    tags: List[TagResponse] = Field(
+    model_version: ModelVersionResponse | None = None
+    tags: list[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
     )
     logs: Optional["LogsResponse"] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
     )
-    log_collection: Optional[List["LogsResponse"]] = Field(
+    log_collection: list["LogsResponse"] | None = Field(
         title="Logs associated with this pipeline run.",
         default=None,
     )
-    visualizations: List["CuratedVisualizationResponse"] = Field(
+    visualizations: list["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline run.",
     )
@@ -352,7 +348,7 @@ class PipelineRunResponse(
 
     # Helper methods
     @property
-    def artifact_versions(self) -> List["ArtifactVersionResponse"]:
+    def artifact_versions(self) -> list["ArtifactVersionResponse"]:
         """Get all artifact versions that are outputs of steps of this run.
 
         Returns:
@@ -365,7 +361,7 @@ class PipelineRunResponse(
         return get_artifacts_versions_of_pipeline_run(self)
 
     @property
-    def produced_artifact_versions(self) -> List["ArtifactVersionResponse"]:
+    def produced_artifact_versions(self) -> list["ArtifactVersionResponse"]:
         """Get all artifact versions produced during this pipeline run.
 
         Returns:
@@ -388,7 +384,7 @@ class PipelineRunResponse(
         return self.get_body().status
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -397,7 +393,7 @@ class PipelineRunResponse(
         return self.get_metadata().run_metadata
 
     @property
-    def steps(self) -> Dict[str, "StepRunResponse"]:
+    def steps(self) -> dict[str, "StepRunResponse"]:
         """The `steps` property.
 
         Returns:
@@ -425,7 +421,7 @@ class PipelineRunResponse(
         return self.get_metadata().config
 
     @property
-    def start_time(self) -> Optional[datetime]:
+    def start_time(self) -> datetime | None:
         """The `start_time` property.
 
         Returns:
@@ -434,7 +430,7 @@ class PipelineRunResponse(
         return self.get_metadata().start_time
 
     @property
-    def end_time(self) -> Optional[datetime]:
+    def end_time(self) -> datetime | None:
         """The `end_time` property.
 
         Returns:
@@ -452,7 +448,7 @@ class PipelineRunResponse(
         return self.get_body().in_progress
 
     @property
-    def client_environment(self) -> Dict[str, Any]:
+    def client_environment(self) -> dict[str, Any]:
         """The `client_environment` property.
 
         Returns:
@@ -461,7 +457,7 @@ class PipelineRunResponse(
         return self.get_metadata().client_environment
 
     @property
-    def orchestrator_environment(self) -> Dict[str, Any]:
+    def orchestrator_environment(self) -> dict[str, Any]:
         """The `orchestrator_environment` property.
 
         Returns:
@@ -470,7 +466,7 @@ class PipelineRunResponse(
         return self.get_metadata().orchestrator_environment
 
     @property
-    def orchestrator_run_id(self) -> Optional[str]:
+    def orchestrator_run_id(self) -> str | None:
         """The `orchestrator_run_id` property.
 
         Returns:
@@ -479,7 +475,7 @@ class PipelineRunResponse(
         return self.get_metadata().orchestrator_run_id
 
     @property
-    def code_path(self) -> Optional[str]:
+    def code_path(self) -> str | None:
         """The `code_path` property.
 
         Returns:
@@ -488,7 +484,7 @@ class PipelineRunResponse(
         return self.get_metadata().code_path
 
     @property
-    def template_id(self) -> Optional[UUID]:
+    def template_id(self) -> UUID | None:
         """The `template_id` property.
 
         Returns:
@@ -578,7 +574,7 @@ class PipelineRunResponse(
         return self.get_resources().code_reference
 
     @property
-    def model_version(self) -> Optional[ModelVersionResponse]:
+    def model_version(self) -> ModelVersionResponse | None:
         """The `model_version` property.
 
         Returns:
@@ -587,7 +583,7 @@ class PipelineRunResponse(
         return self.get_resources().model_version
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -605,7 +601,7 @@ class PipelineRunResponse(
         return self.get_resources().logs
 
     @property
-    def log_collection(self) -> Optional[List["LogsResponse"]]:
+    def log_collection(self) -> list["LogsResponse"] | None:
         """The `log_collection` property.
 
         Returns:
@@ -622,7 +618,7 @@ class PipelineRunFilter(
 ):
     """Model to enable advanced filtering of all pipeline runs."""
 
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
@@ -631,7 +627,7 @@ class PipelineRunFilter(
         "model",
         "model_version",
     ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
@@ -658,67 +654,67 @@ class PipelineRunFilter(
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    orchestrator_run_id: Optional[str] = Field(
+    orchestrator_run_id: str | None = Field(
         default=None,
         description="Name of the Pipeline Run within the orchestrator",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUID | str | None = Field(
         default=None,
         description="Pipeline associated with the Pipeline Run",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUID | str | None = Field(
         default=None,
         description="Stack used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    schedule_id: Optional[Union[UUID, str]] = Field(
+    schedule_id: UUID | str | None = Field(
         default=None,
         description="Schedule that triggered the Pipeline Run",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUID | str | None = Field(
         default=None,
         description="Build used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUID | str | None = Field(
         default=None,
         description="Snapshot used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    code_repository_id: Optional[Union[UUID, str]] = Field(
+    code_repository_id: UUID | str | None = Field(
         default=None,
         description="Code repository used for the Pipeline Run",
         union_mode="left_to_right",
     )
-    template_id: Optional[Union[UUID, str]] = Field(
+    template_id: UUID | str | None = Field(
         default=None,
         description="DEPRECATED: Template used for the pipeline run.",
         union_mode="left_to_right",
         deprecated=True,
     )
-    source_snapshot_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: UUID | str | None = Field(
         default=None,
         description="Source snapshot used for the pipeline run.",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="Model version associated with the pipeline run.",
         union_mode="left_to_right",
     )
-    linked_to_model_version_id: Optional[Union[UUID, str]] = Field(
+    linked_to_model_version_id: UUID | str | None = Field(
         default=None,
         description="Filter by model version linked to the pipeline run. "
         "The difference to `model_version_id` is that this filter will "
@@ -726,60 +722,60 @@ class PipelineRunFilter(
         "version, but also if any step run is linked to the model version.",
         union_mode="left_to_right",
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         default=None,
         description="Name of the Pipeline Run",
     )
-    in_progress: Optional[bool] = Field(
+    in_progress: bool | None = Field(
         default=None,
         description="Whether the pipeline run is in progress.",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: datetime | str | None = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: datetime | str | None = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    unlisted: Optional[bool] = None
+    unlisted: bool | None = None
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
-    pipeline_name: Optional[str] = Field(
+    pipeline_name: str | None = Field(
         default=None,
         description="Name of the pipeline associated with the run",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUID | str | None = Field(
         default=None,
         description="Name/ID of the pipeline associated with the run.",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUID | str | None = Field(
         default=None,
         description="Name/ID of the stack associated with the run.",
     )
-    code_repository: Optional[Union[UUID, str]] = Field(
+    code_repository: UUID | str | None = Field(
         default=None,
         description="Name/ID of the code repository associated with the run.",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUID | str | None = Field(
         default=None,
         description="Name/ID of the model associated with the run.",
     )
-    stack_component: Optional[Union[UUID, str]] = Field(
+    stack_component: UUID | str | None = Field(
         default=None,
         description="Name/ID of the stack component associated with the run.",
     )
-    templatable: Optional[bool] = Field(
+    templatable: bool | None = Field(
         default=None, description="Whether the run is templatable."
     )
-    triggered_by_step_run_id: Optional[Union[UUID, str]] = Field(
+    triggered_by_step_run_id: UUID | str | None = Field(
         default=None,
         description="The ID of the step run that triggered this pipeline run.",
         union_mode="left_to_right",
     )
-    triggered_by_deployment_id: Optional[Union[UUID, str]] = Field(
+    triggered_by_deployment_id: UUID | str | None = Field(
         default=None,
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
@@ -788,8 +784,8 @@ class PipelineRunFilter(
 
     def get_custom_filters(
         self,
-        table: Type["AnySchema"],
-    ) -> List["ColumnElement[bool]"]:
+        table: type["AnySchema"],
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:
@@ -1023,7 +1019,7 @@ class PipelineRunFilter(
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query.
 

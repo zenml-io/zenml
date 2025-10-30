@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -49,55 +49,55 @@ class DatabricksOrchestratorSettings(BaseSettings):
     """
 
     # Cluster Configuration
-    spark_version: Optional[str] = Field(
+    spark_version: str | None = Field(
         default=None,
         description="Apache Spark version for the Databricks cluster. "
         "Uses workspace default if not specified. Example: '3.2.x-scala2.12'",
     )
-    num_workers: Optional[int] = Field(
+    num_workers: int | None = Field(
         default=None,
         description="Fixed number of worker nodes. Cannot be used with autoscaling.",
     )
-    node_type_id: Optional[str] = Field(
+    node_type_id: str | None = Field(
         default=None,
         description="Databricks node type identifier. "
         "Refer to Databricks documentation for available instance types. "
         "Example: 'i3.xlarge'",
     )
-    policy_id: Optional[str] = Field(
+    policy_id: str | None = Field(
         default=None,
         description="Databricks cluster policy ID for governance and cost control.",
     )
-    autotermination_minutes: Optional[int] = Field(
+    autotermination_minutes: int | None = Field(
         default=None,
         description="Minutes of inactivity before automatic cluster termination. "
         "Helps control costs by shutting down idle clusters.",
     )
-    autoscale: Tuple[int, int] = Field(
+    autoscale: tuple[int, int] = Field(
         default=(0, 1),
         description="Cluster autoscaling bounds as (min_workers, max_workers). "
         "Automatically adjusts cluster size based on workload.",
     )
-    single_user_name: Optional[str] = Field(
+    single_user_name: str | None = Field(
         default=None,
         description="Databricks username for single-user cluster access mode.",
     )
-    spark_conf: Optional[Dict[str, str]] = Field(
+    spark_conf: dict[str, str] | None = Field(
         default=None,
         description="Custom Spark configuration properties as key-value pairs. "
         "Example: {'spark.sql.adaptive.enabled': 'true', 'spark.sql.adaptive.coalescePartitions.enabled': 'true'}",
     )
-    spark_env_vars: Optional[Dict[str, str]] = Field(
+    spark_env_vars: dict[str, str] | None = Field(
         default=None,
         description="Environment variables for the Spark driver and executors. "
         "Example: {'SPARK_WORKER_MEMORY': '4g', 'SPARK_DRIVER_MEMORY': '2g'}",
     )
-    schedule_timezone: Optional[str] = Field(
+    schedule_timezone: str | None = Field(
         default=None,
         description="Timezone for scheduled pipeline execution. "
         "Uses IANA timezone format (e.g., 'America/New_York').",
     )
-    availability_type: Optional[DatabricksAvailabilityType] = Field(
+    availability_type: DatabricksAvailabilityType | None = Field(
         default=None,
         description="Instance availability type: ON_DEMAND (guaranteed), SPOT (cost-optimized), "
         "or SPOT_WITH_FALLBACK (spot with on-demand backup).",
@@ -160,7 +160,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         return DATABRICKS_ORCHESTRATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -169,7 +169,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -187,7 +187,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/databricks.png"
 
     @property
-    def config_class(self) -> Type[DatabricksOrchestratorConfig]:
+    def config_class(self) -> type[DatabricksOrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 
         Returns:
@@ -196,7 +196,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
         return DatabricksOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["DatabricksOrchestrator"]:
+    def implementation_class(self) -> type["DatabricksOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

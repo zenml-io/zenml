@@ -14,7 +14,7 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from pydantic import Field, field_validator
 
@@ -46,7 +46,7 @@ class BaseContainerRegistryConfig(AuthenticationConfigMixin):
         "Container Registry, 'ghcr.io' for GitHub Container Registry). This is "
         "the base URL where container images will be pushed to and pulled from."
     )
-    default_repository: Optional[str] = Field(
+    default_repository: str | None = Field(
         default=None,
         description="Default repository namespace for image storage (e.g., "
         "'username' for Docker Hub, 'project-id' for GCR, 'organization' for "
@@ -103,7 +103,7 @@ class BaseContainerRegistry(AuthenticationMixin):
         return bool(self.config.authentication_secret)
 
     @property
-    def credentials(self) -> Optional[Tuple[str, str]]:
+    def credentials(self) -> tuple[str, str] | None:
         """Username and password to authenticate with this container registry.
 
         Returns:
@@ -225,7 +225,7 @@ class BaseContainerRegistry(AuthenticationMixin):
             image_name, docker_client=self.docker_client
         )
 
-    def get_image_repo_digest(self, image_name: str) -> Optional[str]:
+    def get_image_repo_digest(self, image_name: str) -> str | None:
         """Get the repository digest of an image.
 
         Args:
@@ -260,7 +260,7 @@ class BaseContainerRegistryFlavor(Flavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -276,7 +276,7 @@ class BaseContainerRegistryFlavor(Flavor):
         )
 
     @property
-    def config_class(self) -> Type[BaseContainerRegistryConfig]:
+    def config_class(self) -> type[BaseContainerRegistryConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -285,7 +285,7 @@ class BaseContainerRegistryFlavor(Flavor):
         return BaseContainerRegistryConfig
 
     @property
-    def implementation_class(self) -> Type[BaseContainerRegistry]:
+    def implementation_class(self) -> type[BaseContainerRegistry]:
         """Implementation class.
 
         Returns:

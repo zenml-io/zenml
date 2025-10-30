@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Lightning orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -40,34 +40,34 @@ class LightningOrchestratorSettings(BaseSettings):
     """
 
     # Lightning AI Platform Configuration
-    main_studio_name: Optional[str] = Field(
+    main_studio_name: str | None = Field(
         default=None,
         description="Lightning AI studio instance name where the pipeline will execute.",
     )
-    machine_type: Optional[str] = Field(
+    machine_type: str | None = Field(
         default=None,
         description="Compute instance type for pipeline execution. "
         "Refer to Lightning AI documentation for available options.",
     )
-    user_id: Optional[str] = SecretField(
+    user_id: str | None = SecretField(
         default=None, description="Lightning AI user ID for authentication."
     )
-    api_key: Optional[str] = SecretField(
+    api_key: str | None = SecretField(
         default=None,
         description="Lightning AI API key for platform authentication.",
     )
-    username: Optional[str] = Field(
+    username: str | None = Field(
         default=None, description="Lightning AI platform username."
     )
-    teamspace: Optional[str] = Field(
+    teamspace: str | None = Field(
         default=None,
         description="Lightning AI teamspace for collaborative pipeline execution.",
     )
-    organization: Optional[str] = Field(
+    organization: str | None = Field(
         default=None,
         description="Lightning AI organization name for enterprise accounts.",
     )
-    custom_commands: Optional[List[str]] = Field(
+    custom_commands: list[str] | None = Field(
         default=None,
         description="Additional shell commands to execute in the Lightning AI environment.",
     )
@@ -135,7 +135,7 @@ class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
         return LIGHTNING_ORCHESTRATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -144,7 +144,7 @@ class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -162,7 +162,7 @@ class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/lightning.png"
 
     @property
-    def config_class(self) -> Type[LightningOrchestratorConfig]:
+    def config_class(self) -> type[LightningOrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 
         Returns:
@@ -171,7 +171,7 @@ class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
         return LightningOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["LightningOrchestrator"]:
+    def implementation_class(self) -> type["LightningOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

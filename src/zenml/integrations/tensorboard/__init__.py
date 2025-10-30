@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization for TensorBoard integration."""
 
-from typing import List, Optional
 from zenml.integrations.constants import TENSORBOARD
 from zenml.integrations.integration import Integration
 
@@ -25,8 +24,8 @@ class TensorBoardIntegration(Integration):
     REQUIREMENTS = []
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+    def get_requirements(cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Defines platform specific requirements for the integration.
 
         Args:

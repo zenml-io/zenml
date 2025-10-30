@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Callback registry implementation."""
 
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any
+from collections.abc import Callable
 
 from typing_extensions import ParamSpec
 
@@ -29,8 +30,8 @@ class CallbackRegistry:
 
     def __init__(self) -> None:
         """Initializes the callback registry."""
-        self._callbacks: List[
-            Tuple[Callable[P, Any], Tuple[Any], Dict[str, Any]]
+        self._callbacks: list[
+            tuple[Callable[P, Any], tuple[Any], dict[str, Any]]
         ] = []
 
     def register_callback(

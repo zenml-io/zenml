@@ -15,12 +15,6 @@
 
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
     cast,
 )
 
@@ -77,7 +71,7 @@ class SagemakerStepOperator(BaseStepOperator):
         return cast(SagemakerStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the SageMaker step operator.
 
         Returns:
@@ -88,7 +82,7 @@ class SagemakerStepOperator(BaseStepOperator):
     @property
     def entrypoint_config_class(
         self,
-    ) -> Type[StepOperatorEntrypointConfiguration]:
+    ) -> type[StepOperatorEntrypointConfiguration]:
         """Returns the entrypoint configuration class for this step operator.
 
         Returns:
@@ -97,7 +91,7 @@ class SagemakerStepOperator(BaseStepOperator):
         return SagemakerEntrypointConfiguration
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -105,7 +99,7 @@ class SagemakerStepOperator(BaseStepOperator):
             registry and a remote artifact store.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The SageMaker step operator runs code remotely and "
@@ -141,7 +135,7 @@ class SagemakerStepOperator(BaseStepOperator):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -166,8 +160,8 @@ class SagemakerStepOperator(BaseStepOperator):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launches a step on SageMaker.
 
@@ -257,7 +251,7 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
         # Construct training input object, if necessary
-        inputs: Optional[Union[TrainingInput, Dict[str, TrainingInput]]] = None
+        inputs: TrainingInput | dict[str, TrainingInput] | None = None
 
         if isinstance(settings.input_data_s3_uri, str):
             inputs = TrainingInput(s3_data=settings.input_data_s3_uri)

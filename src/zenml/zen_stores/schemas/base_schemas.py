@@ -14,7 +14,8 @@
 """Base classes for SQLModel schemas."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
+from collections.abc import Sequence
 from uuid import UUID, uuid4
 
 from sqlalchemy.sql.base import ExecutableOption

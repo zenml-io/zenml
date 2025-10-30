@@ -22,7 +22,6 @@ The Vertex AI integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
 
-from typing import List, Type
 
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
@@ -69,7 +68,7 @@ class GcpIntegration(Integration):
         from zenml.integrations.gcp import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the GCP integration.
 
         Returns:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -112,55 +112,55 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
     """
 
     # Resources
-    instance_type: Optional[str] = None
-    cpus: Union[None, int, float, str] = Field(
+    instance_type: str | None = None
+    cpus: None | int | float | str = Field(
         default=None, union_mode="left_to_right"
     )
-    memory: Union[None, int, float, str] = Field(
+    memory: None | int | float | str = Field(
         default=None, union_mode="left_to_right"
     )
-    accelerators: Union[None, str, Dict[str, int]] = Field(
+    accelerators: None | str | dict[str, int] = Field(
         default=None, union_mode="left_to_right"
     )
-    accelerator_args: Optional[Dict[str, str]] = None
-    use_spot: Optional[bool] = None
-    job_recovery: Union[None, str, Dict[str, Any]] = Field(
+    accelerator_args: dict[str, str] | None = None
+    use_spot: bool | None = None
+    job_recovery: None | str | dict[str, Any] = Field(
         default=None, union_mode="left_to_right"
     )
-    region: Optional[str] = None
-    zone: Optional[str] = None
-    image_id: Union[Dict[str, str], str, None] = Field(
+    region: str | None = None
+    zone: str | None = None
+    image_id: dict[str, str] | str | None = Field(
         default=None, union_mode="left_to_right"
     )
-    disk_size: Optional[int] = None
-    disk_tier: Optional[Literal["high", "medium", "low", "ultra", "best"]] = (
+    disk_size: int | None = None
+    disk_tier: Literal["high", "medium", "low", "ultra", "best"] | None = (
         None
     )
 
     # Run settings
-    cluster_name: Optional[str] = None
+    cluster_name: str | None = None
     retry_until_up: bool = False
-    idle_minutes_to_autostop: Optional[int] = 30
+    idle_minutes_to_autostop: int | None = 30
     down: bool = True
     stream_logs: bool = True
-    docker_run_args: List[str] = []
+    docker_run_args: list[str] = []
 
     # Additional SkyPilot features
-    ports: Union[None, int, str, List[Union[int, str]]] = Field(
+    ports: None | int | str | list[int | str] = Field(
         default=None, union_mode="left_to_right"
     )
-    labels: Optional[Dict[str, str]] = None
-    any_of: Optional[List[Dict[str, Any]]] = None
-    ordered: Optional[List[Dict[str, Any]]] = None
-    workdir: Optional[str] = None
-    task_name: Optional[str] = None
-    file_mounts: Optional[Dict[str, Any]] = None
-    envs: Optional[Dict[str, str]] = None
+    labels: dict[str, str] | None = None
+    any_of: list[dict[str, Any]] | None = None
+    ordered: list[dict[str, Any]] | None = None
+    workdir: str | None = None
+    task_name: str | None = None
+    file_mounts: dict[str, Any] | None = None
+    envs: dict[str, str] | None = None
 
     # Future-proofing settings dictionaries
-    task_settings: Dict[str, Any] = {}
-    resources_settings: Dict[str, Any] = {}
-    launch_settings: Dict[str, Any] = {}
+    task_settings: dict[str, Any] = {}
+    resources_settings: dict[str, Any] = {}
+    launch_settings: dict[str, Any] = {}
 
 
 class SkypilotBaseOrchestratorConfig(

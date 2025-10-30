@@ -49,7 +49,7 @@ def upgrade() -> None:
         return
 
     now = utc_now()
-    empty_config = base64.b64encode("{}".encode("utf-8"))
+    empty_config = base64.b64encode(b"{}")
 
     # If an existing default deployer exists, rename it to avoid conflicts
     existing_default = connection.execute(
@@ -90,4 +90,3 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """No downgrade supported for this data migration."""
-    pass

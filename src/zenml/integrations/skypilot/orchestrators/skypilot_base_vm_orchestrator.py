@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 from uuid import uuid4
 
 import sky
@@ -65,10 +65,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
     """
 
     # The default instance type to use if none is specified in settings
-    DEFAULT_INSTANCE_TYPE: Optional[str] = None
+    DEFAULT_INSTANCE_TYPE: str | None = None
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         In the remote case, checks that the stack contains a container registry,
@@ -80,7 +80,7 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             for component in stack.components.values():
                 if not component.config.is_local:
                     continue
@@ -158,10 +158,10 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to

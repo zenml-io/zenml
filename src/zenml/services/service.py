@@ -20,15 +20,10 @@ from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
-    Dict,
-    Generator,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
 )
+from collections.abc import Callable, Generator
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -54,8 +49,8 @@ ZENM_ENDPOINT_PREFIX = "zenml-"
 
 
 def update_service_status(
-    pre_status: Optional[ServiceState] = None,
-    post_status: Optional[ServiceState] = None,
+    pre_status: ServiceState | None = None,
+    post_status: ServiceState | None = None,
     error_status: ServiceState = ServiceState.ERROR,
 ) -> Callable[[T], T]:
     """A decorator to update the service status before and after a method call.
@@ -146,7 +141,7 @@ class ServiceConfig(BaseTypedModel):
         else:
             raise ValueError("Either 'name' or 'model_name' must be set.")
 
-    def get_service_labels(self) -> Dict[str, str]:
+    def get_service_labels(self) -> dict[str, str]:
         """Get the service labels.
 
         Returns:
@@ -183,7 +178,7 @@ class BaseService(BaseTypedModel):
     config: ServiceConfig
     status: ServiceStatus
     # TODO [ENG-703]: allow multiple endpoints per service
-    endpoint: Optional[BaseServiceEndpoint] = None
+    endpoint: BaseServiceEndpoint | None = None
 
     def __init__(
         self,
@@ -212,7 +207,7 @@ class BaseService(BaseTypedModel):
         """
         if not model.service_source:
             raise ValueError("Service source not found in the model.")
-        class_: Type[BaseService] = source_utils.load_and_validate_class(
+        class_: type[BaseService] = source_utils.load_and_validate_class(
             source=model.service_source, expected_class=BaseService
         )
         return class_(
@@ -235,13 +230,13 @@ class BaseService(BaseTypedModel):
             The loaded service object.
         """
         service_dict = json.loads(json_str)
-        class_: Type[BaseService] = source_utils.load_and_validate_class(
+        class_: type[BaseService] = source_utils.load_and_validate_class(
             source=service_dict["type"], expected_class=BaseService
         )
         return class_.from_dict(service_dict)
 
     @abstractmethod
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the external service.
 
         This method should be overridden by subclasses that implement
@@ -256,7 +251,7 @@ class BaseService(BaseTypedModel):
 
     @abstractmethod
     def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
+        self, follow: bool = False, tail: int | None = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 
@@ -479,7 +474,7 @@ class BaseService(BaseTypedModel):
                         f"'{self.status.last_error}'"
                     )
 
-    def get_prediction_url(self) -> Optional[str]:
+    def get_prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -494,7 +489,7 @@ class BaseService(BaseTypedModel):
             )
         return prediction_url
 
-    def get_healthcheck_url(self) -> Optional[str]:
+    def get_healthcheck_url(self) -> str | None:
         """Gets the healthcheck URL for the endpoint.
 
         Returns:
@@ -533,7 +528,7 @@ class BaseDeploymentService(BaseService):
     """Base class for deployment services."""
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -542,7 +537,7 @@ class BaseDeploymentService(BaseService):
         return None
 
     @property
-    def healthcheck_url(self) -> Optional[str]:
+    def healthcheck_url(self) -> str | None:
         """Gets the healthcheck URL for the endpoint.
 
         Returns:

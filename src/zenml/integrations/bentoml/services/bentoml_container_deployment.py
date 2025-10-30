@@ -15,7 +15,7 @@
 
 import os
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import bentoml
 import docker.errors as docker_errors
@@ -57,18 +57,18 @@ class BentoMLContainerDeploymentConfig(ContainerServiceConfig):
     model_name: str
     model_uri: str
     bento_tag: str
-    bento_uri: Optional[str] = None
-    platform: Optional[str] = None
+    bento_uri: str | None = None
+    platform: str | None = None
     image: str = ""
-    image_tag: Optional[str] = None
-    features: Optional[List[str]] = None
-    file: Optional[str] = None
-    apis: List[str] = []
-    working_dir: Optional[str] = None
+    image_tag: str | None = None
+    features: list[str] | None = None
+    file: str | None = None
+    apis: list[str] = []
+    working_dir: str | None = None
     workers: int = 1
     backlog: int = 2048
-    host: Optional[str] = None
-    port: Optional[int] = None
+    host: str | None = None
+    port: int | None = None
 
 
 class BentoMLContainerDeploymentEndpointConfig(ContainerServiceEndpointConfig):
@@ -91,7 +91,7 @@ class BentoMLContainerDeploymentEndpoint(ContainerServiceEndpoint):
     config: BentoMLContainerDeploymentEndpointConfig
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -121,7 +121,7 @@ class BentoMLContainerDeploymentService(
 
     def __init__(
         self,
-        config: Union[BentoMLContainerDeploymentConfig, Dict[str, Any]],
+        config: BentoMLContainerDeploymentConfig | dict[str, Any],
         **attrs: Any,
     ) -> None:
         """Initialize the BentoML deployment service.
@@ -203,7 +203,7 @@ class BentoMLContainerDeploymentService(
 
         self._setup_runtime_path()
 
-        ports: Dict[int, Optional[int]] = {}
+        ports: dict[int, int | None] = {}
         if self.endpoint:
             self.endpoint.prepare_for_start()
             if self.endpoint.status.port:
@@ -341,7 +341,7 @@ class BentoMLContainerDeploymentService(
             raise
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Get the URI where the http server is running.
 
         Returns:
@@ -353,7 +353,7 @@ class BentoMLContainerDeploymentService(
         return self.endpoint.prediction_url
 
     @property
-    def prediction_apis_urls(self) -> Optional[List[str]]:
+    def prediction_apis_urls(self) -> list[str] | None:
         """Get the URI where the prediction api services is answering requests.
 
         Returns:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline run DAG models."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,21 +26,21 @@ class PipelineRunDAG(BaseModel):
 
     id: UUID
     status: ExecutionStatus
-    nodes: List["Node"]
-    edges: List["Edge"]
+    nodes: list["Node"]
+    edges: list["Edge"]
 
     class Node(BaseModel):
         """Node in the pipeline run DAG."""
 
         node_id: str
         type: str
-        id: Optional[UUID] = None
+        id: UUID | None = None
         name: str
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
 
     class Edge(BaseModel):
         """Edge in the pipeline run DAG."""
 
         source: str
         target: str
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}

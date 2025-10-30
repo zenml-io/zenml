@@ -15,7 +15,6 @@
 
 The Airflow integration powers an alternative orchestrator.
 """
-from typing import List, Type
 
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
@@ -31,7 +30,7 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = []
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Airflow integration.
 
         Returns:

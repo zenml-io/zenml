@@ -24,13 +24,8 @@ from pathlib import Path, PurePath
 from types import BuiltinFunctionType, FunctionType, ModuleType
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterator,
-    Optional,
-    Type,
-    Union,
 )
+from collections.abc import Callable, Iterator
 from uuid import UUID
 
 from zenml.config.source import (
@@ -65,16 +60,16 @@ BuiltinFunctionTypeSource = Source(
 )
 
 
-_CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
+_CUSTOM_SOURCE_ROOT: str | None = os.getenv(
     ENV_ZENML_CUSTOM_SOURCE_ROOT, None
 )
 
-_SHARED_TEMPDIR: Optional[str] = None
-_resolved_notebook_sources: Dict[str, str] = {}
-_notebook_modules: Dict[str, UUID] = {}
+_SHARED_TEMPDIR: str | None = None
+_resolved_notebook_sources: dict[str, str] = {}
+_notebook_modules: dict[str, UUID] = {}
 
 
-def load(source: Union[Source, str]) -> Any:
+def load(source: Source | str) -> Any:
     """Load a source or import path.
 
     Args:
@@ -150,14 +145,14 @@ def load(source: Union[Source, str]) -> Any:
 
 
 def resolve(
-    obj: Union[
-        Type[Any],
-        Callable[..., Any],
-        ModuleType,
-        FunctionType,
-        BuiltinFunctionType,
-        NoneType,
-    ],
+    obj: (
+        type[Any] |
+        Callable[..., Any] |
+        ModuleType |
+        FunctionType |
+        BuiltinFunctionType |
+        NoneType
+    ),
     skip_validation: bool = False,
 ) -> Source:
     """Resolve an object.
@@ -334,7 +329,7 @@ def get_source_root() -> str:
     return implicit_source_root
 
 
-def set_custom_source_root(source_root: Optional[str]) -> None:
+def set_custom_source_root(source_root: str | None) -> None:
     """Sets a custom source root.
 
     If set this has the highest priority and will always be used as the source
@@ -576,7 +571,7 @@ def _resolve_module(module: ModuleType) -> str:
 
 
 def _load_module(
-    module_name: str, import_root: Optional[str] = None
+    module_name: str, import_root: str | None = None
 ) -> ModuleType:
     """Load a module.
 
@@ -703,7 +698,7 @@ def _try_to_load_notebook_source(source: NotebookSource) -> Any:
     return obj
 
 
-def _get_package_for_module(module_name: str) -> Optional[str]:
+def _get_package_for_module(module_name: str) -> str | None:
     """Get the package name for a module.
 
     Args:
@@ -724,7 +719,7 @@ def _get_package_for_module(module_name: str) -> Optional[str]:
     return None
 
 
-def _get_package_version(package_name: str) -> Optional[str]:
+def _get_package_version(package_name: str) -> str | None:
     """Gets the version of a package.
 
     Args:
@@ -746,8 +741,8 @@ def _get_package_version(package_name: str) -> Optional[str]:
 # currently doesn't support this for abstract classes:
 # https://github.com/python/mypy/issues/4717
 def load_and_validate_class(
-    source: Union[str, Source], expected_class: Type[Any]
-) -> Type[Any]:
+    source: str | Source, expected_class: type[Any]
+) -> type[Any]:
     """Loads a source class and validates its class.
 
     Args:
@@ -772,7 +767,7 @@ def load_and_validate_class(
 
 
 def validate_source_class(
-    source: Union[Source, str], expected_class: Type[Any]
+    source: Source | str, expected_class: type[Any]
 ) -> bool:
     """Validates that a source resolves to a certain class.
 
@@ -794,7 +789,7 @@ def validate_source_class(
         return False
 
 
-def get_resolved_notebook_sources() -> Dict[str, str]:
+def get_resolved_notebook_sources() -> dict[str, str]:
     """Get all notebook sources that were resolved in this process.
 
     Returns:

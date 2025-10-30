@@ -35,7 +35,7 @@ class RunMetadataSchema(BaseSchema, table=True):
 
     __tablename__ = "run_metadata"
 
-    stack_component_id: Optional[UUID] = build_foreign_key_field(
+    stack_component_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="stack_component_id",
@@ -47,7 +47,7 @@ class RunMetadataSchema(BaseSchema, table=True):
         back_populates="run_metadata"
     )
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -71,7 +71,7 @@ class RunMetadataSchema(BaseSchema, table=True):
     value: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str
 
-    publisher_step_id: Optional[UUID] = build_foreign_key_field(
+    publisher_step_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
         source_column="publisher_step_id",

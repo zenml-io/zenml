@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import (
     Field,
@@ -49,12 +49,12 @@ class KubernetesOrchestratorSettings(BaseSettings):
         description="Whether to wait for all pipeline steps to complete. "
         "When `False`, the client returns immediately and execution continues asynchronously.",
     )
-    service_account_name: Optional[str] = Field(
+    service_account_name: str | None = Field(
         default=None,
         description="Kubernetes service account for the orchestrator pod. "
         "If not specified, creates a new account with 'edit' permissions.",
     )
-    step_pod_service_account_name: Optional[str] = Field(
+    step_pod_service_account_name: str | None = Field(
         default=None,
         description="Kubernetes service account for step execution pods. "
         "Uses the default service account if not specified.",
@@ -63,35 +63,35 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=False,
         description="Whether to run containers in privileged mode with extended permissions.",
     )
-    pod_settings: Optional[KubernetesPodSettings] = Field(
+    pod_settings: KubernetesPodSettings | None = Field(
         default=None,
         description="Pod configuration for step execution containers.",
     )
-    orchestrator_pod_settings: Optional[KubernetesPodSettings] = Field(
+    orchestrator_pod_settings: KubernetesPodSettings | None = Field(
         default=None,
         description="Pod configuration for the orchestrator container that launches step pods.",
     )
-    job_name_prefix: Optional[str] = Field(
+    job_name_prefix: str | None = Field(
         default=None,
         description="Prefix for the job name.",
     )
-    max_parallelism: Optional[PositiveInt] = Field(
+    max_parallelism: PositiveInt | None = Field(
         default=None,
         description="Maximum number of step pods to run concurrently. No limit if not specified.",
     )
-    successful_jobs_history_limit: Optional[NonNegativeInt] = Field(
+    successful_jobs_history_limit: NonNegativeInt | None = Field(
         default=None,
         description="Number of successful scheduled jobs to retain in history.",
     )
-    failed_jobs_history_limit: Optional[NonNegativeInt] = Field(
+    failed_jobs_history_limit: NonNegativeInt | None = Field(
         default=None,
         description="Number of failed scheduled jobs to retain in history.",
     )
-    ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
+    ttl_seconds_after_finished: NonNegativeInt | None = Field(
         default=None,
         description="Seconds to keep finished jobs before automatic cleanup.",
     )
-    active_deadline_seconds: Optional[NonNegativeInt] = Field(
+    active_deadline_seconds: NonNegativeInt | None = Field(
         default=None,
         description="Job deadline in seconds. If the job doesn't finish "
         "within this time, it will be terminated.",
@@ -117,7 +117,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=3,
         description="The backoff limit for the orchestrator job.",
     )
-    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+    fail_on_container_waiting_reasons: list[str] | None = Field(
         default=[
             "InvalidImageName",
             "ErrImagePull",
@@ -146,7 +146,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
         description="The interval in seconds to check for run interruptions.",
         ge=0.5,
     )
-    pod_failure_policy: Optional[Dict[str, Any]] = Field(
+    pod_failure_policy: dict[str, Any] | None = Field(
         default=None,
         description="The pod failure policy to use for the job that is "
         "executing the step.",
@@ -166,37 +166,37 @@ class KubernetesOrchestratorSettings(BaseSettings):
     )
 
     # Deprecated fields
-    timeout: Optional[int] = Field(
+    timeout: int | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    stream_step_logs: Optional[bool] = Field(
+    stream_step_logs: bool | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    pod_startup_timeout: Optional[int] = Field(
+    pod_startup_timeout: int | None = Field(
         default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_max_retries: Optional[int] = Field(
+    pod_failure_max_retries: int | None = Field(
         default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_retry_delay: Optional[int] = Field(
+    pod_failure_retry_delay: int | None = Field(
         default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_failure_backoff: Optional[float] = Field(
+    pod_failure_backoff: float | None = Field(
         default=None,
         description="DEPRECATED/UNUSED.",
         deprecated=True,
     )
-    pod_name_prefix: Optional[str] = Field(
+    pod_name_prefix: str | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
@@ -246,7 +246,7 @@ class KubernetesOrchestratorConfig(
         "config option is ignored. If the stack component is linked to a "
         "Kubernetes service connector, this field is ignored.",
     )
-    kubernetes_context: Optional[str] = Field(
+    kubernetes_context: str | None = Field(
         None,
         description="Name of a Kubernetes context to run pipelines in. "
         "If the stack component is linked to a Kubernetes service connector, "
@@ -268,7 +268,7 @@ class KubernetesOrchestratorConfig(
     skip_local_validations: bool = Field(
         False, description="If `True`, the local validations will be skipped."
     )
-    parallel_step_startup_waiting_period: Optional[float] = Field(
+    parallel_step_startup_waiting_period: float | None = Field(
         None,
         description="How long to wait in between starting parallel steps. "
         "This can be used to distribute server load when running pipelines "
@@ -357,7 +357,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -372,7 +372,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -381,7 +381,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -399,7 +399,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubernetes.png"
 
     @property
-    def config_class(self) -> Type[KubernetesOrchestratorConfig]:
+    def config_class(self) -> type[KubernetesOrchestratorConfig]:
         """Returns `KubernetesOrchestratorConfig` config class.
 
         Returns:
@@ -408,7 +408,7 @@ class KubernetesOrchestratorFlavor(BaseOrchestratorFlavor):
         return KubernetesOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["KubernetesOrchestrator"]:
+    def implementation_class(self) -> type["KubernetesOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

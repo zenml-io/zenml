@@ -26,10 +26,8 @@ from types import (
 )
 from typing import (
     Any,
-    Callable,
-    Type,
-    Union,
 )
+from collections.abc import Callable
 
 from zenml.environment import Environment
 
@@ -53,16 +51,16 @@ def get_source_code(value: Any) -> str:
             object: Any,
             _old_getfile: Callable[
                 [
-                    Union[
-                        ModuleType,
-                        Type[Any],
-                        MethodType,
-                        FunctionType,
-                        TracebackType,
-                        FrameType,
-                        CodeType,
-                        Callable[..., Any],
-                    ]
+                    (
+                        ModuleType |
+                        type[Any] |
+                        MethodType |
+                        FunctionType |
+                        TracebackType |
+                        FrameType |
+                        CodeType |
+                        Callable[..., Any]
+                    )
                 ],
                 str,
             ] = inspect.getfile,

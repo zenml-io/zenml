@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """FastAPI adapter implementations."""
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any
+from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -50,7 +51,7 @@ class FastAPIEndpointAdapter(EndpointAdapter):
         )
 
         def verify_token(
-            credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+            credentials: HTTPAuthorizationCredentials | None = Depends(
                 security
             ),
         ) -> None:
@@ -118,7 +119,7 @@ class FastAPIEndpointAdapter(EndpointAdapter):
                 return
 
         # Register with appropriate HTTP method
-        route_kwargs: Dict[str, Any] = {"dependencies": dependencies}
+        route_kwargs: dict[str, Any] = {"dependencies": dependencies}
         route_kwargs.update(spec.extra_kwargs)
 
         if spec.method == EndpointMethod.GET:

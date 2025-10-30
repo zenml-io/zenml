@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization of the PyTorch integration."""
 
-import platform
-from typing import List, Optional
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.integration import Integration
 

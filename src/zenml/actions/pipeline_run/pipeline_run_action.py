@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
 
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar
 from uuid import UUID
 
 from zenml.actions.base_action import (
@@ -47,7 +47,7 @@ class PipelineRunActionConfiguration(ActionConfig):
     """Configuration class to configure a pipeline run action."""
 
     snapshot_id: UUID
-    run_config: Optional[PipelineRunConfiguration] = None
+    run_config: PipelineRunConfiguration | None = None
 
 
 # -------------------- Pipeline Run Plugin -----------------------------------
@@ -57,7 +57,7 @@ class PipelineRunActionHandler(BaseActionHandler):
     """Action handler for running pipelines."""
 
     @property
-    def config_class(self) -> Type[PipelineRunActionConfiguration]:
+    def config_class(self) -> type[PipelineRunActionConfiguration]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
@@ -66,7 +66,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         return PipelineRunActionConfiguration
 
     @property
-    def flavor_class(self) -> Type[BaseActionFlavor]:
+    def flavor_class(self) -> type[BaseActionFlavor]:
         """Returns the flavor class of the plugin.
 
         Returns:
@@ -169,7 +169,7 @@ class PipelineRunActionHandler(BaseActionHandler):
         self,
         action_config: ActionConfig,
         hydrate: bool = False,
-    ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
+    ) -> dict[ResourceType, BaseResponse[Any, Any, Any]]:
         """Extract related resources for this action.
 
         Args:
@@ -196,7 +196,7 @@ class PipelineRunActionHandler(BaseActionHandler):
                 f"No snapshot found with id {action_config.snapshot_id}."
             )
 
-        resources: Dict[ResourceType, BaseResponse[Any, Any, Any]] = {
+        resources: dict[ResourceType, BaseResponse[Any, Any, Any]] = {
             ResourceType.PIPELINE_SNAPSHOT: snapshot
         }
 
@@ -217,11 +217,11 @@ class PipelineRunActionFlavor(BaseActionFlavor):
 
     FLAVOR: ClassVar[str] = "builtin"
     SUBTYPE: ClassVar[PluginSubType] = PluginSubType.PIPELINE_RUN
-    PLUGIN_CLASS: ClassVar[Type[PipelineRunActionHandler]] = (
+    PLUGIN_CLASS: ClassVar[type[PipelineRunActionHandler]] = (
         PipelineRunActionHandler
     )
 
     # EventPlugin specific
-    ACTION_CONFIG_CLASS: ClassVar[Type[PipelineRunActionConfiguration]] = (
+    ACTION_CONFIG_CLASS: ClassVar[type[PipelineRunActionConfiguration]] = (
         PipelineRunActionConfiguration
     )

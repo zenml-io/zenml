@@ -16,7 +16,6 @@
 The BentoML integration allows you to use the BentoML model serving
 to implement continuous model deployment.
 """
-from typing import List, Type
 
 from zenml.integrations.constants import BENTOML
 from zenml.integrations.integration import Integration
@@ -41,7 +40,7 @@ class BentoMLIntegration(Integration):
         from zenml.integrations.bentoml import services  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for BentoML.
 
         Returns:

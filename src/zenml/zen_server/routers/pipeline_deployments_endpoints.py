@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for deployments."""
 
-from typing import Any, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, Security
@@ -98,7 +98,7 @@ router = APIRouter(
 def create_deployment(
     request: Request,
     deployment: PipelineSnapshotRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Creates a deployment.
@@ -149,7 +149,7 @@ def list_deployments(
     deployment_filter_model: PipelineSnapshotFilter = Depends(
         make_dependable(PipelineSnapshotFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Any:
@@ -202,7 +202,7 @@ def get_deployment(
     request: Request,
     deployment_id: UUID,
     hydrate: bool = True,
-    step_configuration_filter: Optional[List[str]] = Query(None),
+    step_configuration_filter: list[str] | None = Query(None),
     _: AuthContext = Security(authorize),
 ) -> Any:
     """Gets a specific deployment using its unique id.

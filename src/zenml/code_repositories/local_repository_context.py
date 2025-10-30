@@ -58,7 +58,6 @@ class LocalRepositoryContext(ABC):
         Returns:
             The root path of the local repository.
         """
-        pass
 
     @property
     @abstractmethod
@@ -71,7 +70,6 @@ class LocalRepositoryContext(ABC):
         Returns:
             Whether the local repository is dirty.
         """
-        pass
 
     @property
     @abstractmethod
@@ -84,7 +82,6 @@ class LocalRepositoryContext(ABC):
         Returns:
             Whether the local repository has local changes.
         """
-        pass
 
     @property
     @abstractmethod
@@ -94,4 +91,3 @@ class LocalRepositoryContext(ABC):
         Returns:
             The current commit of the local repository.
         """
-        pass

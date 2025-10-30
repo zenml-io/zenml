@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -58,7 +59,7 @@ class ServiceSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="services")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -67,29 +68,29 @@ class ServiceSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="services")
-    service_source: Optional[str] = Field(
+    service_source: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
     service_type: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str = Field(sa_column=Column(TEXT, nullable=False))
     flavor: str = Field(sa_column=Column(TEXT, nullable=False))
-    admin_state: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    state: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    labels: Optional[bytes]
+    admin_state: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    state: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    labels: bytes | None
     config: bytes
-    status: Optional[bytes]
-    endpoint: Optional[bytes]
-    prediction_url: Optional[str] = Field(
+    status: bytes | None
+    endpoint: bytes | None
+    prediction_url: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    health_check_url: Optional[str] = Field(
+    health_check_url: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    pipeline_name: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    pipeline_step_name: Optional[str] = Field(
+    pipeline_name: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    pipeline_step_name: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    model_version_id: Optional[UUID] = build_foreign_key_field(
+    model_version_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=ModelVersionSchema.__tablename__,
         source_column="model_version_id",
@@ -100,7 +101,7 @@ class ServiceSchema(NamedSchema, table=True):
     model_version: Optional["ModelVersionSchema"] = Relationship(
         back_populates="services",
     )
-    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_run_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target="pipeline_run",
         source_column="pipeline_run_id",

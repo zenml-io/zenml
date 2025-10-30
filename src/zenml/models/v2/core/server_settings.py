@@ -14,9 +14,6 @@
 """Models representing server settings stored in the database."""
 
 from datetime import datetime
-from typing import (
-    Optional,
-)
 from uuid import UUID
 
 from pydantic import Field
@@ -37,21 +34,21 @@ from zenml.models.v2.base.base import (
 class ServerSettingsUpdate(BaseUpdate):
     """Model for updating server settings."""
 
-    server_name: Optional[str] = Field(
+    server_name: str | None = Field(
         default=None, title="The name of the server."
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None, title="The logo URL of the server."
     )
-    enable_analytics: Optional[bool] = Field(
+    enable_analytics: bool | None = Field(
         default=None,
         title="Whether to enable analytics for the server.",
     )
-    display_announcements: Optional[bool] = Field(
+    display_announcements: bool | None = Field(
         default=None,
         title="Whether to display announcements about ZenML in the dashboard.",
     )
-    display_updates: Optional[bool] = Field(
+    display_updates: bool | None = Field(
         default=None,
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
@@ -67,7 +64,7 @@ class ServerSettingsResponseBody(BaseResponseBody):
         title="The unique server id.",
     )
     server_name: str = Field(title="The name of the server.")
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None, title="The logo URL of the server."
     )
     active: bool = Field(
@@ -76,10 +73,10 @@ class ServerSettingsResponseBody(BaseResponseBody):
     enable_analytics: bool = Field(
         title="Whether analytics are enabled for the server.",
     )
-    display_announcements: Optional[bool] = Field(
+    display_announcements: bool | None = Field(
         title="Whether to display announcements about ZenML in the dashboard.",
     )
-    display_updates: Optional[bool] = Field(
+    display_updates: bool | None = Field(
         title="Whether to display notifications about ZenML updates in the dashboard.",
     )
     last_user_activity: datetime = Field(
@@ -138,7 +135,7 @@ class ServerSettingsResponse(
         return self.get_body().server_name
 
     @property
-    def logo_url(self) -> Optional[str]:
+    def logo_url(self) -> str | None:
         """The `logo_url` property.
 
         Returns:
@@ -156,7 +153,7 @@ class ServerSettingsResponse(
         return self.get_body().enable_analytics
 
     @property
-    def display_announcements(self) -> Optional[bool]:
+    def display_announcements(self) -> bool | None:
         """The `display_announcements` property.
 
         Returns:
@@ -165,7 +162,7 @@ class ServerSettingsResponse(
         return self.get_body().display_announcements
 
     @property
-    def display_updates(self) -> Optional[bool]:
+    def display_updates(self) -> bool | None:
         """The `display_updates` property.
 
         Returns:
@@ -211,13 +208,13 @@ class ServerSettingsResponse(
 class ServerActivationRequest(ServerSettingsUpdate):
     """Model for activating the server."""
 
-    admin_username: Optional[str] = Field(
+    admin_username: str | None = Field(
         default=None,
         title="The username of the default admin account to create. Leave "
         "empty to skip creating the default admin account.",
     )
 
-    admin_password: Optional[str] = Field(
+    admin_password: str | None = Field(
         default=None,
         title="The password of the default admin account to create. Leave "
         "empty to skip creating the default admin account.",

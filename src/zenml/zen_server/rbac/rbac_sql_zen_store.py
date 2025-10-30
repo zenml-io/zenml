@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """RBAC SQL Zen Store implementation."""
 
-from typing import (
-    Optional,
-    Tuple,
-)
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -45,7 +41,7 @@ class RBACSqlZenStore(SqlZenStore):
 
     def _get_or_create_model(
         self, model_request: ModelRequest
-    ) -> Tuple[bool, ModelResponse]:
+    ) -> tuple[bool, ModelResponse]:
         """Get or create a model.
 
         Args:
@@ -102,8 +98,8 @@ class RBACSqlZenStore(SqlZenStore):
     def _get_model_version(
         self,
         model_id: UUID,
-        version_name: Optional[str] = None,
-        producer_run_id: Optional[UUID] = None,
+        version_name: str | None = None,
+        producer_run_id: UUID | None = None,
     ) -> ModelVersionResponse:
         """Get a model version.
 
@@ -128,8 +124,8 @@ class RBACSqlZenStore(SqlZenStore):
     def _get_or_create_model_version(
         self,
         model_version_request: ModelVersionRequest,
-        producer_run_id: Optional[UUID] = None,
-    ) -> Tuple[bool, ModelVersionResponse]:
+        producer_run_id: UUID | None = None,
+    ) -> tuple[bool, ModelVersionResponse]:
         """Get or create a model version.
 
         Args:

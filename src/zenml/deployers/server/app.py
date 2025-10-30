@@ -19,14 +19,9 @@ from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
     Union,
 )
+from collections.abc import Callable
 from uuid import UUID
 
 from asgiref.compatibility import guarantee_single_callable
@@ -147,11 +142,11 @@ class BaseDeploymentAppRunner(ABC):
         # Create framework-specific adapters
         self.endpoint_adapter = self._create_endpoint_adapter()
         self.middleware_adapter = self._create_middleware_adapter()
-        self._asgi_app: Optional[ASGIApplication] = None
+        self._asgi_app: ASGIApplication | None = None
 
-        self.endpoints: List[EndpointSpec] = []
-        self.middlewares: List[MiddlewareSpec] = []
-        self.extensions: List[AppExtensionSpec] = []
+        self.endpoints: list[EndpointSpec] = []
+        self.middlewares: list[MiddlewareSpec] = []
+        self.extensions: list[AppExtensionSpec] = []
 
     @property
     def asgi_app(self) -> ASGIApplication:
@@ -258,7 +253,7 @@ class BaseDeploymentAppRunner(ABC):
         """
         settings = self.snapshot.pipeline_configuration.deployment_settings
         if settings.deployment_service_class is None:
-            service_cls: Type[BasePipelineDeploymentService] = (
+            service_cls: type[BasePipelineDeploymentService] = (
                 PipelineDeploymentService
             )
         else:
@@ -346,7 +341,7 @@ class BaseDeploymentAppRunner(ABC):
 
         return _invoke_endpoint
 
-    def dashboard_files_path(self) -> Optional[str]:
+    def dashboard_files_path(self) -> str | None:
         """Get the absolute path of the dashboard files directory.
 
         Returns:
@@ -384,7 +379,7 @@ class BaseDeploymentAppRunner(ABC):
         return dashboard_path
 
     @abstractmethod
-    def _get_dashboard_endpoints(self) -> List[EndpointSpec]:
+    def _get_dashboard_endpoints(self) -> list[EndpointSpec]:
         """Get the dashboard endpoints specs.
 
         This is called if the dashboard files path is set to construct the
@@ -394,7 +389,7 @@ class BaseDeploymentAppRunner(ABC):
             The dashboard endpoints specs.
         """
 
-    def _create_default_endpoint_specs(self) -> List[EndpointSpec]:
+    def _create_default_endpoint_specs(self) -> list[EndpointSpec]:
         """Create EndpointSpec objects for default endpoints.
 
         Returns:
@@ -460,7 +455,7 @@ class BaseDeploymentAppRunner(ABC):
         # - if set to a string, we use the string as the value for the header
         # - if set to `False`, we don't set the header
 
-        server: Optional[secure.Server] = None
+        server: secure.Server | None = None
         if self.settings.secure_headers.server:
             server = secure.Server()
             if isinstance(self.settings.secure_headers.server, str):
@@ -468,43 +463,43 @@ class BaseDeploymentAppRunner(ABC):
             else:
                 server.set(str(self.deployment.id))
 
-        hsts: Optional[secure.StrictTransportSecurity] = None
+        hsts: secure.StrictTransportSecurity | None = None
         if self.settings.secure_headers.hsts:
             hsts = secure.StrictTransportSecurity()
             if isinstance(self.settings.secure_headers.hsts, str):
                 hsts.set(self.settings.secure_headers.hsts)
 
-        xfo: Optional[secure.XFrameOptions] = None
+        xfo: secure.XFrameOptions | None = None
         if self.settings.secure_headers.xfo:
             xfo = secure.XFrameOptions()
             if isinstance(self.settings.secure_headers.xfo, str):
                 xfo.set(self.settings.secure_headers.xfo)
 
-        csp: Optional[secure.ContentSecurityPolicy] = None
+        csp: secure.ContentSecurityPolicy | None = None
         if self.settings.secure_headers.csp:
             csp = secure.ContentSecurityPolicy()
             if isinstance(self.settings.secure_headers.csp, str):
                 csp.set(self.settings.secure_headers.csp)
 
-        xcto: Optional[secure.XContentTypeOptions] = None
+        xcto: secure.XContentTypeOptions | None = None
         if self.settings.secure_headers.content:
             xcto = secure.XContentTypeOptions()
             if isinstance(self.settings.secure_headers.content, str):
                 xcto.set(self.settings.secure_headers.content)
 
-        referrer: Optional[secure.ReferrerPolicy] = None
+        referrer: secure.ReferrerPolicy | None = None
         if self.settings.secure_headers.referrer:
             referrer = secure.ReferrerPolicy()
             if isinstance(self.settings.secure_headers.referrer, str):
                 referrer.set(self.settings.secure_headers.referrer)
 
-        cache: Optional[secure.CacheControl] = None
+        cache: secure.CacheControl | None = None
         if self.settings.secure_headers.cache:
             cache = secure.CacheControl()
             if isinstance(self.settings.secure_headers.cache, str):
                 cache.set(self.settings.secure_headers.cache)
 
-        permissions: Optional[secure.PermissionsPolicy] = None
+        permissions: secure.PermissionsPolicy | None = None
         if self.settings.secure_headers.permissions:
             permissions = secure.PermissionsPolicy()
             if isinstance(self.settings.secure_headers.permissions, str):
@@ -556,7 +551,7 @@ class BaseDeploymentAppRunner(ABC):
 
             async def send_wrapper(message: ASGISendEvent) -> None:
                 if message["type"] == "http.response.start":
-                    hdrs: List[Tuple[bytes, bytes]] = list(
+                    hdrs: list[tuple[bytes, bytes]] = list(
                         message.get("headers", [])
                     )
                     existing = {k: i for i, (k, _) in enumerate(hdrs)}
@@ -585,7 +580,7 @@ class BaseDeploymentAppRunner(ABC):
             The CORS middleware spec.
         """
 
-    def _create_default_middleware_specs(self) -> List[MiddlewareSpec]:
+    def _create_default_middleware_specs(self) -> list[MiddlewareSpec]:
         """Create MiddlewareSpec objects for default middleware.
 
         Returns:
@@ -847,7 +842,7 @@ class BaseDeploymentAppRunner(ABC):
    Log Level: {settings.log_level}
 """)
 
-        uvicorn_kwargs: Dict[str, Any] = dict(
+        uvicorn_kwargs: dict[str, Any] = dict(
             host=settings.uvicorn_host,
             port=settings.uvicorn_port,
             workers=settings.uvicorn_workers,
@@ -889,9 +884,9 @@ class BaseDeploymentAppRunner(ABC):
     @abstractmethod
     def build(
         self,
-        middlewares: List[MiddlewareSpec],
-        endpoints: List[EndpointSpec],
-        extensions: List[AppExtensionSpec],
+        middlewares: list[MiddlewareSpec],
+        endpoints: list[EndpointSpec],
+        extensions: list[AppExtensionSpec],
     ) -> ASGIApplication:
         """Build the ASGI compatible web application.
 
@@ -925,7 +920,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+    def implementation_class(self) -> type[BaseDeploymentAppRunner]:
         """The class that implements the deployment app runner.
 
         Returns:
@@ -933,7 +928,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         """
 
     @property
-    def requirements(self) -> List[str]:
+    def requirements(self) -> list[str]:
         """The software requirements for the deployment app runner.
 
         Returns:
@@ -961,7 +956,7 @@ class BaseDeploymentAppRunnerFlavor(ABC):
         )
 
         if settings.deployment_app_runner_flavor is None:
-            app_runner_flavor_class: Type[BaseDeploymentAppRunnerFlavor] = (
+            app_runner_flavor_class: type[BaseDeploymentAppRunnerFlavor] = (
                 FastAPIDeploymentAppRunnerFlavor
             )
         else:
@@ -1032,11 +1027,11 @@ def build_asgi_app() -> ASGIApplication:
 
 def start_deployment_app(
     deployment_id: UUID,
-    pid_file: Optional[str] = None,
-    log_file: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    reload: Optional[bool] = None,
+    pid_file: str | None = None,
+    log_file: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    reload: bool | None = None,
 ) -> None:
     """Start the deployment app.
 

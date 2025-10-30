@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS App Runner deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class AWSDeployerSettings(BaseDeployerSettings):
     """Settings for the AWS App Runner deployer."""
 
-    region: Optional[str] = Field(
+    region: str | None = Field(
         default=None,
         description="AWS region where the App Runner service will be deployed. "
         "If not specified, the region will be determined from the authenticated "
@@ -98,20 +98,20 @@ class AWSDeployerSettings(BaseDeployerSettings):
         description="Whether the App Runner service is publicly accessible.",
     )
 
-    ingress_vpc_configuration: Optional[str] = Field(
+    ingress_vpc_configuration: str | None = Field(
         default=None,
         description="VPC configuration for private App Runner services. "
         "JSON string with VpcId, VpcEndpointId, and VpcIngressConnectionName.",
     )
 
     # Environment and configuration
-    environment_variables: Dict[str, str] = Field(
+    environment_variables: dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to set in the App Runner service.",
     )
 
     # Tags
-    tags: Dict[str, str] = Field(
+    tags: dict[str, str] = Field(
         default_factory=dict,
         description="Tags to apply to the App Runner service.",
     )
@@ -131,25 +131,25 @@ class AWSDeployerSettings(BaseDeployerSettings):
     )
 
     # Observability
-    observability_configuration_arn: Optional[str] = Field(
+    observability_configuration_arn: str | None = Field(
         default=None,
         description="ARN of the observability configuration to associate with "
         "the App Runner service.",
     )
 
     # Encryption
-    encryption_kms_key: Optional[str] = Field(
+    encryption_kms_key: str | None = Field(
         default=None,
         description="KMS key ARN for encrypting App Runner service data.",
     )
 
     # IAM Roles
-    instance_role_arn: Optional[str] = Field(
+    instance_role_arn: str | None = Field(
         default=None,
         description="ARN of the IAM role to assign to the App Runner service instances.",
     )
 
-    access_role_arn: Optional[str] = Field(
+    access_role_arn: str | None = Field(
         default=None,
         description="ARN of the IAM role that App Runner uses to access the "
         "image repository (ECR). Required for private ECR repositories. If not "
@@ -158,7 +158,7 @@ class AWSDeployerSettings(BaseDeployerSettings):
     )
 
     # Traffic allocation for A/B testing and gradual rollouts
-    traffic_allocation: Dict[str, int] = Field(
+    traffic_allocation: dict[str, int] = Field(
         default_factory=lambda: {"LATEST": 100},
         description="Traffic allocation between revisions for A/B testing and "
         "gradual rollouts. Keys can be revision names, tags, or 'LATEST' for "
@@ -233,7 +233,7 @@ class AWSDeployerConfig(
 ):
     """Configuration for the AWS App Runner deployer."""
 
-    resource_combinations: List[Tuple[float, float]] = Field(
+    resource_combinations: list[tuple[float, float]] = Field(
         default=DEFAULT_RESOURCE_COMBINATIONS,
         description="AWS App Runner supported CPU (vCPU), memory (GB) "
         "combinations.",
@@ -268,7 +268,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -284,7 +284,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -293,7 +293,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -311,7 +311,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/aws-app-runner.png"
 
     @property
-    def config_class(self) -> Type[AWSDeployerConfig]:
+    def config_class(self) -> type[AWSDeployerConfig]:
         """Returns the AWSDeployerConfig config class.
 
         Returns:
@@ -320,7 +320,7 @@ class AWSDeployerFlavor(BaseDeployerFlavor):
         return AWSDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["AWSDeployer"]:
+    def implementation_class(self) -> type["AWSDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

@@ -21,10 +21,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
 )
 from uuid import uuid4
 
@@ -89,7 +85,6 @@ class SharedLocalOrchestrator(LocalOrchestrator):
         """
         # Bypass the init hook execution because it is run globally by
         # the deployment service
-        pass
 
     @classmethod
     def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
@@ -100,7 +95,6 @@ class SharedLocalOrchestrator(LocalOrchestrator):
         """
         # Bypass the cleanup hook execution because it is run globally by
         # the deployment service
-        pass
 
 
 class BasePipelineDeploymentService(ABC):
@@ -186,7 +180,7 @@ class BasePipelineDeploymentService(ABC):
     @property
     def input_model(
         self,
-    ) -> Type[BaseModel]:
+    ) -> type[BaseModel]:
         """Construct a Pydantic model representing pipeline input parameters.
 
         Load the pipeline class from `pipeline_spec.source` and derive the
@@ -228,7 +222,7 @@ class BasePipelineDeploymentService(ABC):
         return model
 
     @property
-    def input_schema(self) -> Dict[str, Any]:
+    def input_schema(self) -> dict[str, Any]:
         """Return the JSON schema for pipeline input parameters.
 
         Returns:
@@ -247,7 +241,7 @@ class BasePipelineDeploymentService(ABC):
         raise RuntimeError("The pipeline input schema is not available.")
 
     @property
-    def output_schema(self) -> Dict[str, Any]:
+    def output_schema(self) -> dict[str, Any]:
         """Return the JSON schema for the pipeline outputs.
 
         Returns:
@@ -267,7 +261,7 @@ class BasePipelineDeploymentService(ABC):
 
     def get_pipeline_invoke_models(
         self,
-    ) -> Tuple[Type[BaseModel], Type[BaseModel]]:
+    ) -> tuple[type[BaseModel], type[BaseModel]]:
         """Generate the request and response models for the pipeline invoke endpoint.
 
         Returns:
@@ -288,7 +282,7 @@ class BasePipelineDeploymentService(ABC):
 
             class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
                 outputs: Annotated[
-                    Optional[Dict[str, Any]],
+                    dict[str, Any] | None,
                     WithJsonSchema(self.output_schema, mode="serialization"),
                 ]
 
@@ -315,7 +309,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
         # Execution tracking
         self.service_start_time = time.time()
-        self.last_execution_time: Optional[datetime] = None
+        self.last_execution_time: datetime | None = None
         self.total_executions = 0
         self.orchestrator_class = SharedLocalOrchestrator
 
@@ -353,7 +347,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
-        placeholder_run: Optional[PipelineRunResponse] = None
+        placeholder_run: PipelineRunResponse | None = None
         try:
             # Create a placeholder run separately from the actual execution,
             # so that we have a run ID to include in the response even if the
@@ -446,12 +440,11 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def health_check(self) -> None:
         """Check service health."""
-        pass
 
     def _map_outputs(
         self,
-        runtime_outputs: Optional[Dict[str, Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        runtime_outputs: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """Map pipeline outputs using centralized runtime processing.
 
         Args:
@@ -495,8 +488,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def _prepare_execute_with_orchestrator(
         self,
-        resolved_params: Dict[str, Any],
-    ) -> Tuple[PipelineRunResponse, PipelineSnapshotResponse]:
+        resolved_params: dict[str, Any],
+    ) -> tuple[PipelineRunResponse, PipelineSnapshotResponse]:
         """Prepare the execution with the orchestrator.
 
         Args:
@@ -532,9 +525,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         self,
         placeholder_run: PipelineRunResponse,
         deployment_snapshot: PipelineSnapshotResponse,
-        resolved_params: Dict[str, Any],
+        resolved_params: dict[str, Any],
         skip_artifact_materialization: bool,
-    ) -> Optional[Dict[str, Dict[str, Any]]]:
+    ) -> dict[str, dict[str, Any]] | None:
         """Run the snapshot via the orchestrator and return the concrete run.
 
         Args:
@@ -575,7 +568,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             skip_artifact_materialization=skip_artifact_materialization,
         )
 
-        captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
+        captured_outputs: dict[str, dict[str, Any]] | None = None
         try:
             # Use the new deployment snapshot with pre-configured settings
             orchestrator.run(
@@ -640,11 +633,11 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def _build_response(
         self,
-        resolved_params: Dict[str, Any],
+        resolved_params: dict[str, Any],
         start_time: float,
-        mapped_outputs: Optional[Dict[str, Any]] = None,
-        placeholder_run: Optional[PipelineRunResponse] = None,
-        error: Optional[Exception] = None,
+        mapped_outputs: dict[str, Any] | None = None,
+        placeholder_run: PipelineRunResponse | None = None,
+        error: Exception | None = None,
     ) -> BaseDeploymentInvocationResponse:
         """Build success response with execution tracking.
 
@@ -662,7 +655,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         self.total_executions += 1
         self.last_execution_time = datetime.now(timezone.utc)
 
-        run: Optional[PipelineRunResponse] = placeholder_run
+        run: PipelineRunResponse | None = placeholder_run
         if placeholder_run:
             try:
                 # Fetch the concrete run via its id

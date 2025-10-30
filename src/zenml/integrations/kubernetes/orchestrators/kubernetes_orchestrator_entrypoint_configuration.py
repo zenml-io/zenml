@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Kubernetes master/orchestrator pod."""
 
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -26,7 +26,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
     """Entrypoint configuration for the k8s master/orchestrator pod."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all the options required for running this entrypoint.
 
         Returns:
@@ -38,7 +38,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         return options
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
+    def get_entrypoint_command(cls) -> list[str]:
         """Returns a command that runs the entrypoint module.
 
         Returns:
@@ -56,7 +56,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         cls,
         snapshot_id: "UUID",
         run_id: Optional["UUID"] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

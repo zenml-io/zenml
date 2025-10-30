@@ -15,7 +15,7 @@
 
 import os
 import random
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 
 def get_orchestrator_run_name(
-    pipeline_name: str, max_length: Optional[int] = None
+    pipeline_name: str, max_length: int | None = None
 ) -> str:
     """Gets an orchestrator run name.
 
@@ -79,8 +79,8 @@ def get_orchestrator_run_name(
 
 
 def is_setting_enabled(
-    is_enabled_on_step: Optional[bool],
-    is_enabled_on_pipeline: Optional[bool],
+    is_enabled_on_step: bool | None,
+    is_enabled_on_pipeline: bool | None,
 ) -> bool:
     """Checks if a certain setting is enabled within a step run.
 
@@ -103,10 +103,10 @@ def is_setting_enabled(
 
 
 def get_config_environment_vars(
-    schedule_id: Optional[UUID] = None,
-    pipeline_run_id: Optional[UUID] = None,
-    deployment_id: Optional[UUID] = None,
-) -> Tuple[Dict[str, str], Dict[str, str]]:
+    schedule_id: UUID | None = None,
+    pipeline_run_id: UUID | None = None,
+    deployment_id: UUID | None = None,
+) -> tuple[dict[str, str], dict[str, str]]:
     """Gets environment variables to set for mirroring the active config.
 
     If a schedule ID, pipeline run ID or step run ID is given, and the current
@@ -130,7 +130,7 @@ def get_config_environment_vars(
 
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
-    secrets: Dict[str, str] = {}
+    secrets: dict[str, str] = {}
 
     if (
         global_config.store_configuration.type == StoreType.REST
@@ -247,7 +247,7 @@ class register_artifact_store_filesystem:
     will be restored.
     """
 
-    def __init__(self, target_artifact_store_id: Optional[UUID]) -> None:
+    def __init__(self, target_artifact_store_id: UUID | None) -> None:
         """Initialization of the context manager.
 
         Args:
@@ -308,9 +308,9 @@ class register_artifact_store_filesystem:
 
     def __exit__(
         self,
-        exc_type: Optional[Any],
-        exc_value: Optional[Any],
-        traceback: Optional[Any],
+        exc_type: Any | None,
+        exc_value: Any | None,
+        traceback: Any | None,
     ) -> None:
         """Set it back to the original state.
 

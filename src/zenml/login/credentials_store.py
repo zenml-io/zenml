@@ -15,7 +15,7 @@
 
 import os
 from datetime import timedelta
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Optional, cast
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
@@ -89,8 +89,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     """
 
-    credentials: Dict[str, ServerCredentials]
-    last_modified_time: Optional[float] = None
+    credentials: dict[str, ServerCredentials]
+    last_modified_time: float | None = None
 
     def __init__(self) -> None:
         """Initializes the login credentials store with values loaded from the credentials YAML file.
@@ -232,7 +232,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def get_password(
         self, server_url: str
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Retrieve the username and password from the credentials store for a specific server URL.
 
         Args:
@@ -248,7 +248,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             return credential.username, credential.password
         return None, None
 
-    def get_api_key(self, server_url: str) -> Optional[str]:
+    def get_api_key(self, server_url: str) -> str | None:
         """Retrieve an API key from the credentials store for a specific server URL.
 
         Args:
@@ -265,7 +265,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def get_token(
         self, server_url: str, allow_expired: bool = False
-    ) -> Optional[APIToken]:
+    ) -> APIToken | None:
         """Retrieve a valid token from the credentials store for a specific server URL.
 
         Args:
@@ -285,7 +285,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
                 return token
         return None
 
-    def get_credentials(self, server_url: str) -> Optional[ServerCredentials]:
+    def get_credentials(self, server_url: str) -> ServerCredentials | None:
         """Retrieve the credentials for a specific server URL.
 
         Args:
@@ -314,7 +314,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             return True
         return False
 
-    def get_pro_api_key(self, pro_api_url: str) -> Optional[str]:
+    def get_pro_api_key(self, pro_api_url: str) -> str | None:
         """Retrieve an API key from the credentials store for a ZenML Pro API server.
 
         Args:
@@ -330,7 +330,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def get_pro_token(
         self, pro_api_url: str, allow_expired: bool = False
-    ) -> Optional[APIToken]:
+    ) -> APIToken | None:
         """Retrieve a valid token from the credentials store for a ZenML Pro API server.
 
         Args:
@@ -351,7 +351,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
 
     def get_pro_credentials(
         self, pro_api_url: str
-    ) -> Optional[ServerCredentials]:
+    ) -> ServerCredentials | None:
         """Retrieve valid credentials from the credentials store for a ZenML Pro API server.
 
         Args:
@@ -587,7 +587,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
     def update_server_info(
         self,
         server_url: str,
-        server_info: Union[ServerModel, WorkspaceRead],
+        server_info: ServerModel | WorkspaceRead,
     ) -> None:
         """Update the server information stored for a specific server URL.
 
@@ -641,8 +641,8 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             self._save_credentials()
 
     def list_credentials(
-        self, type: Optional[ServerType] = None
-    ) -> List[ServerCredentials]:
+        self, type: ServerType | None = None
+    ) -> list[ServerCredentials]:
         """Get all credentials stored in the credentials store.
 
         Args:

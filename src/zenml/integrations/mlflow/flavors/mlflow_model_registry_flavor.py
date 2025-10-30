@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow model registry flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.mlflow import MLFLOW_MODEL_REGISTRY_FLAVOR
 from zenml.model_registries.base_model_registry import (
@@ -44,7 +44,7 @@ class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
         return MLFLOW_MODEL_REGISTRY_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -53,7 +53,7 @@ class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -71,7 +71,7 @@ class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png"
 
     @property
-    def config_class(self) -> Type[MLFlowModelRegistryConfig]:
+    def config_class(self) -> type[MLFlowModelRegistryConfig]:
         """Returns `MLFlowModelRegistryConfig` config class.
 
         Returns:
@@ -80,7 +80,7 @@ class MLFlowModelRegistryFlavor(BaseModelRegistryFlavor):
         return MLFlowModelRegistryConfig
 
     @property
-    def implementation_class(self) -> Type["MLFlowModelRegistry"]:
+    def implementation_class(self) -> type["MLFlowModelRegistry"]:
         """Implementation class for this flavor.
 
         Returns:

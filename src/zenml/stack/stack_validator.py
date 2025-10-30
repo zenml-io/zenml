@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Validator."""
 
-from typing import TYPE_CHECKING, AbstractSet, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, AbstractSet
+from collections.abc import Callable
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
@@ -37,10 +38,10 @@ class StackValidator:
 
     def __init__(
         self,
-        required_components: Optional[AbstractSet[StackComponentType]] = None,
-        custom_validation_function: Optional[
-            Callable[["Stack"], Tuple[bool, str]]
-        ] = None,
+        required_components: AbstractSet[StackComponentType] | None = None,
+        custom_validation_function: None | (
+            Callable[["Stack"], tuple[bool, str]]
+        ) = None,
     ):
         """Initializes a `StackValidator` instance.
 

@@ -14,7 +14,6 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -153,9 +152,9 @@ def create_artifact_version(
 )
 @async_fastapi_endpoint_wrapper
 def batch_create_artifact_version(
-    artifact_versions: List[ArtifactVersionRequest],
+    artifact_versions: list[ArtifactVersionRequest],
     _: AuthContext = Security(authorize),
-) -> List[ArtifactVersionResponse]:
+) -> list[ArtifactVersionResponse]:
     """Create a batch of artifact versions.
 
     Args:
@@ -251,7 +250,7 @@ def delete_artifact_version(
 )
 @async_fastapi_endpoint_wrapper
 def prune_artifact_versions(
-    project_name_or_id: Union[str, UUID],
+    project_name_or_id: str | UUID,
     only_versions: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:

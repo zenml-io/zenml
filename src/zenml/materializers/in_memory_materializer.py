@@ -16,10 +16,6 @@
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
 )
 
 from zenml.enums import ArtifactType
@@ -30,7 +26,7 @@ from zenml.metadata.metadata_types import MetadataType
 class InMemoryMaterializer(BaseMaterializer):
     """Materializer that stores artifacts in memory."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (object,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     SKIP_REGISTRATION: ClassVar[bool] = True
 
@@ -44,7 +40,7 @@ class InMemoryMaterializer(BaseMaterializer):
 
         runtime.put_in_memory_data(self.uri, data)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Load data from memory.
 
         Args:
@@ -65,7 +61,7 @@ class InMemoryMaterializer(BaseMaterializer):
                 f"No data available for artifactURI `{self.uri}`"
             )
 
-    def extract_full_metadata(self, data: Any) -> Dict[str, MetadataType]:
+    def extract_full_metadata(self, data: Any) -> dict[str, MetadataType]:
         """No metadata extraction.
 
         Args:
@@ -76,7 +72,7 @@ class InMemoryMaterializer(BaseMaterializer):
         """
         return {}
 
-    def save_visualizations(self, data: Any) -> Dict[str, Any]:
+    def save_visualizations(self, data: Any) -> dict[str, Any]:
         """No visualizations.
 
         Args:
@@ -87,7 +83,7 @@ class InMemoryMaterializer(BaseMaterializer):
         """
         return {}
 
-    def compute_content_hash(self, data: Any) -> Optional[str]:
+    def compute_content_hash(self, data: Any) -> str | None:
         """No content hash computation in serving mode.
 
         Args:

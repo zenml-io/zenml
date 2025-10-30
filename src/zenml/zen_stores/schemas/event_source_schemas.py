@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -69,7 +70,7 @@ class EventSourceSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="event_sources")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -79,7 +80,7 @@ class EventSourceSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="event_sources")
 
-    triggers: List["TriggerSchema"] = Relationship(
+    triggers: list["TriggerSchema"] = Relationship(
         back_populates="event_source"
     )
 

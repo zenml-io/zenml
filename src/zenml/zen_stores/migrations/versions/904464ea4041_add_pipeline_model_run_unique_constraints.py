@@ -7,7 +7,7 @@ Create Date: 2024-11-04 10:27:05.450092
 """
 
 from collections import defaultdict
-from typing import Any, Dict, Set
+from typing import Any
 
 import sqlalchemy as sa
 from alembic import op
@@ -38,7 +38,7 @@ def resolve_duplicate_entities() -> None:
         result = connection.execute(
             sa.select(table.c.id, table.c.name, table.c.workspace_id)
         ).all()
-        existing: Dict[str, Set[str]] = defaultdict(set)
+        existing: dict[str, set[str]] = defaultdict(set)
 
         for id_, name, workspace_id in result:
             names_in_workspace = existing[workspace_id]
@@ -71,8 +71,8 @@ def resolve_duplicate_entities() -> None:
         )
     ).all()
 
-    existing_names: Dict[str, Set[str]] = defaultdict(set)
-    existing_numbers: Dict[str, Set[int]] = defaultdict(set)
+    existing_names: dict[str, set[str]] = defaultdict(set)
+    existing_numbers: dict[str, set[int]] = defaultdict(set)
 
     needs_update = []
 
@@ -99,7 +99,7 @@ def resolve_duplicate_entities() -> None:
         needs_new_name,
         needs_new_number,
     ) in needs_update:
-        values: Dict[str, Any] = {}
+        values: dict[str, Any] = {}
 
         is_numeric_version = str(number) == name
         next_numeric_version = max(existing_numbers[model_id]) + 1

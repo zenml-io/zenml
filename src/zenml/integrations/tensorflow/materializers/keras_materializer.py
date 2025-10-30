@@ -14,7 +14,7 @@
 """Implementation of the TensorFlow Keras materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import tensorflow as tf
 from tensorflow.python import keras as tf_keras
@@ -31,14 +31,14 @@ if TYPE_CHECKING:
 class KerasMaterializer(BaseMaterializer):
     """Materializer to read/write Keras models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         tf.keras.Model,
         tf_keras.Model,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     MODEL_FILE_NAME = "model.keras"
 
-    def load(self, data_type: Type[Any]) -> tf_keras.Model:
+    def load(self, data_type: type[Any]) -> tf_keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
 
         Args:
@@ -70,7 +70,7 @@ class KerasMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, model: tf_keras.Model
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.
 
         Args:

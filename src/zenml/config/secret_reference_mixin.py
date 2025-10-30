@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Secret reference mixin implementation."""
 
-from typing import TYPE_CHECKING, Any, Set
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -141,7 +141,7 @@ class SecretReferenceMixin(BaseModel):
         __getattribute__ = __custom_getattribute__
 
     @property
-    def required_secrets(self) -> Set[secret_utils.SecretReference]:
+    def required_secrets(self) -> set[secret_utils.SecretReference]:
         """All required secrets for this object.
 
         Returns:

@@ -16,14 +16,13 @@
 import importlib
 import inspect
 import sys
-from typing import List, Optional, Type
 
 from zenml.integrations.integration import Integration, IntegrationMeta
 
 
 def get_integration_for_module(
     module_name: str,
-) -> Optional[Type[Integration]]:
+) -> type[Integration] | None:
     """Gets the integration class for a module inside an integration.
 
     If the module given by `module_name` is not part of a ZenML integration,
@@ -58,7 +57,7 @@ def get_integration_for_module(
     return None
 
 
-def get_requirements_for_module(module_name: str) -> List[str]:
+def get_requirements_for_module(module_name: str) -> list[str]:
     """Gets requirements for a module inside an integration.
 
     If the module given by `module_name` is not part of a ZenML integration,

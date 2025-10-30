@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization of the Lightning integration for ZenML."""
 
-from typing import List, Type
 
 from zenml.integrations.constants import (
     LIGHTNING,
@@ -31,7 +30,7 @@ class LightningIntegration(Integration):
     REQUIREMENTS = ["lightning-sdk>=0.1.17"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Lightning integration.
 
         Returns:

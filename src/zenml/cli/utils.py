@@ -27,20 +27,13 @@ from typing import (
     TYPE_CHECKING,
     AbstractSet,
     Any,
-    Callable,
-    Dict,
-    Iterator,
     List,
     NoReturn,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
 )
+from collections.abc import Callable, Iterator, Sequence
 
 import click
 import yaml
@@ -154,8 +147,8 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
 
 def declare(
     text: Union[str, "Text"],
-    bold: Optional[bool] = None,
-    italic: Optional[bool] = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
     **kwargs: Any,
 ) -> None:
     """Echo a declaration on the CLI.
@@ -185,7 +178,7 @@ def error(text: str) -> NoReturn:
 
     # Create a custom ClickException that bypasses Click's default "Error: " prefix
     class StyledClickException(click.ClickException):
-        def show(self, file: Optional[IO[Any]] = None) -> None:
+        def show(self, file: IO[Any] | None = None) -> None:
             if file is None:
                 file = click.get_text_stream("stderr")
             # Print our custom styled message directly without Click's prefix
@@ -221,8 +214,8 @@ def exception(exception: Exception) -> NoReturn:
 
 def warning(
     text: str,
-    bold: Optional[bool] = None,
-    italic: Optional[bool] = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
     **kwargs: Any,
 ) -> None:
     """Echo a warning string on the CLI.
@@ -240,8 +233,8 @@ def warning(
 
 def success(
     text: str,
-    bold: Optional[bool] = None,
-    italic: Optional[bool] = None,
+    bold: bool | None = None,
+    italic: bool | None = None,
     **kwargs: Any,
 ) -> None:
     """Echo a success string on the CLI.
@@ -279,9 +272,9 @@ def print_markdown_with_pager(text: str) -> None:
 
 
 def print_table(
-    obj: List[Dict[str, Any]],
-    title: Optional[str] = None,
-    caption: Optional[str] = None,
+    obj: list[dict[str, Any]],
+    title: str | None = None,
+    caption: str | None = None,
     **columns: table.Column,
 ) -> None:
     """Prints the list of dicts in a table format.
@@ -326,7 +319,7 @@ def print_table(
                 ):
                     # Display the URL as a hyperlink in a way that doesn't break
                     # the URL when it needs to be wrapped over multiple lines
-                    value: Union[str, Text] = Text(v, style=f"link {v}")
+                    value: str | Text = Text(v, style=f"link {v}")
                 else:
                     value = str(v)
                     # Escape text when square brackets are used, but allow
@@ -341,12 +334,12 @@ def print_table(
 
 
 def print_pydantic_models(
-    models: Union[Page[T], List[T]],
-    columns: Optional[List[str]] = None,
-    exclude_columns: Optional[List[str]] = None,
-    active_models: Optional[List[T]] = None,
+    models: Page[T] | list[T],
+    columns: list[str] | None = None,
+    exclude_columns: list[str] | None = None,
+    active_models: list[T] | None = None,
     show_active: bool = False,
-    rename_columns: Dict[str, str] = {},
+    rename_columns: dict[str, str] = {},
 ) -> None:
     """Prints the list of Pydantic models in a table.
 
@@ -369,7 +362,7 @@ def print_pydantic_models(
         show_active_column = False
         active_models = list()
 
-    def __dictify(model: T) -> Dict[str, str]:
+    def __dictify(model: T) -> dict[str, str]:
         """Helper function to map over the list to turn Models into dicts.
 
         Args:
@@ -414,7 +407,7 @@ def print_pydantic_models(
         else:
             include_columns = columns
 
-        items: Dict[str, Any] = {}
+        items: dict[str, Any] = {}
 
         for k in include_columns:
             value = getattr(model, k)
@@ -440,7 +433,7 @@ def print_pydantic_models(
                             )
                         else:
                             items.setdefault(k, []).append(str(v.id))
-            elif isinstance(value, Set) or isinstance(value, List):
+            elif isinstance(value, set) or isinstance(value, list):
                 items[k] = [str(v) for v in value]
             else:
                 items[k] = str(value)
@@ -497,8 +490,8 @@ def print_pydantic_models(
 def print_pydantic_model(
     title: str,
     model: BaseModel,
-    exclude_columns: Optional[AbstractSet[str]] = None,
-    columns: Optional[AbstractSet[str]] = None,
+    exclude_columns: AbstractSet[str] | None = None,
+    columns: AbstractSet[str] | None = None,
 ) -> None:
     """Prints a single Pydantic model in a table.
 
@@ -555,7 +548,7 @@ def print_pydantic_model(
     else:
         include_columns = list(columns)
 
-    items: Dict[str, Any] = {}
+    items: dict[str, Any] = {}
 
     for k in include_columns:
         value = getattr(model, k)
@@ -576,7 +569,7 @@ def print_pydantic_model(
                         items.setdefault(k, []).append(str(v.id))
 
                 items[k] = str(items[k])
-        elif isinstance(value, Set) or isinstance(value, List):
+        elif isinstance(value, set) or isinstance(value, list):
             items[k] = str([str(v) for v in value])
         else:
             items[k] = str(value)
@@ -588,8 +581,8 @@ def print_pydantic_model(
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, Type["Integration"]]],
-) -> List[Dict[str, str]]:
+    integrations: list[tuple[str, type["Integration"]]],
+) -> list[dict[str, str]]:
     """Formats a list of integrations into a List of Dicts.
 
     This list of dicts can then be printed in a table style using
@@ -693,7 +686,7 @@ def print_flavor_list(flavors: Page["FlavorResponse"]) -> None:
 def print_stack_component_configuration(
     component: "ComponentResponse",
     active_status: bool,
-    connector_requirements: Optional[ServiceConnectorRequirements] = None,
+    connector_requirements: ServiceConnectorRequirements | None = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -837,7 +830,7 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
                 f"{MAX_ARGUMENT_VALUE_SIZE} bytes)."
             )
 
-        with open(filename, "r") as f:
+        with open(filename) as f:
             return f.read()
     except OSError as e:
         raise ValueError(
@@ -846,7 +839,7 @@ def expand_argument_value_from_file(name: str, value: str) -> str:
         )
 
 
-def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
+def convert_structured_str_to_dict(string: str) -> dict[str, str]:
     """Convert a structured string (JSON or YAML) into a dict.
 
     Examples:
@@ -864,7 +857,7 @@ def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
         dict_: dict from structured JSON or YAML str
     """
     try:
-        dict_: Dict[str, str] = json.loads(string)
+        dict_: dict[str, str] = json.loads(string)
         return dict_
     except ValueError:
         pass
@@ -882,10 +875,10 @@ def convert_structured_str_to_dict(string: str) -> Dict[str, str]:
 
 
 def parse_name_and_extra_arguments(
-    args: List[str],
+    args: list[str],
     expand_args: bool = False,
     name_mandatory: bool = True,
-) -> Tuple[Optional[str], Dict[str, str]]:
+) -> tuple[str | None, dict[str, str]]:
     """Parse a name and extra arguments from the CLI.
 
     This is a utility function used to parse a variable list of optional CLI
@@ -914,7 +907,7 @@ def parse_name_and_extra_arguments(
     Returns:
         The name and a dict of parsed args.
     """
-    name: Optional[str] = None
+    name: str | None = None
     # The name was not supplied as the first argument, we have to
     # search the other arguments for the name.
     for i, arg in enumerate(args):
@@ -937,7 +930,7 @@ def parse_name_and_extra_arguments(
         "identifier as the key and the following structure: "
         '--custom_argument="value"'
     )
-    args_dict: Dict[str, str] = {}
+    args_dict: dict[str, str] = {}
     for a in args:
         if not a:
             # Skip empty arguments.
@@ -968,7 +961,7 @@ def validate_keys(key: str) -> None:
         error("Please provide args with a proper identifier as the key.")
 
 
-def parse_unknown_component_attributes(args: List[str]) -> List[str]:
+def parse_unknown_component_attributes(args: list[str]) -> list[str]:
     """Parse unknown options from the CLI.
 
     Args:
@@ -990,10 +983,10 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
 
 
 def prompt_configuration(
-    config_schema: Dict[str, Any],
+    config_schema: dict[str, Any],
     show_secrets: bool = False,
-    existing_config: Optional[Dict[str, str]] = None,
-) -> Dict[str, str]:
+    existing_config: dict[str, str] | None = None,
+) -> dict[str, str]:
     """Prompt the user for configuration values using the provided schema.
 
     Args:
@@ -1018,7 +1011,7 @@ def prompt_configuration(
         title = f"[{attr_name}] {title}"
         required = attr_name in config_schema.get("required", [])
         hidden = attr_schema.get("format", "") == "password"
-        subtitles: List[str] = []
+        subtitles: list[str] = []
         subtitles.append(attr_type_name)
         if hidden:
             subtitles.append("secret")
@@ -1098,7 +1091,7 @@ def prompt_configuration(
 
 
 def install_packages(
-    packages: List[str],
+    packages: list[str],
     upgrade: bool = False,
     use_uv: bool = False,
 ) -> None:
@@ -1210,7 +1203,7 @@ def is_pip_installed() -> bool:
 
 
 def pretty_print_secret(
-    secret: Dict[str, str],
+    secret: dict[str, str],
     hide_secret: bool = True,
 ) -> None:
     """Print all key-value pairs associated with a secret.
@@ -1220,7 +1213,7 @@ def pretty_print_secret(
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
-    title: Optional[str] = None
+    title: str | None = None
 
     def get_secret_value(value: Any) -> str:
         if value is None:
@@ -1238,7 +1231,7 @@ def pretty_print_secret(
     print_table(stack_dicts, title=title)
 
 
-def print_list_items(list_items: List[str], column_title: str) -> None:
+def print_list_items(list_items: list[str], column_title: str) -> None:
     """Prints the configuration options of a stack.
 
     Args:
@@ -1283,7 +1276,7 @@ def get_service_state_emoji(state: "ServiceState") -> str:
 
 
 def pretty_print_model_deployer(
-    model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
+    model_services: list["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
     """Given a list of served_models, print all associated key-value pairs.
 
@@ -1316,7 +1309,7 @@ def pretty_print_model_deployer(
 
 
 def pretty_print_registered_model_table(
-    registered_models: List["RegisteredModel"],
+    registered_models: list["RegisteredModel"],
 ) -> None:
     """Given a list of registered_models, print all associated key-value pairs.
 
@@ -1337,7 +1330,7 @@ def pretty_print_registered_model_table(
 
 
 def pretty_print_model_version_table(
-    model_versions: List["RegistryModelVersion"],
+    model_versions: list["RegistryModelVersion"],
 ) -> None:
     """Given a list of model_versions, print all associated key-value pairs.
 
@@ -1462,7 +1455,7 @@ def print_served_model_configuration(
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
+def describe_pydantic_object(schema_json: dict[str, Any]) -> None:
     """Describes a Pydantic object based on the dict-representation of its schema.
 
     Args:
@@ -1658,7 +1651,7 @@ def print_service_connectors_table(
     if len(connectors) == 0:
         return
 
-    active_connectors: List["ServiceConnectorResponse"] = []
+    active_connectors: list["ServiceConnectorResponse"] = []
     for components in client.active_stack_model.components.values():
         for component in components:
             if component.connector:
@@ -1718,7 +1711,7 @@ def print_service_connectors_table(
 
 
 def print_service_connector_resource_table(
-    resources: List["ServiceConnectorResourcesModel"],
+    resources: list["ServiceConnectorResourcesModel"],
     show_resources_only: bool = False,
 ) -> None:
     """Prints a table with details for a list of service connector resources.
@@ -1730,7 +1723,7 @@ def print_service_connector_resource_table(
     resource_table = []
     for resource_model in resources:
         printed_connector = False
-        resource_row: Dict[str, Any] = {}
+        resource_row: dict[str, Any] = {}
 
         if resource_model.error:
             # Global error
@@ -2063,7 +2056,7 @@ def print_service_connector_auth_method(
     )
     message += f"{auth_method.description}\n"
 
-    attributes: List[str] = []
+    attributes: list[str] = []
     for attr_name, attr_schema in auth_method.config_schema.get(
         "properties", {}
     ).items():
@@ -2071,7 +2064,7 @@ def print_service_connector_auth_method(
         attr_type = attr_schema.get("type", "string")
         required = attr_name in auth_method.config_schema.get("required", [])
         hidden = attr_schema.get("format", "") == "password"
-        subtitles: List[str] = []
+        subtitles: list[str] = []
         subtitles.append(attr_type)
         if hidden:
             subtitles.append("secret")
@@ -2201,7 +2194,7 @@ def _get_stack_components(
     return list(stack.components.values())
 
 
-def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
+def _scrub_secret(config: StackComponentConfig) -> dict[str, Any]:
     """Remove secret values from a configuration.
 
     Args:
@@ -2345,7 +2338,7 @@ def print_pipeline_runs_table(
 
 def fetch_snapshot(
     snapshot_name_or_id: str,
-    pipeline_name_or_id: Optional[str] = None,
+    pipeline_name_or_id: str | None = None,
 ) -> "PipelineSnapshotResponse":
     """Fetch a snapshot by name or ID.
 
@@ -2393,7 +2386,7 @@ def fetch_snapshot(
 
 
 def get_deployment_status_emoji(
-    status: Optional[str],
+    status: str | None,
 ) -> str:
     """Returns an emoji representing the given deployment status.
 
@@ -2415,7 +2408,7 @@ def get_deployment_status_emoji(
     return ":question:"
 
 
-def format_deployment_status(status: Optional[str]) -> str:
+def format_deployment_status(status: str | None) -> str:
     """Format deployment status with color.
 
     Args:
@@ -2695,7 +2688,7 @@ def print_page_info(page: Page[T]) -> None:
 F = TypeVar("F", bound=Callable[..., None])
 
 
-def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
+def create_filter_help_text(filter_model: type[BaseFilter], field: str) -> str:
     """Create the help text used in the click option help text.
 
     Args:
@@ -2747,7 +2740,7 @@ def create_filter_help_text(filter_model: Type[BaseFilter], field: str) -> str:
 
 
 def create_data_type_help_text(
-    filter_model: Type[BaseFilter], field: str
+    filter_model: type[BaseFilter], field: str
 ) -> str:
     """Create a general help text for a fields datatype.
 
@@ -2805,7 +2798,7 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
-def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
+def list_options(filter_model: type[BaseFilter]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
     The Outer decorator (`list_options`) is responsible for creating the inner
@@ -2904,7 +2897,7 @@ def temporary_active_stack(
             Client().activate_stack(old_stack_id)
 
 
-def print_user_info(info: Dict[str, Any]) -> None:
+def print_user_info(info: dict[str, Any]) -> None:
     """Print user information to the terminal.
 
     Args:
@@ -2918,8 +2911,8 @@ def print_user_info(info: Dict[str, Any]) -> None:
 
 
 def get_parsed_labels(
-    labels: Optional[List[str]], allow_label_only: bool = False
-) -> Dict[str, Optional[str]]:
+    labels: list[str] | None, allow_label_only: bool = False
+) -> dict[str, str | None]:
     """Parse labels into a dictionary.
 
     Args:
@@ -2975,7 +2968,7 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
         return False
 
 
-def print_model_url(url: Optional[str]) -> None:
+def print_model_url(url: str | None) -> None:
     """Pretty prints a given URL on the CLI.
 
     Args:
@@ -3003,12 +2996,12 @@ def is_jupyter_installed() -> bool:
 
 def multi_choice_prompt(
     object_type: str,
-    choices: List[List[Any]],
-    headers: List[str],
+    choices: list[list[Any]],
+    headers: list[str],
     prompt_text: str,
     allow_zero_be_a_new_object: bool = False,
-    default_choice: Optional[str] = None,
-) -> Optional[int]:
+    default_choice: str | None = None,
+) -> int | None:
     """Prompts the user to select a choice from a list of choices.
 
     Args:

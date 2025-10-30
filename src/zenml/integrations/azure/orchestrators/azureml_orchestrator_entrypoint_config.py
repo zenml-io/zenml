@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, List, Set
+from typing import Any
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -30,7 +30,7 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for ZenML AzureML pipeline steps."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -40,7 +40,7 @@ class AzureMLEntrypointConfiguration(StepEntrypointConfiguration):
         return super().get_entrypoint_options() | {ZENML_ENV_VARIABLES}
 
     @classmethod
-    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

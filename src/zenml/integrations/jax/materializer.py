@@ -17,8 +17,6 @@ import os
 from typing import (
     Any,
     ClassVar,
-    Tuple,
-    Type,
 )
 
 import jax
@@ -34,10 +32,10 @@ NUMPY_FILENAME = "data.npy"
 class JAXArrayMaterializer(BaseMaterializer):
     """A materializer for JAX arrays."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (jax.Array,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (jax.Array,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> jax.Array:
+    def load(self, data_type: type[Any]) -> jax.Array:
         """Reads data from a `.npy` file, and returns a JAX array.
 
         Args:

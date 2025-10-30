@@ -17,8 +17,6 @@ from abc import ABC, abstractmethod
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    Optional,
     Type,
 )
 
@@ -108,9 +106,9 @@ class BaseEventSourceHandler(BasePlugin, ABC):
     actions.
     """
 
-    _event_hub: Optional[BaseEventHub] = None
+    _event_hub: BaseEventHub | None = None
 
-    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
+    def __init__(self, event_hub: BaseEventHub | None = None) -> None:
         """Event source handler initialization.
 
         Args:
@@ -133,7 +131,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[EventSourceConfig]:
+    def config_class(self) -> type[EventSourceConfig]:
         """Returns the event source configuration class.
 
         Returns:
@@ -142,7 +140,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
     @property
     @abstractmethod
-    def filter_class(self) -> Type[EventFilterConfig]:
+    def filter_class(self) -> type[EventFilterConfig]:
         """Returns the event filter configuration class.
 
         Returns:
@@ -396,7 +394,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
         return event_source
 
     def validate_event_source_configuration(
-        self, event_source_config: Dict[str, Any]
+        self, event_source_config: dict[str, Any]
     ) -> EventSourceConfig:
         """Validate and return the event source configuration.
 
@@ -418,7 +416,7 @@ class BaseEventSourceHandler(BasePlugin, ABC):
 
     def validate_event_filter_configuration(
         self,
-        configuration: Dict[str, Any],
+        configuration: dict[str, Any],
     ) -> EventFilterConfig:
         """Validate and return the configuration of an event filter.
 
@@ -488,7 +486,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event_source: Event source request.
             config: Event source configuration instantiated from the request.
         """
-        pass
 
     def _process_event_source_request(
         self, event_source: EventSourceResponse, config: EventSourceConfig
@@ -513,7 +510,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event_source: Newly created event source
             config: Event source configuration instantiated from the response.
         """
-        pass
 
     def _validate_event_source_update(
         self,
@@ -550,7 +546,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             config_update: Event source configuration instantiated from the
                 updated event source.
         """
-        pass
 
     def _process_event_source_update(
         self,
@@ -583,13 +578,12 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             previous_config: Event source configuration instantiated from the
                 original event source.
         """
-        pass
 
     def _process_event_source_delete(
         self,
         event_source: EventSourceResponse,
         config: EventSourceConfig,
-        force: Optional[bool] = False,
+        force: bool | None = False,
     ) -> None:
         """Process an event source before it is deleted from the database.
 
@@ -610,7 +604,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
                 the deletion.
             force: Whether to force deprovision the event source.
         """
-        pass
 
     def _process_event_source_response(
         self, event_source: EventSourceResponse, config: EventSourceConfig
@@ -635,7 +628,6 @@ class BaseEventSourceHandler(BasePlugin, ABC):
             event_source: Event source response.
             config: Event source configuration instantiated from the response.
         """
-        pass
 
 
 # -------------------- Flavors ----------------------------------
@@ -647,11 +639,11 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
     TYPE: ClassVar[PluginType] = PluginType.EVENT_SOURCE
 
     # EventPlugin specific
-    EVENT_SOURCE_CONFIG_CLASS: ClassVar[Type[EventSourceConfig]]
-    EVENT_FILTER_CONFIG_CLASS: ClassVar[Type[EventFilterConfig]]
+    EVENT_SOURCE_CONFIG_CLASS: ClassVar[type[EventSourceConfig]]
+    EVENT_FILTER_CONFIG_CLASS: ClassVar[type[EventFilterConfig]]
 
     @classmethod
-    def get_event_filter_config_schema(cls) -> Dict[str, Any]:
+    def get_event_filter_config_schema(cls) -> dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
@@ -660,7 +652,7 @@ class BaseEventSourceFlavor(BasePluginFlavor, ABC):
         return cls.EVENT_SOURCE_CONFIG_CLASS.model_json_schema()
 
     @classmethod
-    def get_event_source_config_schema(cls) -> Dict[str, Any]:
+    def get_event_source_config_schema(cls) -> dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:

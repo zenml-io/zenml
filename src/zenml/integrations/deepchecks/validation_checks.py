@@ -14,7 +14,6 @@
 """Definition of the Deepchecks validation check types."""
 
 import re
-from typing import Type
 
 import deepchecks.tabular.checks as tabular_checks
 import deepchecks.vision.checks as vision_checks
@@ -97,7 +96,7 @@ class DeepchecksValidationCheck(StrEnum):
         return check_name.startswith("deepchecks.vision.")
 
     @classmethod
-    def get_check_class(cls, check_name: str) -> Type[BaseCheck]:
+    def get_check_class(cls, check_name: str) -> type[BaseCheck]:
         """Get the Deepchecks check class associated with an enum value or a custom check name.
 
         Args:
@@ -118,7 +117,7 @@ class DeepchecksValidationCheck(StrEnum):
         cls.validate_check_name(check_name)
 
         try:
-            check_class: Type[BaseCheck] = (
+            check_class: type[BaseCheck] = (
                 source_utils.load_and_validate_class(
                     check_name, expected_class=BaseCheck
                 )
@@ -139,7 +138,7 @@ class DeepchecksValidationCheck(StrEnum):
         return check_class
 
     @property
-    def check_class(self) -> Type[BaseCheck]:
+    def check_class(self) -> type[BaseCheck]:
         """Convert the enum value to a valid Deepchecks check class.
 
         Returns:

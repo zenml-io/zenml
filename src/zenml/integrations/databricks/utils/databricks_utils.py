@@ -14,7 +14,6 @@
 """Databricks utilities."""
 
 import re
-from typing import Dict, List, Optional
 
 from databricks.sdk.service.compute import Library, PythonPyPiLibrary
 from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency
@@ -26,11 +25,11 @@ from zenml import __version__
 def convert_step_to_task(
     task_name: str,
     command: str,
-    arguments: List[str],
-    libraries: Optional[List[str]] = None,
-    depends_on: Optional[List[str]] = None,
-    zenml_project_wheel: Optional[str] = None,
-    job_cluster_key: Optional[str] = None,
+    arguments: list[str],
+    libraries: list[str] | None = None,
+    depends_on: list[str] | None = None,
+    zenml_project_wheel: str | None = None,
+    job_cluster_key: str | None = None,
 ) -> DatabricksTask:
     """Convert a ZenML step to a Databricks task.
 
@@ -69,7 +68,7 @@ def convert_step_to_task(
     )
 
 
-def sanitize_labels(labels: Dict[str, str]) -> None:
+def sanitize_labels(labels: dict[str, str]) -> None:
     """Update the label values to be valid Kubernetes labels.
 
     See:

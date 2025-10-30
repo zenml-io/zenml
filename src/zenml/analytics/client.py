@@ -15,7 +15,7 @@
 
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent
@@ -26,7 +26,7 @@ from zenml.constants import IS_DEBUG_ENV
 logger = logging.getLogger(__name__)
 
 
-class Client(object):
+class Client:
     """The client class for ZenML analytics."""
 
     def __init__(self, send: bool = True, timeout: int = 15) -> None:
@@ -40,8 +40,8 @@ class Client(object):
         self.timeout = timeout
 
     def identify(
-        self, user_id: UUID, traits: Optional[Dict[Any, Any]]
-    ) -> Tuple[bool, str]:
+        self, user_id: UUID, traits: dict[Any, Any] | None
+    ) -> tuple[bool, str]:
         """Method to identify a user with given traits.
 
         Args:
@@ -59,7 +59,7 @@ class Client(object):
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
-    def alias(self, user_id: UUID, previous_id: UUID) -> Tuple[bool, str]:
+    def alias(self, user_id: UUID, previous_id: UUID) -> tuple[bool, str]:
         """Method to alias user IDs.
 
         Args:
@@ -81,8 +81,8 @@ class Client(object):
         self,
         user_id: UUID,
         event: "AnalyticsEvent",
-        properties: Optional[Dict[Any, Any]],
-    ) -> Tuple[bool, str]:
+        properties: dict[Any, Any] | None,
+    ) -> tuple[bool, str]:
         """Method to track events.
 
         Args:
@@ -103,8 +103,8 @@ class Client(object):
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
     def group(
-        self, user_id: UUID, group_id: UUID, traits: Optional[Dict[Any, Any]]
-    ) -> Tuple[bool, str]:
+        self, user_id: UUID, group_id: UUID, traits: dict[Any, Any] | None
+    ) -> tuple[bool, str]:
         """Method to group users.
 
         Args:
@@ -124,7 +124,7 @@ class Client(object):
         }
         return self._enqueue(json.dumps(msg, cls=AnalyticsEncoder))
 
-    def _enqueue(self, msg: str) -> Tuple[bool, str]:
+    def _enqueue(self, msg: str) -> tuple[bool, str]:
         """Method to queue messages to be sent.
 
         Args:

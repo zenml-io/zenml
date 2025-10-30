@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization for the ZenML vLLM integration."""
-from typing import List, Type
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 from zenml.logger import get_logger
@@ -33,10 +32,9 @@ class VLLMIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.vllm import services
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the vLLM integration.
 
         Returns:

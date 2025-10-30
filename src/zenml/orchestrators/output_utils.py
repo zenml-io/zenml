@@ -14,7 +14,8 @@
 """Utilities for outputs."""
 
 import os
-from typing import TYPE_CHECKING, Dict, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 from uuid import uuid4
 
 from zenml.client import Client
@@ -64,7 +65,7 @@ def prepare_output_artifact_uris(
     step: "Step",
     *,
     skip_artifact_materialization: bool = False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Prepares the output artifact URIs to run the current step.
 
     Args:
@@ -80,7 +81,7 @@ def prepare_output_artifact_uris(
         A dictionary mapping output names to artifact URIs.
     """
     artifact_store = stack.artifact_store
-    output_artifact_uris: Dict[str, str] = {}
+    output_artifact_uris: dict[str, str] = {}
 
     for output_name in step.config.outputs.keys():
         substituted_output_name = string_utils.format_name_template(

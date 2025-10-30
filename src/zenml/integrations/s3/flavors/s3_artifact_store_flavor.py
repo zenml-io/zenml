@@ -18,10 +18,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    Optional,
-    Set,
-    Type,
 )
 
 from pydantic import Field, field_validator
@@ -62,47 +58,47 @@ class S3ArtifactStoreConfig(
     ```
     """
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+    SUPPORTED_SCHEMES: ClassVar[set[str]] = {"s3://"}
 
-    key: Optional[str] = SecretField(
+    key: str | None = SecretField(
         default=None,
         description="AWS access key ID for authentication. "
         "If not provided, credentials will be inferred from the environment.",
     )
-    secret: Optional[str] = SecretField(
+    secret: str | None = SecretField(
         default=None,
         description="AWS secret access key for authentication. "
         "If not provided, credentials will be inferred from the environment.",
     )
-    token: Optional[str] = SecretField(
+    token: str | None = SecretField(
         default=None,
         description="AWS session token for temporary credentials. "
         "If not provided, credentials will be inferred from the environment.",
     )
-    client_kwargs: Optional[Dict[str, Any]] = Field(
+    client_kwargs: dict[str, Any] | None = Field(
         None,
         description="Additional keyword arguments to pass to the S3 client. "
         "For example, to connect to a custom S3-compatible endpoint: "
         "{'endpoint_url': 'http://minio:9000'}",
     )
-    config_kwargs: Optional[Dict[str, Any]] = Field(
+    config_kwargs: dict[str, Any] | None = Field(
         None,
         description="Additional keyword arguments to pass to the S3 client configuration. "
         "For example: {'region_name': 'us-west-2', 'signature_version': 's3v4'}",
     )
-    s3_additional_kwargs: Optional[Dict[str, Any]] = Field(
+    s3_additional_kwargs: dict[str, Any] | None = Field(
         None,
         description="Additional keyword arguments for S3 operations. "
         "For example: {'ACL': 'bucket-owner-full-control'}",
     )
 
-    _bucket: Optional[str] = None
+    _bucket: str | None = None
 
     @field_validator("client_kwargs")
     @classmethod
     def _validate_client_kwargs(
-        cls, value: Optional[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+        cls, value: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
         """Validates the `client_kwargs` attribute.
 
         Args:
@@ -161,7 +157,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -177,7 +173,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -186,7 +182,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at SDK docs explaining this flavor.
 
         Returns:
@@ -204,7 +200,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/aws.png"
 
     @property
-    def config_class(self) -> Type[S3ArtifactStoreConfig]:
+    def config_class(self) -> type[S3ArtifactStoreConfig]:
         """The config class of the flavor.
 
         Returns:
@@ -213,7 +209,7 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return S3ArtifactStoreConfig
 
     @property
-    def implementation_class(self) -> Type["S3ArtifactStore"]:
+    def implementation_class(self) -> type["S3ArtifactStore"]:
         """Implementation class for this flavor.
 
         Returns:

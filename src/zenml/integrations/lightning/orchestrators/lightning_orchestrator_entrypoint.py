@@ -15,7 +15,7 @@
 
 import argparse
 import os
-from typing import Dict, cast
+from typing import cast
 
 from lightning_sdk import Machine, Studio
 
@@ -115,7 +115,7 @@ def main() -> None:
         f'"{req}"' for req in pipeline_requirements
     )
 
-    unique_resource_configs: Dict[str, str] = {}
+    unique_resource_configs: dict[str, str] = {}
     main_studio_name = sanitize_studio_name(
         f"zenml_{orchestrator_run_id}_pipeline"
     )

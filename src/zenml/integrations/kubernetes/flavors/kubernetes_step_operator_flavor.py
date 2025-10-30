@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field, NonNegativeInt
 
@@ -34,11 +34,11 @@ if TYPE_CHECKING:
 class KubernetesStepOperatorSettings(BaseSettings):
     """Settings for the Kubernetes step operator."""
 
-    pod_settings: Optional[KubernetesPodSettings] = Field(
+    pod_settings: KubernetesPodSettings | None = Field(
         default=None,
         description="Pod configuration for step execution containers.",
     )
-    service_account_name: Optional[str] = Field(
+    service_account_name: str | None = Field(
         default=None,
         description="Kubernetes service account for step pods. Uses default account if not specified.",
     )
@@ -46,20 +46,20 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=False,
         description="Whether to run step containers in privileged mode with extended permissions.",
     )
-    job_name_prefix: Optional[str] = Field(
+    job_name_prefix: str | None = Field(
         default=None,
         description="Prefix for the job name.",
     )
-    ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
+    ttl_seconds_after_finished: NonNegativeInt | None = Field(
         default=None,
         description="Seconds to keep finished jobs before automatic cleanup.",
     )
-    active_deadline_seconds: Optional[NonNegativeInt] = Field(
+    active_deadline_seconds: NonNegativeInt | None = Field(
         default=None,
         description="Job deadline in seconds. If the job doesn't finish "
         "within this time, it will be terminated.",
     )
-    fail_on_container_waiting_reasons: Optional[List[str]] = Field(
+    fail_on_container_waiting_reasons: list[str] | None = Field(
         default=[
             "InvalidImageName",
             "ErrImagePull",
@@ -74,22 +74,22 @@ class KubernetesStepOperatorSettings(BaseSettings):
     )
 
     # Deprecated fields
-    pod_startup_timeout: Optional[int] = Field(
+    pod_startup_timeout: int | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    pod_failure_max_retries: Optional[int] = Field(
+    pod_failure_max_retries: int | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    pod_failure_retry_delay: Optional[int] = Field(
+    pod_failure_retry_delay: int | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    pod_failure_backoff: Optional[float] = Field(
+    pod_failure_backoff: float | None = Field(
         default=None,
         deprecated=True,
         description="DEPRECATED/UNUSED.",
@@ -116,7 +116,7 @@ class KubernetesStepOperatorConfig(
         description="Whether to execute within the same cluster as the orchestrator. "
         "Requires appropriate pod creation permissions.",
     )
-    kubernetes_context: Optional[str] = Field(
+    kubernetes_context: str | None = Field(
         default=None,
         description="Kubernetes context name for cluster connection. "
         "Ignored when using service connectors or in-cluster execution.",
@@ -160,7 +160,7 @@ class KubernetesStepOperatorFlavor(BaseStepOperatorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -175,7 +175,7 @@ class KubernetesStepOperatorFlavor(BaseStepOperatorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -184,7 +184,7 @@ class KubernetesStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -202,7 +202,7 @@ class KubernetesStepOperatorFlavor(BaseStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/kubernetes.png"
 
     @property
-    def config_class(self) -> Type[KubernetesStepOperatorConfig]:
+    def config_class(self) -> type[KubernetesStepOperatorConfig]:
         """Returns `KubernetesStepOperatorConfig` config class.
 
         Returns:
@@ -211,7 +211,7 @@ class KubernetesStepOperatorFlavor(BaseStepOperatorFlavor):
         return KubernetesStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["KubernetesStepOperator"]:
+    def implementation_class(self) -> type["KubernetesStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:

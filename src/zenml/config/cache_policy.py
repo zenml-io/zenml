@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Cache policy."""
 
-from typing import Any, List, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
-from typing_extensions import Annotated
+from typing import Annotated
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.logger import get_logger
@@ -45,27 +45,27 @@ class CachePolicy(BaseModel):
         default=True,
         description="Whether to include the artifact IDs in the cache key.",
     )
-    ignored_inputs: Optional[List[str]] = Field(
+    ignored_inputs: list[str] | None = Field(
         default=None,
         description="List of input names to ignore in the cache key.",
     )
-    file_dependencies: Optional[List[str]] = Field(
+    file_dependencies: list[str] | None = Field(
         default=None,
         description="List of file paths. The contents of theses files will be "
         "included in the cache key. Only relative paths within the source root "
         "are allowed.",
     )
-    source_dependencies: Optional[List[SourceWithValidator]] = Field(
+    source_dependencies: list[SourceWithValidator] | None = Field(
         default=None,
         description="List of Python objects (modules, classes, functions). "
         "The source code of these objects will be included in the cache key.",
     )
-    cache_func: Optional[SourceWithValidator] = Field(
+    cache_func: SourceWithValidator | None = Field(
         default=None,
         description="Function without arguments that returns a string. The "
         "returned value will be included in the cache key.",
     )
-    expires_after: Optional[int] = Field(
+    expires_after: int | None = Field(
         default=None,
         description="The number of seconds after which the cached result by a "
         "step with this cache policy will expire. If not set, the result "
@@ -74,8 +74,8 @@ class CachePolicy(BaseModel):
 
     @field_validator("source_dependencies", mode="before")
     def _validate_source_dependencies(
-        cls, v: Optional[List[Any]]
-    ) -> Optional[List[Any]]:
+        cls, v: list[Any] | None
+    ) -> list[Any] | None:
         from zenml.utils import source_utils
 
         if v is None:
@@ -90,7 +90,7 @@ class CachePolicy(BaseModel):
         return result
 
     @field_validator("cache_func", mode="before")
-    def _validate_cache_func(cls, v: Optional[Any]) -> Optional[Any]:
+    def _validate_cache_func(cls, v: Any | None) -> Any | None:
         from zenml.utils import source_utils
 
         if v is None or isinstance(v, (str, Source, dict)):

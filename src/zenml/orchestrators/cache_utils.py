@@ -15,7 +15,8 @@
 
 import hashlib
 import os
-from typing import TYPE_CHECKING, Mapping, Optional
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Mapping
 from uuid import UUID
 
 from zenml.client import Client

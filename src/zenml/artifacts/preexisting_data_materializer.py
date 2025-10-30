@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio
@@ -32,11 +32,11 @@ class PreexistingDataMaterializer(BaseMaterializer):
     This materializer solely supports the `register_artifact` function.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Path,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Path,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Copy the artifact file(s) to a local temp directory.
 
         Args:

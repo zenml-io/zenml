@@ -20,14 +20,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
 )
+from collections.abc import Iterable
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (
@@ -63,10 +57,10 @@ class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = BASIC_TYPES
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = BASIC_TYPES
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Define `self.data_path`.
 
@@ -78,7 +72,7 @@ class BuiltInMaterializer(BaseMaterializer):
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
     def load(
-        self, data_type: Union[Type[bool], Type[float], Type[int], Type[str]]
+        self, data_type: type[bool] | type[float] | type[int] | type[str]
     ) -> Any:
         """Reads basic primitive types from JSON.
 
@@ -97,7 +91,7 @@ class BuiltInMaterializer(BaseMaterializer):
             )
         return contents
 
-    def save(self, data: Union[bool, float, int, str]) -> None:
+    def save(self, data: bool | float | int | str) -> None:
         """Serialize a basic type to JSON.
 
         Args:
@@ -110,8 +104,8 @@ class BuiltInMaterializer(BaseMaterializer):
         )
 
     def save_visualizations(
-        self, data: Union[bool, float, int, str]
-    ) -> Dict[str, VisualizationType]:
+        self, data: bool | float | int | str
+    ) -> dict[str, VisualizationType]:
         """Save visualizations for the given basic type.
 
         Args:
@@ -123,8 +117,8 @@ class BuiltInMaterializer(BaseMaterializer):
         return {self.data_path.replace("\\", "/"): VisualizationType.JSON}
 
     def extract_metadata(
-        self, data: Union[bool, float, int, str]
-    ) -> Dict[str, "MetadataType"]:
+        self, data: bool | float | int | str
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given built-in container object.
 
         Args:
@@ -140,7 +134,7 @@ class BuiltInMaterializer(BaseMaterializer):
 
         return {}
 
-    def compute_content_hash(self, data: Any) -> Optional[str]:
+    def compute_content_hash(self, data: Any) -> str | None:
         """Compute the content hash of the given data.
 
         Args:
@@ -159,10 +153,10 @@ class BytesMaterializer(BaseMaterializer):
     """Handle `bytes` data type, which is not JSON serializable."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bytes,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (bytes,)
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Define `self.data_path`.
 
@@ -173,7 +167,7 @@ class BytesMaterializer(BaseMaterializer):
         super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_BYTES_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads a bytes object from file.
 
         Args:
@@ -194,7 +188,7 @@ class BytesMaterializer(BaseMaterializer):
         with self.artifact_store.open(self.data_path, "wb") as file_:
             file_.write(data)
 
-    def save_visualizations(self, data: bytes) -> Dict[str, VisualizationType]:
+    def save_visualizations(self, data: bytes) -> dict[str, VisualizationType]:
         """Save visualizations for the given bytes data.
 
         Args:
@@ -205,7 +199,7 @@ class BytesMaterializer(BaseMaterializer):
         """
         return {self.data_path.replace("\\", "/"): VisualizationType.MARKDOWN}
 
-    def compute_content_hash(self, data: Any) -> Optional[str]:
+    def compute_content_hash(self, data: Any) -> str | None:
         """Compute the content hash of the given data.
 
         Args:
@@ -269,7 +263,7 @@ def _custom_json_converter(obj: Any) -> Any:
     return obj
 
 
-def find_type_by_str(type_str: str) -> Type[Any]:
+def find_type_by_str(type_str: str) -> type[Any]:
     """Get a Python type, given its string representation.
 
     E.g., "<class 'int'>" should resolve to `int`.
@@ -294,7 +288,7 @@ def find_type_by_str(type_str: str) -> Type[Any]:
     raise RuntimeError(f"Cannot resolve type '{type_str}'.")
 
 
-def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
+def find_materializer_registry_type(type_: type[Any]) -> type[Any]:
     """For a given type, find the type registered in the registry.
 
     This can be either the type itself, or a superclass of the type.
@@ -332,7 +326,7 @@ def find_materializer_registry_type(type_: Type[Any]) -> Type[Any]:
 class BuiltInContainerMaterializer(BaseMaterializer):
     """Handle built-in container types (dict, list, set, tuple)."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         dict,
         list,
         set,
@@ -340,7 +334,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
     )
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Define `self.data_path` and `self.metadata_path`.
 
@@ -352,7 +346,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         self.metadata_path = os.path.join(self.uri, DEFAULT_METADATA_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads a materialized built-in container object.
 
         If the data was serialized to JSON, deserialize it.
@@ -468,8 +462,8 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # non-serializable list: Materialize each element into a subfolder.
         # Get path, type, and corresponding materializer for each element.
-        metadata: List[Dict[str, str]] = []
-        materializers: List[BaseMaterializer] = []
+        metadata: list[dict[str, str]] = []
+        materializers: list[BaseMaterializer] = []
         try:
             for i, element in enumerate(data):
                 element_path = os.path.join(self.uri, str(i))
@@ -506,7 +500,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             raise e
 
     # save dict type objects to JSON file with JSON visualization type
-    def save_visualizations(self, data: Any) -> Dict[str, "VisualizationType"]:
+    def save_visualizations(self, data: Any) -> dict[str, "VisualizationType"]:
         """Save visualizations for the given data.
 
         Args:
@@ -522,7 +516,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return {self.data_path.replace("\\", "/"): VisualizationType.JSON}
         return {}
 
-    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, data: Any) -> dict[str, "MetadataType"]:
         """Extract metadata from the given built-in container object.
 
         Args:
@@ -535,7 +529,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             return {"length": len(data)}
         return {}
 
-    def compute_content_hash(self, data: Any) -> Optional[str]:
+    def compute_content_hash(self, data: Any) -> str | None:
         """Compute the content hash of the given data.
 
         Args:

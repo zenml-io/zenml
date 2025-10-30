@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
-from typing import Any, List, Set
+from typing import Any
 from uuid import UUID
 
 from zenml.client import Client
@@ -39,7 +39,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all options required for the deployment entrypoint.
 
         Returns:
@@ -50,7 +50,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         }
 
     @classmethod
-    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> list[str]:
         """Gets arguments for the deployment entrypoint command.
 
         Args:

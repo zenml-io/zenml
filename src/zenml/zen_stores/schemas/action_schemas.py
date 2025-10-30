@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
@@ -65,7 +66,7 @@ class ActionSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="actions")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -78,7 +79,7 @@ class ActionSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"foreign_keys": "[ActionSchema.user_id]"},
     )
 
-    triggers: List["TriggerSchema"] = Relationship(back_populates="action")
+    triggers: list["TriggerSchema"] = Relationship(back_populates="action")
 
     service_account_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -98,7 +99,7 @@ class ActionSchema(NamedSchema, table=True):
 
     flavor: str = Field(nullable=False)
     plugin_subtype: str = Field(nullable=False)
-    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    description: str | None = Field(sa_column=Column(TEXT, nullable=True))
 
     configuration: bytes
 

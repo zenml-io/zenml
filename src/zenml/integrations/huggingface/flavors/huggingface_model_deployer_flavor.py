@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Hugging Face model deployer flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -33,22 +33,22 @@ if TYPE_CHECKING:
 class HuggingFaceBaseConfig(BaseModel):
     """Hugging Face Inference Endpoint configuration."""
 
-    repository: Optional[str] = None
-    framework: Optional[str] = None
-    accelerator: Optional[str] = None
-    instance_size: Optional[str] = None
-    instance_type: Optional[str] = None
-    region: Optional[str] = None
-    vendor: Optional[str] = None
-    account_id: Optional[str] = None
+    repository: str | None = None
+    framework: str | None = None
+    accelerator: str | None = None
+    instance_size: str | None = None
+    instance_type: str | None = None
+    region: str | None = None
+    vendor: str | None = None
+    account_id: str | None = None
     min_replica: int = 0
     max_replica: int = 1
-    revision: Optional[str] = None
-    task: Optional[str] = None
-    custom_image: Optional[Dict[str, Any]] = None
+    revision: str | None = None
+    task: str | None = None
+    custom_image: dict[str, Any] | None = None
     endpoint_type: str = "public"
-    secret_name: Optional[str] = None
-    namespace: Optional[str] = None
+    secret_name: str | None = None
+    namespace: str | None = None
 
 
 class HuggingFaceModelDeployerConfig(
@@ -61,7 +61,7 @@ class HuggingFaceModelDeployerConfig(
         namespace: Hugging Face namespace used to list endpoints
     """
 
-    token: Optional[str] = SecretField(default=None)
+    token: str | None = SecretField(default=None)
 
     # The namespace to list endpoints for. Set to `"*"` to list all endpoints
     # from all namespaces (i.e. personal namespace and all orgs the user belongs to).
@@ -81,7 +81,7 @@ class HuggingFaceModelDeployerFlavor(BaseModelDeployerFlavor):
         return HUGGINGFACE_MODEL_DEPLOYER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -90,7 +90,7 @@ class HuggingFaceModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -108,7 +108,7 @@ class HuggingFaceModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_registry/huggingface.png"
 
     @property
-    def config_class(self) -> Type[HuggingFaceModelDeployerConfig]:
+    def config_class(self) -> type[HuggingFaceModelDeployerConfig]:
         """Returns `HuggingFaceModelDeployerConfig` config class.
 
         Returns:
@@ -117,7 +117,7 @@ class HuggingFaceModelDeployerFlavor(BaseModelDeployerFlavor):
         return HuggingFaceModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["HuggingFaceModelDeployer"]:
+    def implementation_class(self) -> type["HuggingFaceModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

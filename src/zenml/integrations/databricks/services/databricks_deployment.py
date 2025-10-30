@@ -14,7 +14,8 @@
 """Implementation of the Databricks Deployment service."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Union
+from collections.abc import Generator
 
 import numpy as np
 import pandas as pd
@@ -56,15 +57,15 @@ UUID_SLICE_LENGTH: int = 8
 class DatabricksDeploymentConfig(DatabricksBaseConfig, ServiceConfig):
     """Databricks service configurations."""
 
-    model_uri: Optional[str] = Field(
+    model_uri: str | None = Field(
         None,
         description="URI of the model to deploy. This can be a local path or a cloud storage path.",
     )
-    host: Optional[str] = Field(
+    host: str | None = Field(
         None, description="Databricks host URL for the deployment."
     )
 
-    def get_databricks_deployment_labels(self) -> Dict[str, str]:
+    def get_databricks_deployment_labels(self) -> dict[str, str]:
         """Generate labels for the Databricks deployment from the service configuration.
 
         These labels are attached to the Databricks deployment resource
@@ -119,7 +120,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         """
         super().__init__(config=config, **attrs)
 
-    def get_client_id_and_secret(self) -> Tuple[str, str, str]:
+    def get_client_id_and_secret(self) -> tuple[str, str, str]:
         """Get the Databricks client id and secret.
 
         Raises:
@@ -159,7 +160,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
             raise ValueError("Host not found.")
         return host, client_id, client_secret
 
-    def _get_databricks_deployment_labels(self) -> Dict[str, str]:
+    def _get_databricks_deployment_labels(self) -> dict[str, str]:
         """Generate the labels for the Databricks deployment from the service configuration.
 
         Returns:
@@ -195,7 +196,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         )
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """The prediction URI exposed by the prediction service.
 
         Returns:
@@ -246,7 +247,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
                 "Failed to start Databricks inference endpoint service: No URL available, please check the Databricks console for more details."
             )
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the Databricks deployment.
 
         Returns:
@@ -355,7 +356,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
         return np.array(response.json()["predictions"])
 
     def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
+        self, follow: bool = False, tail: int | None = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 
@@ -385,8 +386,7 @@ class DatabricksDeploymentService(BaseDeploymentService):
                     log_lines = log_lines[-tail:]
 
                 # Yield only new lines
-                for line in log_lines[last_log_count:]:
-                    yield line
+                yield from log_lines[last_log_count:]
 
                 last_log_count = len(log_lines)
 

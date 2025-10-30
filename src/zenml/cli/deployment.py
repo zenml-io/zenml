@@ -14,7 +14,7 @@
 """CLI functionality to interact with deployments."""
 
 import json
-from typing import Any, List, Optional
+from typing import Any
 from uuid import UUID
 
 import click
@@ -192,10 +192,10 @@ def describe_deployment(
 )
 def provision_deployment(
     deployment_name_or_id: str,
-    snapshot_name_or_id: Optional[str] = None,
-    pipeline_name_or_id: Optional[str] = None,
+    snapshot_name_or_id: str | None = None,
+    pipeline_name_or_id: str | None = None,
     overtake: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
 ) -> None:
     """Provision a deployment.
 
@@ -209,7 +209,7 @@ def provision_deployment(
         timeout: The maximum time in seconds to wait for the deployment
             to be provisioned.
     """
-    snapshot_id: Optional[UUID] = None
+    snapshot_id: UUID | None = None
     if snapshot_name_or_id:
         snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
         snapshot_id = snapshot.id
@@ -303,13 +303,13 @@ def provision_deployment(
     "deprovisioned.",
 )
 def deprovision_deployment(
-    deployment_name_or_id: Optional[str] = None,
+    deployment_name_or_id: str | None = None,
     all: bool = False,
     mine: bool = False,
     yes: bool = False,
     ignore_errors: bool = False,
     max_count: int = 10,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
 ) -> None:
     """Deprovision a deployment.
 
@@ -465,12 +465,12 @@ def deprovision_deployment(
     help="Force the deletion of the deployment if it cannot be deprovisioned.",
 )
 def delete_deployment(
-    deployment_name_or_id: Optional[str] = None,
+    deployment_name_or_id: str | None = None,
     all: bool = False,
     mine: bool = False,
     ignore_errors: bool = False,
     yes: bool = False,
-    timeout: Optional[int] = None,
+    timeout: int | None = None,
     max_count: int = 20,
     force: bool = False,
 ) -> None:
@@ -603,8 +603,8 @@ def refresh_deployment(
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def invoke_deployment(
     deployment_name_or_id: str,
-    args: List[str],
-    timeout: Optional[int] = None,
+    args: list[str],
+    timeout: int | None = None,
 ) -> None:
     """Call a deployment with arguments.
 
@@ -677,7 +677,7 @@ def invoke_deployment(
 def log_deployment(
     deployment_name_or_id: str,
     follow: bool = False,
-    tail: Optional[int] = None,
+    tail: int | None = None,
 ) -> None:
     """Get the logs of a deployment.
 

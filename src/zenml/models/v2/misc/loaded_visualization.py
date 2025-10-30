@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model representing loaded visualizations."""
 
-from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -24,4 +23,4 @@ class LoadedVisualization(BaseModel):
     """Model for loaded visualizations."""
 
     type: VisualizationType
-    value: Union[str, bytes] = Field(union_mode="left_to_right")
+    value: str | bytes = Field(union_mode="left_to_right")

@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -50,13 +50,13 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
         token: The token to access the repository.
     """
 
-    instance_url: Optional[str] = None
+    instance_url: str | None = None
     group: str
     project: str
-    host: Optional[str] = "gitlab.com"
-    token: Optional[str] = SecretField(default=None)
+    host: str | None = "gitlab.com"
+    token: str | None = SecretField(default=None)
 
-    url: Optional[str] = None
+    url: str | None = None
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("url", "instance_url")
     )
@@ -66,7 +66,7 @@ class GitLabCodeRepository(BaseCodeRepository):
     """GitLab code repository."""
 
     @classmethod
-    def validate_config(cls, config: Dict[str, Any]) -> None:
+    def validate_config(cls, config: dict[str, Any]) -> None:
         """Validate the code repository config.
 
         This method should check that the config/credentials are valid and
@@ -118,7 +118,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
     def download_files(
-        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+        self, commit: str, directory: str, repo_sub_directory: str | None
     ) -> None:
         """Downloads files from a commit to a local directory.
 
@@ -152,7 +152,7 @@ class GitLabCodeRepository(BaseCodeRepository):
                 except Exception as e:
                     logger.error("Error processing %s: %s", content["path"], e)
 
-    def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
+    def get_local_context(self, path: str) -> LocalRepositoryContext | None:
         """Gets the local repository context.
 
         Args:
@@ -196,7 +196,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             f"@{host}:"
             r"(?P<port>\d+)?"
             r"(?(scheme_with_delimiter)/|/?)"
-            f"{group}/{project}(\.git)?$",
+            fr"{group}/{project}(\.git)?$",
         )
         if ssh_regex.fullmatch(url):
             return True

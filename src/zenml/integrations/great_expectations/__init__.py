@@ -17,7 +17,6 @@ The Great Expectations integration enables you to use Great Expectations as a
 way of profiling and validating your data.
 """
 
-from typing import List, Type, Optional
 
 from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
@@ -40,7 +39,7 @@ class GreatExpectationsIntegration(Integration):
         from zenml.integrations.great_expectations import materializers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
@@ -53,8 +52,8 @@ class GreatExpectationsIntegration(Integration):
         return [GreatExpectationsDataValidatorFlavor]
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+    def get_requirements(cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:

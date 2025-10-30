@@ -19,7 +19,8 @@ database connection.
 """
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Union
+from collections.abc import Callable, Sequence
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -39,7 +40,7 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: Any, name: Optional[str], type_: str, *args: Any, **kwargs: Any
+    object: Any, name: str | None, type_: str, *args: Any, **kwargs: Any
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
@@ -79,7 +80,7 @@ class Alembic:
         self,
         engine: Engine,
         metadata: MetaData = SQLModel.metadata,
-        context: Optional[EnvironmentContext] = None,
+        context: EnvironmentContext | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the Alembic wrapper.
@@ -122,7 +123,7 @@ class Alembic:
 
     def run_migrations(
         self,
-        fn: Optional[Callable[[_RevIdType, MigrationContext], List[Any]]],
+        fn: Callable[[_RevIdType, MigrationContext], list[Any]] | None,
     ) -> None:
         """Run an online migration function in the current migration context.
 
@@ -130,7 +131,7 @@ class Alembic:
             fn: Migration function to run. If not set, the function configured
                 externally by the Alembic CLI command is used.
         """
-        fn_context_args: Dict[Any, Any] = {}
+        fn_context_args: dict[Any, Any] = {}
         if fn is not None:
             fn_context_args["fn"] = fn
 
@@ -149,15 +150,15 @@ class Alembic:
             with self.environment_context.begin_transaction():
                 self.environment_context.run_migrations()
 
-    def head_revisions(self) -> List[str]:
+    def head_revisions(self) -> list[str]:
         """Get the head database revisions.
 
         Returns:
             List of head revisions.
         """
-        head_revisions: List[str] = []
+        head_revisions: list[str] = []
 
-        def do_get_head_rev(rev: _RevIdType, context: Any) -> List[Any]:
+        def do_get_head_rev(rev: _RevIdType, context: Any) -> list[Any]:
             nonlocal head_revisions
 
             for r in self.script_directory.get_heads():
@@ -170,15 +171,15 @@ class Alembic:
 
         return head_revisions
 
-    def current_revisions(self) -> List[str]:
+    def current_revisions(self) -> list[str]:
         """Get the current database revisions.
 
         Returns:
             List of head revisions.
         """
-        current_revisions: List[str] = []
+        current_revisions: list[str] = []
 
-        def do_get_current_rev(rev: _RevIdType, context: Any) -> List[Any]:
+        def do_get_current_rev(rev: _RevIdType, context: Any) -> list[Any]:
             nonlocal current_revisions
 
             # Handle rev parameter in a way that's compatible with different alembic versions
@@ -206,7 +207,7 @@ class Alembic:
             revision: String revision target.
         """
 
-        def do_stamp(rev: _RevIdType, context: Any) -> List[Any]:
+        def do_stamp(rev: _RevIdType, context: Any) -> list[Any]:
             # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._stamp_revs(revision, rev)
@@ -224,7 +225,7 @@ class Alembic:
             revision: String revision target.
         """
 
-        def do_upgrade(rev: _RevIdType, context: Any) -> List[Any]:
+        def do_upgrade(rev: _RevIdType, context: Any) -> list[Any]:
             # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._upgrade_revs(revision, rev)
@@ -245,7 +246,7 @@ class Alembic:
             revision: String revision target.
         """
 
-        def do_downgrade(rev: _RevIdType, context: Any) -> List[Any]:
+        def do_downgrade(rev: _RevIdType, context: Any) -> list[Any]:
             # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._downgrade_revs(revision, rev)

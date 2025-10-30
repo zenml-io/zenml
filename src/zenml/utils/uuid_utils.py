@@ -14,7 +14,7 @@
 """Utility functions for handling UUIDs."""
 
 import hashlib
-from typing import Any, Optional, Union
+from typing import Any
 from uuid import UUID
 
 
@@ -40,8 +40,8 @@ def is_valid_uuid(value: Any, version: int = 4) -> bool:
 
 
 def parse_name_or_uuid(
-    name_or_id: Optional[str],
-) -> Optional[Union[str, UUID]]:
+    name_or_id: str | None,
+) -> str | UUID | None:
     """Convert a "name or id" string value to a string or UUID.
 
     Args:

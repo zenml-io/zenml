@@ -14,7 +14,6 @@
 """ZenML secrets store interface."""
 
 from abc import ABC, abstractmethod
-from typing import Dict
 from uuid import UUID
 
 
@@ -44,7 +43,7 @@ class SecretsStoreInterface(ABC):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -54,7 +53,7 @@ class SecretsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -72,7 +71,7 @@ class SecretsStoreInterface(ABC):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

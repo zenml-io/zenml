@@ -14,7 +14,6 @@
 """Models representing devices."""
 
 from datetime import datetime
-from typing import Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -43,36 +42,36 @@ class OAuthDeviceInternalRequest(BaseRequest):
         description="The number of seconds after which the OAuth2 device "
         "expires and can no longer be used for authentication."
     )
-    os: Optional[str] = Field(
+    os: str | None = Field(
         default=None,
         description="The operating system of the device used for "
         "authentication.",
     )
-    ip_address: Optional[str] = Field(
+    ip_address: str | None = Field(
         default=None,
         description="The IP address of the device used for authentication.",
     )
-    hostname: Optional[str] = Field(
+    hostname: str | None = Field(
         default=None,
         description="The hostname of the device used for authentication.",
     )
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         default=None,
         description="The Python version of the device used for authentication.",
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         default=None,
         description="The ZenML version of the device used for authentication.",
     )
-    city: Optional[str] = Field(
+    city: str | None = Field(
         default=None,
         description="The city where the device is located.",
     )
-    region: Optional[str] = Field(
+    region: str | None = Field(
         default=None,
         description="The region where the device is located.",
     )
-    country: Optional[str] = Field(
+    country: str | None = Field(
         default=None,
         description="The country where the device is located.",
     )
@@ -84,7 +83,7 @@ class OAuthDeviceInternalRequest(BaseRequest):
 class OAuthDeviceUpdate(BaseUpdate):
     """OAuth2 device update model."""
 
-    locked: Optional[bool] = Field(
+    locked: bool | None = Field(
         default=None,
         description="Whether to lock or unlock the OAuth2 device. A locked "
         "device cannot be used for authentication.",
@@ -94,22 +93,22 @@ class OAuthDeviceUpdate(BaseUpdate):
 class OAuthDeviceInternalUpdate(OAuthDeviceUpdate):
     """OAuth2 device update model used internally for authentication."""
 
-    user_id: Optional[UUID] = Field(
+    user_id: UUID | None = Field(
         default=None, description="User that owns the OAuth2 device."
     )
-    status: Optional[OAuthDeviceStatus] = Field(
+    status: OAuthDeviceStatus | None = Field(
         default=None, description="The new status of the OAuth2 device."
     )
-    expires_in: Optional[int] = Field(
+    expires_in: int | None = Field(
         default=None,
         description="Set the device to expire in the given number of seconds. "
         "If the value is 0 or negative, the device is set to never expire.",
     )
-    failed_auth_attempts: Optional[int] = Field(
+    failed_auth_attempts: int | None = Field(
         default=None,
         description="Set the number of failed authentication attempts.",
     )
-    trusted_device: Optional[bool] = Field(
+    trusted_device: bool | None = Field(
         default=None,
         description="Whether to mark the OAuth2 device as trusted. A trusted "
         "device has a much longer validity time.",
@@ -121,36 +120,36 @@ class OAuthDeviceInternalUpdate(OAuthDeviceUpdate):
         default=False,
         description="Whether to generate new user and device codes.",
     )
-    os: Optional[str] = Field(
+    os: str | None = Field(
         default=None,
         description="The operating system of the device used for "
         "authentication.",
     )
-    ip_address: Optional[str] = Field(
+    ip_address: str | None = Field(
         default=None,
         description="The IP address of the device used for authentication.",
     )
-    hostname: Optional[str] = Field(
+    hostname: str | None = Field(
         default=None,
         description="The hostname of the device used for authentication.",
     )
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         default=None,
         description="The Python version of the device used for authentication.",
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         default=None,
         description="The ZenML version of the device used for authentication.",
     )
-    city: Optional[str] = Field(
+    city: str | None = Field(
         default=None,
         description="The city where the device is located.",
     )
-    region: Optional[str] = Field(
+    region: str | None = Field(
         default=None,
         description="The region where the device is located.",
     )
-    country: Optional[str] = Field(
+    country: str | None = Field(
         default=None,
         description="The country where the device is located.",
     )
@@ -163,7 +162,7 @@ class OAuthDeviceResponseBody(UserScopedResponseBody):
     """Response body for OAuth2 devices."""
 
     client_id: UUID = Field(description="The client ID of the OAuth2 device.")
-    expires: Optional[datetime] = Field(
+    expires: datetime | None = Field(
         default=None,
         description="The expiration date of the OAuth2 device after which "
         "the device is no longer valid and cannot be used for "
@@ -176,16 +175,16 @@ class OAuthDeviceResponseBody(UserScopedResponseBody):
     status: OAuthDeviceStatus = Field(
         description="The status of the OAuth2 device."
     )
-    os: Optional[str] = Field(
+    os: str | None = Field(
         default=None,
         description="The operating system of the device used for "
         "authentication.",
     )
-    ip_address: Optional[str] = Field(
+    ip_address: str | None = Field(
         default=None,
         description="The IP address of the device used for authentication.",
     )
-    hostname: Optional[str] = Field(
+    hostname: str | None = Field(
         default=None,
         description="The hostname of the device used for authentication.",
     )
@@ -194,30 +193,30 @@ class OAuthDeviceResponseBody(UserScopedResponseBody):
 class OAuthDeviceResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for OAuth2 devices."""
 
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         default=None,
         description="The Python version of the device used for authentication.",
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         default=None,
         description="The ZenML version of the device used for authentication.",
     )
-    city: Optional[str] = Field(
+    city: str | None = Field(
         default=None,
         description="The city where the device is located.",
     )
-    region: Optional[str] = Field(
+    region: str | None = Field(
         default=None,
         description="The region where the device is located.",
     )
-    country: Optional[str] = Field(
+    country: str | None = Field(
         default=None,
         description="The country where the device is located.",
     )
     failed_auth_attempts: int = Field(
         description="The number of failed authentication attempts.",
     )
-    last_login: Optional[datetime] = Field(
+    last_login: datetime | None = Field(
         description="The date of the last successful login."
     )
 
@@ -258,7 +257,7 @@ class OAuthDeviceResponse(
         return self.get_body().client_id
 
     @property
-    def expires(self) -> Optional[datetime]:
+    def expires(self) -> datetime | None:
         """The `expires` property.
 
         Returns:
@@ -285,7 +284,7 @@ class OAuthDeviceResponse(
         return self.get_body().status
 
     @property
-    def os(self) -> Optional[str]:
+    def os(self) -> str | None:
         """The `os` property.
 
         Returns:
@@ -294,7 +293,7 @@ class OAuthDeviceResponse(
         return self.get_body().os
 
     @property
-    def ip_address(self) -> Optional[str]:
+    def ip_address(self) -> str | None:
         """The `ip_address` property.
 
         Returns:
@@ -303,7 +302,7 @@ class OAuthDeviceResponse(
         return self.get_body().ip_address
 
     @property
-    def hostname(self) -> Optional[str]:
+    def hostname(self) -> str | None:
         """The `hostname` property.
 
         Returns:
@@ -312,7 +311,7 @@ class OAuthDeviceResponse(
         return self.get_body().hostname
 
     @property
-    def python_version(self) -> Optional[str]:
+    def python_version(self) -> str | None:
         """The `python_version` property.
 
         Returns:
@@ -321,7 +320,7 @@ class OAuthDeviceResponse(
         return self.get_metadata().python_version
 
     @property
-    def zenml_version(self) -> Optional[str]:
+    def zenml_version(self) -> str | None:
         """The `zenml_version` property.
 
         Returns:
@@ -330,7 +329,7 @@ class OAuthDeviceResponse(
         return self.get_metadata().zenml_version
 
     @property
-    def city(self) -> Optional[str]:
+    def city(self) -> str | None:
         """The `city` property.
 
         Returns:
@@ -339,7 +338,7 @@ class OAuthDeviceResponse(
         return self.get_metadata().city
 
     @property
-    def region(self) -> Optional[str]:
+    def region(self) -> str | None:
         """The `region` property.
 
         Returns:
@@ -348,7 +347,7 @@ class OAuthDeviceResponse(
         return self.get_metadata().region
 
     @property
-    def country(self) -> Optional[str]:
+    def country(self) -> str | None:
         """The `country` property.
 
         Returns:
@@ -366,7 +365,7 @@ class OAuthDeviceResponse(
         return self.get_metadata().failed_auth_attempts
 
     @property
-    def last_login(self) -> Optional[datetime]:
+    def last_login(self) -> datetime | None:
         """The `last_login` property.
 
         Returns:
@@ -388,7 +387,7 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
     def _verify_code(
         self,
         code: str,
-        code_hash: Optional[str],
+        code_hash: str | None,
     ) -> bool:
         """Verifies a given code against the stored (hashed) code.
 
@@ -441,32 +440,32 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
 class OAuthDeviceFilter(UserScopedFilter):
     """Model to enable advanced filtering of OAuth2 devices."""
 
-    expires: Optional[Union[datetime, str, None]] = Field(
+    expires: datetime | str | None | None = Field(
         default=None,
         description="The expiration date of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    client_id: Union[UUID, str, None] = Field(
+    client_id: UUID | str | None = Field(
         default=None,
         description="The client ID of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    status: Union[OAuthDeviceStatus, str, None] = Field(
+    status: OAuthDeviceStatus | str | None = Field(
         default=None,
         description="The status of the OAuth2 device.",
         union_mode="left_to_right",
     )
-    trusted_device: Union[bool, str, None] = Field(
+    trusted_device: bool | str | None = Field(
         default=None,
         description="Whether the OAuth2 device was marked as trusted.",
         union_mode="left_to_right",
     )
-    failed_auth_attempts: Union[int, str, None] = Field(
+    failed_auth_attempts: int | str | None = Field(
         default=None,
         description="The number of failed authentication attempts.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str, None]] = Field(
+    last_login: datetime | str | None | None = Field(
         default=None,
         description="The date of the last successful login.",
         union_mode="left_to_right",

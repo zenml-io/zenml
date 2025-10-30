@@ -14,7 +14,7 @@
 """Kubernetes step operator implementation."""
 
 import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from kubernetes import client as k8s_client
 
@@ -53,7 +53,7 @@ KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY = "kubernetes_step_operator"
 class KubernetesStepOperator(BaseStepOperator):
     """Step operator to run on Kubernetes."""
 
-    _k8s_client: Optional[k8s_client.ApiClient] = None
+    _k8s_client: k8s_client.ApiClient | None = None
 
     @property
     def config(self) -> KubernetesStepOperatorConfig:
@@ -65,7 +65,7 @@ class KubernetesStepOperator(BaseStepOperator):
         return cast(KubernetesStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Kubernetes step operator.
 
         Returns:
@@ -74,7 +74,7 @@ class KubernetesStepOperator(BaseStepOperator):
         return KubernetesStepOperatorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -82,7 +82,7 @@ class KubernetesStepOperator(BaseStepOperator):
             registry and a remote artifact store.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The Kubernetes step operator runs code remotely and "
@@ -118,7 +118,7 @@ class KubernetesStepOperator(BaseStepOperator):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -195,8 +195,8 @@ class KubernetesStepOperator(BaseStepOperator):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launches a step on Kubernetes.
 

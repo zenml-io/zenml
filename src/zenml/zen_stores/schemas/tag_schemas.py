@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column, UniqueConstraint
@@ -54,7 +55,7 @@ class TagSchema(NamedSchema, table=True):
         ),
     )
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -67,7 +68,7 @@ class TagSchema(NamedSchema, table=True):
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     exclusive: bool = Field(default=False)
 
-    links: List["TagResourceSchema"] = Relationship(
+    links: list["TagResourceSchema"] = Relationship(
         back_populates="tag",
         sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
     )

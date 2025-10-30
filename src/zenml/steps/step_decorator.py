@@ -16,17 +16,12 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Type,
     TypeVar,
     Union,
     overload,
 )
+from collections.abc import Callable, Mapping, Sequence
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -41,7 +36,7 @@ if TYPE_CHECKING:
     from zenml.steps import BaseStep
     from zenml.types import HookSpecification
 
-    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+    MaterializerClassOrSource = Union[str, Source, type[BaseMaterializer]]
 
     OutputMaterializersSpecification = Union[
         MaterializerClassOrSource,
@@ -62,23 +57,23 @@ def step(_func: "F") -> "BaseStep": ...
 @overload
 def step(
     *,
-    name: Optional[str] = None,
-    enable_cache: Optional[bool] = None,
-    enable_artifact_metadata: Optional[bool] = None,
-    enable_artifact_visualization: Optional[bool] = None,
-    enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[Union[bool, str]] = None,
-    step_operator: Optional[Union[bool, str]] = None,
+    name: str | None = None,
+    enable_cache: bool | None = None,
+    enable_artifact_metadata: bool | None = None,
+    enable_artifact_visualization: bool | None = None,
+    enable_step_logs: bool | None = None,
+    experiment_tracker: bool | str | None = None,
+    step_operator: bool | str | None = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
-    environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[Union[UUID, str]]] = None,
-    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    extra: Optional[Dict[str, Any]] = None,
+    environment: dict[str, Any] | None = None,
+    secrets: list[UUID | str] | None = None,
+    settings: dict[str, "SettingsOrDict"] | None = None,
+    extra: dict[str, Any] | None = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    substitutions: Optional[Dict[str, str]] = None,
+    substitutions: dict[str, str] | None = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
@@ -86,23 +81,23 @@ def step(
 def step(
     _func: Optional["F"] = None,
     *,
-    name: Optional[str] = None,
-    enable_cache: Optional[bool] = None,
-    enable_artifact_metadata: Optional[bool] = None,
-    enable_artifact_visualization: Optional[bool] = None,
-    enable_step_logs: Optional[bool] = None,
-    experiment_tracker: Optional[Union[bool, str]] = None,
-    step_operator: Optional[Union[bool, str]] = None,
+    name: str | None = None,
+    enable_cache: bool | None = None,
+    enable_artifact_metadata: bool | None = None,
+    enable_artifact_visualization: bool | None = None,
+    enable_step_logs: bool | None = None,
+    experiment_tracker: bool | str | None = None,
+    step_operator: bool | str | None = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
-    environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[Union[UUID, str]]] = None,
-    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    extra: Optional[Dict[str, Any]] = None,
+    environment: dict[str, Any] | None = None,
+    secrets: list[UUID | str] | None = None,
+    settings: dict[str, "SettingsOrDict"] | None = None,
+    extra: dict[str, Any] | None = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    substitutions: Optional[Dict[str, str]] = None,
+    substitutions: dict[str, str] | None = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
@@ -147,7 +142,7 @@ def step(
     def inner_decorator(func: "F") -> "BaseStep":
         from zenml.steps.decorated_step import _DecoratedStep
 
-        class_: Type["BaseStep"] = type(
+        class_: type["BaseStep"] = type(
             func.__name__,
             (_DecoratedStep,),
             {

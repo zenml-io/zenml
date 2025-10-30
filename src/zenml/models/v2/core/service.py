@@ -18,10 +18,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -64,48 +61,48 @@ class ServiceRequest(ProjectScopedRequest):
     service_type: ServiceType = Field(
         title="The type of the service.",
     )
-    service_source: Optional[str] = Field(
+    service_source: str | None = Field(
         title="The class of the service.",
         description="The fully qualified class name of the service "
         "implementation.",
         default=None,
     )
-    admin_state: Optional[ServiceState] = Field(
+    admin_state: ServiceState | None = Field(
         title="The admin state of the service.",
         description="The administrative state of the service, e.g., ACTIVE, "
         "INACTIVE.",
         default=None,
     )
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         title="The service config.",
         description="A dictionary containing configuration parameters for the "
         "service.",
     )
-    labels: Optional[Dict[str, str]] = Field(
+    labels: dict[str, str] | None = Field(
         default=None,
         title="The service labels.",
     )
-    status: Optional[Dict[str, Any]] = Field(
+    status: dict[str, Any] | None = Field(
         default=None,
         title="The status of the service.",
     )
-    endpoint: Optional[Dict[str, Any]] = Field(
+    endpoint: dict[str, Any] | None = Field(
         default=None,
         title="The service endpoint.",
     )
-    prediction_url: Optional[str] = Field(
+    prediction_url: str | None = Field(
         default=None,
         title="The service endpoint URL.",
     )
-    health_check_url: Optional[str] = Field(
+    health_check_url: str | None = Field(
         default=None,
         title="The service health check URL.",
     )
-    model_version_id: Optional[UUID] = Field(
+    model_version_id: UUID | None = Field(
         default=None,
         title="The model version id linked to the service.",
     )
-    pipeline_run_id: Optional[UUID] = Field(
+    pipeline_run_id: UUID | None = Field(
         default=None,
         title="The pipeline run id linked to the service.",
     )
@@ -125,44 +122,44 @@ class ServiceRequest(ProjectScopedRequest):
 class ServiceUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         title="The name of the service.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    admin_state: Optional[ServiceState] = Field(
+    admin_state: ServiceState | None = Field(
         None,
         title="The admin state of the service.",
         description="The administrative state of the service, e.g., ACTIVE, "
         "INACTIVE.",
     )
-    service_source: Optional[str] = Field(
+    service_source: str | None = Field(
         None,
         title="The class of the service.",
         description="The fully qualified class name of the service "
         "implementation.",
     )
-    status: Optional[Dict[str, Any]] = Field(
+    status: dict[str, Any] | None = Field(
         None,
         title="The status of the service.",
     )
-    endpoint: Optional[Dict[str, Any]] = Field(
+    endpoint: dict[str, Any] | None = Field(
         None,
         title="The service endpoint.",
     )
-    prediction_url: Optional[str] = Field(
+    prediction_url: str | None = Field(
         None,
         title="The service endpoint URL.",
     )
-    health_check_url: Optional[str] = Field(
+    health_check_url: str | None = Field(
         None,
         title="The service health check URL.",
     )
-    labels: Optional[Dict[str, str]] = Field(
+    labels: dict[str, str] | None = Field(
         default=None,
         title="The service labels.",
     )
-    model_version_id: Optional[UUID] = Field(
+    model_version_id: UUID | None = Field(
         default=None,
         title="The model version id linked to the service.",
     )
@@ -185,7 +182,7 @@ class ServiceResponseBody(ProjectScopedResponseBody):
     service_type: ServiceType = Field(
         title="The type of the service.",
     )
-    labels: Optional[Dict[str, str]] = Field(
+    labels: dict[str, str] | None = Field(
         default=None,
         title="The service labels.",
     )
@@ -195,7 +192,7 @@ class ServiceResponseBody(ProjectScopedResponseBody):
     updated: datetime = Field(
         title="The timestamp when this component was last updated.",
     )
-    state: Optional[ServiceState] = Field(
+    state: ServiceState | None = Field(
         default=None,
         title="The current state of the service.",
     )
@@ -204,27 +201,27 @@ class ServiceResponseBody(ProjectScopedResponseBody):
 class ServiceResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for services."""
 
-    service_source: Optional[str] = Field(
+    service_source: str | None = Field(
         title="The class of the service.",
     )
-    admin_state: Optional[ServiceState] = Field(
+    admin_state: ServiceState | None = Field(
         title="The admin state of the service.",
     )
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         title="The service config.",
     )
-    status: Optional[Dict[str, Any]] = Field(
+    status: dict[str, Any] | None = Field(
         title="The status of the service.",
     )
-    endpoint: Optional[Dict[str, Any]] = Field(
+    endpoint: dict[str, Any] | None = Field(
         default=None,
         title="The service endpoint.",
     )
-    prediction_url: Optional[str] = Field(
+    prediction_url: str | None = Field(
         default=None,
         title="The service endpoint URL.",
     )
-    health_check_url: Optional[str] = Field(
+    health_check_url: str | None = Field(
         default=None,
         title="The service health check URL.",
     )
@@ -285,7 +282,7 @@ class ServiceResponse(
         return self.get_body().service_type
 
     @property
-    def labels(self) -> Optional[Dict[str, str]]:
+    def labels(self) -> dict[str, str] | None:
         """The `labels` property.
 
         Returns:
@@ -294,7 +291,7 @@ class ServiceResponse(
         return self.get_body().labels
 
     @property
-    def service_source(self) -> Optional[str]:
+    def service_source(self) -> str | None:
         """The `service_source` property.
 
         Returns:
@@ -303,7 +300,7 @@ class ServiceResponse(
         return self.get_metadata().service_source
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """The `config` property.
 
         Returns:
@@ -312,7 +309,7 @@ class ServiceResponse(
         return self.get_metadata().config
 
     @property
-    def status(self) -> Optional[Dict[str, Any]]:
+    def status(self) -> dict[str, Any] | None:
         """The `status` property.
 
         Returns:
@@ -321,7 +318,7 @@ class ServiceResponse(
         return self.get_metadata().status
 
     @property
-    def endpoint(self) -> Optional[Dict[str, Any]]:
+    def endpoint(self) -> dict[str, Any] | None:
         """The `endpoint` property.
 
         Returns:
@@ -348,7 +345,7 @@ class ServiceResponse(
         return self.get_body().updated
 
     @property
-    def admin_state(self) -> Optional[ServiceState]:
+    def admin_state(self) -> ServiceState | None:
         """The `admin_state` property.
 
         Returns:
@@ -357,7 +354,7 @@ class ServiceResponse(
         return self.get_metadata().admin_state
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """The `prediction_url` property.
 
         Returns:
@@ -366,7 +363,7 @@ class ServiceResponse(
         return self.get_metadata().prediction_url
 
     @property
-    def health_check_url(self) -> Optional[str]:
+    def health_check_url(self) -> str | None:
         """The `health_check_url` property.
 
         Returns:
@@ -375,7 +372,7 @@ class ServiceResponse(
         return self.get_metadata().health_check_url
 
     @property
-    def state(self) -> Optional[ServiceState]:
+    def state(self) -> ServiceState | None:
         """The `state` property.
 
         Returns:
@@ -408,42 +405,42 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    type: Optional[str] = Field(
+    type: str | None = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
     )
-    flavor: Optional[str] = Field(
+    flavor: str | None = Field(
         default=None,
         description="Flavor of the service. Use this to filter services by "
         "their flavor.",
     )
-    config: Optional[bytes] = Field(
+    config: bytes | None = Field(
         default=None,
         description="Config of the service. Use this to filter services by "
         "their config.",
     )
-    pipeline_name: Optional[str] = Field(
+    pipeline_name: str | None = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
     )
-    pipeline_step_name: Optional[str] = Field(
+    pipeline_step_name: str | None = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
-    running: Optional[bool] = Field(
+    running: bool | None = Field(
         default=None, description="Whether the service is running"
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="By the model version this service is attached to.",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUID | str | None = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
         union_mode="left_to_right",
@@ -483,7 +480,7 @@ class ServiceFilter(ProjectScopedFilter):
         "pipeline_name",
         "config",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "flavor",
         "type",
@@ -493,7 +490,7 @@ class ServiceFilter(ProjectScopedFilter):
     ]
 
     def generate_filter(
-        self, table: Type["AnySchema"]
+        self, table: type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Discord alerter flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.integrations.discord import DISCORD_ALERTER_FLAVOR
@@ -37,7 +37,7 @@ class DiscordAlerterConfig(BaseAlerterConfig):
     """
 
     discord_token: str = SecretField()
-    default_discord_channel_id: Optional[str] = None  # TODO: Potential setting
+    default_discord_channel_id: str | None = None  # TODO: Potential setting
 
     @property
     def is_valid(self) -> bool:
@@ -96,7 +96,7 @@ class DiscordAlerterFlavor(BaseAlerterFlavor):
         return DISCORD_ALERTER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -105,7 +105,7 @@ class DiscordAlerterFlavor(BaseAlerterFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -123,7 +123,7 @@ class DiscordAlerterFlavor(BaseAlerterFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/discord.png"
 
     @property
-    def config_class(self) -> Type[DiscordAlerterConfig]:
+    def config_class(self) -> type[DiscordAlerterConfig]:
         """Returns `DiscordAlerterConfig` config class.
 
         Returns:
@@ -132,7 +132,7 @@ class DiscordAlerterFlavor(BaseAlerterFlavor):
         return DiscordAlerterConfig
 
     @property
-    def implementation_class(self) -> Type["DiscordAlerter"]:
+    def implementation_class(self) -> type["DiscordAlerter"]:
         """Implementation class for this flavor.
 
         Returns:

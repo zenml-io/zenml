@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -60,7 +60,7 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     artifact_version: ArtifactVersionSchema = Relationship(
         back_populates="visualizations"
     )
-    curated_visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    curated_visualizations: list["CuratedVisualizationSchema"] = Relationship(
         back_populates="artifact_visualization",
         sa_relationship_kwargs=dict(
             order_by="CuratedVisualizationSchema.display_order",

@@ -14,7 +14,8 @@
 """SQL Model Implementations for code repositories."""
 
 import json
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -64,7 +65,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="code_repositories")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -79,8 +80,8 @@ class CodeRepositorySchema(NamedSchema, table=True):
 
     config: str = Field(sa_column=Column(TEXT, nullable=False))
     source: str = Field(sa_column=Column(TEXT, nullable=False))
-    logo_url: Optional[str] = Field()
-    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    logo_url: str | None = Field()
+    description: str | None = Field(sa_column=Column(TEXT, nullable=True))
 
     @classmethod
     def get_query_options(

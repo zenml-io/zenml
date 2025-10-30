@@ -14,7 +14,6 @@
 """Workload manager interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 from uuid import UUID
 
 
@@ -26,9 +25,9 @@ class WorkloadManagerInterface(ABC):
         self,
         workload_id: UUID,
         image: str,
-        command: List[str],
-        arguments: List[str],
-        environment: Optional[Dict[str, str]] = None,
+        command: list[str],
+        arguments: list[str],
+        environment: dict[str, str] | None = None,
         sync: bool = True,
         timeout_in_seconds: int = 0,
     ) -> None:
@@ -46,7 +45,6 @@ class WorkloadManagerInterface(ABC):
                 the container. If set to 0 the container will run until it
                 fails or finishes.
         """
-        pass
 
     @abstractmethod
     def build_and_push_image(
@@ -71,7 +69,6 @@ class WorkloadManagerInterface(ABC):
         Returns:
             The full image name including container registry.
         """
-        pass
 
     @abstractmethod
     def delete_workload(self, workload_id: UUID) -> None:
@@ -80,7 +77,6 @@ class WorkloadManagerInterface(ABC):
         Args:
             workload_id: Workload ID.
         """
-        pass
 
     @abstractmethod
     def get_logs(self, workload_id: UUID) -> str:
@@ -92,7 +88,6 @@ class WorkloadManagerInterface(ABC):
         Returns:
             The stored logs.
         """
-        pass
 
     @abstractmethod
     def log(self, workload_id: UUID, message: str) -> None:
@@ -102,4 +97,3 @@ class WorkloadManagerInterface(ABC):
             workload_id: Workload ID.
             message: The message to log.
         """
-        pass

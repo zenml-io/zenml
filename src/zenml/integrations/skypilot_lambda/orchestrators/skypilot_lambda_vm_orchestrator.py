@@ -14,7 +14,7 @@
 """Implementation of the a Skypilot based Lambda VM orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import sky
 
@@ -61,7 +61,7 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         return cast(SkypilotLambdaOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Skypilot orchestrator.
 
         Returns:
@@ -75,7 +75,6 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         Args:
             set: Whether to set the environment variables or not.
         """
-        pass
 
     def setup_credentials(self) -> None:
         """Set up credentials for the orchestrator."""

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the ServiceStatus class."""
 
-from typing import Optional
 
 from zenml.enums import ServiceState
 from zenml.logger import get_logger
@@ -44,7 +43,7 @@ class ServiceStatus(BaseTypedModel):
 
     def update_state(
         self,
-        new_state: Optional[ServiceState] = None,
+        new_state: ServiceState | None = None,
         error: str = "",
     ) -> None:
         """Update the current operational state to reflect a new state value and/or error.

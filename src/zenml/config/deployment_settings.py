@@ -16,13 +16,9 @@
 from enum import Enum, IntFlag, auto
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Union,
 )
+from collections.abc import Callable
 
 from pydantic import (
     BaseModel,
@@ -175,8 +171,8 @@ class EndpointSpec(BaseModel):
     handler: SourceOrObjectField
     native: bool = False
     auth_required: bool = True
-    init_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    extra_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    init_kwargs: dict[str, Any] = Field(default_factory=dict)
+    extra_kwargs: dict[str, Any] = Field(default_factory=dict)
 
     def load_sources(self) -> None:
         """Load all source strings into callables."""
@@ -281,8 +277,8 @@ class MiddlewareSpec(BaseModel):
     middleware: SourceOrObjectField
     native: bool = False
     order: int = 0
-    init_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    extra_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    init_kwargs: dict[str, Any] = Field(default_factory=dict)
+    extra_kwargs: dict[str, Any] = Field(default_factory=dict)
 
     def load_sources(self) -> None:
         """Load source string into callable."""
@@ -346,7 +342,7 @@ class AppExtensionSpec(BaseModel):
     """
 
     extension: SourceOrObjectField
-    extension_kwargs: Dict[str, Any] = Field(default_factory=dict)
+    extension_kwargs: dict[str, Any] = Field(default_factory=dict)
 
     def load_sources(self) -> None:
         """Load source string into callable."""
@@ -385,9 +381,9 @@ class AppExtensionSpec(BaseModel):
 class CORSConfig(BaseModel):
     """Configuration for CORS."""
 
-    allow_origins: List[str] = ["*"]
-    allow_methods: List[str] = ["GET", "POST", "OPTIONS"]
-    allow_headers: List[str] = ["*"]
+    allow_origins: list[str] = ["*"]
+    allow_methods: list[str] = ["GET", "POST", "OPTIONS"]
+    allow_headers: list[str] = ["*"]
     allow_credentials: bool = False
 
 
@@ -455,35 +451,35 @@ class SecureHeadersConfig(BaseModel):
             included in responses.
     """
 
-    server: Union[bool, str] = Field(
+    server: bool | str = Field(
         default=True,
         union_mode="left_to_right",
     )
-    hsts: Union[bool, str] = Field(
+    hsts: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_HSTS,
         union_mode="left_to_right",
     )
-    xfo: Union[bool, str] = Field(
+    xfo: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_XFO,
         union_mode="left_to_right",
     )
-    content: Union[bool, str] = Field(
+    content: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CONTENT,
         union_mode="left_to_right",
     )
-    csp: Union[bool, str] = Field(
+    csp: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CSP,
         union_mode="left_to_right",
     )
-    referrer: Union[bool, str] = Field(
+    referrer: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_REFERRER,
         union_mode="left_to_right",
     )
-    cache: Union[bool, str] = Field(
+    cache: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_CACHE,
         union_mode="left_to_right",
     )
-    permissions: Union[bool, str] = Field(
+    permissions: bool | str = Field(
         default=DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_PERMISSIONS,
         union_mode="left_to_right",
     )
@@ -654,10 +650,10 @@ class DeploymentSettings(BaseSettings):
     # These settings are only available at the pipeline level
     LEVEL: ClassVar[ConfigurationLevel] = ConfigurationLevel.PIPELINE
 
-    app_title: Optional[str] = None
-    app_description: Optional[str] = None
-    app_version: Optional[str] = None
-    app_kwargs: Dict[str, Any] = {}
+    app_title: str | None = None
+    app_description: str | None = None
+    app_version: str | None = None
+    app_kwargs: dict[str, Any] = {}
 
     include_default_endpoints: DeploymentDefaultEndpoints = (
         DeploymentDefaultEndpoints.ALL
@@ -675,23 +671,23 @@ class DeploymentSettings(BaseSettings):
     info_url_path: str = DEFAULT_DEPLOYMENT_APP_INFO_URL_PATH
     metrics_url_path: str = DEFAULT_DEPLOYMENT_APP_METRICS_URL_PATH
 
-    dashboard_files_path: Optional[str] = None
+    dashboard_files_path: str | None = None
     cors: CORSConfig = CORSConfig()
     secure_headers: SecureHeadersConfig = SecureHeadersConfig()
 
     thread_pool_size: int = DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE
 
-    startup_hook: Optional[SourceOrObjectField] = None
-    shutdown_hook: Optional[SourceOrObjectField] = None
-    startup_hook_kwargs: Dict[str, Any] = {}
-    shutdown_hook_kwargs: Dict[str, Any] = {}
+    startup_hook: SourceOrObjectField | None = None
+    shutdown_hook: SourceOrObjectField | None = None
+    startup_hook_kwargs: dict[str, Any] = {}
+    shutdown_hook_kwargs: dict[str, Any] = {}
 
     # Framework-agnostic endpoint/middleware configuration
-    custom_endpoints: Optional[List[EndpointSpec]] = None
-    custom_middlewares: Optional[List[MiddlewareSpec]] = None
+    custom_endpoints: list[EndpointSpec] | None = None
+    custom_middlewares: list[MiddlewareSpec] | None = None
 
     # Pluggable app extensions for advanced features
-    app_extensions: Optional[List[AppExtensionSpec]] = None
+    app_extensions: list[AppExtensionSpec] | None = None
 
     uvicorn_host: str = "0.0.0.0"  # nosec
     uvicorn_port: int = 8000
@@ -699,12 +695,12 @@ class DeploymentSettings(BaseSettings):
     uvicorn_reload: bool = False
     log_level: LoggingLevels = LoggingLevels.INFO
 
-    uvicorn_kwargs: Dict[str, Any] = {}
+    uvicorn_kwargs: dict[str, Any] = {}
 
-    deployment_app_runner_flavor: Optional[SourceOrObjectField] = None
-    deployment_app_runner_kwargs: Dict[str, Any] = {}
-    deployment_service_class: Optional[SourceOrObjectField] = None
-    deployment_service_kwargs: Dict[str, Any] = {}
+    deployment_app_runner_flavor: SourceOrObjectField | None = None
+    deployment_app_runner_kwargs: dict[str, Any] = {}
+    deployment_service_class: SourceOrObjectField | None = None
+    deployment_service_kwargs: dict[str, Any] = {}
 
     def load_sources(self) -> None:
         """Load source string into callable."""

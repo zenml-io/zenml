@@ -17,7 +17,7 @@ import datetime
 import importlib
 import os
 import zipfile
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -31,38 +31,38 @@ class TaskConfiguration(BaseModel):
 
     id: str
     zenml_step_name: str
-    upstream_steps: List[str]
+    upstream_steps: list[str]
 
     docker_image: str
-    command: List[str]
-    arguments: List[str]
+    command: list[str]
+    arguments: list[str]
 
-    environment: Dict[str, str] = {}
+    environment: dict[str, str] = {}
 
     operator_source: str
-    operator_args: Dict[str, Any] = {}
+    operator_args: dict[str, Any] = {}
 
 
 class DagConfiguration(BaseModel):
     """Airflow DAG configuration."""
 
     id: str
-    tasks: List[TaskConfiguration]
+    tasks: list[TaskConfiguration]
 
-    local_stores_path: Optional[str] = None
+    local_stores_path: str | None = None
 
-    schedule: Union[datetime.timedelta, str] = Field(
+    schedule: datetime.timedelta | str = Field(
         union_mode="left_to_right"
     )
     start_date: datetime.datetime
-    end_date: Optional[datetime.datetime] = None
+    end_date: datetime.datetime | None = None
     catchup: bool = False
 
-    tags: List[str] = []
-    dag_args: Dict[str, Any] = {}
+    tags: list[str] = []
+    dag_args: dict[str, Any] = {}
 
 
-def import_class_by_path(class_path: str) -> Type[Any]:
+def import_class_by_path(class_path: str) -> type[Any]:
     """Imports a class based on a given path.
 
     Args:
@@ -77,10 +77,10 @@ def import_class_by_path(class_path: str) -> Type[Any]:
 
 
 def get_operator_init_kwargs(
-    operator_class: Type[Any],
+    operator_class: type[Any],
     dag_config: DagConfiguration,
     task_config: TaskConfiguration,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Gets keyword arguments to pass to the operator init method.
 
     Args:
@@ -141,7 +141,7 @@ def get_operator_init_kwargs(
 
 def get_docker_operator_init_kwargs(
     dag_config: DagConfiguration, task_config: TaskConfiguration
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Gets keyword arguments to pass to the DockerOperator.
 
     Args:
@@ -179,7 +179,7 @@ def get_docker_operator_init_kwargs(
 
 def get_kubernetes_pod_operator_init_kwargs(
     dag_config: DagConfiguration, task_config: TaskConfiguration
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Gets keyword arguments to pass to the KubernetesPodOperator.
 
     Args:

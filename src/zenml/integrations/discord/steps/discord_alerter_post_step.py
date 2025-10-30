@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step that allows you to post messages to Discord."""
 
-from typing import Optional
 
 from zenml import get_step_context, step
 from zenml.client import Client
@@ -27,7 +26,7 @@ from zenml.integrations.discord.alerters.discord_alerter import (
 @step
 def discord_alerter_post_step(
     message: str,
-    params: Optional[DiscordAlerterParameters] = None,
+    params: DiscordAlerterParameters | None = None,
 ) -> bool:
     """Post a message to the Discord alerter component of the active stack.
 

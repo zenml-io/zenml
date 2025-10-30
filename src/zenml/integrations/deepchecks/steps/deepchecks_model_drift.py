@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks model drift validation step."""
 
-from typing import Any, Dict, Optional, Sequence, cast
+from typing import Any, Optional, cast
+from collections.abc import Sequence
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
@@ -33,10 +34,10 @@ def deepchecks_model_drift_check_step(
     reference_dataset: pd.DataFrame,
     target_dataset: pd.DataFrame,
     model: ClassifierMixin,
-    check_list: Optional[Sequence[DeepchecksModelDriftCheck]] = None,
-    dataset_kwargs: Optional[Dict[str, Any]] = None,
-    check_kwargs: Optional[Dict[str, Any]] = None,
-    run_kwargs: Optional[Dict[str, Any]] = None,
+    check_list: Sequence[DeepchecksModelDriftCheck] | None = None,
+    dataset_kwargs: dict[str, Any] | None = None,
+    check_kwargs: dict[str, Any] | None = None,
+    run_kwargs: dict[str, Any] | None = None,
 ) -> SuiteResult:
     """Run model drift checks on two pandas DataFrames and an sklearn model.
 

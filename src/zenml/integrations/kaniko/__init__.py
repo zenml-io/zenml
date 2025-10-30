@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Kaniko integration for image building."""
-from typing import List, Type
 
 from zenml.integrations.constants import KANIKO
 from zenml.integrations.integration import Integration
@@ -28,7 +27,7 @@ class KanikoIntegration(Integration):
     REQUIREMENTS = []
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Kaniko integration.
 
         Returns:

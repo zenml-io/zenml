@@ -17,14 +17,15 @@ import threading
 import time
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+from collections.abc import Callable
 
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def reverse_dag(dag: Dict[str, List[str]]) -> Dict[str, List[str]]:
+def reverse_dag(dag: dict[str, list[str]]) -> dict[str, list[str]]:
     """Reverse a DAG.
 
     Args:
@@ -71,13 +72,13 @@ class ThreadedDagRunner:
 
     def __init__(
         self,
-        dag: Dict[str, List[str]],
+        dag: dict[str, list[str]],
         run_fn: Callable[[str], Any],
-        preparation_fn: Optional[Callable[[str], bool]] = None,
-        finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
+        preparation_fn: Callable[[str], bool] | None = None,
+        finalize_fn: Callable[[dict[str, NodeStatus]], None] | None = None,
         parallel_node_startup_waiting_period: float = 0.0,
-        max_parallelism: Optional[int] = None,
-        continue_fn: Optional[Callable[[], bool]] = None,
+        max_parallelism: int | None = None,
+        continue_fn: Callable[[], bool] | None = None,
     ) -> None:
         """Define attributes and initialize all nodes in waiting state.
 
@@ -246,7 +247,7 @@ class ThreadedDagRunner:
             return
 
         # Run downstream nodes.
-        threads: List[threading.Thread] = []
+        threads: list[threading.Thread] = []
         for downstream_node in self.reversed_dag[node]:
             if self._can_run(downstream_node):
                 if threads and self.parallel_node_startup_waiting_period > 0:
@@ -268,7 +269,7 @@ class ThreadedDagRunner:
         # Run all nodes that can be started immediately.
         # These will, in turn, start other nodes once all of their respective
         # upstream nodes have completed.
-        threads: List[threading.Thread] = []
+        threads: list[threading.Thread] = []
         for node in self.nodes:
             if self._can_run(node):
                 if threads and self.parallel_node_startup_waiting_period > 0:

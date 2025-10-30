@@ -16,7 +16,8 @@
 import inspect
 import json
 from json.decoder import JSONDecodeError
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
+from collections.abc import Callable
 
 import yaml
 from pydantic import (
@@ -43,7 +44,7 @@ M = TypeVar("M", bound="BaseModel")
 
 def update_model(
     original: M,
-    update: Union["BaseModel", Dict[str, Any]],
+    update: Union["BaseModel", dict[str, Any]],
     recursive: bool = True,
     exclude_none: bool = False,
 ) -> M:
@@ -58,7 +59,7 @@ def update_model(
     Returns:
         The updated model.
     """
-    if isinstance(update, Dict):
+    if isinstance(update, dict):
         if exclude_none:
             update_dict = dict_utils.remove_none_values(
                 update, recursive=recursive
@@ -83,7 +84,7 @@ class TemplateGenerator:
     """Class to generate templates for pydantic models or classes."""
 
     def __init__(
-        self, instance_or_class: Union[BaseModel, Type[BaseModel]]
+        self, instance_or_class: BaseModel | type[BaseModel]
     ) -> None:
         """Initializes the template generator.
 
@@ -93,7 +94,7 @@ class TemplateGenerator:
         """
         self.instance_or_class = instance_or_class
 
-    def run(self) -> Dict[str, Any]:
+    def run(self) -> dict[str, Any]:
         """Generates the template.
 
         Returns:
@@ -111,9 +112,9 @@ class TemplateGenerator:
         # Convert to json in an intermediate step, so we can leverage Pydantic's
         # encoder to support types like UUID and datetime
         json_string = json.dumps(template, default=pydantic_encoder)
-        return cast(Dict[str, Any], json.loads(json_string))
+        return cast(dict[str, Any], json.loads(json_string))
 
-    def _generate_template_for_model(self, model: BaseModel) -> Dict[str, Any]:
+    def _generate_template_for_model(self, model: BaseModel) -> dict[str, Any]:
         """Generates a template for a pydantic model.
 
         Args:
@@ -132,8 +133,8 @@ class TemplateGenerator:
 
     def _generate_template_for_model_class(
         self,
-        model_class: Type[BaseModel],
-    ) -> Dict[str, Any]:
+        model_class: type[BaseModel],
+    ) -> dict[str, Any]:
         """Generates a template for a pydantic model class.
 
         Args:
@@ -142,7 +143,7 @@ class TemplateGenerator:
         Returns:
             The model class template.
         """
-        template: Dict[str, Any] = {}
+        template: dict[str, Any] = {}
 
         for name, field in model_class.model_fields.items():
             annotation = field.annotation
@@ -175,7 +176,7 @@ class TemplateGenerator:
         Returns:
             The value template.
         """
-        if isinstance(value, Dict):
+        if isinstance(value, dict):
             return {
                 k: self._generate_template_for_value(v)
                 for k, v in value.items()
@@ -221,7 +222,7 @@ class YAMLSerializationMixin(BaseModel):
         return yaml.dump(dict_, sort_keys=sort_keys)
 
     @classmethod
-    def from_yaml(cls: Type[M], path: str) -> M:
+    def from_yaml(cls: type[M], path: str) -> M:
         """Creates an instance from a YAML file.
 
         Args:
@@ -236,10 +237,10 @@ class YAMLSerializationMixin(BaseModel):
 
 def validate_function_args(
     __func: Callable[..., Any],
-    __config: Optional[ConfigDict],
+    __config: ConfigDict | None,
     *args: Any,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Validates arguments passed to a function.
 
     This function validates that all arguments to call the function exist and
@@ -262,7 +263,7 @@ def validate_function_args(
     validated_args = ()
     validated_kwargs = {}
 
-    def f(*args: Any, **kwargs: Dict[Any, Any]) -> None:
+    def f(*args: Any, **kwargs: dict[Any, Any]) -> None:
         nonlocal validated_args
         nonlocal validated_kwargs
 
@@ -286,9 +287,9 @@ def validate_function_args(
 
 def model_validator_data_handler(
     raw_data: Any,
-    base_class: Type[BaseModel],
+    base_class: type[BaseModel],
     validation_info: ValidationInfo,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Utility function to parse raw input data of varying types to a dict.
 
     With the change to pydantic v2, validators which operate with "before"
@@ -412,7 +413,7 @@ def before_validator_handler(
     """
 
     def before_validator(
-        cls: Type[BaseModel], data: Any, validation_info: ValidationInfo
+        cls: type[BaseModel], data: Any, validation_info: ValidationInfo
     ) -> Any:
         """Wrapper method to handle the raw data.
 
@@ -433,8 +434,8 @@ def before_validator_handler(
 
 
 def has_validators(
-    pydantic_class: Type[BaseModel],
-    field_name: Optional[str] = None,
+    pydantic_class: type[BaseModel],
+    field_name: str | None = None,
 ) -> bool:
     """Function to check if a Pydantic model or a pydantic field has validators.
 

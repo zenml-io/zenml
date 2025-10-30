@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -50,13 +50,13 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
         token: The token to access the repository.
     """
 
-    api_url: Optional[str] = None
+    api_url: str | None = None
     owner: str
     repository: str
-    host: Optional[str] = "github.com"
-    token: Optional[str] = SecretField(default=None)
+    host: str | None = "github.com"
+    token: str | None = SecretField(default=None)
 
-    url: Optional[str] = None
+    url: str | None = None
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("url", "api_url")
     )
@@ -66,7 +66,7 @@ class GitHubCodeRepository(BaseCodeRepository):
     """GitHub code repository."""
 
     @classmethod
-    def validate_config(cls, config: Dict[str, Any]) -> None:
+    def validate_config(cls, config: dict[str, Any]) -> None:
         """Validate the code repository config.
 
         This method should check that the config/credentials are valid and
@@ -162,7 +162,7 @@ class GitHubCodeRepository(BaseCodeRepository):
             raise RuntimeError(f"An error occurred while logging in: {str(e)}")
 
     def download_files(
-        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+        self, commit: str, directory: str, repo_sub_directory: str | None
     ) -> None:
         """Downloads files from a commit to a local directory.
 
@@ -177,7 +177,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         contents = self.github_repo.get_contents(
             repo_sub_directory or "", ref=commit
         )
-        if not isinstance(contents, List):
+        if not isinstance(contents, list):
             raise RuntimeError("Invalid repository subdirectory.")
 
         os.makedirs(directory, exist_ok=True)
@@ -206,7 +206,7 @@ class GitHubCodeRepository(BaseCodeRepository):
                 try:
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
-                except (GithubException, IOError, AssertionError) as e:
+                except (GithubException, OSError, AssertionError) as e:
                     logger.error(
                         "Error processing `%s` (%s): %s",
                         content.path,
@@ -214,7 +214,7 @@ class GitHubCodeRepository(BaseCodeRepository):
                         e,
                     )
 
-    def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
+    def get_local_context(self, path: str) -> LocalRepositoryContext | None:
         """Gets the local repository context.
 
         Args:

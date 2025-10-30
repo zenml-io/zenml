@@ -15,7 +15,7 @@
 
 import datetime
 from abc import abstractmethod
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 from pydantic import BaseModel
 
@@ -40,7 +40,7 @@ class ZenMLCloudStackDeployment(BaseModel):
     stack_name: str
     zenml_server_url: str
     zenml_server_api_token: str
-    location: Optional[str] = None
+    location: str | None = None
 
     @classmethod
     @abstractmethod
@@ -81,7 +81,7 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     @abstractmethod
-    def integrations(cls) -> List[str]:
+    def integrations(cls) -> list[str]:
         """Return the ZenML integrations required for the stack.
 
         Returns:
@@ -91,7 +91,7 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     @abstractmethod
-    def permissions(cls) -> Dict[str, List[str]]:
+    def permissions(cls) -> dict[str, list[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
         Returns:
@@ -101,7 +101,7 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     @classmethod
     @abstractmethod
-    def locations(cls) -> Dict[str, str]:
+    def locations(cls) -> dict[str, str]:
         """Return the locations where the ZenML stack can be deployed.
 
         Returns:
@@ -121,7 +121,7 @@ class ZenMLCloudStackDeployment(BaseModel):
         return self.deployment
 
     @classmethod
-    def skypilot_default_regions(cls) -> Dict[str, str]:
+    def skypilot_default_regions(cls) -> dict[str, str]:
         """Returns the regions supported by default for the Skypilot.
 
         Returns:
@@ -174,8 +174,8 @@ class ZenMLCloudStackDeployment(BaseModel):
 
     def get_stack(
         self,
-        date_start: Optional[datetime.datetime] = None,
-    ) -> Optional[DeployedStack]:
+        date_start: datetime.datetime | None = None,
+    ) -> DeployedStack | None:
         """Return the ZenML stack that was deployed and registered.
 
         This method is called to retrieve a ZenML stack matching the deployment

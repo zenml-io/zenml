@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AzureML step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, model_validator
 
@@ -45,7 +45,7 @@ class AzureMLStepOperatorSettings(AzureMLComputeSettings):
             Deprecated in favor of `compute_name`.
     """
 
-    compute_target_name: Optional[str] = Field(
+    compute_target_name: str | None = Field(
         default=None,
         description="Name of the configured ComputeTarget. Deprecated in favor "
         "of `compute_name`.",
@@ -54,7 +54,7 @@ class AzureMLStepOperatorSettings(AzureMLComputeSettings):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_compute_name(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_compute_name(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Backward compatibility for compute_target_name.
 
         Args:
@@ -102,9 +102,9 @@ class AzureMLStepOperatorConfig(
 
     # Service principal authentication
     # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
-    tenant_id: Optional[str] = SecretField(default=None)
-    service_principal_id: Optional[str] = SecretField(default=None)
-    service_principal_password: Optional[str] = SecretField(default=None)
+    tenant_id: str | None = SecretField(default=None)
+    service_principal_id: str | None = SecretField(default=None)
+    service_principal_password: str | None = SecretField(default=None)
 
     @property
     def is_remote(self) -> bool:
@@ -135,7 +135,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -148,7 +148,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
         return ServiceConnectorRequirements(resource_type=AZURE_RESOURCE_TYPE)
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -157,7 +157,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -175,7 +175,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/azureml.png"
 
     @property
-    def config_class(self) -> Type[AzureMLStepOperatorConfig]:
+    def config_class(self) -> type[AzureMLStepOperatorConfig]:
         """Returns AzureMLStepOperatorConfig config class.
 
         Returns:
@@ -184,7 +184,7 @@ class AzureMLStepOperatorFlavor(BaseStepOperatorFlavor):
         return AzureMLStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["AzureMLStepOperator"]:
+    def implementation_class(self) -> type["AzureMLStepOperator"]:
         """Implementation class.
 
         Returns:

@@ -14,7 +14,7 @@
 """Implementation of the LightGBM materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import lightgbm as lgb
 
@@ -31,10 +31,10 @@ DEFAULT_FILENAME = "data.binary"
 class LightGBMDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Dataset."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Dataset,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (lgb.Dataset,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> lgb.Dataset:
+    def load(self, data_type: type[Any]) -> lgb.Dataset:
         """Reads a lightgbm.Dataset binary file and loads it.
 
         Args:
@@ -71,7 +71,7 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, matrix: lgb.Dataset
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:

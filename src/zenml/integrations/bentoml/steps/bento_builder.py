@@ -15,7 +15,7 @@
 
 import importlib
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import bentoml
 from bentoml import bentos
@@ -37,14 +37,14 @@ def bento_builder_step(
     model_name: str,
     model_type: str,
     service: str,
-    version: Optional[str] = None,
-    labels: Optional[Dict[str, str]] = None,
-    description: Optional[str] = None,
-    include: Optional[List[str]] = None,
-    exclude: Optional[List[str]] = None,
-    python: Optional[Dict[str, Any]] = None,
-    docker: Optional[Dict[str, Any]] = None,
-    working_dir: Optional[str] = None,
+    version: str | None = None,
+    labels: dict[str, str] | None = None,
+    description: str | None = None,
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+    python: dict[str, Any] | None = None,
+    docker: dict[str, Any] | None = None,
+    working_dir: str | None = None,
 ) -> bento.Bento:
     """Build a BentoML Model and Bento bundle.
 

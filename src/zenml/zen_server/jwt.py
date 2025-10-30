@@ -16,8 +16,6 @@
 from datetime import datetime, timedelta
 from typing import (
     Any,
-    Dict,
-    Optional,
     cast,
 )
 from uuid import UUID
@@ -52,13 +50,13 @@ class JWTToken(BaseModel):
     """
 
     user_id: UUID
-    device_id: Optional[UUID] = None
-    api_key_id: Optional[UUID] = None
-    schedule_id: Optional[UUID] = None
-    pipeline_run_id: Optional[UUID] = None
-    deployment_id: Optional[UUID] = None
-    session_id: Optional[UUID] = None
-    claims: Dict[str, Any] = {}
+    device_id: UUID | None = None
+    api_key_id: UUID | None = None
+    schedule_id: UUID | None = None
+    pipeline_run_id: UUID | None = None
+    deployment_id: UUID | None = None
+    session_id: UUID | None = None
+    claims: dict[str, Any] = {}
 
     @classmethod
     def decode_token(
@@ -93,7 +91,7 @@ class JWTToken(BaseModel):
                 verify=verify,
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
-            claims = cast(Dict[str, Any], claims_data)
+            claims = cast(dict[str, Any], claims_data)
         except jwt.PyJWTError as e:
             raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
@@ -110,7 +108,7 @@ class JWTToken(BaseModel):
                 "Invalid JWT token: the subject claim is not a valid UUID"
             )
 
-        device_id: Optional[UUID] = None
+        device_id: UUID | None = None
         if "device_id" in claims:
             try:
                 device_id = UUID(claims.pop("device_id"))
@@ -120,7 +118,7 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        api_key_id: Optional[UUID] = None
+        api_key_id: UUID | None = None
         if "api_key_id" in claims:
             try:
                 api_key_id = UUID(claims.pop("api_key_id"))
@@ -130,7 +128,7 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        schedule_id: Optional[UUID] = None
+        schedule_id: UUID | None = None
         if "schedule_id" in claims:
             try:
                 schedule_id = UUID(claims.pop("schedule_id"))
@@ -140,7 +138,7 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        pipeline_run_id: Optional[UUID] = None
+        pipeline_run_id: UUID | None = None
         if "pipeline_run_id" in claims:
             try:
                 pipeline_run_id = UUID(claims.pop("pipeline_run_id"))
@@ -150,7 +148,7 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        deployment_id: Optional[UUID] = None
+        deployment_id: UUID | None = None
         if "deployment_id" in claims:
             try:
                 deployment_id = UUID(claims.pop("deployment_id"))
@@ -160,7 +158,7 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        session_id: Optional[UUID] = None
+        session_id: UUID | None = None
         if "session_id" in claims:
             try:
                 session_id = UUID(claims.pop("session_id"))
@@ -181,7 +179,7 @@ class JWTToken(BaseModel):
             claims=claims,
         )
 
-    def encode(self, expires: Optional[datetime] = None) -> str:
+    def encode(self, expires: datetime | None = None) -> str:
         """Creates a JWT access token.
 
         Encodes, signs and returns a JWT access token.
@@ -195,7 +193,7 @@ class JWTToken(BaseModel):
         """
         config = server_config()
 
-        claims: Dict[str, Any] = self.claims.copy()
+        claims: dict[str, Any] = self.claims.copy()
 
         claims["sub"] = str(self.user_id)
         claims["iss"] = config.get_jwt_token_issuer()

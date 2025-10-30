@@ -19,7 +19,7 @@ import os
 import re
 import sys
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from zenml.logging.step_logging import ArtifactStoreHandler
@@ -112,7 +112,7 @@ class CustomFormatter(logging.Formatter):
         else:
             return "%(message)s"
 
-    COLORS: Dict[LoggingLevels, str] = {
+    COLORS: dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
         LoggingLevels.INFO: white,
         LoggingLevels.WARN: yellow,

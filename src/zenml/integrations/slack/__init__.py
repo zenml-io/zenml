@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Slack integration for alerter components."""
 
-from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -33,7 +31,7 @@ class SlackIntegration(Integration):
     REQUIREMENTS = ["slack-sdk==3.30.0"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Slack integration.
 
         Returns:

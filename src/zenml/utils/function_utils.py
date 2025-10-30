@@ -17,7 +17,8 @@ import inspect
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Tuple, TypeVar, Union
+from typing import Any, TypeVar, Union
+from collections.abc import Callable, Iterator
 
 import click
 
@@ -125,7 +126,7 @@ def _cli_wrapped_function(func: F) -> F:
     Raises:
         ValueError: If the function arguments are not valid.
     """
-    options: List[Any] = []
+    options: list[Any] = []
     fullargspec = inspect.getfullargspec(func)
     if fullargspec.defaults is not None:
         defaults = [None] * (
@@ -205,7 +206,7 @@ def _cli_wrapped_function(func: F) -> F:
 @contextmanager
 def create_cli_wrapped_script(
     func: F, flavor: str = "accelerate"
-) -> Iterator[Tuple[Path, Path]]:
+) -> Iterator[tuple[Path, Path]]:
     """Create a script with the CLI-wrapped function.
 
     Args:

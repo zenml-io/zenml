@@ -17,10 +17,7 @@ import json
 from typing import (
     TYPE_CHECKING,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -70,17 +67,17 @@ logger = get_logger(__name__)
 class ModelVersionRequest(ProjectScopedRequest):
     """Request model for model versions."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    stage: Optional[str] = Field(
+    stage: str | None = Field(
         description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
@@ -89,7 +86,7 @@ class ModelVersionRequest(ProjectScopedRequest):
     model: UUID = Field(
         description="The ID of the model containing version",
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         title="Tags associated with the model version",
         default=None,
     )
@@ -101,7 +98,7 @@ class ModelVersionRequest(ProjectScopedRequest):
 class ModelVersionUpdate(BaseUpdate):
     """Update model for model versions."""
 
-    stage: Optional[Union[str, ModelStages]] = Field(
+    stage: str | ModelStages | None = Field(
         description="Target model version stage to be set",
         default=None,
         union_mode="left_to_right",
@@ -111,19 +108,19 @@ class ModelVersionUpdate(BaseUpdate):
         "silently archived or an error should be raised.",
         default=False,
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="Target model version name to be set",
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="Target model version description to be set",
         default=None,
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         description="Tags to be added to the model version",
         default=None,
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         description="Tags to be removed from the model version",
         default=None,
     )
@@ -145,7 +142,7 @@ class ModelVersionUpdate(BaseUpdate):
 class ModelVersionResponseBody(ProjectScopedResponseBody):
     """Response body for model versions."""
 
-    stage: Optional[str] = Field(
+    stage: str | None = Field(
         description="The stage of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
@@ -169,12 +166,12 @@ class ModelVersionResponseBody(ProjectScopedResponseBody):
 class ModelVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for model versions."""
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="The description of the model version",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    run_metadata: Dict[str, MetadataType] = Field(
+    run_metadata: dict[str, MetadataType] = Field(
         description="Metadata linked to the model version",
         default={},
     )
@@ -186,7 +183,7 @@ class ModelVersionResponseResources(ProjectScopedResponseResources):
     services: Page[ServiceResponse] = Field(
         description="Services linked to the model version",
     )
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         title="Tags associated with the model version", default=[]
     )
 
@@ -200,14 +197,14 @@ class ModelVersionResponse(
 ):
     """Response model for model versions."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="The name of the model version",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
 
     @property
-    def stage(self) -> Optional[str]:
+    def stage(self) -> str | None:
         """The `stage` property.
 
         Returns:
@@ -234,7 +231,7 @@ class ModelVersionResponse(
         return self.get_body().model
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -243,7 +240,7 @@ class ModelVersionResponse(
         return self.get_resources().tags
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -252,7 +249,7 @@ class ModelVersionResponse(
         return self.get_metadata().description
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -306,7 +303,7 @@ class ModelVersionResponse(
     @property
     def model_artifacts(
         self,
-    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
+    ) -> dict[str, dict[str, "ArtifactVersionResponse"]]:
         """Get all model artifacts linked to this model version.
 
         Returns:
@@ -326,7 +323,7 @@ class ModelVersionResponse(
             project=self.project_id,
         )
 
-        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        result: dict[str, dict[str, "ArtifactVersionResponse"]] = {}
         for artifact_version in artifact_versions:
             result.setdefault(artifact_version.name, {})
             result[artifact_version.name][artifact_version.version] = (
@@ -336,7 +333,7 @@ class ModelVersionResponse(
         return result
 
     @property
-    def data_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+    def data_artifact_ids(self) -> dict[str, dict[str, UUID]]:
         """Data artifacts linked to this model version.
 
         Returns:
@@ -356,7 +353,7 @@ class ModelVersionResponse(
         }
 
     @property
-    def model_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+    def model_artifact_ids(self) -> dict[str, dict[str, UUID]]:
         """Model artifacts linked to this model version.
 
         Returns:
@@ -376,7 +373,7 @@ class ModelVersionResponse(
         }
 
     @property
-    def deployment_artifact_ids(self) -> Dict[str, Dict[str, UUID]]:
+    def deployment_artifact_ids(self) -> dict[str, dict[str, UUID]]:
         """Deployment artifacts linked to this model version.
 
         Returns:
@@ -398,7 +395,7 @@ class ModelVersionResponse(
     @property
     def data_artifacts(
         self,
-    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
+    ) -> dict[str, dict[str, "ArtifactVersionResponse"]]:
         """Get all data artifacts linked to this model version.
 
         Returns:
@@ -426,7 +423,7 @@ class ModelVersionResponse(
             project=self.project_id,
         )
 
-        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        result: dict[str, dict[str, "ArtifactVersionResponse"]] = {}
         for artifact_version in artifact_versions:
             result.setdefault(artifact_version.name, {})
             result[artifact_version.name][artifact_version.version] = (
@@ -438,7 +435,7 @@ class ModelVersionResponse(
     @property
     def deployment_artifacts(
         self,
-    ) -> Dict[str, Dict[str, "ArtifactVersionResponse"]]:
+    ) -> dict[str, dict[str, "ArtifactVersionResponse"]]:
         """Get all deployment artifacts linked to this model version.
 
         Returns:
@@ -459,7 +456,7 @@ class ModelVersionResponse(
             project=self.project_id,
         )
 
-        result: Dict[str, Dict[str, "ArtifactVersionResponse"]] = {}
+        result: dict[str, dict[str, "ArtifactVersionResponse"]] = {}
         for artifact_version in artifact_versions:
             result.setdefault(artifact_version.name, {})
             result[artifact_version.name][artifact_version.version] = (
@@ -469,7 +466,7 @@ class ModelVersionResponse(
         return result
 
     @property
-    def pipeline_run_ids(self) -> Dict[str, UUID]:
+    def pipeline_run_ids(self) -> dict[str, UUID]:
         """Pipeline runs linked to this model version.
 
         Returns:
@@ -491,7 +488,7 @@ class ModelVersionResponse(
         }
 
     @property
-    def pipeline_runs(self) -> Dict[str, "PipelineRunResponse"]:
+    def pipeline_runs(self) -> dict[str, "PipelineRunResponse"]:
         """Get all pipeline runs linked to this version.
 
         Returns:
@@ -515,8 +512,8 @@ class ModelVersionResponse(
     def _get_linked_object(
         self,
         name: str,
-        version: Optional[str] = None,
-        type: Optional[ArtifactType] = None,
+        version: str | None = None,
+        type: ArtifactType | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version given type.
 
@@ -549,7 +546,7 @@ class ModelVersionResponse(
     def get_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version.
 
@@ -566,7 +563,7 @@ class ModelVersionResponse(
     def get_model_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the model artifact linked to this model version.
 
@@ -583,7 +580,7 @@ class ModelVersionResponse(
     def get_data_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the data artifact linked to this model version.
 
@@ -600,7 +597,7 @@ class ModelVersionResponse(
     def get_deployment_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the deployment artifact linked to this model version.
 
@@ -615,7 +612,7 @@ class ModelVersionResponse(
         return self._get_linked_object(name, version, ArtifactType.SERVICE)
 
     def set_stage(
-        self, stage: Union[str, ModelStages], force: bool = False
+        self, stage: str | ModelStages, force: bool = False
     ) -> None:
         """Sets this Model Version to a desired stage.
 
@@ -649,42 +646,42 @@ class ModelVersionFilter(
 ):
     """Filter model for model versions."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="The name of the Model Version",
     )
-    number: Optional[int] = Field(
+    number: int | None = Field(
         default=None,
         description="The number of the Model Version",
     )
-    stage: Optional[Union[str, ModelStages]] = Field(
+    stage: str | ModelStages | None = Field(
         description="The model version stage",
         default=None,
         union_mode="left_to_right",
     )
-    model: Optional[Union[str, UUID]] = Field(
+    model: str | UUID | None = Field(
         default=None,
         description="The name or ID of the model which the search is scoped "
         "to. This field must always be set and is always applied in addition "
@@ -694,8 +691,8 @@ class ModelVersionFilter(
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List[Union["ColumnElement[bool]"]]:
+        self, table: type["AnySchema"]
+    ) -> list[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Args:

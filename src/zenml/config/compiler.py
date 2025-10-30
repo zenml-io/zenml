@@ -19,12 +19,9 @@ import string
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Mapping,
     Optional,
-    Tuple,
 )
+from collections.abc import Mapping
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
@@ -56,7 +53,7 @@ ENVIRONMENT_VARIABLE_PREFIX = "__ZENML__"
 logger = get_logger(__file__)
 
 
-def get_zenml_versions() -> Tuple[str, str]:
+def get_zenml_versions() -> tuple[str, str]:
     """Returns the version of ZenML on the client and server side.
 
     Returns:
@@ -324,7 +321,7 @@ class Compiler:
     @staticmethod
     def _verify_run_name(
         run_name: str,
-        substitutions: Dict[str, str],
+        substitutions: dict[str, str],
     ) -> None:
         """Verifies that the run name contains only valid placeholders.
 
@@ -371,10 +368,10 @@ class Compiler:
 
     def _filter_and_validate_settings(
         self,
-        settings: Dict[str, "BaseSettings"],
+        settings: dict[str, "BaseSettings"],
         configuration_level: ConfigurationLevel,
         stack: "Stack",
-    ) -> Dict[str, "BaseSettings"]:
+    ) -> dict[str, "BaseSettings"]:
         """Filters and validates settings.
 
         Args:
@@ -523,7 +520,7 @@ class Compiler:
     def _get_sorted_invocations(
         self,
         pipeline: "Pipeline",
-    ) -> List[Tuple[str, "StepInvocation"]]:
+    ) -> list[tuple[str, "StepInvocation"]]:
         """Sorts the step invocations of a pipeline using topological sort.
 
         The resulting list of invocations will be in an order that can be
@@ -539,12 +536,12 @@ class Compiler:
         from zenml.orchestrators.topsort import topsorted_layers
 
         # Sort step names using topological sort
-        dag: Dict[str, List[str]] = {}
+        dag: dict[str, list[str]] = {}
         for name, step in pipeline.invocations.items():
             self._verify_upstream_steps(invocation=step, pipeline=pipeline)
             dag[name] = list(step.upstream_steps)
 
-        reversed_dag: Dict[str, List[str]] = reverse_dag(dag)
+        reversed_dag: dict[str, list[str]] = reverse_dag(dag)
         layers = topsorted_layers(
             nodes=list(dag),
             get_node_id_fn=lambda node: node,
@@ -552,7 +549,7 @@ class Compiler:
             get_child_nodes=lambda node: reversed_dag[node],
         )
         sorted_step_names = [step for layer in layers for step in layer]
-        sorted_invocations: List[Tuple[str, "StepInvocation"]] = [
+        sorted_invocations: list[tuple[str, "StepInvocation"]] = [
             (name_in_pipeline, pipeline.invocations[name_in_pipeline])
             for name_in_pipeline in sorted_step_names
         ]
@@ -620,7 +617,7 @@ class Compiler:
 
     @staticmethod
     def _compute_pipeline_spec(
-        pipeline: "Pipeline", step_specs: List["StepSpec"]
+        pipeline: "Pipeline", step_specs: list["StepSpec"]
     ) -> "PipelineSpec":
         """Computes the pipeline spec.
 
@@ -664,7 +661,7 @@ class Compiler:
 
 
 def convert_component_shortcut_settings_keys(
-    settings: Dict[str, "BaseSettings"], stack: "Stack"
+    settings: dict[str, "BaseSettings"], stack: "Stack"
 ) -> None:
     """Convert component shortcut settings keys.
 
@@ -691,8 +688,8 @@ def convert_component_shortcut_settings_keys(
 
 
 def finalize_environment_variables(
-    environment: Dict[str, Any],
-) -> Dict[str, str]:
+    environment: dict[str, Any],
+) -> dict[str, str]:
     """Finalize the user environment variables.
 
     This function adds all __ZENML__ prefixed environment variables from the

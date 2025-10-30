@@ -17,7 +17,8 @@ import queue
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -52,8 +53,8 @@ class Node(BaseModel):
 
     id: str
     status: NodeStatus = NodeStatus.NOT_READY
-    upstream_nodes: List[str] = []
-    metadata: Dict[str, Any] = {}
+    upstream_nodes: list[str] = []
+    metadata: dict[str, Any] = {}
 
     @property
     def is_finished(self) -> bool:
@@ -88,17 +89,17 @@ class DagRunner:
 
     def __init__(
         self,
-        nodes: List[Node],
+        nodes: list[Node],
         node_startup_function: Callable[[Node], NodeStatus],
         node_monitoring_function: Callable[[Node], NodeStatus],
-        node_stop_function: Optional[Callable[[Node], None]] = None,
-        interrupt_function: Optional[
-            Callable[[], Optional[InterruptMode]]
-        ] = None,
+        node_stop_function: Callable[[Node], None] | None = None,
+        interrupt_function: None | (
+            Callable[[], InterruptMode | None]
+        ) = None,
         monitoring_interval: float = 1.0,
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,
-        max_parallelism: Optional[int] = None,
+        max_parallelism: int | None = None,
     ) -> None:
         """Initialize the DAG runner.
 
@@ -137,7 +138,7 @@ class DagRunner:
         )
 
     @property
-    def running_nodes(self) -> List[Node]:
+    def running_nodes(self) -> list[Node]:
         """Running nodes.
 
         Returns:
@@ -150,7 +151,7 @@ class DagRunner:
         ]
 
     @property
-    def active_nodes(self) -> List[Node]:
+    def active_nodes(self) -> list[Node]:
         """Active nodes.
 
         Active nodes are nodes that are either running or starting.
@@ -322,7 +323,7 @@ class DagRunner:
             time_to_sleep = max(0, self.monitoring_interval - duration)
             self.shutdown_event.wait(timeout=time_to_sleep)
 
-    def run(self) -> Dict[str, NodeStatus]:
+    def run(self) -> dict[str, NodeStatus]:
         """Run the DAG.
 
         Returns:

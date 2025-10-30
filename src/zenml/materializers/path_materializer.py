@@ -17,7 +17,7 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from zenml.constants import (
     ENV_ZENML_DISABLE_PATH_MATERIALIZER,
@@ -61,7 +61,7 @@ class PathMaterializer(BaseMaterializer):
     or directly copying the file if it's a single file.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Path,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Path,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ARCHIVE_NAME: ClassVar[str] = "data.tar.gz"
     FILE_NAME: ClassVar[str] = "file_data"
@@ -71,7 +71,7 @@ class PathMaterializer(BaseMaterializer):
         ENV_ZENML_DISABLE_PATH_MATERIALIZER, default=False
     )
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Copy the artifact files to a local temp directory or file.
 
         Args:

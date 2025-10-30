@@ -17,7 +17,8 @@ import asyncio
 import base64
 import json
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Callable
 from uuid import UUID, uuid4
 
 from fastapi import Request, Response
@@ -51,7 +52,7 @@ class RequestContext:
         """
         self.request = request
         self.request_id = request.headers.get("X-Request-ID", str(uuid4())[:8])
-        self.transaction_id: Optional[UUID] = None
+        self.transaction_id: UUID | None = None
         transaction_id = request.headers.get("Idempotency-Key")
         if transaction_id:
             try:
@@ -190,12 +191,12 @@ class RequestManager:
             deduplicate: Whether to deduplicate requests.
         """
         self.deduplicate = deduplicate
-        self.transactions: Dict[UUID, RequestRecord] = dict()
+        self.transactions: dict[UUID, RequestRecord] = dict()
         self.lock = asyncio.Lock()
         self.transaction_ttl = transaction_ttl
         self.request_timeout = request_timeout
 
-        self.request_contexts: ContextVar[Optional[RequestContext]] = (
+        self.request_contexts: ContextVar[RequestContext | None] = (
             ContextVar("request_contexts", default=None)
         )
 
@@ -225,11 +226,9 @@ class RequestManager:
 
     async def startup(self) -> None:
         """Start the request manager."""
-        pass
 
     async def shutdown(self) -> None:
         """Shutdown the request manager."""
-        pass
 
     async def async_run_and_cache_result(
         self,
@@ -361,7 +360,7 @@ class RequestManager:
                 if deduplicate_request:
                     assert transaction_id is not None
                     cache_result = True
-                    result_to_cache: Optional[bytes] = None
+                    result_to_cache: bytes | None = None
                     if result is not None:
                         try:
                             result_to_cache = base64.b64encode(
@@ -443,7 +442,7 @@ class RequestManager:
     async def execute(
         self,
         func: Callable[..., Any],
-        deduplicate: Optional[bool],
+        deduplicate: bool | None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:

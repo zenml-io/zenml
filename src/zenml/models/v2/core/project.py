@@ -14,7 +14,7 @@
 """Models representing projects."""
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import Field, model_validator
 
@@ -58,7 +58,7 @@ class ProjectRequest(BaseRequest):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _validate_project_name(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_project_name(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate the project name.
 
         Args:
@@ -94,7 +94,7 @@ class ProjectRequest(BaseRequest):
 class ProjectUpdate(BaseUpdate):
     """Update model for projects."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The unique name of the project. The project name must only "
         "contain only lowercase letters, numbers, underscores, and hyphens and "
         "be at most 50 characters long.",
@@ -103,12 +103,12 @@ class ProjectUpdate(BaseUpdate):
         pattern=r"^[a-z0-9_-]+$",
         default=None,
     )
-    display_name: Optional[str] = Field(
+    display_name: str | None = Field(
         title="The display name of the project.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="The description of the project.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
@@ -192,12 +192,12 @@ class ProjectResponse(
 class ProjectFilter(BaseFilter):
     """Model to enable advanced filtering of all projects."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the project",
     )
 
-    display_name: Optional[str] = Field(
+    display_name: str | None = Field(
         default=None,
         description="Display name of the project",
     )

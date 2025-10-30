@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -89,7 +88,7 @@ def list_authorized_devices(
 @async_fastapi_endpoint_wrapper
 def get_authorization_device(
     device_id: UUID,
-    user_code: Optional[str] = None,
+    user_code: str | None = None,
     hydrate: bool = True,
     auth_context: AuthContext = Security(authorize),
 ) -> OAuthDeviceResponse:

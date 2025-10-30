@@ -16,7 +16,6 @@
 import os
 import subprocess
 import sys
-from typing import Optional, Tuple
 
 import click
 from rich.progress import track
@@ -76,7 +75,7 @@ def list_integrations() -> None:
     name="requirements", help="List all requirements for an integration."
 )
 @click.argument("integration_name", required=False, default=None)
-def get_requirements(integration_name: Optional[str] = None) -> None:
+def get_requirements(integration_name: str | None = None) -> None:
     """List all requirements for the chosen integration.
 
     Args:
@@ -150,9 +149,9 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     help="Add the exported requirements to your current Poetry project.",
 )
 def export_requirements(
-    integrations: Tuple[str],
-    ignore_integration: Tuple[str],
-    output_file: Optional[str] = None,
+    integrations: tuple[str],
+    ignore_integration: tuple[str],
+    output_file: str | None = None,
     overwrite: bool = False,
     installed_only: bool = False,
     poetry: bool = False,
@@ -282,8 +281,8 @@ def export_requirements(
     default=False,
 )
 def install(
-    integrations: Tuple[str],
-    ignore_integration: Tuple[str],
+    integrations: tuple[str],
+    ignore_integration: tuple[str],
     force: bool = False,
     uv: bool = False,
 ) -> None:
@@ -402,7 +401,7 @@ def install(
     default=False,
 )
 def uninstall(
-    integrations: Tuple[str], force: bool = False, uv: bool = False
+    integrations: tuple[str], force: bool = False, uv: bool = False
 ) -> None:
     """Uninstalls the required packages for a given integration.
 
@@ -483,7 +482,7 @@ def uninstall(
     default=False,
 )
 def upgrade(
-    integrations: Tuple[str],
+    integrations: tuple[str],
     force: bool = False,
     uv: bool = False,
 ) -> None:

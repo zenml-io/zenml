@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utilities for CLI output."""
 
-from typing import List
 
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Heading, Markdown
@@ -61,7 +60,7 @@ zenml_cli_thank_you_message = Markdown(
 )
 
 
-def zenml_go_notebook_tutorial_message(ipynb_files: List[str]) -> Markdown:
+def zenml_go_notebook_tutorial_message(ipynb_files: list[str]) -> Markdown:
     """Outputs a message to the user about the `zenml go` tutorial.
 
     Args:

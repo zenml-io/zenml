@@ -14,7 +14,7 @@
 """Functionality for model-deployer CLI subcommands."""
 
 import uuid
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 from rich.errors import MarkupError
@@ -124,12 +124,12 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
     @click.pass_obj
     def list_models(
         model_deployer: "BaseModelDeployer",
-        step: Optional[str],
-        pipeline_name: Optional[str],
-        pipeline_run_id: Optional[str],
-        model: Optional[str],
-        model_version: Optional[str],
-        flavor: Optional[str],
+        step: str | None,
+        pipeline_name: str | None,
+        pipeline_run_id: str | None,
+        model: str | None,
+        model_version: str | None,
+        flavor: str | None,
         running: bool,
     ) -> None:
         """List of all served models within the model-deployer stack component.
@@ -393,7 +393,7 @@ def register_model_deployer_subcommands() -> None:  # noqa: C901
         model_deployer: "BaseModelDeployer",
         served_model_uuid: str,
         follow: bool,
-        tail: Optional[int],
+        tail: int | None,
         raw: bool,
     ) -> None:
         """Display the logs for a model server.

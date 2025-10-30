@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Modal step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
@@ -41,9 +41,9 @@ class ModalStepOperatorSettings(BaseSettings):
         cloud: The cloud provider to use for the step execution.
     """
 
-    gpu: Optional[str] = None
-    region: Optional[str] = None
-    cloud: Optional[str] = None
+    gpu: str | None = None
+    region: str | None = None
+    cloud: str | None = None
 
 
 class ModalStepOperatorConfig(
@@ -78,7 +78,7 @@ class ModalStepOperatorFlavor(BaseStepOperatorFlavor):
         return MODAL_STEP_OPERATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -87,7 +87,7 @@ class ModalStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -105,7 +105,7 @@ class ModalStepOperatorFlavor(BaseStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/modal.png"
 
     @property
-    def config_class(self) -> Type[ModalStepOperatorConfig]:
+    def config_class(self) -> type[ModalStepOperatorConfig]:
         """Returns `ModalStepOperatorConfig` config class.
 
         Returns:
@@ -114,7 +114,7 @@ class ModalStepOperatorFlavor(BaseStepOperatorFlavor):
         return ModalStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["ModalStepOperator"]:
+    def implementation_class(self) -> type["ModalStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:

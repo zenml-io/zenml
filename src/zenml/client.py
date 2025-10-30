@@ -22,19 +22,11 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
 )
+from collections.abc import Callable, Generator, Mapping, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
@@ -229,8 +221,8 @@ class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
     _active_project: Optional["ProjectResponse"] = None
-    active_project_id: Optional[UUID] = None
-    active_stack_id: Optional[UUID] = None
+    active_project_id: UUID | None = None
+    active_stack_id: UUID | None = None
     _active_stack: Optional["StackResponse"] = None
 
     @property
@@ -365,7 +357,7 @@ class Client(metaclass=ClientMetaClass):
 
     def __init__(
         self,
-        root: Optional[Path] = None,
+        root: Path | None = None,
     ) -> None:
         """Initializes the global client instance.
 
@@ -392,8 +384,8 @@ class Client(metaclass=ClientMetaClass):
                 current working directory. Only used to initialize new
                 clients internally.
         """
-        self._root: Optional[Path] = None
-        self._config: Optional[ClientConfiguration] = None
+        self._root: Path | None = None
+        self._config: ClientConfiguration | None = None
 
         self._set_active_root(root)
 
@@ -420,7 +412,7 @@ class Client(metaclass=ClientMetaClass):
         """
         cls._global_client = client
 
-    def _set_active_root(self, root: Optional[Path] = None) -> None:
+    def _set_active_root(self, root: Path | None = None) -> None:
         """Set the supplied path as the repository root.
 
         If a client configuration is found at the given path or the
@@ -454,7 +446,7 @@ class Client(metaclass=ClientMetaClass):
         # settings
         self._sanitize_config()
 
-    def _config_path(self) -> Optional[str]:
+    def _config_path(self) -> str | None:
         """Path to the client configuration file.
 
         Returns:
@@ -484,7 +476,7 @@ class Client(metaclass=ClientMetaClass):
         if active_project:
             self._config.set_active_project(active_project)
 
-    def _load_config(self) -> Optional[ClientConfiguration]:
+    def _load_config(self) -> ClientConfiguration | None:
         """Loads the client configuration from disk.
 
         This happens if the client has an active root and the configuration
@@ -513,7 +505,7 @@ class Client(metaclass=ClientMetaClass):
 
     @staticmethod
     def initialize(
-        root: Optional[Path] = None,
+        root: Path | None = None,
     ) -> None:
         """Initializes a new ZenML repository at the given path.
 
@@ -563,8 +555,8 @@ class Client(metaclass=ClientMetaClass):
 
     @staticmethod
     def find_repository(
-        path: Optional[Path] = None, enable_warnings: bool = False
-    ) -> Optional[Path]:
+        path: Path | None = None, enable_warnings: bool = False
+    ) -> Path | None:
         """Search for a ZenML repository directory.
 
         Args:
@@ -610,7 +602,7 @@ class Client(metaclass=ClientMetaClass):
                 f"repository, run `zenml init`."
             )
 
-        def _find_repository_helper(path_: Path) -> Optional[Path]:
+        def _find_repository_helper(path_: Path) -> Path | None:
             """Recursively search parent directories for a ZenML repository.
 
             Args:
@@ -661,7 +653,7 @@ class Client(metaclass=ClientMetaClass):
         return GlobalConfiguration().zen_store
 
     @property
-    def root(self) -> Optional[Path]:
+    def root(self) -> Path | None:
         """The root directory of this client.
 
         Returns:
@@ -671,7 +663,7 @@ class Client(metaclass=ClientMetaClass):
         return self._root
 
     @property
-    def config_directory(self) -> Optional[Path]:
+    def config_directory(self) -> Path | None:
         """The configuration directory of this client.
 
         Returns:
@@ -680,7 +672,7 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.root / REPOSITORY_DIRECTORY_NAME if self.root else None
 
-    def activate_root(self, root: Optional[Path] = None) -> None:
+    def activate_root(self, root: Path | None = None) -> None:
         """Set the active repository root directory.
 
         Args:
@@ -693,7 +685,7 @@ class Client(metaclass=ClientMetaClass):
         self._set_active_root(root)
 
     def set_active_project(
-        self, project_name_or_id: Union[str, UUID]
+        self, project_name_or_id: str | UUID
     ) -> "ProjectResponse":
         """Set the project for the local client.
 
@@ -733,12 +725,12 @@ class Client(metaclass=ClientMetaClass):
 
     def update_server_settings(
         self,
-        updated_name: Optional[str] = None,
-        updated_logo_url: Optional[str] = None,
-        updated_enable_analytics: Optional[bool] = None,
-        updated_enable_announcements: Optional[bool] = None,
-        updated_enable_updates: Optional[bool] = None,
-        updated_onboarding_state: Optional[Dict[str, Any]] = None,
+        updated_name: str | None = None,
+        updated_logo_url: str | None = None,
+        updated_enable_analytics: bool | None = None,
+        updated_enable_announcements: bool | None = None,
+        updated_enable_updates: bool | None = None,
+        updated_onboarding_state: dict[str, Any] | None = None,
     ) -> ServerSettingsResponse:
         """Update the server settings.
 
@@ -771,7 +763,7 @@ class Client(metaclass=ClientMetaClass):
     def create_user(
         self,
         name: str,
-        password: Optional[str] = None,
+        password: str | None = None,
         is_admin: bool = False,
     ) -> UserResponse:
         """Create a new user.
@@ -797,7 +789,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_user(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> UserResponse:
@@ -826,15 +818,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        external_user_id: Optional[str] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        full_name: Optional[str] = None,
-        email: Optional[str] = None,
-        active: Optional[bool] = None,
-        email_opted_in: Optional[bool] = None,
+        id: UUID | str | None = None,
+        external_user_id: str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        full_name: str | None = None,
+        email: str | None = None,
+        active: bool | None = None,
+        email_opted_in: bool | None = None,
         hydrate: bool = False,
     ) -> Page[UserResponse]:
         """List all users.
@@ -880,17 +872,17 @@ class Client(metaclass=ClientMetaClass):
 
     def update_user(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        updated_name: Optional[str] = None,
-        updated_full_name: Optional[str] = None,
-        updated_email: Optional[str] = None,
-        updated_email_opt_in: Optional[bool] = None,
-        updated_password: Optional[str] = None,
-        old_password: Optional[str] = None,
-        updated_is_admin: Optional[bool] = None,
-        updated_metadata: Optional[Dict[str, Any]] = None,
-        updated_default_project_id: Optional[UUID] = None,
-        active: Optional[bool] = None,
+        name_id_or_prefix: str | UUID,
+        updated_name: str | None = None,
+        updated_full_name: str | None = None,
+        updated_email: str | None = None,
+        updated_email_opt_in: bool | None = None,
+        updated_password: str | None = None,
+        old_password: str | None = None,
+        updated_is_admin: bool | None = None,
+        updated_metadata: dict[str, Any] | None = None,
+        updated_default_project_id: UUID | None = None,
+        active: bool | None = None,
     ) -> UserResponse:
         """Update a user.
 
@@ -992,7 +984,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         description: str,
-        display_name: Optional[str] = None,
+        display_name: str | None = None,
     ) -> ProjectResponse:
         """Create a new project.
 
@@ -1014,7 +1006,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_project(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]],
+        name_id_or_prefix: UUID | str | None,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> ProjectResponse:
@@ -1045,11 +1037,11 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        display_name: Optional[str] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        display_name: str | None = None,
         hydrate: bool = False,
     ) -> Page[ProjectResponse]:
         """List all projects.
@@ -1087,10 +1079,10 @@ class Client(metaclass=ClientMetaClass):
 
     def update_project(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]],
-        new_name: Optional[str] = None,
-        new_display_name: Optional[str] = None,
-        new_description: Optional[str] = None,
+        name_id_or_prefix: UUID | str | None,
+        new_name: str | None = None,
+        new_display_name: str | None = None,
+        new_description: str | None = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1193,10 +1185,10 @@ class Client(metaclass=ClientMetaClass):
     def create_stack(
         self,
         name: str,
-        components: Mapping[StackComponentType, Union[str, UUID]],
-        stack_spec_file: Optional[str] = None,
-        labels: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Sequence[Union[UUID, str]]] = None,
+        components: Mapping[StackComponentType, str | UUID],
+        stack_spec_file: str | None = None,
+        labels: dict[str, Any] | None = None,
+        secrets: Sequence[UUID | str] | None = None,
     ) -> StackResponse:
         """Registers a stack and its components.
 
@@ -1238,7 +1230,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_stack(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]] = None,
+        name_id_or_prefix: UUID | str | None = None,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> StackResponse:
@@ -1272,14 +1264,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        component_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        component: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        component_id: str | UUID | None = None,
+        user: UUID | str | None = None,
+        component: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1321,17 +1313,17 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
-        stack_spec_file: Optional[str] = None,
-        labels: Optional[Dict[str, Any]] = None,
-        description: Optional[str] = None,
-        component_updates: Optional[
-            Dict[StackComponentType, List[Union[UUID, str]]]
-        ] = None,
-        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        environment: Optional[Dict[str, Any]] = None,
+        name_id_or_prefix: UUID | str | None = None,
+        name: str | None = None,
+        stack_spec_file: str | None = None,
+        labels: dict[str, Any] | None = None,
+        description: str | None = None,
+        component_updates: None | (
+            dict[StackComponentType, list[UUID | str]]
+        ) = None,
+        add_secrets: Sequence[UUID | str] | None = None,
+        remove_secrets: Sequence[UUID | str] | None = None,
+        environment: dict[str, Any] | None = None,
     ) -> StackResponse:
         """Updates a stack and its components.
 
@@ -1431,7 +1423,7 @@ class Client(metaclass=ClientMetaClass):
         return updated_stack
 
     def delete_stack(
-        self, name_id_or_prefix: Union[str, UUID], recursive: bool = False
+        self, name_id_or_prefix: str | UUID, recursive: bool = False
     ) -> None:
         """Deregisters a stack.
 
@@ -1527,7 +1519,7 @@ class Client(metaclass=ClientMetaClass):
 
             return self._active_stack
 
-        stack_id: Optional[UUID] = None
+        stack_id: UUID | None = None
 
         if self._config:
             if self._config._active_stack:
@@ -1547,7 +1539,7 @@ class Client(metaclass=ClientMetaClass):
         return self.get_stack(stack_id)
 
     def activate_stack(
-        self, stack_name_id_or_prefix: Union[str, UUID]
+        self, stack_name_id_or_prefix: str | UUID
     ) -> None:
         """Sets the stack as active.
 
@@ -1580,11 +1572,11 @@ class Client(metaclass=ClientMetaClass):
         Args:
             stack: The stack to validate.
         """
-        local_components: List[str] = []
-        remote_components: List[str] = []
+        local_components: list[str] = []
+        remote_components: list[str] = []
         assert stack.components is not None
         for component_type, components in stack.components.items():
-            component_flavor: Union[FlavorResponse, str]
+            component_flavor: FlavorResponse | str
 
             for component in components:
                 if isinstance(component, UUID):
@@ -1649,7 +1641,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         config: "ServiceConfig",
         service_type: ServiceType,
-        model_version_id: Optional[UUID] = None,
+        model_version_id: UUID | None = None,
     ) -> ServiceResponse:
         """Registers a service.
 
@@ -1674,11 +1666,11 @@ class Client(metaclass=ClientMetaClass):
 
     def get_service(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
-        type: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
+        type: str | None = None,
+        project: str | UUID | None = None,
     ) -> ServiceResponse:
         """Gets a service.
 
@@ -1731,21 +1723,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        type: Optional[str] = None,
-        flavor: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        type: str | None = None,
+        flavor: str | None = None,
+        user: UUID | str | None = None,
+        project: str | UUID | None = None,
         hydrate: bool = False,
-        running: Optional[bool] = None,
-        service_name: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        config: Optional[Dict[str, Any]] = None,
+        running: bool | None = None,
+        service_name: str | None = None,
+        pipeline_name: str | None = None,
+        pipeline_run_id: str | None = None,
+        pipeline_step_name: str | None = None,
+        model_version_id: str | UUID | None = None,
+        config: dict[str, Any] | None = None,
     ) -> Page[ServiceResponse]:
         """List all services.
 
@@ -1802,15 +1794,15 @@ class Client(metaclass=ClientMetaClass):
     def update_service(
         self,
         id: UUID,
-        name: Optional[str] = None,
-        service_source: Optional[str] = None,
-        admin_state: Optional[ServiceState] = None,
-        status: Optional[Dict[str, Any]] = None,
-        endpoint: Optional[Dict[str, Any]] = None,
-        labels: Optional[Dict[str, str]] = None,
-        prediction_url: Optional[str] = None,
-        health_check_url: Optional[str] = None,
-        model_version_id: Optional[UUID] = None,
+        name: str | None = None,
+        service_source: str | None = None,
+        admin_state: ServiceState | None = None,
+        status: dict[str, Any] | None = None,
+        endpoint: dict[str, Any] | None = None,
+        labels: dict[str, str] | None = None,
+        prediction_url: str | None = None,
+        health_check_url: str | None = None,
+        model_version_id: UUID | None = None,
     ) -> ServiceResponse:
         """Update a service.
 
@@ -1855,7 +1847,7 @@ class Client(metaclass=ClientMetaClass):
     def delete_service(
         self,
         name_id_or_prefix: UUID,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a service.
 
@@ -1875,7 +1867,7 @@ class Client(metaclass=ClientMetaClass):
     def get_stack_component(
         self,
         component_type: StackComponentType,
-        name_id_or_prefix: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID | None = None,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> ComponentResponse:
@@ -1949,15 +1941,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        flavor: Optional[str] = None,
-        type: Optional[str] = None,
-        connector_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        flavor: str | None = None,
+        type: str | None = None,
+        connector_id: str | UUID | None = None,
+        stack_id: str | UUID | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
@@ -2007,10 +1999,10 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         flavor: str,
         component_type: StackComponentType,
-        configuration: Dict[str, str],
-        labels: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        environment: Optional[Dict[str, Any]] = None,
+        configuration: dict[str, str],
+        labels: dict[str, Any] | None = None,
+        secrets: Sequence[UUID | str] | None = None,
+        environment: dict[str, Any] | None = None,
     ) -> "ComponentResponse":
         """Registers a stack component.
 
@@ -2062,17 +2054,17 @@ class Client(metaclass=ClientMetaClass):
 
     def update_stack_component(
         self,
-        name_id_or_prefix: Optional[Union[UUID, str]],
+        name_id_or_prefix: UUID | str | None,
         component_type: StackComponentType,
-        name: Optional[str] = None,
-        configuration: Optional[Dict[str, Any]] = None,
-        labels: Optional[Dict[str, Any]] = None,
-        disconnect: Optional[bool] = None,
-        connector_id: Optional[UUID] = None,
-        connector_resource_id: Optional[str] = None,
-        add_secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        remove_secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        environment: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        configuration: dict[str, Any] | None = None,
+        labels: dict[str, Any] | None = None,
+        disconnect: bool | None = None,
+        connector_id: UUID | None = None,
+        connector_resource_id: str | None = None,
+        add_secrets: Sequence[UUID | str] | None = None,
+        remove_secrets: Sequence[UUID | str] | None = None,
+        environment: dict[str, Any] | None = None,
     ) -> ComponentResponse:
         """Updates a stack component.
 
@@ -2199,7 +2191,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_stack_component(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         component_type: StackComponentType,
     ) -> None:
         """Deletes a registered stack component.
@@ -2289,13 +2281,13 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        type: Optional[str] = None,
-        integration: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        type: str | None = None,
+        integration: str | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
@@ -2410,16 +2402,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        latest_run_status: Optional[str] = None,
-        latest_run_user: Optional[Union[UUID, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        latest_run_status: str | None = None,
+        latest_run_user: UUID | str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2470,8 +2462,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_pipeline(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
@@ -2495,8 +2487,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_pipeline(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a pipeline.
 
@@ -2513,8 +2505,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_build(
         self,
-        id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> PipelineBuildResponse:
         """Get a build by id or prefix.
@@ -2545,7 +2537,7 @@ class Client(metaclass=ClientMetaClass):
                 hydrate=hydrate,
             )
 
-        list_kwargs: Dict[str, Any] = dict(
+        list_kwargs: dict[str, Any] = dict(
             id=f"startswith:{id_or_prefix}",
             hydrate=hydrate,
         )
@@ -2582,21 +2574,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        container_registry_id: Optional[Union[UUID, str]] = None,
-        is_local: Optional[bool] = None,
-        contains_code: Optional[bool] = None,
-        zenml_version: Optional[str] = None,
-        python_version: Optional[str] = None,
-        checksum: Optional[str] = None,
-        stack_checksum: Optional[str] = None,
-        duration: Optional[Union[int, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
+        pipeline_id: str | UUID | None = None,
+        stack_id: str | UUID | None = None,
+        container_registry_id: UUID | str | None = None,
+        is_local: bool | None = None,
+        contains_code: bool | None = None,
+        zenml_version: str | None = None,
+        python_version: str | None = None,
+        checksum: str | None = None,
+        stack_checksum: str | None = None,
+        duration: int | str | None = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -2655,7 +2647,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def delete_build(
-        self, id_or_prefix: str, project: Optional[Union[str, UUID]] = None
+        self, id_or_prefix: str, project: str | UUID | None = None
     ) -> None:
         """Delete a build.
 
@@ -2672,7 +2664,7 @@ class Client(metaclass=ClientMetaClass):
     def create_event_source(
         self,
         name: str,
-        configuration: Dict[str, Any],
+        configuration: dict[str, Any],
         flavor: str,
         event_source_subtype: PluginSubType,
         description: str = "",
@@ -2704,9 +2696,9 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def get_event_source(
         self,
-        name_id_or_prefix: Union[UUID, str],
+        name_id_or_prefix: UUID | str,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> EventSourceResponse:
         """Get an event source by name, ID or prefix.
@@ -2736,14 +2728,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        flavor: Optional[str] = None,
-        event_source_type: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        flavor: str | None = None,
+        event_source_type: str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[EventSourceResponse]:
         """Lists all event_sources.
@@ -2788,13 +2780,13 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def update_event_source(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        configuration: Optional[Dict[str, Any]] = None,
-        rotate_secret: Optional[bool] = None,
-        is_active: Optional[bool] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        description: str | None = None,
+        configuration: dict[str, Any] | None = None,
+        rotate_secret: bool | None = None,
+        is_active: bool | None = None,
+        project: str | UUID | None = None,
     ) -> EventSourceResponse:
         """Updates an event_source.
 
@@ -2847,8 +2839,8 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def delete_event_source(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Deletes an event_source.
 
@@ -2874,9 +2866,9 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         flavor: str,
         action_type: PluginSubType,
-        configuration: Dict[str, Any],
+        configuration: dict[str, Any],
         service_account_id: UUID,
-        auth_window: Optional[int] = None,
+        auth_window: int | None = None,
         description: str = "",
     ) -> ActionResponse:
         """Create an action.
@@ -2912,9 +2904,9 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def get_action(
         self,
-        name_id_or_prefix: Union[UUID, str],
+        name_id_or_prefix: UUID | str,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> ActionResponse:
         """Get an action by name, ID or prefix.
@@ -2945,14 +2937,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        flavor: Optional[str] = None,
-        action_type: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        flavor: str | None = None,
+        action_type: str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[ActionResponse]:
         """List actions.
@@ -2995,13 +2987,13 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def update_action(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        configuration: Optional[Dict[str, Any]] = None,
-        service_account_id: Optional[UUID] = None,
-        auth_window: Optional[int] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        description: str | None = None,
+        configuration: dict[str, Any] | None = None,
+        service_account_id: UUID | None = None,
+        auth_window: int | None = None,
+        project: str | UUID | None = None,
     ) -> ActionResponse:
         """Update an action.
 
@@ -3042,8 +3034,8 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def delete_action(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete an action.
 
@@ -3068,7 +3060,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         event_source_id: UUID,
-        event_filter: Dict[str, Any],
+        event_filter: dict[str, Any],
         action_id: UUID,
         description: str = "",
     ) -> TriggerResponse:
@@ -3098,9 +3090,9 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def get_trigger(
         self,
-        name_id_or_prefix: Union[UUID, str],
+        name_id_or_prefix: UUID | str,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> TriggerResponse:
         """Get a trigger by name, ID or prefix.
@@ -3131,18 +3123,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        event_source_id: Optional[UUID] = None,
-        action_id: Optional[UUID] = None,
-        event_source_flavor: Optional[str] = None,
-        event_source_subtype: Optional[str] = None,
-        action_flavor: Optional[str] = None,
-        action_subtype: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        event_source_id: UUID | None = None,
+        action_id: UUID | None = None,
+        event_source_flavor: str | None = None,
+        event_source_subtype: str | None = None,
+        action_flavor: str | None = None,
+        action_subtype: str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[TriggerResponse]:
         """Lists all triggers.
@@ -3197,12 +3189,12 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def update_trigger(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        event_filter: Optional[Dict[str, Any]] = None,
-        is_active: Optional[bool] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        description: str | None = None,
+        event_filter: dict[str, Any] | None = None,
+        is_active: bool | None = None,
+        project: str | UUID | None = None,
     ) -> TriggerResponse:
         """Updates a trigger.
 
@@ -3251,8 +3243,8 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def delete_trigger(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Deletes an trigger.
 
@@ -3274,11 +3266,11 @@ class Client(metaclass=ClientMetaClass):
 
     def get_snapshot(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         *,
-        pipeline_name_or_id: Optional[Union[str, UUID]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        include_config_schema: Optional[bool] = None,
+        pipeline_name_or_id: str | UUID | None = None,
+        project: str | UUID | None = None,
+        include_config_schema: bool | None = None,
         allow_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> PipelineSnapshotResponse:
@@ -3320,7 +3312,7 @@ class Client(metaclass=ClientMetaClass):
                 include_config_schema=include_config_schema,
             )
 
-        list_kwargs: Dict[str, Any] = {
+        list_kwargs: dict[str, Any] = {
             "named_only": None,
             "project": project,
             "hydrate": hydrate,
@@ -3389,23 +3381,23 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
-        named_only: Optional[bool] = True,
-        pipeline: Optional[Union[str, UUID]] = None,
-        stack: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
-        runnable: Optional[bool] = None,
-        deployable: Optional[bool] = None,
-        deployed: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
+        name: str | None = None,
+        named_only: bool | None = True,
+        pipeline: str | UUID | None = None,
+        stack: str | UUID | None = None,
+        build_id: str | UUID | None = None,
+        schedule_id: str | UUID | None = None,
+        source_snapshot_id: str | UUID | None = None,
+        runnable: bool | None = None,
+        deployable: bool | None = None,
+        deployed: bool | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
         hydrate: bool = False,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
@@ -3469,13 +3461,13 @@ class Client(metaclass=ClientMetaClass):
 
     def update_snapshot(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        replace: Optional[bool] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        replace: bool | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
     ) -> PipelineSnapshotResponse:
         """Update a snapshot.
 
@@ -3511,8 +3503,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_snapshot(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a snapshot.
 
@@ -3530,16 +3522,16 @@ class Client(metaclass=ClientMetaClass):
     @_fail_for_sql_zen_store
     def trigger_pipeline(
         self,
-        snapshot_name_or_id: Optional[Union[str, UUID]] = None,
-        pipeline_name_or_id: Union[str, UUID, None] = None,
-        run_configuration: Union[
-            PipelineRunConfiguration, Dict[str, Any], None
-        ] = None,
-        config_path: Optional[str] = None,
-        stack_name_or_id: Union[str, UUID, None] = None,
+        snapshot_name_or_id: str | UUID | None = None,
+        pipeline_name_or_id: str | UUID | None = None,
+        run_configuration: (
+            PipelineRunConfiguration | dict[str, Any] | None
+        ) = None,
+        config_path: str | None = None,
+        stack_name_or_id: str | UUID | None = None,
         synchronous: bool = False,
-        project: Optional[Union[str, UUID]] = None,
-        template_id: Optional[UUID] = None,
+        project: str | UUID | None = None,
+        template_id: UUID | None = None,
     ) -> PipelineRunResponse:
         """Run a pipeline snapshot.
 
@@ -3608,7 +3600,7 @@ class Client(metaclass=ClientMetaClass):
         if config_path:
             run_configuration = PipelineRunConfiguration.from_yaml(config_path)
 
-        if isinstance(run_configuration, Dict):
+        if isinstance(run_configuration, dict):
             run_configuration = PipelineRunConfiguration.model_validate(
                 run_configuration
             )
@@ -3720,8 +3712,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> DeploymentResponse:
         """Get a deployment.
@@ -3750,9 +3742,9 @@ class Client(metaclass=ClientMetaClass):
         *,
         resource_id: UUID,
         resource_type: VisualizationResourceTypes,
-        project_id: Optional[UUID] = None,
-        display_name: Optional[str] = None,
-        display_order: Optional[int] = None,
+        project_id: UUID | None = None,
+        display_name: str | None = None,
+        display_order: int | None = None,
         layout_size: CuratedVisualizationSize = CuratedVisualizationSize.FULL_WIDTH,
     ) -> CuratedVisualizationResponse:
         """Create a curated visualization associated with a resource.
@@ -3799,9 +3791,9 @@ class Client(metaclass=ClientMetaClass):
         self,
         visualization_id: UUID,
         *,
-        display_name: Optional[str] = None,
-        display_order: Optional[int] = None,
-        layout_size: Optional[CuratedVisualizationSize] = None,
+        display_name: str | None = None,
+        display_order: int | None = None,
+        layout_size: CuratedVisualizationSize | None = None,
     ) -> CuratedVisualizationResponse:
         """Update display metadata for a curated visualization.
 
@@ -3840,19 +3832,19 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        deployer_id: Optional[Union[str, UUID]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        status: Optional[DeploymentStatus] = None,
-        url: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        snapshot_id: str | UUID | None = None,
+        deployer_id: str | UUID | None = None,
+        project: str | UUID | None = None,
+        status: DeploymentStatus | None = None,
+        url: str | None = None,
+        user: UUID | str | None = None,
+        pipeline: UUID | str | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
         """List deployments.
@@ -3906,10 +3898,10 @@ class Client(metaclass=ClientMetaClass):
 
     def provision_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        timeout: Optional[int] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+        timeout: int | None = None,
     ) -> DeploymentResponse:
         """Provision a deployment.
 
@@ -3938,7 +3930,7 @@ class Client(metaclass=ClientMetaClass):
         from zenml.stack.stack import Stack
         from zenml.stack.stack_component import StackComponent
 
-        deployment: Optional[DeploymentResponse] = None
+        deployment: DeploymentResponse | None = None
         deployment_name_or_id = name_id_or_prefix
         try:
             deployment = self.get_deployment(
@@ -3952,7 +3944,7 @@ class Client(metaclass=ClientMetaClass):
                 raise
 
         stack = Client().active_stack
-        deployer: Optional[BaseDeployer] = None
+        deployer: BaseDeployer | None = None
 
         if snapshot_id:
             snapshot = self.get_snapshot(
@@ -4020,9 +4012,9 @@ class Client(metaclass=ClientMetaClass):
 
     def deprovision_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
-        timeout: Optional[int] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
+        timeout: int | None = None,
     ) -> None:
         """Deprovision a deployment.
 
@@ -4077,10 +4069,10 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         force: bool = False,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Deprovision and delete a deployment.
 
@@ -4151,8 +4143,8 @@ class Client(metaclass=ClientMetaClass):
 
     def refresh_deployment(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> DeploymentResponse:
         """Refresh the status of a deployment.
 
@@ -4201,10 +4193,10 @@ class Client(metaclass=ClientMetaClass):
 
     def get_deployment_logs(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a deployment.
 
@@ -4262,8 +4254,8 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         snapshot_id: UUID,
-        description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
     ) -> RunTemplateResponse:
         """Create a run template.
 
@@ -4289,8 +4281,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_run_template(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> RunTemplateResponse:
         """Get a run template.
@@ -4321,20 +4313,20 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        id: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
-        hidden: Optional[bool] = False,
-        tag: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        id: UUID | str | None = None,
+        name: str | None = None,
+        hidden: bool | None = False,
+        tag: str | None = None,
+        project: str | UUID | None = None,
+        pipeline_id: str | UUID | None = None,
+        build_id: str | UUID | None = None,
+        stack_id: str | UUID | None = None,
+        code_repository_id: str | UUID | None = None,
+        user: UUID | str | None = None,
+        pipeline: UUID | str | None = None,
+        stack: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[RunTemplateResponse]:
         """Get a page of run templates.
@@ -4391,13 +4383,13 @@ class Client(metaclass=ClientMetaClass):
 
     def update_run_template(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        hidden: Optional[bool] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        name: str | None = None,
+        description: str | None = None,
+        hidden: bool | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
+        project: str | UUID | None = None,
     ) -> RunTemplateResponse:
         """Update a run template.
 
@@ -4439,8 +4431,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_run_template(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a run template.
 
@@ -4467,9 +4459,9 @@ class Client(metaclass=ClientMetaClass):
 
     def get_schedule(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
@@ -4499,22 +4491,22 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        orchestrator_id: Optional[Union[str, UUID]] = None,
-        active: Optional[Union[str, bool]] = None,
-        cron_expression: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        interval_second: Optional[int] = None,
-        catchup: Optional[Union[str, bool]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
+        pipeline_id: str | UUID | None = None,
+        orchestrator_id: str | UUID | None = None,
+        active: str | bool | None = None,
+        cron_expression: str | None = None,
+        start_time: datetime | str | None = None,
+        end_time: datetime | str | None = None,
+        interval_second: int | None = None,
+        catchup: str | bool | None = None,
         hydrate: bool = False,
-        run_once_start_time: Optional[Union[datetime, str]] = None,
+        run_once_start_time: datetime | str | None = None,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -4600,8 +4592,8 @@ class Client(metaclass=ClientMetaClass):
 
     def update_schedule(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        cron_expression: Optional[str] = None,
+        name_id_or_prefix: str | UUID,
+        cron_expression: str | None = None,
     ) -> ScheduleResponse:
         """Update a schedule.
 
@@ -4640,8 +4632,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_schedule(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a schedule.
 
@@ -4676,9 +4668,9 @@ class Client(metaclass=ClientMetaClass):
 
     def get_pipeline_run(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
         include_full_metadata: bool = False,
     ) -> PipelineRunResponse:
@@ -4712,42 +4704,42 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        pipeline_name: Optional[str] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        template_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        linked_to_model_version_id: Optional[Union[str, UUID]] = None,
-        orchestrator_run_id: Optional[str] = None,
-        status: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        unlisted: Optional[bool] = None,
-        templatable: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        code_repository: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
-        stack_component: Optional[Union[UUID, str]] = None,
-        in_progress: Optional[bool] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        project: str | UUID | None = None,
+        pipeline_id: str | UUID | None = None,
+        pipeline_name: str | None = None,
+        stack_id: str | UUID | None = None,
+        schedule_id: str | UUID | None = None,
+        build_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+        code_repository_id: str | UUID | None = None,
+        template_id: str | UUID | None = None,
+        source_snapshot_id: str | UUID | None = None,
+        model_version_id: str | UUID | None = None,
+        linked_to_model_version_id: str | UUID | None = None,
+        orchestrator_run_id: str | None = None,
+        status: str | None = None,
+        start_time: datetime | str | None = None,
+        end_time: datetime | str | None = None,
+        unlisted: bool | None = None,
+        templatable: bool | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
+        user: UUID | str | None = None,
+        run_metadata: list[str] | None = None,
+        pipeline: UUID | str | None = None,
+        code_repository: UUID | str | None = None,
+        model: UUID | str | None = None,
+        stack: UUID | str | None = None,
+        stack_component: UUID | str | None = None,
+        in_progress: bool | None = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
-        triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
-        triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
+        triggered_by_step_run_id: UUID | str | None = None,
+        triggered_by_deployment_id: UUID | str | None = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -4853,8 +4845,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_pipeline_run(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Deletes a pipeline run.
 
@@ -4897,26 +4889,26 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        cache_key: Optional[str] = None,
-        cache_expires_at: Optional[Union[datetime, str]] = None,
-        cache_expired: Optional[bool] = None,
-        code_hash: Optional[str] = None,
-        status: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        pipeline_run_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        original_step_run_id: Optional[Union[str, UUID]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        exclude_retried: Optional[bool] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        cache_key: str | None = None,
+        cache_expires_at: datetime | str | None = None,
+        cache_expired: bool | None = None,
+        code_hash: str | None = None,
+        status: str | None = None,
+        start_time: datetime | str | None = None,
+        end_time: datetime | str | None = None,
+        pipeline_run_id: str | UUID | None = None,
+        snapshot_id: str | UUID | None = None,
+        original_step_run_id: str | UUID | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
+        model_version_id: str | UUID | None = None,
+        model: UUID | str | None = None,
+        run_metadata: list[str] | None = None,
+        exclude_retried: bool | None = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4988,7 +4980,7 @@ class Client(metaclass=ClientMetaClass):
     def update_step_run(
         self,
         step_run_id: UUID,
-        cache_expires_at: Optional[datetime] = None,
+        cache_expires_at: datetime | None = None,
     ) -> StepRunResponse:
         """Update a step run.
 
@@ -5009,8 +5001,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_artifact(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = False,
     ) -> ArtifactResponse:
         """Get an artifact by name, id or prefix.
@@ -5038,16 +5030,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        has_custom_name: bool | None = None,
+        user: UUID | str | None = None,
+        project: str | UUID | None = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -5093,12 +5085,12 @@ class Client(metaclass=ClientMetaClass):
 
     def update_artifact(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        new_name: Optional[str] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
-        has_custom_name: Optional[bool] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        new_name: str | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
+        has_custom_name: bool | None = None,
+        project: str | UUID | None = None,
     ) -> ArtifactResponse:
         """Update an artifact.
 
@@ -5129,8 +5121,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_artifact(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete an artifact.
 
@@ -5149,7 +5141,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         only_versions: bool = True,
         delete_from_artifact_store: bool = False,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete all unused artifacts and artifact versions.
 
@@ -5180,9 +5172,9 @@ class Client(metaclass=ClientMetaClass):
 
     def get_artifact_version(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        version: str | None = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> ArtifactVersionResponse:
         """Get an artifact version by ID or artifact name.
@@ -5238,28 +5230,28 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        artifact: Optional[Union[str, UUID]] = None,
-        name: Optional[str] = None,
-        version: Optional[Union[str, int]] = None,
-        version_number: Optional[int] = None,
-        artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[Union[ArtifactType, str]] = None,
-        data_type: Optional[str] = None,
-        uri: Optional[str] = None,
-        materializer: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        only_unused: Optional[bool] = False,
-        has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        artifact: str | UUID | None = None,
+        name: str | None = None,
+        version: str | int | None = None,
+        version_number: int | None = None,
+        artifact_store_id: str | UUID | None = None,
+        type: ArtifactType | str | None = None,
+        data_type: str | None = None,
+        uri: str | None = None,
+        materializer: str | None = None,
+        project: str | UUID | None = None,
+        model_version_id: str | UUID | None = None,
+        only_unused: bool | None = False,
+        has_custom_name: bool | None = None,
+        user: UUID | str | None = None,
+        model: UUID | str | None = None,
+        pipeline_run: UUID | str | None = None,
+        run_metadata: list[str] | None = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -5335,11 +5327,11 @@ class Client(metaclass=ClientMetaClass):
 
     def update_artifact_version(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        version: str | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
+        project: str | UUID | None = None,
     ) -> ArtifactVersionResponse:
         """Update an artifact version.
 
@@ -5370,11 +5362,11 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_artifact_version(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        version: Optional[str] = None,
+        name_id_or_prefix: str | UUID,
+        version: str | None = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete an artifact version.
 
@@ -5476,10 +5468,10 @@ class Client(metaclass=ClientMetaClass):
 
     def create_run_metadata(
         self,
-        metadata: Dict[str, "MetadataType"],
-        resources: List[RunMetadataResource],
-        stack_component_id: Optional[UUID] = None,
-        publisher_step_id: Optional[UUID] = None,
+        metadata: dict[str, "MetadataType"],
+        resources: list[RunMetadataResource],
+        stack_component_id: UUID | None = None,
+        publisher_step_id: UUID | None = None,
     ) -> None:
         """Create run metadata.
 
@@ -5494,8 +5486,8 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.metadata.metadata_types import get_metadata_type
 
-        values: Dict[str, "MetadataType"] = {}
-        types: Dict[str, "MetadataTypeEnum"] = {}
+        values: dict[str, "MetadataType"] = {}
+        types: dict[str, "MetadataTypeEnum"] = {}
         for key, value in metadata.items():
             # Skip metadata that is too large to be stored in the database.
             if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
@@ -5531,7 +5523,7 @@ class Client(metaclass=ClientMetaClass):
     def create_secret(
         self,
         name: str,
-        values: Dict[str, str],
+        values: dict[str, str],
         private: bool = False,
     ) -> SecretResponse:
         """Creates a new secret.
@@ -5564,8 +5556,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_secret(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        private: Optional[bool] = None,
+        name_id_or_prefix: str | UUID,
+        private: bool | None = None,
         allow_partial_name_match: bool = True,
         allow_partial_id_match: bool = True,
         hydrate: bool = True,
@@ -5644,7 +5636,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
         for search_private_status in search_private_statuses:
-            partial_matches: List[SecretResponse] = []
+            partial_matches: list[SecretResponse] = []
             for secret in secrets.items:
                 if secret.private != search_private_status:
                     continue
@@ -5697,12 +5689,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        private: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        private: bool | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
         """Fetches all the secret models.
@@ -5756,12 +5748,12 @@ class Client(metaclass=ClientMetaClass):
 
     def update_secret(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        private: Optional[bool] = None,
-        new_name: Optional[str] = None,
-        update_private: Optional[bool] = None,
-        add_or_update_values: Optional[Dict[str, str]] = None,
-        remove_values: Optional[List[str]] = None,
+        name_id_or_prefix: str | UUID,
+        private: bool | None = None,
+        new_name: str | None = None,
+        update_private: bool | None = None,
+        add_or_update_values: dict[str, str] | None = None,
+        remove_values: list[str] | None = None,
     ) -> SecretResponse:
         """Updates a secret.
 
@@ -5796,7 +5788,7 @@ class Client(metaclass=ClientMetaClass):
 
         if update_private:
             secret_update.private = update_private
-        values: Dict[str, Optional[SecretStr]] = {}
+        values: dict[str, SecretStr | None] = {}
         if add_or_update_values:
             values.update(
                 {
@@ -5825,7 +5817,7 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def delete_secret(
-        self, name_id_or_prefix: str, private: Optional[bool] = None
+        self, name_id_or_prefix: str, private: bool | None = None
     ) -> None:
         """Deletes a secret.
 
@@ -5846,7 +5838,7 @@ class Client(metaclass=ClientMetaClass):
     def get_secret_by_name_and_private_status(
         self,
         name: str,
-        private: Optional[bool] = None,
+        private: bool | None = None,
         hydrate: bool = True,
     ) -> SecretResponse:
         """Fetches a registered secret with a given name and optional private status.
@@ -5965,7 +5957,7 @@ class Client(metaclass=ClientMetaClass):
 
     @staticmethod
     def _validate_code_repository_config(
-        source: Source, config: Dict[str, Any]
+        source: Source, config: dict[str, Any]
     ) -> None:
         """Validate a code repository config.
 
@@ -5978,7 +5970,7 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.code_repositories import BaseCodeRepository
 
-        code_repo_class: Type[BaseCodeRepository] = (
+        code_repo_class: type[BaseCodeRepository] = (
             source_utils.load_and_validate_class(
                 source=source, expected_class=BaseCodeRepository
             )
@@ -5993,10 +5985,10 @@ class Client(metaclass=ClientMetaClass):
     def create_code_repository(
         self,
         name: str,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         source: Source,
-        description: Optional[str] = None,
-        logo_url: Optional[str] = None,
+        description: str | None = None,
+        logo_url: str | None = None,
     ) -> CodeRepositoryResponse:
         """Create a new code repository.
 
@@ -6025,9 +6017,9 @@ class Client(metaclass=ClientMetaClass):
 
     def get_code_repository(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> CodeRepositoryResponse:
         """Get a code repository by name, id or prefix.
@@ -6057,12 +6049,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        project: str | UUID | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
@@ -6103,12 +6095,12 @@ class Client(metaclass=ClientMetaClass):
 
     def update_code_repository(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        logo_url: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        description: str | None = None,
+        logo_url: str | None = None,
+        config: dict[str, Any] | None = None,
+        project: str | UUID | None = None,
     ) -> CodeRepositoryResponse:
         """Update a code repository.
 
@@ -6153,8 +6145,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_code_repository(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Delete a code repository.
 
@@ -6175,27 +6167,25 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         connector_type: str,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-        configuration: Optional[Dict[str, str]] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+        configuration: dict[str, str] | None = None,
+        resource_id: str | None = None,
         description: str = "",
-        expiration_seconds: Optional[int] = None,
-        expires_at: Optional[datetime] = None,
-        expires_skew_tolerance: Optional[int] = None,
-        labels: Optional[Dict[str, str]] = None,
+        expiration_seconds: int | None = None,
+        expires_at: datetime | None = None,
+        expires_skew_tolerance: int | None = None,
+        labels: dict[str, str] | None = None,
         auto_configure: bool = False,
         verify: bool = True,
         list_resources: bool = True,
         register: bool = True,
-    ) -> Tuple[
-        Optional[
-            Union[
-                ServiceConnectorResponse,
-                ServiceConnectorRequest,
-            ]
-        ],
-        Optional[ServiceConnectorResourcesModel],
+    ) -> tuple[
+        None | (
+                ServiceConnectorResponse |
+                ServiceConnectorRequest
+        ),
+        ServiceConnectorResourcesModel | None,
     ]:
         """Create, validate and/or register a service connector.
 
@@ -6237,8 +6227,8 @@ class Client(metaclass=ClientMetaClass):
             service_connector_registry,
         )
 
-        connector_instance: Optional[ServiceConnector] = None
-        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+        connector_instance: ServiceConnector | None = None
+        connector_resources: ServiceConnectorResourcesModel | None = None
 
         # Get the service connector type class
         try:
@@ -6392,7 +6382,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_service_connector(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
         expand_secrets: bool = False,
@@ -6427,16 +6417,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        connector_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        labels: Optional[Dict[str, Optional[str]]] = None,
+        id: UUID | str | None = None,
+        created: datetime | None = None,
+        updated: datetime | None = None,
+        name: str | None = None,
+        connector_type: str | None = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        user: UUID | str | None = None,
+        labels: dict[str, str | None] | None = None,
         hydrate: bool = False,
         expand_secrets: bool = False,
     ) -> Page[ServiceConnectorResponse]:
@@ -6491,28 +6481,26 @@ class Client(metaclass=ClientMetaClass):
 
     def update_service_connector(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        configuration: Optional[Dict[str, str]] = None,
-        resource_id: Optional[str] = None,
-        description: Optional[str] = None,
-        expires_at: Optional[datetime] = None,
-        expires_skew_tolerance: Optional[int] = None,
-        expiration_seconds: Optional[int] = None,
-        labels: Optional[Dict[str, Optional[str]]] = None,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        configuration: dict[str, str] | None = None,
+        resource_id: str | None = None,
+        description: str | None = None,
+        expires_at: datetime | None = None,
+        expires_skew_tolerance: int | None = None,
+        expiration_seconds: int | None = None,
+        labels: dict[str, str | None] | None = None,
         verify: bool = True,
         list_resources: bool = True,
         update: bool = True,
-    ) -> Tuple[
-        Optional[
-            Union[
-                ServiceConnectorResponse,
-                ServiceConnectorUpdate,
-            ]
-        ],
-        Optional[ServiceConnectorResourcesModel],
+    ) -> tuple[
+        None | (
+                ServiceConnectorResponse |
+                ServiceConnectorUpdate
+        ),
+        ServiceConnectorResourcesModel | None,
     ]:
         """Validate and/or register an updated service connector.
 
@@ -6575,8 +6563,8 @@ class Client(metaclass=ClientMetaClass):
             expand_secrets=configuration is None,
         )
 
-        connector_instance: Optional[ServiceConnector] = None
-        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+        connector_instance: ServiceConnector | None = None
+        connector_resources: ServiceConnectorResourcesModel | None = None
 
         if isinstance(connector_model.connector_type, str):
             connector = self.get_service_connector_type(
@@ -6585,7 +6573,7 @@ class Client(metaclass=ClientMetaClass):
         else:
             connector = connector_model.connector_type
 
-        resource_types: Optional[Union[str, List[str]]] = None
+        resource_types: str | list[str] | None = None
         if resource_type == "":
             resource_types = None
         elif resource_type is None:
@@ -6709,7 +6697,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_service_connector(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
     ) -> None:
         """Deletes a registered service connector.
 
@@ -6732,9 +6720,9 @@ class Client(metaclass=ClientMetaClass):
 
     def verify_service_connector(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        name_id_or_prefix: UUID | str,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         list_resources: bool = True,
     ) -> "ServiceConnectorResourcesModel":
         """Verifies if a service connector has access to one or more resources.
@@ -6810,9 +6798,9 @@ class Client(metaclass=ClientMetaClass):
 
     def login_service_connector(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        name_id_or_prefix: UUID | str,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> "ServiceConnector":
         """Use a service connector to authenticate a local client/SDK.
@@ -6851,9 +6839,9 @@ class Client(metaclass=ClientMetaClass):
 
     def get_service_connector_client(
         self,
-        name_id_or_prefix: Union[UUID, str],
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        name_id_or_prefix: UUID | str,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         verify: bool = False,
     ) -> "ServiceConnector":
         """Get the client side of a service connector instance to use with a local client.
@@ -6936,10 +6924,10 @@ class Client(metaclass=ClientMetaClass):
 
     def list_service_connector_resources(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[ServiceConnectorResourcesModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -6961,10 +6949,10 @@ class Client(metaclass=ClientMetaClass):
 
     def list_service_connector_types(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-    ) -> List[ServiceConnectorTypeModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+    ) -> list[ServiceConnectorTypeModel]:
         """Get a list of service connector types.
 
         Args:
@@ -7004,14 +6992,14 @@ class Client(metaclass=ClientMetaClass):
     def create_model(
         self,
         name: str,
-        license: Optional[str] = None,
-        description: Optional[str] = None,
-        audience: Optional[str] = None,
-        use_cases: Optional[str] = None,
-        limitations: Optional[str] = None,
-        trade_offs: Optional[str] = None,
-        ethics: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        license: str | None = None,
+        description: str | None = None,
+        audience: str | None = None,
+        use_cases: str | None = None,
+        limitations: str | None = None,
+        trade_offs: str | None = None,
+        ethics: str | None = None,
+        tags: list[str] | None = None,
         save_models_to_registry: bool = True,
     ) -> ModelResponse:
         """Creates a new model in Model Control Plane.
@@ -7050,8 +7038,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_model(
         self,
-        model_name_or_id: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        model_name_or_id: str | UUID,
+        project: str | UUID | None = None,
     ) -> None:
         """Deletes a model from Model Control Plane.
 
@@ -7066,19 +7054,19 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model(
         self,
-        model_name_or_id: Union[str, UUID],
-        name: Optional[str] = None,
-        license: Optional[str] = None,
-        description: Optional[str] = None,
-        audience: Optional[str] = None,
-        use_cases: Optional[str] = None,
-        limitations: Optional[str] = None,
-        trade_offs: Optional[str] = None,
-        ethics: Optional[str] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
-        save_models_to_registry: Optional[bool] = None,
-        project: Optional[Union[str, UUID]] = None,
+        model_name_or_id: str | UUID,
+        name: str | None = None,
+        license: str | None = None,
+        description: str | None = None,
+        audience: str | None = None,
+        use_cases: str | None = None,
+        limitations: str | None = None,
+        trade_offs: str | None = None,
+        ethics: str | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
+        save_models_to_registry: bool | None = None,
+        project: str | UUID | None = None,
     ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
@@ -7123,8 +7111,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_model(
         self,
-        model_name_or_id: Union[str, UUID],
-        project: Optional[Union[str, UUID]] = None,
+        model_name_or_id: str | UUID,
+        project: str | UUID | None = None,
         hydrate: bool = True,
         bypass_lazy_loader: bool = False,
     ) -> ModelResponse:
@@ -7163,15 +7151,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        id: UUID | str | None = None,
+        user: UUID | str | None = None,
+        project: str | UUID | None = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -7219,11 +7207,11 @@ class Client(metaclass=ClientMetaClass):
 
     def create_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        model_name_or_id: str | UUID,
+        name: str | None = None,
+        description: str | None = None,
+        tags: list[str] | None = None,
+        project: str | UUID | None = None,
     ) -> ModelVersionResponse:
         """Creates a new model version in Model Control Plane.
 
@@ -7266,11 +7254,11 @@ class Client(metaclass=ClientMetaClass):
 
     def get_model_version(
         self,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
-        model_version_name_or_number_or_id: Optional[
-            Union[str, int, ModelStages, UUID]
-        ] = None,
-        project: Optional[Union[str, UUID]] = None,
+        model_name_or_id: str | UUID | None = None,
+        model_version_name_or_number_or_id: None | (
+            str | int | ModelStages | UUID
+        ) = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> ModelVersionResponse:
         """Get an existing model version from Model Control Plane.
@@ -7391,24 +7379,24 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model: Optional[Union[str, UUID]] = None,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
+        model: str | UUID | None = None,
+        model_name_or_id: str | UUID | None = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        number: Optional[int] = None,
-        stage: Optional[Union[str, ModelStages]] = None,
-        run_metadata: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        id: UUID | str | None = None,
+        number: int | None = None,
+        stage: str | ModelStages | None = None,
+        run_metadata: list[str] | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        tag: str | None = None,
+        tags: list[str] | None = None,
+        project: str | UUID | None = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
 
@@ -7476,15 +7464,15 @@ class Client(metaclass=ClientMetaClass):
 
     def update_model_version(
         self,
-        model_name_or_id: Union[str, UUID],
-        version_name_or_id: Union[str, UUID],
-        stage: Optional[Union[str, ModelStages]] = None,
+        model_name_or_id: str | UUID,
+        version_name_or_id: str | UUID,
+        stage: str | ModelStages | None = None,
         force: bool = False,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        add_tags: Optional[List[str]] = None,
-        remove_tags: Optional[List[str]] = None,
-        project: Optional[Union[str, UUID]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        add_tags: list[str] | None = None,
+        remove_tags: list[str] | None = None,
+        project: str | UUID | None = None,
     ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
@@ -7534,16 +7522,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        artifact_version_id: Optional[Union[UUID, str]] = None,
-        artifact_name: Optional[str] = None,
-        only_data_artifacts: Optional[bool] = None,
-        only_model_artifacts: Optional[bool] = None,
-        only_deployment_artifacts: Optional[bool] = None,
-        has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        model_version_id: UUID | str | None = None,
+        artifact_version_id: UUID | str | None = None,
+        artifact_name: str | None = None,
+        only_data_artifacts: bool | None = None,
+        only_model_artifacts: bool | None = None,
+        only_deployment_artifacts: bool | None = None,
+        has_custom_name: bool | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -7646,12 +7634,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_name: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        model_version_id: UUID | str | None = None,
+        pipeline_run_id: UUID | str | None = None,
+        pipeline_run_name: str | None = None,
+        user: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
@@ -7697,16 +7685,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        expires: Optional[Union[datetime, str]] = None,
-        client_id: Union[UUID, str, None] = None,
-        status: Union[OAuthDeviceStatus, str, None] = None,
-        trusted_device: Union[bool, str, None] = None,
-        user: Optional[Union[UUID, str]] = None,
-        failed_auth_attempts: Union[int, str, None] = None,
-        last_login: Optional[Union[datetime, str, None]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        expires: datetime | str | None = None,
+        client_id: UUID | str | None = None,
+        status: OAuthDeviceStatus | str | None = None,
+        trusted_device: bool | str | None = None,
+        user: UUID | str | None = None,
+        failed_auth_attempts: int | str | None = None,
+        last_login: datetime | str | None | None = None,
         hydrate: bool = False,
     ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
@@ -7755,7 +7743,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_authorized_device(
         self,
-        id_or_prefix: Union[UUID, str],
+        id_or_prefix: UUID | str,
         allow_id_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> OAuthDeviceResponse:
@@ -7797,8 +7785,8 @@ class Client(metaclass=ClientMetaClass):
 
     def update_authorized_device(
         self,
-        id_or_prefix: Union[UUID, str],
-        locked: Optional[bool] = None,
+        id_or_prefix: UUID | str,
+        locked: bool | None = None,
     ) -> OAuthDeviceResponse:
         """Update an authorized device.
 
@@ -7821,7 +7809,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_authorized_device(
         self,
-        id_or_prefix: Union[str, UUID],
+        id_or_prefix: str | UUID,
     ) -> None:
         """Delete an authorized device.
 
@@ -7861,10 +7849,10 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        trigger_id: Optional[Union[UUID, str]] = None,
-        step_run_id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        project: Optional[Union[UUID, str]] = None,
+        trigger_id: UUID | str | None = None,
+        step_run_id: UUID | str | None = None,
+        user: UUID | str | None = None,
+        project: UUID | str | None = None,
         hydrate: bool = False,
     ) -> Page[TriggerExecutionResponse]:
         """List all trigger executions matching the given filter criteria.
@@ -7914,9 +7902,9 @@ class Client(metaclass=ClientMetaClass):
         self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
         **kwargs: Any,
     ) -> AnyResponse:
@@ -7951,7 +7939,7 @@ class Client(metaclass=ClientMetaClass):
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
-        list_kwargs: Dict[str, Any] = dict(
+        list_kwargs: dict[str, Any] = dict(
             name=f"equals:{name_id_or_prefix}",
             hydrate=hydrate,
             **kwargs,
@@ -7997,9 +7985,9 @@ class Client(metaclass=ClientMetaClass):
         self,
         get_method: Callable[..., AnyResponse],
         list_method: Callable[..., Page[AnyResponse]],
-        name_id_or_prefix: Union[str, UUID],
-        version: Optional[str],
-        project: Optional[Union[str, UUID]] = None,
+        name_id_or_prefix: str | UUID,
+        version: str | None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> "AnyResponse":
         from zenml.utils.uuid_utils import is_valid_uuid
@@ -8019,7 +8007,7 @@ class Client(metaclass=ClientMetaClass):
             return get_method(name_id_or_prefix, hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
-        list_kwargs: Dict[str, Any] = dict(
+        list_kwargs: dict[str, Any] = dict(
             size=1,
             sort_by="desc:created",
             name=name_id_or_prefix,
@@ -8070,7 +8058,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,
         allow_name_prefix_match: bool,
-        project: Optional[Union[str, UUID]] = None,
+        project: str | UUID | None = None,
         hydrate: bool = True,
         **kwargs: Any,
     ) -> AnyResponse:
@@ -8095,7 +8083,7 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that partial ID
                 or name.
         """
-        list_method_args: Dict[str, Any] = {
+        list_method_args: dict[str, Any] = {
             "logical_operator": LogicalOperators.OR,
             "id": f"startswith:{partial_id_or_name}",
             "hydrate": hydrate,
@@ -8132,7 +8120,7 @@ class Client(metaclass=ClientMetaClass):
             )
 
         # If more than one entity is found, raise an error.
-        ambiguous_entities: List[str] = []
+        ambiguous_entities: list[str] = []
         for model in entity.items:
             model_name = getattr(model, "name", None)
             if model_name:
@@ -8153,7 +8141,7 @@ class Client(metaclass=ClientMetaClass):
     def create_service_account(
         self,
         name: str,
-        full_name: Optional[str] = None,
+        full_name: str | None = None,
         description: str = "",
     ) -> ServiceAccountResponse:
         """Create a new service account.
@@ -8180,7 +8168,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_service_account(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> ServiceAccountResponse:
@@ -8209,12 +8197,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        active: bool | None = None,
         hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
@@ -8254,10 +8242,10 @@ class Client(metaclass=ClientMetaClass):
 
     def update_service_account(
         self,
-        name_id_or_prefix: Union[str, UUID],
-        updated_name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
+        name_id_or_prefix: str | UUID,
+        updated_name: str | None = None,
+        description: str | None = None,
+        active: bool | None = None,
     ) -> ServiceAccountResponse:
         """Update a service account.
 
@@ -8286,7 +8274,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_service_account(
         self,
-        name_id_or_prefix: Union[str, UUID],
+        name_id_or_prefix: str | UUID,
     ) -> None:
         """Delete a service account.
 
@@ -8304,7 +8292,7 @@ class Client(metaclass=ClientMetaClass):
 
     def create_api_key(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
+        service_account_name_id_or_prefix: str | UUID,
         name: str,
         description: str = "",
         set_key: bool = False,
@@ -8370,19 +8358,19 @@ class Client(metaclass=ClientMetaClass):
 
     def list_api_keys(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
+        service_account_name_id_or_prefix: str | UUID,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
-        last_login: Optional[Union[datetime, str]] = None,
-        last_rotated: Optional[Union[datetime, str]] = None,
+        id: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        active: bool | None = None,
+        last_login: datetime | str | None = None,
+        last_rotated: datetime | str | None = None,
         hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys.
@@ -8434,8 +8422,8 @@ class Client(metaclass=ClientMetaClass):
 
     def get_api_key(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[str, UUID],
+        service_account_name_id_or_prefix: str | UUID,
+        name_id_or_prefix: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> APIKeyResponse:
@@ -8486,11 +8474,11 @@ class Client(metaclass=ClientMetaClass):
 
     def update_api_key(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[UUID, str],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        active: Optional[bool] = None,
+        service_account_name_id_or_prefix: str | UUID,
+        name_id_or_prefix: UUID | str,
+        name: str | None = None,
+        description: str | None = None,
+        active: bool | None = None,
     ) -> APIKeyResponse:
         """Update an API key.
 
@@ -8521,8 +8509,8 @@ class Client(metaclass=ClientMetaClass):
 
     def rotate_api_key(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[UUID, str],
+        service_account_name_id_or_prefix: str | UUID,
+        name_id_or_prefix: UUID | str,
         retain_period_minutes: int = 0,
         set_key: bool = False,
     ) -> APIKeyResponse:
@@ -8560,8 +8548,8 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_api_key(
         self,
-        service_account_name_id_or_prefix: Union[str, UUID],
-        name_id_or_prefix: Union[str, UUID],
+        service_account_name_id_or_prefix: str | UUID,
+        name_id_or_prefix: str | UUID,
     ) -> None:
         """Delete an API key.
 
@@ -8585,7 +8573,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         exclusive: bool = False,
-        color: Optional[Union[str, ColorVariants]] = None,
+        color: str | ColorVariants | None = None,
     ) -> TagResponse:
         """Creates a new tag.
 
@@ -8610,7 +8598,7 @@ class Client(metaclass=ClientMetaClass):
 
     def delete_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_name_or_id: str | UUID,
     ) -> None:
         """Deletes a tag.
 
@@ -8622,10 +8610,10 @@ class Client(metaclass=ClientMetaClass):
 
     def update_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
-        name: Optional[str] = None,
-        exclusive: Optional[bool] = None,
-        color: Optional[Union[str, ColorVariants]] = None,
+        tag_name_or_id: str | UUID,
+        name: str | None = None,
+        exclusive: bool | None = None,
+        color: str | ColorVariants | None = None,
     ) -> TagResponse:
         """Updates an existing tag.
 
@@ -8665,7 +8653,7 @@ class Client(metaclass=ClientMetaClass):
 
     def get_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_name_or_id: str | UUID,
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
     ) -> TagResponse:
@@ -8694,14 +8682,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        color: Optional[Union[str, ColorVariants]] = None,
-        exclusive: Optional[bool] = None,
-        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
+        id: UUID | str | None = None,
+        user: UUID | str | None = None,
+        created: datetime | str | None = None,
+        updated: datetime | str | None = None,
+        name: str | None = None,
+        color: str | ColorVariants | None = None,
+        exclusive: bool | None = None,
+        resource_type: str | TaggableResourceTypes | None = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -8745,8 +8733,8 @@ class Client(metaclass=ClientMetaClass):
 
     def attach_tag(
         self,
-        tag: Union[str, tag_utils.Tag],
-        resources: List[TagResource],
+        tag: str | tag_utils.Tag,
+        resources: list[TagResource],
     ) -> None:
         """Attach a tag to resources.
 
@@ -8798,8 +8786,8 @@ class Client(metaclass=ClientMetaClass):
 
     def detach_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
-        resources: List[TagResource],
+        tag_name_or_id: str | UUID,
+        resources: list[TagResource],
     ) -> None:
         """Detach a tag from resources.
 

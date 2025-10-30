@@ -14,7 +14,7 @@
 """Implementation of the whylogs profiler step."""
 
 import datetime
-from typing import Optional, cast
+from typing import cast
 
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore
@@ -34,7 +34,7 @@ from zenml.utils import settings_utils
 @step
 def whylogs_profiler_step(
     dataset: pd.DataFrame,
-    dataset_timestamp: Optional[datetime.datetime] = None,
+    dataset_timestamp: datetime.datetime | None = None,
 ) -> DatasetProfileView:
     """Generate a whylogs `DatasetProfileView` from a given `pd.DataFrame`.
 
@@ -55,8 +55,8 @@ def whylogs_profiler_step(
 
 
 def get_whylogs_profiler_step(
-    dataset_timestamp: Optional[datetime.datetime] = None,
-    dataset_id: Optional[str] = None,
+    dataset_timestamp: datetime.datetime | None = None,
+    dataset_id: str | None = None,
     enable_whylabs: bool = True,
 ) -> BaseStep:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.

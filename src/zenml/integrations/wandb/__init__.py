@@ -16,9 +16,7 @@
 The wandb integrations currently enables you to use wandb tracking as a
 convenient way to visualize your experiment runs within the wandb ui.
 """
-from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -34,7 +32,7 @@ class WandbIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["Pillow"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Weights and Biases integration.
 
         Returns:

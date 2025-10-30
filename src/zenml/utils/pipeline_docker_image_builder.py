@@ -20,12 +20,9 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
 )
+from collections.abc import Sequence
 
 import zenml
 from zenml.config import DockerSettings
@@ -81,11 +78,11 @@ class PipelineDockerImageBuilder:
         tag: str,
         stack: "Stack",
         include_files: bool,
-        entrypoint: Optional[str] = None,
-        extra_files: Optional[Dict[str, str]] = None,
+        entrypoint: str | None = None,
+        extra_files: dict[str, str] | None = None,
         code_repository: Optional["BaseCodeRepository"] = None,
-        extra_requirements_files: Dict[str, List[str]] = {},
-    ) -> Tuple[str, Optional[str], Optional[str]]:
+        extra_requirements_files: dict[str, list[str]] = {},
+    ) -> tuple[str, str | None, str | None]:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
         Use the image name returned by this method whenever you need to uniquely
@@ -123,8 +120,8 @@ class PipelineDockerImageBuilder:
                 image build.
             ValueError: If the specified Dockerfile does not exist.
         """
-        requirements: Optional[str] = None
-        dockerfile: Optional[str] = None
+        requirements: str | None = None
+        dockerfile: str | None = None
 
         if docker_settings.skip_build:
             assert (
@@ -400,7 +397,7 @@ class PipelineDockerImageBuilder:
     @classmethod
     def _add_requirements_files(
         cls,
-        requirements_files: List[Tuple[str, str, List[str]]],
+        requirements_files: list[tuple[str, str, list[str]]],
         build_context: "BuildContext",
     ) -> None:
         """Adds requirements files to the build context.
@@ -419,8 +416,8 @@ class PipelineDockerImageBuilder:
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
         log: bool = True,
-        extra_requirements_files: Dict[str, List[str]] = {},
-    ) -> List[Tuple[str, str, List[str]]]:
+        extra_requirements_files: dict[str, list[str]] = {},
+    ) -> list[tuple[str, str, list[str]]]:
         """Gathers and/or generates pip requirements files.
 
         This method is called in `PipelineDockerImageBuilder.build_docker_image`
@@ -504,7 +501,7 @@ class PipelineDockerImageBuilder:
             requirements = None
             pyproject_path = None
 
-        requirements_files: List[Tuple[str, str, List[str]]] = []
+        requirements_files: list[tuple[str, str, list[str]]] = []
 
         # Generate requirements file for the local environment if configured
         if docker_settings.replicate_local_python_environment:
@@ -680,7 +677,7 @@ class PipelineDockerImageBuilder:
                     else "Including",
                     path,
                 )
-        elif isinstance(requirements, List):
+        elif isinstance(requirements, list):
             user_requirements = "\n".join(requirements)
             if log:
                 logger.info(
@@ -701,9 +698,9 @@ class PipelineDockerImageBuilder:
     def _generate_zenml_pipeline_dockerfile(
         parent_image: str,
         docker_settings: DockerSettings,
-        requirements_files: Sequence[Tuple[str, str, List[str]]] = (),
+        requirements_files: Sequence[tuple[str, str, list[str]]] = (),
         apt_packages: Sequence[str] = (),
-        entrypoint: Optional[str] = None,
+        entrypoint: str | None = None,
     ) -> str:
         """Generates a Dockerfile.
 
@@ -744,7 +741,7 @@ class PipelineDockerImageBuilder:
             == PythonPackageInstaller.PIP
         ):
             install_command = "pip install"
-            default_installer_args: Dict[str, Any] = PIP_DEFAULT_ARGS
+            default_installer_args: dict[str, Any] = PIP_DEFAULT_ARGS
         elif (
             docker_settings.python_package_installer
             == PythonPackageInstaller.UV

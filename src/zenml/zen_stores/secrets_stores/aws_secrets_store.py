@@ -17,9 +17,6 @@ import json
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Type,
 )
 from uuid import UUID
 
@@ -78,7 +75,7 @@ class AWSSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def populate_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
@@ -147,7 +144,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
 
     config: AWSSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.AWS
-    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+    CONFIG_TYPE: ClassVar[type[ServiceConnectorSecretsStoreConfiguration]] = (
         AWSSecretsStoreConfiguration
     )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = AWS_CONNECTOR_TYPE
@@ -201,8 +198,8 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
 
     @staticmethod
     def _get_aws_secret_tags(
-        metadata: Dict[str, str],
-    ) -> List[Dict[str, str]]:
+        metadata: dict[str, str],
+    ) -> list[dict[str, str]]:
         """Convert ZenML secret metadata to AWS secret tags.
 
         Args:
@@ -211,7 +208,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
         Returns:
             The AWS secret tags.
         """
-        aws_tags: List[Dict[str, str]] = []
+        aws_tags: list[dict[str, str]] = []
         for k, v in metadata.items():
             aws_tags.append(
                 {
@@ -225,7 +222,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -255,7 +252,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
 
         logger.debug(f"Created AWS secret: {aws_secret_id}")
 
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -297,7 +294,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
             )
 
         # Convert the AWS secret tags to a metadata dictionary.
-        metadata: Dict[str, str] = {
+        metadata: dict[str, str] = {
             tag["Key"]: tag["Value"]
             for tag in describe_secret_response["Tags"]
         }
@@ -328,7 +325,7 @@ class AWSSecretsStore(ServiceConnectorSecretsStore):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

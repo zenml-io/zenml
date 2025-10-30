@@ -14,7 +14,6 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -45,23 +44,23 @@ class ScheduleRequest(ProjectScopedRequest):
     name: str
     active: bool
 
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    interval_second: Optional[timedelta] = None
+    cron_expression: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    interval_second: timedelta | None = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime] = None
+    run_once_start_time: datetime | None = None
 
-    orchestrator_id: Optional[UUID]
-    pipeline_id: Optional[UUID]
+    orchestrator_id: UUID | None
+    pipeline_id: UUID | None
 
     @field_validator(
         "start_time", "end_time", "run_once_start_time", mode="after"
     )
     @classmethod
     def _ensure_tzunaware_utc(
-        cls, value: Optional[datetime]
-    ) -> Optional[datetime]:
+        cls, value: datetime | None
+    ) -> datetime | None:
         """Ensures that all datetimes are timezone unaware and in UTC time.
 
         Args:
@@ -126,8 +125,8 @@ class ScheduleRequest(ProjectScopedRequest):
 class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 
-    name: Optional[str] = None
-    cron_expression: Optional[str] = None
+    name: str | None = None
+    cron_expression: str | None = None
 
 
 # ------------------ Response Model ------------------
@@ -137,21 +136,21 @@ class ScheduleResponseBody(ProjectScopedResponseBody):
     """Response body for schedules."""
 
     active: bool
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    interval_second: Optional[timedelta] = None
+    cron_expression: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    interval_second: timedelta | None = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime] = None
+    run_once_start_time: datetime | None = None
 
 
 class ScheduleResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for schedules."""
 
-    orchestrator_id: Optional[UUID]
-    pipeline_id: Optional[UUID]
+    orchestrator_id: UUID | None
+    pipeline_id: UUID | None
 
-    run_metadata: Dict[str, MetadataType] = Field(
+    run_metadata: dict[str, MetadataType] = Field(
         title="Metadata associated with this schedule.",
         default={},
     )
@@ -187,7 +186,7 @@ class ScheduleResponse(
 
     # Helper methods
     @property
-    def utc_start_time(self) -> Optional[str]:
+    def utc_start_time(self) -> str | None:
         """Optional ISO-formatted string of the UTC start time.
 
         Returns:
@@ -199,7 +198,7 @@ class ScheduleResponse(
         return to_utc_timezone(self.start_time).isoformat()
 
     @property
-    def utc_end_time(self) -> Optional[str]:
+    def utc_end_time(self) -> str | None:
         """Optional ISO-formatted string of the UTC end time.
 
         Returns:
@@ -221,7 +220,7 @@ class ScheduleResponse(
         return self.get_body().active
 
     @property
-    def cron_expression(self) -> Optional[str]:
+    def cron_expression(self) -> str | None:
         """The `cron_expression` property.
 
         Returns:
@@ -230,7 +229,7 @@ class ScheduleResponse(
         return self.get_body().cron_expression
 
     @property
-    def start_time(self) -> Optional[datetime]:
+    def start_time(self) -> datetime | None:
         """The `start_time` property.
 
         Returns:
@@ -239,7 +238,7 @@ class ScheduleResponse(
         return self.get_body().start_time
 
     @property
-    def end_time(self) -> Optional[datetime]:
+    def end_time(self) -> datetime | None:
         """The `end_time` property.
 
         Returns:
@@ -248,7 +247,7 @@ class ScheduleResponse(
         return self.get_body().end_time
 
     @property
-    def run_once_start_time(self) -> Optional[datetime]:
+    def run_once_start_time(self) -> datetime | None:
         """The `run_once_start_time` property.
 
         Returns:
@@ -257,7 +256,7 @@ class ScheduleResponse(
         return self.get_body().run_once_start_time
 
     @property
-    def interval_second(self) -> Optional[timedelta]:
+    def interval_second(self) -> timedelta | None:
         """The `interval_second` property.
 
         Returns:
@@ -275,7 +274,7 @@ class ScheduleResponse(
         return self.get_body().catchup
 
     @property
-    def orchestrator_id(self) -> Optional[UUID]:
+    def orchestrator_id(self) -> UUID | None:
         """The `orchestrator_id` property.
 
         Returns:
@@ -284,7 +283,7 @@ class ScheduleResponse(
         return self.get_metadata().orchestrator_id
 
     @property
-    def pipeline_id(self) -> Optional[UUID]:
+    def pipeline_id(self) -> UUID | None:
         """The `pipeline_id` property.
 
         Returns:
@@ -293,7 +292,7 @@ class ScheduleResponse(
         return self.get_metadata().pipeline_id
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -308,44 +307,44 @@ class ScheduleResponse(
 class ScheduleFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUID | str | None = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    orchestrator_id: Optional[Union[UUID, str]] = Field(
+    orchestrator_id: UUID | str | None = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    active: Optional[bool] = Field(
+    active: bool | None = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: Optional[str] = Field(
+    cron_expression: str | None = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: datetime | str | None = Field(
         default=None, description="Start time", union_mode="left_to_right"
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: datetime | str | None = Field(
         default=None, description="End time", union_mode="left_to_right"
     )
-    interval_second: Optional[Optional[float]] = Field(
+    interval_second: float | None | None = Field(
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: Optional[bool] = Field(
+    catchup: bool | None = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the schedule",
     )
-    run_once_start_time: Optional[Union[datetime, str]] = Field(
+    run_once_start_time: datetime | str | None = Field(
         default=None,
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
