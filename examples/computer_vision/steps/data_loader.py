@@ -28,6 +28,91 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
+# COCO 2017 class names in the correct order (80 classes)
+# This ensures consistent class IDs during training
+COCO_CLASSES = [
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush",
+]
+
 
 @step
 def load_coco_dataset(
@@ -91,13 +176,18 @@ def load_coco_dataset(
         shutil.rmtree(export_dir)
         export_dir.mkdir(parents=True, exist_ok=True)
 
-    # Export to YOLO format
+    # Export to YOLO format with correct COCO class mapping
     # YOLO requires both 'train' and 'val' splits in dataset.yaml
     # For this demo, we'll use the same data for both splits
+
+    logger.info("Exporting with correct COCO class mapping (80 classes)...")
+
+    # Export train split with proper class mapping
     dataset.export(
         export_dir=str(export_dir),
         dataset_type=fo.types.YOLOv5Dataset,
         split="train",
+        classes=COCO_CLASSES,  # Use correct COCO class mapping
     )
 
     # Also export as validation split (YOLO requires both)
@@ -105,6 +195,7 @@ def load_coco_dataset(
         export_dir=str(export_dir),
         dataset_type=fo.types.YOLOv5Dataset,
         split="val",
+        classes=COCO_CLASSES,  # Use correct COCO class mapping
     )
 
     logger.info(f"Dataset exported successfully to {export_dir}")

@@ -211,9 +211,7 @@ def run_detection(
     # Save using cv2
     cv2.imwrite(str(annotated_image_path), annotated_img)
 
-    logger.info(
-        f"Annotated image saved to: {annotated_image_path.absolute()}"
-    )
+    logger.info(f"Annotated image saved to: {annotated_image_path.absolute()}")
 
     # Convert images to base64 for web display
     # Get the original image

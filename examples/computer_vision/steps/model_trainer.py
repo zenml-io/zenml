@@ -81,7 +81,6 @@ def train_yolo_model(
         )
 
     # Train the model
-    # Ultralytics handles all the training details and returns the results
     model.train(
         data=str(data_yaml),
         epochs=epochs,
@@ -90,6 +89,10 @@ def train_yolo_model(
         name="coco_training",
         exist_ok=True,
         verbose=True,
+        # Standard training settings
+        val=True,  # Enable validation
+        plots=True,  # Generate training plots
+        save_period=1,  # Save model every epoch
     )
 
     logger.info("Training completed!")
