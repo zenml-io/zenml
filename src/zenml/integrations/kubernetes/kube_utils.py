@@ -1338,13 +1338,13 @@ def wait_for_loadbalancer_ip(
                 and service.status.load_balancer.ingress
             ):
                 ingress = service.status.load_balancer.ingress[0]
-                external_ip = ingress.ip or ingress.hostname
+                external_ip: Optional[str] = ingress.ip or ingress.hostname
                 if external_ip:
                     logger.info(
                         f"LoadBalancer service '{service_name}' received "
                         f"external IP/hostname: {external_ip}"
                     )
-                    return external_ip
+                    return str(external_ip)
 
             logger.debug(
                 f"LoadBalancer service '{service_name}' is still waiting "
