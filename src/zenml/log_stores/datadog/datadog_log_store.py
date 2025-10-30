@@ -16,6 +16,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
+from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
 
@@ -162,8 +163,7 @@ class DatadogLogStore(OtelLogStore):
     """Log store that exports logs to Datadog.
 
     This implementation extends OtelLogStore and configures it to send logs
-    to Datadog's HTTP intake API. Logs are sent with appropriate tags including
-    pipeline_run_id, step_id, and source for easy filtering on Datadog.
+    to Datadog's HTTP intake API.
     """
 
     @property

@@ -102,10 +102,6 @@ class DatadogLogStoreFlavor(Flavor):
         Returns:
             The config class.
         """
-        from zenml.log_stores.datadog.datadog_log_store import (
-            DatadogLogStoreConfig,
-        )
-
         return DatadogLogStoreConfig
 
     @property

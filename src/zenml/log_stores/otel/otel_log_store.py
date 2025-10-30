@@ -19,9 +19,14 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.resources import Resource
+
 from zenml.log_stores.base_log_store import BaseLogStore
+from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.logger import get_logger, get_storage_log_level, logging_handlers
-from zenml.utils.string_utils import random_str
+from zenml.models import LogsRequest
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LoggerProvider
@@ -79,53 +84,25 @@ class OtelLogStore(BaseLogStore):
             The log exporter instance.
         """
 
-    def activate(
-        self,
-        pipeline_run_id: UUID,
-        step_id: Optional[UUID] = None,
-        source: str = "step",
-    ) -> None:
+    def activate(self, log_request: "LogsRequest") -> None:
         """Activate log collection with OpenTelemetry.
 
         Args:
-            pipeline_run_id: The ID of the pipeline run.
-            step_id: The ID of the step (if collecting step logs).
-            source: The source of the logs (e.g., "step", "orchestrator").
+            log_request: The log request model.
         """
-        try:
-            from opentelemetry.sdk._logs import LoggerProvider
-            from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-            from opentelemetry.sdk.resources import Resource
-        except ImportError:
-            logger.error(
-                "OpenTelemetry SDK not installed. Install with: "
-                "pip install opentelemetry-sdk opentelemetry-exporter-otlp"
-            )
-            return
-
-        # Store metadata
-        self._pipeline_run_id = pipeline_run_id
-        self._step_id = step_id
-        self._source = source
-
-        # Create resource with service information and ZenML metadata
-        resource_attributes = {
-            "service.name": self.config.service_name,
-            "service.version": self.config.service_version,
-            "service.instance.id": random_str(8),
-            "deployment.environment": self.config.deployment_environment,
-            "zenml.pipeline_run_id": str(pipeline_run_id),
-            "zenml.source": source,
-        }
-        if step_id:
-            resource_attributes["zenml.step_id"] = str(step_id)
-
-        otel_resource = Resource.create(resource_attributes)
+        # Create resource
+        otel_resource = Resource.create(
+            {
+                "service.name": self.config.service_name,
+                "service.version": self.config.service_version,
+                "zenml.log_id": str(log_request.id),
+            }
+        )
 
         # Create logger provider
         self.logger_provider = LoggerProvider(resource=otel_resource)
 
-        # Get exporter from subclass
+        # Get exporter
         exporter = self.get_exporter()
 
         # Create batch processor for efficient background processing
@@ -138,18 +115,10 @@ class OtelLogStore(BaseLogStore):
         self.logger_provider.add_log_record_processor(processor)
 
         # Create handler for Python logging integration
-        try:
-            from opentelemetry.sdk._logs import LoggingHandler
-
-            self.handler = LoggingHandler(
-                level=get_storage_log_level().value,
-                logger_provider=self.logger_provider,
-            )
-        except ImportError:
-            logger.error(
-                "Failed to import LoggingHandler from OpenTelemetry SDK"
-            )
-            return
+        self.handler = LoggingHandler(
+            level=get_storage_log_level().value,
+            logger_provider=self.logger_provider,
+        )
 
         # Add handler to root logger
         root_logger = logging.getLogger()
@@ -164,11 +133,6 @@ class OtelLogStore(BaseLogStore):
 
         # Add to context variables for print capture
         logging_handlers.add(self.handler)
-
-        logger.debug(
-            f"OtelLogStore activated for {source} "
-            f"(pipeline_run={pipeline_run_id}, step={step_id})"
-        )
 
     def deactivate(self) -> None:
         """Deactivate log collection and flush remaining logs."""
@@ -199,6 +163,7 @@ class OtelLogStore(BaseLogStore):
 
         logger.debug("OtelLogStore deactivated")
 
+    @abstractmethod
     def fetch(
         self,
         logs_model: "LogsResponse",
@@ -221,8 +186,3 @@ class OtelLogStore(BaseLogStore):
         Returns:
             List of log entries from the backend.
         """
-        logger.warning(
-            "OtelLogStore.fetch() not implemented. "
-            "Subclasses should override this method to query their backend."
-        )
-        return []

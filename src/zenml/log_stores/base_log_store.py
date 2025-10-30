@@ -46,6 +46,7 @@ class BaseLogStore(StackComponent):
         """
         return cast(BaseLogStoreConfig, self._config)
 
+    # TODO: This should probably accept not just requests but also responses
     @abstractmethod
     def activate(self, log_request: "LogsRequest") -> None:
         """Activate the log store for log collection.
