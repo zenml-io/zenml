@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.deployers.base_deployer import (
@@ -47,7 +47,27 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         session_affinity: Session affinity for the Service (ClientIP or None).
         load_balancer_ip: Static IP for LoadBalancer service type.
         load_balancer_source_ranges: CIDR blocks allowed to access LoadBalancer.
+        command: Override container command (entrypoint).
+        args: Override container args.
+        readiness_probe_initial_delay: Seconds before first readiness probe after container start.
+        readiness_probe_period: Seconds between readiness probe checks.
+        readiness_probe_timeout: Seconds before readiness probe times out.
+        readiness_probe_failure_threshold: Failed probes before marking container as not ready.
+        liveness_probe_initial_delay: Seconds before first liveness probe after container start.
+        liveness_probe_period: Seconds between liveness probe checks.
+        liveness_probe_timeout: Seconds before liveness probe times out.
+        liveness_probe_failure_threshold: Failed probes before restarting container.
+        service_account_name: Kubernetes service account for the deployment pods.
+        image_pull_secrets: Names of Kubernetes secrets for pulling private images.
         pod_settings: Advanced pod configuration settings.
+        ingress_enabled: Enable Ingress resource creation for external access.
+        ingress_class: Ingress class name to use (e.g., 'nginx', 'traefik').
+        ingress_host: Hostname for the Ingress (e.g., 'my-app.example.com').
+        ingress_path: Path prefix for the Ingress rule (e.g., '/', '/api').
+        ingress_path_type: Path matching type: 'Prefix', 'Exact', or 'ImplementationSpecific'.
+        ingress_tls_enabled: Enable TLS/HTTPS for the Ingress.
+        ingress_tls_secret_name: Name of the Kubernetes Secret containing TLS certificate and key.
+        ingress_annotations: Annotations for the Ingress resource.
     """
 
     namespace: Optional[str] = Field(
@@ -66,11 +86,11 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
             "consider using ClusterIP with a manually configured Ingress resource."
         ),
     )
-    service_port: int = Field(
+    service_port: PositiveInt = Field(
         default=8000,
         description="Port to expose on the service.",
     )
-    node_port: Optional[int] = Field(
+    node_port: Optional[PositiveInt] = Field(
         default=None,
         description="Specific port on each node (NodePort type only). "
         "Must be in range 30000-32767. If not specified, Kubernetes assigns one.",
@@ -120,35 +140,35 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     )
 
     # Probe configuration
-    readiness_probe_initial_delay: int = Field(
+    readiness_probe_initial_delay: PositiveInt = Field(
         default=10,
         description="Seconds before first readiness probe after container start.",
     )
-    readiness_probe_period: int = Field(
+    readiness_probe_period: PositiveInt = Field(
         default=10,
         description="Seconds between readiness probe checks.",
     )
-    readiness_probe_timeout: int = Field(
+    readiness_probe_timeout: PositiveInt = Field(
         default=5,
         description="Seconds before readiness probe times out.",
     )
-    readiness_probe_failure_threshold: int = Field(
+    readiness_probe_failure_threshold: PositiveInt = Field(
         default=3,
         description="Failed probes before marking container as not ready.",
     )
-    liveness_probe_initial_delay: int = Field(
+    liveness_probe_initial_delay: PositiveInt = Field(
         default=30,
         description="Seconds before first liveness probe after container start.",
     )
-    liveness_probe_period: int = Field(
+    liveness_probe_period: PositiveInt = Field(
         default=10,
         description="Seconds between liveness probe checks.",
     )
-    liveness_probe_timeout: int = Field(
+    liveness_probe_timeout: PositiveInt = Field(
         default=5,
         description="Seconds before liveness probe times out.",
     )
-    liveness_probe_failure_threshold: int = Field(
+    liveness_probe_failure_threshold: PositiveInt = Field(
         default=3,
         description="Failed probes before restarting container.",
     )
@@ -226,6 +246,12 @@ class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
 
     This config combines deployer-specific settings with Kubernetes
     component configuration (context, namespace, in-cluster mode).
+
+    Attributes:
+        incluster: If `True`, the deployer will run inside the same cluster in which it itself is running. This requires the client to run in a Kubernetes pod itself. If set, the `kubernetes_context` config option is ignored. If the stack component is linked to a Kubernetes service connector, this field is ignored.
+        kubernetes_context: Name of a Kubernetes context to run deployments in. If the stack component is linked to a Kubernetes service connector, this field is ignored. Otherwise, it is mandatory.
+        kubernetes_namespace: Default Kubernetes namespace for deployments. Can be overridden per-deployment using the `namespace` setting. Defaults to 'zenml-deployments'.
+        local: If `True`, the deployer will assume it is connected to a local kubernetes cluster and will perform additional validations.
     """
 
     incluster: bool = Field(

@@ -79,7 +79,29 @@ POD_RESTART_ERROR_THRESHOLD = 2
 
 
 class KubernetesDeploymentMetadata(BaseModel):
-    """Metadata for a Kubernetes deployment."""
+    """Metadata for a Kubernetes deployment.
+
+    Captures runtime state and actual deployment details. Configuration settings
+    are stored separately in the deployment snapshot and can be viewed with
+    `zenml deployment describe <name> --show-schema`.
+
+    Attributes:
+        deployment_name: The name of the Kubernetes Deployment resource.
+        namespace: The namespace where the deployment is running.
+        service_name: The name of the Kubernetes Service resource.
+        pod_name: The name of a running pod (if available).
+        port: The service port exposed by the deployment.
+        service_type: The type of Kubernetes Service (LoadBalancer, NodePort, ClusterIP).
+        external_ip: The external IP or hostname (for LoadBalancer services).
+        node_port: The assigned node port (for NodePort services).
+        replicas: Number of replicas desired by the deployment.
+        ready_replicas: Number of pods that are ready and serving traffic.
+        available_replicas: Number of pods available for use.
+        cpu: CPU resources allocated to the deployment (e.g., "1000m", "2").
+        memory: Memory resources allocated to the deployment (e.g., "2Gi").
+        image: The container image actually deployed.
+        labels: Labels applied to the deployment resources.
+    """
 
     deployment_name: str
     namespace: str
@@ -89,6 +111,12 @@ class KubernetesDeploymentMetadata(BaseModel):
     service_type: str = "LoadBalancer"
     external_ip: Optional[str] = None
     node_port: Optional[int] = None
+    replicas: Optional[int] = None
+    ready_replicas: Optional[int] = None
+    available_replicas: Optional[int] = None
+    cpu: Optional[str] = None
+    memory: Optional[str] = None
+    image: Optional[str] = None
     labels: Dict[str, str] = Field(default_factory=dict)
 
     @classmethod
@@ -418,6 +446,9 @@ class KubernetesDeployer(ContainerizedDeployer):
     def _get_namespace(self, deployment: DeploymentResponse) -> str:
         """Get the namespace for a deployment.
 
+        Attempts to retrieve namespace from cached metadata first for performance,
+        then falls back to parsing settings if metadata is unavailable.
+
         Args:
             deployment: The deployment.
 
@@ -427,6 +458,22 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeployerError: If the deployment has no snapshot.
         """
+        # Fast path: Try to get namespace from metadata (avoids re-parsing settings)
+        if deployment.deployment_metadata:
+            try:
+                metadata = KubernetesDeploymentMetadata.from_deployment(
+                    deployment
+                )
+                return metadata.namespace
+            except Exception:
+                # Metadata invalid or incomplete, fall back to settings
+                logger.debug(
+                    f"Could not retrieve namespace from metadata for "
+                    f"deployment '{deployment.name}', parsing settings instead."
+                )
+
+        # Slow path: Parse settings (used during initial provisioning
+        # or when metadata is unavailable)
         snapshot = deployment.snapshot
         if not snapshot:
             raise DeployerError(
@@ -1896,18 +1943,59 @@ class KubernetesDeployer(ContainerizedDeployer):
                 k8s_service, namespace, k8s_ingress
             )
 
-            # Build metadata
+            # Extract runtime resource configuration from deployment
+            cpu_str = None
+            memory_str = None
+            if (
+                k8s_deployment.spec.template.spec.containers
+                and k8s_deployment.spec.template.spec.containers[0].resources
+            ):
+                resources = k8s_deployment.spec.template.spec.containers[
+                    0
+                ].resources
+                if resources.requests:
+                    cpu_str = resources.requests.get("cpu")
+                    memory_str = resources.requests.get("memory")
+                # Fall back to limits if no requests
+                if not cpu_str and resources.limits:
+                    cpu_str = resources.limits.get("cpu")
+                if not memory_str and resources.limits:
+                    memory_str = resources.limits.get("memory")
+
+            # Get actual image from deployment
+            image_str = None
+            if (
+                k8s_deployment.spec.template.spec.containers
+                and k8s_deployment.spec.template.spec.containers[0].image
+            ):
+                image_str = k8s_deployment.spec.template.spec.containers[
+                    0
+                ].image
+
+            # Build metadata (runtime state only, config is in snapshot)
             metadata = KubernetesDeploymentMetadata(
+                # Core identity
                 deployment_name=self._get_deployment_name(deployment),
                 namespace=namespace,
                 service_name=self._get_service_name(deployment),
                 pod_name=pod_name,
+                # Service networking
                 port=settings.service_port,
                 service_type=settings.service_type,
+                # Runtime health & scaling
+                replicas=k8s_deployment.spec.replicas or 0,
+                ready_replicas=k8s_deployment.status.ready_replicas or 0,
+                available_replicas=k8s_deployment.status.available_replicas
+                or 0,
+                # Runtime resources
+                cpu=cpu_str,
+                memory=memory_str,
+                image=image_str,
+                # Labels
                 labels=self._get_deployment_labels(deployment, settings),
             )
 
-            # Add service-specific metadata
+            # Add service-specific networking metadata
             if settings.service_type == "LoadBalancer":
                 if (
                     k8s_service.status.load_balancer
