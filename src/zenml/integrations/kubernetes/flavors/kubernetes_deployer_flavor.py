@@ -172,6 +172,14 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         default=3,
         description="Failed probes before restarting container.",
     )
+    liveness_probe_path: str = Field(
+        default="/api/health",
+        description="HTTP path for liveness probe health checks.",
+    )
+    readiness_probe_path: str = Field(
+        default="/api/health",
+        description="HTTP path for readiness probe health checks.",
+    )
 
     # Security and access control
     service_account_name: Optional[str] = Field(

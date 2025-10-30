@@ -396,8 +396,16 @@ class KubernetesDeployer(ContainerizedDeployer):
                             f"configuration. To set the active context, run:\n\n"
                             f"  `kubectl config use-context {kubernetes_context}`\n"
                         )
-                except Exception:
-                    pass
+                except RuntimeError as e:
+                    logger.debug(
+                        f"Could not validate Kubernetes context "
+                        f"'{kubernetes_context}': {e}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Unexpected error while validating Kubernetes context "
+                        f"'{kubernetes_context}': {e}"
+                    )
             elif self.config.incluster:
                 pass
             else:
@@ -507,14 +515,14 @@ class KubernetesDeployer(ContainerizedDeployer):
         )
         return settings.namespace or self.config.kubernetes_namespace
 
-    def _get_deployment_name(self, deployment: DeploymentResponse) -> str:
-        """Generate Kubernetes deployment name.
+    def _get_resource_base_name(self, deployment: DeploymentResponse) -> str:
+        """Get the base name used for all Kubernetes resources for this deployment.
 
         Args:
             deployment: The deployment.
 
         Returns:
-            Sanitized deployment name.
+            Sanitized base name used for Deployment, Service, and Ingress resources.
         """
         name = f"zenml-deployment-{deployment.id}"
         return kube_utils.sanitize_label(name)[:MAX_K8S_NAME_LENGTH]
@@ -561,10 +569,10 @@ class KubernetesDeployer(ContainerizedDeployer):
     def _sanitize_secret_key(self, key: str) -> str:
         """Sanitize a secret key to be a valid Kubernetes environment variable name.
 
-        Kubernetes environment variable names must:
-        - Consist of alphanumeric characters, '-', '_' or '.'
-        - Start with a letter or underscore (not a digit)
-        - Not contain certain special characters
+        Kubernetes environment variable names must be valid C identifiers:
+        - Consist of alphanumeric characters and underscores only: [A-Za-z0-9_]
+        - Start with a letter or underscore (not a digit): [A-Za-z_]
+        - Cannot contain hyphens, dots, or other special characters
 
         Args:
             key: The secret key to sanitize.
@@ -577,17 +585,10 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         original_key = key
 
-        sanitized = re.sub(r"[^a-zA-Z0-9_.-]", "_", key)
+        sanitized = re.sub(r"[^A-Za-z0-9_]", "_", original_key)
 
-        if sanitized and sanitized[0].isdigit():
-            sanitized = f"_{sanitized}"
-
-        if not sanitized:
-            raise DeployerError(
-                f"Secret key '{original_key}' cannot be sanitized to a valid "
-                f"Kubernetes environment variable name. Please use keys that "
-                f"contain at least one alphanumeric character."
-            )
+        if not sanitized or not re.match(r"^[A-Za-z_]", sanitized):
+            sanitized = f"_{sanitized}" if sanitized else "_VAR"
 
         if sanitized != original_key:
             logger.warning(
@@ -674,6 +675,8 @@ class KubernetesDeployer(ContainerizedDeployer):
     def _build_deployment_manifest(
         self,
         deployment: DeploymentResponse,
+        namespace: str,
+        labels: Dict[str, str],
         image: str,
         environment: Dict[str, str],
         secrets: Dict[str, str],
@@ -686,6 +689,8 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment.
+            namespace: Kubernetes namespace.
+            labels: Labels to apply to the deployment resources.
             image: Container image URI.
             environment: Environment variables.
             secrets: Secret environment variables (already sanitized).
@@ -697,9 +702,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Returns:
             Kubernetes Deployment manifest.
         """
-        deployment_name = self._get_deployment_name(deployment)
-        namespace = self._get_namespace(deployment)
-        labels = self._get_deployment_labels(deployment, settings)
+        deployment_name = self._get_resource_base_name(deployment)
 
         env_vars = self._prepare_environment(deployment, environment, secrets)
 
@@ -744,27 +747,31 @@ class KubernetesDeployer(ContainerizedDeployer):
             service_account_name=settings.service_account_name,
             liveness_probe_config=liveness_probe_config,
             readiness_probe_config=readiness_probe_config,
+            liveness_probe_path=settings.liveness_probe_path,
+            readiness_probe_path=settings.readiness_probe_path,
             pod_settings=settings.pod_settings,
         )
 
     def _build_service_manifest(
         self,
-        deployment: DeploymentResponse,
+        deployment_name: str,
+        service_name: str,
+        namespace: str,
+        labels: Dict[str, str],
         settings: KubernetesDeployerSettings,
     ) -> k8s_client.V1Service:
         """Build Kubernetes Service manifest.
 
         Args:
-            deployment: The deployment.
+            deployment_name: Name of the deployment.
+            service_name: Name of the service.
+            namespace: Kubernetes namespace.
+            labels: Labels to apply to the service resources.
             settings: Deployer settings.
 
         Returns:
             Kubernetes Service manifest.
         """
-        service_name = self._get_deployment_name(deployment)
-        namespace = self._get_namespace(deployment)
-        labels = self._get_deployment_labels(deployment, settings)
-
         return build_service_manifest(
             service_name=service_name,
             namespace=namespace,
@@ -776,17 +783,22 @@ class KubernetesDeployer(ContainerizedDeployer):
             session_affinity=settings.session_affinity,
             load_balancer_ip=settings.load_balancer_ip,
             load_balancer_source_ranges=settings.load_balancer_source_ranges,
+            deployment_name=deployment_name,
         )
 
     def _build_ingress_manifest(
         self,
         deployment: DeploymentResponse,
+        namespace: str,
+        labels: Dict[str, str],
         settings: KubernetesDeployerSettings,
     ) -> k8s_client.V1Ingress:
         """Build Kubernetes Ingress manifest.
 
         Args:
             deployment: The deployment.
+            namespace: Kubernetes namespace.
+            labels: Labels to apply to the ingress resources.
             settings: Deployer settings.
 
         Returns:
@@ -795,10 +807,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeployerError: If TLS is enabled but secret name is not provided.
         """
-        service_name = self._get_deployment_name(deployment)
-        namespace = self._get_namespace(deployment)
-        labels = self._get_deployment_labels(deployment, settings)
-        ingress_name = f"{service_name}-ingress"
+        service_name = self._get_resource_base_name(deployment)
+        ingress_name = self._get_ingress_name(deployment)
 
         if (
             settings.ingress_tls_enabled
@@ -832,8 +842,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         Returns:
             Ingress name.
         """
-        service_name = self._get_deployment_name(deployment)
-        return f"{service_name}-ingress"
+        deployment_name = self._get_resource_base_name(deployment)
+        return f"{deployment_name}-ingress"
+
+    def _get_hpa_name(self, deployment: DeploymentResponse) -> str:
+        """Generate Kubernetes HorizontalPodAutoscaler name.
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            HPA name.
+        """
+        deployment_name = self._get_resource_base_name(deployment)
+        return f"{deployment_name}-hpa"
 
     def _get_pod_for_deployment(
         self, deployment: DeploymentResponse
@@ -933,7 +955,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     def _manage_deployment_resource(
         self,
-        deployment: DeploymentResponse,
         namespace: str,
         deployment_name: str,
         deployment_manifest: k8s_client.V1Deployment,
@@ -942,7 +963,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         """Create or update Kubernetes Deployment resource.
 
         Args:
-            deployment: The deployment.
             namespace: Kubernetes namespace.
             deployment_name: Name of the Kubernetes Deployment.
             deployment_manifest: Deployment manifest.
@@ -972,7 +992,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     def _manage_service_resource(
         self,
-        deployment: DeploymentResponse,
         namespace: str,
         service_name: str,
         service_manifest: k8s_client.V1Service,
@@ -981,7 +1000,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         """Create or update Kubernetes Service resource.
 
         Args:
-            deployment: The deployment.
             namespace: Kubernetes namespace.
             service_name: Name of the Kubernetes Service.
             service_manifest: Service manifest.
@@ -1046,6 +1064,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         namespace: str,
+        labels: Dict[str, str],
         settings: KubernetesDeployerSettings,
     ) -> None:
         """Manage Kubernetes Ingress resource.
@@ -1053,6 +1072,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment.
             namespace: Kubernetes namespace.
+            labels: Labels to apply to the ingress resources.
             settings: Deployer settings.
         """
         ingress_name = self._get_ingress_name(deployment)
@@ -1064,7 +1084,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         if settings.ingress_enabled:
             ingress_manifest = self._build_ingress_manifest(
-                deployment, settings
+                deployment, namespace, labels, settings
             )
 
             if existing_ingress:
@@ -1115,7 +1135,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment_name: Name of the Kubernetes Deployment.
             settings: Deployer settings.
         """
-        hpa_name = f"{deployment_name}-hpa"
+        hpa_name = self._get_hpa_name(deployment)
 
         if settings.hpa_manifest:
             logger.info(
@@ -1190,8 +1210,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             raise DeploymentProvisionError(str(e)) from e
 
         namespace = self._get_namespace(deployment)
-        deployment_name = self._get_deployment_name(deployment)
-        service_name = deployment_name
+        deployment_name = service_name = self._get_resource_base_name(
+            deployment
+        )
+        labels = self._get_deployment_labels(deployment, settings)
 
         existing_deployment = get_deployment(
             apps_api=self.k8s_apps_api,
@@ -1212,6 +1234,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             # Build manifests
             deployment_manifest = self._build_deployment_manifest(
                 deployment,
+                namespace,
+                labels,
                 image,
                 environment,
                 sanitized_secrets,
@@ -1221,12 +1245,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                 replicas,
             )
             service_manifest = self._build_service_manifest(
-                deployment, settings
+                deployment_name, service_name, namespace, labels, settings
             )
 
             # Manage Kubernetes resources
             self._manage_deployment_resource(
-                deployment,
                 namespace,
                 deployment_name,
                 deployment_manifest,
@@ -1239,14 +1262,15 @@ class KubernetesDeployer(ContainerizedDeployer):
                 namespace=namespace,
             )
             self._manage_service_resource(
-                deployment,
                 namespace,
                 service_name,
                 service_manifest,
                 existing_service,
             )
 
-            self._manage_ingress_resource(deployment, namespace, settings)
+            self._manage_ingress_resource(
+                deployment, namespace, labels, settings
+            )
             self._manage_hpa_resource(
                 deployment, namespace, deployment_name, settings
             )
@@ -1303,7 +1327,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                 except Exception as cleanup_error:
                     logger.warning(
                         f"Failed to clean up partial resources for deployment '{deployment.name}': "
-                        f"{cleanup_error}. Manual cleanup may be required."
+                        f"{cleanup_error}. Manual cleanup may be required. "
+                        f"Original provisioning error: {e}"
                     )
             else:
                 logger.error(
@@ -1451,11 +1476,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             self.get_settings(snapshot),
         )
         namespace = self._get_namespace(deployment)
-        deployment_name = self._get_deployment_name(deployment)
+        deployment_name = service_name = self._get_resource_base_name(
+            deployment
+        )
         ingress_name = self._get_ingress_name(deployment)
+        labels = self._get_deployment_labels(deployment, settings)
 
         try:
-            # Get Kubernetes resources
             k8s_deployment = get_deployment(
                 apps_api=self.k8s_apps_api,
                 name=deployment_name,
@@ -1463,7 +1490,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
             k8s_service = get_service(
                 core_api=self.k8s_core_api,
-                name=deployment_name,
+                name=service_name,
                 namespace=namespace,
             )
             k8s_ingress = None
@@ -1480,12 +1507,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                     "not found"
                 )
 
-            # Determine status
             status = self._determine_deployment_status(
                 k8s_deployment, deployment
             )
 
-            # Build URL
             url = build_service_url(
                 core_api=self.k8s_core_api,
                 service=k8s_service,
@@ -1493,20 +1518,18 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ingress=k8s_ingress,
             )
 
-            # Extract resource info
             cpu_str, memory_str, image_str = self._extract_resource_info(
                 k8s_deployment
             )
 
-            # Get pod name
             pod = self._get_pod_for_deployment(deployment)
             pod_name = pod.metadata.name if pod else None
 
             # Build metadata
             metadata = KubernetesDeploymentMetadata(
-                deployment_name=self._get_deployment_name(deployment),
+                deployment_name=deployment_name,
                 namespace=namespace,
-                service_name=self._get_deployment_name(deployment),
+                service_name=service_name,
                 pod_name=pod_name,
                 port=settings.service_port,
                 service_type=settings.service_type,
@@ -1517,10 +1540,9 @@ class KubernetesDeployer(ContainerizedDeployer):
                 cpu=cpu_str,
                 memory=memory_str,
                 image=image_str,
-                labels=self._get_deployment_labels(deployment, settings),
+                labels=labels,
             )
 
-            # Enrich metadata with service-specific info
             self._enrich_metadata_with_service_info(
                 metadata, k8s_service, settings
             )
@@ -1621,13 +1643,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentDeprovisionError: If deprovisioning fails.
         """
         namespace = self._get_namespace(deployment)
-        deployment_name = self._get_deployment_name(deployment)
-        service_name = self._get_deployment_name(deployment)
+        deployment_name = service_name = self._get_resource_base_name(
+            deployment
+        )
         ingress_name = self._get_ingress_name(deployment)
+        hpa_name = self._get_hpa_name(deployment)
 
         try:
-            # Delete HPA if it exists
-            hpa_name = f"{deployment_name}-hpa"
             delete_hpa(
                 autoscaling_api=self.k8s_autoscaling_api,
                 name=hpa_name,
@@ -1638,7 +1660,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            # Delete Ingress
             delete_ingress(
                 networking_api=self.k8s_networking_api,
                 name=ingress_name,
@@ -1649,7 +1670,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            # Delete Service
             delete_service(
                 core_api=self.k8s_core_api,
                 name=service_name,
@@ -1660,7 +1680,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            # Delete Deployment
             delete_deployment(
                 apps_api=self.k8s_apps_api,
                 name=deployment_name,
@@ -1672,7 +1691,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            # Delete Secret
             try:
                 secret_name = self._get_secret_name(deployment)
                 kube_utils.delete_secret(
@@ -1685,9 +1703,20 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"in namespace '{namespace}'."
                 )
             except ApiException as e:
-                if e.status != 404:
-                    logger.warning(
-                        f"Failed to delete Secret '{secret_name}': {e}"
+                if e.status == 404:
+                    logger.debug(
+                        f"Secret '{secret_name}' not found in namespace '{namespace}' (already deleted or never existed)."
+                    )
+                elif e.status == 403:
+                    logger.error(
+                        f"Permission denied when deleting Secret '{secret_name}' in namespace '{namespace}': {e}. "
+                        f"The Secret may remain and require manual cleanup. "
+                        f"Check RBAC permissions for the service account."
+                    )
+                else:
+                    logger.error(
+                        f"Failed to delete Secret '{secret_name}' in namespace '{namespace}': {e}. "
+                        f"The Secret may remain and require manual cleanup."
                     )
 
             return None

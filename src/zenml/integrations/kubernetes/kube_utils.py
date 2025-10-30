@@ -2025,6 +2025,13 @@ def build_url_from_ingress(ingress: k8s_client.V1Ingress) -> Optional[str]:
     Returns:
         URL from ingress rules or load balancer, or None if not available.
     """
+    if not ingress.spec:
+        logger.warning(
+            f"Ingress '{ingress.metadata.name if ingress.metadata else 'unknown'}' "
+            f"has no spec. Cannot build URL."
+        )
+        return None
+
     protocol = "https" if ingress.spec.tls else "http"
 
     # Try to get URL from ingress rules
@@ -2066,12 +2073,16 @@ def build_url_from_loadbalancer_service(
     Returns:
         LoadBalancer URL or None if IP not yet assigned.
     """
-    if not service.spec.ports:
+    if not service.spec or not service.spec.ports:
         return None
 
     service_port = service.spec.ports[0].port
 
-    if service.status.load_balancer and service.status.load_balancer.ingress:
+    if (
+        service.status
+        and service.status.load_balancer
+        and service.status.load_balancer.ingress
+    ):
         lb_ingress = service.status.load_balancer.ingress[0]
         host = lb_ingress.ip or lb_ingress.hostname
         if host:
@@ -2094,12 +2105,12 @@ def build_url_from_nodeport_service(
     Returns:
         NodePort URL or None if not accessible.
     """
-    if not service.spec.ports:
+    if not service.spec or not service.spec.ports:
         return None
 
     node_port = service.spec.ports[0].node_port
     service_port = service.spec.ports[0].port
-    service_name = service.metadata.name
+    service_name = service.metadata.name if service.metadata else "unknown"
 
     if not node_port:
         return None
@@ -2157,10 +2168,11 @@ def build_url_from_clusterip_service(
     Returns:
         Internal cluster DNS URL.
     """
-    if not service.spec.ports:
-        return f"http://{service.metadata.name}.{namespace}.svc.cluster.local"
+    service_name = service.metadata.name if service.metadata else "unknown"
 
-    service_name = service.metadata.name
+    if not service.spec or not service.spec.ports:
+        return f"http://{service_name}.{namespace}.svc.cluster.local"
+
     service_port = service.spec.ports[0].port
 
     logger.warning(
@@ -2194,6 +2206,14 @@ def build_service_url(
     # If ingress is configured, use it
     if ingress:
         return build_url_from_ingress(ingress)
+
+    if not service.spec or not service.spec.type:
+        service_name = service.metadata.name if service.metadata else "unknown"
+        logger.warning(
+            f"Service '{service_name}' has no type specified in spec. "
+            f"Cannot build service URL."
+        )
+        return None
 
     # Otherwise, build URL based on service type
     service_type = service.spec.type
