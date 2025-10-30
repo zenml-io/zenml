@@ -1,0 +1,1 @@
+import{j as l}from"./@radix-sxciy0xP.js";function n({children:e,icon:t}){return l.jsxs("section",{className:"layout-container flex h-full w-full flex-1 flex-col items-center justify-center gap-5",children:[t,e]})}export{n as E};

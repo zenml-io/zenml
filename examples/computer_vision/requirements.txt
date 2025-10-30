@@ -1,0 +1,6 @@
+zenml[server]>=0.91.0
+ultralytics>=8.0.0
+fiftyone>=0.25.0
+pillow>=10.0.0
+opencv-python>=4.8.0
+

@@ -1,0 +1,50 @@
+Requirement already satisfied: modal in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (0.73.98)
+Collecting modal
+  Downloading modal-1.0.3-py3-none-any.whl.metadata (2.4 kB)
+Requirement already satisfied: aiohttp in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (3.11.18)
+Requirement already satisfied: certifi in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (2025.4.26)
+Requirement already satisfied: click~=8.1.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (8.1.7)
+Requirement already satisfied: grpclib==0.4.7 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (0.4.7)
+Requirement already satisfied: protobuf!=4.24.0,<7.0,>=3.19 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (4.25.7)
+Requirement already satisfied: rich>=12.0.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (14.0.0)
+Collecting synchronicity~=0.9.13 (from modal)
+  Downloading synchronicity-0.9.14-py3-none-any.whl.metadata (13 kB)
+Requirement already satisfied: toml in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (0.10.2)
+Requirement already satisfied: typer>=0.9 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (0.15.2)
+Requirement already satisfied: types-certifi in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (2021.10.8.3)
+Requirement already satisfied: types-toml in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (0.10.8.20240310)
+Requirement already satisfied: watchfiles in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (1.0.5)
+Requirement already satisfied: typing_extensions~=4.6 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from modal) (4.14.0)
+Requirement already satisfied: h2<5,>=3.1.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from grpclib==0.4.7->modal) (4.2.0)
+Requirement already satisfied: multidict in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from grpclib==0.4.7->modal) (6.4.3)
+Requirement already satisfied: markdown-it-py>=2.2.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from rich>=12.0.0->modal) (3.0.0)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from rich>=12.0.0->modal) (2.19.1)
+Requirement already satisfied: sigtools>=4.0.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from synchronicity~=0.9.13->modal) (4.0.1)
+Requirement already satisfied: shellingham>=1.3.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from typer>=0.9->modal) (1.5.4)
+Requirement already satisfied: aiohappyeyeballs>=2.3.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (2.6.1)
+Requirement already satisfied: aiosignal>=1.1.2 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (1.3.2)
+Requirement already satisfied: async-timeout<6.0,>=4.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (5.0.1)
+Requirement already satisfied: attrs>=17.3.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (25.3.0)
+Requirement already satisfied: frozenlist>=1.1.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (1.6.0)
+Requirement already satisfied: propcache>=0.2.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (0.3.1)
+Requirement already satisfied: yarl<2.0,>=1.17.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from aiohttp->modal) (1.20.0)
+Requirement already satisfied: anyio>=3.0.0 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from watchfiles->modal) (4.9.0)
+Requirement already satisfied: exceptiongroup>=1.0.2 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from anyio>=3.0.0->watchfiles->modal) (1.3.0)
+Requirement already satisfied: idna>=2.8 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from anyio>=3.0.0->watchfiles->modal) (3.10)
+Requirement already satisfied: sniffio>=1.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from anyio>=3.0.0->watchfiles->modal) (1.3.1)
+Requirement already satisfied: hyperframe<7,>=6.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from h2<5,>=3.1.0->grpclib==0.4.7->modal) (6.1.0)
+Requirement already satisfied: hpack<5,>=4.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from h2<5,>=3.1.0->grpclib==0.4.7->modal) (4.1.0)
+Requirement already satisfied: mdurl~=0.1 in /home/htahir1/.virtualenvs/zenml_dev/lib/python3.10/site-packages (from markdown-it-py>=2.2.0->rich>=12.0.0->modal) (0.1.2)
+Downloading modal-1.0.3-py3-none-any.whl (577 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 577.9/577.9 kB 4.9 MB/s eta 0:00:00
+Downloading synchronicity-0.9.14-py3-none-any.whl (37 kB)
+Installing collected packages: synchronicity, modal
+  Attempting uninstall: synchronicity
+    Found existing installation: synchronicity 0.9.11
+    Uninstalling synchronicity-0.9.11:
+      Successfully uninstalled synchronicity-0.9.11
+  Attempting uninstall: modal
+    Found existing installation: modal 0.73.98
+    Uninstalling modal-0.73.98:
+      Successfully uninstalled modal-0.73.98
+Successfully installed modal-1.0.3 synchronicity-0.9.14
