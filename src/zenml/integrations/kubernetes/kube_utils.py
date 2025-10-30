@@ -1171,3 +1171,253 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+def wait_for_service_deletion(
+    core_api: k8s_client.CoreV1Api,
+    service_name: str,
+    namespace: str,
+    timeout: int = 60,
+) -> None:
+    """Wait for a Service to be fully deleted.
+
+    Polls the Service until it returns 404, indicating deletion is complete.
+    This prevents race conditions when recreating Services with immutable
+    field changes.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        service_name: Name of the Service to wait for.
+        namespace: Namespace containing the Service.
+        timeout: Maximum time to wait in seconds. Default is 60.
+
+    Raises:
+        RuntimeError: If Service is not deleted within timeout.
+        ApiException: If an API error occurs (other than 404).
+    """
+    start_time = time.time()
+    backoff = 1.0
+    max_backoff = 5.0
+
+    while time.time() - start_time < timeout:
+        try:
+            core_api.read_namespaced_service(
+                name=service_name,
+                namespace=namespace,
+            )
+            logger.debug(
+                f"Waiting for Service '{service_name}' deletion to complete..."
+            )
+            time.sleep(backoff)
+            backoff = min(backoff * 1.5, max_backoff)
+        except ApiException as e:
+            if e.status == 404:
+                logger.debug(f"Service '{service_name}' deletion confirmed.")
+                return
+            raise
+
+    raise RuntimeError(
+        f"Timeout waiting for Service '{service_name}' to be deleted after "
+        f"{timeout} seconds. Service may have finalizers or the cluster may "
+        f"be slow. Check Service status with kubectl."
+    )
+
+
+def wait_for_deployment_ready(
+    apps_api: k8s_client.AppsV1Api,
+    deployment_name: str,
+    namespace: str,
+    timeout: int,
+    check_interval: float = 2.0,
+) -> None:
+    """Wait for a Deployment to become ready.
+
+    Args:
+        apps_api: Kubernetes AppsV1Api client.
+        deployment_name: Name of the Deployment to wait for.
+        namespace: Namespace containing the Deployment.
+        timeout: Maximum time to wait in seconds.
+        check_interval: Seconds between status checks. Default is 2.0.
+
+    Raises:
+        RuntimeError: If deployment doesn't become ready within timeout
+            or encounters a failure condition.
+    """
+    logger.info(
+        f"Waiting up to {timeout}s for deployment '{deployment_name}' "
+        f"to become ready..."
+    )
+
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            deployment = apps_api.read_namespaced_deployment(
+                name=deployment_name,
+                namespace=namespace,
+            )
+
+            if deployment.status:
+                available_replicas = deployment.status.available_replicas or 0
+                replicas = deployment.spec.replicas or 0
+
+                if available_replicas == replicas and replicas > 0:
+                    logger.info(
+                        f"Deployment '{deployment_name}' is ready with "
+                        f"{available_replicas}/{replicas} replicas available."
+                    )
+                    return
+
+                if deployment.status.conditions:
+                    for condition in deployment.status.conditions:
+                        if (
+                            condition.type == "Progressing"
+                            and condition.status == "False"
+                            and condition.reason == "ProgressDeadlineExceeded"
+                        ):
+                            raise RuntimeError(
+                                f"Deployment '{deployment_name}' failed to "
+                                f"progress: {condition.message}"
+                            )
+
+                logger.debug(
+                    f"Deployment '{deployment_name}' status: "
+                    f"{available_replicas}/{replicas} replicas available"
+                )
+
+        except ApiException as e:
+            if e.status != 404:
+                raise RuntimeError(
+                    f"Error checking deployment status: {e}"
+                ) from e
+
+        time.sleep(check_interval)
+
+    raise RuntimeError(
+        f"Deployment '{deployment_name}' did not become ready "
+        f"within {timeout} seconds"
+    )
+
+
+def wait_for_loadbalancer_ip(
+    core_api: k8s_client.CoreV1Api,
+    service_name: str,
+    namespace: str,
+    timeout: int = 150,
+    check_interval: float = 2.0,
+) -> Optional[str]:
+    """Wait for a LoadBalancer service to get an external IP.
+
+    Args:
+        core_api: Kubernetes CoreV1Api client.
+        service_name: Name of the LoadBalancer Service.
+        namespace: Namespace containing the Service.
+        timeout: Maximum time to wait in seconds. Default is 150.
+        check_interval: Seconds between status checks. Default is 2.0.
+
+    Returns:
+        The external IP/hostname if assigned, None if timeout reached.
+        Note: Returns None on timeout rather than raising to allow
+        deployment to continue (IP might be assigned later).
+    """
+    logger.info(
+        f"Waiting up to {timeout}s for LoadBalancer service '{service_name}' "
+        f"to get an external IP..."
+    )
+
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            service = core_api.read_namespaced_service(
+                name=service_name,
+                namespace=namespace,
+            )
+
+            if (
+                service.status
+                and service.status.load_balancer
+                and service.status.load_balancer.ingress
+            ):
+                ingress = service.status.load_balancer.ingress[0]
+                external_ip = ingress.ip or ingress.hostname
+                if external_ip:
+                    logger.info(
+                        f"LoadBalancer service '{service_name}' received "
+                        f"external IP/hostname: {external_ip}"
+                    )
+                    return external_ip
+
+            logger.debug(
+                f"LoadBalancer service '{service_name}' is still waiting "
+                f"for external IP assignment..."
+            )
+
+        except ApiException as e:
+            if e.status != 404:
+                logger.error(f"Error checking service status: {e}")
+                return None
+
+        time.sleep(check_interval)
+
+    logger.warning(
+        f"LoadBalancer service '{service_name}' did not receive an "
+        f"external IP within {timeout} seconds. The deployment is still "
+        f"running, but you may need to check the service status later."
+    )
+    return None
+
+
+def check_pod_failure_status(
+    pod: k8s_client.V1Pod,
+    restart_error_threshold: int = 5,
+) -> Optional[str]:
+    """Check if a pod has container failures indicating deployment errors.
+
+    Args:
+        pod: The Kubernetes pod to inspect.
+        restart_error_threshold: Number of restarts to consider as an error.
+            Default is 5.
+
+    Returns:
+        Error reason if pod has failures, None otherwise.
+    """
+    if not pod.status or not pod.status.container_statuses:
+        return None
+
+    # Error reasons that indicate permanent or recurring failures
+    ERROR_REASONS = {
+        "CrashLoopBackOff",
+        "ErrImagePull",
+        "ImagePullBackOff",
+        "CreateContainerConfigError",
+        "InvalidImageName",
+        "CreateContainerError",
+        "RunContainerError",
+    }
+
+    for container_status in pod.status.container_statuses:
+        if container_status.state and container_status.state.waiting:
+            reason = container_status.state.waiting.reason
+            if reason in ERROR_REASONS:
+                message = container_status.state.waiting.message or ""
+                return f"{reason}: {message}".strip(": ")
+
+        if container_status.state and container_status.state.terminated:
+            reason = container_status.state.terminated.reason
+            exit_code = container_status.state.terminated.exit_code
+            if exit_code and exit_code != 0:
+                message = container_status.state.terminated.message or ""
+                return f"Container terminated with exit code {exit_code}: {reason} {message}".strip()
+
+        if (
+            container_status.last_state
+            and container_status.last_state.terminated
+        ):
+            restart_count = container_status.restart_count or 0
+            if restart_count > restart_error_threshold:
+                reason = (
+                    container_status.last_state.terminated.reason or "Error"
+                )
+                exit_code = container_status.last_state.terminated.exit_code
+                return f"Container restarting ({restart_count} restarts): {reason} (exit code {exit_code})"
+
+    return None

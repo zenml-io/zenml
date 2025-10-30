@@ -477,3 +477,281 @@ def build_cron_job_manifest(
         metadata=job_template.metadata,
         spec=spec,
     )
+
+
+def build_deployment_manifest(
+    deployment_name: str,
+    namespace: str,
+    labels: Dict[str, str],
+    annotations: Optional[Dict[str, str]],
+    replicas: int,
+    image: str,
+    command: List[str],
+    args: List[str],
+    env_vars: List[k8s_client.V1EnvVar],
+    service_port: int,
+    resource_requests: Dict[str, str],
+    resource_limits: Dict[str, str],
+    image_pull_policy: str,
+    image_pull_secrets: List[str],
+    service_account_name: Optional[str],
+    liveness_probe_config: Dict[str, Any],
+    readiness_probe_config: Dict[str, Any],
+    pod_settings: Optional[Any] = None,
+) -> k8s_client.V1Deployment:
+    """Build a Kubernetes Deployment manifest.
+
+    Args:
+        deployment_name: Name of the deployment.
+        namespace: Kubernetes namespace.
+        labels: Labels to apply to resources.
+        annotations: Annotations to apply to pod metadata.
+        replicas: Number of pod replicas.
+        image: Container image URI.
+        command: Container command.
+        args: Container arguments.
+        env_vars: Environment variables for the container.
+        service_port: Container port to expose.
+        resource_requests: Resource requests (cpu, memory, gpu).
+        resource_limits: Resource limits (cpu, memory, gpu).
+        image_pull_policy: Image pull policy.
+        image_pull_secrets: Names of image pull secrets.
+        service_account_name: Service account name.
+        liveness_probe_config: Liveness probe configuration.
+        readiness_probe_config: Readiness probe configuration.
+        pod_settings: Optional pod settings to apply.
+
+    Returns:
+        Kubernetes Deployment manifest.
+    """
+    container = k8s_client.V1Container(
+        name="deployment",
+        image=image,
+        command=command,
+        args=args,
+        env=env_vars,
+        ports=[
+            k8s_client.V1ContainerPort(
+                container_port=service_port,
+                name="http",
+            )
+        ],
+        resources=k8s_client.V1ResourceRequirements(
+            requests=resource_requests,
+            limits=resource_limits,
+        ),
+        liveness_probe=k8s_client.V1Probe(
+            http_get=k8s_client.V1HTTPGetAction(
+                path="/api/health",
+                port=service_port,
+            ),
+            **liveness_probe_config,
+        ),
+        readiness_probe=k8s_client.V1Probe(
+            http_get=k8s_client.V1HTTPGetAction(
+                path="/api/health",
+                port=service_port,
+            ),
+            **readiness_probe_config,
+        ),
+        image_pull_policy=image_pull_policy,
+    )
+
+    pod_spec = k8s_client.V1PodSpec(
+        containers=[container],
+        service_account_name=service_account_name,
+        image_pull_secrets=[
+            k8s_client.V1LocalObjectReference(name=secret_name)
+            for secret_name in image_pull_secrets
+        ]
+        if image_pull_secrets
+        else None,
+    )
+
+    # Apply pod settings if provided
+    if pod_settings:
+        add_pod_settings(pod_spec, pod_settings)
+
+    # Pod template labels must include the selector label
+    pod_labels = {**labels, "app": deployment_name}
+
+    pod_template = k8s_client.V1PodTemplateSpec(
+        metadata=k8s_client.V1ObjectMeta(
+            labels=pod_labels,
+            annotations=annotations or None,
+        ),
+        spec=pod_spec,
+    )
+
+    return k8s_client.V1Deployment(
+        api_version="apps/v1",
+        kind="Deployment",
+        metadata=k8s_client.V1ObjectMeta(
+            name=deployment_name,
+            namespace=namespace,
+            labels=labels,
+        ),
+        spec=k8s_client.V1DeploymentSpec(
+            replicas=replicas,
+            selector=k8s_client.V1LabelSelector(
+                match_labels={"app": deployment_name}
+            ),
+            template=pod_template,
+        ),
+    )
+
+
+def build_service_manifest(
+    service_name: str,
+    namespace: str,
+    labels: Dict[str, str],
+    annotations: Optional[Dict[str, str]],
+    service_type: str,
+    service_port: int,
+    node_port: Optional[int],
+    session_affinity: Optional[str],
+    load_balancer_ip: Optional[str],
+    load_balancer_source_ranges: Optional[List[str]],
+) -> k8s_client.V1Service:
+    """Build a Kubernetes Service manifest.
+
+    Args:
+        service_name: Name of the service.
+        namespace: Kubernetes namespace.
+        labels: Labels to apply to the service.
+        annotations: Annotations to apply to the service.
+        service_type: Type of service (LoadBalancer, NodePort, ClusterIP).
+        service_port: Port to expose.
+        node_port: Node port (for NodePort service type).
+        session_affinity: Session affinity setting.
+        load_balancer_ip: Static IP for LoadBalancer.
+        load_balancer_source_ranges: CIDR blocks for LoadBalancer.
+
+    Returns:
+        Kubernetes Service manifest.
+    """
+    service_port_obj = k8s_client.V1ServicePort(
+        port=service_port,
+        target_port=service_port,
+        protocol="TCP",
+        name="http",
+    )
+
+    if service_type == "NodePort" and node_port:
+        service_port_obj.node_port = node_port
+
+    service_spec = k8s_client.V1ServiceSpec(
+        type=service_type,
+        selector={"app": service_name},
+        ports=[service_port_obj],
+    )
+
+    if session_affinity:
+        service_spec.session_affinity = session_affinity
+
+    if service_type == "LoadBalancer":
+        if load_balancer_ip:
+            service_spec.load_balancer_ip = load_balancer_ip
+        if load_balancer_source_ranges:
+            service_spec.load_balancer_source_ranges = (
+                load_balancer_source_ranges
+            )
+
+    return k8s_client.V1Service(
+        api_version="v1",
+        kind="Service",
+        metadata=k8s_client.V1ObjectMeta(
+            name=service_name,
+            namespace=namespace,
+            labels=labels,
+            annotations=annotations or None,
+        ),
+        spec=service_spec,
+    )
+
+
+def build_ingress_manifest(
+    ingress_name: str,
+    namespace: str,
+    labels: Dict[str, str],
+    annotations: Optional[Dict[str, str]],
+    service_name: str,
+    service_port: int,
+    ingress_class: Optional[str],
+    ingress_host: Optional[str],
+    ingress_path: str,
+    ingress_path_type: str,
+    tls_enabled: bool,
+    tls_secret_name: Optional[str],
+) -> k8s_client.V1Ingress:
+    """Build a Kubernetes Ingress manifest.
+
+    Args:
+        ingress_name: Name of the ingress.
+        namespace: Kubernetes namespace.
+        labels: Labels to apply to the ingress.
+        annotations: Annotations to apply to the ingress.
+        service_name: Name of the backend service.
+        service_port: Port of the backend service.
+        ingress_class: Ingress class name.
+        ingress_host: Hostname for the ingress rule.
+        ingress_path: Path for the ingress rule.
+        ingress_path_type: Path type (Prefix, Exact, etc.).
+        tls_enabled: Whether TLS is enabled.
+        tls_secret_name: Name of the TLS secret.
+
+    Returns:
+        Kubernetes Ingress manifest.
+    """
+    backend = k8s_client.V1IngressBackend(
+        service=k8s_client.V1IngressServiceBackend(
+            name=service_name,
+            port=k8s_client.V1ServiceBackendPort(number=service_port),
+        )
+    )
+
+    http_ingress_path = k8s_client.V1HTTPIngressPath(
+        path=ingress_path,
+        path_type=ingress_path_type,
+        backend=backend,
+    )
+
+    http_ingress_rule_value = k8s_client.V1HTTPIngressRuleValue(
+        paths=[http_ingress_path]
+    )
+
+    ingress_rule = k8s_client.V1IngressRule(
+        http=http_ingress_rule_value,
+    )
+
+    if ingress_host:
+        ingress_rule.host = ingress_host
+
+    tls_configs = None
+    if tls_enabled and tls_secret_name:
+        tls_config = k8s_client.V1IngressTLS(
+            secret_name=tls_secret_name,
+        )
+        if ingress_host:
+            tls_config.hosts = [ingress_host]
+        tls_configs = [tls_config]
+
+    ingress_spec = k8s_client.V1IngressSpec(
+        rules=[ingress_rule],
+        tls=tls_configs,
+    )
+
+    if ingress_class:
+        ingress_spec.ingress_class_name = ingress_class
+
+    return k8s_client.V1Ingress(
+        api_version="networking.k8s.io/v1",
+        kind="Ingress",
+        metadata=k8s_client.V1ObjectMeta(
+            name=ingress_name,
+            namespace=namespace,
+            labels=labels,
+            annotations=annotations or None,
+        ),
+        spec=ingress_spec,
+    )
