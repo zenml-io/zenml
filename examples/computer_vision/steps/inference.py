@@ -167,12 +167,22 @@ def run_detection(
     # Parse results
     detections: List[Dict[str, Any]] = []
 
-    for result in results:
-        # Get image dimensions
-        image_height, image_width = result.orig_shape
+    if not results:
+        return {
+            "error": "No inference results returned",
+            "detections": [],
+            "num_detections": 0,
+        }
 
-        # Extract detection information
-        boxes = result.boxes
+    # Process the first result (YOLO inference typically returns one result per image)
+    result = results[0]
+
+    # Get image dimensions
+    image_height, image_width = result.orig_shape
+
+    # Extract detection information
+    boxes = result.boxes
+    if boxes is not None and len(boxes) > 0:
         for box in boxes:
             # Get bounding box coordinates (xyxy format)
             x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -191,45 +201,38 @@ def run_detection(
                 }
             )
 
-        # Save annotated image
-        annotated_image_path = Path("predictions") / "annotated_image.jpg"
-        annotated_image_path.parent.mkdir(parents=True, exist_ok=True)
+    # Save annotated image (this will show bounding boxes even if no detections)
+    annotated_image_path = Path("predictions") / "annotated_image.jpg"
+    annotated_image_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Plot results on image
-        annotated_img = result.plot()
+    # Plot results on image (YOLO's plot() shows boxes if any detected)
+    annotated_img = result.plot()
 
-        # Save using cv2
-        cv2.imwrite(str(annotated_image_path), annotated_img)
+    # Save using cv2
+    cv2.imwrite(str(annotated_image_path), annotated_img)
 
-        logger.info(
-            f"Annotated image saved to: {annotated_image_path.absolute()}"
-        )
+    logger.info(
+        f"Annotated image saved to: {annotated_image_path.absolute()}"
+    )
 
-        # Convert images to base64 for web display
-        # Get the original image
-        original_img = result.orig_img
+    # Convert images to base64 for web display
+    # Get the original image
+    original_img = result.orig_img
 
-        # Encode original image to base64
-        _, original_buffer = cv2.imencode(".jpg", original_img)
-        original_base64 = base64.b64encode(original_buffer).decode("utf-8")
+    # Encode original image to base64
+    _, original_buffer = cv2.imencode(".jpg", original_img)
+    original_base64 = base64.b64encode(original_buffer).decode("utf-8")
 
-        # Encode annotated image to base64
-        _, annotated_buffer = cv2.imencode(".jpg", annotated_img)
-        annotated_base64 = base64.b64encode(annotated_buffer).decode("utf-8")
+    # Encode annotated image to base64
+    _, annotated_buffer = cv2.imencode(".jpg", annotated_img)
+    annotated_base64 = base64.b64encode(annotated_buffer).decode("utf-8")
 
-        return {
-            "detections": detections,
-            "num_detections": len(detections),
-            "annotated_image_path": str(annotated_image_path.absolute()),
-            "image_size": {"width": image_width, "height": image_height},
-            "model_version": model_version,
-            "original_image_base64": original_base64,
-            "annotated_image_base64": annotated_base64,
-        }
-
-    # If no results
     return {
-        "detections": [],
-        "num_detections": 0,
-        "error": "No detections found",
+        "detections": detections,
+        "num_detections": len(detections),
+        "annotated_image_path": str(annotated_image_path.absolute()),
+        "image_size": {"width": image_width, "height": image_height},
+        "model_version": model_version,
+        "original_image_base64": original_base64,
+        "annotated_image_base64": annotated_base64,
     }
