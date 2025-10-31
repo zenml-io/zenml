@@ -14,12 +14,13 @@
 """Module for centralized WarningController implementation."""
 
 import logging
-from collections import defaultdict
+from collections import Counter
 from typing import Any
 
 from zenml.enums import LoggingLevels
 from zenml.utils.singleton import SingletonMetaClass
 from zenml.utils.warnings.base import WarningConfig, WarningVerbosity
+from zenml.utils.warnings.registry import WarningCodes
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class WarningController(metaclass=SingletonMetaClass):
     def __init__(self) -> None:
         """WarningController constructor."""
         self._warning_configs: dict[str, WarningConfig] = {}
-        self._warning_statistics: dict[str, int] = defaultdict(int)
+        self._warning_statistics: dict[str, int] = Counter()
 
     def register(self, warning_configs: dict[str, WarningConfig]) -> None:
         """Register a warning config collection to the controller.
@@ -81,7 +82,7 @@ class WarningController(metaclass=SingletonMetaClass):
 
     def _log(
         self,
-        warning_code: str,
+        warning_code: WarningCodes,
         message: str,
         level: LoggingLevels,
         **kwargs: dict[str, Any],
@@ -125,7 +126,9 @@ class WarningController(metaclass=SingletonMetaClass):
             # Assumes warning level is the default if an invalid option is passed.
             logger.warning(display_message.format(**kwargs))
 
-    def warn(self, *, warning_code: str, message: str, **kwargs: Any) -> None:
+    def warn(
+        self, *, warning_code: WarningCodes, message: str, **kwargs: Any
+    ) -> None:
         """Method to execute warning handling logic with warning log level.
 
         Args:
@@ -135,7 +138,9 @@ class WarningController(metaclass=SingletonMetaClass):
         """
         self._log(warning_code, message, LoggingLevels.WARNING, **kwargs)
 
-    def info(self, *, warning_code: str, message: str, **kwargs: Any) -> None:
+    def info(
+        self, *, warning_code: WarningCodes, message: str, **kwargs: Any
+    ) -> None:
         """Method to execute warning handling logic with info log level.
 
         Args:

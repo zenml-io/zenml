@@ -385,29 +385,20 @@ class Compiler:
             stack: The stack the settings are validated against.
 
         """
-        from zenml.orchestrators import (
-            ContainerizedOrchestrator,
-            LocalOrchestrator,
-        )
+        from zenml.orchestrators import LocalOrchestrator
 
-        if not docker_settings or isinstance(
-            stack.orchestrator, ContainerizedOrchestrator
-        ):
+        if not docker_settings:
             return
 
         warning_message = (
-            "You are specifying docker settings but you are not using a"
-            f"containerized orchestrator: {stack.orchestrator.__class__.__name__}."
-            f"Consider switching stack or using a containerized orchestrator, otherwise"
-            f"your docker settings will be ignored."
+            "You are specifying docker settings but the orchestrator"
+            " you are using (LocalOrchestrator) will not make use of them. "
+            "Consider switching stacks, removing the settings, or using a "
+            "different orchestrator."
         )
 
         if isinstance(stack.orchestrator, LocalOrchestrator):
             WARNING_CONTROLLER.info(
-                warning_code=WarningCodes.ZML002, message=warning_message
-            )
-        else:
-            WARNING_CONTROLLER.warn(
                 warning_code=WarningCodes.ZML002, message=warning_message
             )
 
@@ -440,7 +431,7 @@ class Compiler:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
                 WARNING_CONTROLLER.info(
-                    warning_code=WarningCodes.ZML001.value,
+                    warning_code=WarningCodes.ZML001,
                     message="Not including stack component settings with key {key}",
                     key=key,
                 )

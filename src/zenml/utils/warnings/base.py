@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Warning configuration class and helper enums."""
 
-from enum import Enum
-
 from pydantic import BaseModel, Field
 
+from zenml.utils.enum_utils import StrEnum
 
-class WarningSeverity(str, Enum):
+
+class WarningSeverity(StrEnum):
     """Enum class describing the warning severity."""
 
     LOW = "low"
@@ -26,13 +26,13 @@ class WarningSeverity(str, Enum):
     HIGH = "high"
 
 
-class WarningCategory(str, Enum):
+class WarningCategory(StrEnum):
     """Enum class describing the warning category."""
 
     USAGE = "USAGE"
 
 
-class WarningVerbosity(str, Enum):
+class WarningVerbosity(StrEnum):
     """Enum class describing the warning verbosity."""
 
     LOW = "low"

@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """Module for warning configurations organization and resolution."""
 
-from enum import Enum
-
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.warnings.base import (
     WarningCategory,
     WarningConfig,
@@ -23,7 +22,7 @@ from zenml.utils.warnings.base import (
 )
 
 
-class WarningCodes(str, Enum):
+class WarningCodes(StrEnum):
     """Enum class organizing the warning codes."""
 
     ZML001 = "ZML001"
