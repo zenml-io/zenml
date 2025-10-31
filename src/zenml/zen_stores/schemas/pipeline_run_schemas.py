@@ -43,6 +43,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
+    PipelineRunTriggerInfo,
     PipelineRunUpdate,
     RunMetadataEntry,
 )
@@ -568,6 +569,23 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 client_environment.pop("python_packages", None)
                 orchestrator_environment.pop("python_packages", None)
 
+            trigger_info: Optional[PipelineRunTriggerInfo] = None
+            if self.triggered_by and self.triggered_by_type:
+                if (
+                    self.triggered_by_type
+                    == PipelineRunTriggeredByType.STEP_RUN.value
+                ):
+                    trigger_info = PipelineRunTriggerInfo(
+                        step_run_id=self.triggered_by,
+                    )
+                elif (
+                    self.triggered_by_type
+                    == PipelineRunTriggeredByType.DEPLOYMENT.value
+                ):
+                    trigger_info = PipelineRunTriggerInfo(
+                        deployment_id=self.triggered_by,
+                    )
+
             metadata = PipelineRunResponseMetadata(
                 run_metadata=self.fetch_metadata(
                     include_full_metadata=include_full_metadata
@@ -583,6 +601,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if self.snapshot
                 else None,
                 is_templatable=is_templatable,
+                trigger_info=trigger_info,
             )
 
         resources = None

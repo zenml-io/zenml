@@ -275,6 +275,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=False,
         description="Whether a template can be created from this run.",
     )
+    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+        default=None,
+        title="Trigger information for the pipeline run.",
+    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):

@@ -15,3 +15,4 @@
 * [Teams](teams.md)
 * [Roles & Permissions](roles.md)
 * [Service Accounts](service-accounts.md)
+* [Secrets Stores](secrets-stores.md)
