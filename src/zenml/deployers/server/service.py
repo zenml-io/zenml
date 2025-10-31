@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Pipeline deployment service."""
 
-import contextvars
 import time
 import traceback
 from abc import ABC, abstractmethod
@@ -64,6 +63,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
+from zenml.zen_stores.rest_zen_store import RestZenStore
 
 if TYPE_CHECKING:
     from zenml.deployers.server.app import BaseDeploymentAppRunner
@@ -75,28 +75,10 @@ logger = get_logger(__name__)
 class SharedLocalOrchestrator(LocalOrchestrator):
     """Local orchestrator tweaked for deployments.
 
-    This is a slight modification of the LocalOrchestrator:
-    - uses request-scoped orchestrator run ids by storing them in contextvars
-    - bypasses the init/cleanup hook execution because they are run globally by
-    the deployment service
+    This is a slight modification of the LocalOrchestrator: it bypasses the
+    init/cleanup hook execution because they are run globally by the deployment
+    service
     """
-
-    # Use contextvars for thread-safe, request-scoped state
-    _shared_orchestrator_run_id: contextvars.ContextVar[Optional[str]] = (
-        contextvars.ContextVar("orchestrator_run_id", default=None)
-    )
-
-    def get_orchestrator_run_id(self) -> str:
-        """Get the orchestrator run id.
-
-        Returns:
-            The orchestrator run id.
-        """
-        run_id = self._shared_orchestrator_run_id.get()
-        if run_id is None:
-            run_id = str(uuid4())
-            self._shared_orchestrator_run_id.set(run_id)
-        return run_id
 
     @classmethod
     def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
@@ -324,22 +306,18 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         """
         self._client = Client()
 
+        if isinstance(self._client.zen_store, RestZenStore):
+            # Set the connection pool size to match the number of threads
+            self._client.zen_store.config.connection_pool_size = (
+                self.app_runner.settings.thread_pool_size
+            )
+            self._client.zen_store.reinitialize_session()
+
         # Execution tracking
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
         self.total_executions = 0
-
-        # Cache a local orchestrator instance to avoid per-request construction
-        self._orchestrator = SharedLocalOrchestrator(
-            name="deployment-local",
-            id=uuid4(),
-            config=LocalOrchestratorConfig(),
-            flavor="local",
-            type=StackComponentType.ORCHESTRATOR,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
+        self.orchestrator_class = SharedLocalOrchestrator
 
         try:
             # Execute init hook
@@ -577,8 +555,16 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         """
         active_stack: Stack = self._client.active_stack
 
-        if self._orchestrator is None:
-            raise RuntimeError("Orchestrator not initialized")
+        orchestrator = self.orchestrator_class(
+            name="deployment-local",
+            id=uuid4(),
+            config=LocalOrchestratorConfig(),
+            flavor="local",
+            type=StackComponentType.ORCHESTRATOR,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
         # Start deployment runtime context with parameters (still needed for
         # in-memory materializer)
@@ -592,7 +578,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         try:
             # Use the new deployment snapshot with pre-configured settings
-            self._orchestrator.run(
+            orchestrator.run(
                 snapshot=deployment_snapshot,
                 stack=active_stack,
                 placeholder_run=placeholder_run,

@@ -473,7 +473,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         raw_name = f"{prefix}{deployment_name}"
 
         return self._sanitize_name(
-            raw_name, deployment_id_short, max_length=63
+            raw_name, deployment_id_short, max_length=49
         )
 
     def _get_secret_name(

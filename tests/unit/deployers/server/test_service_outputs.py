@@ -116,6 +116,9 @@ class _DummyDeploymentAppRunner(BaseDeploymentAppRunner):
 
 
 class _DummyOrchestrator:
+    def __init__(self, *args, **kwargs) -> None:
+        pass
+
     def run(self, snapshot, stack, placeholder_run):  # noqa: D401
         runtime.record_step_outputs("step1", {"result": "fast_value"})
 
@@ -172,7 +175,7 @@ def _make_service(
     )
     service.initialize()
     service.params_model = _DummyParams
-    service._orchestrator = _DummyOrchestrator()
+    service.orchestrator_class = _DummyOrchestrator
     return service
 
 

@@ -52,6 +52,7 @@ For additional configuration of the Local deployer, you can pass the following `
   * `port_range`: The range of ports to search for a free port. Defaults to `(8000, 65535)`.
   * `address`: The address that the deployment server will listen on. Defaults to `127.0.0.1`.
   * `blocking`: Whether to run the deployment in the current process instead of running it as a daemon process. Defaults to False. Use this if you want to debug issues with the deployment ASGI application itself.
+  * `auto_reload`: Whether to enable auto-reload for the uvicorn server. This is useful to speed up local development by automatically restarting the server when code changes are detected without requiring a re-provisioning of the entire deployment. Defaults to False. NOTE: the `auto_reload` setting has no effect on changes in the pipeline configuration, step configuration or stack configuration.
 
 Check out [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
