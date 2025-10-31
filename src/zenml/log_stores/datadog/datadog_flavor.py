@@ -15,12 +15,13 @@
 
 from typing import Type
 
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
+from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 
 class DatadogLogStoreConfig(OtelLogStoreConfig):
@@ -33,7 +34,7 @@ class DatadogLogStoreConfig(OtelLogStoreConfig):
         site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
     """
 
-    api_key: SecretStr = Field(
+    api_key: PlainSerializedSecretStr = Field(
         description="Datadog API key for log ingestion",
     )
     site: str = Field(
