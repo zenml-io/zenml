@@ -1759,51 +1759,6 @@ def get_ingress(
             return None
         raise
 
-
-def create_ingress(
-    networking_api: k8s_client.NetworkingV1Api,
-    namespace: str,
-    ingress_manifest: k8s_client.V1Ingress,
-) -> k8s_client.V1Ingress:
-    """Create a Kubernetes Ingress.
-
-    Args:
-        networking_api: Kubernetes Networking V1 API client.
-        namespace: Kubernetes namespace.
-        ingress_manifest: The Ingress manifest.
-
-    Returns:
-        The created Ingress.
-    """
-    return retry_on_api_exception(
-        networking_api.create_namespaced_ingress,
-        fail_on_status_codes=(404, 409),
-    )(namespace=namespace, body=ingress_manifest)
-
-
-def update_ingress(
-    networking_api: k8s_client.NetworkingV1Api,
-    name: str,
-    namespace: str,
-    ingress_manifest: k8s_client.V1Ingress,
-) -> k8s_client.V1Ingress:
-    """Update a Kubernetes Ingress.
-
-    Args:
-        networking_api: Kubernetes Networking V1 API client.
-        name: Name of the ingress.
-        namespace: Kubernetes namespace.
-        ingress_manifest: The updated Ingress manifest.
-
-    Returns:
-        The updated Ingress.
-    """
-    return retry_on_api_exception(
-        networking_api.patch_namespaced_ingress,
-        fail_on_status_codes=(404,),
-    )(name=name, namespace=namespace, body=ingress_manifest)
-
-
 def delete_ingress(
     networking_api: k8s_client.NetworkingV1Api,
     name: str,
@@ -1827,6 +1782,51 @@ def delete_ingress(
     except ApiException as e:
         if e.status != 404:
             raise
+
+
+def create_or_update_ingress(
+    networking_api: k8s_client.NetworkingV1Api,
+    namespace: str,
+    ingress_manifest: Dict[str, Any],
+) -> None:
+    """Create or update a Kubernetes Ingress.
+
+    Args:
+        networking_api: Kubernetes Networking V1 API client.
+        namespace: Kubernetes namespace.
+        ingress_manifest: The Ingress manifest as a dictionary.
+
+    Raises:
+        ApiException: If an API error occurs.
+    """
+    ingress_name = ingress_manifest.get("metadata", {}).get("name")
+    if not ingress_name:
+        logger.warning(
+            "Ingress manifest is missing 'metadata.name'. Skipping Ingress creation."
+        )
+        return
+
+    try:
+        retry_on_api_exception(
+            networking_api.create_namespaced_ingress,
+            fail_on_status_codes=(404,),
+        )(namespace=namespace, body=ingress_manifest)
+        logger.info(f"Created Ingress '{ingress_name}'.")
+    except ApiException as e:
+        if e.status == 409:
+            # Ingress already exists, update it
+            try:
+                retry_on_api_exception(
+                    networking_api.patch_namespaced_ingress,
+                    fail_on_status_codes=(404,),
+                )(name=ingress_name, namespace=namespace, body=ingress_manifest)
+                logger.info(f"Updated Ingress '{ingress_name}'.")
+            except ApiException as patch_error:
+                logger.warning(
+                    f"Failed to update Ingress '{ingress_name}': {patch_error}"
+                )
+        else:
+            logger.warning(f"Failed to create Ingress '{ingress_name}': {e}")
 
 
 # ============================================================================

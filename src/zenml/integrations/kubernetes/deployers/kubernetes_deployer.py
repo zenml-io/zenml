@@ -53,7 +53,6 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 )
 from zenml.integrations.kubernetes.manifest_utils import (
     build_deployment_manifest,
-    build_ingress_manifest,
     build_service_manifest,
 )
 from zenml.logger import get_logger
@@ -519,15 +518,26 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         return f"zenml-secrets-{deployment.id}"
 
-    def _get_ingress_name(self, deployment: DeploymentResponse) -> str:
-        """Generate Kubernetes ingress name.
+    def _get_ingress_name(
+        self, deployment: DeploymentResponse, settings: KubernetesDeployerSettings
+    ) -> Optional[str]:
+        """Get Kubernetes ingress name from manifest if provided.
 
         Args:
             deployment: The deployment.
+            settings: Deployer settings.
 
         Returns:
-            Ingress name.
+            Ingress name from manifest or None if not provided.
         """
+        if not settings.ingress_manifest:
+            return None
+
+        manifest_name = settings.ingress_manifest.get("metadata", {}).get("name")
+        if manifest_name:
+            return str(manifest_name)
+
+        # Fallback to default name
         deployment_name = self._get_resource_base_name(deployment)
         return f"{deployment_name}-ingress"
 
@@ -798,52 +808,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment_name=deployment_name,
         )
 
-    def _build_ingress_manifest(
-        self,
-        deployment: DeploymentResponse,
-        namespace: str,
-        labels: Dict[str, str],
-        settings: KubernetesDeployerSettings,
-    ) -> k8s_client.V1Ingress:
-        """Build Kubernetes Ingress manifest.
-
-        Args:
-            deployment: The deployment.
-            namespace: Kubernetes namespace.
-            labels: Labels to apply to the ingress resources.
-            settings: Deployer settings.
-
-        Returns:
-            Kubernetes Ingress manifest.
-
-        Raises:
-            DeployerError: If TLS is enabled but secret name is not provided.
-        """
-        service_name = self._get_resource_base_name(deployment)
-        ingress_name = self._get_ingress_name(deployment)
-
-        if (
-            settings.ingress_tls_enabled
-            and not settings.ingress_tls_secret_name
-        ):
-            raise DeployerError(
-                "ingress_tls_secret_name must be set when ingress_tls_enabled is True"
-            )
-
-        return build_ingress_manifest(
-            ingress_name=ingress_name,
-            namespace=namespace,
-            labels=labels,
-            annotations=settings.ingress_annotations,
-            service_name=service_name,
-            service_port=settings.service_port,
-            ingress_class=settings.ingress_class,
-            ingress_host=settings.ingress_host,
-            ingress_path=settings.ingress_path,
-            ingress_path_type=settings.ingress_path_type,
-            tls_enabled=settings.ingress_tls_enabled,
-            tls_secret_name=settings.ingress_tls_secret_name,
-        )
 
     # ========================================================================
     # Resource Lifecycle Management
@@ -1055,7 +1019,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         namespace: str,
-        labels: Dict[str, str],
         settings: KubernetesDeployerSettings,
     ) -> None:
         """Manage Kubernetes Ingress resource.
@@ -1063,53 +1026,38 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment.
             namespace: Kubernetes namespace.
-            labels: Labels to apply to the ingress resources.
             settings: Deployer settings.
         """
-        ingress_name = self._get_ingress_name(deployment)
-        existing_ingress = kube_utils.get_ingress(
-            networking_api=self.k8s_networking_api,
-            name=ingress_name,
-            namespace=namespace,
-        )
+        ingress_name = self._get_ingress_name(deployment, settings)
 
-        if settings.ingress_enabled:
-            ingress_manifest = self._build_ingress_manifest(
-                deployment, namespace, labels, settings
+        if settings.ingress_manifest:
+            logger.info(
+                f"Creating/updating Ingress "
+                f"in namespace '{namespace}'."
             )
-
-            if existing_ingress:
-                logger.info(
-                    f"Updating Kubernetes Ingress '{ingress_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                kube_utils.update_ingress(
+            kube_utils.create_or_update_ingress(
+                networking_api=self.k8s_networking_api,
+                namespace=namespace,
+                ingress_manifest=settings.ingress_manifest,
+            )
+        else:
+            # Clean up ingress if manifest was removed
+            if ingress_name:
+                existing_ingress = kube_utils.get_ingress(
                     networking_api=self.k8s_networking_api,
                     name=ingress_name,
                     namespace=namespace,
-                    ingress_manifest=ingress_manifest,
                 )
-            else:
-                logger.info(
-                    f"Creating Kubernetes Ingress '{ingress_name}' "
-                    f"in namespace '{namespace}'."
-                )
-                kube_utils.create_ingress(
-                    networking_api=self.k8s_networking_api,
-                    namespace=namespace,
-                    ingress_manifest=ingress_manifest,
-                )
-        elif existing_ingress:
-            # Delete Ingress if disabled
-            logger.info(
-                f"Ingress disabled, deleting existing Kubernetes Ingress '{ingress_name}' "
-                f"in namespace '{namespace}'."
-            )
-            kube_utils.delete_ingress(
-                networking_api=self.k8s_networking_api,
-                name=ingress_name,
-                namespace=namespace,
-            )
+                if existing_ingress:
+                    logger.info(
+                        f"Ingress manifest removed, deleting existing Ingress '{ingress_name}' "
+                        f"in namespace '{namespace}'."
+                    )
+                    kube_utils.delete_ingress(
+                        networking_api=self.k8s_networking_api,
+                        name=ingress_name,
+                        namespace=namespace,
+                    )
 
     def _manage_hpa_resource(
         self,
@@ -1262,7 +1210,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
             self._manage_ingress_resource(
-                deployment, namespace, labels, settings
+                deployment, namespace, settings
             )
             self._manage_hpa_resource(deployment, namespace, settings)
 
@@ -1475,7 +1423,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         deployment_name = service_name = self._get_resource_base_name(
             deployment
         )
-        ingress_name = self._get_ingress_name(deployment)
+        ingress_name = self._get_ingress_name(deployment, settings)
         labels = self._get_deployment_labels(deployment, settings)
 
         try:
@@ -1490,7 +1438,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 namespace=namespace,
             )
             k8s_ingress = None
-            if settings.ingress_enabled:
+            if ingress_name:
                 k8s_ingress = kube_utils.get_ingress(
                     networking_api=self.k8s_networking_api,
                     name=ingress_name,
@@ -1646,11 +1594,21 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentNotFoundError: If deployment is not found.
             DeploymentDeprovisionError: If deprovisioning fails.
         """
+        snapshot = deployment.snapshot
+        if not snapshot:
+            raise DeploymentDeprovisionError(
+                f"Deployment '{deployment.name}' has no snapshot."
+            )
+
+        settings = cast(
+            KubernetesDeployerSettings,
+            self.get_settings(snapshot),
+        )
         namespace = self._get_namespace(deployment)
         deployment_name = service_name = self._get_resource_base_name(
             deployment
         )
-        ingress_name = self._get_ingress_name(deployment)
+        ingress_name = self._get_ingress_name(deployment, settings)
         hpa_name = self._get_hpa_name(deployment)
 
         try:
@@ -1664,15 +1622,16 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"in namespace '{namespace}'."
             )
 
-            kube_utils.delete_ingress(
-                networking_api=self.k8s_networking_api,
-                name=ingress_name,
-                namespace=namespace,
-            )
-            logger.info(
-                f"Deleted Kubernetes Ingress '{ingress_name}' "
-                f"in namespace '{namespace}'."
-            )
+            if ingress_name:
+                kube_utils.delete_ingress(
+                    networking_api=self.k8s_networking_api,
+                    name=ingress_name,
+                    namespace=namespace,
+                )
+                logger.info(
+                    f"Deleted Kubernetes Ingress '{ingress_name}' "
+                    f"in namespace '{namespace}'."
+                )
 
             kube_utils.delete_service(
                 core_api=self.k8s_core_api,

@@ -60,14 +60,8 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         service_account_name: Kubernetes service account for the deployment pods.
         image_pull_secrets: Names of Kubernetes secrets for pulling private images.
         pod_settings: Advanced pod configuration settings.
-        ingress_enabled: Enable Ingress resource creation for external access.
-        ingress_class: Ingress class name to use (e.g., 'nginx', 'traefik').
-        ingress_host: Hostname for the Ingress (e.g., 'my-app.example.com').
-        ingress_path: Path prefix for the Ingress rule (e.g., '/', '/api').
-        ingress_path_type: Path matching type: 'Prefix', 'Exact', or 'ImplementationSpecific'.
-        ingress_tls_enabled: Enable TLS/HTTPS for the Ingress.
-        ingress_tls_secret_name: Name of the Kubernetes Secret containing TLS certificate and key.
-        ingress_annotations: Annotations for the Ingress resource.
+        ingress_manifest: Optional Ingress manifest for external access routing.
+        hpa_manifest: Optional HorizontalPodAutoscaler manifest for autoscaling.
         service_deletion_timeout: Timeout in seconds to wait for service deletion.
         deployment_ready_check_interval: Interval in seconds between deployment readiness checks.
         pod_restart_error_threshold: Number of pod restarts before marking a deployment as failed.
@@ -202,53 +196,49 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     )
 
     # Ingress configuration
-    ingress_enabled: bool = Field(
-        default=False,
-        description="Enable Ingress resource creation for external access. "
-        "When enabled, an Ingress will be created in addition to the Service. "
-        "Requires an Ingress Controller (nginx, traefik, etc.) in the cluster.",
-    )
-    ingress_class: Optional[str] = Field(
+    ingress_manifest: Optional[Dict[str, Any]] = Field(
         default=None,
-        description="Ingress class name to use (e.g., 'nginx', 'traefik'). "
-        "If not specified, uses the cluster's default Ingress class. "
-        "The Ingress Controller for this class must be installed in the cluster.",
-    )
-    ingress_host: Optional[str] = Field(
-        default=None,
-        description="Hostname for the Ingress (e.g., 'my-app.example.com'). "
-        "If not specified, the Ingress will match all hosts. "
-        "Required for TLS configuration.",
-    )
-    ingress_path: str = Field(
-        default="/",
-        description="Path prefix for the Ingress rule (e.g., '/', '/api'). "
-        "Defaults to '/' (match all paths).",
-    )
-    ingress_path_type: str = Field(
-        default="Prefix",
-        description="Path matching type: 'Prefix', 'Exact', or 'ImplementationSpecific'. "
-        "Defaults to 'Prefix' (matches the path and all sub-paths).",
-    )
-    ingress_tls_enabled: bool = Field(
-        default=False,
-        description="Enable TLS/HTTPS for the Ingress. "
-        "Requires 'ingress_tls_secret_name' to be set.",
-    )
-    ingress_tls_secret_name: Optional[str] = Field(
-        default=None,
-        description="Name of the Kubernetes Secret containing TLS certificate and key. "
-        "Required when 'ingress_tls_enabled' is True. "
-        "The secret must exist in the same namespace and contain 'tls.crt' and 'tls.key'.",
-    )
-    ingress_annotations: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Annotations for the Ingress resource. "
-        "Use controller-specific annotations for advanced configuration. "
-        "Examples:\n"
-        "  nginx: {'nginx.ingress.kubernetes.io/rewrite-target': '/'}\n"
-        "  traefik: {'traefik.ingress.kubernetes.io/router.entrypoints': 'web'}\n"
-        "  AWS ALB: {'alb.ingress.kubernetes.io/scheme': 'internet-facing'}",
+        description="Optional Ingress manifest for external access routing. "
+        "If provided, ZenML will create/update this Ingress alongside the Deployment and Service. "
+        "The Ingress should route to the service created by this deployer. "
+        "Requires an Ingress Controller (nginx, traefik, etc.) in the cluster. "
+        "Example:\n"
+        "  {\n"
+        '    "apiVersion": "networking.k8s.io/v1",\n'
+        '    "kind": "Ingress",\n'
+        '    "metadata": {\n'
+        '      "name": "my-ingress",\n'
+        '      "annotations": {\n'
+        '        "nginx.ingress.kubernetes.io/rewrite-target": "/"\n'
+        "      }\n"
+        "    },\n"
+        '    "spec": {\n'
+        '      "ingressClassName": "nginx",\n'
+        '      "rules": [\n'
+        "        {\n"
+        '          "host": "my-app.example.com",\n'
+        '          "http": {\n'
+        '            "paths": [\n'
+        "              {\n"
+        '                "path": "/",\n'
+        '                "pathType": "Prefix",\n'
+        '                "backend": {\n'
+        '                  "service": {\n'
+        '                    "name": "<service-name>",\n'
+        '                    "port": {"number": 8000}\n'
+        "                  }\n"
+        "                }\n"
+        "              }\n"
+        "            ]\n"
+        "          }\n"
+        "        }\n"
+        "      ],\n"
+        '      "tls": [\n'
+        '        {"hosts": ["my-app.example.com"], "secretName": "tls-secret"}\n'
+        "      ]\n"
+        "    }\n"
+        "  }\n"
+        "See: https://kubernetes.io/docs/concepts/services-networking/ingress/",
     )
 
     # Autoscaling configuration
