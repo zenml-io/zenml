@@ -82,6 +82,6 @@
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [Forecasting time-series prediction](https://github.com/zenml-io/zenml-projects/tree/main/floracasts)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
-* [Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
+* [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)
 * [Deep research agentic workflow](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)
 * [More Projects...](https://github.com/zenml-io/zenml-projects)
