@@ -8,7 +8,7 @@ trained model's predictions vs ground truth annotations.
 
 import sys
 
-import fiftyone as fo
+from annotators import FiftyOneAnnotator
 
 from zenml.logger import get_logger
 
@@ -17,20 +17,29 @@ logger = get_logger(__name__)
 
 def list_available_datasets():
     """List all available FiftyOne datasets."""
-    datasets = fo.list_datasets()
+    # Use FiftyOne annotator for dataset management
+    annotator = FiftyOneAnnotator()
+    datasets = annotator.get_dataset_names()
+
     if not datasets:
         logger.info("No FiftyOne datasets found.")
         return []
 
     logger.info("Available FiftyOne datasets:")
     for i, name in enumerate(datasets, 1):
-        dataset = fo.load_dataset(name)
-        sample_count = len(dataset)
-        has_predictions = "predictions" in dataset.get_field_schema().keys()
-        pred_status = (
-            "✅ Has predictions" if has_predictions else "❌ No predictions"
-        )
-        logger.info(f"{i}. {name} ({sample_count} samples) - {pred_status}")
+        try:
+            labeled_count, unlabeled_count = annotator.get_dataset_stats(name)
+            total_samples = labeled_count + unlabeled_count
+            pred_status = (
+                f"✅ Has predictions ({labeled_count} labeled)"
+                if labeled_count > 0
+                else "❌ No predictions"
+            )
+            logger.info(
+                f"{i}. {name} ({total_samples} samples) - {pred_status}"
+            )
+        except Exception as e:
+            logger.warning(f"Could not get stats for dataset {name}: {e}")
 
     return datasets
 
@@ -38,15 +47,22 @@ def list_available_datasets():
 def launch_dataset(dataset_name: str, port: int = 5151):
     """Launch FiftyOne app with specific dataset."""
     try:
-        dataset = fo.load_dataset(dataset_name)
+        # Use FiftyOne annotator for launching
+        annotator = FiftyOneAnnotator()
+
+        # Get dataset stats
+        labeled_count, unlabeled_count = annotator.get_dataset_stats(
+            dataset_name
+        )
+        total_samples = labeled_count + unlabeled_count
+
         logger.info(f"Loading dataset: {dataset_name}")
-        logger.info(f"Samples: {len(dataset)}")
+        logger.info(f"Samples: {total_samples}")
 
         # Check if it has predictions
-        has_predictions = "predictions" in dataset.get_field_schema().keys()
-        if has_predictions:
+        if labeled_count > 0:
             logger.info(
-                "✅ Dataset has predictions - you can compare with ground truth!"
+                f"✅ Dataset has predictions ({labeled_count} labeled) - you can compare with ground truth!"
             )
         else:
             logger.info("❌ Dataset has no predictions - run training first")
@@ -54,7 +70,8 @@ def launch_dataset(dataset_name: str, port: int = 5151):
         logger.info("Launching FiftyOne App...")
         logger.info(f"🌐 Opening browser to http://localhost:{port}")
 
-        session = fo.launch_app(dataset, port=port)
+        # Launch using annotator
+        session = annotator.launch(dataset_name=dataset_name, port=port)
 
         logger.info("\n🎯 FiftyOne Dashboard Controls:")
         logger.info(

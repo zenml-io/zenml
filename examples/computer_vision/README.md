@@ -100,6 +100,9 @@ After training, the pipeline creates persistent FiftyOne datasets linked to your
 # Easy way - automatically finds datasets with predictions
 python launch_fiftyone.py
 
+# Launch specific dataset with custom port
+python launch_fiftyone.py coco-2017-validation-50samples --port 8080
+
 # Manual way
 fiftyone app launch
 # Then in Python: fo.load_dataset('coco-2017-validation-50samples')
@@ -132,16 +135,27 @@ computer_vision/
 │   ├── evaluate.py               - Model evaluation metrics
 │   ├── inference.py              - Fast object detection (supports base64 uploads)
 │   └── fiftyone_analysis.py      - Complete annotation workflow loop
+├── annotators/
+│   ├── __init__.py               - Annotator package initialization
+│   └── fiftyone_annotator.py     - FiftyOne annotator class (ZenML-style)
 ├── materializers/
 │   └── ultralytics_materializer.py  - Custom YOLO model serialization
 ├── ui/
 │   └── index.html                - Interactive web interface with image upload
 ├── run.py                        - CLI for training and testing
-├── launch_fiftyone.py            - Easy FiftyOne dashboard launcher
+├── launch_fiftyone.py            - Easy FiftyOne dashboard launcher (uses annotator)
 └── requirements.txt              - Dependencies
 ```
 
 ## 🔑 Important Notes
+
+### **FiftyOne Annotator Class**
+
+This example includes a `FiftyOneAnnotator` class that encapsulates all FiftyOne functionality in a clean, ZenML-style interface. **Crucially, it fixes the COCO class mapping issue** that causes catastrophic training failure when FiftyOne exports datasets with sequential IDs instead of proper COCO class IDs.
+
+- 📄 [View FiftyOne annotator documentation](./annotators/README.md)
+- 🔧 [View annotator implementation](./annotators/fiftyone_annotator.py)
+- 🎯 **Key fix**: Proper COCO 80-class mapping ensures successful training (mAP@50: 0.799) vs broken training (0 mAP)
 
 ### **Custom Materializers**
 

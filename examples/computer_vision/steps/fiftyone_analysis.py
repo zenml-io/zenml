@@ -18,8 +18,7 @@
 
 from typing import Annotated, Any, Dict
 
-import fiftyone as fo
-from fiftyone import ViewField as F
+from annotators import FiftyOneAnnotator
 from ultralytics import YOLO
 
 from zenml import step
@@ -49,79 +48,15 @@ def run_inference_on_fiftyone_dataset(
     Returns:
         Updated FiftyOne dataset name with predictions added
     """
-    logger.info(f"Loading FiftyOne dataset: {fiftyone_dataset_name}")
+    # Initialize FiftyOne annotator
+    annotator = FiftyOneAnnotator()
 
-    # Load the existing FiftyOne dataset
-    try:
-        dataset = fo.load_dataset(fiftyone_dataset_name)
-    except ValueError:
-        logger.error(f"Dataset {fiftyone_dataset_name} not found")
-        raise
-
-    logger.info(f"Dataset loaded with {len(dataset)} samples")
-    logger.info(f"Ground truth field: {dataset.default_classes}")
-
-    # Add predictions field to store model outputs
-    predictions_field = "predictions"
-    logger.info(
-        f"Running inference and adding predictions to '{predictions_field}' field"
+    # Run inference and add predictions using the annotator
+    return annotator.run_inference_and_add_predictions(
+        dataset_name=fiftyone_dataset_name,
+        model=trained_model,
+        confidence_threshold=confidence_threshold,
     )
-
-    # Run inference on each sample
-    prediction_count = 0
-    for sample in dataset.iter_samples(progress=True):
-        image_path = sample.filepath
-
-        # Run YOLO inference
-        results = trained_model(
-            image_path, conf=confidence_threshold, verbose=False
-        )
-
-        # Convert YOLO results to FiftyOne detections
-        detections = []
-        for result in results:
-            boxes = result.boxes
-            if boxes is not None:
-                for box in boxes:
-                    # Get bounding box coordinates (normalized)
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
-
-                    # Normalize coordinates (YOLO uses absolute, FiftyOne needs relative)
-                    img_height, img_width = result.orig_shape
-                    x1_norm = x1 / img_width
-                    y1_norm = y1 / img_height
-                    x2_norm = x2 / img_width
-                    y2_norm = y2 / img_height
-
-                    # Convert to FiftyOne format (x, y, width, height)
-                    width = x2_norm - x1_norm
-                    height = y2_norm - y1_norm
-
-                    # Get confidence and class
-                    confidence = float(box.conf[0])
-                    class_id = int(box.cls[0])
-                    class_name = trained_model.names[class_id]
-
-                    detection = fo.Detection(
-                        label=class_name,
-                        bounding_box=[x1_norm, y1_norm, width, height],
-                        confidence=confidence,
-                    )
-                    detections.append(detection)
-
-        # Add predictions to the sample
-        sample[predictions_field] = fo.Detections(detections=detections)
-        sample.save()
-        prediction_count += len(detections)
-
-    logger.info(
-        f"Added {prediction_count} predictions across {len(dataset)} samples"
-    )
-
-    # Save the updated dataset
-    dataset.save()
-
-    return fiftyone_dataset_name
 
 
 def analyze_predictions_with_fiftyone(
@@ -141,152 +76,11 @@ def analyze_predictions_with_fiftyone(
     Returns:
         Analysis results and insights about model performance
     """
-    logger.info(f"Analyzing predictions in dataset: {fiftyone_dataset_name}")
+    # Initialize FiftyOne annotator
+    annotator = FiftyOneAnnotator()
 
-    # Load dataset with predictions
-    dataset = fo.load_dataset(fiftyone_dataset_name)
-
-    # Get ground truth and prediction fields
-    gt_field = "ground_truth"  # COCO datasets use this by default
-    pred_field = "predictions"
-
-    logger.info(f"Comparing {gt_field} vs {pred_field}")
-
-    # Evaluate predictions against ground truth at IoU 0.5
-    results_50 = dataset.evaluate_detections(
-        pred_field,
-        gt_field=gt_field,
-        eval_key="eval_50",
-        iou=0.5,
-        compute_mAP=True,
-    )
-
-    # Evaluate at IoU 0.75 for mAP_75
-    results_75 = dataset.evaluate_detections(
-        pred_field,
-        gt_field=gt_field,
-        eval_key="eval_75",
-        iou=0.75,
-        compute_mAP=True,
-    )
-
-    # Extract key metrics
-    analysis = {
-        "mAP_50": results_50.mAP(),
-        "mAP_75": results_75.mAP(),
-        "num_samples": len(dataset),
-        "num_ground_truth": len(
-            dataset.values(f"{gt_field}.detections", unwind=True)
-        ),
-        "num_predictions": len(
-            dataset.values(f"{pred_field}.detections", unwind=True)
-        ),
-    }
-
-    # Get overall precision and recall (from IoU 0.5 evaluation)
-    try:
-        analysis["precision"] = results_50.precision()
-        analysis["recall"] = results_50.recall()
-    except Exception as e:
-        logger.warning(f"Could not get precision/recall: {e}")
-        analysis["precision"] = None
-        analysis["recall"] = None
-
-    # Get per-class metrics
-    class_metrics = {}
-    try:
-        for class_name in dataset.distinct(f"{gt_field}.detections.label"):
-            class_view = dataset.filter_labels(
-                gt_field, F("label") == class_name
-            )
-            if len(class_view) > 0:
-                try:
-                    class_results = class_view.evaluate_detections(
-                        pred_field,
-                        gt_field=gt_field,
-                        eval_key=f"eval_50_{class_name}",
-                        iou=0.5,
-                        compute_mAP=True,
-                    )
-                    class_metrics[class_name] = {
-                        "mAP": class_results.mAP(),
-                        "precision": class_results.precision(),
-                        "recall": class_results.recall(),
-                    }
-                except Exception as e:
-                    logger.warning(
-                        f"Could not evaluate class {class_name}: {e}"
-                    )
-                    class_metrics[class_name] = {
-                        "mAP": None,
-                        "precision": None,
-                        "recall": None,
-                    }
-    except Exception as e:
-        logger.warning(f"Could not compute per-class metrics: {e}")
-
-    analysis["per_class_metrics"] = class_metrics
-
-    # Calculate confidence statistics manually
-    try:
-        confidences = dataset.values(
-            f"{pred_field}.detections.confidence", unwind=True
-        )
-        if confidences:
-            import statistics
-
-            analysis["confidence_stats"] = {
-                "avg_confidence": statistics.mean(confidences),
-                "max_confidence": max(confidences),
-                "min_confidence": min(confidences),
-                "num_detections": len(confidences),
-            }
-        else:
-            analysis["confidence_stats"] = {"num_detections": 0}
-    except Exception as e:
-        logger.warning(f"Could not compute confidence stats: {e}")
-        analysis["confidence_stats"] = {"num_detections": 0}
-
-    # Find samples with false positives and false negatives
-    # The eval attribute is attached to prediction labels, not as a top-level field
-    try:
-        fp_view = dataset.filter_labels(pred_field, F("eval_50") == "fp")
-        analysis["samples_with_most_fps"] = len(fp_view)
-
-        fn_view = dataset.filter_labels(pred_field, F("eval_50") == "fn")
-        analysis["samples_with_most_fns"] = len(fn_view)
-    except Exception as e:
-        logger.warning(f"Could not compute FP/FN analysis: {e}")
-        analysis["samples_with_most_fps"] = 0
-        analysis["samples_with_most_fns"] = 0
-
-    logger.info("Analysis complete!")
-    mAP_50 = analysis.get("mAP_50")
-    mAP_75 = analysis.get("mAP_75")
-
-    mAP_50_str = f"{mAP_50:.3f}" if mAP_50 is not None else "N/A"
-    mAP_75_str = f"{mAP_75:.3f}" if mAP_75 is not None else "N/A"
-
-    logger.info(f"mAP@0.5: {mAP_50_str}")
-    logger.info(f"mAP@0.75: {mAP_75_str}")
-    logger.info("Per-class performance:")
-
-    for class_name, metrics in class_metrics.items():
-        mAP_val = metrics.get("mAP")
-        precision_val = metrics.get("precision")
-        recall_val = metrics.get("recall")
-
-        mAP_val_str = f"{mAP_val:.3f}" if mAP_val is not None else "N/A"
-        precision_str = (
-            f"{precision_val:.3f}" if precision_val is not None else "N/A"
-        )
-        recall_str = f"{recall_val:.3f}" if recall_val is not None else "N/A"
-
-        logger.info(
-            f"  {class_name}: mAP={mAP_val_str}, P={precision_str}, R={recall_str}"
-        )
-
-    return analysis
+    # Use annotator to evaluate predictions
+    return annotator.evaluate_predictions(dataset_name=fiftyone_dataset_name)
 
 
 def create_fiftyone_dashboard_session(
@@ -305,66 +99,40 @@ def create_fiftyone_dashboard_session(
     Returns:
         Session information and access details
     """
-    logger.info(f"Creating FiftyOne App session for: {fiftyone_dataset_name}")
+    # Initialize FiftyOne annotator
+    annotator = FiftyOneAnnotator()
 
-    # Load dataset
-    dataset = fo.load_dataset(fiftyone_dataset_name)
-
-    # Create interesting views for analysis
-    views = {}
-
-    # View 1: Samples with predictions
-    pred_view = dataset.exists("predictions")
-    views["with_predictions"] = f"Samples with predictions ({len(pred_view)})"
-
-    # View 2: High confidence predictions
-    high_conf_view = dataset.filter_labels(
-        "predictions", F("confidence") > 0.8
+    # Get dataset stats using annotator
+    labeled_count, unlabeled_count = annotator.get_dataset_stats(
+        fiftyone_dataset_name
     )
-    views["high_confidence"] = (
-        f"High confidence predictions ({len(high_conf_view)})"
+    total_samples = labeled_count + unlabeled_count
+
+    logger.info(f"Dataset '{fiftyone_dataset_name}' ready for analysis:")
+    logger.info(f"  • Total samples: {total_samples}")
+    logger.info(f"  • Samples with predictions: {labeled_count}")
+    logger.info(f"  • Samples without predictions: {unlabeled_count}")
+
+    # Show analysis summary
+    if analysis_results:
+        mAP_50 = analysis_results.get("mAP_50")
+        mAP_75 = analysis_results.get("mAP_75")
+
+        if mAP_50 is not None:
+            logger.info(f"  • mAP@0.5: {mAP_50:.3f}")
+        if mAP_75 is not None:
+            logger.info(f"  • mAP@0.75: {mAP_75:.3f}")
+
+    logger.info("\n🎯 FiftyOne Dashboard Access:")
+    logger.info(
+        f"  Launch command: python launch_fiftyone.py {fiftyone_dataset_name}"
+    )
+    logger.info("  Default URL: http://localhost:5151")
+    logger.info(
+        "  Custom port: python launch_fiftyone.py {dataset_name} --port 8080"
     )
 
-    # View 3: Low confidence predictions (potential issues)
-    low_conf_view = dataset.filter_labels("predictions", F("confidence") < 0.3)
-    views["low_confidence"] = (
-        f"Low confidence predictions ({len(low_conf_view)})"
-    )
-
-    # View 4: False positives and false negatives
-    try:
-        fp_view = dataset.filter_labels("predictions", F("eval_50") == "fp")
-        views["false_positives"] = f"False positives ({len(fp_view)})"
-
-        fn_view = dataset.filter_labels("predictions", F("eval_50") == "fn")
-        views["false_negatives"] = f"False negatives ({len(fn_view)})"
-    except Exception as e:
-        logger.warning(f"Could not create FP/FN views: {e}")
-
-    session_info = {
-        "dataset_name": fiftyone_dataset_name,
-        "total_samples": len(dataset),
-        "available_views": views,
-        "analysis_summary": {
-            "mAP_50": analysis_results.get("mAP_50", "N/A"),
-            "mAP_75": analysis_results.get("mAP_75", "N/A"),
-            "num_predictions": analysis_results.get("num_predictions", 0),
-        },
-        "instructions": [
-            "1. Start FiftyOne App: `fiftyone app launch`",
-            f"2. Load dataset: `fo.load_dataset('{fiftyone_dataset_name}')`",
-            "3. Explore ground truth vs predictions side-by-side",
-            "4. Use the views above to focus on specific samples",
-            "5. Click on samples to see detailed annotations",
-        ],
-    }
-
-    logger.info("FiftyOne App session ready!")
-    logger.info(f"Dataset: {fiftyone_dataset_name}")
-    logger.info(f"Available views: {list(views.keys())}")
-    logger.info("Start with: fiftyone app launch")
-
-    return str(session_info)
+    return f"FiftyOne dashboard ready for '{fiftyone_dataset_name}'"
 
 
 @step

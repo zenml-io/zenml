@@ -47,7 +47,6 @@ from pipelines import (
     object_detection_training_pipeline,
 )
 
-from zenml.client import Client
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -130,6 +129,8 @@ def main() -> None:
         )
 
         # Get latest model version for logging
+        from zenml.client import Client
+
         client = Client()
         try:
             latest_model = client.get_artifact_version(
@@ -159,26 +160,38 @@ def main() -> None:
     elif args.predict:
         logger.info(f"Running inference on {args.image}...")
 
-        # Run inference pipeline - returns the detection results directly
-        results = object_detection_inference_pipeline(
+        # Run inference pipeline
+        pipeline_run = object_detection_inference_pipeline(
             image_path=args.image,
             confidence_threshold=args.confidence,
         )
 
-        if isinstance(results, dict) and "error" in results:
-            logger.error(f"Error: {results['error']}")
-            return
+        # Get the actual results from the pipeline run
+        try:
+            from zenml.client import Client
 
-        logger.info(
-            f"\n🎯 Detected {results.get('num_detections', 0)} objects:"
-        )
-        for i, detection in enumerate(results.get("detections", []), 1):
+            client = Client()
+            run_info = client.get_pipeline_run(pipeline_run.id)
+            step_run = run_info.steps["run_detection"]
+            results = step_run.outputs["detection_results"].load()
+
             logger.info(
-                f"  {i}. {detection['label']} ({detection['confidence']:.1%})"
+                f"\n🎯 Detected {results.get('num_detections', 0)} objects:"
             )
+            for i, detection in enumerate(results.get("detections", []), 1):
+                logger.info(
+                    f"  {i}. {detection['label']} ({detection['confidence']:.1%})"
+                )
 
-        if results.get("annotated_image_path"):
-            logger.info(f"\n📸 Saved to: {results['annotated_image_path']}")
+            if results.get("annotated_image_path"):
+                logger.info(
+                    f"\n📸 Saved to: {results['annotated_image_path']}"
+                )
+        except Exception as e:
+            logger.error(f"Could not retrieve results: {e}")
+            logger.info(
+                "But inference completed successfully! Check the logs above for detected objects."
+            )
 
     else:
         print("""
