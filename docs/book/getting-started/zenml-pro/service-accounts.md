@@ -311,7 +311,7 @@ Reduce the risk of API key exposure by periodically exchanging the API key for a
        ```
 
 
-This will return a response like this:
+This will return a response like this (the API token is the `access_token` field):
 
 ```json
 {
