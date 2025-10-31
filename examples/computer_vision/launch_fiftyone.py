@@ -104,7 +104,7 @@ def main():
     while i < len(args):
         if args[i] == "--port" and i + 1 < len(args):
             try:
-                int(args[i + 1])
+                port = int(args[i + 1])
                 i += 2
             except ValueError:
                 logger.error(f"Invalid port number: {args[i + 1]}")
@@ -117,7 +117,7 @@ def main():
             return
 
     if dataset_name:
-        launch_dataset(dataset_name)
+        launch_dataset(dataset_name, port)
     else:
         datasets = list_available_datasets()
         if not datasets:
