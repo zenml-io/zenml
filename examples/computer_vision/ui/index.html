@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Object Detection | ZenML</title>
+    
+    <!-- Favicon - Simple camera/detection icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%237a3ef4'/%3E%3Crect x='20' y='30' width='60' height='40' rx='4' fill='none' stroke='white' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='12' fill='none' stroke='white' stroke-width='4'/%3E%3Crect x='70' y='35' width='8' height='8' rx='2' fill='white'/%3E%3C/svg%3E" />
+
+    <!-- ZenML Brand Fonts (Fontsource CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono@5.0.16/index.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ===== CSS Variables - ZenML Design System ===== */
+      :root {
+        /* Primary Colors */
+        --zenml-purple: #7a3ef4;
+        --zenml-purple-dark: #431d93;
+        --zenml-purple-light: #e4d8fd;
+        --zenml-purple-lighter: #f1ebfe;
+        --zenml-purple-mid: #9565f6;
+
+        /* Neutral Colors */
+        --text-primary: #0d061d;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --surface-primary: #ffffff;
+        --surface-secondary: #f9fafb;
+        --surface-tertiary: #f3f4f6;
+
+        /* Semantic Colors */
+        --success: #1cbf4a;
+        --success-light: #d2f2db;
+        --warning: #f98b0a;
+        --warning-light: #fff6ea;
+        --error: #eb483d;
+        --error-light: #fbdad8;
+
+        /* Border Colors */
+        --border-moderate: #e5e7eb;
+        --border-bold: #6b7280;
+
+        /* Typography */
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Courier New",
+          monospace;
+
+        /* Spacing Scale (8pt grid) */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+
+        /* Shadows */
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-standard: 0 2px 8px rgba(0, 0, 0, 0.1);
+        --shadow-emphasized: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+        /* Border Radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-full: 999px;
+      }
+
+      /* ===== Reset & Base Styles ===== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-ui);
+        background: var(--surface-secondary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        padding: var(--spacing-lg);
+        font-size: 16px;
+        line-height: 24px;
+      }
+
+      /* ===== Layout ===== */
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-standard);
+        overflow: hidden;
+      }
+
+      /* ===== Header ===== */
+      .header {
+        background: var(--surface-primary);
+        padding: var(--spacing-lg);
+        text-align: center;
+        border-bottom: 1px solid var(--border-moderate);
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 32px;
+        letter-spacing: -0.01em;
+        margin-bottom: var(--spacing-sm);
+        color: var(--text-primary);
+      }
+
+      .header p {
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 400;
+        color: var(--text-secondary);
+      }
+
+      /* ===== Content Area ===== */
+      .content {
+        padding: var(--spacing-lg);
+      }
+
+      /* ===== Endpoint Info (Code Block) ===== */
+      .endpoint-info {
+        background: var(--surface-tertiary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        font-family: var(--font-mono);
+        font-size: 13px;
+        line-height: 20px;
+      }
+
+      .endpoint-info strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      .endpoint-info .url {
+        color: var(--text-primary);
+        word-break: break-all;
+      }
+
+      /* ===== Form Sections ===== */
+      .form-section {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .form-section h2 {
+        color: var(--text-primary);
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* ===== Form Groups ===== */
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: var(--spacing-md);
+      }
+
+      /* ===== Toggle Buttons ===== */
+      .input-toggle {
+        display: flex;
+        background: var(--surface-tertiary);
+        border-radius: var(--radius-md);
+        padding: 4px;
+        margin-bottom: var(--spacing-lg);
+        gap: 2px;
+      }
+
+      .toggle-option {
+        flex: 1;
+        padding: 12px 16px;
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+
+      .toggle-option:hover {
+        color: var(--text-primary);
+        background: var(--surface-primary);
+      }
+
+      .toggle-option.active {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+        box-shadow: var(--shadow-subtle);
+      }
+
+      .form-group label {
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 20px;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .form-group input[type="text"],
+      .form-group input[type="number"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .form-group input[type="file"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px dashed var(--border-moderate);
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+        background: var(--surface-secondary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+      }
+
+      .form-group input[type="file"]:hover {
+        border-color: var(--zenml-purple);
+        background: var(--surface-primary);
+      }
+
+      .form-group input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--zenml-purple);
+        box-shadow: 0 0 0 3px rgba(122, 62, 244, 0.1);
+      }
+
+      .upload-preview {
+        margin-top: var(--spacing-sm);
+        text-align: center;
+      }
+
+      .upload-preview img {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+        box-shadow: var(--shadow-subtle);
+      }
+
+      .form-group input:disabled {
+        background: var(--surface-tertiary);
+        color: var(--text-tertiary);
+        cursor: not-allowed;
+      }
+
+      /* ===== Examples Helper ===== */
+      .examples {
+        margin-top: var(--spacing-sm);
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .examples strong {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: block;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .example-link {
+        display: inline-block;
+        color: var(--zenml-purple);
+        text-decoration: none;
+        margin-right: var(--spacing-sm);
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .example-link:hover {
+        text-decoration: underline;
+        color: var(--zenml-purple-dark);
+      }
+
+      /* ===== Primary Button (ZenML Brand) ===== */
+      .btn {
+        background: var(--zenml-purple);
+        color: var(--surface-primary);
+        border: none;
+        padding: 12px 24px;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 20px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.1s ease,
+          box-shadow 0.2s ease;
+        width: 100%;
+        margin-top: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+      }
+
+      .btn:hover:not(:disabled) {
+        background: var(--zenml-purple-dark);
+        box-shadow: var(--shadow-standard);
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* ===== Loading Spinner ===== */
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--surface-primary);
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ===== Result Card ===== */
+      .result {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+        display: none;
+      }
+
+      .result.success {
+        background: var(--success-light);
+        border-color: var(--success);
+      }
+
+      .result.error {
+        background: var(--error-light);
+        border-color: var(--error);
+      }
+
+      .result h3 {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 28px;
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+      }
+
+      .result.success h3 {
+        color: var(--success);
+      }
+
+      .result.error h3 {
+        color: var(--error);
+      }
+
+      /* ===== Detection Results Grid ===== */
+      .detection-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .summary-item {
+        background: var(--surface-primary);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .summary-item strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+        letter-spacing: 0.02em;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xs);
+        text-transform: uppercase;
+      }
+
+      .summary-item .value {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 24px;
+        color: var(--text-primary);
+      }
+
+      /* ===== Detection List ===== */
+      .detections-list {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .detection-item {
+        background: var(--surface-primary);
+        border: 1px solid var(--border-moderate);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        transition: border-color 0.2s ease;
+      }
+
+      .detection-item:hover {
+        border-color: var(--zenml-purple);
+      }
+
+      .detection-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .detection-label {
+        font-weight: 600;
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-primary);
+      }
+
+      /* ===== Badge ===== */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 18px;
+      }
+
+      .badge.success {
+        background: var(--success-light);
+        color: var(--success);
+      }
+
+      .detection-bbox {
+        font-size: 13px;
+        line-height: 20px;
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
+      }
+
+      /* ===== Footer ===== */
+      .footer {
+        text-align: center;
+        padding: var(--spacing-lg);
+        background: var(--surface-secondary);
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 20px;
+        border-top: 1px solid var(--border-moderate);
+      }
+
+      .footer strong {
+        color: var(--zenml-purple);
+        font-weight: 600;
+      }
+
+      /* ===== Image Comparison Grid ===== */
+      .image-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
+        margin: var(--spacing-lg) 0;
+      }
+
+      .image-comparison img {
+        width: 100%;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-moderate);
+      }
+
+      .image-comparison h3 {
+        margin-bottom: var(--spacing-sm);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-align: center;
+      }
+
+      /* ===== Responsive Design ===== */
+      @media (max-width: 768px) {
+        body {
+          padding: var(--spacing-md);
+        }
+
+        .header {
+          padding: var(--spacing-lg);
+        }
+
+        .header h1 {
+          font-size: 20px;
+          line-height: 28px;
+        }
+
+        .content {
+          padding: var(--spacing-lg);
+        }
+
+        .detection-summary {
+          grid-template-columns: 1fr;
+        }
+
+        .image-comparison {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>🎯 YOLO Object Detection</h1>
+        <p>Real-time object detection using ZenML and Ultralytics</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- API Endpoint Info -->
+        <div class="endpoint-info">
+          <strong>API Endpoint:</strong>
+          <span class="url" id="endpoint-url"
+            >http://127.0.0.1:8000/invoke</span
+          >
+        </div>
+
+        <!-- Detection Form -->
+        <form id="detection-form">
+          <!-- Image Input -->
+          <div class="form-section">
+            <h2>Image Detection</h2>
+
+            <!-- Image Source Selection -->
+            <div class="input-toggle">
+              <button type="button" class="toggle-option active" id="toggle_url">
+                🔗 From URL
+              </button>
+              <button type="button" class="toggle-option" id="toggle_upload">
+                📁 Upload Image
+              </button>
+            </div>
+
+            <!-- URL Input -->
+            <div class="form-group" id="url_input_group">
+              <label for="image_path">Image Path or URL</label>
+              <input
+                type="text"
+                id="image_path"
+                name="image_path"
+                value="https://ultralytics.com/images/bus.jpg"
+                placeholder="https://example.com/image.jpg or /path/to/image.jpg"
+              />
+              <div class="examples">
+                <strong>Try these examples:</strong>
+                <a class="example-link" onclick="setExample('https://ultralytics.com/images/bus.jpg')">Bus Scene</a>
+                <a class="example-link" onclick="setExample('https://ultralytics.com/images/zidane.jpg')">Zidane</a>
+                <a class="example-link" onclick="setExample('https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg')">Street View</a>
+              </div>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group" id="upload_input_group" style="display: none;">
+              <label for="image_upload">Upload Image File</label>
+              <input
+                type="file"
+                id="image_upload"
+                name="image_upload"
+                accept="image/*"
+              />
+              <div id="upload_preview" class="upload-preview" style="display: none;">
+                <img id="preview_img" src="" alt="Preview" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="confidence">Confidence Threshold (0.0 - 1.0)</label>
+              <input
+                type="number"
+                id="confidence"
+                name="confidence"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.25"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn" id="detect-btn">
+            🔍 Detect Objects
+          </button>
+        </form>
+
+        <!-- Result Display -->
+        <div id="result" class="result">
+          <h3 id="result-title"></h3>
+          <div id="result-content"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        Powered by <strong>ZenML</strong> Pipeline Deployments | Computer Vision with Ultralytics YOLO
+      </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+      // DOM Elements
+      const form = document.getElementById("detection-form");
+      const resultDiv = document.getElementById("result");
+      const resultTitle = document.getElementById("result-title");
+      const resultContent = document.getElementById("result-content");
+      const detectBtn = document.getElementById("detect-btn");
+      const endpointUrl = document.getElementById("endpoint-url");
+
+      // Image source elements
+      const toggleUrl = document.getElementById("toggle_url");
+      const toggleUpload = document.getElementById("toggle_upload");
+      const urlInputGroup = document.getElementById("url_input_group");
+      const uploadInputGroup = document.getElementById("upload_input_group");
+      const imageUpload = document.getElementById("image_upload");
+      const uploadPreview = document.getElementById("upload_preview");
+      const previewImg = document.getElementById("preview_img");
+
+      // Track current mode
+      let currentMode = "url";
+
+      // Auto-detect API endpoint - use the same host and port as the UI
+      const apiUrl = `${window.location.protocol}//${window.location.host}/invoke`;
+      endpointUrl.textContent = apiUrl;
+
+      // Set example image
+      function setExample(url) {
+        document.getElementById("image_path").value = url;
+        // Switch to URL mode if not already selected
+        setMode("url");
+      }
+
+      // Set the current mode and update UI
+      function setMode(mode) {
+        currentMode = mode;
+
+        // Update button states
+        if (mode === "url") {
+          toggleUrl.classList.add("active");
+          toggleUpload.classList.remove("active");
+          urlInputGroup.style.display = "block";
+          uploadInputGroup.style.display = "none";
+          document.getElementById("image_path").required = true;
+          imageUpload.required = false;
+        } else {
+          toggleUpload.classList.add("active");
+          toggleUrl.classList.remove("active");
+          urlInputGroup.style.display = "none";
+          uploadInputGroup.style.display = "block";
+          document.getElementById("image_path").required = false;
+          imageUpload.required = true;
+        }
+      }
+
+      // Handle image upload preview
+      function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            uploadPreview.style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        } else {
+          uploadPreview.style.display = "none";
+        }
+      }
+
+      // Convert file to base64 for API
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            // Remove the data:image/type;base64, prefix
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Event listeners
+      toggleUrl.addEventListener('click', () => setMode("url"));
+      toggleUpload.addEventListener('click', () => setMode("upload"));
+      imageUpload.addEventListener('change', handleImageUpload);
+
+      // Form submission handler
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Show loading state
+        detectBtn.disabled = true;
+        detectBtn.innerHTML =
+          '<span class="loading"></span>Detecting Objects...';
+        resultDiv.style.display = "none";
+
+        // Collect form data
+        const confidence = parseFloat(document.getElementById("confidence").value);
+        let payload;
+
+        if (currentMode === "upload") {
+          // Handle uploaded image
+          const file = imageUpload.files[0];
+          if (!file) {
+            displayError("Please select an image file to upload.");
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+
+          try {
+            const imageBase64 = await fileToBase64(file);
+            payload = {
+              parameters: {
+                image_path: `data:image/${file.type.split('/')[1]};base64,${imageBase64}`,
+                confidence_threshold: confidence,
+              },
+            };
+          } catch (error) {
+            displayError("Error reading image file: " + error.message);
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+        } else {
+          // Handle URL input
+          const imagePath = document.getElementById("image_path").value;
+          if (!imagePath.trim()) {
+            displayError("Please enter an image URL or path.");
+            detectBtn.disabled = false;
+            detectBtn.innerHTML = "🔍 Detect Objects";
+            return;
+          }
+
+          payload = {
+            parameters: {
+              image_path: imagePath,
+              confidence_threshold: confidence,
+            },
+          };
+        }
+
+        try {
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+
+          // The pipeline output is under outputs.output (single return value from pipeline)
+          if (result.success && result.outputs && result.outputs.output) {
+            displayDetectionResult(result.outputs.output);
+          } else {
+            throw new Error(result.error || "Invalid response format");
+          }
+        } catch (error) {
+          displayError(error.message);
+        } finally {
+          // Reset button
+          detectBtn.disabled = false;
+          detectBtn.innerHTML = "🔍 Detect Objects";
+        }
+      });
+
+      // Display detection result
+      function displayDetectionResult(detection) {
+        console.log('Detection data:', detection);
+        console.log('Has original_image_base64:', !!detection.original_image_base64, detection.original_image_base64?.length);
+        console.log('Has annotated_image_base64:', !!detection.annotated_image_base64, detection.annotated_image_base64?.length);
+
+        const numDetections = detection.num_detections || 0;
+        const detections = detection.detections || [];
+        const imageSize = detection.image_size || {};
+        const modelVersion = detection.model_version || "Unknown";
+
+        resultDiv.className = "result success";
+        resultTitle.innerHTML = `✅ Detection Complete`;
+
+        // Build summary section
+        let summaryHTML = `
+          <div class="detection-summary">
+            <div class="summary-item">
+              <strong>Objects Found</strong>
+              <div class="value">${numDetections}</div>
+            </div>
+            <div class="summary-item">
+              <strong>Image Size</strong>
+              <div class="value">${imageSize.width || 'N/A'} × ${imageSize.height || 'N/A'}</div>
+            </div>
+            <div class="summary-item">
+              <strong>Model Version</strong>
+              <div class="value">${modelVersion}</div>
+            </div>
+          </div>
+        `;
+
+        // Display images side by side if available
+        if (detection.original_image_base64 && detection.annotated_image_base64) {
+          console.log('Rendering images...');
+          console.log('Original base64 prefix:', detection.original_image_base64.substring(0, 50));
+          console.log('Annotated base64 prefix:', detection.annotated_image_base64.substring(0, 50));
+          
+          summaryHTML += `
+            <div class="image-comparison">
+              <div>
+                <h3>Original Image</h3>
+                <img src="data:image/jpeg;base64,${detection.original_image_base64}" 
+                     alt="Original Image"
+                     onload="console.log('Original image loaded successfully')"
+                     onerror="console.error('Failed to load original image')" />
+              </div>
+              <div>
+                <h3>Detection Results</h3>
+                <img src="data:image/jpeg;base64,${detection.annotated_image_base64}" 
+                     alt="Annotated Image with Detections"
+                     onload="console.log('Annotated image loaded successfully')"
+                     onerror="console.error('Failed to load annotated image')" />
+              </div>
+            </div>
+          `;
+        } else {
+          console.warn('Missing image data - original:', !!detection.original_image_base64, 'annotated:', !!detection.annotated_image_base64);
+        }
+
+        // Build detections list
+        if (detections.length > 0) {
+          summaryHTML += '<h3 style="margin-bottom: 12px; font-size: 16px; color: var(--text-primary);">Detected Objects:</h3>';
+          summaryHTML += '<div class="detections-list">';
+          
+          detections.forEach((det, index) => {
+            const confidence = (det.confidence * 100).toFixed(1);
+            const bbox = det.bbox.map(v => Math.round(v)).join(', ');
+            
+            summaryHTML += `
+              <div class="detection-item">
+                <div class="detection-header">
+                  <span class="detection-label">${det.label}</span>
+                  <span class="badge success">${confidence}%</span>
+                </div>
+                <div class="detection-bbox">BBox: [${bbox}]</div>
+              </div>
+            `;
+          });
+          
+          summaryHTML += '</div>';
+        } else {
+          summaryHTML += '<p style="text-align: center; color: var(--text-secondary); margin-top: 16px;">No objects detected in this image.</p>';
+        }
+
+        resultContent.innerHTML = summaryHTML;
+        resultDiv.style.display = "block";
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Display error
+      function displayError(message) {
+        resultDiv.className = "result error";
+        resultTitle.innerHTML = "❌ Detection Failed";
+        resultContent.innerHTML = `
+          <p style="color: var(--text-primary); margin-bottom: 12px;">
+            <strong>Error:</strong> ${message}
+          </p>
+          <p style="color: var(--text-secondary); font-size: 14px;">
+            Please check that the ZenML deployment is running and accessible at the endpoint above.
+          </p>
+        `;
+        resultDiv.style.display = "block";
+        resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      // Allow Enter key to submit
+      document.getElementById("image_path").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+          form.dispatchEvent(new Event("submit"));
+        }
+      });
+    </script>
+  </body>
+</html>
