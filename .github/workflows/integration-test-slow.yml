@@ -41,9 +41,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ["3.10", "3.11", "3.12", "3.13"]
+        options: ['3.10', '3.11', '3.12', '3.13']
         required: false
-        default: "3.11"
+        default: '3.11'
       test_environment:
         description: The test environment
         type: choice
@@ -70,7 +70,7 @@ on:
         type: choice
         options: [no, on-failure, always, before-tests]
         required: false
-        default: "no"
+        default: 'no'
       tmate_timeout:
         description: Timeout for tmate session (minutes)
         type: number
@@ -95,7 +95,7 @@ jobs:
       # on MAC OS, we need to set this environment variable
       # to fix problems with the fork() calls (see this thread
       # for more information: http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)
-      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_US_EAST_1_ENV_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_US_EAST_1_ENV_SECRET_ACCESS_KEY }}
       AWS_US_EAST_1_SERVER_URL: ${{ secrets.AWS_US_EAST_1_SERVER_URL }}
@@ -116,18 +116,16 @@ jobs:
         with:
           root-reserve-mb: 20000
           swap-size-mb: 1024
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-haskell: "true"
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
           build-mount-path: /var/lib/docker/
-        if:
-          inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Reload Docker
         run: sudo systemctl restart docker
-        if:
-          inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Login to Docker Hub
@@ -135,8 +133,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if:
-          github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
+        if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - uses: actions/checkout@v4.2.2
