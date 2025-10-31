@@ -48,7 +48,7 @@ def test_server_cli_up_down(clean_client, mocker):
     cli_runner.invoke(login_command, ["--local", "--port", port])
 
     # sleep for a bit to let the server start
-    time.sleep(15)
+    time.sleep(5)
 
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health", timeout=16).status_code == 200
@@ -66,7 +66,7 @@ def test_server_cli_up_down(clean_client, mocker):
     cli_runner.invoke(logout_command)
 
     # sleep for a bit to let the server stop
-    time.sleep(15)
+    time.sleep(5)
 
     deployer = LocalServerDeployer()
     with pytest.raises(ServerDeploymentNotFoundError):

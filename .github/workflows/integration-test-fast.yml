@@ -255,7 +255,7 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration/functional/cli/test_server.py::test_server_cli_up_down ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }} 6 ${{ matrix.shard }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@v3.17

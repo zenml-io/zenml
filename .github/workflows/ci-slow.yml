@@ -2,13 +2,13 @@
 name: ci-slow
 on:
   workflow_dispatch:
-  # workflow_call:
-  # push:
-  #   branches: [main]
-  #   paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
-  # pull_request:
-  #   types: [opened, synchronize, ready_for_review]
-  #   paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+  workflow_call:
+  push:
+    branches: [main]
+    paths-ignore: [docs/**, "*", "!pyproject.toml", "**.md"]
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: [docs/**, "*", "!pyproject.toml", "**.md"]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
