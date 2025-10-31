@@ -2,13 +2,13 @@
 name: ci-fast
 on:
   workflow_dispatch:
-  workflow_call:
-  push:
-    branches: [main]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+  # workflow_call:
+  # push:
+  #   branches: [main]
+  #   paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review]
+  #   paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       - name: Install darglint using uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   spellcheck:
@@ -69,17 +69,18 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
   update-templates-to-examples:
     # this doesn't work on forked repositories (i.e. outside contributors)
     # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
+    if:
+      github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
       == false
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
-      python-version: '3.11'
+      python-version: "3.11"
       os: ubuntu-latest
     secrets: inherit
   linting:
@@ -87,7 +88,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ["3.11"]
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -104,7 +105,7 @@ jobs:
         # excluded from the `ci-slow` workflow. If you change the configuration
         # here, please adjust the configuration of `ci-slow` accordingly.
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ["3.11"]
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -121,7 +122,7 @@ jobs:
         # excluded from the `ci-slow` workflow. If you change the configuration
         # here, please adjust the configuration of `ci-slow` accordingly.
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ["3.11"]
         test_environment: [default, docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
