@@ -40,7 +40,7 @@ Choosing a method:
 
 You can generate a short-lived API token using the CLI or the ZenML UI. This is useful when you need a fast way to make authenticated HTTP requests to the ZenML API endpoints and you don't need a long-term solution.
 
-1. Generate a short-lived API token through the API Tokens page under your ZenML UI server settings, or the `zenml token` CLI command, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide. Here's a quick example using the CLI:
+1. Generate a short-lived API token through the API Tokens page under your ZenML UI server settings, or the `zenml token` CLI command, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
 
 2. Use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
    *   using `curl`:

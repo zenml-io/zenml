@@ -346,6 +346,8 @@ This will return a response like this:
 
        print(response.json())
        ```
+{% endtab %}
+{% endtabs %}
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
 
