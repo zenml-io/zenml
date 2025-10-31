@@ -23,6 +23,7 @@
 * [Deployers](deployers/README.md)
   * [Local Deployer](deployers/local.md)
   * [Docker Deployer](deployers/docker.md)
+  * [Kubernetes Deployer](deployers/kubernetes.md)
   * [AWS App Runner Deployer](deployers/aws-app-runner.md)
   * [GCP Cloud Run Deployer](deployers/gcp-cloud-run.md)
 * [Artifact Stores](artifact-stores/README.md)

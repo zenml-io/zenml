@@ -540,6 +540,14 @@ class DeploymentStatus(StrEnum):
     ERROR = "error"
 
 
+class KubernetesServiceType(StrEnum):
+    """Kubernetes Service types for the Kubernetes deployer."""
+
+    LOAD_BALANCER = "LoadBalancer"
+    NODE_PORT = "NodePort"
+    CLUSTER_IP = "ClusterIP"
+
+
 class PipelineRunTriggeredByType(StrEnum):
     """All possible types that can trigger a pipeline run."""
 

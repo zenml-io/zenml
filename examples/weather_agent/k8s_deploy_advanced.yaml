@@ -1,0 +1,45 @@
+# Advanced Kubernetes Deployment Configuration for Weather Agent
+# This configuration demonstrates advanced Kubernetes deployment options including
+# resource management, scaling, health checks, node placement, service exposure, and ingress.
+
+# Override default pipeline parameters
+parameters:
+  city: "San Francisco"
+
+settings:
+  docker:
+    parent_image: safoinme/zenml:deployer-0.4
+    # For local testing: force code inclusion in image
+    allow_download_from_artifact_store: false
+    allow_including_files_in_images: true
+  # Resource configuration with high availability
+  resources:
+    cpu_count: 1
+    memory: "2GB"
+    min_replicas: 3  # Run 3 replicas for redundancy
+    max_replicas: 3  # Fixed scaling (no autoscaling)
+  # Advanced Kubernetes deployer configuration
+  deployer:
+    # Namespace for isolation and organization
+    namespace: weather-prod
+    
+    # Use LoadBalancer for external access
+    service_type: LoadBalancer
+    
+    # Health check configuration
+    readiness_probe_initial_delay: 5
+    readiness_probe_period: 10
+    liveness_probe_initial_delay: 20
+    liveness_probe_period: 15
+    
+    # Advanced pod placement and scheduling
+    pod_settings:
+      
+      # Pod labels for organization and filtering
+      labels:
+        app: weather-agent
+        environment: production
+        version: "1.0"
+    
+    # Image pull policy
+    image_pull_policy: IfNotPresent
