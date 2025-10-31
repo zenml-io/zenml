@@ -91,7 +91,7 @@ def run_detection(
                     name_id_or_prefix="yolo-model"
                 )
                 model_version = latest_artifact.version
-            except:
+            except Exception:
                 model_version = "unknown"
 
     except Exception as e:

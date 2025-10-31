@@ -269,7 +269,7 @@ def analyze_predictions_with_fiftyone(
 
     logger.info(f"mAP@0.5: {mAP_50_str}")
     logger.info(f"mAP@0.75: {mAP_75_str}")
-    logger.info(f"Per-class performance:")
+    logger.info("Per-class performance:")
 
     for class_name, metrics in class_metrics.items():
         mAP_val = metrics.get("mAP")

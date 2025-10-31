@@ -100,7 +100,7 @@ def train_yolo_model(
     # After training, the model object is already updated with the best weights
     # YOLO automatically loads the best weights into the model object
     # No need to manually load from a path!
-    logger.info(f"Model trained successfully")
+    logger.info("Model trained successfully")
     logger.info(f"Best weights saved at: {model.trainer.best}")
 
     # Tag the trained model artifact as 'production' for deployment
