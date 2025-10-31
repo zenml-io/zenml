@@ -77,4 +77,6 @@ def cleanup_model() -> None:
 
     Note: The cleanup hook takes no arguments according to ZenML's hook specification.
     """
+    # This method is not used in the current implementation, 
+    #  but it is here for completeness.
     logger.info("Cleaning up YOLO model resources")

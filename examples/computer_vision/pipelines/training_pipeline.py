@@ -33,7 +33,6 @@ logger = get_logger(__name__)
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
-    required_integrations=["pillow"],
 )
 
 

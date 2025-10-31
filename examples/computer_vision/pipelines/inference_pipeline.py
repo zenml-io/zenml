@@ -32,7 +32,6 @@ from zenml.config.resource_settings import ResourceSettings
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
-    required_integrations=["pillow"],
 )
 
 # Custom CSP to allow data URIs for base64-encoded images
