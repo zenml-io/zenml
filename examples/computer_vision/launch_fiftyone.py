@@ -35,7 +35,7 @@ def list_available_datasets():
     return datasets
 
 
-def launch_dataset(dataset_name: str):
+def launch_dataset(dataset_name: str, port: int = 5151):
     """Launch FiftyOne app with specific dataset."""
     try:
         dataset = fo.load_dataset(dataset_name)
@@ -52,9 +52,9 @@ def launch_dataset(dataset_name: str):
             logger.info("❌ Dataset has no predictions - run training first")
 
         logger.info("Launching FiftyOne App...")
-        logger.info("🌐 Opening browser to http://localhost:5151")
+        logger.info(f"🌐 Opening browser to http://localhost:{port}")
 
-        session = fo.launch_app(dataset, port=5151)
+        session = fo.launch_app(dataset, port=port)
 
         logger.info("\n🎯 FiftyOne Dashboard Controls:")
         logger.info(
@@ -79,9 +79,29 @@ def main():
     print("🔍 FiftyOne Dashboard Launcher")
     print("=" * 40)
 
-    if len(sys.argv) > 1:
-        dataset_name = sys.argv[1]
-        launch_dataset(dataset_name)
+    port = 5151  # Default port
+    dataset_name = None
+
+    # Parse command line arguments
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == "--port" and i + 1 < len(args):
+            try:
+                port = int(args[i + 1])
+                i += 2
+            except ValueError:
+                logger.error(f"Invalid port number: {args[i + 1]}")
+                return
+        elif not dataset_name:
+            dataset_name = args[i]
+            i += 1
+        else:
+            logger.error(f"Unknown argument: {args[i]}")
+            return
+
+    if dataset_name:
+        launch_dataset(dataset_name, port)
     else:
         datasets = list_available_datasets()
         if not datasets:
@@ -90,9 +110,10 @@ def main():
             return
 
         logger.info("\nUsage:")
-        logger.info("python launch_fiftyone.py <dataset_name>")
-        logger.info("\nExample:")
+        logger.info("python launch_fiftyone.py <dataset_name> [--port <port>]")
+        logger.info("\nExamples:")
         logger.info(f"python launch_fiftyone.py {datasets[0]}")
+        logger.info(f"python launch_fiftyone.py {datasets[0]} --port 8080")
 
 
 if __name__ == "__main__":
