@@ -15,7 +15,6 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ubuntu-latest-integration-test:
-    needs: [linting]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
