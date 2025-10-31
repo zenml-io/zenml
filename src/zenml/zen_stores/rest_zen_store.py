@@ -4140,7 +4140,7 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=device_id, route=DEVICES)
 
     # -------------------
-    # Pipeline API Tokens
+    # API Tokens
     # -------------------
 
     def get_api_token(
