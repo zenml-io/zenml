@@ -150,6 +150,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
 
+    # ========================================================================
+    # Client and API Management
+    # ========================================================================
+
     def get_kube_client(
         self, incluster: Optional[bool] = None
     ) -> k8s_client.ApiClient:
@@ -223,15 +227,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         return k8s_client.AppsV1Api(self.get_kube_client())
 
     @property
-    def k8s_batch_api(self) -> k8s_client.BatchV1Api:
-        """Get Kubernetes Batch V1 API client.
-
-        Returns:
-            Kubernetes Batch V1 API client.
-        """
-        return k8s_client.BatchV1Api(self.get_kube_client())
-
-    @property
     def k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
         """Get Kubernetes RBAC Authorization V1 API client.
 
@@ -257,6 +252,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             Kubernetes Autoscaling V2 API client.
         """
         return k8s_client.AutoscalingV2Api(self.get_kube_client())
+
+    # ========================================================================
+    # Cluster and Namespace Management
+    # ========================================================================
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -328,6 +327,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             role_binding_name=role_binding_name,
         )
         return service_account_name
+
+    # ========================================================================
+    # Validation and Configuration
+    # ========================================================================
 
     def validate_kubernetes_context(
         self, stack: "Stack", component_type: str
@@ -450,6 +453,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             custom_validation_function=_validate_local_requirements,
         )
 
+    # ========================================================================
+    # Resource Naming and Labels
+    # ========================================================================
+
     def _get_namespace(self, deployment: DeploymentResponse) -> str:
         """Get the namespace for a deployment.
 
@@ -512,6 +519,30 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         return f"zenml-secrets-{deployment.id}"
 
+    def _get_ingress_name(self, deployment: DeploymentResponse) -> str:
+        """Generate Kubernetes ingress name.
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            Ingress name.
+        """
+        deployment_name = self._get_resource_base_name(deployment)
+        return f"{deployment_name}-ingress"
+
+    def _get_hpa_name(self, deployment: DeploymentResponse) -> str:
+        """Generate Kubernetes HorizontalPodAutoscaler name.
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            HPA name.
+        """
+        deployment_name = self._get_resource_base_name(deployment)
+        return f"{deployment_name}-hpa"
+
     def _get_deployment_labels(
         self,
         deployment: DeploymentResponse,
@@ -539,6 +570,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             labels.update(settings.labels)
 
         return labels
+
+    # ========================================================================
+    # Security and Secret Management
+    # ========================================================================
 
     def _sanitize_secret_key(self, key: str) -> str:
         """Sanitize a secret key to be a valid Kubernetes environment variable name.
@@ -642,6 +677,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
 
         return env_vars
+
+    # ========================================================================
+    # Manifest Building
+    # ========================================================================
 
     def _build_deployment_manifest(
         self,
@@ -806,29 +845,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             tls_secret_name=settings.ingress_tls_secret_name,
         )
 
-    def _get_ingress_name(self, deployment: DeploymentResponse) -> str:
-        """Generate Kubernetes ingress name.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Ingress name.
-        """
-        deployment_name = self._get_resource_base_name(deployment)
-        return f"{deployment_name}-ingress"
-
-    def _get_hpa_name(self, deployment: DeploymentResponse) -> str:
-        """Generate Kubernetes HorizontalPodAutoscaler name.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            HPA name.
-        """
-        deployment_name = self._get_resource_base_name(deployment)
-        return f"{deployment_name}-hpa"
+    # ========================================================================
+    # Resource Lifecycle Management
+    # ========================================================================
 
     def _get_pod_for_deployment(
         self, deployment: DeploymentResponse
@@ -1134,6 +1153,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                     namespace=namespace,
                 )
 
+    # ========================================================================
+    # Deployment Operations (Core Methods)
+    # ========================================================================
+
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,
@@ -1306,6 +1329,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Failed to provision Kubernetes deployment "
                 f"'{deployment.name}': {e}"
             ) from e
+
+    # ========================================================================
+    # State and Status Management
+    # ========================================================================
 
     def _determine_deployment_status(
         self,
@@ -1532,6 +1559,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Failed to get state for deployment '{deployment.name}': {e}"
             )
 
+    # ========================================================================
+    # Logging
+    # ========================================================================
+
     def do_get_deployment_state_logs(
         self,
         deployment: DeploymentResponse,
@@ -1592,6 +1623,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Failed to retrieve logs for deployment "
                 f"'{deployment.name}': {e}"
             )
+
+    # ========================================================================
+    # Deprovisioning
+    # ========================================================================
 
     def do_deprovision_deployment(
         self,
