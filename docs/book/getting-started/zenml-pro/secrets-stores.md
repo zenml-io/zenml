@@ -17,7 +17,7 @@ This operation has two main stages:
 
 ## AWS Secrets Manager
 
-The authentication used by the AWS secrets store is built on the [ZenML Service Connector](https://docs.zenml.io/stacks/service-connectors/overview) of the same type as the secrets store. This means that you can use any of the [authentication methods supported by the Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector#authentication-methods) to authenticate with the secrets store.
+The authentication used by the AWS secrets store is built on the [ZenML Service Connector](https://docs.zenml.io/concepts/service_connectors) of the same type as the secrets store. This means that you can use any of the [authentication methods supported by the Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector#authentication-methods) to authenticate with the secrets store.
 
 The recommended authentication method documented here is to use the [implicit authentication method](https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector#implicit-authentication), because this doesn't need any sensitive credentials to be exchanged with the ZenML Pro support team.
 
