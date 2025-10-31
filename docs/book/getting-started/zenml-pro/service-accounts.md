@@ -242,24 +242,110 @@ Once you have created a service account and API key, you can use them to authent
 
 ### ZenML Pro API programmatic access
 
-The API key can be used to generate JWT session tokens that are valid for 1 hour. You simply have to pass the API key string as the `password` to the `/auth/login` endpoint. A new session token will be generated every time:
+The API key can be used to authenticate to the ZenML Pro management REST API programmatically. There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-```python
-curl -X 'POST' \
-  'https://cloudapi.zenml.io/auth/login' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'password=ZENPROKEY_eyJpZCI6I...'
+{% tabs %}
+{% tab title="Using the API key directly (simple but less secure)" %}
 
-{"access_token":"...(access-token-value)...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
+{% hint style="warning" %}
+This approach, albeit simple, is not recommended because the long-lived API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
+{% endhint %}
+
+To authenticate to the REST API, simply pass the API key directly in the `Authorization` header used with your API calls:
+
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_KEY" https://cloudapi.zenml.io/users/me
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_KEY" https://cloudapi.zenml.io/users/me
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+         "https://cloudapi.zenml.io/users/me",
+         headers={"Authorization": f"Bearer YOUR_API_KEY"}
+       )
+       print(response.json())
+       ```
+
+
+{% endtab %}
+
+{% tab title="Two-step authentication (secure and recommended)" %}
+
+Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API access token:
+
+1. To obtain an API access token using your API key, send a POST request to the `/auth/login` endpoint. Here are examples using common HTTP clients:
+   *   using curl:
+
+       ```bash
+       curl -X POST -d "password=<YOUR_API_KEY>" https://cloudapi.zenml.io/auth/login
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --post-data="password=<YOUR_API_KEY>" \
+           --header="Content-Type: application/x-www-form-urlencoded" \
+           https://cloudapi.zenml.io/auth/login
+       ```
+   *   using python:
+
+       ```python
+       import requests
+       import json
+
+       response = requests.post(
+           "https://cloudapi.zenml.io/auth/login",
+           data={"password": "<YOUR_API_KEY>"},
+           headers={"Content-Type": "application/x-www-form-urlencoded"}
+       )
+
+       print(response.json())
+       ```
+
+
+This will return a response like this:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "device_id": null,
+  "device_metadata": null
+}
 ```
 
-Then finally, the generated API access token is used as a bearer token when calling ZenML Pro API endpoints:
+2. Once you have obtained an API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the token expires, simply repeat the steps above to obtain a new token. For example, you can use the following command to check your current user:
+   *   using curl:
 
-```python
-curl -H "Authorization: Bearer ...(access-token-value)..." https://cloudapi.zenml.io/users/me
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+       ```
+   *   using wget:
 
-{"password":null,"password_expired":null,"name":"Automation Bot","avatar_url":null,"company":null,"job_title":null,"metadata":{},"id":"9ceb3e75-0c18-4cfb-b41b-d5db1d640077","username":"autobot","email":"autobot","oauth_provider":null,"oauth_id":null,"is_active":true,"is_superuser":false,"is_service_account":true,"organization_id":"fc992c14-d960-4db7-812e-8f070c99c6f0"}
-```
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://cloudapi.zenml.io/users/me",
+           headers={"Authorization": f"Bearer {YOUR_API_TOKEN}"}
+       )
+
+       print(response.json())
+       ```
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
 
@@ -291,32 +377,114 @@ zenml login <your-workspace-name> --api-key
 # You will be prompted to enter your API key
 ```
 
-* for programmatic access:
-  * the ZenML Pro API key needs first to be exchanged for a control plane API access token, as covered [in the previous section](./service-accounts.md#zenml-pro-api-programmatic-access):
-  
-  ```bash
-  curl -X 'POST' \
-  'https://cloudapi.zenml.io/auth/login' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'password=ZENPROKEY_eyJpZCI6I...'
-  {"access_token":"eyJhbGciOiJIUzI1...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
-  ```
+#### ZenML Pro Workspace API programmatic access
 
-  * then this token can be exchanged for a workspace API access token:
+Similar to the ZenML Pro API programmatic access, the API key can be used to authenticate to the ZenML Pro workspace REST API programmatically. This is no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-  ```bash
-  curl -X 'POST' \
-  'https://1ca28d37-zenml.cloudinfra.zenml.io/api/v1/login' \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1..."
-  {"access_token":"iIsInR5cCI6Ik...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
-  ```
+{% tabs %}
+{% tab title="Using the Pro API key directly (simple but less secure)" %}
 
-  * finally, the workspace API access token can be used to make calls to the workspace API:
-  ```bash
-  curl -H "Authorization: Bearer iIsInR5cCI6Ik..." https://1ca28d37-zenml.cloudinfra.zenml.io/api/v1/current-user
+{% hint style="warning" %}
+This approach, albeit simple, is not recommended because the long-lived Pro API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
+{% endhint %}
 
-  {"body":{"created":"2025-10-16T15:08:11","updated":"2025-10-16T18:06:29","active":true,"activation_token":null,"full_name":"John","email_opted_in":false,"is_service_account":true,"is_admin":false,"default_project_id":null,"avatar_url":null},"metadata":{"email":null,"external_user_id":"d6ace281-5d7e-46db-9a11-d4452ece48ee","user_metadata":{}},"resources":null,"id":"667990c8-199b-45e7-98cd-4b30356ba5e7","permission_denied":false,"name":"john"}
-  ```
+Use the Pro API key directly to authenticate your API requests by including it in the `Authorization` header. For example, you can use the following command to check your current workspace user:
+
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_KEY" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_KEY" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://your-workspace-url/api/v1/current-user",
+           headers={"Authorization": f"Bearer {YOUR_API_KEY}"}
+       )
+
+       print(response.json())
+       ```
+
+{% endtab %}
+
+{% tab title="Two-step authentication (secure and recommended)" %}
+
+Reduce the risk of Pro API key exposure by periodically exchanging the Pro API key for a short-lived workspace API access token.
+
+1. To obtain a workspace API access token using your Pro API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
+   *   using curl:
+
+       ```bash
+       curl -X POST -d "password=<YOUR_API_KEY>" https://your-workspace-url/api/v1/login
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --post-data="password=<YOUR_API_KEY>" \
+           --header="Content-Type: application/x-www-form-urlencoded" \
+           https://your-workspace-url/api/v1/login
+       ```
+   *   using python:
+
+       ```python
+       import requests
+       import json
+
+       response = requests.post(
+           "https://your-workspace-url/api/v1/login",
+           data={"password": "<YOUR_API_KEY>"},
+           headers={"Content-Type": "application/x-www-form-urlencoded"}
+       )
+
+       print(response.json())
+       ```
+
+This will return a response like this (the workspace API token is the `access_token` field):
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": null,
+  "scope": null
+}
+```
+
+2. Once you have obtained a workspace API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the token expires, simply repeat the steps above to obtain a new token. For example, you can use the following command to check your current workspace user:
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://your-workspace-url/api/v1/current-user",
+           headers={"Authorization": f"Bearer {YOUR_API_TOKEN}"}
+       )
+
+       print(response.json())
+       ```
+
+{% endtab %}
+{% endtabs %}
 
 ## Migration of workspace level service accounts
 
