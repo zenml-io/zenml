@@ -43,18 +43,48 @@ Visit `http://localhost:8000` for the interactive UI ([see code](ui/index.html))
 
 **Test batch inference locally**:
 
+The inference step supports multiple image input formats:
+
 ```bash
+# Using image URL
 python run.py --predict --image https://ultralytics.com/images/bus.jpg
+
+# Using local file path
+python run.py --predict --image /path/to/local/image.jpg
+
+# Using base64 data URI (useful for programmatic usage)
+python run.py --predict --image "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA..."
 ```
 
 **Make predictions via API**:
 
 ```bash
+# Using image URL
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "parameters": {
       "image_path": "https://ultralytics.com/images/bus.jpg",
+      "confidence_threshold": 0.25
+    }
+  }'
+
+# Using local file path
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "image_path": "/path/to/local/image.jpg",
+      "confidence_threshold": 0.25
+    }
+  }'
+
+# Using base64 data URI (useful for web apps)
+curl -X POST http://localhost:8000/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "parameters": {
+      "image_path": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...",
       "confidence_threshold": 0.25
     }
   }'

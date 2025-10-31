@@ -187,12 +187,18 @@ def main() -> None:
 USAGE:
   python run.py --train --samples 50 --epochs 3
   python run.py --predict --image path/to/image.jpg
+  python run.py --predict --image https://example.com/image.jpg
+  python run.py --predict --image "data:image/jpeg;base64,/9j/4AAQ..."
   zenml pipeline deploy pipelines.inference_pipeline.object_detection_inference_pipeline
 
 OPTIONS:
   --train                         Train YOLO model on COCO dataset
   --predict                       Run inference on an image
-  --image PATH                    Image path or URL (default: ultralytics bus.jpg)
+  --image PATH                    Image input - supports multiple formats:
+                                  • Local file: /path/to/image.jpg
+                                  • HTTP URL: https://example.com/image.jpg
+                                  • Base64 data URI: data:image/jpeg;base64,...
+                                  (default: ultralytics bus.jpg)
   --samples N                     COCO samples for training (default: 50)
   --epochs N                      Training epochs (default: 1)
   --model NAME                    YOLO model (default: yolov8n.pt)
