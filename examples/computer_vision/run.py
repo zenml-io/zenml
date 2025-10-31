@@ -173,7 +173,7 @@ def main() -> None:
             client = Client()
             run_info = client.get_pipeline_run(pipeline_run.id)
             step_run = run_info.steps["run_detection"]
-            results = step_run.outputs["detection_results"].load()
+            results = step_run.output.load()
 
             logger.info(
                 f"\n🎯 Detected {results.get('num_detections', 0)} objects:"

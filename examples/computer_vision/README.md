@@ -68,26 +68,6 @@ curl -X POST http://localhost:8000/invoke \
       "confidence_threshold": 0.25
     }
   }'
-
-# Using local file path
-curl -X POST http://localhost:8000/invoke \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parameters": {
-      "image_path": "/path/to/local/image.jpg",
-      "confidence_threshold": 0.25
-    }
-  }'
-
-# Using base64 data URI (useful for web apps)
-curl -X POST http://localhost:8000/invoke \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parameters": {
-      "image_path": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...",
-      "confidence_threshold": 0.25
-    }
-  }'
 ```
 
 **Explore with FiftyOne Dashboard**:
