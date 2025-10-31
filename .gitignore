@@ -196,6 +196,8 @@ examples/computer_vision/*.pt
 examples/computer_vision/data
 examples/computer_vision/runs
 examples/computer_vision/predictions
+examples/computer_vision/test_fixed_training
+examples/computer_vision/test_runs
 
 #neptune
 *.neptune/
