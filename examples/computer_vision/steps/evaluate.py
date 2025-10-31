@@ -50,12 +50,10 @@ def evaluate_model(
     data_yaml = dataset_path / "dataset.yaml"
 
     if not data_yaml.exists():
-        logger.warning(f"Dataset config not found at {data_yaml}")
-        return {
-            "error": "Dataset config not found",
-            "mAP50": 0.0,
-            "mAP50-95": 0.0,
-        }
+        raise FileNotFoundError(
+            f"Could not find dataset.yaml at {data_yaml}. "
+            "Make sure the dataset was exported correctly."
+        )
 
     # Run validation
     try:
