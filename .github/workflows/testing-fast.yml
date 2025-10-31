@@ -1,5 +1,5 @@
 ---
-name: ci-fast
+name: ci-fast-test
 on:
   workflow_dispatch:
   workflow_call:
