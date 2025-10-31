@@ -43,7 +43,7 @@ class TagGroup(click.Group):
         commands: Optional[
             Union[Dict[str, click.Command], Sequence[click.Command]]
         ] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Initialize the Tag group.
 
