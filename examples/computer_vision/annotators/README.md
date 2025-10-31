@@ -160,29 +160,6 @@ labeled_count, unlabeled_count = annotator.get_dataset_stats(dataset_name)
 session = annotator.launch(dataset_name=dataset_name, port=port)
 ```
 
-## Helper Functions
-
-The annotator includes several utility functions:
-
-### COCO Class Mapping Fix
-
-**⚠️ Critical Issue**: FiftyOne exports COCO datasets with sequential class IDs (0, 1, 2, ...) but YOLO models expect the original COCO class IDs (0-79 with gaps). This mismatch causes catastrophic training failure.
-
-**✅ Solution**: The `COCO_CLASSES` constant provides the correct 80-class mapping:
-
-```python
-# Before: Training fails with 0 mAP (wrong class mapping)
-# FiftyOne export: class IDs 0-11 for 12 classes
-
-# After: Training succeeds with proper mAP (correct class mapping)
-annotator.export_to_yolo_format(
-    dataset_name="coco-2017-validation-5samples",
-    export_dir="./data/coco_subset",
-    # classes=COCO_CLASSES automatically applied
-)
-# YOLO export: proper COCO class IDs 0-79
-```
-
 ### Evaluation Metrics
 
 The `evaluate_predictions()` method computes comprehensive metrics at different IoU thresholds:

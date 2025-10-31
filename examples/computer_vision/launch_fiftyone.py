@@ -96,7 +96,6 @@ def main():
     print("🔍 FiftyOne Dashboard Launcher")
     print("=" * 40)
 
-    port = 5151  # Default port
     dataset_name = None
 
     # Parse command line arguments
@@ -118,7 +117,7 @@ def main():
             return
 
     if dataset_name:
-        launch_dataset(dataset_name, port)
+        launch_dataset(dataset_name)
     else:
         datasets = list_available_datasets()
         if not datasets:

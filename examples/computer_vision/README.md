@@ -131,7 +131,7 @@ computer_vision/
 
 ### **FiftyOne Annotator Class**
 
-This example includes a `FiftyOneAnnotator` class that encapsulates all FiftyOne functionality in a clean, ZenML-style interface. **Crucially, it fixes the COCO class mapping issue** that causes catastrophic training failure when FiftyOne exports datasets with sequential IDs instead of proper COCO class IDs.
+This example includes a `FiftyOneAnnotator` class that encapsulates all FiftyOne functionality in a clean, ZenML-style interface.
 
 - 📄 [View FiftyOne annotator documentation](./annotators/README.md)
 - 🔧 [View annotator implementation](./annotators/fiftyone_annotator.py)
