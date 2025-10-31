@@ -94,7 +94,7 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
-    from zenml.pipelines.dynamic.runner import StepRunOutputsFuture
+    from zenml.execution.pipeline.dynamic.outputs import StepRunOutputsFuture
 
 
 logger = get_logger(__name__)
@@ -491,11 +491,11 @@ class BaseStep:
             The outputs of the entrypoint function call.
         """
         from zenml import get_step_context
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
         from zenml.pipelines.compilation_context import (
             PipelineCompilationContext,
-        )
-        from zenml.pipelines.dynamic.run_context import (
-            DynamicPipelineRunContext,
         )
 
         try:
@@ -529,7 +529,7 @@ class BaseStep:
 
         compilation_context = PipelineCompilationContext.get()
         if not compilation_context:
-            from zenml.pipelines.run_utils import (
+            from zenml.execution.pipeline.utils import (
                 should_prevent_pipeline_execution,
             )
 
@@ -632,7 +632,7 @@ class BaseStep:
         ] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
-        from zenml.pipelines.dynamic.run_context import (
+        from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
 
@@ -929,7 +929,7 @@ class BaseStep:
         Returns:
             The step copy.
         """
-        from zenml.pipelines.dynamic.run_context import (
+        from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
 
@@ -967,7 +967,7 @@ class BaseStep:
                 or not. See the `BaseStep.configure(...)` method for a detailed
                 explanation.
         """
-        from zenml.pipelines.dynamic.run_context import (
+        from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
 

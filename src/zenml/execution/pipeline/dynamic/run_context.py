@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING, Self
 from zenml.utils import context_utils
 
 if TYPE_CHECKING:
+    from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
     from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
     from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
-    from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
 
 
 class DynamicPipelineRunContext(context_utils.BaseContext):

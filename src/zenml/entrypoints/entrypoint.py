@@ -21,7 +21,7 @@ from zenml.entrypoints.base_entrypoint_configuration import (
     ENTRYPOINT_CONFIG_SOURCE_OPTION,
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import prevent_pipeline_execution
+from zenml.execution.pipeline.utils import prevent_pipeline_execution
 from zenml.utils import source_utils
 
 

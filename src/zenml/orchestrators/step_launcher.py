@@ -468,7 +468,7 @@ class StepLauncher:
                     output_artifact_uris=output_artifact_uris,
                 )
             else:
-                from zenml.pipelines.dynamic.runner import (
+                from zenml.execution.pipeline.dynamic.runner import (
                     should_run_in_process,
                 )
 

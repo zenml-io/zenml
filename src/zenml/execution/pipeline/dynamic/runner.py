@@ -15,7 +15,7 @@
 
 import contextvars
 import inspect
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,6 +34,14 @@ from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
+from zenml.execution.pipeline.dynamic.outputs import (
+    OutputArtifact,
+    StepRunOutputs,
+    StepRunOutputsFuture,
+)
+from zenml.execution.pipeline.dynamic.run_context import (
+    DynamicPipelineRunContext,
+)
 from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_pipeline_logging
@@ -47,7 +55,6 @@ from zenml.orchestrators.publish_utils import (
     publish_successful_pipeline_run,
 )
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
-from zenml.pipelines.dynamic.run_context import DynamicPipelineRunContext
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
@@ -61,68 +68,6 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
-
-
-class DynamicStepRunOutput(ArtifactVersionResponse):
-    """Dynamic step run output artifact."""
-
-    output_name: str
-    step_name: str
-
-
-StepRunOutputs = Union[
-    None, DynamicStepRunOutput, Tuple[DynamicStepRunOutput, ...]
-]
-
-
-# TODO: maybe one future per artifact? But for a step that doesn't return anything, the user wouldn't have a future to wait for.
-# Or that step returns a future that returns None? Would be similar to a python function.
-class StepRunOutputsFuture:
-    """Future for a step run output."""
-
-    def __init__(
-        self, wrapped: Future[StepRunOutputs], invocation_id: str
-    ) -> None:
-        """Initialize the future.
-
-        Args:
-            wrapped: The wrapped future object.
-            invocation_id: The invocation ID of the step run.
-        """
-        self._wrapped = wrapped
-        self._invocation_id = invocation_id
-
-    def wait(self) -> None:
-        """Wait for the future to complete."""
-        self._wrapped.result()
-
-    def result(self) -> StepRunOutputs:
-        """Get the step run output artifacts.
-
-        Returns:
-            The step run output artifacts.
-        """
-        return self._wrapped.result()
-
-    def load(self) -> Any:
-        """Get the step run output artifact data.
-
-        Raises:
-            ValueError: If the step run output is invalid.
-
-        Returns:
-            The step run output artifact data.
-        """
-        result = self.result()
-
-        if result is None:
-            return None
-        elif isinstance(result, ArtifactVersionResponse):
-            return result.load()
-        elif isinstance(result, tuple):
-            return tuple(item.load() for item in result)
-        else:
-            raise ValueError(f"Invalid step run output: {result}")
 
 
 class DynamicPipelineRunner:
@@ -352,14 +297,14 @@ def compile_dynamic_step_invocation(
         if (
             input
             and isinstance(input, tuple)
-            and isinstance(input[0], DynamicStepRunOutput)
+            and isinstance(input[0], OutputArtifact)
         ):
             raise ValueError(
                 "Passing multiple step run outputs to another step is not "
                 "allowed."
             )
 
-        if isinstance(input, DynamicStepRunOutput):
+        if isinstance(input, OutputArtifact):
             upstream_steps.add(input.step_name)
 
         return input
@@ -383,7 +328,7 @@ def compile_dynamic_step_invocation(
     input_artifacts = {}
     external_artifacts = {}
     for name, value in validated_args.items():
-        if isinstance(value, DynamicStepRunOutput):
+        if isinstance(value, OutputArtifact):
             input_artifacts[name] = StepArtifact(
                 invocation_id=value.step_name,
                 output_name=value.output_name,
@@ -434,8 +379,8 @@ def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
 
     def _convert_output_artifact(
         output_name: str, artifact: ArtifactVersionResponse
-    ) -> DynamicStepRunOutput:
-        return DynamicStepRunOutput(
+    ) -> OutputArtifact:
+        return OutputArtifact(
             output_name=output_name,
             step_name=step_run.name,
             **artifact.model_dump(),

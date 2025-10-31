@@ -20,7 +20,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import submit_pipeline
+from zenml.execution.pipeline.utils import submit_pipeline
 
 PLACEHOLDER_RUN_ID_OPTION = "placeholder_run_id"
 

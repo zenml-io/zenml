@@ -20,8 +20,8 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
+from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 from zenml.integrations.registry import integration_registry
-from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
 
 RUN_ID_OPTION = "run_id"
 

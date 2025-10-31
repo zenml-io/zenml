@@ -25,12 +25,12 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, create_model
 
 from zenml.client import Client
+from zenml.execution.pipeline.utils import (
+    should_prevent_pipeline_execution,
+)
 from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.pipelines.run_utils import (
-    should_prevent_pipeline_execution,
-)
 from zenml.steps.utils import (
     parse_return_type_annotations,
 )

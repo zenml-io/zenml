@@ -194,7 +194,9 @@ class LocalOrchestrator(BaseOrchestrator):
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
         """Submits a dynamic pipeline to the orchestrator."""
-        from zenml.pipelines.dynamic.runner import DynamicPipelineRunner
+        from zenml.execution.pipeline.dynamic.runner import (
+            DynamicPipelineRunner,
+        )
 
         self._orchestrator_run_id = str(uuid4())
         start_time = time.time()

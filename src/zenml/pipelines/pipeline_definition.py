@@ -58,6 +58,10 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
+from zenml.execution.pipeline.utils import (
+    should_prevent_pipeline_execution,
+    submit_pipeline,
+)
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.logging.step_logging import (
@@ -83,8 +87,6 @@ from zenml.pipelines import build_utils
 from zenml.pipelines.compilation_context import PipelineCompilationContext
 from zenml.pipelines.run_utils import (
     create_placeholder_run,
-    should_prevent_pipeline_execution,
-    submit_pipeline,
     upload_notebook_cell_code_if_necessary,
 )
 from zenml.stack import Stack
@@ -1389,7 +1391,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The step invocation ID.
         """
-        from zenml.pipelines.dynamic.run_context import (
+        from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
 
