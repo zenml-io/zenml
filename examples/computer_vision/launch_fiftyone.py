@@ -104,7 +104,7 @@ def main():
     while i < len(args):
         if args[i] == "--port" and i + 1 < len(args):
             try:
-                port = int(args[i + 1])
+                int(args[i + 1])
                 i += 2
             except ValueError:
                 logger.error(f"Invalid port number: {args[i + 1]}")
