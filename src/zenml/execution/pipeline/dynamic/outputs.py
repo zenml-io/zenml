@@ -14,18 +14,12 @@
 """Dynamic pipeline execution outputs."""
 
 from concurrent.futures import Future
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Tuple,
-    Union,
-)
+from typing import Any, List, Tuple, Union
 
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
 )
-
 
 logger = get_logger(__name__)
 
@@ -37,18 +31,14 @@ class OutputArtifact(ArtifactVersionResponse):
     step_name: str
 
 
-StepRunOutputs = Union[
-    None, OutputArtifact, Tuple[OutputArtifact, ...]
-]
+StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-# TODO: maybe one future per artifact? But for a step that doesn't return anything, the user wouldn't have a future to wait for.
-# Or that step returns a future that returns None? Would be similar to a python function.
-class StepRunOutputsFuture:
-    """Future for a step run output."""
+class ArtifactFuture:
+    """Future for a step run output artifact."""
 
     def __init__(
-        self, wrapped: Future[StepRunOutputs], invocation_id: str
+        self, wrapped: Future[StepRunOutputs], invocation_id: str, index: int
     ) -> None:
         """Initialize the future.
 
@@ -58,12 +48,59 @@ class StepRunOutputsFuture:
         """
         self._wrapped = wrapped
         self._invocation_id = invocation_id
+        self._index = index
 
-    def wait(self) -> None:
-        """Wait for the future to complete."""
+    def _wait(self) -> None:
         self._wrapped.result()
 
-    def result(self) -> StepRunOutputs:
+    def result(self) -> OutputArtifact:
+        """Get the step run output artifact.
+
+        Returns:
+            The step run output artifact.
+        """
+        result = self._wrapped.result()
+        if isinstance(result, OutputArtifact):
+            return result
+        elif isinstance(result, tuple):
+            return result[self._index]
+        else:
+            raise RuntimeError(
+                f"Step {self._invocation_id} returned an invalid output: {result}"
+            )
+
+    def load(self) -> Any:
+        """Load the step run output artifact data.
+
+        Returns:
+            The step run output artifact data.
+        """
+        return self.result().load()
+
+
+class StepRunOutputsFuture:
+    """Future for a step run output."""
+
+    def __init__(
+        self,
+        wrapped: Future[StepRunOutputs],
+        invocation_id: str,
+        output_keys: List[str],
+    ) -> None:
+        """Initialize the future.
+
+        Args:
+            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
+        """
+        self._wrapped = wrapped
+        self._invocation_id = invocation_id
+        self._output_keys = output_keys
+
+    def _wait(self) -> None:
+        self._wrapped.result()
+
+    def artifacts(self) -> StepRunOutputs:
         """Get the step run output artifacts.
 
         Returns:
@@ -80,7 +117,7 @@ class StepRunOutputsFuture:
         Returns:
             The step run output artifact data.
         """
-        result = self.result()
+        result = self.artifacts()
 
         if result is None:
             return None
@@ -90,3 +127,39 @@ class StepRunOutputsFuture:
             return tuple(item.load() for item in result)
         else:
             raise ValueError(f"Invalid step run output: {result}")
+
+    def __getitem__(self, key: Union[str, int]) -> ArtifactFuture:
+        if isinstance(key, str):
+            index = self._output_keys.index(key)
+        elif isinstance(key, int):
+            index = key
+        else:
+            raise ValueError(f"Invalid key type: {type(key)}")
+
+        if index > len(self._output_keys):
+            raise IndexError(f"Index out of range: {index}")
+
+        return ArtifactFuture(
+            wrapped=self._wrapped,
+            invocation_id=self._invocation_id,
+            index=index,
+        )
+
+    def __iter__(self) -> Any:
+        if not self._output_keys:
+            raise ValueError(
+                f"Step {self._invocation_id} does not return any outputs."
+            )
+
+        for index in range(len(self._output_keys)):
+            yield ArtifactFuture(
+                wrapped=self._wrapped,
+                invocation_id=self._invocation_id,
+                index=index,
+            )
+
+    def __len__(self) -> int:
+        return len(self._output_keys)
+
+
+StepRunFuture = Union[ArtifactFuture, StepRunOutputsFuture]

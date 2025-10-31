@@ -94,7 +94,10 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
-    from zenml.execution.pipeline.dynamic.outputs import StepRunOutputsFuture
+    from zenml.execution.pipeline.dynamic.outputs import (
+        StepRunFuture,
+        StepRunOutputsFuture,
+    )
 
 
 logger = get_logger(__name__)
@@ -468,8 +471,8 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "StepRunOutputsFuture",
-            Sequence[Union[str, StepArtifact, "StepRunOutputsFuture"]],
+            "StepRunFuture",
+            Sequence[Union[str, StepArtifact, "StepRunFuture"]],
             None,
         ] = None,
         **kwargs: Any,
@@ -512,8 +515,8 @@ class BaseStep:
         if run_context := DynamicPipelineRunContext.get():
             after = cast(
                 Union[
-                    "StepRunOutputsFuture",
-                    Sequence["StepRunOutputsFuture"],
+                    "StepRunFuture",
+                    Sequence["StepRunFuture"],
                     None,
                 ],
                 after,
@@ -627,9 +630,7 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union[
-            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-        ] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
         from zenml.execution.pipeline.dynamic.run_context import (

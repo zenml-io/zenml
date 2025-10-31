@@ -219,6 +219,7 @@ class StepRunner:
             step_failed = False
             try:
                 if (
+                    # TODO: do we need to disable this for dynamic pipelines?
                     pipeline_run.snapshot
                     and self._stack.orchestrator.run_init_cleanup_at_step_level
                 ):

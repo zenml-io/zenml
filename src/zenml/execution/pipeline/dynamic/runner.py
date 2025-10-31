@@ -35,7 +35,9 @@ from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
 from zenml.execution.pipeline.dynamic.outputs import (
+    ArtifactFuture,
     OutputArtifact,
+    StepRunFuture,
     StepRunOutputs,
     StepRunOutputsFuture,
 )
@@ -153,6 +155,9 @@ class DynamicPipelineRunner:
                 self._orchestrator.run_init_hook(snapshot=self._snapshot)
                 try:
                     # TODO: step logging isn't threadsafe
+                    # TODO: what should be allowed as pipeline returns?
+                    #  (artifacts, json serializable, anything?)
+                    #  how do we show it in the UI?
                     self.pipeline._call_entrypoint(**pipeline_parameters)
                 except:
                     publish_failed_pipeline_run(run.id)
@@ -171,9 +176,7 @@ class DynamicPipelineRunner:
         id: Optional[str],
         args: Tuple[Any],
         kwargs: Dict[str, Any],
-        after: Union[
-            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-        ] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
 
@@ -184,9 +187,7 @@ class DynamicPipelineRunner:
         id: Optional[str],
         args: Tuple[Any],
         kwargs: Dict[str, Any],
-        after: Union[
-            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-        ] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
 
@@ -196,9 +197,7 @@ class DynamicPipelineRunner:
         id: Optional[str],
         args: Tuple[Any],
         kwargs: Dict[str, Any],
-        after: Union[
-            "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-        ] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
         """Launch a step.
@@ -240,8 +239,11 @@ class DynamicPipelineRunner:
         if concurrent:
             ctx = contextvars.copy_context()
             future = self._executor.submit(ctx.run, _launch)
+            compiled_step.config.outputs
             step_run_future = StepRunOutputsFuture(
-                wrapped=future, invocation_id=compiled_step.spec.invocation_id
+                wrapped=future,
+                invocation_id=compiled_step.spec.invocation_id,
+                output_keys=list(compiled_step.config.outputs),
             )
             self._futures.append(step_run_future)
             return step_run_future
@@ -251,7 +253,7 @@ class DynamicPipelineRunner:
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
         for future in self._futures:
-            future.wait()
+            future.artifacts()
         self._futures = []
 
 
@@ -262,9 +264,7 @@ def compile_dynamic_step_invocation(
     id: Optional[str],
     args: Tuple[Any],
     kwargs: Dict[str, Any],
-    after: Union[
-        "StepRunOutputsFuture", Sequence["StepRunOutputsFuture"], None
-    ] = None,
+    after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -282,27 +282,25 @@ def compile_dynamic_step_invocation(
     """
     upstream_steps = set()
 
-    if isinstance(after, StepRunOutputsFuture):
-        after.wait()
+    if isinstance(after, StepRunFuture):
+        after._wait()
         upstream_steps.add(after._invocation_id)
     elif isinstance(after, Sequence):
         for item in after:
-            item.wait()
+            item._wait()
             upstream_steps.add(item._invocation_id)
 
     def _await_and_validate_input(input: Any) -> Any:
         if isinstance(input, StepRunOutputsFuture):
-            input = input.result()
+            if len(input._output_keys) != 1:
+                raise ValueError(
+                    "Passing multiple step run outputs to another step is not "
+                    "allowed."
+                )
+            input = input.artifacts()
 
-        if (
-            input
-            and isinstance(input, tuple)
-            and isinstance(input[0], OutputArtifact)
-        ):
-            raise ValueError(
-                "Passing multiple step run outputs to another step is not "
-                "allowed."
-            )
+        if isinstance(input, ArtifactFuture):
+            input = input.result()
 
         if isinstance(input, OutputArtifact):
             upstream_steps.add(input.step_name)
