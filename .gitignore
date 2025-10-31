@@ -189,6 +189,14 @@ test_terraform/
 # feast registry database
 examples/feast_feature_store/feast_feature_repo/data/registry.db
 
+# Computer vision example
+examples/computer_vision/*.jpg
+examples/computer_vision/*.jpeg
+examples/computer_vision/*.pt
+examples/computer_vision/data
+examples/computer_vision/runs
+examples/computer_vision/predictions
+
 #neptune
 *.neptune/
 
@@ -201,11 +209,3 @@ zenml_tutorial/
 
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow
-
-# Computer vision example
-examples/computer_vision/*.jpg
-examples/computer_vision/*.jpeg
-examples/computer_vision/*.pt
-examples/computer_vision/data
-examples/computer_vision/runs
-examples/computer_vision/predictions
