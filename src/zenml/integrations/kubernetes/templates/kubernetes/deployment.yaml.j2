@@ -114,11 +114,13 @@ spec:
         imagePullPolicy: {{ image_pull_policy | default("IfNotPresent") }}
         
         {% if command %}
-        command: {{ command | to_yaml | indent(10) }}
+        command:
+{{ command | to_yaml | indent(10, first=True) }}
         {% endif %}
         
         {% if args %}
-        args: {{ args | to_yaml | indent(10) }}
+        args:
+{{ args | to_yaml | indent(10, first=True) }}
         {% endif %}
         
         {% if env %}

@@ -100,6 +100,66 @@ def test_render_to_k8s_object_returns_canonical_yaml(
     assert manifest.canonical_yaml == expected_yaml
 
 
+def test_render_to_k8s_object_sets_metadata_attributes(
+    custom_template_dir: Path,
+) -> None:
+    template_path = custom_template_dir / "job.yaml.j2"
+    template_path.write_text(
+        "apiVersion: batch/v1\n"
+        "kind: Job\n"
+        "metadata:\n"
+        "  name: demo-job\n"
+        "spec:\n"
+        "  template:\n"
+        "    metadata:\n"
+        "      labels:\n"
+        "        app: demo\n"
+        "    spec:\n"
+        "      containers:\n"
+        "        - name: worker\n"
+        "          image: busybox\n"
+        "          command: ['echo', 'hello']\n"
+        "      restartPolicy: Never\n"
+    )
+
+    engine = KubernetesTemplateEngine(
+        custom_templates_dir=str(custom_template_dir)
+    )
+    manifest = engine.render_to_k8s_object(
+        "job.yaml.j2",
+        context={},
+    )
+
+    assert getattr(manifest.k8s_object, "api_version", None) == "batch/v1"
+    assert getattr(manifest.k8s_object, "kind", None) == "Job"
+
+
+def test_render_to_k8s_object_canonical_yaml_includes_metadata(
+    custom_template_dir: Path,
+) -> None:
+    template_path = custom_template_dir / "configmap.yaml.j2"
+    template_path.write_text(
+        "apiVersion: v1\n"
+        "kind: ConfigMap\n"
+        "metadata:\n"
+        "  name: demo-config\n"
+        "data:\n"
+        "  key: value\n"
+    )
+
+    engine = KubernetesTemplateEngine(
+        custom_templates_dir=str(custom_template_dir)
+    )
+    manifest = engine.render_to_k8s_object(
+        "configmap.yaml.j2",
+        context={},
+    )
+    canonical = yaml.safe_load(manifest.canonical_yaml)
+
+    assert canonical["apiVersion"] == "v1"
+    assert canonical["kind"] == "ConfigMap"
+
+
 def test_render_to_k8s_object_invalid_yaml(custom_template_dir: Path) -> None:
     template_path = custom_template_dir / "broken.yaml.j2"
     template_path.write_text("apiVersion: v1\nkind: Service\nmetadata: [1, 2")

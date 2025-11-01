@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
+import yaml
 from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes import k8s_applier
@@ -148,6 +149,94 @@ def test_apply_resource_invalid_type(dynamic_client_fixture) -> None:
 
     with pytest.raises(ValueError):
         applier.apply_resource(42)  # type: ignore[arg-type]
+
+
+def test_apply_resource_preserves_api_version_and_kind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeApiClient:
+        def sanitize_for_serialization(self, resource):
+            return {"metadata": {"name": "demo"}}
+
+    class FakeResource:
+        api_version = "apps/v1"
+        kind = "Deployment"
+
+        def to_dict(self):
+            return {"metadata": {"name": "demo"}}
+
+    captured: dict[str, object] = {}
+
+    applier = KubernetesApplier(api_client=FakeApiClient())
+
+    def fake_apply_yaml(yaml_content: str, dry_run: bool) -> None:
+        captured["yaml"] = yaml.safe_load(yaml_content)
+        captured["dry_run"] = dry_run
+
+    monkeypatch.setattr(
+        applier,
+        "apply_yaml",
+        fake_apply_yaml,
+        raising=False,
+    )
+
+    applier.apply_resource(FakeResource(), dry_run=False)
+
+    assert "yaml" in captured
+    assert captured["yaml"]["apiVersion"] == "apps/v1"
+    assert captured["yaml"]["kind"] == "Deployment"
+    assert captured["dry_run"] is False
+
+
+def test_apply_resource_normalizes_metadata_keys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeApiClient:
+        def sanitize_for_serialization(self, resource):
+            return {
+                "api_version": "batch/v1",
+                "kind": "Job",
+                "metadata": {"name": "demo"},
+            }
+
+    class FakeResource:
+        def to_dict(self):
+            return {"metadata": {"name": "demo"}}
+
+    applier = KubernetesApplier(api_client=FakeApiClient())
+    captured_yaml: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        applier,
+        "apply_yaml",
+        lambda yaml_content, dry_run: captured_yaml.update(
+            yaml.safe_load(yaml_content)
+        ),
+        raising=False,
+    )
+
+    applier.apply_resource(FakeResource(), dry_run=True)
+
+    assert captured_yaml["apiVersion"] == "batch/v1"
+    assert "api_version" not in captured_yaml
+    assert captured_yaml["kind"] == "Job"
+
+
+def test_apply_resource_raises_for_missing_metadata() -> None:
+    class FakeApiClient:
+        def sanitize_for_serialization(self, resource):
+            return {"metadata": {"name": "demo"}}
+
+    class IncompleteResource:
+        def to_dict(self):
+            return {"metadata": {"name": "demo"}}
+
+    applier = KubernetesApplier(api_client=FakeApiClient())
+
+    with pytest.raises(ValueError) as exc_info:
+        applier.apply_resource(IncompleteResource())
+
+    assert "apiVersion" in str(exc_info.value)
 
 
 def test_delete_resource_handles_404(dynamic_client_fixture) -> None:

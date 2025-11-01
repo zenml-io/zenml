@@ -304,6 +304,8 @@ class KubernetesTemplateEngine:
                 raise ValueError(
                     f"Invalid Kubernetes manifest: missing 'kind' field in {template_name}"
                 )
+            parsed_api_version = parsed.get("apiVersion")
+            parsed_kind = parsed.get("kind")
             kind = parsed["kind"]
         except yaml.YAMLError as e:
             raise ValueError(
@@ -352,13 +354,38 @@ class KubernetesTemplateEngine:
                 f"Failed to convert template to K8s object: {e}"
             ) from e
 
-        # Canonical representation produced by the client (what gets applied)
-        if hasattr(k8s_object, "to_dict"):
-            canonical_dict = k8s_object.to_dict()
-        else:
-            canonical_dict = self.api_client.sanitize_for_serialization(
-                k8s_object
+        if parsed_api_version and hasattr(k8s_object, "api_version") and not getattr(
+            k8s_object, "api_version", None
+        ):
+            setattr(k8s_object, "api_version", parsed_api_version)
+        if parsed_kind and hasattr(k8s_object, "kind") and not getattr(
+            k8s_object, "kind", None
+        ):
+            setattr(k8s_object, "kind", parsed_kind)
+
+        canonical_dict = self.api_client.sanitize_for_serialization(k8s_object)
+
+        effective_api_version = parsed_api_version or getattr(
+            k8s_object, "api_version", None
+        )
+        effective_kind = parsed_kind or getattr(k8s_object, "kind", None)
+
+        if not effective_api_version or not effective_kind:
+            raise ValueError(
+                f"Rendered manifest for '{template_name}' is missing required apiVersion/kind metadata."
             )
+
+        if isinstance(canonical_dict, dict):
+            canonical_dict["apiVersion"] = str(effective_api_version)
+            canonical_dict.pop("api_version", None)
+            canonical_dict["kind"] = str(effective_kind)
+        else:
+            canonical_dict = {
+                "apiVersion": str(effective_api_version),
+                "kind": str(effective_kind),
+                "manifest": canonical_dict,
+            }
+
         canonical_yaml = yaml.safe_dump(
             canonical_dict,
             sort_keys=False,

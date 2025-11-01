@@ -14,7 +14,7 @@
 """Kubernetes resource applier."""
 
 import time
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 from kubernetes import client as k8s_client
@@ -218,9 +218,8 @@ class KubernetesApplier:
             ValueError: If resource is invalid.
             ApiException: If the operation fails.
         """
-        # Convert K8s object to dict
         if hasattr(resource, "to_dict"):
-            resource_dict = resource.to_dict()
+            resource_dict = self.api_client.sanitize_for_serialization(resource)
         elif isinstance(resource, dict):
             resource_dict = resource
         else:
@@ -228,10 +227,41 @@ class KubernetesApplier:
                 f"Resource must be a Kubernetes object or dict, got {type(resource)}"
             )
 
-        # Convert to YAML string
-        yaml_content = yaml.dump(resource_dict, default_flow_style=False)
+        if not isinstance(resource_dict, dict):
+            raise ValueError(
+                f"Serialized resource must be a dict, got {type(resource_dict)}"
+            )
 
-        # Apply using the YAML method
+        normalized_dict: Dict[str, Any] = dict(resource_dict)
+
+        api_version = normalized_dict.get("apiVersion") or normalized_dict.get(
+            "api_version"
+        )
+        if not api_version and hasattr(resource, "api_version"):
+            api_version = getattr(resource, "api_version")
+
+        kind_value = normalized_dict.get("kind")
+        if not kind_value and hasattr(resource, "kind"):
+            kind_value = getattr(resource, "kind")
+
+        if api_version:
+            normalized_dict["apiVersion"] = str(api_version)
+        normalized_dict.pop("api_version", None)
+
+        if kind_value:
+            normalized_dict["kind"] = str(kind_value)
+
+        if not normalized_dict.get("apiVersion") or not normalized_dict.get("kind"):
+            raise ValueError(
+                "Resource must have 'kind' and 'apiVersion' fields. "
+                f"Got: kind={normalized_dict.get('kind')}, apiVersion={normalized_dict.get('apiVersion')}"
+            )
+
+        yaml_content = yaml.dump(
+            normalized_dict,
+            default_flow_style=False,
+        )
+
         return self.apply_yaml(yaml_content=yaml_content, dry_run=dry_run)
 
     def delete_resource(
