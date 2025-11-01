@@ -144,7 +144,7 @@ def test_save_manifests_and_directory(
         raise RuntimeError("boom")
 
     monkeypatch.setattr(
-        "zenml.integrations.kubernetes.template_engine.Client",
+        "zenml.client.Client",
         raising_client,
     )
 

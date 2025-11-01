@@ -400,7 +400,6 @@ class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
         Returns:
             True if using a local Kubernetes cluster, False otherwise.
         """
-        # Check if context indicates a local cluster
         if self.kubernetes_context:
             local_context_indicators = [
                 "k3d-",
@@ -415,7 +414,7 @@ class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
                 indicator in context_lower
                 for indicator in local_context_indicators
             )
-        return self.local
+        return False
 
     @property
     def is_remote(self) -> bool:

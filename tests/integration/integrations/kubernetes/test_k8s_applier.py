@@ -143,7 +143,7 @@ def test_apply_yaml_missing_name_raises(dynamic_client_fixture) -> None:
         applier.apply_yaml(yaml_content)
 
 
-def test_apply_resource_invalid_type() -> None:
+def test_apply_resource_invalid_type(dynamic_client_fixture) -> None:
     applier = KubernetesApplier(api_client=object())
 
     with pytest.raises(ValueError):
@@ -170,6 +170,7 @@ def test_get_resource_returns_none_for_404(dynamic_client_fixture) -> None:
 
 
 def test_wait_for_resource_condition_timeout(
+    dynamic_client_fixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     applier = KubernetesApplier(api_client=object())
@@ -209,6 +210,7 @@ def test_wait_for_resource_condition_timeout(
 
 
 def test_wait_for_deployment_ready_delegates(
+    dynamic_client_fixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     applier = KubernetesApplier(api_client=object())
@@ -233,6 +235,7 @@ def test_wait_for_deployment_ready_delegates(
 
 
 def test_wait_for_service_loadbalancer_ip_success(
+    dynamic_client_fixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     applier = KubernetesApplier(api_client=object())
@@ -259,6 +262,7 @@ def test_wait_for_service_loadbalancer_ip_success(
 
 
 def test_wait_for_service_loadbalancer_ip_failure(
+    dynamic_client_fixture,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     applier = KubernetesApplier(api_client=object())

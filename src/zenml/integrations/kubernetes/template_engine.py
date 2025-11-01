@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes template engine."""
 
+import json
 import os
 import tempfile
 from functools import lru_cache
@@ -57,7 +58,9 @@ class _FakeHTTPResponse:
         Args:
             data: YAML string to deserialize.
         """
-        self.data = data
+        # Store as JSON string since K8s deserializer expects JSON response
+        self._yaml_data = data
+        self.data = json.dumps(yaml.safe_load(data))
         # Add commonly checked attributes for robustness
         self.status = 200
         self.reason = "OK"
@@ -66,7 +69,7 @@ class _FakeHTTPResponse:
         """Read method that may be called by some deserializers.
 
         Returns:
-            The data as bytes.
+            The data as bytes (JSON format).
         """
         return (
             self.data.encode("utf-8")
@@ -183,8 +186,6 @@ class KubernetesTemplateEngine:
         Returns:
             JSON string representation.
         """
-        import json
-
         return json.dumps(value, sort_keys=False, indent=2)
 
     @staticmethod
@@ -286,12 +287,16 @@ class KubernetesTemplateEngine:
 
         Raises:
             TemplateNotFound: If the template file doesn't exist.
-            yaml.YAMLError: If rendered output is invalid YAML.
-            ValueError: If deserialization fails or kind is missing.
+            ValueError: If rendered output is invalid YAML, deserialization fails, or kind is missing.
         """
-        yaml_content = self.render_template(
-            template_name=template_name, context=context
-        )
+        try:
+            yaml_content = self.render_template(
+                template_name=template_name, context=context
+            )
+        except yaml.YAMLError as e:
+            raise ValueError(
+                f"Failed to render template {template_name}: {e}"
+            ) from e
 
         try:
             parsed = yaml.safe_load(yaml_content)
@@ -469,14 +474,14 @@ class KubernetesTemplateEngine:
         Returns:
             Path to the directory containing all saved manifests.
         """
-        from zenml.client import Client
-
         if output_dir:
             manifest_dir = (
                 Path(output_dir).expanduser().resolve() / deployment_name
             )
         else:
             try:
+                from zenml.client import Client
+
                 client = Client()
                 config_dir = client.config_directory
                 if config_dir:
