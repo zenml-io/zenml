@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML secrets store configurations."""
 
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -39,7 +38,7 @@ class SecretsStoreConfiguration(BaseModel):
     """
 
     type: SecretsStoreType
-    class_path: Optional[str] = None
+    class_path: str | None = None
 
     @model_validator(mode="after")
     def validate_custom(self) -> "SecretsStoreConfiguration":

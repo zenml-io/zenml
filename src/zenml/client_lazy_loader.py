@@ -15,7 +15,8 @@
 
 import contextlib
 import functools
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
 
 from pydantic import BaseModel, Field
 
@@ -28,18 +29,18 @@ logger = get_logger(__name__)
 
 
 class _CallStep(BaseModel):
-    attribute_name: Optional[str] = None
+    attribute_name: str | None = None
     is_call: bool = False
-    call_args: List[Any] = Field(default_factory=list)
-    call_kwargs: Dict[str, Any] = Field(default_factory=dict)
-    selector: Optional[Any] = None
+    call_args: list[Any] = Field(default_factory=list)
+    call_kwargs: dict[str, Any] = Field(default_factory=dict)
+    selector: Any | None = None
 
 
 class ClientLazyLoader(BaseModel):
     """Lazy loader for Client methods."""
 
     method_name: str
-    call_chain: List[_CallStep] = []
+    call_chain: list[_CallStep] = []
     exclude_next_call: bool = False
 
     def __getattr__(self, name: str) -> "ClientLazyLoader":
@@ -100,7 +101,7 @@ class ClientLazyLoader(BaseModel):
         from zenml.client import Client
 
         def _iterate_over_lazy_chain(
-            self: "ClientLazyLoader", self_: Any, call_chain_: List[_CallStep]
+            self: "ClientLazyLoader", self_: Any, call_chain_: list[_CallStep]
         ) -> Any:
             next_step = call_chain_.pop(0)
             try:
@@ -142,7 +143,7 @@ class ClientLazyLoader(BaseModel):
 
 def client_lazy_loader(
     method_name: str, *args: Any, **kwargs: Any
-) -> Optional[ClientLazyLoader]:
+) -> ClientLazyLoader | None:
     """Lazy loader for Client methods helper.
 
     Usage:
@@ -174,8 +175,8 @@ def client_lazy_loader(
 
 
 def evaluate_all_lazy_load_args_in_client_methods(
-    cls: Type["Client"],
-) -> Type["Client"]:
+    cls: type["Client"],
+) -> type["Client"]:
     """Class wrapper to evaluate lazy loader arguments of all methods.
 
     Args:
@@ -214,7 +215,7 @@ def evaluate_all_lazy_load_args_in_client_methods(
 
         return _inner
 
-    def _decorate() -> Type["Client"]:
+    def _decorate() -> type["Client"]:
         for name, fn in inspect.getmembers(cls, inspect.isfunction):
             setattr(
                 cls,

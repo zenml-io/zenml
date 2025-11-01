@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import field_validator
 
@@ -72,20 +72,20 @@ class KubernetesPodSettings(BaseSettings):
             will be applied to the pod spec.
     """
 
-    node_selectors: Dict[str, str] = {}
-    affinity: Dict[str, Any] = {}
-    tolerations: List[Dict[str, Any]] = []
-    resources: Dict[str, Dict[str, str]] = {}
-    annotations: Dict[str, str] = {}
-    volumes: List[Dict[str, Any]] = []
-    volume_mounts: List[Dict[str, Any]] = []
+    node_selectors: dict[str, str] = {}
+    affinity: dict[str, Any] = {}
+    tolerations: list[dict[str, Any]] = []
+    resources: dict[str, dict[str, str]] = {}
+    annotations: dict[str, str] = {}
+    volumes: list[dict[str, Any]] = []
+    volume_mounts: list[dict[str, Any]] = []
     host_ipc: bool = False
-    scheduler_name: Optional[str] = None
-    image_pull_secrets: List[str] = []
-    labels: Dict[str, str] = {}
-    env: List[Dict[str, Any]] = []
-    env_from: List[Dict[str, Any]] = []
-    additional_pod_spec_args: Dict[str, Any] = {}
+    scheduler_name: str | None = None
+    image_pull_secrets: list[str] = []
+    labels: dict[str, str] = {}
+    env: list[dict[str, Any]] = []
+    env_from: list[dict[str, Any]] = []
+    additional_pod_spec_args: dict[str, Any] = {}
 
     @field_validator("volumes", mode="before")
     @classmethod

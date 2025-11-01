@@ -17,9 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 from uuid import UUID
@@ -65,42 +62,42 @@ class ModelRequest(ProjectScopedRequest):
         title="The name of the model",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    license: Optional[str] = Field(
+    license: str | None = Field(
         title="The license model created under",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="The description of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    audience: Optional[str] = Field(
+    audience: str | None = Field(
         title="The target audience of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    use_cases: Optional[str] = Field(
+    use_cases: str | None = Field(
         title="The use cases of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    limitations: Optional[str] = Field(
+    limitations: str | None = Field(
         title="The know limitations of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    trade_offs: Optional[str] = Field(
+    trade_offs: str | None = Field(
         title="The trade offs of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    ethics: Optional[str] = Field(
+    ethics: str | None = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         title="Tags associated with the model",
         default=None,
     )
@@ -116,17 +113,17 @@ class ModelRequest(ProjectScopedRequest):
 class ModelUpdate(BaseUpdate):
     """Update model for models."""
 
-    name: Optional[str] = None
-    license: Optional[str] = None
-    description: Optional[str] = None
-    audience: Optional[str] = None
-    use_cases: Optional[str] = None
-    limitations: Optional[str] = None
-    trade_offs: Optional[str] = None
-    ethics: Optional[str] = None
-    add_tags: Optional[List[str]] = None
-    remove_tags: Optional[List[str]] = None
-    save_models_to_registry: Optional[bool] = None
+    name: str | None = None
+    license: str | None = None
+    description: str | None = None
+    audience: str | None = None
+    use_cases: str | None = None
+    limitations: str | None = None
+    trade_offs: str | None = None
+    ethics: str | None = None
+    add_tags: list[str] | None = None
+    remove_tags: list[str] | None = None
+    save_models_to_registry: bool | None = None
 
 
 # ------------------ Response Model ------------------
@@ -139,37 +136,37 @@ class ModelResponseBody(ProjectScopedResponseBody):
 class ModelResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for models."""
 
-    license: Optional[str] = Field(
+    license: str | None = Field(
         title="The license model created under",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="The description of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    audience: Optional[str] = Field(
+    audience: str | None = Field(
         title="The target audience of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    use_cases: Optional[str] = Field(
+    use_cases: str | None = Field(
         title="The use cases of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    limitations: Optional[str] = Field(
+    limitations: str | None = Field(
         title="The know limitations of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    trade_offs: Optional[str] = Field(
+    trade_offs: str | None = Field(
         title="The trade offs of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    ethics: Optional[str] = Field(
+    ethics: str | None = Field(
         title="The ethical implications of the model",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
@@ -183,12 +180,12 @@ class ModelResponseMetadata(ProjectScopedResponseMetadata):
 class ModelResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model entity."""
 
-    tags: List["TagResponse"] = Field(
+    tags: list["TagResponse"] = Field(
         title="Tags associated with the model",
     )
-    latest_version_name: Optional[str] = None
-    latest_version_id: Optional[UUID] = None
-    visualizations: List["CuratedVisualizationResponse"] = Field(
+    latest_version_name: str | None = None
+    latest_version_id: UUID | None = None
+    visualizations: list["CuratedVisualizationResponse"] = Field(
         default_factory=list,
         title="Curated visualizations associated with the model.",
     )
@@ -218,7 +215,7 @@ class ModelResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List["TagResponse"]:
+    def tags(self) -> list["TagResponse"]:
         """The `tags` property.
 
         Returns:
@@ -227,7 +224,7 @@ class ModelResponse(
         return self.get_resources().tags
 
     @property
-    def latest_version_name(self) -> Optional[str]:
+    def latest_version_name(self) -> str | None:
         """The `latest_version_name` property.
 
         Returns:
@@ -236,7 +233,7 @@ class ModelResponse(
         return self.get_resources().latest_version_name
 
     @property
-    def latest_version_id(self) -> Optional[UUID]:
+    def latest_version_id(self) -> UUID | None:
         """The `latest_version_id` property.
 
         Returns:
@@ -245,7 +242,7 @@ class ModelResponse(
         return self.get_resources().latest_version_id
 
     @property
-    def license(self) -> Optional[str]:
+    def license(self) -> str | None:
         """The `license` property.
 
         Returns:
@@ -254,7 +251,7 @@ class ModelResponse(
         return self.get_metadata().license
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -263,7 +260,7 @@ class ModelResponse(
         return self.get_metadata().description
 
     @property
-    def audience(self) -> Optional[str]:
+    def audience(self) -> str | None:
         """The `audience` property.
 
         Returns:
@@ -272,7 +269,7 @@ class ModelResponse(
         return self.get_metadata().audience
 
     @property
-    def use_cases(self) -> Optional[str]:
+    def use_cases(self) -> str | None:
         """The `use_cases` property.
 
         Returns:
@@ -281,7 +278,7 @@ class ModelResponse(
         return self.get_metadata().use_cases
 
     @property
-    def limitations(self) -> Optional[str]:
+    def limitations(self) -> str | None:
         """The `limitations` property.
 
         Returns:
@@ -290,7 +287,7 @@ class ModelResponse(
         return self.get_metadata().limitations
 
     @property
-    def trade_offs(self) -> Optional[str]:
+    def trade_offs(self) -> str | None:
         """The `trade_offs` property.
 
         Returns:
@@ -299,7 +296,7 @@ class ModelResponse(
         return self.get_metadata().trade_offs
 
     @property
-    def ethics(self) -> Optional[str]:
+    def ethics(self) -> str | None:
         """The `ethics` property.
 
         Returns:
@@ -317,7 +314,7 @@ class ModelResponse(
         return self.get_metadata().save_models_to_registry
 
     @property
-    def visualizations(self) -> List["CuratedVisualizationResponse"]:
+    def visualizations(self) -> list["CuratedVisualizationResponse"]:
         """The `visualizations` property.
 
         Returns:
@@ -327,7 +324,7 @@ class ModelResponse(
 
     # Helper functions
     @property
-    def versions(self) -> List["Model"]:
+    def versions(self) -> list["Model"]:
         """List all versions of the model.
 
         Returns:
@@ -353,21 +350,21 @@ class ModelResponse(
 class ModelFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of all models."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the Model",
     )
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
@@ -375,7 +372,7 @@ class ModelFilter(ProjectScopedFilter, TaggableFilter):
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query for Models.
 

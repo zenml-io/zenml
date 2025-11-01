@@ -16,7 +16,7 @@
 import os
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from uuid import UUID
 
 from packaging import version
@@ -117,13 +117,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    user_email: Optional[str] = None
-    user_email_opt_in: Optional[bool] = None
+    user_email: str | None = None
+    user_email_opt_in: bool | None = None
     analytics_opt_in: bool = True
-    version: Optional[str] = None
-    store: Optional[SerializeAsAny[StoreConfiguration]] = None
-    active_stack_id: Optional[uuid.UUID] = None
-    active_project_id: Optional[uuid.UUID] = None
+    version: str | None = None
+    store: SerializeAsAny[StoreConfiguration] | None = None
+    active_stack_id: uuid.UUID | None = None
+    active_project_id: uuid.UUID | None = None
 
     _zen_store: Optional["BaseZenStore"] = None
     _active_project: Optional["ProjectResponse"] = None
@@ -176,7 +176,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
     @field_validator("version")
     @classmethod
-    def _validate_version(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_version(cls, value: str | None) -> str | None:
         """Validate the version attribute.
 
         Args:
@@ -288,7 +288,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         # to ensure the schema migration results are persisted
         self.version = __version__
 
-    def _read_config(self) -> Dict[str, Any]:
+    def _read_config(self) -> dict[str, Any]:
         """Reads configuration options from disk.
 
         If the config file doesn't exist yet, this method returns an empty
@@ -439,7 +439,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             LOCAL_STORES_DIRECTORY_NAME,
         )
 
-    def get_config_environment_vars(self) -> Dict[str, str]:
+    def get_config_environment_vars(self) -> dict[str, str]:
         """Convert the global configuration to environment variables.
 
         Returns:
@@ -489,7 +489,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         return environment_vars
 
     def _get_store_configuration(
-        self, baseline: Optional[StoreConfiguration] = None
+        self, baseline: StoreConfiguration | None = None
     ) -> StoreConfiguration:
         """Get the store configuration.
 
@@ -510,12 +510,12 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         """
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
-        store: Optional[StoreConfiguration] = baseline or self.store
+        store: StoreConfiguration | None = baseline or self.store
 
         # Step 1: Read environment variable overrides
-        env_store_config: Dict[str, str] = {}
-        env_secrets_store_config: Dict[str, str] = {}
-        env_backup_secrets_store_config: Dict[str, str] = {}
+        env_store_config: dict[str, str] = {}
+        env_secrets_store_config: dict[str, str] = {}
+        env_backup_secrets_store_config: dict[str, str] = {}
         for k, v in os.environ.items():
             if k.startswith(ENV_ZENML_STORE_PREFIX):
                 env_store_config[k[len(ENV_ZENML_STORE_PREFIX) :].lower()] = v

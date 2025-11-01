@@ -17,7 +17,8 @@ import contextlib
 import inspect
 import shutil
 import tempfile
-from typing import Any, ClassVar, Dict, Iterator, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, cast
+from collections.abc import Iterator
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType
@@ -37,7 +38,7 @@ class BaseMaterializerMeta(type):
     """
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: tuple[type[Any], ...], dct: dict[str, Any]
     ) -> "BaseMaterializerMeta":
         """Creates a Materializer class and registers it at the `MaterializerRegistry`.
 
@@ -53,7 +54,7 @@ class BaseMaterializerMeta(type):
             MaterializerInterfaceError: If the class was improperly defined.
         """
         cls = cast(
-            Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
+            type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
         if not cls._DOCS_BUILDING_MODE:
             # Skip the following validation and registration for base classes.
@@ -112,7 +113,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.BASE
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = ()
 
     # `SKIP_REGISTRATION` can be set to True to not register the class in the
     # materializer registry. This is primarily useful for defining base classes.
@@ -123,7 +124,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     _DOCS_BUILDING_MODE: ClassVar[bool] = False
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Initializes a materializer with the given URI.
 
@@ -155,7 +156,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # Public Interface
     # ================
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Write logic here to load the data of an artifact.
 
         Args:
@@ -175,7 +176,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         """
         # write `data` into self.uri
 
-    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+    def save_visualizations(self, data: Any) -> dict[str, VisualizationType]:
         """Save visualizations of the given data.
 
         If this method is not overridden, no visualizations will be saved.
@@ -207,7 +208,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # Optionally, save some visualizations of `data` inside `self.uri`.
         return {}
 
-    def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, data: Any) -> dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
         This metadata will be tracked and displayed alongside the artifact.
@@ -229,7 +230,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         # Optionally, extract some metadata from `data` for ZenML to store.
         return {}
 
-    def compute_content_hash(self, data: Any) -> Optional[str]:
+    def compute_content_hash(self, data: Any) -> str | None:
         """Compute the content hash of the given data.
 
         Args:
@@ -243,7 +244,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     # ================
     # Internal Methods
     # ================
-    def validate_save_type_compatibility(self, data_type: Type[Any]) -> None:
+    def validate_save_type_compatibility(self, data_type: type[Any]) -> None:
         """Checks whether the materializer can save the given type.
 
         Args:
@@ -259,7 +260,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
                 f"{self.ASSOCIATED_TYPES}."
             )
 
-    def validate_load_type_compatibility(self, data_type: Type[Any]) -> None:
+    def validate_load_type_compatibility(self, data_type: type[Any]) -> None:
         """Checks whether the materializer can load the given type.
 
         Args:
@@ -276,7 +277,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             )
 
     @classmethod
-    def can_save_type(cls, data_type: Type[Any]) -> bool:
+    def can_save_type(cls, data_type: type[Any]) -> bool:
         """Whether the materializer can save a certain type.
 
         Args:
@@ -291,7 +292,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         )
 
     @classmethod
-    def can_load_type(cls, data_type: Type[Any]) -> bool:
+    def can_load_type(cls, data_type: type[Any]) -> bool:
         """Whether the materializer can load an artifact as the given type.
 
         Args:
@@ -309,7 +310,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
             for associated_type in cls.ASSOCIATED_TYPES
         )
 
-    def extract_full_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+    def extract_full_metadata(self, data: Any) -> dict[str, "MetadataType"]:
         """Extract both base and custom metadata from the given data.
 
         Args:
@@ -322,7 +323,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
         custom_metadata = self.extract_metadata(data)
         return {**base_metadata, **custom_metadata}
 
-    def _extract_base_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
+    def _extract_base_metadata(self, data: Any) -> dict[str, "MetadataType"]:
         """Extract metadata from the given data.
 
         This metadata will be extracted for all artifacts in addition to the

@@ -14,7 +14,8 @@
 """Utility functions for ZenML settings."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Sequence, Type
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from zenml.config.constants import (
     DEPLOYMENT_SETTINGS_KEY,
@@ -124,7 +125,7 @@ def get_stack_component_for_settings_key(
     return stack_component
 
 
-def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
+def get_general_settings() -> dict[str, type["BaseSettings"]]:
     """Returns all general settings.
 
     Returns:

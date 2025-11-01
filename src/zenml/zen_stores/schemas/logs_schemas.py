@@ -49,7 +49,7 @@ class LogsSchema(BaseSchema, table=True):
     source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
 
     # Foreign Keys
-    pipeline_run_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_run_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
         source_column="pipeline_run_id",
@@ -57,7 +57,7 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    step_run_id: Optional[UUID] = build_foreign_key_field(
+    step_run_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StepRunSchema.__tablename__,
         source_column="step_run_id",

@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Local git repository context."""
 
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Callable
 
 from zenml.code_repositories import (
     LocalRepositoryContext,

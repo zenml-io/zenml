@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the a Skypilot based Azure VM orchestrator."""
 
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import sky
 
@@ -59,7 +59,7 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
         return cast(SkypilotAzureOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Skypilot orchestrator.
 
         Returns:
@@ -73,4 +73,3 @@ class SkypilotAzureOrchestrator(SkypilotBaseOrchestrator):
         Args:
             set: Whether to set the environment variables or not.
         """
-        pass

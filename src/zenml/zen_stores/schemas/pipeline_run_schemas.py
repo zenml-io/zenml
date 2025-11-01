@@ -15,7 +15,8 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -108,18 +109,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Fields
-    orchestrator_run_id: Optional[str] = Field(nullable=True)
-    start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True, default=None)
+    orchestrator_run_id: str | None = Field(nullable=True)
+    start_time: datetime | None = Field(nullable=True)
+    end_time: datetime | None = Field(nullable=True, default=None)
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
-    status_reason: Optional[str] = Field(nullable=True)
-    orchestrator_environment: Optional[str] = Field(
+    status_reason: str | None = Field(nullable=True)
+    orchestrator_environment: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
 
     # Foreign keys
-    snapshot_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSnapshotSchema.__tablename__,
         source_column="snapshot_id",
@@ -127,7 +128,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -143,7 +144,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSchema.__tablename__,
         source_column="pipeline_id",
@@ -166,7 +167,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.PIPELINE_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==PipelineRunSchema.id)",
@@ -174,11 +175,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    logs: List["LogsSchema"] = Relationship(
+    logs: list["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    step_runs: List["StepRunSchema"] = Relationship(
+    step_runs: list["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"},
     )
     model_version: "ModelVersionSchema" = Relationship(
@@ -186,14 +187,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Temporary fields and foreign keys to be deprecated
-    pipeline_configuration: Optional[str] = Field(
+    pipeline_configuration: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    client_environment: Optional[str] = Field(
+    client_environment: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
 
-    stack_id: Optional[UUID] = build_foreign_key_field(
+    stack_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackSchema.__tablename__,
         source_column="stack_id",
@@ -201,7 +202,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    build_id: Optional[UUID] = build_foreign_key_field(
+    build_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineBuildSchema.__tablename__,
         source_column="build_id",
@@ -209,7 +210,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    schedule_id: Optional[UUID] = build_foreign_key_field(
+    schedule_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=ScheduleSchema.__tablename__,
         source_column="schedule_id",
@@ -217,7 +218,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    trigger_execution_id: Optional[UUID] = build_foreign_key_field(
+    trigger_execution_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=TriggerExecutionSchema.__tablename__,
         source_column="trigger_execution_id",
@@ -231,13 +232,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     schedule: Optional["ScheduleSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
-    triggered_by: Optional[UUID] = None
-    triggered_by_type: Optional[str] = None
+    triggered_by: UUID | None = None
+    triggered_by_type: str | None = None
 
-    services: List["ServiceSchema"] = Relationship(
+    services: list["ServiceSchema"] = Relationship(
         back_populates="pipeline_run",
     )
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_RUN.value}', foreign(TagResourceSchema.resource_id)==PipelineRunSchema.id)",
             secondary="tag_resource",
@@ -246,7 +247,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="tags",
         ),
     )
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"
@@ -260,7 +261,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Needed for cascade deletion
-    model_versions_pipeline_runs_links: List[
+    model_versions_pipeline_runs_links: list[
         "ModelVersionPipelineRunSchema"
     ] = Relationship(
         back_populates="pipeline_run",
@@ -436,7 +437,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
 
-    def get_upstream_steps(self) -> Dict[str, List[str]]:
+    def get_upstream_steps(self) -> dict[str, list[str]]:
         """Get the list of all the upstream steps for each step.
 
         Returns:
@@ -459,7 +460,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
     def fetch_metadata_collection(
         self, include_full_metadata: bool = False, **kwargs: Any
-    ) -> Dict[str, List[RunMetadataEntry]]:
+    ) -> dict[str, list[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the pipeline run.
 
         Args:
@@ -566,7 +567,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 client_environment.pop("python_packages", None)
                 orchestrator_environment.pop("python_packages", None)
 
-            trigger_info: Optional[PipelineRunTriggerInfo] = None
+            trigger_info: PipelineRunTriggerInfo | None = None
             if self.triggered_by and self.triggered_by_type:
                 if (
                     self.triggered_by_type

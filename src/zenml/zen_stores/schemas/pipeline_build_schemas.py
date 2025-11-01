@@ -14,7 +14,8 @@
 """SQLModel implementation of pipeline build tables."""
 
 import json
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Column, String
@@ -46,7 +47,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
 
     __tablename__ = "pipeline_build"
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -66,7 +67,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="builds")
 
-    stack_id: Optional[UUID] = build_foreign_key_field(
+    stack_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackSchema.__tablename__,
         source_column="stack_id",
@@ -76,7 +77,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
     )
     stack: Optional["StackSchema"] = Relationship(back_populates="builds")
 
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSchema.__tablename__,
         source_column="pipeline_id",
@@ -100,12 +101,12 @@ class PipelineBuildSchema(BaseSchema, table=True):
     is_local: bool
     contains_code: bool
 
-    zenml_version: Optional[str]
-    python_version: Optional[str]
-    checksum: Optional[str]
-    stack_checksum: Optional[str]
+    zenml_version: str | None
+    python_version: str | None
+    checksum: str | None
+    stack_checksum: str | None
     # Build duration in seconds
-    duration: Optional[int] = None
+    duration: int | None = None
 
     @classmethod
     def get_query_options(

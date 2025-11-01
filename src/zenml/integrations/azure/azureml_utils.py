@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """AzureML definitions."""
 
-from typing import Optional
 
 from azure.ai.ml import MLClient
 from azure.ai.ml.entities import Compute
@@ -58,7 +57,7 @@ def create_or_get_compute(
     client: MLClient,
     settings: AzureMLComputeSettings,
     default_compute_name: str,
-) -> Optional[str]:
+) -> str | None:
     """Creates or fetches the compute target if defined in the settings.
 
     Args:

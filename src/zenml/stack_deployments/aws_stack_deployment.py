@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to AWS."""
 
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
@@ -119,7 +119,7 @@ console.
 """
 
     @classmethod
-    def integrations(cls) -> List[str]:
+    def integrations(cls) -> list[str]:
         """Return the ZenML integrations required for the stack.
 
         Returns:
@@ -132,7 +132,7 @@ console.
         ]
 
     @classmethod
-    def permissions(cls) -> Dict[str, List[str]]:
+    def permissions(cls) -> dict[str, list[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
         Returns:
@@ -195,7 +195,7 @@ console.
         }
 
     @classmethod
-    def locations(cls) -> Dict[str, str]:
+    def locations(cls) -> dict[str, str]:
         """Return the locations where the ZenML stack can be deployed.
 
         Returns:
@@ -282,7 +282,7 @@ console.
             f"{region}#/stacks/create/review?{query_params}"
         )
 
-        config: Optional[str] = None
+        config: str | None = None
         if self.deployment_type == STACK_DEPLOYMENT_TERRAFORM:
             config = f"""terraform {{
     required_providers {{

@@ -19,7 +19,6 @@ and an `io` module to handle file operations on Azure Blob Storage.
 The Azure Step Operator integration submodule provides a way to run ZenML steps
 in AzureML.
 """
-from typing import List, Type
 
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
@@ -65,7 +64,7 @@ class AzureIntegration(Integration):
         from zenml.integrations.azure import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declares the flavors for the integration.
 
         Returns:

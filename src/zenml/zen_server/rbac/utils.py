@@ -16,14 +16,9 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Type,
     TypeVar,
 )
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -61,8 +56,8 @@ def dehydrate_page(page: Page[AnyResponse]) -> Page[AnyResponse]:
 
 
 def dehydrate_response_model_batch(
-    batch: List[AnyResponse],
-) -> List[AnyResponse]:
+    batch: list[AnyResponse],
+) -> list[AnyResponse]:
     """Dehydrate all items of a batch.
 
     Args:
@@ -92,7 +87,7 @@ def dehydrate_response_model_batch(
 
 
 def dehydrate_response_model(
-    model: AnyModel, permissions: Optional[Dict[Resource, bool]] = None
+    model: AnyModel, permissions: dict[Resource, bool] | None = None
 ) -> AnyModel:
     """Dehydrate a model if necessary.
 
@@ -134,7 +129,7 @@ def dehydrate_response_model(
 
 
 def _dehydrate_value(
-    value: Any, permissions: Optional[Dict[Resource, bool]] = None
+    value: Any, permissions: dict[Resource, bool] | None = None
 ) -> Any:
     """Helper function to recursive dehydrate any object.
 
@@ -167,12 +162,12 @@ def _dehydrate_value(
         return dehydrate_page(page=value)
     elif isinstance(value, BaseModel):
         return dehydrate_response_model(value, permissions=permissions)
-    elif isinstance(value, Dict):
+    elif isinstance(value, dict):
         return {
             k: _dehydrate_value(v, permissions=permissions)
             for k, v in value.items()
         }
-    elif isinstance(value, (List, Set, tuple)):
+    elif isinstance(value, (list, set, tuple)):
         type_ = type(value)
         return type_(
             _dehydrate_value(v, permissions=permissions) for v in value
@@ -260,7 +255,7 @@ def verify_permission_for_model(model: AnyModel, action: Action) -> None:
 
 
 def batch_verify_permissions(
-    resources: Set[Resource],
+    resources: set[Resource],
     action: Action,
 ) -> None:
     """Batch permission verification.
@@ -302,8 +297,8 @@ def batch_verify_permissions(
 def verify_permission(
     resource_type: str,
     action: Action,
-    resource_id: Optional[UUID] = None,
-    project_id: Optional[UUID] = None,
+    resource_id: UUID | None = None,
+    project_id: UUID | None = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -324,8 +319,8 @@ def verify_permission(
 def get_allowed_resource_ids(
     resource_type: str,
     action: Action = Action.READ,
-    project_id: Optional[UUID] = None,
-) -> Optional[Set[UUID]]:
+    project_id: UUID | None = None,
+) -> set[UUID] | None:
     """Get all resource IDs of a resource type that a user can access.
 
     Args:
@@ -359,7 +354,7 @@ def get_allowed_resource_ids(
     return {UUID(id) for id in allowed_ids}
 
 
-def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
+def get_resource_for_model(model: AnyModel) -> Resource | None:
     """Get the resource associated with a model object.
 
     Args:
@@ -374,14 +369,14 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
         # This model is not tied to any RBAC resource type
         return None
 
-    project_id: Optional[UUID] = None
+    project_id: UUID | None = None
     if isinstance(model, ProjectScopedResponse):
         project_id = model.project_id
     elif isinstance(model, ProjectScopedRequest):
         # A project scoped request is always scoped to a specific project
         project_id = model.project
 
-    resource_id: Optional[UUID] = None
+    resource_id: UUID | None = None
     if isinstance(model, BaseIdentifiedResponse):
         resource_id = model.id
 
@@ -419,7 +414,7 @@ def get_surrogate_permission_model_for_model(
 
 def get_resource_type_for_model(
     model: AnyModel,
-) -> Optional[ResourceType]:
+) -> ResourceType | None:
     """Get the resource type associated with a model object.
 
     Args:
@@ -483,7 +478,7 @@ def get_resource_type_for_model(
         TriggerResponse,
     )
 
-    mapping: Dict[
+    mapping: dict[
         Any,
         ResourceType,
     ] = {
@@ -569,7 +564,7 @@ def is_owned_by_authenticated_user(model: AnyModel) -> bool:
 
 def get_subresources_for_model(
     model: AnyModel,
-) -> Set[Resource]:
+) -> set[Resource]:
     """Get all sub-resources of a model which need permission verification.
 
     Args:
@@ -598,7 +593,7 @@ def get_subresources_for_model(
     return resources
 
 
-def _get_subresources_for_value(value: Any) -> Set[Resource]:
+def _get_subresources_for_value(value: Any) -> set[Resource]:
     """Helper function to recursive retrieve resources of any object.
 
     Args:
@@ -619,12 +614,12 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
         return resources.union(get_subresources_for_model(value))
     elif isinstance(value, BaseModel):
         return get_subresources_for_model(value)
-    elif isinstance(value, Dict):
+    elif isinstance(value, dict):
         resources_list = [
             _get_subresources_for_value(v) for v in value.values()
         ]
         return set.union(*resources_list) if resources_list else set()
-    elif isinstance(value, (List, Set, tuple)):
+    elif isinstance(value, (list, set, tuple)):
         resources_list = [_get_subresources_for_value(v) for v in value]
         return set.union(*resources_list) if resources_list else set()
     else:
@@ -633,7 +628,7 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
 
 def get_schema_for_resource_type(
     resource_type: ResourceType,
-) -> Type["BaseSchema"]:
+) -> type["BaseSchema"]:
     """Get the database schema for a resource type.
 
     Args:
@@ -670,7 +665,7 @@ def get_schema_for_resource_type(
         UserSchema,
     )
 
-    mapping: Dict[ResourceType, Type["BaseSchema"]] = {
+    mapping: dict[ResourceType, type["BaseSchema"]] = {
         ResourceType.STACK: StackSchema,
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
@@ -706,9 +701,9 @@ def get_schema_for_resource_type(
 def update_resource_membership(
     sharing_user: "UserResponse",
     resource: Resource,
-    actions: List[Action],
-    user_id: Optional[str] = None,
-    team_id: Optional[str] = None,
+    actions: list[Action],
+    user_id: str | None = None,
+    team_id: str | None = None,
 ) -> None:
     """Update the resource membership of a user.
 
@@ -741,7 +736,7 @@ def delete_model_resource(model: AnyModel) -> None:
     delete_model_resources(models=[model])
 
 
-def delete_model_resources(models: List[AnyModel]) -> None:
+def delete_model_resources(models: list[AnyModel]) -> None:
     """Delete resource membership information for a list of models.
 
     Args:
@@ -758,7 +753,7 @@ def delete_model_resources(models: List[AnyModel]) -> None:
     delete_resources(resources=list(resources))
 
 
-def delete_resources(resources: List[Resource]) -> None:
+def delete_resources(resources: list[Resource]) -> None:
     """Delete resource membership information for a list of resources.
 
     Args:

@@ -14,8 +14,6 @@
 """Initialization of the Label Studio config generators submodule."""
 
 from zenml.integrations.label_studio.label_config_generators.label_config_generators import (
-    generate_basic_ocr_label_config,
-    generate_basic_object_detection_bounding_boxes_label_config,
     generate_image_classification_label_config,
     generate_text_classification_label_config,
     TASK_TO_FILENAME_REFERENCE_MAPPING,

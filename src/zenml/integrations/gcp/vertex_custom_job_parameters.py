@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex custom job parameter model."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -54,11 +54,11 @@ class VertexCustomJobParameters(BaseModel):
             See: https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html
     """
 
-    accelerator_type: Optional[str] = None
+    accelerator_type: str | None = None
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
     boot_disk_size_gb: int = 100
     boot_disk_type: str = "pd-ssd"
-    persistent_resource_id: Optional[str] = None
-    service_account: Optional[str] = None
-    additional_training_job_args: Dict[str, Any] = {}
+    persistent_resource_id: str | None = None
+    service_account: str | None = None
+    additional_training_job_args: dict[str, Any] = {}

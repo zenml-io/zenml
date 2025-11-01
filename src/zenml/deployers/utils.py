@@ -14,7 +14,7 @@
 """ZenML deployers utilities."""
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 import jsonref
@@ -45,7 +45,7 @@ from zenml.utils.json_utils import pydantic_encoder
 
 def get_deployment_input_schema(
     deployment: DeploymentResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the schema for a deployment's input parameters.
 
     Args:
@@ -71,7 +71,7 @@ def get_deployment_input_schema(
 
 def get_deployment_output_schema(
     deployment: DeploymentResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the schema for a deployment's output parameters.
 
     Args:
@@ -97,7 +97,7 @@ def get_deployment_output_schema(
 
 def get_deployment_invocation_example(
     deployment: DeploymentResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Generate an example invocation command for a deployment.
 
     Args:
@@ -133,8 +133,8 @@ def get_deployment_invocation_example(
 
 
 def invoke_deployment(
-    deployment_name_or_id: Union[str, UUID],
-    project: Optional[UUID] = None,
+    deployment_name_or_id: str | UUID,
+    project: UUID | None = None,
     timeout: int = 300,  # 5 minute timeout
     **kwargs: Any,
 ) -> Any:
@@ -296,7 +296,7 @@ def invoke_deployment(
 
 def deployment_snapshot_request_from_source_snapshot(
     source_snapshot: PipelineSnapshotResponse,
-    deployment_parameters: Dict[str, Any],
+    deployment_parameters: dict[str, Any],
 ) -> PipelineSnapshotRequest:
     """Generate a snapshot request for deployment execution.
 
@@ -380,10 +380,10 @@ def deployment_snapshot_request_from_source_snapshot(
         source_snapshot.pipeline_spec
         and source_snapshot.pipeline_spec.parameters is not None
     ):
-        original_params: Dict[str, Any] = dict(
+        original_params: dict[str, Any] = dict(
             source_snapshot.pipeline_spec.parameters
         )
-        merged_params: Dict[str, Any] = original_params.copy()
+        merged_params: dict[str, Any] = original_params.copy()
         for k, v in deployment_parameters.items():
             if k in original_params:
                 merged_params[k] = v
@@ -413,7 +413,7 @@ def deployment_snapshot_request_from_source_snapshot(
 
 def load_deployment_requirements(
     deployment_settings: DeploymentSettings,
-) -> List[str]:
+) -> list[str]:
     """Load the software requirements for a deployment.
 
     Args:

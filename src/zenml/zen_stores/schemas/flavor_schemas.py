@@ -14,7 +14,8 @@
 """SQL Model Implementations for Flavors."""
 
 import json
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -59,12 +60,12 @@ class FlavorSchema(NamedSchema, table=True):
     type: str
     source: str
     config_schema: str = Field(sa_column=Column(TEXT, nullable=False))
-    integration: Optional[str] = Field(default="")
-    connector_type: Optional[str]
-    connector_resource_type: Optional[str]
-    connector_resource_id_attr: Optional[str]
+    integration: str | None = Field(default="")
+    connector_type: str | None
+    connector_resource_type: str | None
+    connector_resource_id_attr: str | None
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -74,11 +75,11 @@ class FlavorSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="flavors")
 
-    logo_url: Optional[str] = Field()
+    logo_url: str | None = Field()
 
-    docs_url: Optional[str] = Field()
+    docs_url: str | None = Field()
 
-    sdk_docs_url: Optional[str] = Field()
+    sdk_docs_url: str | None = Field()
 
     is_custom: bool = Field(default=True)
 

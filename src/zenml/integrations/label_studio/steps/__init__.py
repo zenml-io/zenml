@@ -13,9 +13,3 @@
 #  permissions and limitations under the License.
 """Standard steps to be used with the Label Studio annotator integration."""
 
-from zenml.integrations.label_studio.steps.label_studio_standard_steps import (
-    LabelStudioDatasetSyncParameters,
-    get_labeled_data,
-    get_or_create_dataset,
-    sync_new_data_to_label_studio,
-)

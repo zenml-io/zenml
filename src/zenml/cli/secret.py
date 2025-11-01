@@ -14,7 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import Any, List, Optional
+from typing import Any
 
 import click
 
@@ -84,7 +84,7 @@ def secret() -> None:
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def create_secret(
-    name: str, private: bool, interactive: bool, values: str, args: List[str]
+    name: str, private: bool, interactive: bool, values: str, args: list[str]
 ) -> None:
     """Create a secret.
 
@@ -207,7 +207,7 @@ def list_secrets(**kwargs: Any) -> None:
     required=False,
     help="Use this flag to explicitly fetch a private secret or a public secret.",
 )
-def get_secret(name_id_or_prefix: str, private: Optional[bool] = None) -> None:
+def get_secret(name_id_or_prefix: str, private: bool | None = None) -> None:
     """Get a secret and print it to the console.
 
     Args:
@@ -228,7 +228,7 @@ def get_secret(name_id_or_prefix: str, private: Optional[bool] = None) -> None:
 
 
 def _get_secret(
-    name_id_or_prefix: str, private: Optional[bool] = None
+    name_id_or_prefix: str, private: bool | None = None
 ) -> SecretResponse:
     """Get a secret with a given name, prefix or id.
 
@@ -296,9 +296,9 @@ def _get_secret(
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
     name_or_id: str,
-    extra_args: List[str],
-    private: Optional[bool] = None,
-    remove_keys: List[str] = [],
+    extra_args: list[str],
+    private: bool | None = None,
+    remove_keys: list[str] = [],
     interactive: bool = False,
     values: str = "",
 ) -> None:
@@ -512,8 +512,8 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
 )
 def export_secret(
     name_id_or_prefix: str,
-    private: Optional[bool] = None,
-    filename: Optional[str] = None,
+    private: bool | None = None,
+    filename: str | None = None,
 ) -> None:
     """Export a secret as a YAML file.
 

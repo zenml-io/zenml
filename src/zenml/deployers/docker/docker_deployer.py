@@ -18,14 +18,9 @@ import os
 import sys
 from typing import (
     Any,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-    Type,
     cast,
 )
+from collections.abc import Generator
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
@@ -74,12 +69,12 @@ logger = get_logger(__name__)
 class DockerDeploymentMetadata(BaseModel):
     """Metadata for a Docker deployment."""
 
-    port: Optional[int] = None
-    container_id: Optional[str] = None
-    container_name: Optional[str] = None
-    container_image_id: Optional[str] = None
-    container_image_uri: Optional[str] = None
-    container_status: Optional[str] = None
+    port: int | None = None
+    container_id: str | None = None
+    container_name: str | None = None
+    container_image_id: str | None = None
+    container_image_uri: str | None = None
+    container_status: str | None = None
 
     @classmethod
     def from_container(
@@ -135,10 +130,10 @@ class DockerDeploymentMetadata(BaseModel):
 class DockerDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines locally using Docker."""
 
-    _docker_client: Optional[DockerClient] = None
+    _docker_client: DockerClient | None = None
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Docker deployer.
 
         Returns:
@@ -156,7 +151,7 @@ class DockerDeployer(ContainerizedDeployer):
         return cast(DockerDeployerConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is an image builder in the stack.
 
         Returns:
@@ -192,7 +187,7 @@ class DockerDeployer(ContainerizedDeployer):
 
     def _get_container(
         self, deployment: DeploymentResponse
-    ) -> Optional[Container]:
+    ) -> Container | None:
         """Get the docker container associated with a deployment.
 
         Args:
@@ -253,8 +248,8 @@ class DockerDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Deploy a pipeline as a Docker container.
@@ -350,7 +345,7 @@ class DockerDeployer(ContainerizedDeployer):
             )
             self.docker_client.images.pull(image)
 
-        preferred_ports: List[int] = []
+        preferred_ports: list[int] = []
         if settings.port:
             preferred_ports.append(settings.port)
         if existing_metadata.port:
@@ -364,9 +359,9 @@ class DockerDeployer(ContainerizedDeployer):
         container_port = (
             snapshot.pipeline_configuration.deployment_settings.uvicorn_port
         )
-        ports: Dict[str, Optional[int]] = {f"{container_port}/tcp": port}
+        ports: dict[str, int | None] = {f"{container_port}/tcp": port}
 
-        uid_args: Dict[str, Any] = {}
+        uid_args: dict[str, Any] = {}
         if sys.platform == "win32":
             # File permissions are not checked on Windows. This if clause
             # prevents mypy from complaining about unused 'type: ignore'
@@ -462,7 +457,7 @@ class DockerDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a Docker deployment.
 
@@ -491,7 +486,7 @@ class DockerDeployer(ContainerizedDeployer):
             )
 
         try:
-            log_kwargs: Dict[str, Any] = {
+            log_kwargs: dict[str, Any] = {
                 "stdout": True,
                 "stderr": True,
                 "stream": follow,
@@ -515,8 +510,7 @@ class DockerDeployer(ContainerizedDeployer):
             else:
                 if isinstance(log_stream, bytes):
                     log_text = log_stream.decode("utf-8", errors="replace")
-                    for line in log_text.splitlines():
-                        yield line
+                    yield from log_text.splitlines()
                 else:
                     for log_line in log_stream:
                         if isinstance(log_line, bytes):
@@ -550,7 +544,7 @@ class DockerDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Deprovision a docker deployment.
 
         Args:
@@ -601,10 +595,10 @@ class DockerDeployerSettings(BaseDeployerSettings):
             of what can be passed.)
     """
 
-    port: Optional[int] = None
+    port: int | None = None
     allocate_port_if_busy: bool = True
-    port_range: Tuple[int, int] = (8000, 65535)
-    run_args: Dict[str, Any] = {}
+    port_range: tuple[int, int] = (8000, 65535)
+    run_args: dict[str, Any] = {}
 
 
 class DockerDeployerConfig(BaseDeployerConfig, DockerDeployerSettings):
@@ -633,7 +627,7 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
         return "docker"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -642,7 +636,7 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -660,7 +654,7 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/docker.png"
 
     @property
-    def config_class(self) -> Type[BaseDeployerConfig]:
+    def config_class(self) -> type[BaseDeployerConfig]:
         """Config class for the base deployer flavor.
 
         Returns:
@@ -669,7 +663,7 @@ class DockerDeployerFlavor(BaseDeployerFlavor):
         return DockerDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["DockerDeployer"]:
+    def implementation_class(self) -> type["DockerDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

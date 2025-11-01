@@ -48,13 +48,11 @@ class VersionedIdentifier(BaseModel):
 class ArtifactVersionIdentifier(VersionedIdentifier):
     """Class for artifact version identifier group."""
 
-    pass
 
 
 class ModelVersionIdentifier(VersionedIdentifier):
     """Class for model version identifier group."""
 
-    pass
 
 
 class PipelineRunIdentifier(BaseModel):

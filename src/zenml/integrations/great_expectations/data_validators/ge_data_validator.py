@@ -14,7 +14,8 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Type, cast
+from typing import Any, ClassVar, cast
+from collections.abc import Sequence
 
 import pandas as pd
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]
@@ -65,12 +66,12 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     """Great Expectations data validator stack component."""
 
     NAME: ClassVar[str] = "Great Expectations"
-    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+    FLAVOR: ClassVar[type[BaseDataValidatorFlavor]] = (
         GreatExpectationsDataValidatorFlavor
     )
 
-    _context: Optional[AbstractDataContext] = None
-    _context_config: Optional[DataContextConfig] = None
+    _context: AbstractDataContext | None = None
+    _context_config: DataContextConfig | None = None
 
     @property
     def config(self) -> GreatExpectationsDataValidatorConfig:
@@ -98,7 +99,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return data_validator.data_context
 
     @property
-    def context_config(self) -> Optional[DataContextConfig]:
+    def context_config(self) -> DataContextConfig | None:
         """Get the Great Expectations data context configuration.
 
         Raises:
@@ -126,7 +127,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         return self._context_config
 
     @property
-    def local_path(self) -> Optional[str]:
+    def local_path(self) -> str | None:
         """Return a local path where this component stores information.
 
         If an existing local GE data context is used, it is
@@ -138,7 +139,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         return self.config.context_root_dir
 
-    def get_store_config(self, class_name: str, prefix: str) -> Dict[str, Any]:
+    def get_store_config(self, class_name: str, prefix: str) -> dict[str, Any]:
         """Generate a Great Expectations store configuration.
 
         Args:
@@ -159,7 +160,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
     def get_data_docs_config(
         self, prefix: str, local: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate Great Expectations data docs configuration.
 
         Args:
@@ -205,7 +206,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
             # Define default configuration options that plug the GX stores
             # in the active ZenML artifact store
-            zenml_context_config: Dict[str, Any] = dict(
+            zenml_context_config: dict[str, Any] = dict(
                 stores={
                     expectations_store_name: self.get_store_config(
                         "ExpectationsStore", "expectations"
@@ -326,11 +327,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
-        comparison_dataset: Optional[Any] = None,
-        profile_list: Optional[Sequence[str]] = None,
-        expectation_suite_name: Optional[str] = None,
-        data_asset_name: Optional[str] = None,
-        profiler_kwargs: Optional[Dict[str, Any]] = None,
+        comparison_dataset: Any | None = None,
+        profile_list: Sequence[str] | None = None,
+        expectation_suite_name: str | None = None,
+        data_asset_name: str | None = None,
+        profiler_kwargs: dict[str, Any] | None = None,
         overwrite_existing_suite: bool = True,
         **kwargs: Any,
     ) -> ExpectationSuite:
@@ -438,11 +439,11 @@ class GreatExpectationsDataValidator(BaseDataValidator):
     def data_validation(
         self,
         dataset: pd.DataFrame,
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[str]] = None,
-        expectation_suite_name: Optional[str] = None,
-        data_asset_name: Optional[str] = None,
-        action_list: Optional[List[Dict[str, Any]]] = None,
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[str] | None = None,
+        expectation_suite_name: str | None = None,
+        data_asset_name: str | None = None,
+        action_list: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> CheckpointResult:
         """Great Expectations data validation.
@@ -513,7 +514,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             },
         ]
 
-        checkpoint_config: Dict[str, Any] = {
+        checkpoint_config: dict[str, Any] = {
             "name": checkpoint_name,
             "run_name_template": run_name,
             "config_version": 1,

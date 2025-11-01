@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Bitbucket webhook event source flavor."""
 
-from typing import ClassVar, Type
+from typing import ClassVar
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceFlavor,
@@ -30,14 +30,14 @@ class BitbucketWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure Bitbucket event sources."""
 
     FLAVOR: ClassVar[str] = BITBUCKET_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[Type[BitbucketWebhookEventSourceHandler]] = (
+    PLUGIN_CLASS: ClassVar[type[BitbucketWebhookEventSourceHandler]] = (
         BitbucketWebhookEventSourceHandler
     )
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[
-        Type[BitbucketWebhookEventSourceConfiguration]
+        type[BitbucketWebhookEventSourceConfiguration]
     ] = BitbucketWebhookEventSourceConfiguration
     EVENT_FILTER_CONFIG_CLASS: ClassVar[
-        Type[BitbucketWebhookEventFilterConfiguration]
+        type[BitbucketWebhookEventFilterConfiguration]
     ] = BitbucketWebhookEventFilterConfiguration

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML Pro workspace client."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from zenml.logger import get_logger
@@ -58,12 +57,12 @@ class WorkspaceClient:
         self,
         offset: int = 0,
         limit: int = 20,
-        workspace_name: Optional[str] = None,
-        url: Optional[str] = None,
-        organization_id: Optional[UUID] = None,
-        status: Optional[WorkspaceStatus] = None,
+        workspace_name: str | None = None,
+        url: str | None = None,
+        organization_id: UUID | None = None,
+        status: WorkspaceStatus | None = None,
         member_only: bool = False,
-    ) -> List[WorkspaceRead]:
+    ) -> list[WorkspaceRead]:
         """List workspaces.
 
         Args:

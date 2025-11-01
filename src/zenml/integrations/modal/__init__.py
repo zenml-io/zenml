@@ -16,7 +16,6 @@
 The Modal integration sub-module provides a step operator flavor that allows
 executing steps on Modal's cloud infrastructure.
 """
-from typing import List, Type
 
 from zenml.integrations.constants import MODAL
 from zenml.integrations.integration import Integration
@@ -32,7 +31,7 @@ class ModalIntegration(Integration):
     REQUIREMENTS = ["modal>=0.64.49,<1"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Modal integration.
 
         Returns:

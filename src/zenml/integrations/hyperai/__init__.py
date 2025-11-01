@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the HyperAI integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import HYPERAI
 from zenml.integrations.integration import Integration
@@ -37,7 +36,7 @@ class HyperAIIntegration(Integration):
         from zenml.integrations.hyperai import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the HyperAI integration.
         
         Returns:

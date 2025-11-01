@@ -18,7 +18,7 @@ import random
 import socket
 import threading
 import time
-from typing import List, Optional, Tuple, cast
+from typing import cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -91,7 +91,7 @@ def parse_args() -> argparse.Namespace:
 
 def _get_orchestrator_job_state(
     batch_api: k8s_client.BatchV1Api, namespace: str, job_name: str
-) -> Tuple[Optional[UUID], Optional[str]]:
+) -> tuple[UUID | None, str | None]:
     """Get the existing status of the orchestrator job.
 
     Args:
@@ -127,7 +127,7 @@ def _reconstruct_nodes(
     pipeline_run: PipelineRunResponse,
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
-) -> List[Node]:
+) -> list[Node]:
     """Reconstruct the nodes from the pipeline run.
 
     Args:
@@ -642,7 +642,7 @@ def main() -> None:
             else:
                 return NodeStatus.RUNNING
 
-        def should_interrupt_execution() -> Optional[InterruptMode]:
+        def should_interrupt_execution() -> InterruptMode | None:
             """Check if the DAG execution should be interrupted.
 
             Returns:

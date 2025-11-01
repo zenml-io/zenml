@@ -14,7 +14,6 @@
 """FastAPI implementation of the deployment app factory and adapters."""
 
 
-from typing import List, Type
 from zenml.deployers.server.app import BaseDeploymentAppRunner, BaseDeploymentAppRunnerFlavor
 
 FASTAPI_APP_RUNNER_FLAVOR_NAME = "fastapi"
@@ -32,7 +31,7 @@ class FastAPIDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
         return FASTAPI_APP_RUNNER_FLAVOR_NAME
 
     @property
-    def implementation_class(self) -> Type[BaseDeploymentAppRunner]:
+    def implementation_class(self) -> type[BaseDeploymentAppRunner]:
         """The class that implements the deployment app runner.
 
         Returns:
@@ -42,7 +41,7 @@ class FastAPIDeploymentAppRunnerFlavor(BaseDeploymentAppRunnerFlavor):
         return FastAPIDeploymentAppRunner
 
     @property
-    def requirements(self) -> List[str]:
+    def requirements(self) -> list[str]:
         """The software requirements for the deployment app runner.
 
         Returns:

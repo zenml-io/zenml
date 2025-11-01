@@ -14,7 +14,7 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Optional, Type, cast
+from typing import cast
 
 from pydantic import BaseModel
 
@@ -44,7 +44,7 @@ class BaseAlerter(StackComponent, ABC):
         return cast(BaseAlerterConfig, self._config)
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, message: str, params: BaseAlerterStepParameters | None = None
     ) -> bool:
         """Post a message to a chat service.
 
@@ -58,7 +58,7 @@ class BaseAlerter(StackComponent, ABC):
         return True
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self, question: str, params: BaseAlerterStepParameters | None = None
     ) -> bool:
         """Post a message to a chat service and wait for approval.
 
@@ -88,7 +88,7 @@ class BaseAlerterFlavor(Flavor, ABC):
         return StackComponentType.ALERTER
 
     @property
-    def config_class(self) -> Type[BaseAlerterConfig]:
+    def config_class(self) -> type[BaseAlerterConfig]:
         """Returns BaseAlerterConfig class.
 
         Returns:
@@ -97,7 +97,7 @@ class BaseAlerterFlavor(Flavor, ABC):
         return BaseAlerterConfig
 
     @property
-    def implementation_class(self) -> Type[BaseAlerter]:
+    def implementation_class(self) -> type[BaseAlerter]:
         """Implementation class.
 
         Returns:

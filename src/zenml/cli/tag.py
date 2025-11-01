@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with tags."""
 
-from typing import Any, Optional, Union
+from typing import Any
 from uuid import UUID
 
 import click
@@ -72,7 +72,7 @@ def list_tags(**kwargs: Any) -> None:
     type=click.Choice(choices=ColorVariants.values()),
     required=False,
 )
-def register_tag(name: str, color: Optional[ColorVariants]) -> None:
+def register_tag(name: str, color: ColorVariants | None) -> None:
     """Register a new model in the Model Control Plane.
 
     Args:
@@ -108,7 +108,7 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
     required=False,
 )
 def update_tag(
-    tag_name_or_id: Union[str, UUID], name: Optional[str], color: Optional[str]
+    tag_name_or_id: str | UUID, name: str | None, color: str | None
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -142,7 +142,7 @@ def update_tag(
     help="Don't ask for confirmation.",
 )
 def delete_tag(
-    tag_name_or_id: Union[str, UUID],
+    tag_name_or_id: str | UUID,
     yes: bool = False,
 ) -> None:
     """Delete an existing tag.

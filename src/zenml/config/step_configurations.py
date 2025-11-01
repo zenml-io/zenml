@@ -16,13 +16,8 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
 )
+from collections.abc import Mapping
 from uuid import UUID
 
 from pydantic import (
@@ -60,18 +55,18 @@ logger = get_logger(__name__)
 class PartialArtifactConfiguration(FrozenBaseModel):
     """Class representing a partial input/output artifact configuration."""
 
-    materializer_source: Optional[Tuple[SourceWithValidator, ...]] = None
+    materializer_source: tuple[SourceWithValidator, ...] | None = None
     # TODO: This could be moved to the `PipelineSnapshot` as it's the same
     # for all steps/outputs
-    default_materializer_source: Optional[SourceWithValidator] = None
-    artifact_config: Optional[ArtifactConfig] = None
+    default_materializer_source: SourceWithValidator | None = None
+    artifact_config: ArtifactConfig | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
     def _remove_deprecated_attributes(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Removes deprecated attributes from the values dict.
 
         Args:
@@ -92,8 +87,8 @@ class PartialArtifactConfiguration(FrozenBaseModel):
     @classmethod
     def _convert_source(
         cls,
-        value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
-    ) -> Optional[Tuple[Source, ...]]:
+        value: None | Source | dict[str, Any] | str | tuple[Source, ...],
+    ) -> tuple[Source, ...] | None:
         """Converts old source strings to tuples of source objects.
 
         Args:
@@ -115,14 +110,14 @@ class PartialArtifactConfiguration(FrozenBaseModel):
 class ArtifactConfiguration(PartialArtifactConfiguration):
     """Class representing a complete input/output artifact configuration."""
 
-    materializer_source: Tuple[SourceWithValidator, ...]
+    materializer_source: tuple[SourceWithValidator, ...]
 
     @field_validator("materializer_source", mode="before")
     @classmethod
     def _convert_source(
         cls,
-        value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
-    ) -> Optional[Tuple[Source, ...]]:
+        value: None | Source | dict[str, Any] | str | tuple[Source, ...],
+    ) -> tuple[Source, ...] | None:
         """Converts old source strings to tuples of source objects.
 
         Args:
@@ -144,73 +139,73 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
 class StepConfigurationUpdate(FrozenBaseModel):
     """Class for step configuration updates."""
 
-    enable_cache: Optional[bool] = Field(
+    enable_cache: bool | None = Field(
         default=None,
         description="Whether to enable cache for the step.",
     )
-    enable_artifact_metadata: Optional[bool] = Field(
+    enable_artifact_metadata: bool | None = Field(
         default=None,
         description="Whether to store metadata for the output artifacts of "
         "the step.",
     )
-    enable_artifact_visualization: Optional[bool] = Field(
+    enable_artifact_visualization: bool | None = Field(
         default=None,
         description="Whether to enable visualizations for the output "
         "artifacts of the step.",
     )
-    enable_step_logs: Optional[bool] = Field(
+    enable_step_logs: bool | None = Field(
         default=None,
         description="Whether to enable logs for the step.",
     )
-    step_operator: Optional[Union[bool, str]] = Field(
+    step_operator: bool | str | None = Field(
         default=None,
         description="The step operator to use for the step.",
     )
-    experiment_tracker: Optional[Union[bool, str]] = Field(
+    experiment_tracker: bool | str | None = Field(
         default=None,
         description="The experiment tracker to use for the step.",
     )
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default=None,
         description="Parameters for the step function.",
     )
-    settings: Optional[Dict[str, SerializeAsAny[BaseSettings]]] = Field(
+    settings: dict[str, SerializeAsAny[BaseSettings]] | None = Field(
         default=None,
         description="Settings for the step.",
     )
-    environment: Optional[Dict[str, str]] = Field(
+    environment: dict[str, str] | None = Field(
         default=None,
         description="The environment for the step.",
     )
-    secrets: Optional[List[Union[str, UUID]]] = Field(
+    secrets: list[str | UUID] | None = Field(
         default=None,
         description="The secrets for the step.",
     )
-    extra: Optional[Dict[str, Any]] = Field(
+    extra: dict[str, Any] | None = Field(
         default=None,
         description="Extra configurations for the step.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: SourceWithValidator | None = Field(
         default=None,
         description="The failure hook source for the step.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: SourceWithValidator | None = Field(
         default=None,
         description="The success hook source for the step.",
     )
-    model: Optional[Model] = Field(
+    model: Model | None = Field(
         default=None,
         description="The model to use for the step.",
     )
-    retry: Optional[StepRetryConfig] = Field(
+    retry: StepRetryConfig | None = Field(
         default=None,
         description="The retry configuration for the step.",
     )
-    substitutions: Optional[Dict[str, str]] = Field(
+    substitutions: dict[str, str] | None = Field(
         default=None,
         description="The substitutions for the step.",
     )
-    cache_policy: Optional[CachePolicyWithValidator] = Field(
+    cache_policy: CachePolicyWithValidator | None = Field(
         default=None,
         description="The cache policy for the step.",
     )
@@ -254,12 +249,12 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
-    parameters: Dict[str, Any] = {}
-    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    environment: Dict[str, str] = {}
-    secrets: List[Union[str, UUID]] = []
-    extra: Dict[str, Any] = {}
-    substitutions: Dict[str, str] = {}
+    parameters: dict[str, Any] = {}
+    settings: dict[str, SerializeAsAny[BaseSettings]] = {}
+    environment: dict[str, str] = {}
+    secrets: list[str | UUID] = []
+    extra: dict[str, Any] = {}
+    substitutions: dict[str, str] = {}
     caching_parameters: Mapping[str, Any] = {}
     external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
     model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
@@ -404,14 +399,14 @@ class StepSpec(FrozenBaseModel):
     """Specification of a pipeline."""
 
     source: SourceWithValidator
-    upstream_steps: List[str]
-    inputs: Dict[str, InputSpec] = {}
+    upstream_steps: list[str]
+    inputs: dict[str, InputSpec] = {}
     invocation_id: str
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_invocation_id(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_invocation_id(cls, data: dict[str, Any]) -> dict[str, Any]:
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
         return data
@@ -480,7 +475,7 @@ class Step(FrozenBaseModel):
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         pipeline_configuration: "PipelineConfiguration",
     ) -> "Step":
         """Create a step from a dictionary.

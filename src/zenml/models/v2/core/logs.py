@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing logs."""
 
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import Field, field_validator
@@ -85,12 +85,12 @@ class LogsResponseBody(BaseDatedResponseBody):
 class LogsResponseMetadata(BaseResponseMetadata):
     """Response metadata for logs."""
 
-    step_run_id: Optional[UUID] = Field(
+    step_run_id: UUID | None = Field(
         title="Step ID to associate the logs with.",
         default=None,
         description="When this is set, pipeline_run_id should be set to None.",
     )
-    pipeline_run_id: Optional[UUID] = Field(
+    pipeline_run_id: UUID | None = Field(
         title="Pipeline run ID to associate the logs with.",
         default=None,
         description="When this is set, step_run_id should be set to None.",
@@ -141,7 +141,7 @@ class LogsResponse(
         return self.get_body().source
 
     @property
-    def step_run_id(self) -> Optional[UUID]:
+    def step_run_id(self) -> UUID | None:
         """The `step_run_id` property.
 
         Returns:
@@ -150,7 +150,7 @@ class LogsResponse(
         return self.get_metadata().step_run_id
 
     @property
-    def pipeline_run_id(self) -> Optional[UUID]:
+    def pipeline_run_id(self) -> UUID | None:
         """The `pipeline_run_id` property.
 
         Returns:

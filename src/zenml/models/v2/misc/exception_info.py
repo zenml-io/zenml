@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Exception information models."""
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -24,7 +23,7 @@ class ExceptionInfo(BaseModel):
     traceback: str = Field(
         title="The traceback of the exception.",
     )
-    step_code_line: Optional[int] = Field(
+    step_code_line: int | None = Field(
         default=None,
         title="The line number of the step code that raised the exception.",
     )

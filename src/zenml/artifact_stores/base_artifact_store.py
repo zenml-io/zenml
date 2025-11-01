@@ -20,18 +20,11 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
     Union,
     cast,
 )
+from collections.abc import Callable, Iterable
 
 from pydantic import Field, model_validator
 
@@ -85,8 +78,8 @@ class _sanitize_paths:
         else:
             self.allow_local_file_access = True
 
-        self.path_args: List[int] = []
-        self.path_kwargs: List[str] = []
+        self.path_args: list[int] = []
+        self.path_kwargs: list[str] = []
         for i, param in enumerate(
             inspect.signature(self.func).parameters.values()
         ):
@@ -208,13 +201,13 @@ class BaseArtifactStoreConfig(StackComponentConfig):
         "Path must be accessible with the configured credentials and permissions"
     )
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]]
+    SUPPORTED_SCHEMES: ClassVar[set[str]]
     IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = False
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _ensure_artifact_store(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _ensure_artifact_store(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validator function for the Artifact Stores.
 
         Checks whether supported schemes are defined and the given path is
@@ -289,7 +282,7 @@ class BaseArtifactStore(StackComponent):
         return self.config.path
 
     @property
-    def custom_cache_key(self) -> Optional[bytes]:
+    def custom_cache_key(self) -> bytes | None:
         """Custom cache key.
 
         Any artifact store can override this property in case they need
@@ -337,7 +330,7 @@ class BaseArtifactStore(StackComponent):
         """
 
     @abstractmethod
-    def glob(self, pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> list[PathType]:
         """Gets the paths that match a glob pattern.
 
         Args:
@@ -359,7 +352,7 @@ class BaseArtifactStore(StackComponent):
         """
 
     @abstractmethod
-    def listdir(self, path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> list[PathType]:
         """Returns a list of files under a given directory in the filesystem.
 
         Args:
@@ -425,7 +418,7 @@ class BaseArtifactStore(StackComponent):
         """
 
     @abstractmethod
-    def size(self, path: PathType) -> Optional[int]:
+    def size(self, path: PathType) -> int | None:
         """Get the size of a file in bytes.
 
         Args:
@@ -448,8 +441,8 @@ class BaseArtifactStore(StackComponent):
         self,
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:
@@ -469,7 +462,7 @@ class BaseArtifactStore(StackComponent):
             *args: The positional arguments to pass to the Pydantic object.
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
-        super(BaseArtifactStore, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._add_path_sanitization()
 
         # If running in a ZenML server environment, we don't register
@@ -497,7 +490,7 @@ class BaseArtifactStore(StackComponent):
         if isinstance(self, LocalFilesystem):
             return
 
-        overloads: Dict[str, Any] = {
+        overloads: dict[str, Any] = {
             "SUPPORTED_SCHEMES": self.config.SUPPORTED_SCHEMES,
         }
         for method_name, method in inspect.getmembers(BaseArtifactStore):
@@ -536,7 +529,7 @@ class BaseArtifactStoreFlavor(Flavor):
         return StackComponentType.ARTIFACT_STORE
 
     @property
-    def config_class(self) -> Type[StackComponentConfig]:
+    def config_class(self) -> type[StackComponentConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -546,7 +539,7 @@ class BaseArtifactStoreFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type["BaseArtifactStore"]:
+    def implementation_class(self) -> type["BaseArtifactStore"]:
         """Implementation class.
 
         Returns:

@@ -13,16 +13,17 @@
 #  permissions and limitations under the License.
 """Util functions for materializers."""
 
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer
 
 
 def select_materializer(
-    data_type: Type[Any],
-    materializer_classes: Sequence[Type["BaseMaterializer"]],
-) -> Type["BaseMaterializer"]:
+    data_type: type[Any],
+    materializer_classes: Sequence[type["BaseMaterializer"]],
+) -> type["BaseMaterializer"]:
     """Select a materializer for a given data type.
 
     Args:
@@ -35,7 +36,7 @@ def select_materializer(
     Returns:
         The first materializer that can handle the given data type.
     """
-    fallback: Optional[Type["BaseMaterializer"]] = None
+    fallback: type["BaseMaterializer"] | None = None
 
     for class_ in data_type.__mro__:
         for materializer_class in materializer_classes:

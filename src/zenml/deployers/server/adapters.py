@@ -14,7 +14,8 @@
 """Framework adapter interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
+from collections.abc import Callable
 
 from asgiref.typing import (
     ASGIApplication,

@@ -14,7 +14,8 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
@@ -78,8 +79,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
 
     # Fields
-    name: Optional[str] = Field(nullable=True)
-    description: Optional[str] = Field(
+    name: str | None = Field(nullable=True)
+    description: str | None = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -100,8 +101,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
-    pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
-    pipeline_spec: Optional[str] = Field(
+    pipeline_version_hash: str | None = Field(nullable=True, default=None)
+    pipeline_spec: str | None = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -109,10 +110,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
-    code_path: Optional[str] = Field(nullable=True)
+    code_path: str | None = Field(nullable=True)
 
     # Foreign keys
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -128,7 +129,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    stack_id: Optional[UUID] = build_foreign_key_field(
+    stack_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackSchema.__tablename__,
         source_column="stack_id",
@@ -144,7 +145,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    schedule_id: Optional[UUID] = build_foreign_key_field(
+    schedule_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=ScheduleSchema.__tablename__,
         source_column="schedule_id",
@@ -152,7 +153,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    build_id: Optional[UUID] = build_foreign_key_field(
+    build_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineBuildSchema.__tablename__,
         source_column="build_id",
@@ -160,7 +161,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    code_reference_id: Optional[UUID] = build_foreign_key_field(
+    code_reference_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=CodeReferenceSchema.__tablename__,
         source_column="code_reference_id",
@@ -170,10 +171,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     # This is not a foreign key to remove a cycle which messes with our DB
     # backup process
-    source_snapshot_id: Optional[UUID] = None
+    source_snapshot_id: UUID | None = None
 
     # Deprecated, remove once we remove run templates entirely
-    template_id: Optional[UUID] = None
+    template_id: UUID | None = None
 
     # SQLModel Relationships
     source_snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
@@ -196,13 +197,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
 
-    pipeline_runs: List["PipelineRunSchema"] = Relationship(
+    pipeline_runs: list["PipelineRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
-    step_runs: List["StepRunSchema"] = Relationship(
+    step_runs: list["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
-    step_configurations: List["StepConfigurationSchema"] = Relationship(
+    step_configurations: list["StepConfigurationSchema"] = Relationship(
         sa_relationship_kwargs={
             "cascade": "delete",
             "order_by": "asc(StepConfigurationSchema.index)",
@@ -212,7 +213,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         back_populates="snapshot"
     )
     step_count: int
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE_SNAPSHOT.value}', foreign(TagResourceSchema.resource_id)==PipelineSnapshotSchema.id)",
             secondary="tag_resource",
@@ -221,7 +222,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"
@@ -281,8 +282,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
     def get_step_configurations(
-        self, include: Optional[List[str]] = None
-    ) -> List["StepConfigurationSchema"]:
+        self, include: list[str] | None = None
+    ) -> list["StepConfigurationSchema"]:
         """Get step configurations for the snapshot.
 
         Args:
@@ -382,7 +383,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     def from_request(
         cls,
         request: PipelineSnapshotRequest,
-        code_reference_id: Optional[UUID],
+        code_reference_id: UUID | None,
     ) -> "PipelineSnapshotSchema":
         """Create schema from request.
 
@@ -460,8 +461,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         include_python_packages: bool = False,
-        include_config_schema: Optional[bool] = None,
-        step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: bool | None = None,
+        step_configuration_filter: list[str] | None = None,
         **kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Convert schema to response.

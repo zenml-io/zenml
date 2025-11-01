@@ -20,11 +20,8 @@ import zipfile
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     NamedTuple,
     Optional,
-    Tuple,
-    Type,
     cast,
 )
 
@@ -67,12 +64,12 @@ class DagGeneratorValues(NamedTuple):
     file: str
     config_file_name: str
     run_id_env_variable_name: str
-    dag_configuration_class: Type["DagConfiguration"]
-    task_configuration_class: Type["TaskConfiguration"]
+    dag_configuration_class: type["DagConfiguration"]
+    task_configuration_class: type["TaskConfiguration"]
 
 
 def get_dag_generator_values(
-    custom_dag_generator_source: Optional[str] = None,
+    custom_dag_generator_source: str | None = None,
 ) -> DagGeneratorValues:
     """Gets values from the DAG generator module.
 
@@ -126,7 +123,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         return cast(AirflowOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Kubeflow orchestrator.
 
         Returns:
@@ -151,7 +148,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
 
             def _validate_remote_components(
                 stack: "Stack",
-            ) -> Tuple[bool, str]:
+            ) -> tuple[bool, str]:
                 for component in stack.components.values():
                     if not component.config.is_local:
                         continue
@@ -181,10 +178,10 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -283,7 +280,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
     def _apply_resource_settings(
         self,
         resource_settings: "ResourceSettings",
-        operator_args: Dict[str, Any],
+        operator_args: dict[str, Any],
     ) -> None:
         """Adds resource settings to the operator args.
 
@@ -399,7 +396,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
     @staticmethod
     def _translate_schedule(
         schedule: Optional["ScheduleResponse"] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Convert ZenML schedule into Airflow schedule.
 
         The Airflow schedule uses slightly different naming and needs some

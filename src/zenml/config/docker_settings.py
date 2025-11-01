@@ -14,7 +14,7 @@
 """Docker settings."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -68,8 +68,8 @@ class DockerBuildConfig(BaseModel):
             Docker image.
     """
 
-    build_options: Dict[str, Any] = {}
-    dockerignore: Optional[str] = None
+    build_options: dict[str, Any] = {}
+    dockerignore: str | None = None
 
 
 _docker_settings_warnings_logged = []
@@ -212,47 +212,47 @@ class DockerSettings(BaseSettings):
             from the artifact store.
     """
 
-    parent_image: Optional[str] = None
-    image_tag: Optional[str] = None
-    dockerfile: Optional[str] = None
-    build_context_root: Optional[str] = None
-    parent_image_build_config: Optional[DockerBuildConfig] = None
+    parent_image: str | None = None
+    image_tag: str | None = None
+    dockerfile: str | None = None
+    build_context_root: str | None = None
+    parent_image_build_config: DockerBuildConfig | None = None
     skip_build: bool = False
     prevent_build_reuse: bool = False
-    target_repository: Optional[str] = None
+    target_repository: str | None = None
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.UV
     )
-    python_package_installer_args: Dict[str, Any] = {}
+    python_package_installer_args: dict[str, Any] = {}
     disable_automatic_requirements_detection: bool = True
-    replicate_local_python_environment: Optional[
-        Union[List[str], PythonEnvironmentExportMethod, bool]
-    ] = Field(default=None, union_mode="left_to_right")
-    pyproject_path: Optional[str] = None
-    pyproject_export_command: Optional[List[str]] = None
-    requirements: Union[None, str, List[str]] = Field(
+    replicate_local_python_environment: None | (
+        list[str] | PythonEnvironmentExportMethod | bool
+    ) = Field(default=None, union_mode="left_to_right")
+    pyproject_path: str | None = None
+    pyproject_export_command: list[str] | None = None
+    requirements: None | str | list[str] = Field(
         default=None, union_mode="left_to_right"
     )
-    required_integrations: List[str] = []
+    required_integrations: list[str] = []
     install_stack_requirements: bool = True
     install_deployment_requirements: bool = True
-    local_project_install_command: Optional[str] = None
-    apt_packages: List[str] = []
-    environment: Dict[str, Any] = {}
-    user: Optional[str] = None
-    build_config: Optional[DockerBuildConfig] = None
+    local_project_install_command: str | None = None
+    apt_packages: list[str] = []
+    environment: dict[str, Any] = {}
+    user: str | None = None
+    build_config: DockerBuildConfig | None = None
 
     allow_including_files_in_images: bool = True
     allow_download_from_code_repository: bool = True
     allow_download_from_artifact_store: bool = True
 
     # Deprecated attributes
-    build_options: Dict[str, Any] = {}
-    dockerignore: Optional[str] = None
+    build_options: dict[str, Any] = {}
+    dockerignore: str | None = None
     copy_files: bool = True
     copy_global_config: bool = True
-    source_files: Optional[str] = None
-    required_hub_plugins: List[str] = []
+    source_files: str | None = None
+    required_hub_plugins: list[str] = []
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "copy_files",
@@ -266,7 +266,7 @@ class DockerSettings(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_source_files(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_source_files(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Migrate old source_files values.
 
         Args:

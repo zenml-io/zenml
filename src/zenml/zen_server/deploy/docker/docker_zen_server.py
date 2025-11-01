@@ -14,7 +14,7 @@
 """Service implementation for the ZenML docker server deployment."""
 
 import os
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Optional, cast
 
 from pydantic import ConfigDict
 
@@ -72,10 +72,10 @@ class DockerServerDeploymentConfig(LocalServerDeploymentConfig):
 
     port: int = 8238
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
-    store: Optional[StoreConfiguration] = None
+    store: StoreConfiguration | None = None
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         """Get the configured server URL.
 
         Returns:
@@ -148,14 +148,14 @@ class DockerZenServer(ContainerService):
         """
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
-            with open(config_filename, "r") as f:
+            with open(config_filename) as f:
                 return cast(
                     "DockerZenServer", DockerZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
 
-    def _get_container_cmd(self) -> Tuple[List[str], Dict[str, str]]:
+    def _get_container_cmd(self) -> tuple[list[str], dict[str, str]]:
         """Get the command to run the service container.
 
         Override the inherited method to use a ZenML global config path inside

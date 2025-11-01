@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Github webhook event source flavor."""
 
-from typing import ClassVar, Type
+from typing import ClassVar
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceFlavor,
@@ -30,14 +30,14 @@ class GithubWebhookEventSourceFlavor(BaseWebhookEventSourceFlavor):
     """Enables users to configure github event sources."""
 
     FLAVOR: ClassVar[str] = GITHUB_EVENT_FLAVOR
-    PLUGIN_CLASS: ClassVar[Type[GithubWebhookEventSourceHandler]] = (
+    PLUGIN_CLASS: ClassVar[type[GithubWebhookEventSourceHandler]] = (
         GithubWebhookEventSourceHandler
     )
 
     # EventPlugin specific
     EVENT_SOURCE_CONFIG_CLASS: ClassVar[
-        Type[GithubWebhookEventSourceConfiguration]
+        type[GithubWebhookEventSourceConfiguration]
     ] = GithubWebhookEventSourceConfiguration
     EVENT_FILTER_CONFIG_CLASS: ClassVar[
-        Type[GithubWebhookEventFilterConfiguration]
+        type[GithubWebhookEventFilterConfiguration]
     ] = GithubWebhookEventFilterConfiguration

@@ -13,7 +13,3 @@
 #  permissions and limitations under the License.
 """Initialization of the whylogs steps."""
 
-from zenml.integrations.whylogs.steps.whylogs_profiler import (
-    whylogs_profiler_step,
-    get_whylogs_profiler_step,
-)

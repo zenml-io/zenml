@@ -16,7 +16,6 @@
 The Skypilot integration sub-module powers an alternative to the local
 orchestrator for a remote orchestration of ZenML pipelines on VMs.
 """
-from typing import List, Type
 
 from zenml.integrations.constants import (
     SKYPILOT_KUBERNETES,
@@ -36,7 +35,7 @@ class SkypilotKubernetesIntegration(Integration):
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Skypilot Kubernetes integration.
 
         Returns:

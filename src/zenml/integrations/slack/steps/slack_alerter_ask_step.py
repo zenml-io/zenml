@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step that allows you to send messages to Slack and wait for a response."""
 
-from typing import Optional
 
 from zenml import get_step_context, step
 from zenml.client import Client
@@ -27,7 +26,7 @@ from zenml.integrations.slack.alerters.slack_alerter import (
 @step
 def slack_alerter_ask_step(
     message: str,
-    params: Optional[SlackAlerterParameters] = None,
+    params: SlackAlerterParameters | None = None,
 ) -> bool:
     """Posts a message to the Slack alerter component and waits for approval.
 

@@ -17,7 +17,8 @@ import base64
 import functools
 import random
 import string
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -148,7 +149,7 @@ def validate_name(model: BaseModel, name_field: str = "name") -> None:
 
 def format_name_template(
     name_template: str,
-    substitutions: Optional[Dict[str, str]] = None,
+    substitutions: dict[str, str] | None = None,
 ) -> str:
     """Formats a name template with the given arguments.
 
@@ -233,7 +234,7 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
             model_values[k] = new_value
 
         return cast(V, type(value).model_validate(model_values))  # type: ignore[redundant-cast]
-    elif isinstance(value, Dict):
+    elif isinstance(value, dict):
         return cast(
             V, {substitute_(k): substitute_(v) for k, v in value.items()}
         )

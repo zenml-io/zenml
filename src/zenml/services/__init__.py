@@ -52,8 +52,6 @@ from zenml.services.service_monitor import (
     TCPEndpointHealthMonitorConfig,
 )
 from zenml.services.service_status import ServiceStatus
-from zenml.enums import ServiceState
-from zenml.models.v2.misc.service import ServiceType
 
 __all__ = [
     "ServiceConfig",

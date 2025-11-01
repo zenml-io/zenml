@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the GitHub ZenML integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
@@ -25,11 +24,11 @@ class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
-    REQUIREMENTS: List[str] = ["pygithub"]
+    REQUIREMENTS: list[str] = ["pygithub"]
 
 
     @classmethod
-    def plugin_flavors(cls) -> List[Type[BasePluginFlavor]]:
+    def plugin_flavors(cls) -> list[type[BasePluginFlavor]]:
         """Declare the event flavors for the github integration.
 
         Returns:

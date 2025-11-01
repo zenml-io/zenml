@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
+from collections.abc import Sequence
 from uuid import UUID, uuid4
 
 from pydantic import ConfigDict
@@ -99,7 +100,7 @@ class ModelSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="models")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -119,7 +120,7 @@ class ModelSchema(NamedSchema, table=True):
     save_models_to_registry: bool = Field(
         sa_column=Column(BOOLEAN, nullable=False)
     )
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
             secondary="tag_resource",
@@ -128,11 +129,11 @@ class ModelSchema(NamedSchema, table=True):
             overlaps="tags",
         ),
     )
-    model_versions: List["ModelVersionSchema"] = Relationship(
+    model_versions: list["ModelVersionSchema"] = Relationship(
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"
@@ -357,7 +358,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="model_versions")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -378,7 +379,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         nullable=False,
     )
     model: "ModelSchema" = Relationship(back_populates="model_versions")
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
             secondary="tag_resource",
@@ -388,7 +389,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
 
-    services: List["ServiceSchema"] = Relationship(
+    services: list["ServiceSchema"] = Relationship(
         back_populates="model_version",
     )
 
@@ -396,7 +397,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     stage: str = Field(sa_column=Column(TEXT, nullable=True))
 
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
@@ -404,10 +405,10 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    pipeline_runs: List["PipelineRunSchema"] = Relationship(
+    pipeline_runs: list["PipelineRunSchema"] = Relationship(
         back_populates="model_version",
     )
-    step_runs: List["StepRunSchema"] = Relationship(
+    step_runs: list["StepRunSchema"] = Relationship(
         back_populates="model_version"
     )
 
@@ -423,11 +424,11 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
     producer_run_id_if_numeric: UUID
 
     # Needed for cascade deletion behavior
-    artifact_links: List["ModelVersionArtifactSchema"] = Relationship(
+    artifact_links: list["ModelVersionArtifactSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    pipeline_run_links: List["ModelVersionPipelineRunSchema"] = Relationship(
+    pipeline_run_links: list["ModelVersionPipelineRunSchema"] = Relationship(
         back_populates="model_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -486,7 +487,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         model_version_request: ModelVersionRequest,
         model_version_number: int,
-        producer_run_id: Optional[UUID] = None,
+        producer_run_id: UUID | None = None,
     ) -> "ModelVersionSchema":
         """Convert an `ModelVersionRequest` to an `ModelVersionSchema`.
 
@@ -578,9 +579,9 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
     def update(
         self,
-        target_stage: Optional[str] = None,
-        target_name: Optional[str] = None,
-        target_description: Optional[str] = None,
+        target_stage: str | None = None,
+        target_name: str | None = None,
+        target_description: str | None = None,
     ) -> "ModelVersionSchema":
         """Updates a `ModelVersionSchema` to a target stage.
 

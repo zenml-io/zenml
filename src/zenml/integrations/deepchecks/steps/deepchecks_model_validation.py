@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks model validation validation step."""
 
-from typing import Any, Dict, Optional, Sequence, cast
+from typing import Any, Optional, cast
+from collections.abc import Sequence
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
@@ -32,10 +33,10 @@ from zenml.integrations.deepchecks.validation_checks import (
 def deepchecks_model_validation_check_step(
     dataset: pd.DataFrame,
     model: ClassifierMixin,
-    check_list: Optional[Sequence[DeepchecksModelValidationCheck]] = None,
-    dataset_kwargs: Optional[Dict[str, Any]] = None,
-    check_kwargs: Optional[Dict[str, Any]] = None,
-    run_kwargs: Optional[Dict[str, Any]] = None,
+    check_list: Sequence[DeepchecksModelValidationCheck] | None = None,
+    dataset_kwargs: dict[str, Any] | None = None,
+    check_kwargs: dict[str, Any] | None = None,
+    run_kwargs: dict[str, Any] | None = None,
 ) -> SuiteResult:
     """Run model validation checks on a pandas DataFrame and an sklearn model.
 

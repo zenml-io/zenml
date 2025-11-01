@@ -16,7 +16,7 @@
 import os
 import sys
 from importlib.metadata import distribution
-from typing import Any, List, Set
+from typing import Any
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -38,7 +38,7 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -54,7 +54,7 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     def get_entrypoint_arguments(
         cls,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         The argument list should be something that

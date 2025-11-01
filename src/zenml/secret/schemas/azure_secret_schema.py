@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Azure Authentication Secret Schema definition."""
 
-from typing import Optional
 
 from zenml.secret.base_secret import BaseSecretSchema
 
@@ -21,10 +20,10 @@ from zenml.secret.base_secret import BaseSecretSchema
 class AzureSecretSchema(BaseSecretSchema):
     """Azure Authentication Secret Schema definition."""
 
-    account_name: Optional[str] = None
-    account_key: Optional[str] = None
-    sas_token: Optional[str] = None
-    connection_string: Optional[str] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    tenant_id: Optional[str] = None
+    account_name: str | None = None
+    account_key: str | None = None
+    sas_token: str | None = None
+    connection_string: str | None = None
+    client_id: str | None = None
+    client_secret: str | None = None
+    tenant_id: str | None = None

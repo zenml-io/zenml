@@ -16,9 +16,7 @@
 The CometML integrations currently enables you to use Comet tracking as a
 convenient way to visualize your experiment runs within the Comet ui.
 """
-from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import COMET
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -33,7 +31,7 @@ class CometIntegration(Integration):
     REQUIREMENTS = ["comet-ml>=3.0.0"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Comet integration.
 
         Returns:

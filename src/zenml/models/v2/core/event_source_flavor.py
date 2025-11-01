@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing event source flavors.."""
 
-from typing import Any, Dict
+from typing import Any
 
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,
@@ -30,8 +30,8 @@ class EventSourceFlavorResponseBody(BasePluginResponseBody):
 class EventSourceFlavorResponseMetadata(BasePluginResponseMetadata):
     """Response metadata for event flavors."""
 
-    source_config_schema: Dict[str, Any]
-    filter_config_schema: Dict[str, Any]
+    source_config_schema: dict[str, Any]
+    filter_config_schema: dict[str, Any]
 
 
 class EventSourceFlavorResponseResources(BasePluginResponseResources):
@@ -49,7 +49,7 @@ class EventSourceFlavorResponse(
 
     # Body and metadata properties
     @property
-    def source_config_schema(self) -> Dict[str, Any]:
+    def source_config_schema(self) -> dict[str, Any]:
         """The `source_config_schema` property.
 
         Returns:
@@ -58,7 +58,7 @@ class EventSourceFlavorResponse(
         return self.get_metadata().source_config_schema
 
     @property
-    def filter_config_schema(self) -> Dict[str, Any]:
+    def filter_config_schema(self) -> dict[str, Any]:
         """The `filter_config_schema` property.
 
         Returns:

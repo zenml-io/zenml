@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Base SecretSchema class."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -22,7 +22,7 @@ class BaseSecretSchema(BaseModel):
     """Base class for all Secret Schemas."""
 
     @classmethod
-    def get_schema_keys(cls) -> List[str]:
+    def get_schema_keys(cls) -> list[str]:
         """Get all attributes that are part of the schema.
 
         These schema keys can be used to define all required key-value pairs of
@@ -33,7 +33,7 @@ class BaseSecretSchema(BaseModel):
         """
         return list(cls.model_fields.keys())
 
-    def get_values(self) -> Dict[str, Any]:
+    def get_values(self) -> dict[str, Any]:
         """Get all values of the secret schema.
 
         Returns:

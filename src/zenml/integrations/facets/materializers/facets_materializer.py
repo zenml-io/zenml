@@ -15,7 +15,6 @@
 
 import base64
 import os
-from typing import Dict
 
 from facets_overview.generic_feature_statistics_generator import (
     GenericFeatureStatisticsGenerator,
@@ -45,7 +44,7 @@ class FacetsMaterializer(BaseMaterializer):
 
     def save_visualizations(
         self, data: FacetsComparison
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Save a Facets visualization of the data.
 
         Args:

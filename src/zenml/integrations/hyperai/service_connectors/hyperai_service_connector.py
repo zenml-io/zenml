@@ -19,7 +19,7 @@ GPU equipped instances.
 
 import base64
 import io
-from typing import Any, List, Optional, Type
+from typing import Any
 
 import paramiko
 from pydantic import Field
@@ -51,7 +51,7 @@ class HyperAICredentials(AuthenticationConfig):
     base64_ssh_key: PlainSerializedSecretStr = Field(
         title="SSH key (base64)",
     )
-    ssh_passphrase: Optional[PlainSerializedSecretStr] = Field(
+    ssh_passphrase: PlainSerializedSecretStr | None = Field(
         default=None,
         title="SSH key passphrase",
     )
@@ -60,7 +60,7 @@ class HyperAICredentials(AuthenticationConfig):
 class HyperAIConfiguration(HyperAICredentials):
     """HyperAI client configuration."""
 
-    hostnames: List[str] = Field(
+    hostnames: list[str] = Field(
         title="Hostnames of the supported HyperAI instances.",
     )
 
@@ -169,7 +169,7 @@ class HyperAIServiceConnector(ServiceConnector):
         """
         return HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC
 
-    def _paramiko_key_type_given_auth_method(self) -> Type[paramiko.PKey]:
+    def _paramiko_key_type_given_auth_method(self) -> type[paramiko.PKey]:
         """Get the Paramiko key type given the authentication method.
 
         Returns:
@@ -309,9 +309,9 @@ class HyperAIServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> "HyperAIServiceConnector":
         """Auto-configure the connector.
@@ -339,9 +339,9 @@ class HyperAIServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify that a connection can be established to the HyperAI instance.
 
         Args:

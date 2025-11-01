@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Discord integration for alerter components."""
 
-from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import DISCORD
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
@@ -34,7 +32,7 @@ class DiscordIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["aiohttp","asyncio"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Discord integration.
 
         Returns:

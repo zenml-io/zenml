@@ -14,7 +14,8 @@
 """Notebook utilities."""
 
 import hashlib
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
+from collections.abc import Callable
 
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -64,7 +65,7 @@ def enable_notebook_code_extraction(
         return inner_decorator(_obj)
 
 
-def get_active_notebook_cell_code() -> Optional[str]:
+def get_active_notebook_cell_code() -> str | None:
     """Get the code of the currently active notebook cell.
 
     Returns:
@@ -95,7 +96,7 @@ def try_to_save_notebook_cell_code(obj: Any) -> None:
             )
 
 
-def load_notebook_cell_code(obj: Any) -> Optional[str]:
+def load_notebook_cell_code(obj: Any) -> str | None:
     """Load the notebook cell code for an object.
 
     Args:

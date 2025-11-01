@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the GitLab ZenML integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import GITLAB
 from zenml.integrations.integration import Integration
@@ -22,6 +21,6 @@ class GitLabIntegration(Integration):
     """Definition of GitLab integration for ZenML."""
 
     NAME = GITLAB
-    REQUIREMENTS: List[str] = ["python-gitlab"]
+    REQUIREMENTS: list[str] = ["python-gitlab"]
 
 

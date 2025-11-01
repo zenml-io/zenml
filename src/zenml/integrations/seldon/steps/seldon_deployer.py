@@ -14,7 +14,7 @@
 """Implementation of the Seldon Deployer step."""
 
 import os
-from typing import Optional, cast
+from typing import cast
 
 from zenml import get_step_context, step
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
@@ -338,9 +338,9 @@ def seldon_custom_model_deployer_step(
 @step(enable_cache=False)
 def seldon_mlflow_registry_deployer_step(
     service_config: SeldonDeploymentConfig,
-    registry_model_name: Optional[str] = None,
-    registry_model_version: Optional[str] = None,
-    registry_model_stage: Optional[ModelVersionStage] = None,
+    registry_model_name: str | None = None,
+    registry_model_version: str | None = None,
+    registry_model_stage: ModelVersionStage | None = None,
     replace_existing: bool = True,
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
 ) -> SeldonDeploymentService:

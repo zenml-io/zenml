@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """The 'analytics' module of ZenML."""
 from contextvars import ContextVar
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import SourceContextTypes
@@ -27,7 +27,7 @@ source_context: ContextVar[SourceContextTypes] = ContextVar(
 
 
 def identify(  # type: ignore[return]
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 ) -> bool:
     """Attach metadata to user directly.
 
@@ -64,7 +64,7 @@ def alias(user_id: UUID, previous_id: UUID) -> bool:  # type: ignore[return]
 
 def group(  # type: ignore[return]
     group_id: UUID,
-    group_metadata: Optional[Dict[str, Any]] = None,
+    group_metadata: dict[str, Any] | None = None,
 ) -> bool:
     """Attach metadata to a segment group.
 
@@ -83,7 +83,7 @@ def group(  # type: ignore[return]
 
 def track(  # type: ignore[return]
     event: "AnalyticsEvent",
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> bool:
     """Track segment event if user opted-in.
 

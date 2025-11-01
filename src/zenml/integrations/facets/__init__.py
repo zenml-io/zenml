@@ -12,8 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Facets integration for ZenML."""
-from typing import Optional, List
-from zenml.integrations.constants import FACETS, PANDAS
+from zenml.integrations.constants import FACETS
 from zenml.integrations.integration import Integration
 
 
@@ -32,8 +31,8 @@ class FacetsIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+        cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:

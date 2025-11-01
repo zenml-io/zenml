@@ -17,10 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -75,15 +71,15 @@ logger = get_logger(__name__)
 class ArtifactVersionRequest(ProjectScopedRequest):
     """Request model for artifact versions."""
 
-    artifact_id: Optional[UUID] = Field(
+    artifact_id: UUID | None = Field(
         default=None,
         title="ID of the artifact to which this version belongs.",
     )
-    artifact_name: Optional[str] = Field(
+    artifact_name: str | None = Field(
         default=None,
         title="Name of the artifact to which this version belongs.",
     )
-    version: Optional[Union[int, str]] = Field(
+    version: int | str | None = Field(
         default=None, title="Version of the artifact."
     )
     has_custom_name: bool = Field(
@@ -91,7 +87,7 @@ class ArtifactVersionRequest(ProjectScopedRequest):
         default=False,
     )
     type: ArtifactType = Field(title="Type of the artifact.")
-    artifact_store_id: Optional[UUID] = Field(
+    artifact_store_id: UUID | None = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
     )
@@ -104,23 +100,23 @@ class ArtifactVersionRequest(ProjectScopedRequest):
     data_type: SourceWithValidator = Field(
         title="Data type of the artifact.",
     )
-    content_hash: Optional[str] = Field(
+    content_hash: str | None = Field(
         title="The content hash of the artifact version.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         title="Tags of the artifact.",
         description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
         default=None,
     )
-    visualizations: Optional[List["ArtifactVisualizationRequest"]] = Field(
+    visualizations: list["ArtifactVisualizationRequest"] | None = Field(
         default=None, title="Visualizations of the artifact."
     )
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
     )
-    metadata: Optional[Dict[str, MetadataType]] = Field(
+    metadata: dict[str, MetadataType] | None = Field(
         default=None, title="Metadata of the artifact version."
     )
 
@@ -174,9 +170,9 @@ class ArtifactVersionRequest(ProjectScopedRequest):
 class ArtifactVersionUpdate(BaseUpdate):
     """Artifact version update model."""
 
-    name: Optional[str] = None
-    add_tags: Optional[List[str]] = None
-    remove_tags: Optional[List[str]] = None
+    name: str | None = None
+    add_tags: list[str] | None = None
+    remove_tags: list[str] | None = None
 
 
 # ------------------ Response Model ------------------
@@ -202,11 +198,11 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
     )
-    artifact_store_id: Optional[UUID] = Field(
+    artifact_store_id: UUID | None = Field(
         title="ID of the artifact store in which this artifact is stored.",
         default=None,
     )
-    content_hash: Optional[str] = Field(
+    content_hash: str | None = Field(
         title="The content hash of the artifact version.",
         default=None,
     )
@@ -236,10 +232,10 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
 class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
-    visualizations: Optional[List["ArtifactVisualizationResponse"]] = Field(
+    visualizations: list["ArtifactVisualizationResponse"] | None = Field(
         default=None, title="Visualizations of the artifact."
     )
-    run_metadata: Dict[str, MetadataType] = Field(
+    run_metadata: dict[str, MetadataType] = Field(
         default={}, title="Metadata of the artifact."
     )
 
@@ -247,14 +243,14 @@ class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
 class ArtifactVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
 
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         title="Tags associated with the artifact version.",
     )
-    producer_step_run_id: Optional[UUID] = Field(
+    producer_step_run_id: UUID | None = Field(
         title="ID of the step run that produced this artifact.",
         default=None,
     )
-    producer_pipeline_run_id: Optional[UUID] = Field(
+    producer_pipeline_run_id: UUID | None = Field(
         title="The ID of the pipeline run that generated this artifact version.",
         default=None,
     )
@@ -317,7 +313,7 @@ class ArtifactVersionResponse(
         return self.get_body().type
 
     @property
-    def content_hash(self) -> Optional[str]:
+    def content_hash(self) -> str | None:
         """The `content_hash` property.
 
         Returns:
@@ -326,7 +322,7 @@ class ArtifactVersionResponse(
         return self.get_body().content_hash
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -335,7 +331,7 @@ class ArtifactVersionResponse(
         return self.get_resources().tags
 
     @property
-    def producer_pipeline_run_id(self) -> Optional[UUID]:
+    def producer_pipeline_run_id(self) -> UUID | None:
         """The `producer_pipeline_run_id` property.
 
         Returns:
@@ -353,7 +349,7 @@ class ArtifactVersionResponse(
         return self.get_body().save_type
 
     @property
-    def artifact_store_id(self) -> Optional[UUID]:
+    def artifact_store_id(self) -> UUID | None:
         """The `artifact_store_id` property.
 
         Returns:
@@ -362,7 +358,7 @@ class ArtifactVersionResponse(
         return self.get_body().artifact_store_id
 
     @property
-    def producer_step_run_id(self) -> Optional[UUID]:
+    def producer_step_run_id(self) -> UUID | None:
         """The `producer_step_run_id` property.
 
         Returns:
@@ -373,7 +369,7 @@ class ArtifactVersionResponse(
     @property
     def visualizations(
         self,
-    ) -> Optional[List["ArtifactVisualizationResponse"]]:
+    ) -> list["ArtifactVisualizationResponse"] | None:
         """The `visualizations` property.
 
         Returns:
@@ -382,7 +378,7 @@ class ArtifactVersionResponse(
         return self.get_metadata().visualizations
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `metadata` property.
 
         Returns:
@@ -476,7 +472,7 @@ class ArtifactVersionResponse(
             overwrite=overwrite,
         )
 
-    def visualize(self, title: Optional[str] = None) -> None:
+    def visualize(self, title: str | None = None) -> None:
         """Visualize the artifact in notebook environments.
 
         Args:
@@ -495,7 +491,7 @@ class ArtifactVersionFilter(
 ):
     """Model to enable advanced filtering of artifact versions."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
@@ -507,24 +503,24 @@ class ArtifactVersionFilter(
         "pipeline_run",
         "model_version_id",
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "artifact_id",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
-    artifact: Optional[Union[UUID, str]] = Field(
+    artifact: UUID | str | None = Field(
         default=None,
         description="The name or ID of the artifact which the search is scoped "
         "to. This field must always be set and is always applied in addition "
@@ -532,60 +528,60 @@ class ArtifactVersionFilter(
         "logical_operator field.",
         union_mode="left_to_right",
     )
-    artifact_id: Optional[Union[UUID, str]] = Field(
+    artifact_id: UUID | str | None = Field(
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
         union_mode="left_to_right",
     )
-    version: Optional[str] = Field(
+    version: str | None = Field(
         default=None,
         description="Version of the artifact",
     )
-    version_number: Optional[Union[int, str]] = Field(
+    version_number: int | str | None = Field(
         default=None,
         description="Version of the artifact if it is an integer",
         union_mode="left_to_right",
     )
-    uri: Optional[str] = Field(
+    uri: str | None = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: Optional[str] = Field(
+    materializer: str | None = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: Optional[str] = Field(
+    type: str | None = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: Optional[str] = Field(
+    data_type: str | None = Field(
         default=None,
         description="Datatype of the artifact",
     )
-    artifact_store_id: Optional[Union[UUID, str]] = Field(
+    artifact_store_id: UUID | str | None = Field(
         default=None,
         description="Artifact store for this artifact",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="ID of the model version that is associated with this "
         "artifact version.",
         union_mode="left_to_right",
     )
-    only_unused: Optional[bool] = Field(
+    only_unused: bool | None = Field(
         default=False, description="Filter only for unused artifacts"
     )
-    has_custom_name: Optional[bool] = Field(
+    has_custom_name: bool | None = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUID | str | None = Field(
         default=None,
         description="Name/ID of the model that is associated with this "
         "artifact version.",
     )
-    pipeline_run: Optional[Union[UUID, str]] = Field(
+    pipeline_run: UUID | str | None = Field(
         default=None,
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
@@ -594,8 +590,8 @@ class ArtifactVersionFilter(
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List[Union["ColumnElement[bool]"]]:
+        self, table: type["AnySchema"]
+    ) -> list[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Args:
@@ -728,11 +724,11 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
     a pipeline context available only during pipeline compilation.
     """
 
-    id: Optional[UUID] = None  # type: ignore[assignment]
-    lazy_load_name: Optional[str] = None
-    lazy_load_version: Optional[str] = None
+    id: UUID | None = None  # type: ignore[assignment]
+    lazy_load_name: str | None = None
+    lazy_load_version: str | None = None
     lazy_load_model_name: str
-    lazy_load_model_version: Optional[str] = None
+    lazy_load_model_version: str | None = None
 
     def get_body(self) -> None:  # type: ignore[override]
         """Protects from misuse of the lazy loader.
@@ -753,7 +749,7 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `metadata` property in lazy loading mode.
 
         Returns:

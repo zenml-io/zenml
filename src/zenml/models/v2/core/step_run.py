@@ -17,12 +17,8 @@ from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -95,32 +91,32 @@ class StepRunRequest(ProjectScopedRequest):
     start_time: datetime = Field(
         title="The start time of the step run.",
     )
-    end_time: Optional[datetime] = Field(
+    end_time: datetime | None = Field(
         title="The end time of the step run.",
         default=None,
     )
     status: ExecutionStatus = Field(title="The status of the step.")
-    cache_key: Optional[str] = Field(
+    cache_key: str | None = Field(
         title="The cache key of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    cache_expires_at: Optional[datetime] = Field(
+    cache_expires_at: datetime | None = Field(
         title="The time at which this step run should not be used for cached "
         "results anymore. If not set, the result will never expire.",
         default=None,
     )
-    code_hash: Optional[str] = Field(
+    code_hash: str | None = Field(
         title="The code hash of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    docstring: Optional[str] = Field(
+    docstring: str | None = Field(
         title="The docstring of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    source_code: Optional[str] = Field(
+    source_code: str | None = Field(
         title="The source code of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -128,20 +124,20 @@ class StepRunRequest(ProjectScopedRequest):
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
     )
-    original_step_run_id: Optional[UUID] = Field(
+    original_step_run_id: UUID | None = Field(
         title="The ID of the original step run if this step was cached.",
         default=None,
     )
-    parent_step_ids: List[UUID] = Field(
+    parent_step_ids: list[UUID] = Field(
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
         deprecated=True,
     )
-    inputs: Dict[str, List[UUID]] = Field(
+    inputs: dict[str, list[UUID]] = Field(
         title="The IDs of the input artifact versions of the step run.",
         default_factory=dict,
     )
-    outputs: Dict[str, List[UUID]] = Field(
+    outputs: dict[str, list[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
     )
@@ -149,7 +145,7 @@ class StepRunRequest(ProjectScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
-    exception_info: Optional[ExceptionInfo] = Field(
+    exception_info: ExceptionInfo | None = Field(
         default=None,
         title="The exception information of the step run.",
     )
@@ -163,27 +159,27 @@ class StepRunRequest(ProjectScopedRequest):
 class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
-    outputs: Dict[str, List[UUID]] = Field(
+    outputs: dict[str, list[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default={},
     )
-    loaded_artifact_versions: Dict[str, UUID] = Field(
+    loaded_artifact_versions: dict[str, UUID] = Field(
         title="The IDs of artifact versions that were loaded by this step run.",
         default={},
     )
-    status: Optional[ExecutionStatus] = Field(
+    status: ExecutionStatus | None = Field(
         title="The status of the step.",
         default=None,
     )
-    end_time: Optional[datetime] = Field(
+    end_time: datetime | None = Field(
         title="The end time of the step run.",
         default=None,
     )
-    exception_info: Optional[ExceptionInfo] = Field(
+    exception_info: ExceptionInfo | None = Field(
         default=None,
         title="The exception information of the step run.",
     )
-    cache_expires_at: Optional[datetime] = Field(
+    cache_expires_at: datetime | None = Field(
         title="The time at which this step run should not be used for cached "
         "results anymore.",
         default=None,
@@ -202,20 +198,20 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     is_retriable: bool = Field(
         title="Whether the step run is retriable.",
     )
-    start_time: Optional[datetime] = Field(
+    start_time: datetime | None = Field(
         title="The start time of the step run.",
         default=None,
     )
-    end_time: Optional[datetime] = Field(
+    end_time: datetime | None = Field(
         title="The end time of the step run.",
         default=None,
     )
-    model_version_id: Optional[UUID] = Field(
+    model_version_id: UUID | None = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
         default=None,
     )
-    substitutions: Dict[str, str] = Field(
+    substitutions: dict[str, str] = Field(
         title="The substitutions of the step run.",
         default={},
     )
@@ -225,7 +221,7 @@ class StepRunResponseBody(ProjectScopedResponseBody):
 class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
 
-    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+    __zenml_skip_dehydration__: ClassVar[list[str]] = [
         "config",
         "spec",
         "metadata",
@@ -236,32 +232,32 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     spec: "StepSpec" = Field(title="The spec of the step.")
 
     # Code related fields
-    cache_key: Optional[str] = Field(
+    cache_key: str | None = Field(
         title="The cache key of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    cache_expires_at: Optional[datetime] = Field(
+    cache_expires_at: datetime | None = Field(
         title="The time at which this step run should not be used for cached "
         "results anymore. If not set, the result will never expire.",
         default=None,
     )
-    code_hash: Optional[str] = Field(
+    code_hash: str | None = Field(
         title="The code hash of the step run.",
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    docstring: Optional[str] = Field(
+    docstring: str | None = Field(
         title="The docstring of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    source_code: Optional[str] = Field(
+    source_code: str | None = Field(
         title="The source code of the step function or class.",
         default=None,
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    exception_info: Optional[ExceptionInfo] = Field(
+    exception_info: ExceptionInfo | None = Field(
         default=None,
         title="The exception information of the step run.",
     )
@@ -277,15 +273,15 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
     )
-    original_step_run_id: Optional[UUID] = Field(
+    original_step_run_id: UUID | None = Field(
         title="The ID of the original step run if this step was cached.",
         default=None,
     )
-    parent_step_ids: List[UUID] = Field(
+    parent_step_ids: list[UUID] = Field(
         title="The IDs of the parent steps of this step run.",
         default_factory=list,
     )
-    run_metadata: Dict[str, MetadataType] = Field(
+    run_metadata: dict[str, MetadataType] = Field(
         title="Metadata associated with this step run.",
         default={},
     )
@@ -294,12 +290,12 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
-    model_version: Optional[ModelVersionResponse] = None
-    inputs: Dict[str, List[StepRunInputResponse]] = Field(
+    model_version: ModelVersionResponse | None = None
+    inputs: dict[str, list[StepRunInputResponse]] = Field(
         title="The input artifact versions of the step run.",
         default_factory=dict,
     )
-    outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
+    outputs: dict[str, list[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
     )
@@ -380,7 +376,7 @@ class StepRunResponse(
         return next(iter(self.outputs.values()))[0]
 
     @property
-    def regular_inputs(self) -> Dict[str, StepRunInputResponse]:
+    def regular_inputs(self) -> dict[str, StepRunInputResponse]:
         """Returns the regular step inputs of the step run.
 
         Regular step inputs are the inputs that are defined in the step function
@@ -412,7 +408,7 @@ class StepRunResponse(
         return result
 
     @property
-    def regular_outputs(self) -> Dict[str, ArtifactVersionResponse]:
+    def regular_outputs(self) -> dict[str, ArtifactVersionResponse]:
         """Returns the regular step outputs of the step run.
 
         Regular step outputs are the outputs that are defined in the step
@@ -473,7 +469,7 @@ class StepRunResponse(
         return self.get_body().is_retriable
 
     @property
-    def inputs(self) -> Dict[str, List[StepRunInputResponse]]:
+    def inputs(self) -> dict[str, list[StepRunInputResponse]]:
         """The `inputs` property.
 
         Returns:
@@ -482,7 +478,7 @@ class StepRunResponse(
         return self.get_resources().inputs
 
     @property
-    def outputs(self) -> Dict[str, List[ArtifactVersionResponse]]:
+    def outputs(self) -> dict[str, list[ArtifactVersionResponse]]:
         """The `outputs` property.
 
         Returns:
@@ -491,7 +487,7 @@ class StepRunResponse(
         return self.get_resources().outputs
 
     @property
-    def model_version_id(self) -> Optional[UUID]:
+    def model_version_id(self) -> UUID | None:
         """The `model_version_id` property.
 
         Returns:
@@ -500,7 +496,7 @@ class StepRunResponse(
         return self.get_body().model_version_id
 
     @property
-    def substitutions(self) -> Dict[str, str]:
+    def substitutions(self) -> dict[str, str]:
         """The `substitutions` property.
 
         Returns:
@@ -527,7 +523,7 @@ class StepRunResponse(
         return self.get_metadata().spec
 
     @property
-    def cache_key(self) -> Optional[str]:
+    def cache_key(self) -> str | None:
         """The `cache_key` property.
 
         Returns:
@@ -536,7 +532,7 @@ class StepRunResponse(
         return self.get_metadata().cache_key
 
     @property
-    def cache_expires_at(self) -> Optional[datetime]:
+    def cache_expires_at(self) -> datetime | None:
         """The `cache_expires_at` property.
 
         Returns:
@@ -545,7 +541,7 @@ class StepRunResponse(
         return self.get_metadata().cache_expires_at
 
     @property
-    def code_hash(self) -> Optional[str]:
+    def code_hash(self) -> str | None:
         """The `code_hash` property.
 
         Returns:
@@ -554,7 +550,7 @@ class StepRunResponse(
         return self.get_metadata().code_hash
 
     @property
-    def docstring(self) -> Optional[str]:
+    def docstring(self) -> str | None:
         """The `docstring` property.
 
         Returns:
@@ -563,7 +559,7 @@ class StepRunResponse(
         return self.get_metadata().docstring
 
     @property
-    def source_code(self) -> Optional[str]:
+    def source_code(self) -> str | None:
         """The `source_code` property.
 
         Returns:
@@ -572,7 +568,7 @@ class StepRunResponse(
         return self.get_metadata().source_code
 
     @property
-    def start_time(self) -> Optional[datetime]:
+    def start_time(self) -> datetime | None:
         """The `start_time` property.
 
         Returns:
@@ -581,7 +577,7 @@ class StepRunResponse(
         return self.get_body().start_time
 
     @property
-    def end_time(self) -> Optional[datetime]:
+    def end_time(self) -> datetime | None:
         """The `end_time` property.
 
         Returns:
@@ -617,7 +613,7 @@ class StepRunResponse(
         return self.get_metadata().pipeline_run_id
 
     @property
-    def original_step_run_id(self) -> Optional[UUID]:
+    def original_step_run_id(self) -> UUID | None:
         """The `original_step_run_id` property.
 
         Returns:
@@ -626,7 +622,7 @@ class StepRunResponse(
         return self.get_metadata().original_step_run_id
 
     @property
-    def parent_step_ids(self) -> List[UUID]:
+    def parent_step_ids(self) -> list[UUID]:
         """The `parent_step_ids` property.
 
         Returns:
@@ -635,7 +631,7 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
-    def run_metadata(self) -> Dict[str, MetadataType]:
+    def run_metadata(self) -> dict[str, MetadataType]:
         """The `run_metadata` property.
 
         Returns:
@@ -644,7 +640,7 @@ class StepRunResponse(
         return self.get_metadata().run_metadata
 
     @property
-    def model_version(self) -> Optional[ModelVersionResponse]:
+    def model_version(self) -> ModelVersionResponse | None:
         """The `model_version` property.
 
         Returns:
@@ -659,86 +655,86 @@ class StepRunResponse(
 class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Model to enable advanced filtering of step runs."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
         "exclude_retried",
         "cache_expired",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
+    code_hash: str | None = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: Optional[str] = Field(
+    cache_key: str | None = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: datetime | str | None = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: datetime | str | None = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUID | str | None = Field(
         default=None,
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUID | str | None = Field(
         default=None,
         description="Snapshot of this step run",
         union_mode="left_to_right",
     )
-    original_step_run_id: Optional[Union[UUID, str]] = Field(
+    original_step_run_id: UUID | str | None = Field(
         default=None,
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="Model version associated with the step run.",
         union_mode="left_to_right",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUID | str | None = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    exclude_retried: Optional[bool] = Field(
+    exclude_retried: bool | None = Field(
         default=None,
         description="Whether to exclude retried step runs.",
     )
-    cache_expires_at: Optional[Union[datetime, str]] = Field(
+    cache_expires_at: datetime | str | None = Field(
         default=None,
         description="Cache expiration time of the step run.",
         union_mode="left_to_right",
     )
-    cache_expired: Optional[bool] = Field(
+    cache_expired: bool | None = Field(
         default=None,
         description="Whether the cache expiration time of the step run has "
         "passed.",
@@ -746,8 +742,8 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

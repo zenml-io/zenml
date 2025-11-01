@@ -17,12 +17,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -82,25 +78,25 @@ class PipelineSnapshotBase(BaseZenModel):
     pipeline_configuration: PipelineConfiguration = Field(
         title="The pipeline configuration for this snapshot."
     )
-    step_configurations: Dict[str, Step] = Field(
+    step_configurations: dict[str, Step] = Field(
         default={}, title="The step configurations for this snapshot."
     )
-    client_environment: Dict[str, Any] = Field(
+    client_environment: dict[str, Any] = Field(
         default={}, title="The client environment for this snapshot."
     )
-    client_version: Optional[str] = Field(
+    client_version: str | None = Field(
         default=None,
         title="The version of the ZenML installation on the client side.",
     )
-    server_version: Optional[str] = Field(
+    server_version: str | None = Field(
         default=None,
         title="The version of the ZenML installation on the server side.",
     )
-    pipeline_version_hash: Optional[str] = Field(
+    pipeline_version_hash: str | None = Field(
         default=None,
         title="The pipeline version hash of the snapshot.",
     )
-    pipeline_spec: Optional[PipelineSpec] = Field(
+    pipeline_spec: PipelineSpec | None = Field(
         default=None,
         title="The pipeline spec of the snapshot.",
     )
@@ -121,45 +117,45 @@ class PipelineSnapshotBase(BaseZenModel):
 class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     """Request model for pipeline snapshots."""
 
-    name: Optional[Union[str, bool]] = Field(
+    name: str | bool | None = Field(
         default=None,
         title="The name of the snapshot.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    replace: Optional[bool] = Field(
+    replace: bool | None = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         default=None,
         title="Tags of the snapshot.",
     )
 
     stack: UUID = Field(title="The stack associated with the snapshot.")
     pipeline: UUID = Field(title="The pipeline associated with the snapshot.")
-    build: Optional[UUID] = Field(
+    build: UUID | None = Field(
         default=None, title="The build associated with the snapshot."
     )
-    schedule: Optional[UUID] = Field(
+    schedule: UUID | None = Field(
         default=None, title="The schedule associated with the snapshot."
     )
     code_reference: Optional["CodeReferenceRequest"] = Field(
         default=None,
         title="The code reference associated with the snapshot.",
     )
-    code_path: Optional[str] = Field(
+    code_path: str | None = Field(
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    template: Optional[UUID] = Field(
+    template: UUID | None = Field(
         default=None,
         description="DEPRECATED: Template used for the snapshot.",
     )
-    source_snapshot: Optional[UUID] = Field(
+    source_snapshot: UUID | None = Field(
         default=None,
         description="Snapshot that is the source of this snapshot.",
     )
@@ -187,24 +183,24 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
 class PipelineSnapshotUpdate(BaseUpdate):
     """Pipeline snapshot update model."""
 
-    name: Optional[Union[str, bool]] = Field(
+    name: str | bool | None = Field(
         default=None,
         title="The name of the snapshot. If set to "
         "False, the name will be removed.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the snapshot.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    replace: Optional[bool] = Field(
+    replace: bool | None = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         default=None, title="New tags to add to the snapshot."
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         default=None, title="Tags to remove from the snapshot."
     )
 
@@ -242,14 +238,14 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
 class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline snapshots."""
 
-    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+    __zenml_skip_dehydration__: ClassVar[list[str]] = [
         "pipeline_configuration",
         "step_configurations",
         "client_environment",
         "pipeline_spec",
     ]
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the snapshot.",
     )
@@ -259,41 +255,41 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
     pipeline_configuration: PipelineConfiguration = Field(
         title="The pipeline configuration for this snapshot."
     )
-    step_configurations: Dict[str, Step] = Field(
+    step_configurations: dict[str, Step] = Field(
         default={}, title="The step configurations for this snapshot."
     )
-    client_environment: Dict[str, Any] = Field(
+    client_environment: dict[str, Any] = Field(
         default={}, title="The client environment for this snapshot."
     )
-    client_version: Optional[str] = Field(
+    client_version: str | None = Field(
         title="The version of the ZenML installation on the client side."
     )
-    server_version: Optional[str] = Field(
+    server_version: str | None = Field(
         title="The version of the ZenML installation on the server side."
     )
-    pipeline_version_hash: Optional[str] = Field(
+    pipeline_version_hash: str | None = Field(
         default=None, title="The pipeline version hash of the snapshot."
     )
-    pipeline_spec: Optional[PipelineSpec] = Field(
+    pipeline_spec: PipelineSpec | None = Field(
         default=None, title="The pipeline spec of the snapshot."
     )
-    code_path: Optional[str] = Field(
+    code_path: str | None = Field(
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    template_id: Optional[UUID] = Field(
+    template_id: UUID | None = Field(
         default=None,
         description="Template from which this snapshot was created.",
         deprecated=True,
     )
-    source_snapshot_id: Optional[UUID] = Field(
+    source_snapshot_id: UUID | None = Field(
         default=None,
         description="Snapshot that is the source of this snapshot.",
     )
-    config_template: Optional[Dict[str, Any]] = Field(
+    config_template: dict[str, Any] | None = Field(
         default=None, title="Run configuration template."
     )
-    config_schema: Optional[Dict[str, Any]] = Field(
+    config_schema: dict[str, Any] | None = Field(
         default=None, title="Run configuration schema."
     )
 
@@ -304,41 +300,41 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     pipeline: PipelineResponse = Field(
         title="The pipeline associated with the snapshot."
     )
-    stack: Optional[StackResponse] = Field(
+    stack: StackResponse | None = Field(
         default=None, title="The stack associated with the snapshot."
     )
-    build: Optional[PipelineBuildResponse] = Field(
+    build: PipelineBuildResponse | None = Field(
         default=None,
         title="The pipeline build associated with the snapshot.",
     )
-    schedule: Optional[ScheduleResponse] = Field(
+    schedule: ScheduleResponse | None = Field(
         default=None, title="The schedule associated with the snapshot."
     )
-    code_reference: Optional[CodeReferenceResponse] = Field(
+    code_reference: CodeReferenceResponse | None = Field(
         default=None,
         title="The code reference associated with the snapshot.",
     )
-    deployment: Optional[DeploymentResponse] = Field(
+    deployment: DeploymentResponse | None = Field(
         default=None,
         title="The deployment associated with the snapshot.",
     )
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         default=[],
         title="Tags associated with the snapshot.",
     )
-    latest_run_id: Optional[UUID] = Field(
+    latest_run_id: UUID | None = Field(
         default=None,
         title="The ID of the latest run of the snapshot.",
     )
-    latest_run_status: Optional[ExecutionStatus] = Field(
+    latest_run_status: ExecutionStatus | None = Field(
         default=None,
         title="The status of the latest run of the snapshot.",
     )
-    latest_run_user: Optional[UserResponse] = Field(
+    latest_run_user: UserResponse | None = Field(
         default=None,
         title="The user that created the latest run of the snapshot.",
     )
-    visualizations: List["CuratedVisualizationResponse"] = Field(
+    visualizations: list["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline snapshot.",
     )
@@ -353,7 +349,7 @@ class PipelineSnapshotResponse(
 ):
     """Response model for pipeline snapshots."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The name of the snapshot.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -390,7 +386,7 @@ class PipelineSnapshotResponse(
         return self.get_body().deployable
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -417,7 +413,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().pipeline_configuration
 
     @property
-    def step_configurations(self) -> Dict[str, Step]:
+    def step_configurations(self) -> dict[str, Step]:
         """The `step_configurations` property.
 
         Returns:
@@ -426,7 +422,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().step_configurations
 
     @property
-    def client_environment(self) -> Dict[str, Any]:
+    def client_environment(self) -> dict[str, Any]:
         """The `client_environment` property.
 
         Returns:
@@ -435,7 +431,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().client_environment
 
     @property
-    def client_version(self) -> Optional[str]:
+    def client_version(self) -> str | None:
         """The `client_version` property.
 
         Returns:
@@ -444,7 +440,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().client_version
 
     @property
-    def server_version(self) -> Optional[str]:
+    def server_version(self) -> str | None:
         """The `server_version` property.
 
         Returns:
@@ -453,7 +449,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().server_version
 
     @property
-    def pipeline_version_hash(self) -> Optional[str]:
+    def pipeline_version_hash(self) -> str | None:
         """The `pipeline_version_hash` property.
 
         Returns:
@@ -462,7 +458,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().pipeline_version_hash
 
     @property
-    def pipeline_spec(self) -> Optional[PipelineSpec]:
+    def pipeline_spec(self) -> PipelineSpec | None:
         """The `pipeline_spec` property.
 
         Returns:
@@ -471,7 +467,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().pipeline_spec
 
     @property
-    def code_path(self) -> Optional[str]:
+    def code_path(self) -> str | None:
         """The `code_path` property.
 
         Returns:
@@ -480,7 +476,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().code_path
 
     @property
-    def template_id(self) -> Optional[UUID]:
+    def template_id(self) -> UUID | None:
         """The `template_id` property.
 
         Returns:
@@ -489,7 +485,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().template_id
 
     @property
-    def source_snapshot_id(self) -> Optional[UUID]:
+    def source_snapshot_id(self) -> UUID | None:
         """The `source_snapshot_id` property.
 
         Returns:
@@ -498,7 +494,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().source_snapshot_id
 
     @property
-    def config_schema(self) -> Optional[Dict[str, Any]]:
+    def config_schema(self) -> dict[str, Any] | None:
         """The `config_schema` property.
 
         Returns:
@@ -507,7 +503,7 @@ class PipelineSnapshotResponse(
         return self.get_metadata().config_schema
 
     @property
-    def config_template(self) -> Optional[Dict[str, Any]]:
+    def config_template(self) -> dict[str, Any] | None:
         """The `config_template` property.
 
         Returns:
@@ -525,7 +521,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().pipeline
 
     @property
-    def stack(self) -> Optional[StackResponse]:
+    def stack(self) -> StackResponse | None:
         """The `stack` property.
 
         Returns:
@@ -534,7 +530,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().stack
 
     @property
-    def build(self) -> Optional[PipelineBuildResponse]:
+    def build(self) -> PipelineBuildResponse | None:
         """The `build` property.
 
         Returns:
@@ -543,7 +539,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().build
 
     @property
-    def schedule(self) -> Optional[ScheduleResponse]:
+    def schedule(self) -> ScheduleResponse | None:
         """The `schedule` property.
 
         Returns:
@@ -552,7 +548,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().schedule
 
     @property
-    def code_reference(self) -> Optional[CodeReferenceResponse]:
+    def code_reference(self) -> CodeReferenceResponse | None:
         """The `code_reference` property.
 
         Returns:
@@ -561,7 +557,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().code_reference
 
     @property
-    def deployment(self) -> Optional[DeploymentResponse]:
+    def deployment(self) -> DeploymentResponse | None:
         """The `deployment` property.
 
         Returns:
@@ -570,7 +566,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().deployment
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -579,7 +575,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().tags
 
     @property
-    def latest_run_id(self) -> Optional[UUID]:
+    def latest_run_id(self) -> UUID | None:
         """The `latest_run_id` property.
 
         Returns:
@@ -588,7 +584,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().latest_run_id
 
     @property
-    def latest_run_status(self) -> Optional[ExecutionStatus]:
+    def latest_run_status(self) -> ExecutionStatus | None:
         """The `latest_run_status` property.
 
         Returns:
@@ -597,7 +593,7 @@ class PipelineSnapshotResponse(
         return self.get_resources().latest_run_status
 
     @property
-    def latest_run_user(self) -> Optional[UserResponse]:
+    def latest_run_user(self) -> UserResponse | None:
         """The `latest_run_user` property.
 
         Returns:
@@ -612,7 +608,7 @@ class PipelineSnapshotResponse(
 class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     """Model for filtering pipeline snapshots."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "named_only",
@@ -629,60 +625,60 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "stack",
         "deployment",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the snapshot.",
     )
-    named_only: Optional[bool] = Field(
+    named_only: bool | None = Field(
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUID | str | None = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUID | str | None = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUID | str | None = Field(
         default=None,
         description="Build associated with the snapshot.",
         union_mode="left_to_right",
     )
-    schedule_id: Optional[Union[UUID, str]] = Field(
+    schedule_id: UUID | str | None = Field(
         default=None,
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    source_snapshot_id: Optional[Union[UUID, str]] = Field(
+    source_snapshot_id: UUID | str | None = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
-    runnable: Optional[bool] = Field(
+    runnable: bool | None = Field(
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: Optional[bool] = Field(
+    deployable: bool | None = Field(
         default=None,
         description="Whether the snapshot is deployable.",
     )
-    deployed: Optional[bool] = Field(
+    deployed: bool | None = Field(
         default=None,
         description="Whether the snapshot is deployed.",
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:
@@ -785,7 +781,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     def apply_sorting(
         self,
         query: "AnyQuery",
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> "AnyQuery":
         """Apply sorting to the query.
 
@@ -845,11 +841,11 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 class PipelineSnapshotRunRequest(BaseZenModel):
     """Request model for running a pipeline snapshot."""
 
-    run_configuration: Optional[PipelineRunConfiguration] = Field(
+    run_configuration: PipelineRunConfiguration | None = Field(
         default=None,
         title="The run configuration for the snapshot.",
     )
-    step_run: Optional[UUID] = Field(
+    step_run: UUID | None = Field(
         default=None,
         title="The ID of the step run that ran the snapshot.",
     )

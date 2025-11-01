@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the bitbucket ZenML integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import BITBUCKET
 from zenml.integrations.integration import Integration
@@ -25,10 +24,10 @@ class BitbucketIntegration(Integration):
     """Definition of bitbucket integration for ZenML."""
 
     NAME = BITBUCKET
-    REQUIREMENTS: List[str] = []
+    REQUIREMENTS: list[str] = []
 
     @classmethod
-    def plugin_flavors(cls) -> List[Type[BasePluginFlavor]]:
+    def plugin_flavors(cls) -> list[type[BasePluginFlavor]]:
         """Declare the event flavors for the bitbucket integration.
 
         Returns:

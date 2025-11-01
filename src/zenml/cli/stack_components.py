@@ -15,7 +15,8 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, cast
+from collections.abc import Callable
 from uuid import UUID
 
 import click
@@ -184,7 +185,7 @@ def generate_stack_component_list_command(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, List[str]], None]:
+) -> Callable[[str, str, list[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
     Args:
@@ -253,12 +254,12 @@ def generate_stack_component_register_command(
     def register_stack_component_command(
         name: str,
         flavor: str,
-        args: List[str],
-        labels: Optional[List[str]] = None,
-        connector: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        secrets: List[str] = [],
-        environment_variables: List[str] = [],
+        args: list[str],
+        labels: list[str] | None = None,
+        connector: str | None = None,
+        resource_id: str | None = None,
+        secrets: list[str] = [],
+        environment_variables: list[str] = [],
     ) -> None:
         """Registers a stack component.
 
@@ -328,7 +329,7 @@ def generate_stack_component_register_command(
 
 def generate_stack_component_update_command(
     component_type: StackComponentType,
-) -> Callable[[str, List[str]], None]:
+) -> Callable[[str, list[str]], None]:
     """Generates an `update` command for the specific stack component type.
 
     Args:
@@ -380,12 +381,12 @@ def generate_stack_component_update_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-        name_id_or_prefix: Optional[str],
-        args: List[str],
-        labels: Optional[List[str]] = None,
-        secrets: List[str] = [],
-        remove_secrets: List[str] = [],
-        environment_variables: List[str] = [],
+        name_id_or_prefix: str | None,
+        args: list[str],
+        labels: list[str] | None = None,
+        secrets: list[str] = [],
+        remove_secrets: list[str] = [],
+        environment_variables: list[str] = [],
     ) -> None:
         """Updates a stack component.
 
@@ -445,7 +446,7 @@ def generate_stack_component_update_command(
 
 def generate_stack_component_remove_attribute_command(
     component_type: StackComponentType,
-) -> Callable[[str, List[str]], None]:
+) -> Callable[[str, list[str]], None]:
     """Generates `remove_attribute` command for a specific stack component type.
 
     Args:
@@ -471,8 +472,8 @@ def generate_stack_component_remove_attribute_command(
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
         name_id_or_prefix: str,
-        args: List[str],
-        labels: Optional[List[str]] = None,
+        args: list[str],
+        labels: list[str] | None = None,
     ) -> None:
         """Removes one or more attributes from a stack component.
 
@@ -719,7 +720,7 @@ def generate_stack_component_logs_command(
 
         if follow:
             try:
-                with open(log_file, "r") as f:
+                with open(log_file) as f:
                     # seek to the end of the file
                     f.seek(0, 2)
 
@@ -733,7 +734,7 @@ def generate_stack_component_logs_command(
             except KeyboardInterrupt:
                 cli_utils.declare(f"Stopped following {display_name} logs.")
         else:
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 click.echo(f.read())
 
     return stack_component_logs_command
@@ -964,7 +965,7 @@ def generate_stack_component_flavor_delete_command(
 
 
 def prompt_select_resource_id(
-    resource_ids: List[str],
+    resource_ids: list[str],
     resource_name: str,
     interactive: bool = True,
 ) -> str:
@@ -1013,8 +1014,8 @@ def prompt_select_resource_id(
 
 
 def prompt_select_resource(
-    resource_list: List[ServiceConnectorResourcesModel],
-) -> Tuple[UUID, str]:
+    resource_list: list[ServiceConnectorResourcesModel],
+) -> tuple[UUID, str]:
     """Prompts the user to select a resource ID from a list of resources.
 
     Args:
@@ -1144,9 +1145,9 @@ def generate_stack_component_connect_command(
         type=click.BOOL,
     )
     def connect_stack_component_command(
-        name_id_or_prefix: Optional[str],
-        connector: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        name_id_or_prefix: str | None,
+        connector: str | None = None,
+        resource_id: str | None = None,
         interactive: bool = False,
         no_verify: bool = False,
     ) -> None:
@@ -1393,9 +1394,9 @@ def register_all_stack_component_cli_commands() -> None:
 
 def connect_stack_component_with_service_connector(
     component_type: StackComponentType,
-    name_id_or_prefix: Optional[str] = None,
-    connector: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    name_id_or_prefix: str | None = None,
+    connector: str | None = None,
+    resource_id: str | None = None,
     interactive: bool = False,
     no_verify: bool = False,
 ) -> None:
@@ -1545,7 +1546,7 @@ def connect_stack_component_with_service_connector(
                     "to select a resource interactively."
                 )
 
-    connector_resources: Optional[ServiceConnectorResourcesModel] = None
+    connector_resources: ServiceConnectorResourcesModel | None = None
     if not no_verify:
         with console.status(
             "Validating service connector resource configuration...\n"

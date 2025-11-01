@@ -15,7 +15,7 @@
 
 import threading
 from contextvars import ContextVar
-from typing import Generic, List, Optional, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -30,13 +30,13 @@ class ContextVarList(Generic[T]):
             name: The name for the underlying ContextVar.
         """
         # Use None as default to avoid mutable default issues
-        self._context_var: ContextVar[Optional[List[T]]] = ContextVar(
+        self._context_var: ContextVar[list[T] | None] = ContextVar(
             name, default=None
         )
         # Lock to ensure atomic operations
         self._lock = threading.Lock()
 
-    def get(self) -> List[T]:
+    def get(self) -> list[T]:
         """Get the current list value. Returns empty list if not set.
 
         Returns:

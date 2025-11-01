@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Page model definitions."""
 
-from typing import Generator, Generic, List, TypeVar
+from typing import Generic, TypeVar
+from collections.abc import Generator
 
 from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt
@@ -30,7 +31,7 @@ class Page(BaseModel, Generic[B]):
     max_size: PositiveInt
     total_pages: NonNegativeInt
     total: NonNegativeInt
-    items: List[B]
+    items: list[B]
 
     __params_type__ = BaseFilter
 
@@ -74,8 +75,7 @@ class Page(BaseModel, Generic[B]):
         Yields:
             An iterator over the items in the page.
         """
-        for item in self.items.__iter__():
-            yield item
+        yield from self.items.__iter__()
 
     def __contains__(self, item: B) -> bool:
         """Returns whether the page contains a specific item.

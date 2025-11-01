@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of label config generators for Label Studio."""
 
-from typing import List, Tuple
 
 from zenml.enums import AnnotationTasks
 from zenml.logger import get_logger
@@ -36,8 +35,8 @@ def _generate_label_config() -> str:
 
 
 def generate_text_classification_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
+    labels: list[str],
+) -> tuple[str, str]:
     """Generates a Label Studio label config for text classification.
 
     This is based on the basic config example shown at
@@ -75,8 +74,8 @@ def generate_text_classification_label_config(
 
 
 def generate_image_classification_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
+    labels: list[str],
+) -> tuple[str, str]:
     """Generates a Label Studio label config for image classification.
 
     This is based on the basic config example shown at
@@ -113,8 +112,8 @@ def generate_image_classification_label_config(
 
 
 def generate_basic_object_detection_bounding_boxes_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
+    labels: list[str],
+) -> tuple[str, str]:
     """Generates a Label Studio config for object detection with bounding boxes.
 
     This is based on the basic config example shown at
@@ -151,8 +150,8 @@ def generate_basic_object_detection_bounding_boxes_label_config(
 
 
 def generate_basic_ocr_label_config(
-    labels: List[str],
-) -> Tuple[str, str]:
+    labels: list[str],
+) -> tuple[str, str]:
     """Generates a Label Studio config for optical character recognition (OCR) labeling task.
 
     This is based on the basic config example shown at

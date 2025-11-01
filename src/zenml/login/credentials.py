@@ -14,7 +14,7 @@
 """ZenML login credentials models."""
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Union
+from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -43,14 +43,14 @@ class APIToken(BaseModel):
     """Cached API Token."""
 
     access_token: str
-    expires_in: Optional[int] = None
-    expires_at: Optional[datetime] = None
-    leeway: Optional[int] = None
-    device_id: Optional[UUID] = None
-    device_metadata: Optional[Dict[str, Any]] = None
+    expires_in: int | None = None
+    expires_at: datetime | None = None
+    leeway: int | None = None
+    device_id: UUID | None = None
+    device_metadata: dict[str, Any] | None = None
 
     @property
-    def expires_at_with_leeway(self) -> Optional[datetime]:
+    def expires_at_with_leeway(self) -> datetime | None:
         """Get the token expiration time with leeway.
 
         Returns:
@@ -84,25 +84,25 @@ class ServerCredentials(BaseModel):
     """Cached Server Credentials."""
 
     url: str
-    api_key: Optional[str] = None
-    api_token: Optional[APIToken] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
+    api_key: str | None = None
+    api_token: APIToken | None = None
+    username: str | None = None
+    password: str | None = None
 
     # Extra server attributes
-    deployment_type: Optional[ServerDeploymentType] = None
-    server_id: Optional[UUID] = None
-    server_name: Optional[str] = None
-    status: Optional[str] = None
-    version: Optional[str] = None
+    deployment_type: ServerDeploymentType | None = None
+    server_id: UUID | None = None
+    server_name: str | None = None
+    status: str | None = None
+    version: str | None = None
 
     # Pro server attributes
-    organization_name: Optional[str] = None
-    organization_id: Optional[UUID] = None
-    workspace_name: Optional[str] = None
-    workspace_id: Optional[UUID] = None
-    pro_api_url: Optional[str] = None
-    pro_dashboard_url: Optional[str] = None
+    organization_name: str | None = None
+    organization_id: UUID | None = None
+    workspace_name: str | None = None
+    workspace_id: UUID | None = None
+    pro_api_url: str | None = None
+    pro_dashboard_url: str | None = None
 
     @property
     def id(self) -> str:
@@ -166,7 +166,7 @@ class ServerCredentials(BaseModel):
         return self.api_token is not None and not self.api_token.expired
 
     def update_server_info(
-        self, server_info: Union[ServerModel, WorkspaceRead]
+        self, server_info: ServerModel | WorkspaceRead
     ) -> None:
         """Update with server information received from the server itself or from a ZenML Pro workspace descriptor.
 

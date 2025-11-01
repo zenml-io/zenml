@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Evidently data validator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
@@ -37,7 +37,7 @@ class EvidentlyDataValidatorFlavor(BaseDataValidatorFlavor):
         return EVIDENTLY_DATA_VALIDATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -46,7 +46,7 @@ class EvidentlyDataValidatorFlavor(BaseDataValidatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -64,7 +64,7 @@ class EvidentlyDataValidatorFlavor(BaseDataValidatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/evidently.png"
 
     @property
-    def implementation_class(self) -> Type["EvidentlyDataValidator"]:
+    def implementation_class(self) -> type["EvidentlyDataValidator"]:
         """Implementation class.
 
         Returns:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Any, Optional
+from typing import Any
 
 import click
 
@@ -39,7 +39,7 @@ def user() -> None:
 
 @user.command("describe")
 @click.argument("user_name_or_id", type=str, required=False)
-def describe_user(user_name_or_id: Optional[str] = None) -> None:
+def describe_user(user_name_or_id: str | None = None) -> None:
     """Get the user.
 
     Args:
@@ -137,7 +137,7 @@ def list_users(ctx: click.Context, /, **kwargs: Any) -> None:
 )
 def create_user(
     user_name: str,
-    password: Optional[str] = None,
+    password: str | None = None,
     is_admin: bool = False,
 ) -> None:
     """Create a new user.
@@ -246,12 +246,12 @@ def create_user(
 )
 def update_user(
     user_name_or_id: str,
-    updated_name: Optional[str] = None,
-    updated_full_name: Optional[str] = None,
-    updated_email: Optional[str] = None,
-    make_admin: Optional[bool] = None,
-    make_user: Optional[bool] = None,
-    active: Optional[bool] = None,
+    updated_name: str | None = None,
+    updated_full_name: str | None = None,
+    updated_email: str | None = None,
+    make_admin: bool | None = None,
+    make_user: bool | None = None,
+    active: bool | None = None,
 ) -> None:
     """Update an existing user.
 
@@ -321,7 +321,7 @@ def update_user(
     type=str,
 )
 def change_user_password(
-    password: Optional[str] = None, old_password: Optional[str] = None
+    password: str | None = None, old_password: str | None = None
 ) -> None:
     """Change the password of the current user.
 

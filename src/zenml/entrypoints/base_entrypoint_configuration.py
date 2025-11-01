@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Optional, Set
+from typing import TYPE_CHECKING, Any, NoReturn
 from uuid import UUID
 
 from zenml.client import Client
@@ -57,7 +57,7 @@ class BaseEntrypointConfiguration(ABC):
         entrypoint_args: The parsed arguments passed to the entrypoint.
     """
 
-    def __init__(self, arguments: List[str]):
+    def __init__(self, arguments: list[str]):
         """Initializes the entrypoint configuration.
 
         Args:
@@ -66,7 +66,7 @@ class BaseEntrypointConfiguration(ABC):
         self.entrypoint_args = self._parse_arguments(arguments)
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
+    def get_entrypoint_command(cls) -> list[str]:
         """Returns a command that runs the entrypoint module.
 
         This entrypoint module is responsible for running the entrypoint
@@ -83,7 +83,7 @@ class BaseEntrypointConfiguration(ABC):
         return DEFAULT_ENTRYPOINT_COMMAND
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -101,7 +101,7 @@ class BaseEntrypointConfiguration(ABC):
     def get_entrypoint_arguments(
         cls,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         The argument list should be something that
@@ -144,7 +144,7 @@ class BaseEntrypointConfiguration(ABC):
         return arguments
 
     @classmethod
-    def _parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
+    def _parse_arguments(cls, arguments: list[str]) -> dict[str, Any]:
         """Parses command line arguments.
 
         This method will create an `argparse.ArgumentParser` and add required
@@ -201,7 +201,7 @@ class BaseEntrypointConfiguration(ABC):
     def download_code_if_necessary(
         self,
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        step_name: str | None = None,
     ) -> None:
         """Downloads user code if necessary.
 
@@ -297,7 +297,7 @@ class BaseEntrypointConfiguration(ABC):
     def _should_download_code(
         self,
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        step_name: str | None = None,
     ) -> bool:
         """Checks whether code should be downloaded.
 

@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization of the Prodigy integration."""
-from typing import List, Type
 
 from zenml.integrations.constants import PRODIGY
 from zenml.integrations.integration import Integration
@@ -32,7 +31,7 @@ class ProdigyIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["urllib3"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Prodigy integration.
 
         Returns:

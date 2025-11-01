@@ -15,7 +15,8 @@
 
 import json
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 from uuid import UUID
 
 from zenml.analytics import identify, track
@@ -78,7 +79,7 @@ class AnalyticsAPIError(Exception):
         return msg.format(self.message, self.status)
 
 
-def email_opt_int(opted_in: bool, email: Optional[str], source: str) -> None:
+def email_opt_int(opted_in: bool, email: str | None, source: str) -> None:
     """Track the event of the users response to the email prompt, identify them.
 
     Args:
@@ -102,7 +103,7 @@ class analytics_disabler:
 
     def __init__(self) -> None:
         """Initialization of the context manager."""
-        self.original_value: Optional[bool] = None
+        self.original_value: bool | None = None
 
     def __enter__(self) -> None:
         """Disable the analytics."""
@@ -112,9 +113,9 @@ class analytics_disabler:
 
     def __exit__(
         self,
-        exc_type: Optional[Any],
-        exc_value: Optional[Any],
-        traceback: Optional[Any],
+        exc_type: Any | None,
+        exc_value: Any | None,
+        traceback: Any | None,
     ) -> None:
         """Set it back to the original state.
 
@@ -201,13 +202,13 @@ def track_decorator(event: AnalyticsEvent) -> Callable[[F], F]:
     return inner_decorator
 
 
-class track_handler(object):
+class track_handler:
     """Context handler to enable tracking the success status of an event."""
 
     def __init__(
         self,
         event: AnalyticsEvent,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialization of the context manager.
 
@@ -216,7 +217,7 @@ class track_handler(object):
             metadata: The metadata of the event.
         """
         self.event: AnalyticsEvent = event
-        self.metadata: Dict[str, Any] = metadata or {}
+        self.metadata: dict[str, Any] = metadata or {}
 
     def __enter__(self) -> "track_handler":
         """Enter function of the event handler.
@@ -228,9 +229,9 @@ class track_handler(object):
 
     def __exit__(
         self,
-        type_: Optional[Any],
-        value: Optional[Any],
-        traceback: Optional[Any],
+        type_: Any | None,
+        value: Any | None,
+        traceback: Any | None,
     ) -> Any:
         """Exit function of the event handler.
 

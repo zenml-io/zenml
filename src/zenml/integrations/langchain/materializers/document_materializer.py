@@ -14,7 +14,7 @@
 """Implementation of ZenML's Langchain Document materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from langchain.docstore.document import Document
 
@@ -32,9 +32,9 @@ class LangchainDocumentMaterializer(BaseMaterializer):
     """Handle Langchain Document objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Document,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Document,)
 
-    def load(self, data_type: Type["Document"]) -> Any:
+    def load(self, data_type: type["Document"]) -> Any:
         """Reads BaseModel from JSON.
 
         Args:
@@ -56,7 +56,7 @@ class LangchainDocumentMaterializer(BaseMaterializer):
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(data_path, data.json())
 
-    def extract_metadata(self, data: Document) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, data: Document) -> dict[str, "MetadataType"]:
         """Extract metadata from the given BaseModel object.
 
         Args:

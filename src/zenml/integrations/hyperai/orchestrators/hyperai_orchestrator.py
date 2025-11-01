@@ -17,7 +17,7 @@ import os
 import re
 import tempfile
 from shlex import quote
-from typing import IO, TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import IO, TYPE_CHECKING, Any, Optional, cast
 
 import paramiko
 import yaml
@@ -54,7 +54,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         return cast(HyperAIOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the HyperAI orchestrator.
 
         Returns:
@@ -63,7 +63,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         return HyperAIOrchestratorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is an image builder in the stack.
 
         Returns:
@@ -161,10 +161,10 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -202,7 +202,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             HyperAIServiceConnector,
         )
 
-        compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
+        compose_definition: dict[str, Any] = {"version": "3", "services": {}}
         snapshot_id = snapshot.id
 
         os.environ[ENV_ZENML_HYPERAI_RUN_ID] = str(snapshot_id)
@@ -362,7 +362,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             )
             # Send the password to stdin
             stdin.channel.send(
-                f"{container_registry_password}\n".encode("utf-8")
+                f"{container_registry_password}\n".encode()
             )
             stdin.channel.shutdown_write()
 

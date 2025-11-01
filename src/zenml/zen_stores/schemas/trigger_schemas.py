@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import Any, List, Optional, Sequence, cast
+from typing import Any, Optional, cast
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -74,7 +75,7 @@ class TriggerSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="triggers")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -87,7 +88,7 @@ class TriggerSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"foreign_keys": "[TriggerSchema.user_id]"},
     )
 
-    event_source_id: Optional[UUID] = build_foreign_key_field(
+    event_source_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=EventSourceSchema.__tablename__,
         source_column="event_source_id",
@@ -113,12 +114,12 @@ class TriggerSchema(NamedSchema, table=True):
     )
     action: "ActionSchema" = Relationship(back_populates="triggers")
 
-    executions: List["TriggerExecutionSchema"] = Relationship(
+    executions: list["TriggerExecutionSchema"] = Relationship(
         back_populates="trigger"
     )
 
     event_filter: bytes
-    schedule: Optional[bytes] = Field(nullable=True)
+    schedule: bytes | None = Field(nullable=True)
 
     description: str = Field(sa_column=Column(TEXT, nullable=True))
     is_active: bool = Field(nullable=False)
@@ -301,7 +302,7 @@ class TriggerExecutionSchema(BaseSchema, table=True):
     )
     trigger: TriggerSchema = Relationship(back_populates="executions")
 
-    event_metadata: Optional[bytes] = None
+    event_metadata: bytes | None = None
 
     @classmethod
     def from_request(

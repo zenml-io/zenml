@@ -17,23 +17,22 @@ Check out the latest version here:
 https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/typing.py
 """
 
-import sys
 import typing
-from typing import Any, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Union, cast
 from typing import get_args as _typing_get_args
 from typing import get_origin as _typing_get_origin
 
-from typing_extensions import Annotated, Literal
+from typing import Annotated, Literal
 
 # Annotated[...] is implemented by returning an instance of one of these
 # classes, depending on python/typing_extensions version.
 AnnotatedTypeNames = {"AnnotatedMeta", "_AnnotatedAlias"}
 
 # None types
-NONE_TYPES: Tuple[Any, Any, Any] = (None, None.__class__, Literal[None])
+NONE_TYPES: tuple[Any, Any, Any] = (None, None.__class__, Literal[None])
 
 # Literal types
-LITERAL_TYPES: Set[Any] = {Literal}
+LITERAL_TYPES: set[Any] = {Literal}
 if hasattr(typing, "Literal"):
     LITERAL_TYPES.add(typing.Literal)
 
@@ -54,24 +53,9 @@ def is_none_type(type_: Any) -> bool:
 
 # ----- is_union -----
 
-if sys.version_info < (3, 10):
 
-    def is_union(type_: Optional[Type[Any]]) -> bool:
-        """Checks if the provided type is a union type.
-
-        Args:
-            type_: type to check.
-
-        Returns:
-            boolean indicating whether the type is union type.
-        """
-        return type_ is Union  # type: ignore[comparison-overlap]
-
-
-else:
-
-    def is_union(type_: Optional[Type[Any]]) -> bool:
-        """Checks if the provided type is a union type.
+def is_union(type_: type[Any] | None) -> bool:
+    """Checks if the provided type is a union type.
 
         Args:
             type_: type to check.
@@ -79,15 +63,15 @@ else:
         Returns:
             boolean indicating whether the type is union type.
         """
-        import types
+    import types
 
-        return type_ is Union or type_ is types.UnionType  # type: ignore[comparison-overlap]
+    return type_ is Union or type_ is types.UnionType  # type: ignore[comparison-overlap]
 
 
 # ----- literal -----
 
 
-def is_literal_type(type_: Type[Any]) -> bool:
+def is_literal_type(type_: type[Any]) -> bool:
     """Checks if the provided type is a literal type.
 
     Args:
@@ -99,7 +83,7 @@ def is_literal_type(type_: Type[Any]) -> bool:
     return Literal is not None and get_origin(type_) in LITERAL_TYPES
 
 
-def literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
+def literal_values(type_: type[Any]) -> tuple[Any, ...]:
     """Fetches the literal values defined in a type.
 
     Args:
@@ -111,7 +95,7 @@ def literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
     return get_args(type_)
 
 
-def all_literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
+def all_literal_values(type_: type[Any]) -> tuple[Any, ...]:
     """Fetches the literal values defined in a type in a recursive manner.
 
     This method is used to retrieve all Literal values as Literal can be
@@ -134,7 +118,7 @@ def all_literal_values(type_: Type[Any]) -> Tuple[Any, ...]:
 # ----- get_origin -----
 
 
-def get_origin(tp: Type[Any]) -> Optional[Type[Any]]:
+def get_origin(tp: type[Any]) -> type[Any] | None:
     """Fetches the origin of a given type.
 
     We can't directly use `typing.get_origin` since we need a fallback to
@@ -149,14 +133,14 @@ def get_origin(tp: Type[Any]) -> Optional[Type[Any]]:
         the origin type of the provided type.
     """
     if type(tp).__name__ in AnnotatedTypeNames:
-        return cast(Type[Any], Annotated)  # mypy complains about _SpecialForm
+        return cast(type[Any], Annotated)  # mypy complains about _SpecialForm
     return _typing_get_origin(tp) or getattr(tp, "__origin__", None)
 
 
 # ----- get_args -----
 
 
-def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
+def _generic_get_args(tp: type[Any]) -> tuple[Any, ...]:
     """Generic get args function.
 
     In python 3.9, `typing.Dict`, `typing.List`, ...
@@ -176,7 +160,7 @@ def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
     # Special case for `tuple[()]`, which used to return ((),) with
     # `typing.Tuple in python 3.10- but now returns () for `tuple` and `Tuple`.
     try:
-        if tp == Tuple[()] or tp == tuple[()]:  # type: ignore[comparison-overlap]
+        if tp == tuple[()] or tp == tuple[()]:  # type: ignore[comparison-overlap]
             return ((),)
     # there is a TypeError when compiled with cython
     except TypeError:  # pragma: no cover
@@ -184,7 +168,7 @@ def _generic_get_args(tp: Type[Any]) -> Tuple[Any, ...]:
     return ()
 
 
-def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
+def get_args(tp: type[Any]) -> tuple[Any, ...]:
     """Get type arguments with all substitutions performed.
 
     For unions, basic simplifications used by Union constructor are performed.
@@ -211,7 +195,7 @@ def get_args(tp: Type[Any]) -> Tuple[Any, ...]:
     )
 
 
-def is_optional(tp: Type[Any]) -> bool:
+def is_optional(tp: type[Any]) -> bool:
     """Checks whether a given annotation is typing.Optional.
 
     Args:

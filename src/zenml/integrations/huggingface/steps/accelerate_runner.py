@@ -17,7 +17,8 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (
@@ -35,9 +36,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def run_with_accelerate(
-    step_function_top_level: Optional[BaseStep] = None,
+    step_function_top_level: BaseStep | None = None,
     **accelerate_launch_kwargs: Any,
-) -> Union[Callable[[BaseStep], BaseStep], BaseStep]:
+) -> Callable[[BaseStep], BaseStep] | BaseStep:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -72,7 +73,7 @@ def run_with_accelerate(
 
     def _decorator(step_function: BaseStep) -> BaseStep:
         def _wrapper(
-            entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+            entrypoint: F, accelerate_launch_kwargs: dict[str, Any]
         ) -> F:
             @functools.wraps(entrypoint)
             def inner(*args: Any, **kwargs: Any) -> Any:

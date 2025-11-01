@@ -14,7 +14,7 @@
 """Custom types that can be used as metadata of ZenML artifacts."""
 
 import json
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Union
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
@@ -108,10 +108,10 @@ MetadataType = Union[
     int,
     float,
     bool,
-    Dict[Any, Any],
-    List[Any],
-    Set[Any],
-    Tuple[Any, ...],
+    dict[Any, Any],
+    list[Any],
+    set[Any],
+    tuple[Any, ...],
     Uri,
     Path,
     DType,
@@ -211,8 +211,8 @@ def cast_to_metadata_type(
 
 
 def validate_metadata(
-    metadata: Dict[str, MetadataType],
-) -> Dict[str, MetadataType]:
+    metadata: dict[str, MetadataType],
+) -> dict[str, MetadataType]:
     """Validate metadata.
 
     This function excludes and warns about metadata values that are too long

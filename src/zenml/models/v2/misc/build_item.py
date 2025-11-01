@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline build item."""
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -32,13 +31,13 @@ class BuildItem(BaseModel):
     """
 
     image: str = Field(title="The image name or digest.")
-    dockerfile: Optional[str] = Field(
+    dockerfile: str | None = Field(
         default=None, title="The dockerfile used to build the image."
     )
-    requirements: Optional[str] = Field(
+    requirements: str | None = Field(
         default=None, title="The pip requirements installed in the image."
     )
-    settings_checksum: Optional[str] = Field(
+    settings_checksum: str | None = Field(
         default=None, title="The checksum of the build settings."
     )
     contains_code: bool = Field(

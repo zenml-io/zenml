@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Container Registry."""
 
-from typing import Optional
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryConfig,
@@ -39,7 +38,7 @@ class GitHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return ContainerRegistryFlavor.GITHUB
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -48,7 +47,7 @@ class GitHubContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:

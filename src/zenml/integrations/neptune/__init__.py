@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Module containing Neptune integration."""
 
-from typing import List, Type
 
 from zenml.integrations.constants import NEPTUNE
 from zenml.integrations.integration import Integration
@@ -32,7 +31,7 @@ class NeptuneIntegration(Integration):
     REQUIREMENTS = ["neptune"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Neptune integration.
 
         Returns:

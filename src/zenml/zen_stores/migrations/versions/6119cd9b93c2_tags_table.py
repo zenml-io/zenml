@@ -10,7 +10,6 @@ import json
 import random
 from collections import defaultdict
 from datetime import datetime
-from typing import Set
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -53,7 +52,7 @@ def upgrade() -> None:
         )
     )
     # find unique tags and de-json tags
-    unique_tags: Set[str] = set()
+    unique_tags: set[str] = set()
     model_tags_prepared = []
     for id_, tags in model_tags:
         try:

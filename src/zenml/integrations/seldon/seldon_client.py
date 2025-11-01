@@ -17,7 +17,8 @@ import base64
 import json
 import re
 import time
-from typing import Any, Dict, Generator, List, Literal, Optional
+from typing import Any, Literal
+from collections.abc import Generator
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -59,8 +60,8 @@ class SeldonResourceRequirements(BaseModel):
         requests: resources requested by the model
     """
 
-    limits: Dict[str, str] = Field(default_factory=dict)
-    requests: Dict[str, str] = Field(default_factory=dict)
+    limits: dict[str, str] = Field(default_factory=dict)
+    requests: dict[str, str] = Field(default_factory=dict)
 
 
 class SeldonDeploymentMetadata(BaseModel):
@@ -74,9 +75,9 @@ class SeldonDeploymentMetadata(BaseModel):
     """
 
     name: str
-    labels: Dict[str, str] = Field(default_factory=dict)
-    annotations: Dict[str, str] = Field(default_factory=dict)
-    creationTimestamp: Optional[str] = None
+    labels: dict[str, str] = Field(default_factory=dict)
+    annotations: dict[str, str] = Field(default_factory=dict)
+    creationTimestamp: str | None = None
     model_config = ConfigDict(
         # validate attribute assignments
         validate_assignment=True,
@@ -114,15 +115,15 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     """
 
     name: str
-    type: Optional[SeldonDeploymentPredictiveUnitType] = (
+    type: SeldonDeploymentPredictiveUnitType | None = (
         SeldonDeploymentPredictiveUnitType.MODEL
     )
-    implementation: Optional[str] = None
-    modelUri: Optional[str] = None
-    parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None
-    serviceAccountName: Optional[str] = None
-    envSecretRefName: Optional[str] = None
-    children: Optional[List["SeldonDeploymentPredictiveUnit"]] = None
+    implementation: str | None = None
+    modelUri: str | None = None
+    parameters: list[SeldonDeploymentPredictorParameter] | None = None
+    serviceAccountName: str | None = None
+    envSecretRefName: str | None = None
+    children: list["SeldonDeploymentPredictiveUnit"] | None = None
     model_config = ConfigDict(
         # validate attribute assignments
         validate_assignment=True,
@@ -138,7 +139,7 @@ class SeldonDeploymentComponentSpecs(BaseModel):
         spec: the component spec.
     """
 
-    spec: Optional[Dict[str, Any]] = None
+    spec: dict[str, Any] | None = None
     model_config = ConfigDict(
         # validate attribute assignments
         validate_assignment=True,
@@ -159,10 +160,10 @@ class SeldonDeploymentPredictor(BaseModel):
     name: str
     replicas: int = 1
     graph: SeldonDeploymentPredictiveUnit
-    engineResources: Optional[SeldonResourceRequirements] = Field(
+    engineResources: SeldonResourceRequirements | None = Field(
         default_factory=SeldonResourceRequirements
     )
-    componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]] = None
+    componentSpecs: list[SeldonDeploymentComponentSpecs] | None = None
     model_config = ConfigDict(
         # validate attribute assignments
         validate_assignment=True,
@@ -182,8 +183,8 @@ class SeldonDeploymentSpec(BaseModel):
     """
 
     name: str
-    protocol: Optional[str] = None
-    predictors: List[SeldonDeploymentPredictor]
+    protocol: str | None = None
+    predictors: list[SeldonDeploymentPredictor]
     replicas: int = 1
     model_config = ConfigDict(
         # validate attribute assignments
@@ -226,8 +227,8 @@ class SeldonDeploymentStatusCondition(BaseModel):
 
     type: str
     status: bool
-    reason: Optional[str] = None
-    message: Optional[str] = None
+    reason: str | None = None
+    message: str | None = None
 
 
 class SeldonDeploymentStatus(BaseModel):
@@ -242,10 +243,10 @@ class SeldonDeploymentStatus(BaseModel):
     """
 
     state: SeldonDeploymentStatusState = SeldonDeploymentStatusState.UNKNOWN
-    description: Optional[str] = None
-    replicas: Optional[int] = None
-    address: Optional[SeldonDeploymentStatusAddress] = None
-    conditions: List[SeldonDeploymentStatusCondition]
+    description: str | None = None
+    replicas: int | None = None
+    address: SeldonDeploymentStatusAddress | None = None
+    conditions: list[SeldonDeploymentStatusCondition]
     model_config = ConfigDict(
         # validate attribute assignments
         validate_assignment=True,
@@ -280,7 +281,7 @@ class SeldonDeployment(BaseModel):
     )
     metadata: SeldonDeploymentMetadata
     spec: SeldonDeploymentSpec
-    status: Optional[SeldonDeploymentStatus] = None
+    status: SeldonDeploymentStatus | None = None
 
     def __str__(self) -> str:
         """Returns a string representation of the Seldon Deployment.
@@ -293,18 +294,18 @@ class SeldonDeployment(BaseModel):
     @classmethod
     def build(
         cls,
-        name: Optional[str] = None,
-        model_uri: Optional[str] = None,
-        model_name: Optional[str] = None,
-        implementation: Optional[str] = None,
-        parameters: Optional[List[SeldonDeploymentPredictorParameter]] = None,
-        engineResources: Optional[SeldonResourceRequirements] = None,
-        secret_name: Optional[str] = None,
-        labels: Optional[Dict[str, str]] = None,
-        annotations: Optional[Dict[str, str]] = None,
-        is_custom_deployment: Optional[bool] = False,
-        spec: Optional[Dict[Any, Any]] = None,
-        serviceAccountName: Optional[str] = None,
+        name: str | None = None,
+        model_uri: str | None = None,
+        model_name: str | None = None,
+        implementation: str | None = None,
+        parameters: list[SeldonDeploymentPredictorParameter] | None = None,
+        engineResources: SeldonResourceRequirements | None = None,
+        secret_name: str | None = None,
+        labels: dict[str, str] | None = None,
+        annotations: dict[str, str] | None = None,
+        is_custom_deployment: bool | None = False,
+        spec: dict[Any, Any] | None = None,
+        serviceAccountName: str | None = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -452,7 +453,7 @@ class SeldonDeployment(BaseModel):
         """
         return self.state == SeldonDeploymentStatusState.FAILED
 
-    def get_error(self) -> Optional[str]:
+    def get_error(self) -> str | None:
         """Get a message describing the error, if in an error state.
 
         Returns:
@@ -463,7 +464,7 @@ class SeldonDeployment(BaseModel):
             return self.status.description
         return None
 
-    def get_pending_message(self) -> Optional[str]:
+    def get_pending_message(self) -> str | None:
         """Get a message describing the pending conditions of the Seldon Deployment.
 
         Returns:
@@ -510,9 +511,9 @@ class SeldonClient:
 
     def __init__(
         self,
-        context: Optional[str],
-        namespace: Optional[str],
-        kube_client: Optional[k8s_client.ApiClient] = None,
+        context: str | None,
+        namespace: str | None,
+        kube_client: k8s_client.ApiClient | None = None,
     ):
         """Initialize a Seldon Core client.
 
@@ -526,8 +527,8 @@ class SeldonClient:
 
     def _initialize_k8s_clients(
         self,
-        context: Optional[str],
-        kube_client: Optional[k8s_client.ApiClient] = None,
+        context: str | None,
+        kube_client: k8s_client.ApiClient | None = None,
     ) -> None:
         """Initialize the Kubernetes clients.
 
@@ -571,7 +572,7 @@ class SeldonClient:
         self._custom_objects_api = k8s_client.CustomObjectsApi()
 
     @staticmethod
-    def sanitize_labels(labels: Dict[str, str]) -> None:
+    def sanitize_labels(labels: dict[str, str]) -> None:
         """Update the label values to be valid Kubernetes labels.
 
         See:
@@ -856,10 +857,10 @@ class SeldonClient:
 
     def find_deployments(
         self,
-        name: Optional[str] = None,
-        labels: Optional[Dict[str, str]] = None,
-        fields: Optional[Dict[str, str]] = None,
-    ) -> List[SeldonDeployment]:
+        name: str | None = None,
+        labels: dict[str, str] | None = None,
+        fields: dict[str, str] | None = None,
+    ) -> list[SeldonDeployment]:
         """Find all ZenML-managed Seldon Core deployment resources matching the given criteria.
 
         Args:
@@ -932,7 +933,7 @@ class SeldonClient:
         self,
         name: str,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a Seldon Core deployment resource.
 
@@ -1020,7 +1021,7 @@ class SeldonClient:
     def create_or_update_secret(
         self,
         name: str,
-        secret_values: Dict[str, Any],
+        secret_values: dict[str, Any],
     ) -> None:
         """Create or update a Kubernetes Secret resource.
 
@@ -1119,11 +1120,11 @@ class SeldonClient:
 
 
 def create_seldon_core_custom_spec(
-    model_uri: Optional[str],
-    custom_docker_image: Optional[str],
-    secret_name: Optional[str],
-    command: Optional[List[str]],
-    container_registry_secret_name: Optional[str] = None,
+    model_uri: str | None,
+    custom_docker_image: str | None,
+    secret_name: str | None,
+    command: list[str] | None,
+    container_registry_secret_name: str | None = None,
 ) -> k8s_client.V1PodSpec:
     """Create a custom pod spec for the seldon core container.
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
-from typing import Dict, List, Optional, Set, Union, overload
+from typing import overload
 from uuid import UUID
 
 from zenml.client import Client
@@ -34,14 +34,14 @@ logger = get_logger(__name__)
 
 @overload
 def log_metadata(
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
 ) -> None: ...
 
 
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     step_id: UUID,
 ) -> None: ...
 
@@ -49,24 +49,24 @@ def log_metadata(
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     step_name: str,
-    run_id_name_or_prefix: Union[UUID, str],
+    run_id_name_or_prefix: UUID | str,
 ) -> None: ...
 
 
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
-    run_id_name_or_prefix: Union[UUID, str],
+    metadata: dict[str, MetadataType],
+    run_id_name_or_prefix: UUID | str,
 ) -> None: ...
 
 
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -74,18 +74,18 @@ def log_metadata(
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     artifact_name: str,
-    artifact_version: Optional[str] = None,
+    artifact_version: str | None = None,
 ) -> None: ...
 
 
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     infer_artifact: bool = False,
-    artifact_name: Optional[str] = None,
+    artifact_name: str | None = None,
 ) -> None: ...
 
 
@@ -93,7 +93,7 @@ def log_metadata(
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     model_version_id: UUID,
 ) -> None: ...
 
@@ -101,35 +101,35 @@ def log_metadata(
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     model_name: str,
-    model_version: Union[ModelStages, int, str],
+    model_version: ModelStages | int | str,
 ) -> None: ...
 
 
 @overload
 def log_metadata(
     *,
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     infer_model: bool = False,
 ) -> None: ...
 
 
 def log_metadata(
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     # Steps and runs
-    step_id: Optional[UUID] = None,
-    step_name: Optional[str] = None,
-    run_id_name_or_prefix: Optional[Union[UUID, str]] = None,
+    step_id: UUID | None = None,
+    step_name: str | None = None,
+    run_id_name_or_prefix: UUID | str | None = None,
     # Artifacts
-    artifact_version_id: Optional[UUID] = None,
-    artifact_name: Optional[str] = None,
-    artifact_version: Optional[str] = None,
+    artifact_version_id: UUID | None = None,
+    artifact_name: str | None = None,
+    artifact_version: str | None = None,
     infer_artifact: bool = False,
     # Models
-    model_version_id: Optional[UUID] = None,
-    model_name: Optional[str] = None,
-    model_version: Optional[Union[ModelStages, int, str]] = None,
+    model_version_id: UUID | None = None,
+    model_name: str | None = None,
+    model_version: ModelStages | int | str | None = None,
     infer_model: bool = False,
 ) -> None:
     """Logs metadata for various resource types in a generalized way.
@@ -156,7 +156,7 @@ def log_metadata(
     """
     client = Client()
 
-    resources: List[RunMetadataResource] = []
+    resources: list[RunMetadataResource] = []
     publisher_step_id = None
 
     # Log metadata to a step by ID
@@ -375,7 +375,7 @@ def log_metadata(
 
 
 def bulk_log_metadata(
-    metadata: Dict[str, MetadataType],
+    metadata: dict[str, MetadataType],
     pipeline_runs: list[PipelineRunIdentifier] | None = None,
     step_runs: list[StepRunIdentifier] | None = None,
     artifact_versions: list[ArtifactVersionIdentifier] | None = None,
@@ -400,7 +400,7 @@ def bulk_log_metadata(
     """
     client = Client()
 
-    resources: Set[RunMetadataResource] = set()
+    resources: set[RunMetadataResource] = set()
 
     if not metadata:
         raise ValueError("You must provide metadata to log.")

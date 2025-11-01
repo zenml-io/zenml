@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for projects."""
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
@@ -65,71 +65,71 @@ class ProjectSchema(NamedSchema, table=True):
     display_name: str
     description: str
 
-    pipelines: List["PipelineSchema"] = Relationship(
+    pipelines: list["PipelineSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    schedules: List["ScheduleSchema"] = Relationship(
+    schedules: list["ScheduleSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    runs: List["PipelineRunSchema"] = Relationship(
+    runs: list["PipelineRunSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    step_runs: List["StepRunSchema"] = Relationship(
+    step_runs: list["StepRunSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    builds: List["PipelineBuildSchema"] = Relationship(
+    builds: list["PipelineBuildSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
+    artifact_versions: list["ArtifactVersionSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    actions: List["ActionSchema"] = Relationship(
+    actions: list["ActionSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    triggers: List["TriggerSchema"] = Relationship(
+    triggers: list["TriggerSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    event_sources: List["EventSourceSchema"] = Relationship(
+    event_sources: list["EventSourceSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    snapshots: List["PipelineSnapshotSchema"] = Relationship(
+    snapshots: list["PipelineSnapshotSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    code_repositories: List["CodeRepositorySchema"] = Relationship(
+    code_repositories: list["CodeRepositorySchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    services: List["ServiceSchema"] = Relationship(
+    services: list["ServiceSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    models: List["ModelSchema"] = Relationship(
+    models: list["ModelSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions: List["ModelVersionSchema"] = Relationship(
+    model_versions: list["ModelVersionSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    deployments: List["DeploymentSchema"] = Relationship(
+    deployments: list["DeploymentSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"

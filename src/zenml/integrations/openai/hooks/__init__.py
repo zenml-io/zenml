@@ -13,7 +13,3 @@
 #  permissions and limitations under the License.
 """Initialization of the OpenAI hooks module."""
 
-from zenml.integrations.openai.hooks.open_ai_failure_hook import (
-    openai_chatgpt_alerter_failure_hook,
-    openai_gpt4_alerter_failure_hook,
-)

@@ -16,10 +16,7 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -45,7 +42,7 @@ if TYPE_CHECKING:
     from zenml.login.pro.workspace.client import WorkspaceClient
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
-Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+Json = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseRestAPIModel)
@@ -55,8 +52,8 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     """ZenML Pro client."""
 
     _url: str
-    _api_token: Optional[APIToken] = None
-    _session: Optional[requests.Session] = None
+    _api_token: APIToken | None = None
+    _session: requests.Session | None = None
     _workspace: Optional["WorkspaceClient"] = None
     _organization: Optional["OrganizationClient"] = None
 
@@ -233,7 +230,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         self,
         method: str,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a request to the REST API.
@@ -265,7 +262,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def get(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a GET request to the given endpoint path.
@@ -289,7 +286,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def delete(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a DELETE request to the given endpoint path.
@@ -314,7 +311,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         self,
         path: str,
         body: BaseRestAPIModel,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a POST request to the given endpoint path.
@@ -340,8 +337,8 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def put(
         self,
         path: str,
-        body: Optional[BaseRestAPIModel] = None,
-        params: Optional[Dict[str, Any]] = None,
+        body: BaseRestAPIModel | None = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -370,8 +367,8 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def patch(
         self,
         path: str,
-        body: Optional[BaseRestAPIModel] = None,
-        params: Optional[Dict[str, Any]] = None,
+        body: BaseRestAPIModel | None = None,
+        params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a PATCH request to the given endpoint path.
@@ -400,9 +397,9 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def _create_resource(
         self,
         resource: BaseRestAPIModel,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> AnyResponse:
         """Create a new resource.
 
@@ -422,9 +419,9 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
     def _get_resource(
         self,
-        resource_id: Union[str, int, UUID],
+        resource_id: str | int | UUID,
         route: str,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         **params: Any,
     ) -> AnyResponse:
         """Retrieve a single resource.
@@ -446,9 +443,9 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
     def _list_resources(
         self,
         route: str,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         **params: Any,
-    ) -> List[AnyResponse]:
+    ) -> list[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -473,9 +470,9 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
     def _update_resource(
         self,
-        resource_id: Union[str, int, UUID],
+        resource_id: str | int | UUID,
         resource_update: BaseRestAPIModel,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         route: str,
         **params: Any,
     ) -> AnyResponse:
@@ -501,7 +498,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
         return response_model.model_validate(response_body)
 
     def _delete_resource(
-        self, resource_id: Union[str, UUID], route: str
+        self, resource_id: str | UUID, route: str
     ) -> None:
         """Delete a resource.
 

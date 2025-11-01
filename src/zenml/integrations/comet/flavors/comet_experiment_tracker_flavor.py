@@ -16,10 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Optional,
-    Type,
 )
 
 from zenml.config.base_settings import BaseSettings
@@ -45,9 +41,9 @@ class CometExperimentTrackerSettings(BaseSettings):
         settings: Settings for the Comet experiment.
     """
 
-    run_name: Optional[str] = None
-    tags: List[str] = []
-    settings: Dict[str, Any] = {}
+    run_name: str | None = None
+    tags: list[str] = []
+    settings: dict[str, Any] = {}
 
 
 class CometExperimentTrackerConfig(
@@ -63,8 +59,8 @@ class CometExperimentTrackerConfig(
     """
 
     api_key: str = SecretField()
-    workspace: Optional[str] = None
-    project_name: Optional[str] = None
+    workspace: str | None = None
+    project_name: str | None = None
 
 
 class CometExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
@@ -80,7 +76,7 @@ class CometExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return COMET_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -89,7 +85,7 @@ class CometExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -107,7 +103,7 @@ class CometExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/comet.png"
 
     @property
-    def config_class(self) -> Type[CometExperimentTrackerConfig]:
+    def config_class(self) -> type[CometExperimentTrackerConfig]:
         """Returns `CometExperimentTrackerConfig` config class.
 
         Returns:
@@ -116,7 +112,7 @@ class CometExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return CometExperimentTrackerConfig
 
     @property
-    def implementation_class(self) -> Type["CometExperimentTracker"]:
+    def implementation_class(self) -> type["CometExperimentTracker"]:
         """Implementation class for this flavor.
 
         Returns:

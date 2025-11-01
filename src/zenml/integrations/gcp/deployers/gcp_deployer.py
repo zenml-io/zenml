@@ -18,14 +18,9 @@ import re
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-    Type,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
@@ -82,31 +77,31 @@ GCP_CLOUD_RUN_MAX_INSTANCES = 1000
 class CloudRunDeploymentMetadata(BaseModel):
     """Metadata for a Cloud Run deployment."""
 
-    service_name: Optional[str] = None
-    service_url: Optional[str] = None
-    project_id: Optional[str] = None
-    location: Optional[str] = None
-    revision_name: Optional[str] = None
-    reconciling: Optional[bool] = None
-    service_status: Optional[Dict[str, Any]] = None
-    cpu: Optional[str] = None
-    memory: Optional[str] = None
-    min_instances: Optional[int] = None
-    max_instances: Optional[int] = None
-    concurrency: Optional[int] = None
-    timeout_seconds: Optional[int] = None
-    ingress: Optional[str] = None
-    vpc_connector: Optional[str] = None
-    service_account: Optional[str] = None
-    execution_environment: Optional[str] = None
-    port: Optional[int] = None
-    allow_unauthenticated: Optional[bool] = None
-    labels: Optional[Dict[str, str]] = None
-    annotations: Optional[Dict[str, str]] = None
-    traffic_allocation: Optional[Dict[str, int]] = None
-    created_time: Optional[str] = None
-    updated_time: Optional[str] = None
-    secrets: List[str] = []
+    service_name: str | None = None
+    service_url: str | None = None
+    project_id: str | None = None
+    location: str | None = None
+    revision_name: str | None = None
+    reconciling: bool | None = None
+    service_status: dict[str, Any] | None = None
+    cpu: str | None = None
+    memory: str | None = None
+    min_instances: int | None = None
+    max_instances: int | None = None
+    concurrency: int | None = None
+    timeout_seconds: int | None = None
+    ingress: str | None = None
+    vpc_connector: str | None = None
+    service_account: str | None = None
+    execution_environment: str | None = None
+    port: int | None = None
+    allow_unauthenticated: bool | None = None
+    labels: dict[str, str] | None = None
+    annotations: dict[str, str] | None = None
+    traffic_allocation: dict[str, int] | None = None
+    created_time: str | None = None
+    updated_time: str | None = None
+    secrets: list[str] = []
 
     @classmethod
     def from_cloud_run_service(
@@ -114,7 +109,7 @@ class CloudRunDeploymentMetadata(BaseModel):
         service: run_v2.Service,
         project_id: str,
         location: str,
-        secrets: List[secretmanager.Secret],
+        secrets: list[secretmanager.Secret],
     ) -> "CloudRunDeploymentMetadata":
         """Create metadata from a Cloud Run service.
 
@@ -247,13 +242,13 @@ class CloudRunDeploymentMetadata(BaseModel):
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     """Deployer responsible for deploying pipelines on GCP Cloud Run."""
 
-    _credentials: Optional[Any] = None
-    _project_id: Optional[str] = None
-    _cloud_run_client: Optional[run_v2.ServicesClient] = None
-    _logging_client: Optional[LoggingClient] = None
-    _secret_manager_client: Optional[
+    _credentials: Any | None = None
+    _project_id: str | None = None
+    _cloud_run_client: run_v2.ServicesClient | None = None
+    _logging_client: LoggingClient | None = None
+    _secret_manager_client: None | (
         secretmanager.SecretManagerServiceClient
-    ] = None
+    ) = None
 
     @property
     def config(self) -> GCPDeployerConfig:
@@ -265,7 +260,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         return cast(GCPDeployerConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the GCP deployer.
 
         Returns:
@@ -274,7 +269,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         return GCPDeployerSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is an image builder in the stack.
 
         Returns:
@@ -287,7 +282,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             }
         )
 
-    def _get_credentials_and_project_id(self) -> Tuple[Any, str]:
+    def _get_credentials_and_project_id(self) -> tuple[Any, str]:
         """Get GCP credentials and project ID.
 
         Returns:
@@ -364,7 +359,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     def get_labels(
         self, deployment: DeploymentResponse, settings: GCPDeployerSettings
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Get the labels for a deployment.
 
         Args:
@@ -563,7 +558,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     def _get_secrets(
         self, deployment: DeploymentResponse
-    ) -> List[secretmanager.Secret]:
+    ) -> list[secretmanager.Secret]:
         """Get the existing GCP Secret Manager secrets for a deployment.
 
         Args:
@@ -574,7 +569,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
             deployment.
         """
         metadata = CloudRunDeploymentMetadata.from_deployment(deployment)
-        secrets: List[secretmanager.Secret] = []
+        secrets: list[secretmanager.Secret] = []
         for secret_name in metadata.secrets:
             try:
                 secret = self.secret_manager_client.get_secret(
@@ -622,11 +617,11 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     def _prepare_environment_variables(
         self,
         deployment: DeploymentResponse,
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         settings: GCPDeployerSettings,
         project_id: str,
-    ) -> Tuple[List[run_v2.EnvVar], List[secretmanager.Secret]]:
+    ) -> tuple[list[run_v2.EnvVar], list[secretmanager.Secret]]:
         """Prepare environment variables for Cloud Run, handling secrets appropriately.
 
         Args:
@@ -647,7 +642,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         for key, value in merged_env.items():
             env_vars.append(run_v2.EnvVar(name=key, value=value))
 
-        active_secrets: List[secretmanager.Secret] = []
+        active_secrets: list[secretmanager.Secret] = []
         if secrets:
             if settings.use_secret_manager:
                 for key, value in secrets.items():
@@ -726,7 +721,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
 
     def _get_cloud_run_service(
         self, deployment: DeploymentResponse
-    ) -> Optional[run_v2.Service]:
+    ) -> run_v2.Service | None:
         """Get an existing Cloud Run service for a deployment.
 
         Args:
@@ -762,7 +757,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         service: run_v2.Service,
         project_id: str,
         location: str,
-        secrets: List[secretmanager.Secret],
+        secrets: list[secretmanager.Secret],
     ) -> DeploymentOperationalState:
         """Get the operational state of a Cloud Run service.
 
@@ -812,7 +807,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     def _convert_resource_settings_to_gcp_format(
         self,
         resource_settings: ResourceSettings,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Convert ResourceSettings to GCP Cloud Run resource format.
 
         GCP Cloud Run CPU constraints:
@@ -865,8 +860,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         return str(cpu), memory
 
     def _validate_memory_for_cpu(
-        self, cpu: str, memory_gib: Optional[float]
-    ) -> Optional[float]:
+        self, cpu: str, memory_gib: float | None
+    ) -> float | None:
         """Validate and adjust memory allocation based on CPU requirements.
 
         GCP Cloud Run has minimum memory requirements per CPU configuration:
@@ -908,7 +903,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     def _convert_scaling_settings_to_gcp_format(
         self,
         resource_settings: ResourceSettings,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Convert ResourceSettings scaling to GCP Cloud Run format.
 
         Args:
@@ -954,8 +949,8 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Serve a pipeline as a Cloud Run service.
@@ -1226,7 +1221,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a Cloud Run deployment.
 
@@ -1307,7 +1302,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         self,
         deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Deprovision a Cloud Run deployment.
 
         Args:

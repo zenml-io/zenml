@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Azure artifact store flavor."""
 
-from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
+from typing import TYPE_CHECKING, ClassVar
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
@@ -36,7 +36,7 @@ class AzureArtifactStoreConfig(
 ):
     """Configuration class for Azure Artifact Store."""
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
+    SUPPORTED_SCHEMES: ClassVar[set[str]] = {"abfs://", "az://"}
 
 
 class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
@@ -54,7 +54,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -71,7 +71,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -80,7 +80,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -98,7 +98,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/azure.png"
 
     @property
-    def config_class(self) -> Type[AzureArtifactStoreConfig]:
+    def config_class(self) -> type[AzureArtifactStoreConfig]:
         """Returns AzureArtifactStoreConfig config class.
 
         Returns:
@@ -107,7 +107,7 @@ class AzureArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return AzureArtifactStoreConfig
 
     @property
-    def implementation_class(self) -> Type["AzureArtifactStore"]:
+    def implementation_class(self) -> type["AzureArtifactStore"]:
         """Implementation class.
 
         Returns:

@@ -24,17 +24,11 @@ from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     overload,
 )
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 import psutil
@@ -84,13 +78,13 @@ R = TypeVar("R")
 logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
-_rbac: Optional[RBACInterface] = None
-_feature_gate: Optional[FeatureGateInterface] = None
-_workload_manager: Optional[WorkloadManagerInterface] = None
+_rbac: RBACInterface | None = None
+_feature_gate: FeatureGateInterface | None = None
+_workload_manager: WorkloadManagerInterface | None = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
-_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
-_memcache: Optional[MemoryCache] = None
-_request_manager: Optional[RequestManager] = None
+_plugin_flavor_registry: PluginFlavorRegistry | None = None
+_memcache: MemoryCache | None = None
+_request_manager: RequestManager | None = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -207,7 +201,7 @@ def initialize_workload_manager() -> None:
         from zenml.utils import source_utils
 
         try:
-            workload_manager_class: Type[WorkloadManagerInterface] = (
+            workload_manager_class: type[WorkloadManagerInterface] = (
                 source_utils.load_and_validate_class(
                     source=source, expected_class=WorkloadManagerInterface
                 )
@@ -301,7 +295,7 @@ def memcache() -> MemoryCache:
     return _memcache
 
 
-_server_config: Optional[ServerConfiguration] = None
+_server_config: ServerConfiguration | None = None
 
 
 def server_config() -> ServerConfiguration:
@@ -358,18 +352,18 @@ def async_fastapi_endpoint_wrapper(
 
 @overload
 def async_fastapi_endpoint_wrapper(
-    *, deduplicate: Optional[bool] = None
+    *, deduplicate: bool | None = None
 ) -> Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]: ...
 
 
 def async_fastapi_endpoint_wrapper(
-    func: Optional[Callable[P, R]] = None,
+    func: Callable[P, R] | None = None,
     *,
-    deduplicate: Optional[bool] = None,
-) -> Union[
-    Callable[P, Awaitable[Any]],
-    Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]],
-]:
+    deduplicate: bool | None = None,
+) -> (
+    Callable[P, Awaitable[Any]] |
+    Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]
+):
     """Decorator for FastAPI endpoints.
 
     This decorator for FastAPI endpoints does the following:
@@ -429,7 +423,7 @@ def async_fastapi_endpoint_wrapper(
 
 # Code from https://github.com/tiangolo/fastapi/issues/1474#issuecomment-1160633178
 # to send 422 response when receiving invalid query parameters
-def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
+def make_dependable(cls: type[BaseModel]) -> Callable[..., Any]:
     """This function makes a pydantic model usable for fastapi query parameters.
 
     Additionally, it converts `InternalServerError`s that would happen due to
@@ -484,7 +478,7 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     return init_cls_and_handle_errors
 
 
-def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
+def get_ip_location(ip_address: str) -> tuple[str, str, str]:
     """Get the location of the given IP address.
 
     Args:
@@ -509,8 +503,8 @@ def get_ip_location(ip_address: str) -> Tuple[str, str, str]:
 
 
 def verify_admin_status_if_no_rbac(
-    admin_status: Optional[bool],
-    action: Optional[str] = None,
+    admin_status: bool | None,
+    action: str | None = None,
 ) -> None:
     """Validate the admin status for sensitive requests.
 
@@ -552,7 +546,7 @@ def is_user_request(request: "Request") -> bool:
         True if it's a user request, False otherwise.
     """
     # Define system paths that should be excluded
-    system_paths: List[str] = [
+    system_paths: list[str] = [
         "/health",
         "/ready",
         "/metrics",
@@ -652,7 +646,7 @@ def is_same_or_subdomain(source_domain: str, target_domain: str) -> bool:
     return False
 
 
-def get_zenml_headers() -> Dict[str, str]:
+def get_zenml_headers() -> dict[str, str]:
     """Get the ZenML specific headers to be included in requests made by the server.
 
     Returns:
@@ -671,7 +665,7 @@ def get_zenml_headers() -> Dict[str, str]:
 
 def set_filter_project_scope(
     filter_model: ProjectScopedFilter,
-    project_name_or_id: Optional[Union[UUID, str]] = None,
+    project_name_or_id: UUID | str | None = None,
 ) -> None:
     """Set the project scope of the filter model.
 
@@ -688,7 +682,7 @@ def set_filter_project_scope(
 
 
 process = psutil.Process()
-fd_limit: Union[int, str] = "N/A"
+fd_limit: int | str = "N/A"
 if sys.platform != "win32":
     import resource
 
@@ -698,7 +692,7 @@ if sys.platform != "win32":
         pass
 
 
-def get_system_metrics() -> Dict[str, Any]:
+def get_system_metrics() -> dict[str, Any]:
     """Get comprehensive system metrics.
 
     Returns:
@@ -711,7 +705,7 @@ def get_system_metrics() -> Dict[str, Any]:
     memory = process.memory_info()
 
     # File descriptors
-    open_fds: Union[int, str] = "N/A"
+    open_fds: int | str = "N/A"
     try:
         open_fds = process.num_fds() if hasattr(process, "num_fds") else "N/A"
     except Exception:
@@ -757,7 +751,7 @@ def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
     )
 
 
-event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
+event_loop_lag_monitor_task: asyncio.Task[None] | None = None
 
 
 def start_event_loop_lag_monitor(threshold_ms: int = 50) -> None:

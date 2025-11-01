@@ -14,8 +14,6 @@
 """Initialization for TensorFlow integration."""
 
 import platform
-import sys
-from typing import List, Optional
 from zenml.integrations.constants import TENSORFLOW
 from zenml.integrations.integration import Integration
 from zenml.logger import get_logger
@@ -41,8 +39,8 @@ class TensorflowIntegration(Integration):
         from zenml.integrations.tensorflow import materializers  # noqa
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+    def get_requirements(cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Defines platform specific requirements for the integration.
 
         Args:

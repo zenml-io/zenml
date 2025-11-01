@@ -13,6 +13,3 @@
 #  permissions and limitations under the License.
 """Initialization of the MLflow standard interface steps."""
 
-from zenml.integrations.mlflow.steps.mlflow_deployer import (
-    mlflow_model_deployer_step,
-)

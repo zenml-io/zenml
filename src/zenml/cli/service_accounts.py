@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with API keys."""
 
-from typing import Any, Optional
+from typing import Any
 
 import click
 
@@ -33,9 +33,9 @@ logger = get_logger(__name__)
 def _create_api_key(
     service_account_name_or_id: str,
     name: str,
-    description: Optional[str],
+    description: str | None,
     set_key: bool = False,
-    output_file: Optional[str] = None,
+    output_file: str | None = None,
 ) -> None:
     """Create an API key.
 
@@ -130,7 +130,7 @@ def create_service_account(
     description: str = "",
     create_api_key: bool = True,
     set_api_key: bool = False,
-    output_file: Optional[str] = None,
+    output_file: str | None = None,
 ) -> None:
     """Create a new service account.
 
@@ -240,9 +240,9 @@ def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
 )
 def update_service_account(
     service_account_name_or_id: str,
-    updated_name: Optional[str] = None,
-    description: Optional[str] = None,
-    active: Optional[bool] = None,
+    updated_name: str | None = None,
+    description: str | None = None,
+    active: bool | None = None,
 ) -> None:
     """Update an existing service account.
 
@@ -329,9 +329,9 @@ def api_key(
 def create_api_key(
     service_account_name_or_id: str,
     name: str,
-    description: Optional[str],
+    description: str | None,
     set_key: bool = False,
-    output_file: Optional[str] = None,
+    output_file: str | None = None,
 ) -> None:
     """Create an API key.
 
@@ -432,9 +432,9 @@ def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
 def update_api_key(
     service_account_name_or_id: str,
     name_or_id: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    active: Optional[bool] = None,
+    name: str | None = None,
+    description: str | None = None,
+    active: bool | None = None,
 ) -> None:
     """Update an API key.
 
@@ -487,7 +487,7 @@ def rotate_api_key(
     name_or_id: str,
     retain: int = 0,
     set_key: bool = False,
-    output_file: Optional[str] = None,
+    output_file: str | None = None,
 ) -> None:
     """Rotate an API key.
 

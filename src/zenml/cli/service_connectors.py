@@ -14,7 +14,7 @@
 """Service connector CLI commands."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 from uuid import UUID
 
 import click
@@ -49,7 +49,7 @@ def service_connector() -> None:
 
 
 def prompt_connector_name(
-    default_name: Optional[str] = None, connector: Optional[UUID] = None
+    default_name: str | None = None, connector: UUID | None = None
 ) -> str:
     """Prompt the user for a service connector name.
 
@@ -96,7 +96,7 @@ def prompt_connector_name(
     return name
 
 
-def prompt_resource_type(available_resource_types: List[str]) -> Optional[str]:
+def prompt_resource_type(available_resource_types: list[str]) -> str | None:
     """Prompt the user for a resource type.
 
     Args:
@@ -139,8 +139,8 @@ def prompt_resource_type(available_resource_types: List[str]) -> Optional[str]:
 
 
 def prompt_resource_id(
-    resource_name: str, resource_ids: List[str]
-) -> Optional[str]:
+    resource_name: str, resource_ids: list[str]
+) -> str | None:
     """Prompt the user for a resource ID.
 
     Args:
@@ -150,7 +150,7 @@ def prompt_resource_id(
     Returns:
         The resource ID provided by the user.
     """
-    resource_id: Optional[str] = None
+    resource_id: str | None = None
     if resource_ids:
         resource_ids_list = "\n - " + "\n - ".join(resource_ids)
         prompt = (
@@ -201,9 +201,9 @@ def prompt_resource_id(
 
 
 def prompt_expiration_time(
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    default: Optional[int] = None,
+    min: int | None = None,
+    max: int | None = None,
+    default: int | None = None,
 ) -> int:
     """Prompt the user for an expiration time.
 
@@ -269,8 +269,8 @@ def prompt_expiration_time(
 
 
 def prompt_expires_at(
-    default: Optional[datetime] = None,
-) -> Optional[datetime]:
+    default: datetime | None = None,
+) -> datetime | None:
     """Prompt the user for an expiration timestamp.
 
     Args:
@@ -510,18 +510,18 @@ skip validation, pass the `--no-verify` flag.
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def register_service_connector(
-    name: Optional[str],
-    args: List[str],
-    description: Optional[str] = None,
-    connector_type: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    auth_method: Optional[str] = None,
-    expires_at: Optional[datetime] = None,
-    expires_skew_tolerance: Optional[int] = None,
-    expiration_seconds: Optional[int] = None,
+    name: str | None,
+    args: list[str],
+    description: str | None = None,
+    connector_type: str | None = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
+    auth_method: str | None = None,
+    expires_at: datetime | None = None,
+    expires_skew_tolerance: int | None = None,
+    expiration_seconds: int | None = None,
     no_verify: bool = False,
-    labels: Optional[List[str]] = None,
+    labels: list[str] | None = None,
     interactive: bool = False,
     no_docs: bool = False,
     show_secrets: bool = False,
@@ -569,7 +569,7 @@ def register_service_connector(
     )
 
     # Parse the given labels
-    parsed_labels = cast(Dict[str, str], cli_utils.get_parsed_labels(labels))
+    parsed_labels = cast(dict[str, str], cli_utils.get_parsed_labels(labels))
 
     if interactive:
         # Get the list of available service connector types
@@ -668,10 +668,10 @@ def register_service_connector(
         else:
             auto_configure = False
 
-        connector_model: Optional[
-            Union[ServiceConnectorRequest, ServiceConnectorResponse]
-        ] = None
-        connector_resources: Optional[ServiceConnectorResourcesModel] = None
+        connector_model: None | (
+            ServiceConnectorRequest | ServiceConnectorResponse
+        ) = None
+        connector_resources: ServiceConnectorResourcesModel | None = None
         if auto_configure:
             # Try to autoconfigure the service connector
             try:
@@ -975,7 +975,7 @@ def register_service_connector(
 )
 @click.pass_context
 def list_service_connectors(
-    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
+    ctx: click.Context, /, labels: list[str] | None = None, **kwargs: Any
 ) -> None:
     """List all service connectors.
 
@@ -1079,8 +1079,8 @@ def describe_service_connector(
     name_id_or_prefix: str,
     show_secrets: bool = False,
     describe_client: bool = False,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
 ) -> None:
     """Prints details about a service connector.
 
@@ -1137,7 +1137,7 @@ def describe_service_connector(
 
     with console.status(f"Describing connector '{connector.name}'..."):
         active_stack = client.active_stack_model
-        active_connector_ids: List[UUID] = []
+        active_connector_ids: list[UUID] = []
         for components in active_stack.components.values():
             active_connector_ids.extend(
                 [
@@ -1315,22 +1315,22 @@ validation, pass the `--no-verify` flag.
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def update_service_connector(
-    args: List[str],
-    name_id_or_prefix: Optional[str] = None,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    connector_type: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    auth_method: Optional[str] = None,
-    expires_at: Optional[datetime] = None,
-    expires_skew_tolerance: Optional[int] = None,
-    expiration_seconds: Optional[int] = None,
+    args: list[str],
+    name_id_or_prefix: str | None = None,
+    name: str | None = None,
+    description: str | None = None,
+    connector_type: str | None = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
+    auth_method: str | None = None,
+    expires_at: datetime | None = None,
+    expires_skew_tolerance: int | None = None,
+    expiration_seconds: int | None = None,
     no_verify: bool = False,
-    labels: Optional[List[str]] = None,
+    labels: list[str] | None = None,
     interactive: bool = False,
     show_secrets: bool = False,
-    remove_attrs: Optional[List[str]] = None,
+    remove_attrs: list[str] | None = None,
 ) -> None:
     """Updates a service connector.
 
@@ -1755,8 +1755,8 @@ access to a particular S3 bucket:
 @click.argument("name_id_or_prefix", type=str, required=True)
 def verify_service_connector(
     name_id_or_prefix: str,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
     verify_only: bool = False,
 ) -> None:
     """Verifies if a service connector has access to one or more resources.
@@ -1847,8 +1847,8 @@ service connector:
 @click.argument("name_id_or_prefix", type=str, required=True)
 def login_service_connector(
     name_id_or_prefix: str,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
 ) -> None:
     """Authenticate the local client/SDK with connector credentials.
 
@@ -1955,9 +1955,9 @@ with ZenML can access:
     is_flag=True,
 )
 def list_service_connector_resources(
-    connector_type: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    connector_type: str | None = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
     exclude_errors: bool = False,
 ) -> None:
     """List resources that can be accessed by service connectors.
@@ -2068,9 +2068,9 @@ def list_service_connector_resources(
     is_flag=True,
 )
 def list_service_connector_types(
-    type: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    auth_method: Optional[str] = None,
+    type: str | None = None,
+    resource_type: str | None = None,
+    auth_method: str | None = None,
     detailed: bool = False,
 ) -> None:
     """List service connector types.
@@ -2131,8 +2131,8 @@ def list_service_connector_types(
 )
 def describe_service_connector_type(
     type: str,
-    resource_type: Optional[str] = None,
-    auth_method: Optional[str] = None,
+    resource_type: str | None = None,
+    auth_method: str | None = None,
 ) -> None:
     """Describes a service connector type.
 

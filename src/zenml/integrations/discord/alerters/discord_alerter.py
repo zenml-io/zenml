@@ -14,7 +14,7 @@
 """Implementation for discord flavor of alerter component."""
 
 import asyncio
-from typing import List, Optional, cast
+from typing import cast
 
 from discord import Client, DiscordException, Embed, Intents, Message
 from pydantic import BaseModel
@@ -35,24 +35,24 @@ DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 class DiscordAlerterPayload(BaseModel):
     """Discord alerter payload implementation."""
 
-    pipeline_name: Optional[str] = None
-    step_name: Optional[str] = None
-    stack_name: Optional[str] = None
+    pipeline_name: str | None = None
+    step_name: str | None = None
+    stack_name: str | None = None
 
 
 class DiscordAlerterParameters(BaseAlerterStepParameters):
     """Discord alerter parameters."""
 
     # The ID of the Discord channel to use for communication.
-    discord_channel_id: Optional[str] = None
+    discord_channel_id: str | None = None
 
     # Set of messages that lead to approval in alerter.ask()
-    approve_msg_options: Optional[List[str]] = None
+    approve_msg_options: list[str] | None = None
 
     # Set of messages that lead to disapproval in alerter.ask()
-    disapprove_msg_options: Optional[List[str]] = None
-    payload: Optional[DiscordAlerterPayload] = None
-    include_format_blocks: Optional[bool] = True
+    disapprove_msg_options: list[str] | None = None
+    payload: DiscordAlerterPayload | None = None
+    include_format_blocks: bool | None = True
 
 
 class DiscordAlerter(BaseAlerter):
@@ -68,7 +68,7 @@ class DiscordAlerter(BaseAlerter):
         return cast(DiscordAlerterConfig, self._config)
 
     def _get_channel_id(
-        self, params: Optional[BaseAlerterStepParameters] = None
+        self, params: BaseAlerterStepParameters | None = None
     ) -> str:
         """Get the Discord channel ID to be used by post/ask.
 
@@ -103,8 +103,8 @@ class DiscordAlerter(BaseAlerter):
         )
 
     def _get_approve_msg_options(
-        self, params: Optional[BaseAlerterStepParameters]
-    ) -> List[str]:
+        self, params: BaseAlerterStepParameters | None
+    ) -> list[str]:
         """Define which messages will lead to approval during ask().
 
         Args:
@@ -122,8 +122,8 @@ class DiscordAlerter(BaseAlerter):
         return DEFAULT_APPROVE_MSG_OPTIONS
 
     def _get_disapprove_msg_options(
-        self, params: Optional[BaseAlerterStepParameters]
-    ) -> List[str]:
+        self, params: BaseAlerterStepParameters | None
+    ) -> list[str]:
         """Define which messages will lead to disapproval during ask().
 
         Args:
@@ -141,8 +141,8 @@ class DiscordAlerter(BaseAlerter):
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
     def _create_blocks(
-        self, message: str, params: Optional[BaseAlerterStepParameters]
-    ) -> Optional[Embed]:
+        self, message: str, params: BaseAlerterStepParameters | None
+    ) -> Embed | None:
         """Helper function to create discord blocks.
 
         Args:
@@ -220,7 +220,7 @@ class DiscordAlerter(BaseAlerter):
             loop.close()
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, message: str, params: BaseAlerterStepParameters | None = None
     ) -> bool:
         """Post a message to a Discord channel.
 
@@ -265,7 +265,7 @@ class DiscordAlerter(BaseAlerter):
         return message_sent
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, message: str, params: BaseAlerterStepParameters | None = None
     ) -> bool:
         """Post a message to a Discord channel and wait for approval.
 

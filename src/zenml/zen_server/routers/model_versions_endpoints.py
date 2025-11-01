@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -92,8 +91,8 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_model_version(
     model_version: ModelVersionRequest,
-    model_id: Optional[UUID] = None,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    model_id: UUID | None = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> ModelVersionResponse:
     """Creates a model version.
@@ -132,7 +131,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilter = Depends(
         make_dependable(ModelVersionFilter)
     ),
-    model_name_or_id: Optional[Union[str, UUID]] = None,
+    model_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponse]:
@@ -334,7 +333,7 @@ def list_model_version_artifact_links(
 @async_fastapi_endpoint_wrapper
 def delete_model_version_artifact_link(
     model_version_id: UUID,
-    model_version_artifact_link_name_or_id: Union[str, UUID],
+    model_version_artifact_link_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a model version to artifact link.
@@ -457,7 +456,7 @@ def list_model_version_pipeline_run_links(
 @async_fastapi_endpoint_wrapper
 def delete_model_version_pipeline_run_link(
     model_version_id: UUID,
-    model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+    model_version_pipeline_run_link_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a model version link.

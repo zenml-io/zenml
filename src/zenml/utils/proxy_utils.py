@@ -15,13 +15,14 @@
 
 from abc import ABC
 from functools import wraps
-from typing import Any, Callable, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 
-C = TypeVar("C", bound=Type[ABC])
+C = TypeVar("C", bound=type[ABC])
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def make_proxy_class(interface: Type[ABC], attribute: str) -> Callable[[C], C]:
+def make_proxy_class(interface: type[ABC], attribute: str) -> Callable[[C], C]:
     """Proxy class decorator.
 
     Use this decorator to transform the decorated class into a proxy that

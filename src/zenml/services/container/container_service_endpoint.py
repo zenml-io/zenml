@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a containerized service endpoint."""
 
-from typing import Optional, Union
 
 from pydantic import Field
 
@@ -51,7 +50,7 @@ class ContainerServiceEndpointConfig(ServiceEndpointConfig):
     """
 
     protocol: ServiceEndpointProtocol = ServiceEndpointProtocol.TCP
-    port: Optional[int] = None
+    port: int | None = None
     allocate_port: bool = True
 
 
@@ -78,9 +77,9 @@ class ContainerServiceEndpoint(BaseServiceEndpoint):
     status: ContainerServiceEndpointStatus = Field(
         default_factory=ContainerServiceEndpointStatus
     )
-    monitor: Optional[
-        Union[HTTPEndpointHealthMonitor, TCPEndpointHealthMonitor]
-    ] = Field(..., discriminator="type")
+    monitor: None | (
+        HTTPEndpointHealthMonitor | TCPEndpointHealthMonitor
+    ) = Field(..., discriminator="type")
 
     def _lookup_free_port(self) -> int:
         """Search for a free TCP port for the service endpoint.
@@ -107,7 +106,7 @@ class ContainerServiceEndpoint(BaseServiceEndpoint):
             if port_available(self.config.port):
                 return self.config.port
             if not self.config.allocate_port:
-                raise IOError(f"TCP port {self.config.port} is not available.")
+                raise OSError(f"TCP port {self.config.port} is not available.")
 
         # Attempt to reuse the port used when the services was last running
         if self.status.port and port_available(self.status.port):
@@ -116,7 +115,7 @@ class ContainerServiceEndpoint(BaseServiceEndpoint):
         port = scan_for_available_port()
         if port:
             return port
-        raise IOError("No free TCP ports found")
+        raise OSError("No free TCP ports found")
 
     def prepare_for_start(self) -> None:
         """Prepare the service endpoint for starting.
