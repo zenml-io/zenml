@@ -53,6 +53,7 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.pipeline_snapshot import (
         PipelineSnapshotResponse,
     )
+    from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.tag import TagResponse
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
@@ -212,6 +213,11 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
         default_factory=list,
         title="Curated deployment visualizations.",
     )
+    stack: Optional["StackResponse"] = Field(
+        default=None,
+        title="The stack that was deployed.",
+        description="The stack that was deployed.",
+    )
 
 
 class DeploymentResponse(
@@ -320,6 +326,15 @@ class DeploymentResponse(
             The visualizations of the deployment.
         """
         return self.get_resources().visualizations
+
+    @property
+    def stack(self) -> Optional["StackResponse"]:
+        """The stack.
+
+        Returns:
+            The stack.
+        """
+        return self.get_resources().stack
 
     @property
     def snapshot_id(self) -> Optional[UUID]:
