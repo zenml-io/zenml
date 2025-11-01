@@ -5,7 +5,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from zenml.utils.exception_utils import collect_exception_information
+from zenml.utils.exception_utils import (
+    ContextReraise,
+    collect_exception_information,
+)
 
 
 def test_regex_pattern_no_syntax_warning():
@@ -101,3 +104,44 @@ def test_regex_pattern_matches_windows_paths_and_special_chars():
         r'  File "C:\Other\path\file.py", line 123, in some_function'
     )
     assert line_pattern_win.search(non_match_line) is None
+
+
+def test_context_reraise():
+    # test source errors are captured and re-raised
+
+    class CustomError(Exception):
+        pass
+
+    with pytest.raises(CustomError):
+        with ContextReraise(
+            source_exceptions=[ValueError, TypeError],
+            target_exception=CustomError,
+            message="Oh no",
+        ):
+            raise ValueError("VALUE ERROR")
+
+    # test other errors propagate normally
+
+    with pytest.raises(ZeroDivisionError):
+        with ContextReraise(
+            source_exceptions=[ValueError, TypeError],
+            target_exception=RuntimeError,
+            message="Oh no",
+        ):
+            _ = 1 / 0
+
+    # test inheritance works
+
+    class CustomValueError(ValueError):
+        pass
+
+    class CustomTypeError(TypeError):
+        pass
+
+    with pytest.raises(CustomTypeError):
+        with ContextReraise(
+            source_exceptions=[ValueError, TypeError],
+            target_exception=CustomTypeError,
+            message="Oh no",
+        ):
+            raise CustomValueError("VALUE ERROR")
