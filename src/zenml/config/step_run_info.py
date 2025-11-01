@@ -18,7 +18,11 @@ from uuid import UUID
 
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.step_configurations import StepConfiguration
+from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.logger import get_logger
+from zenml.models import PipelineSnapshotResponse
+
+logger = get_logger(__name__)
 
 
 class StepRunInfo(FrozenBaseModel):
@@ -30,7 +34,9 @@ class StepRunInfo(FrozenBaseModel):
     pipeline_step_name: str
 
     config: StepConfiguration
+    spec: StepSpec
     pipeline: PipelineConfiguration
+    snapshot: PipelineSnapshotResponse
 
     force_write_logs: Callable[..., Any]
 
@@ -46,15 +52,22 @@ class StepRunInfo(FrozenBaseModel):
         Returns:
             The image name or digest.
         """
-        from zenml.client import Client
-
-        run = Client().get_pipeline_run(self.run_id)
-        if not run.build:
+        if not self.snapshot.build:
             raise RuntimeError(
-                f"Missing build for run {run.id}. This is probably because "
-                "the build was manually deleted."
+                f"Missing build for snapshot {self.snapshot.id}. This is "
+                "probably because the build was manually deleted."
             )
 
-        return run.build.get_image(
-            component_key=key, step=self.pipeline_step_name
-        )
+        if self.snapshot.is_dynamic:
+            step_key = self.config.template
+            if not step_key:
+                logger.warning(
+                    "Unable to find config template for step %s. Falling "
+                    "back to the pipeline image.",
+                    self.pipeline_step_name,
+                )
+                step_key = None
+        else:
+            step_key = self.pipeline_step_name
+
+        return self.snapshot.build.get_image(component_key=key, step=step_key)

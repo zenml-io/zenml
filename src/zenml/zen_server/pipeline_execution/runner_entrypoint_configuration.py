@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Runner entrypoint configuration."""
 
-from typing import Any, List, Set
+from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.pipelines.run_utils import submit_pipeline
+from zenml.execution.pipeline.utils import submit_pipeline
 
 PLACEHOLDER_RUN_ID_OPTION = "placeholder_run_id"
 
@@ -29,14 +29,16 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
     """Runner entrypoint configuration."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the name of the
             step to run.
         """
-        return super().get_entrypoint_options() | {PLACEHOLDER_RUN_ID_OPTION}
+        return super().get_entrypoint_options() | {
+            PLACEHOLDER_RUN_ID_OPTION: True
+        }
 
     @classmethod
     def get_entrypoint_arguments(
@@ -63,7 +65,7 @@ class RunnerEntrypointConfiguration(BaseEntrypointConfiguration):
         This method runs the pipeline defined by the snapshot given as input
         to the entrypoint configuration.
         """
-        snapshot = self.load_snapshot()
+        snapshot = self.snapshot
         placeholder_run_id = UUID(
             self.entrypoint_args[PLACEHOLDER_RUN_ID_OPTION]
         )

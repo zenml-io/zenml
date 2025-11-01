@@ -28,7 +28,7 @@ from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
-from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ArtifactSaveType,
@@ -152,6 +152,10 @@ class StepRunRequest(ProjectScopedRequest):
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the step run.",
+    )
+    dynamic_config: Optional["Step"] = Field(
+        title="The dynamic configuration of the step run.",
+        default=None,
     )
 
     model_config = ConfigDict(protected_namespaces=())

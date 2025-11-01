@@ -33,9 +33,11 @@ def get_pipeline_context() -> "PipelineContext":
         RuntimeError: If no active pipeline is found.
         RuntimeError: If inside a running step.
     """
-    from zenml.pipelines.pipeline_definition import Pipeline
+    from zenml.pipelines.compilation_context import PipelineCompilationContext
 
-    if Pipeline.ACTIVE_PIPELINE is None:
+    context = PipelineCompilationContext.get()
+
+    if context is None:
         try:
             from zenml.steps.step_context import get_step_context
 
@@ -49,7 +51,7 @@ def get_pipeline_context() -> "PipelineContext":
             )
 
     return PipelineContext(
-        pipeline_configuration=Pipeline.ACTIVE_PIPELINE.configuration
+        pipeline_configuration=context.pipeline.configuration
     )
 
 

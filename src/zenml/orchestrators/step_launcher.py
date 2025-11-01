@@ -246,7 +246,7 @@ class StepLauncher:
             logger.debug(f"Cannot register signal handlers: {e}")
             # Continue without signal handling - the step will still run
 
-    def launch(self) -> None:
+    def launch(self) -> StepRunResponse:
         """Launches the step.
 
         Raises:
@@ -304,8 +304,10 @@ class StepLauncher:
                 pipeline_run=pipeline_run,
                 stack=self._stack,
             )
+            dynamic_config = self._step if self._snapshot.is_dynamic else None
             step_run_request = request_factory.create_request(
-                invocation_id=self._invocation_id
+                invocation_id=self._invocation_id,
+                dynamic_config=dynamic_config,
             )
             step_run_request.logs = logs_model
 
@@ -377,6 +379,8 @@ class StepLauncher:
                         model_version=model_version,
                     )
 
+        return step_run
+
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
 
@@ -427,12 +431,14 @@ class StepLauncher:
 
         step_run_info = StepRunInfo(
             config=self._step.config,
+            spec=self._step.spec,
             pipeline=self._snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self._invocation_id,
             run_id=pipeline_run.id,
             step_run_id=step_run.id,
             force_write_logs=force_write_logs,
+            snapshot=self._snapshot,
         )
 
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
@@ -453,14 +459,44 @@ class StepLauncher:
                     step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
                 )
-            else:
-                self._run_step_without_step_operator(
+            elif not self._snapshot.is_dynamic:
+                self._run_step_in_current_thread(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
                     step_run_info=step_run_info,
                     input_artifacts=step_run.regular_inputs,
                     output_artifact_uris=output_artifact_uris,
                 )
+            else:
+                from zenml.execution.pipeline.dynamic.runner import (
+                    should_run_in_process,
+                )
+
+                if should_run_in_process(
+                    self._step,
+                    self._snapshot.pipeline_configuration.docker_settings,
+                ):
+                    if self._step.config.in_process is False:
+                        # The step was configured to run out of process, but
+                        # the orchestrator doesn't support it.
+                        logger.warning(
+                            "The %s does not support running dynamic out of "
+                            "process steps. Running step `%s` locally instead.",
+                            self._stack.orchestrator.__class__.__name__,
+                            self._invocation_id,
+                        )
+
+                    self._run_step_in_current_thread(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        step_run_info=step_run_info,
+                        input_artifacts=step_run.regular_inputs,
+                        output_artifact_uris=output_artifact_uris,
+                    )
+                else:
+                    self._run_step_with_dynamic_orchestrator(
+                        step_run_info=step_run_info
+                    )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())
@@ -522,7 +558,27 @@ class StepLauncher:
             environment=environment,
         )
 
-    def _run_step_without_step_operator(
+    def _run_step_with_dynamic_orchestrator(
+        self,
+        step_run_info: StepRunInfo,
+    ) -> None:
+        environment, secrets = orchestrator_utils.get_config_environment_vars(
+            pipeline_run_id=step_run_info.run_id,
+        )
+        environment.update(secrets)
+
+        environment.update(
+            env_utils.get_step_environment(
+                step_config=step_run_info.config,
+                stack=self._stack,
+            )
+        )
+        self._stack.orchestrator.launch_dynamic_step(
+            step_run_info=step_run_info,
+            environment=environment,
+        )
+
+    def _run_step_in_current_thread(
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,

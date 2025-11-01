@@ -110,6 +110,7 @@ class RunContext(metaclass=SingletonMetaClass):
         self.initialized = True
 
 
+# TODO: use base context class
 class StepContext(metaclass=ThreadLocalSingleton):
     """Provides additional context inside a step function.
 

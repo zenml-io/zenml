@@ -111,6 +111,8 @@ def remove_artifact_dirs(artifact_uris: Sequence[str]) -> None:
     Args:
         artifact_uris: URIs of the artifacts to remove the directories for.
     """
+    # TODO: maybe keep non-empty dirs here, if the step saved intermediate
+    # checkpoints?
     artifact_store = Client().active_stack.artifact_store
     for artifact_uri in artifact_uris:
         if artifact_store.isdir(artifact_uri):
