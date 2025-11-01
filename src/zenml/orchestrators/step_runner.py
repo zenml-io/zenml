@@ -41,7 +41,7 @@ from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
+from zenml.logging.step_logging import LoggingContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (
@@ -152,10 +152,7 @@ class StepRunner:
         logs_context = nullcontext()
         if step_logging_enabled and not redirected.get():
             if step_run.logs:
-                logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
-                    logs_uri=step_run.logs.uri,
-                    artifact_store=self._stack.artifact_store,
-                )
+                logs_context = LoggingContext(source="step")
             else:
                 logger.debug(
                     "There is no LogsResponseModel prepared for the step. The"

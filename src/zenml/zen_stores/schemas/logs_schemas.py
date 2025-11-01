@@ -45,7 +45,7 @@ class LogsSchema(BaseSchema, table=True):
     )
 
     # Fields
-    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    uri: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     source: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
 
     # Foreign Keys
@@ -65,19 +65,24 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
-    artifact_store_id: UUID = build_foreign_key_field(
+    artifact_store_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
-        source_column="stack_component_id",
+        source_column="artifact_store_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
+    )
+    log_store_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=StackComponentSchema.__tablename__,
+        source_column="log_store_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )
 
     # Relationships
-    artifact_store: Optional["StackComponentSchema"] = Relationship(
-        back_populates="run_or_step_logs"
-    )
     pipeline_run: Optional["PipelineRunSchema"] = Relationship(
         back_populates="logs"
     )
@@ -111,6 +116,7 @@ class LogsSchema(BaseSchema, table=True):
                 step_run_id=self.step_run_id,
                 pipeline_run_id=self.pipeline_run_id,
                 artifact_store_id=self.artifact_store_id,
+                log_store_id=self.log_store_id,
             )
         return LogsResponse(
             id=self.id,

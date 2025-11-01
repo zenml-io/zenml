@@ -32,7 +32,6 @@ from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.logging import step_logging
 from zenml.models import (
-    LogsRequest,
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
@@ -269,21 +268,8 @@ class StepLauncher:
         logs_model = None
 
         if step_logging_enabled:
-            # Configure the logs
-            logs_uri = step_logging.prepare_logs_uri(
-                artifact_store=self._stack.artifact_store,
-                step_name=self._invocation_id,
-            )
-
-            logs_context = step_logging.PipelineLogsStorageContext(
-                logs_uri=logs_uri, artifact_store=self._stack.artifact_store
-            )  # type: ignore[assignment]
-
-            logs_model = LogsRequest(
-                uri=logs_uri,
-                source="execution",
-                artifact_store_id=self._stack.artifact_store.id,
-            )
+            logs_context = step_logging.LoggingContext(source="step")
+            logs_model = logs_context.log_request
 
         with logs_context:
             if run_was_created:
@@ -338,11 +324,26 @@ class StepLauncher:
                     # the external jobs in step operators
                     if isinstance(
                         logs_context,
-                        step_logging.PipelineLogsStorageContext,
+                        step_logging.LoggingContext,
                     ):
-                        force_write_logs = (
-                            logs_context.storage.send_merge_event
+                        # For LoggingContext using DefaultLogStore, trigger merge
+                        # TODO: investigate
+                        from zenml.log_stores.default.default_log_store import (
+                            DefaultLogStore,
                         )
+
+                        if isinstance(
+                            logs_context.log_store, DefaultLogStore
+                        ) and hasattr(logs_context.log_store, "storage"):
+                            force_write_logs = (
+                                logs_context.log_store.storage.send_merge_event
+                            )
+                        else:
+
+                            def _bypass() -> None:
+                                return None
+
+                            force_write_logs = _bypass
                     else:
 
                         def _bypass() -> None:

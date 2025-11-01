@@ -27,9 +27,10 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
+from zenml.log_stores import fetch_logs
 from zenml.logging.step_logging import (
+    MAX_ENTRIES_PER_REQUEST,
     LogEntry,
-    fetch_log_records,
 )
 from zenml.models import (
     Page,
@@ -277,14 +278,12 @@ def get_step_logs(
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
-    store = zen_store()
-
     # Verify that logs are available for this step
     if step.logs is None:
         raise KeyError("No logs available for this step.")
 
-    return fetch_log_records(
-        zen_store=store,
-        artifact_store_id=step.logs.artifact_store_id,
-        logs_uri=step.logs.uri,
+    return fetch_logs(
+        logs=step.logs,
+        zen_store=zen_store(),
+        limit=MAX_ENTRIES_PER_REQUEST,
     )
