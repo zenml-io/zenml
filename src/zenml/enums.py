@@ -545,3 +545,11 @@ class PipelineRunTriggeredByType(StrEnum):
 
     STEP_RUN = "step_run"
     DEPLOYMENT = "deployment"
+
+
+class KubernetesServiceType(StrEnum):
+    """Kubernetes Service types for the Kubernetes deployer."""
+
+    LOAD_BALANCER = "LoadBalancer"
+    NODE_PORT = "NodePort"
+    CLUSTER_IP = "ClusterIP"

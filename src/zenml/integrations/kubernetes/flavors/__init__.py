@@ -13,6 +13,11 @@
 #  permissions and limitations under the License.
 """Kubernetes integration flavors."""
 
+from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
+    KubernetesDeployerConfig,
+    KubernetesDeployerFlavor,
+    KubernetesDeployerSettings,
+)
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
     KubernetesOrchestratorFlavor,
@@ -25,6 +30,9 @@ from zenml.integrations.kubernetes.flavors.kubernetes_step_operator_flavor impor
 )
 
 __all__ = [
+    "KubernetesDeployerConfig",
+    "KubernetesDeployerFlavor",
+    "KubernetesDeployerSettings",
     "KubernetesOrchestratorFlavor",
     "KubernetesOrchestratorConfig",
     "KubernetesOrchestratorSettings",

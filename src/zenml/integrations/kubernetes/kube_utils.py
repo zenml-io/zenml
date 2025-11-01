@@ -37,7 +37,17 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -46,8 +56,7 @@ from kubernetes.client.rest import ApiException
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_namespace_manifest,
+from zenml.integrations.kubernetes.manifest_utils import (
     build_role_binding_manifest_for_service_account,
     build_secret_manifest,
     build_service_account_manifest,
@@ -56,9 +65,14 @@ from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
+if TYPE_CHECKING:
+    from zenml.config.resource_settings import ResourceSettings
+
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+
+MIB_TO_GIB = 1024  # MiB to GiB conversion factor
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -331,6 +345,9 @@ def _if_not_exists(create_fn: FuncT) -> FuncT:
 
     Returns:
         Wrapped Kubernetes function.
+
+    Raises:
+        ApiException: If an API error occurs.
     """
 
     def create_if_not_exists(*args: Any, **kwargs: Any) -> None:
@@ -381,17 +398,6 @@ def create_edit_service_account(
     )
 
 
-def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
-    """Create a Kubernetes namespace.
-
-    Args:
-        core_api: Client of Core V1 API of Kubernetes API.
-        namespace: Kubernetes namespace. Defaults to "default".
-    """
-    manifest = build_namespace_manifest(namespace)
-    _if_not_exists(core_api.create_namespace)(body=manifest)
-
-
 def create_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
@@ -399,6 +405,8 @@ def create_secret(
     data: Dict[str, Optional[str]],
 ) -> None:
     """Create a Kubernetes secret.
+
+    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -419,6 +427,8 @@ def update_secret(
     data: Dict[str, Optional[str]],
 ) -> None:
     """Update a Kubernetes secret.
+
+    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -441,6 +451,8 @@ def create_or_update_secret(
     data: Dict[str, Optional[str]],
 ) -> None:
     """Create a Kubernetes secret if it doesn't exist, or update it if it does.
+
+    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -467,6 +479,8 @@ def delete_secret(
     secret_name: str,
 ) -> None:
     """Delete a Kubernetes secret.
+
+    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -1171,3 +1185,316 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+# ============================================================================
+# Resource Conversion Utilities
+# ============================================================================
+
+
+def convert_resource_settings_to_k8s_format(
+    resource_settings: "ResourceSettings",
+) -> Tuple[Dict[str, str], Dict[str, str], int]:
+    """Convert ZenML ResourceSettings to Kubernetes resource format.
+
+    Args:
+        resource_settings: The resource settings from pipeline configuration.
+
+    Returns:
+        Tuple of (requests, limits, replicas) in Kubernetes format.
+        - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - limits: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - replicas: Number of replicas
+
+    Raises:
+        ValueError: If replica configuration is invalid.
+    """
+    from zenml.config.resource_settings import ByteUnit
+
+    requests: Dict[str, str] = {}
+    limits: Dict[str, str] = {}
+
+    if resource_settings.cpu_count is not None:
+        cpu_value = resource_settings.cpu_count
+        # Kubernetes accepts CPU as whole numbers (e.g., "2") or millicores (e.g., "500m")
+        if cpu_value < 1:
+            # Fractional CPUs: 0.5 → "500m"
+            cpu_str = f"{int(cpu_value * 1000)}m"
+        else:
+            if cpu_value == int(cpu_value):
+                cpu_str = str(int(cpu_value))  # 2.0 → "2"
+            else:
+                cpu_str = f"{int(cpu_value * 1000)}m"  # 1.5 → "1500m"
+
+        requests["cpu"] = cpu_str
+        limits["cpu"] = cpu_str
+
+    if resource_settings.memory is not None:
+        memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
+        if memory_value is not None:
+            # Use Gi only for clean conversions to avoid precision loss
+            if memory_value >= MIB_TO_GIB and memory_value % MIB_TO_GIB == 0:
+                memory_str = f"{int(memory_value / MIB_TO_GIB)}Gi"
+            else:
+                memory_str = f"{int(memory_value)}Mi"
+
+            requests["memory"] = memory_str
+            limits["memory"] = memory_str
+
+    # Determine replica count from min/max settings
+    # For standard K8s Deployments, we use min_replicas as the baseline
+    # (autoscaling requires a separate HPA resource)
+    min_r = resource_settings.min_replicas
+    max_r = resource_settings.max_replicas
+
+    # Validate and determine replica count
+    if min_r is not None and max_r is not None:
+        if min_r > max_r:
+            raise ValueError(
+                f"min_replicas ({min_r}) cannot be greater than max_replicas ({max_r})"
+            )
+        # Use min_replicas as baseline for HPA
+        replicas = min_r if min_r > 0 else 1  # At least 1 unless explicitly 0
+    elif min_r is not None:
+        # Only min_replicas specified
+        replicas = min_r if min_r > 0 else 1
+    elif max_r is not None:
+        # Only max_replicas specified - use it as baseline
+        replicas = max(1, max_r)  # At least 1
+    else:
+        # Neither specified - default to 1
+        replicas = 1
+
+    if (
+        resource_settings.gpu_count is not None
+        and resource_settings.gpu_count > 0
+    ):
+        # GPU requests must be integers; Kubernetes auto-sets requests=limits for GPUs
+        gpu_str = str(resource_settings.gpu_count)
+        requests["nvidia.com/gpu"] = gpu_str
+        limits["nvidia.com/gpu"] = gpu_str
+        logger.info(
+            f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
+            f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
+            f"You may need to install the NVIDIA device plugin: "
+            f"https://github.com/NVIDIA/k8s-device-plugin"
+        )
+
+    return requests, limits, replicas
+
+
+# ============================================================================
+# URL Building Utilities
+# ============================================================================
+
+
+def build_url_from_ingress(ingress: k8s_client.V1Ingress) -> Optional[str]:
+    """Extract URL from Kubernetes Ingress resource.
+
+    Args:
+        ingress: Kubernetes Ingress resource.
+
+    Returns:
+        URL from ingress rules or load balancer, or None if not available.
+    """
+    if not ingress.spec:
+        logger.warning(
+            f"Ingress '{ingress.metadata.name if ingress.metadata else 'unknown'}' "
+            f"has no spec. Cannot build URL."
+        )
+        return None
+
+    protocol = "https" if ingress.spec.tls else "http"
+
+    # Try to get URL from ingress rules
+    if ingress.spec.rules:
+        rule = ingress.spec.rules[0]
+        if rule.host and rule.http and rule.http.paths:
+            path = rule.http.paths[0].path or "/"
+            return f"{protocol}://{rule.host}{path}"
+
+    # Try to get URL from load balancer status
+    if (
+        ingress.status
+        and ingress.status.load_balancer
+        and ingress.status.load_balancer.ingress
+    ):
+        lb_ingress = ingress.status.load_balancer.ingress[0]
+        host = lb_ingress.ip or lb_ingress.hostname
+        if host:
+            path = "/"
+            if (
+                ingress.spec.rules
+                and ingress.spec.rules[0].http
+                and ingress.spec.rules[0].http.paths
+            ):
+                path = ingress.spec.rules[0].http.paths[0].path or "/"
+            return f"{protocol}://{host}{path}"
+
+    return None
+
+
+def build_url_from_loadbalancer_service(
+    service: k8s_client.V1Service,
+) -> Optional[str]:
+    """Get URL from LoadBalancer service.
+
+    Args:
+        service: Kubernetes Service resource.
+
+    Returns:
+        LoadBalancer URL or None if IP not yet assigned.
+    """
+    if not service.spec or not service.spec.ports:
+        return None
+
+    service_port = service.spec.ports[0].port
+
+    if (
+        service.status
+        and service.status.load_balancer
+        and service.status.load_balancer.ingress
+    ):
+        lb_ingress = service.status.load_balancer.ingress[0]
+        host = lb_ingress.ip or lb_ingress.hostname
+        if host:
+            return f"http://{host}:{service_port}"
+    return None
+
+
+def build_url_from_nodeport_service(
+    core_api: k8s_client.CoreV1Api,
+    service: k8s_client.V1Service,
+    namespace: str,
+) -> Optional[str]:
+    """Get URL from NodePort service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        NodePort URL or None if not accessible.
+    """
+    if not service.spec or not service.spec.ports:
+        return None
+
+    node_port = service.spec.ports[0].node_port
+    service_port = service.spec.ports[0].port
+    service_name = service.metadata.name if service.metadata else "unknown"
+
+    if not node_port:
+        return None
+
+    try:
+        nodes = core_api.list_node()
+
+        # Try to find external IP first
+        for node in nodes.items:
+            if node.status and node.status.addresses:
+                for address in node.status.addresses:
+                    if address.type == "ExternalIP":
+                        logger.info(
+                            f"NodePort service accessible at: http://{address.address}:{node_port}"
+                        )
+                        return f"http://{address.address}:{node_port}"
+
+        # Fall back to internal IP with warning
+        for node in nodes.items:
+            if node.status and node.status.addresses:
+                for address in node.status.addresses:
+                    if address.type == "InternalIP":
+                        logger.warning(
+                            f"NodePort service '{service_name}' has no nodes with ExternalIP. "
+                            f"The returned InternalIP URL is likely NOT accessible from outside the cluster. "
+                            f"For local access, use: kubectl port-forward -n {namespace} "
+                            f"service/{service_name} 8080:{service_port}"
+                        )
+                        return f"http://{address.address}:{node_port}"
+
+        logger.error(
+            f"NodePort service '{service_name}' deployed, but no node IPs available. "
+            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
+        )
+        return None
+
+    except Exception as e:
+        logger.error(
+            f"Failed to get node IPs for NodePort service: {e}. "
+            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
+        )
+        return None
+
+
+def build_url_from_clusterip_service(
+    service: k8s_client.V1Service,
+    namespace: str,
+) -> str:
+    """Get internal DNS URL from ClusterIP service.
+
+    Args:
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+
+    Returns:
+        Internal cluster DNS URL.
+    """
+    service_name = service.metadata.name if service.metadata else "unknown"
+
+    if not service.spec or not service.spec.ports:
+        return f"http://{service_name}.{namespace}.svc.cluster.local"
+
+    service_port = service.spec.ports[0].port
+
+    logger.warning(
+        f"Service '{service_name}' uses ClusterIP, which is only "
+        f"accessible from within the Kubernetes cluster. "
+        f"For local access, use: kubectl port-forward -n {namespace} "
+        f"service/{service_name} 8080:{service_port}"
+    )
+    return (
+        f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
+    )
+
+
+def build_service_url(
+    core_api: k8s_client.CoreV1Api,
+    service: k8s_client.V1Service,
+    namespace: str,
+    ingress: Optional[k8s_client.V1Ingress] = None,
+) -> Optional[str]:
+    """Build URL for accessing a Kubernetes service.
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+        ingress: Optional Kubernetes Ingress resource.
+
+    Returns:
+        Service URL or None if not yet available.
+    """
+    # If ingress is configured, use it
+    if ingress:
+        return build_url_from_ingress(ingress)
+
+    if not service.spec or not service.spec.type:
+        service_name = service.metadata.name if service.metadata else "unknown"
+        logger.warning(
+            f"Service '{service_name}' has no type specified in spec. "
+            f"Cannot build service URL."
+        )
+        return None
+
+    # Otherwise, build URL based on service type
+    service_type = service.spec.type
+
+    if service_type == "LoadBalancer":
+        return build_url_from_loadbalancer_service(service)
+    elif service_type == "NodePort":
+        return build_url_from_nodeport_service(core_api, service, namespace)
+    elif service_type == "ClusterIP":
+        return build_url_from_clusterip_service(service, namespace)
+
+    return None
