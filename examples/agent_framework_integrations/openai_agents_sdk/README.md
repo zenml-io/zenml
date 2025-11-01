@@ -29,11 +29,37 @@ Deploy this agent as a real-time HTTP service:
 ```bash
 # Deploy the pipeline as an HTTP service
 zenml pipeline deploy run.agent_pipeline --name openai-agents-agent
+```
 
-# Invoke via CLI
+Once deployed, you can interact with the service in multiple ways:
+
+### 🎨 Custom Web UI
+Navigate to the root endpoint in your browser to access an interactive web interface:
+```
+http://localhost:8000/
+```
+
+The UI provides:
+- Free-form query input with example suggestions
+- Real-time agent responses with markdown rendering
+- Visual feedback and error handling
+
+### 📚 API Documentation
+FastAPI automatically generates interactive API documentation:
+```
+http://localhost:8000/docs    # Swagger UI
+http://localhost:8000/redoc   # ReDoc alternative
+```
+
+### 🔧 Programmatic Access
+
+**Via ZenML CLI:**
+```bash
 zenml deployment invoke openai-agents-agent --query="Tell me a fun fact about Tokyo"
+```
 
-# Invoke via HTTP API
+**Via HTTP API:**
+```bash
 curl -X POST http://localhost:8000/invoke \
   -H "Content-Type: application/json" \
   -d '{"parameters": {"query": "What are some interesting facts about space exploration?"}}'

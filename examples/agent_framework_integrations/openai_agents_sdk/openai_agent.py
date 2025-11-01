@@ -33,6 +33,7 @@ def get_city_info(city: str) -> str:
         "paris": "Paris is the capital of France, famous for the Eiffel Tower, art museums, and cuisine.",
         "new york": "New York City is the most populous city in the United States, known for its skyline, culture, and diversity.",
         "london": "London is the capital of England and the United Kingdom, famous for its history, architecture, and royal heritage.",
+        "munich": "Munich is the capital of Bavaria, Germany's third-largest city, famous for Oktoberfest, beer gardens, BMW headquarters, and its proximity to the Alps.",
     }
 
     city_lower = city.lower()
@@ -48,6 +49,6 @@ agent = Agent(
     instructions="""You are a helpful travel assistant. You can provide weather information
     and general facts about cities around the world. When users ask about cities, use your
     available tools to get specific information. Be friendly and informative in your responses.""",
-    model="gpt-4o-mini",
+    model="gpt-5-nano",
     tools=[get_weather, get_city_info],
 )
