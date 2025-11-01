@@ -5,11 +5,7 @@ from typing import Annotated, Optional
 from steps.simple_step import simple_step
 
 from zenml import pipeline
-from zenml.config import CORSConfig, DeploymentSettings, DockerSettings
-
-docker_settings = DockerSettings(
-    requirements="requirements.txt",
-)
+from zenml.config import CORSConfig, DeploymentSettings
 
 deployment_settings = DeploymentSettings(
     app_title="Simple Pipeline",
@@ -19,7 +15,6 @@ deployment_settings = DeploymentSettings(
 
 @pipeline(
     settings={
-        "docker": docker_settings,
         "deployment": deployment_settings,
     },
     enable_cache=False,
