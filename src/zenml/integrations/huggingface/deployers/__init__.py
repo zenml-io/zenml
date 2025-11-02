@@ -16,11 +16,9 @@
 from zenml.integrations.huggingface.deployers.huggingface_deployer import (
     HuggingfaceDeployer,
     HuggingfaceDeployerSettings,
-    HuggingfaceDeploymentMetadata,
 )
 
 __all__ = [
     "HuggingfaceDeployer",
     "HuggingfaceDeployerSettings",
-    "HuggingfaceDeploymentMetadata",
 ]
