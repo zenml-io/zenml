@@ -22,6 +22,7 @@ from kubernetes import dynamic
 from kubernetes.client.rest import ApiException
 from kubernetes.dynamic.exceptions import ResourceNotFoundError
 
+from zenml.integrations.kubernetes.kube_utils import retry_on_api_exception
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,7 +50,7 @@ class KubernetesApplier:
     How it works:
     1. Parses YAML to extract kind and apiVersion
     2. Uses dynamic client to discover the resource API
-    3. Automatically handles create-or-update logic
+    3. Automatically handles create-or-update logic via Server-Side Apply (SSA)
     4. Works for ANY K8s resource - built-in or CRDs!
     """
 
@@ -62,15 +63,91 @@ class KubernetesApplier:
         self.api_client = api_client
         self.dynamic_client = dynamic.DynamicClient(api_client)
 
+    def ssa_apply(
+        self,
+        resource: Dict[str, Any],
+        *,
+        namespace: Optional[str] = None,
+        field_manager: str = "zenml",
+        dry_run: bool = False,
+        force: bool = False,
+    ) -> Any:
+        """Apply a resource using Server-Side Apply (SSA).
+
+        SSA is the modern, recommended way to apply Kubernetes resources.
+        It provides better conflict resolution and field ownership tracking.
+
+        Args:
+            resource: Resource dict with apiVersion, kind, and metadata.
+            namespace: Namespace (for namespaced resources; ignored for cluster-scoped).
+            field_manager: Name of the field manager (for SSA ownership tracking).
+            dry_run: If True, validate without actually creating/updating.
+            force: If True, force ownership of conflicting fields.
+
+        Returns:
+            The applied resource object.
+
+        Raises:
+            ValueError: If resource is invalid.
+            ApiException: If the operation fails.
+        """
+        kind = resource.get("kind")
+        api_version = resource.get("apiVersion")
+
+        if not kind or not api_version:
+            raise ValueError(
+                "Resource must have 'kind' and 'apiVersion' fields"
+            )
+
+        try:
+            api_resource = self.dynamic_client.resources.get(
+                api_version=api_version,
+                kind=kind,
+            )
+        except ResourceNotFoundError as e:
+            raise ValueError(
+                f"Unknown resource type: {kind} (apiVersion: {api_version})"
+            ) from e
+
+        is_namespaced = api_resource.namespaced
+        effective_namespace = namespace
+        if is_namespaced and not effective_namespace:
+            effective_namespace = resource.get("metadata", {}).get(
+                "namespace", "default"
+            )
+
+        metadata = resource.get("metadata", {})
+        name = metadata.get("name")
+        if not name:
+            raise ValueError("Resource must have 'metadata.name' field")
+
+        kwargs = {
+            "body": resource,
+            "name": name,
+            "content_type": "application/apply-patch+yaml",
+            "field_manager": field_manager,
+        }
+
+        if is_namespaced:
+            kwargs["namespace"] = effective_namespace
+
+        if dry_run:
+            kwargs["dry_run"] = "All"
+
+        if force:
+            kwargs["force"] = True
+
+        return retry_on_api_exception(api_resource.patch)(**kwargs)
+
     def apply_yaml(
         self,
         yaml_content: str,
         dry_run: bool = False,
     ) -> Any:
-        """Apply Kubernetes resource from YAML string.
+        """Apply Kubernetes resource from YAML string using Server-Side Apply.
 
-        This is the TRULY GENERIC method - it works for ANY resource type
-        without needing to know what it is ahead of time!
+        This method works for ANY resource type without needing to know
+        what it is ahead of time!
 
         Args:
             yaml_content: YAML string containing the resource definition.
@@ -91,123 +168,17 @@ class KubernetesApplier:
         if not isinstance(resource_dict, dict):
             raise ValueError("YAML must contain a dictionary")
 
-        # Extract required fields
-        kind = resource_dict.get("kind")
-        api_version = resource_dict.get("apiVersion")
-
-        if not kind or not api_version:
-            raise ValueError(
-                "Resource must have 'kind' and 'apiVersion' fields. "
-                f"Got: kind={kind}, apiVersion={api_version}"
-            )
-
-        metadata = resource_dict.get("metadata", {})
-        name = metadata.get("name")
-        namespace = metadata.get("namespace")
-
-        if not name:
-            raise ValueError("Resource must have 'metadata.name' field")
-
-        # Use dynamic client to discover and apply the resource
-        try:
-            # Get the API resource for this kind
-            api_resource = self.dynamic_client.resources.get(
-                api_version=api_version,
-                kind=kind,
-            )
-        except ResourceNotFoundError as e:
-            raise ValueError(
-                f"Unknown resource type: {kind} (apiVersion: {api_version}). "
-                f"This might be a CRD that's not installed in your cluster."
-            ) from e
-
-        # Check if this resource is namespaced or cluster-scoped
-        is_namespaced = api_resource.namespaced
-
-        # For namespaced resources without a namespace, default to "default"
-        if is_namespaced and not namespace:
-            namespace = "default"
-            # Update the resource dict to include the namespace
-            if "metadata" not in resource_dict:
-                resource_dict["metadata"] = {}
-            resource_dict["metadata"]["namespace"] = namespace
-
-        # Only use namespace for namespaced resources
-        get_kwargs = {"name": name}
-        if is_namespaced:
-            get_kwargs["namespace"] = namespace
-
-        dry_run_param = "All" if dry_run else None
-
-        try:
-            # Try to get existing resource (just to check if it exists)
-            api_resource.get(**get_kwargs)
-
-            # Resource exists - update it
-            location = (
-                f"in {namespace}" if is_namespaced else "(cluster-scoped)"
-            )
-            logger.info(
-                f"{'[DRY-RUN] ' if dry_run else ''}Updating {kind} {name} {location}"
-            )
-
-            # Server-side apply (the modern K8s way!)
-            patch_kwargs = {
-                "body": resource_dict,
-                "name": name,
-                "dry_run": dry_run_param,
-                "content_type": "application/apply-patch+yaml",
-                "field_manager": "zenml",
-            }
-            if is_namespaced:
-                patch_kwargs["namespace"] = namespace
-
-            result = api_resource.patch(**patch_kwargs)
-
-            if not dry_run:
-                logger.info(f"{kind} {name} updated successfully")
-
-            return result
-
-        except ApiException as e:
-            if e.status == 404:
-                # Doesn't exist - create it
-                location = (
-                    f"in {namespace}" if is_namespaced else "(cluster-scoped)"
-                )
-                logger.info(
-                    f"{'[DRY-RUN] ' if dry_run else ''}Creating {kind} {name} {location}"
-                )
-
-                create_kwargs = {
-                    "body": resource_dict,
-                    "dry_run": dry_run_param,
-                }
-                if is_namespaced:
-                    create_kwargs["namespace"] = namespace
-
-                result = api_resource.create(**create_kwargs)
-
-                if not dry_run:
-                    logger.info(f"{kind} {name} created successfully")
-
-                return result
-            else:
-                # Other error - re-raise
-                raise
+        return self.ssa_apply(resource=resource_dict, dry_run=dry_run)
 
     def apply_resource(
         self,
         resource: Any,
         dry_run: bool = False,
     ) -> Any:
-        """Apply a Kubernetes resource object.
-
-        This method converts a K8s Python object to YAML and then applies it
-        using the dynamic client.
+        """Apply a Kubernetes resource object or dict using Server-Side Apply.
 
         Args:
-            resource: Any Kubernetes resource object (V1Deployment, V1Service, etc.).
+            resource: Any Kubernetes resource object (V1Deployment, V1Service, etc.) or dict.
             dry_run: If True, validate without actually creating/updating.
 
         Returns:
@@ -217,12 +188,12 @@ class KubernetesApplier:
             ValueError: If resource is invalid.
             ApiException: If the operation fails.
         """
-        if hasattr(resource, "to_dict"):
+        if isinstance(resource, dict):
+            resource_dict = resource
+        elif hasattr(resource, "to_dict"):
             resource_dict = self.api_client.sanitize_for_serialization(
                 resource
             )
-        elif isinstance(resource, dict):
-            resource_dict = resource
         else:
             raise ValueError(
                 f"Resource must be a Kubernetes object or dict, got {type(resource)}"
@@ -233,39 +204,32 @@ class KubernetesApplier:
                 f"Serialized resource must be a dict, got {type(resource_dict)}"
             )
 
-        normalized_dict: Dict[str, Any] = dict(resource_dict)
-
-        api_version = normalized_dict.get("apiVersion") or normalized_dict.get(
+        api_version = resource_dict.get("apiVersion") or resource_dict.get(
             "api_version"
         )
         if not api_version and hasattr(resource, "api_version"):
             api_version = getattr(resource, "api_version")
 
-        kind_value = normalized_dict.get("kind")
+        kind_value = resource_dict.get("kind")
         if not kind_value and hasattr(resource, "kind"):
             kind_value = getattr(resource, "kind")
 
         if api_version:
-            normalized_dict["apiVersion"] = str(api_version)
-        normalized_dict.pop("api_version", None)
+            resource_dict["apiVersion"] = str(api_version)
+        resource_dict.pop("api_version", None)
 
         if kind_value:
-            normalized_dict["kind"] = str(kind_value)
+            resource_dict["kind"] = str(kind_value)
 
-        if not normalized_dict.get("apiVersion") or not normalized_dict.get(
+        if not resource_dict.get("apiVersion") or not resource_dict.get(
             "kind"
         ):
             raise ValueError(
                 "Resource must have 'kind' and 'apiVersion' fields. "
-                f"Got: kind={normalized_dict.get('kind')}, apiVersion={normalized_dict.get('apiVersion')}"
+                f"Got: kind={resource_dict.get('kind')}, apiVersion={resource_dict.get('apiVersion')}"
             )
 
-        yaml_content = yaml.dump(
-            normalized_dict,
-            default_flow_style=False,
-        )
-
-        return self.apply_yaml(yaml_content=yaml_content, dry_run=dry_run)
+        return self.ssa_apply(resource=resource_dict, dry_run=dry_run)
 
     def delete_resource(
         self,
@@ -306,7 +270,7 @@ class KubernetesApplier:
             delete_kwargs["namespace"] = namespace
 
         try:
-            api_resource.delete(**delete_kwargs)
+            retry_on_api_exception(api_resource.delete)(**delete_kwargs)
             logger.info(f"{kind} {name} deleted successfully")
         except ApiException as e:
             if e.status == 404:
@@ -397,7 +361,7 @@ class KubernetesApplier:
             get_kwargs["namespace"] = namespace
 
         try:
-            return api_resource.get(**get_kwargs)
+            return retry_on_api_exception(api_resource.get)(**get_kwargs)
         except ApiException as e:
             if e.status == 404:
                 return None
@@ -446,7 +410,7 @@ class KubernetesApplier:
         if is_namespaced:
             get_kwargs["namespace"] = namespace
 
-        result = api_resource.get(**get_kwargs)
+        result = retry_on_api_exception(api_resource.get)(**get_kwargs)
         return result.items if hasattr(result, "items") else []
 
     # ========================================================================
@@ -638,10 +602,89 @@ class KubernetesApplier:
         # Extract the IP/hostname
         for ingress in service.status.load_balancer.ingress:
             if hasattr(ingress, "ip") and ingress.ip:
-                ip_str: str = str(ingress.ip)
-                return ip_str
+                return str(ingress.ip)
             if hasattr(ingress, "hostname") and ingress.hostname:
-                hostname_str: str = str(ingress.hostname)
-                return hostname_str
+                return str(ingress.hostname)
 
         raise RuntimeError("Service has ingress but no IP or hostname found")
+
+    # ========================================================================
+    # Resource Namespace Management
+    # ========================================================================
+
+    def ensure_namespace_alignment(
+        self,
+        resource_dict: Dict[str, Any],
+        namespace: str,
+        deployment_name: str,
+    ) -> None:
+        """Ensure resource namespace matches its scope.
+
+        Modifies resource_dict in place by setting the namespace field for
+        namespaced resources if not already set.
+
+        Args:
+            resource_dict: The Kubernetes manifest to apply (mutated in place).
+            namespace: Target deployment namespace.
+            deployment_name: Name of the deployment (for logging context).
+        """
+        metadata = resource_dict.get("metadata") or {}
+        resource_name = metadata.get(
+            "name", resource_dict.get("kind", "unknown")
+        )
+
+        if metadata.get("namespace"):
+            is_namespaced = self.is_resource_namespaced(resource_dict)
+            if is_namespaced is False:
+                logger.warning(
+                    f"Additional resource '{resource_name}' for deployment '{deployment_name}' is cluster-scoped "
+                    f"but declares namespace '{metadata['namespace']}'. Kubernetes will reject this manifest."
+                )
+            return
+
+        is_namespaced = self.is_resource_namespaced(resource_dict)
+        if is_namespaced:
+            resource_dict.setdefault("metadata", {})["namespace"] = namespace
+        elif is_namespaced is None:
+            logger.debug(
+                f"Could not determine scope for additional resource '{resource_name}' "
+                f"(kind={resource_dict.get('kind')}, apiVersion={resource_dict.get('apiVersion')}); "
+                f"leaving namespace untouched."
+            )
+
+    def is_resource_namespaced(
+        self, resource_dict: Dict[str, Any]
+    ) -> Optional[bool]:
+        """Determine whether a resource is namespaced.
+
+        Args:
+            resource_dict: Kubernetes manifest dictionary.
+
+        Returns:
+            True if the resource is namespaced, False if cluster-scoped,
+            None if the information cannot be determined.
+        """
+        api_version = resource_dict.get("apiVersion")
+        kind = resource_dict.get("kind")
+
+        if not api_version or not kind:
+            return None
+
+        try:
+            api_resource = self.dynamic_client.resources.get(
+                api_version=api_version,
+                kind=kind,
+            )
+        except ResourceNotFoundError:
+            logger.warning(
+                f"Unknown additional resource kind '{kind}' (apiVersion={api_version}); "
+                f"skipping automatic namespace injection."
+            )
+            return None
+        except Exception as exc:
+            logger.debug(
+                f"Failed to inspect additional resource kind '{kind}' (apiVersion={api_version}): {exc}"
+            )
+            return None
+
+        return bool(getattr(api_resource, "namespaced", False))

@@ -14,13 +14,11 @@
 """Kubernetes deployer implementation."""
 
 import re
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
     Generator,
-    List,
     Optional,
     Tuple,
     Type,
@@ -29,10 +27,7 @@ from typing import (
 
 import yaml
 from kubernetes import client as k8s_client
-from kubernetes import watch as k8s_watch
 from kubernetes.client.rest import ApiException
-from kubernetes.dynamic.exceptions import ResourceNotFoundError
-from pydantic import BaseModel, Field
 
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
@@ -59,7 +54,6 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.integrations.kubernetes.template_engine import (
     KubernetesTemplateEngine,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
     DeploymentOperationalState,
@@ -76,31 +70,10 @@ MAX_K8S_NAME_LENGTH = 63
 MAX_LOAD_BALANCER_TIMEOUT = 600  # 10 minutes
 
 
-class KubernetesDeploymentMetadata(BaseModel):
-    """Metadata for a Kubernetes deployment.
-
-    Attributes:
-        deployment_name: Name of the Kubernetes Deployment.
-        namespace: Kubernetes namespace.
-        service_name: Name of the Kubernetes Service.
-        port: Service port.
-        service_type: Service type (LoadBalancer, NodePort, ClusterIP).
-        labels: Labels applied to resources.
-    """
-
-    deployment_name: str
-    namespace: str
-    service_name: str
-    port: int
-    service_type: str = "LoadBalancer"
-    labels: Dict[str, str] = Field(default_factory=dict)
-
-
 class KubernetesDeployer(ContainerizedDeployer):
     """Kubernetes deployer using template-based resource management."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
-    _secret_key_map: Dict[str, str] = {}
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Kubernetes deployer.
@@ -109,8 +82,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        # Clear secret key map to prevent leaks between instances
-        self._secret_key_map = {}
 
     # ========================================================================
     # Kubernetes Client Management
@@ -278,6 +249,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         resource_requests: Dict[str, str],
         resource_limits: Dict[str, str],
         replicas: int,
+        deployment_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Build template rendering context from deployment configuration.
 
@@ -293,6 +265,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             resource_requests: Resource requests dict.
             resource_limits: Resource limits dict.
             replicas: Number of replicas.
+            deployment_id: Optional deployment UUID for unique resource naming.
 
         Returns:
             Template context dictionary.
@@ -329,10 +302,15 @@ class KubernetesDeployer(ContainerizedDeployer):
             pod_settings_dict["env"] = existing_env + secret_env_list
 
         context = {
+            # Core identifiers
             "name": resource_name,
+            "deployment_name": resource_name,  # Alias for clarity in HPA/Ingress
+            "service_name": resource_name,  # Alias for clarity in Ingress
             "namespace": namespace,
+            "deployment_id": deployment_id,  # UUID for unique resource naming
             "labels": labels,
             "annotations": settings.annotations,
+            # Deployment configuration
             "replicas": replicas,
             "image": image,
             "image_pull_policy": settings.image_pull_policy,
@@ -342,6 +320,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             "args": settings.args,
             "env": env_dict,
             "resources": resources if resources else None,
+            # Health probes
             "readiness_probe_path": settings.readiness_probe_path,
             "readiness_probe_initial_delay": settings.readiness_probe_initial_delay,
             "readiness_probe_period": settings.readiness_probe_period,
@@ -353,83 +332,21 @@ class KubernetesDeployer(ContainerizedDeployer):
             "liveness_probe_timeout": settings.liveness_probe_timeout,
             "liveness_probe_failure_threshold": settings.liveness_probe_failure_threshold,
             "probe_port": settings.service_port,
+            # Security
             "security_context": (
                 pod_settings_dict.get("security_context")
                 if pod_settings_dict
                 else None
             ),
-            "pod_settings": pod_settings_dict,
+            # Service configuration
             "service_type": settings.service_type,
             "service_port": settings.service_port,
             "target_port": settings.service_port,
+            # Advanced
+            "pod_settings": pod_settings_dict,
         }
 
         return context
-
-    def _load_additional_resources(
-        self,
-        resource_files: List[str],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Load additional resources from YAML files with Jinja2 templating.
-
-        Args:
-            resource_files: List of file paths to YAML files.
-            context: Optional Jinja2 template context for variable substitution.
-
-        Returns:
-            List of resource dicts ready to apply.
-
-        Raises:
-            DeploymentProvisionError: If a file cannot be loaded or parsed.
-        """
-        loaded_resources = []
-
-        for file_path in resource_files:
-            try:
-                expanded_path = Path(file_path).expanduser()
-                file_path_str = str(expanded_path)
-
-                if not fileio.exists(file_path_str):
-                    raise DeploymentProvisionError(
-                        f"Additional resource file not found: {file_path}"
-                    )
-
-                with fileio.open(file_path_str, "r") as f:
-                    yaml_content = f.read()
-
-                # Render YAML content through Jinja2 if context provided
-                if context:
-                    from jinja2 import Template
-
-                    template = Template(yaml_content)
-                    yaml_content = template.render(**context)
-
-                # Parse YAML (supports multi-document with ---)
-                yaml_docs = list(yaml.safe_load_all(yaml_content))
-
-                for doc in yaml_docs:
-                    if doc and isinstance(doc, dict):
-                        loaded_resources.append(doc)
-                    elif doc:
-                        logger.warning(
-                            f"Skipping invalid YAML document in {file_path}: {doc}"
-                        )
-
-                logger.info(
-                    f"Loaded {len([d for d in yaml_docs if d])} resource(s) from {file_path}"
-                )
-
-            except yaml.YAMLError as e:
-                raise DeploymentProvisionError(
-                    f"Failed to parse YAML file '{file_path}': {e}"
-                ) from e
-            except Exception as e:
-                raise DeploymentProvisionError(
-                    f"Failed to load additional resource file '{file_path}': {e}"
-                ) from e
-
-        return loaded_resources
 
     # ========================================================================
     # Secret Management
@@ -454,7 +371,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             applier: KubernetesApplier instance.
         """
         logger.warning(
-            f"Cleaning up partially created resources for deployment '{deployment.name}'"
+            f"[Deployment {deployment.name}] Cleaning up partially created resources "
+            f"(namespace: {namespace}, resource: {resource_name})"
         )
         cleanup_errors = []
 
@@ -504,15 +422,14 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Successfully cleaned up resources for '{deployment.name}'"
             )
 
-    # ========================================================================
-    # Secret Management
-    # ========================================================================
-
-    def _sanitize_secret_key(self, key: str) -> str:
+    def _sanitize_secret_key(
+        self, key: str, secret_key_map: Dict[str, str]
+    ) -> str:
         """Sanitize secret key to valid K8s env var name and detect collisions.
 
         Args:
             key: Original secret key name.
+            secret_key_map: Dictionary tracking sanitized key mappings to detect collisions.
 
         Returns:
             Sanitized secret key name.
@@ -524,14 +441,14 @@ class KubernetesDeployer(ContainerizedDeployer):
         sanitized = re.sub(r"[^A-Za-z0-9_]", "_", key)
         if not sanitized or not re.match(r"^[A-Za-z_]", sanitized):
             sanitized = f"_{sanitized}" if sanitized else "_VAR"
-        if sanitized in self._secret_key_map:
-            if self._secret_key_map[sanitized] != original:
+        if sanitized in secret_key_map:
+            if secret_key_map[sanitized] != original:
                 raise DeploymentProvisionError(
-                    f"Secret key collision: '{original}' and '{self._secret_key_map[sanitized]}' "
+                    f"Secret key collision: '{original}' and '{secret_key_map[sanitized]}' "
                     f"both sanitize to '{sanitized}'. Please rename one of them."
                 )
         else:
-            self._secret_key_map[sanitized] = original
+            secret_key_map[sanitized] = original
 
         return sanitized
 
@@ -556,9 +473,11 @@ class KubernetesDeployer(ContainerizedDeployer):
         if not secrets:
             return {}
 
+        # Local secret_key_map to track sanitization collisions for this invocation
+        secret_key_map: Dict[str, str] = {}
         sanitized = {}
         for key, value in secrets.items():
-            sanitized_key = self._sanitize_secret_key(key)
+            sanitized_key = self._sanitize_secret_key(key, secret_key_map)
             if sanitized_key != key:
                 logger.warning(
                     f"Secret key '{key}' sanitized to '{sanitized_key}'"
@@ -612,6 +531,69 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return settings, namespace, resource_name, labels, image
 
+    def _validate_additional_resources(
+        self,
+        deployment: DeploymentResponse,
+        settings: KubernetesDeployerSettings,
+        context: Dict[str, Any],
+        applier: KubernetesApplier,
+        engine: KubernetesTemplateEngine,
+    ) -> None:
+        """Validate additional resources before provisioning.
+
+        Validates that:
+        1. Additional resource files can be loaded
+        2. Resources have valid schema (kind, apiVersion)
+        3. Resources can be validated with Kubernetes API (dry-run)
+
+        Args:
+            deployment: The deployment response.
+            settings: Kubernetes deployer settings.
+            context: Template rendering context.
+            applier: KubernetesApplier instance.
+            engine: Template engine instance.
+
+        Raises:
+            DeploymentProvisionError: If validation fails.
+        """
+        if not settings.additional_resources:
+            return
+
+        try:
+            loaded_resources = engine.load_additional_resources(
+                settings.additional_resources,
+                context=context,
+            )
+        except ValueError as e:
+            raise DeploymentProvisionError(
+                f"Failed to load additional resources for validation: {e}"
+            ) from e
+
+        for resource_dict in loaded_resources:
+            kind = resource_dict.get("kind")
+            api_version = resource_dict.get("apiVersion")
+            metadata = resource_dict.get("metadata", {})
+            name = metadata.get("name", "unnamed")
+
+            if not kind or not api_version:
+                raise DeploymentProvisionError(
+                    f"Invalid additional resource '{name}': missing 'kind' or 'apiVersion'"
+                )
+
+            try:
+                applier.apply_resource(resource=resource_dict, dry_run=True)
+                logger.debug(
+                    f"[Deployment {deployment.name}] Validated additional resource: {kind}/{name}"
+                )
+            except ApiException as e:
+                raise DeploymentProvisionError(
+                    f"Invalid additional resource {kind}/{name}: {e.reason}"
+                ) from e
+            except ValueError as e:
+                raise DeploymentProvisionError(
+                    f"Invalid additional resource {kind}/{name}: {e}"
+                ) from e
+
     def _prepare_namespace(
         self,
         namespace: str,
@@ -648,24 +630,29 @@ class KubernetesDeployer(ContainerizedDeployer):
         deployment: DeploymentResponse,
         settings: KubernetesDeployerSettings,
         context: Dict[str, Any],
-    ) -> Tuple[Any, str, Any, str]:
+        engine: Optional[KubernetesTemplateEngine] = None,
+    ) -> Tuple[
+        Dict[str, Any], str, Dict[str, Any], str, KubernetesTemplateEngine
+    ]:
         """Render Kubernetes deployment and service templates.
 
         Args:
             deployment: The deployment response.
             settings: Kubernetes deployer settings.
             context: Template rendering context.
+            engine: Optional pre-initialized template engine. If None, creates one.
 
         Returns:
-            Tuple of (deployment object, deployment canonical YAML,
-            service object, service canonical YAML).
+            Tuple of (deployment dict, deployment canonical YAML,
+            service dict, service canonical YAML, template engine).
 
         Raises:
             DeploymentProvisionError: If template rendering fails.
         """
-        engine = KubernetesTemplateEngine(
-            custom_templates_dir=settings.custom_templates_dir
-        )
+        if engine is None:
+            engine = KubernetesTemplateEngine(
+                custom_templates_dir=settings.custom_templates_dir
+            )
 
         try:
             deployment_manifest = engine.render_to_k8s_object(
@@ -687,10 +674,9 @@ class KubernetesDeployer(ContainerizedDeployer):
                 "service.yaml": service_manifest.canonical_yaml,
             }
 
-            # Add additional resources to saved manifests
             if settings.additional_resources:
                 try:
-                    loaded_resources = self._load_additional_resources(
+                    loaded_resources = engine.load_additional_resources(
                         settings.additional_resources,
                         context=context,
                     )
@@ -705,6 +691,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                             default_flow_style=False,
                             sort_keys=False,
                         )
+                except ValueError as e:
+                    logger.warning(
+                        f"Could not load additional resources for saving: {e}"
+                    )
                 except Exception as e:
                     logger.warning(f"Could not save additional resources: {e}")
 
@@ -713,7 +703,9 @@ class KubernetesDeployer(ContainerizedDeployer):
                 deployment_name=context["name"],
                 output_dir=settings.manifest_output_dir,
             )
-            logger.info(f"Saved manifests to: {save_dir}")
+            logger.info(
+                f"[Deployment {deployment.name}] Saved {len(manifests)} manifests to: {save_dir}"
+            )
 
         if settings.print_manifests:
             logger.info("=" * 80)
@@ -726,10 +718,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             logger.info(service_manifest.canonical_yaml)
             logger.info("=" * 80)
 
-            # Print additional resources if provided
             if settings.additional_resources:
                 try:
-                    loaded_resources = self._load_additional_resources(
+                    loaded_resources = engine.load_additional_resources(
                         settings.additional_resources,
                         context=context,
                     )
@@ -749,23 +740,28 @@ class KubernetesDeployer(ContainerizedDeployer):
                         )
                         logger.info(resource_yaml)
                         logger.info("=" * 80)
+                except ValueError as e:
+                    logger.warning(
+                        f"Could not load additional resources for printing: {e}"
+                    )
                 except Exception as e:
                     logger.warning(
                         f"Could not print additional resources: {e}"
                     )
 
         return (
-            deployment_manifest.k8s_object,
+            deployment_manifest.resource_dict,
             deployment_manifest.canonical_yaml,
-            service_manifest.k8s_object,
+            service_manifest.resource_dict,
             service_manifest.canonical_yaml,
+            engine,
         )
 
     def _apply_core_resources(
         self,
         deployment: DeploymentResponse,
-        k8s_deployment: Any,
-        k8s_service: Any,
+        k8s_deployment: Dict[str, Any],
+        k8s_service: Dict[str, Any],
         applier: KubernetesApplier,
         resource_name: str,
         namespace: str,
@@ -775,8 +771,8 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment response.
-            k8s_deployment: Kubernetes Deployment object.
-            k8s_service: Kubernetes Service object.
+            k8s_deployment: Kubernetes Deployment dict.
+            k8s_service: Kubernetes Service dict.
             applier: KubernetesApplier instance.
             resource_name: Resource name.
             namespace: Kubernetes namespace.
@@ -786,14 +782,15 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentProvisionError: If applying resources fails.
         """
         if dry_run:
-            logger.info(f"[DRY-RUN] Validating deployment '{deployment.name}'")
+            logger.debug(f"   🔹 Validating Deployment: {resource_name}")
             try:
                 applier.apply_resource(resource=k8s_deployment, dry_run=True)
+                logger.debug(f"   🔹 Validating Service: {resource_name}")
                 applier.apply_resource(resource=k8s_service, dry_run=True)
-                logger.info("[DRY-RUN] Validation successful")
+                logger.debug("   ✅ Core resources validated")
             except (ValueError, ApiException) as e:
                 raise DeploymentProvisionError(
-                    f"[DRY-RUN] Validation failed for '{deployment.name}': {e}"
+                    f"❌ Validation failed for '{deployment.name}': {e}"
                 ) from e
             return
 
@@ -808,96 +805,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Failed to apply Kubernetes resources for '{deployment.name}': {e.reason}"
             ) from e
 
-    def _ensure_namespace_alignment(
-        self,
-        resource_dict: Dict[str, Any],
-        namespace: str,
-        applier: KubernetesApplier,
-        deployment_name: str,
-    ) -> None:
-        """Ensure resource namespace matches its scope.
-
-        Args:
-            resource_dict: The Kubernetes manifest to apply.
-            namespace: Target deployment namespace.
-            applier: Kubernetes applier used for discovery.
-            deployment_name: Name of the deployment (for logging context).
-        """
-        metadata = resource_dict.get("metadata") or {}
-        resource_name = metadata.get(
-            "name", resource_dict.get("kind", "unknown")
-        )
-
-        if metadata.get("namespace"):
-            is_namespaced = self._is_resource_namespaced(
-                resource_dict, applier
-            )
-            if is_namespaced is False:
-                logger.warning(
-                    "Additional resource '%s' for deployment '%s' is cluster-scoped "
-                    "but declares namespace '%s'. Kubernetes will reject this manifest.",
-                    resource_name,
-                    deployment_name,
-                    metadata["namespace"],
-                )
-            return
-
-        is_namespaced = self._is_resource_namespaced(resource_dict, applier)
-        if is_namespaced:
-            resource_dict.setdefault("metadata", {})["namespace"] = namespace
-        elif is_namespaced is None:
-            logger.debug(
-                "Could not determine scope for additional resource '%s' (kind=%s, apiVersion=%s); "
-                "leaving namespace untouched.",
-                resource_name,
-                resource_dict.get("kind"),
-                resource_dict.get("apiVersion"),
-            )
-
-    def _is_resource_namespaced(
-        self,
-        resource_dict: Dict[str, Any],
-        applier: KubernetesApplier,
-    ) -> Optional[bool]:
-        """Determine whether a resource is namespaced.
-
-        Args:
-            resource_dict: Kubernetes manifest dictionary.
-            applier: Kubernetes applier instance.
-
-        Returns:
-            True if the resource is namespaced, False if cluster-scoped,
-            None if the information cannot be determined.
-        """
-        api_version = resource_dict.get("apiVersion")
-        kind = resource_dict.get("kind")
-
-        if not api_version or not kind:
-            return None
-
-        try:
-            api_resource = applier.dynamic_client.resources.get(
-                api_version=api_version,
-                kind=kind,
-            )
-        except ResourceNotFoundError:
-            logger.warning(
-                "Unknown additional resource kind '%s' (apiVersion=%s); skipping automatic namespace injection.",
-                kind,
-                api_version,
-            )
-            return None
-        except Exception as exc:
-            logger.debug(
-                "Failed to inspect additional resource kind '%s' (apiVersion=%s): %s",
-                kind,
-                api_version,
-                exc,
-            )
-            return None
-
-        return bool(getattr(api_resource, "namespaced", False))
-
     def _apply_additional_resources(
         self,
         deployment: DeploymentResponse,
@@ -905,6 +812,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         namespace: str,
         applier: KubernetesApplier,
         context: Dict[str, Any],
+        engine: KubernetesTemplateEngine,
     ) -> None:
         """Apply additional Kubernetes resources.
 
@@ -914,36 +822,53 @@ class KubernetesDeployer(ContainerizedDeployer):
             namespace: Kubernetes namespace.
             applier: KubernetesApplier instance.
             context: Jinja2 template context for variable substitution.
+            engine: Template engine instance to reuse.
+
+        Raises:
+            DeploymentProvisionError: If loading additional resources fails,
+                or if strict_additional_resources=True and any resource fails to apply.
         """
         if not settings.additional_resources:
             return
 
-        loaded_resources = self._load_additional_resources(
-            settings.additional_resources,
-            context=context,
-        )
+        try:
+            loaded_resources = engine.load_additional_resources(
+                settings.additional_resources,
+                context=context,
+            )
+        except ValueError as e:
+            raise DeploymentProvisionError(
+                f"Failed to load additional resources for deployment '{deployment.name}': {e}"
+            ) from e
+
+        strict = settings.strict_additional_resources
 
         for resource_dict in loaded_resources:
-            try:
-                kind = resource_dict.get("kind", "Unknown")
-                metadata = resource_dict.get("metadata", {})
-                name = metadata.get("name", "unnamed")
+            kind = resource_dict.get("kind", "Unknown")
+            metadata = resource_dict.get("metadata", {})
+            name = metadata.get("name", "unnamed")
 
-                self._ensure_namespace_alignment(
+            try:
+                applier.ensure_namespace_alignment(
                     resource_dict=resource_dict,
                     namespace=namespace,
-                    applier=applier,
                     deployment_name=deployment.name,
                 )
 
-                logger.debug(f"Applying additional resource: {kind}/{name}")
+                logger.info(f"📦 Applying additional resource: {kind}/{name}")
 
                 applier.apply_resource(resource=resource_dict, dry_run=False)
+                logger.debug(f"   ✅ Applied: {kind}/{name}")
             except Exception as e:
-                logger.warning(
-                    f"Failed to apply {kind} '{name}' for '{deployment.name}': {e}. "
-                    "Continuing with deployment..."
-                )
+                if strict:
+                    raise DeploymentProvisionError(
+                        f"Failed to apply additional resource {kind}/{name}: {e}"
+                    ) from e
+                else:
+                    logger.warning(
+                        f"[Deployment {deployment.name}] Failed to apply {kind} '{name}': {e}. "
+                        "Continuing with deployment..."
+                    )
 
     def _wait_for_deployment_readiness(
         self,
@@ -971,12 +896,19 @@ class KubernetesDeployer(ContainerizedDeployer):
             return
 
         try:
+            logger.info(
+                f"\n⏳ Waiting for deployment to become ready...\n"
+                f"   📋 Deployment: {deployment.name}\n"
+                f"   📦 Namespace: {namespace}\n"
+                f"   ⏱️  Timeout: {timeout}s"
+            )
             applier.wait_for_deployment_ready(
                 name=resource_name,
                 namespace=namespace,
                 timeout=timeout,
                 check_interval=settings.deployment_ready_check_interval,
             )
+            logger.info("✅ Deployment is ready!")
         except RuntimeError as e:
             raise DeploymentProvisionError(
                 f"Deployment '{deployment.name}' did not become ready: {e}"
@@ -992,16 +924,20 @@ class KubernetesDeployer(ContainerizedDeployer):
                     settings.wait_for_load_balancer_timeout,
                     MAX_LOAD_BALANCER_TIMEOUT,
                 )
+                logger.info(
+                    f"⏳ Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
+                )
                 applier.wait_for_service_loadbalancer_ip(
                     name=resource_name,
                     namespace=namespace,
                     timeout=lb_timeout,
                     check_interval=settings.deployment_ready_check_interval,
                 )
-            except RuntimeError as e:
+                logger.info("✅ LoadBalancer IP assigned")
+            except RuntimeError:
                 logger.warning(
-                    f"LoadBalancer IP not assigned within {lb_timeout}s: {e}. "
-                    "Service may still be accessible via cluster IP."
+                    f"⚠️  LoadBalancer IP not assigned within {lb_timeout}s\n"
+                    f"   Service may still be accessible via cluster IP."
                 )
 
     # ========================================================================
@@ -1035,7 +971,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentProvisionError: If any step fails.
         """
         logger.info(
-            f"[DRY-RUN] Building image and generating manifests for '{deployment.name}'"
+            f"\n{'=' * 70}\n"
+            f"🧪 DRY-RUN MODE: Building & validating '{deployment.name}'\n"
+            f"{'=' * 70}"
         )
 
         # Prepare deployment resources (builds image, generates and saves manifests)
@@ -1049,15 +987,16 @@ class KubernetesDeployer(ContainerizedDeployer):
             k8s_deployment,
             k8s_service,
             context,
+            engine,
         ) = self._prepare_deployment_resources(
             deployment, environment, secrets, skip_secrets=True
         )
 
-        logger.info(f"[DRY-RUN] Image built and pushed: {image}")
-        logger.info("[DRY-RUN] Manifests saved to .zenml-deployments/")
+        logger.info(f"✅ Image built and pushed:\n   └─ {image}")
+        logger.info("✅ Manifests generated and saved to .zenml-deployments/")
 
         # Validate manifests with Kubernetes API (dry_run=True)
-        logger.info("[DRY-RUN] Validating manifests with Kubernetes API")
+        logger.info("\n🔍 Validating manifests with Kubernetes API...")
         self._validate_manifests_dry_run(
             deployment,
             k8s_deployment,
@@ -1068,9 +1007,15 @@ class KubernetesDeployer(ContainerizedDeployer):
         )
 
         logger.info(
-            f"[DRY-RUN] Validation successful! Ready to deploy to namespace '{namespace}'"
+            f"\n{'=' * 70}\n"
+            f"✅ DRY-RUN SUCCESSFUL!\n"
+            f"{'=' * 70}\n"
+            f"📋 Namespace: {namespace}\n"
+            f"📦 Deployment: {resource_name}\n"
+            f"💾 Manifests: .zenml-deployments/\n"
+            f"\n💡 To deploy for real: Remove --dry-run flag\n"
+            f"{'=' * 70}"
         )
-        logger.info("[DRY-RUN] To actually deploy, run without --dry-run flag")
 
     def _prepare_deployment_resources(
         self,
@@ -1085,9 +1030,10 @@ class KubernetesDeployer(ContainerizedDeployer):
         Dict[str, str],
         str,
         KubernetesApplier,
-        Any,
-        Any,
-        Dict[str, Any],  # context
+        Dict[str, Any],
+        Dict[str, Any],
+        Dict[str, Any],
+        KubernetesTemplateEngine,
     ]:
         """Prepare all resources needed for deployment (used by both dry-run and normal provisioning).
 
@@ -1099,13 +1045,11 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Returns:
             Tuple of (settings, namespace, resource_name, labels, image, applier,
-                     k8s_deployment, k8s_service, context)
+                     k8s_deployment_dict, k8s_service_dict, context, engine)
 
         Raises:
             DeploymentProvisionError: If preparation fails.
         """
-        self._secret_key_map = {}
-
         settings, namespace, resource_name, labels, image = (
             self._validate_and_prepare_deployment(deployment)
         )
@@ -1155,6 +1099,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             resource_requests=resource_requests,
             resource_limits=resource_limits,
             replicas=replicas,
+            deployment_id=str(deployment.id),
         )
 
         if not context.get("command"):
@@ -1170,9 +1115,15 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ),
             )
 
-        k8s_deployment, _, k8s_service, _ = self._render_k8s_resources(
+        k8s_deployment, _, k8s_service, _, engine = self._render_k8s_resources(
             deployment, settings, context
         )
+
+        # Validate additional resources before attempting to apply anything
+        if not skip_secrets:
+            self._validate_additional_resources(
+                deployment, settings, context, applier, engine
+            )
 
         return (
             settings,
@@ -1183,14 +1134,15 @@ class KubernetesDeployer(ContainerizedDeployer):
             applier,
             k8s_deployment,
             k8s_service,
-            context,  # Return context for additional resources rendering
+            context,
+            engine,
         )
 
     def _validate_manifests_dry_run(
         self,
         deployment: DeploymentResponse,
-        k8s_deployment: Any,
-        k8s_service: Any,
+        k8s_deployment: Dict[str, Any],
+        k8s_service: Dict[str, Any],
         applier: KubernetesApplier,
         resource_name: str,
         namespace: str,
@@ -1199,8 +1151,8 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment.
-            k8s_deployment: Kubernetes deployment manifest.
-            k8s_service: Kubernetes service manifest.
+            k8s_deployment: Kubernetes deployment dict.
+            k8s_service: Kubernetes service dict.
             applier: KubernetesApplier instance.
             resource_name: Resource name.
             namespace: Kubernetes namespace.
@@ -1208,7 +1160,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentProvisionError: If validation fails.
         """
-        logger.info(f"[DRY-RUN] Validating deployment '{deployment.name}'")
+        logger.info(f"   🔸 Validating deployment '{deployment.name}'...")
         self._apply_core_resources(
             deployment,
             k8s_deployment,
@@ -1218,7 +1170,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             namespace,
             dry_run=True,
         )
-        logger.info("[DRY-RUN] Validation successful")
+        logger.info("   ✅ Validation successful")
 
     def do_provision_deployment(
         self,
@@ -1254,6 +1206,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 k8s_deployment,
                 k8s_service,
                 context,
+                engine,
             ) = self._prepare_deployment_resources(
                 deployment, environment, secrets
             )
@@ -1270,7 +1223,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
             self._apply_additional_resources(
-                deployment, settings, namespace, applier, context
+                deployment, settings, namespace, applier, context, engine
             )
 
             self._wait_for_deployment_readiness(
@@ -1369,19 +1322,19 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ingress=None,
             )
 
-            metadata = KubernetesDeploymentMetadata(
-                deployment_name=resource_name,
-                namespace=namespace,
-                service_name=resource_name,
-                port=settings.service_port,
-                service_type=settings.service_type,
-                labels=labels,
-            )
+            metadata = {
+                "deployment_name": resource_name,
+                "namespace": namespace,
+                "service_name": resource_name,
+                "port": settings.service_port,
+                "service_type": settings.service_type,
+                "labels": labels,
+            }
 
             return DeploymentOperationalState(
                 status=status,
                 url=url,
-                metadata=metadata.model_dump(),
+                metadata=metadata,
             )
 
         except ApiException as e:
@@ -1436,15 +1389,18 @@ class KubernetesDeployer(ContainerizedDeployer):
             pod_name = pods[0].metadata.name
 
             if follow:
-                w = k8s_watch.Watch()
-                for line in w.stream(
-                    self.k8s_core_api.read_namespaced_pod_log,
+                resp = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
                     namespace=namespace,
                     follow=True,
                     tail_lines=tail,
-                ):
-                    yield line
+                    _preload_content=False,
+                )
+                for line in resp:
+                    if isinstance(line, bytes):
+                        yield line.decode("utf-8").rstrip()
+                    else:
+                        yield str(line).rstrip()
             else:
                 logs = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
@@ -1499,9 +1455,19 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             if settings.additional_resources:
                 try:
-                    loaded_resources = self._load_additional_resources(
-                        settings.additional_resources
+                    engine = KubernetesTemplateEngine(
+                        custom_templates_dir=settings.custom_templates_dir
                     )
+                    loaded_resources = engine.load_additional_resources(
+                        settings.additional_resources,
+                        context=None,
+                    )
+                except ValueError as e:
+                    logger.warning(
+                        f"Failed to load additional resources for deletion: {e}. "
+                        "Continuing with deletion of core resources..."
+                    )
+                    loaded_resources = []
                 except Exception as e:
                     logger.warning(
                         f"Failed to load additional resources for deletion: {e}. "
@@ -1509,6 +1475,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                     )
                     loaded_resources = []
 
+                # Delete in reverse order of creation (best-effort cleanup)
+                # Note: Kubernetes handles resource dependencies via owner references
+                # and garbage collection. For additional resources without proper
+                # owner references, reverse order is usually sufficient.
                 for resource_dict in reversed(loaded_resources):
                     try:
                         kind = resource_dict.get("kind", "Unknown")

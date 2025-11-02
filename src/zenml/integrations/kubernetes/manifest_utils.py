@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
-import base64
 import os
 import sys
 from typing import Any, Dict, List, Mapping, Optional
@@ -341,31 +340,31 @@ def build_secret_manifest(
     name: str,
     data: Mapping[str, Optional[str]],
     secret_type: str = "Opaque",
-) -> Dict[str, Any]:
-    """Builds a Kubernetes secret manifest.
+) -> k8s_client.V1Secret:
+    """Builds a Kubernetes secret manifest using the typed V1Secret model.
+
+    Uses string_data instead of data to avoid manual base64 encoding.
+    The Kubernetes API automatically handles base64 encoding for string_data.
 
     Args:
         name: Name of the secret.
-        data: The secret data.
+        data: The secret data as plain strings.
         secret_type: The secret type.
 
     Returns:
-        The secret manifest.
+        The typed V1Secret object.
     """
-    encoded_data = {
-        key: base64.b64encode(value.encode()).decode() if value else None
-        for key, value in data.items()
+    string_data = {
+        key: value if value is not None else "" for key, value in data.items()
     }
 
-    return {
-        "apiVersion": "v1",
-        "kind": "Secret",
-        "metadata": {
-            "name": name,
-        },
-        "type": secret_type,
-        "data": encoded_data,
-    }
+    return k8s_client.V1Secret(
+        api_version="v1",
+        kind="Secret",
+        metadata=k8s_client.V1ObjectMeta(name=name),
+        type=secret_type,
+        string_data=string_data,
+    )
 
 
 def pod_template_manifest_from_pod(

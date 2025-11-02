@@ -14,9 +14,7 @@
 """Kubernetes template engine."""
 
 import json
-import os
 import tempfile
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -25,11 +23,9 @@ from jinja2 import (
     Environment,
     FileSystemLoader,
     StrictUndefined,
-    Template,
     TemplateNotFound,
     Undefined,
 )
-from kubernetes import client as k8s_client
 from pydantic import BaseModel, ConfigDict
 
 from zenml.io import fileio
@@ -39,49 +35,10 @@ from zenml.utils import io_utils
 logger = get_logger(__name__)
 
 
-class _FakeHTTPResponse:
-    """Fake HTTP response for K8s API client deserializer.
-
-    The Kubernetes Python client's deserializer expects an HTTP response object.
-    This class provides a minimal fake response to deserialize YAML strings.
-
-    IMPORTANT: This is a workaround for the K8s client deserializer. The K8s
-    client deserializer expects an HTTP response but we're deserializing from
-    a string. This approach is commonly used by Helm, Kluctl, and other K8s
-    tools. If this breaks in future K8s client versions, consider using:
-    kubernetes.utils.create_from_yaml()
-    """
-
-    def __init__(self, data: str):
-        """Initialize with YAML data.
-
-        Args:
-            data: YAML string to deserialize.
-        """
-        # Store as JSON string since K8s deserializer expects JSON response
-        self._yaml_data = data
-        self.data = json.dumps(yaml.safe_load(data))
-        # Add commonly checked attributes for robustness
-        self.status = 200
-        self.reason = "OK"
-
-    def read(self) -> bytes:
-        """Read method that may be called by some deserializers.
-
-        Returns:
-            The data as bytes (JSON format).
-        """
-        return (
-            self.data.encode("utf-8")
-            if isinstance(self.data, str)
-            else self.data
-        )
-
-
 class RenderedKubernetesManifest(BaseModel):
     """Bundle containing various representations of a rendered manifest."""
 
-    k8s_object: Any
+    resource_dict: Dict[str, Any]
     template_yaml: str
     canonical_yaml: str
 
@@ -91,11 +48,11 @@ class RenderedKubernetesManifest(BaseModel):
 class KubernetesTemplateEngine:
     """Engine for generating Kubernetes resources from Jinja2 templates.
 
-    This class implements the industry-standard approach (like Helm/Kluctl):
+    This class implements the industry-standard approach (like Helm/Kustomize):
     1. Load Jinja2 templates (built-in or user-provided)
     2. Render templates with context from Pydantic settings
-    3. Convert rendered YAML to K8s Python objects via deserializer
-    4. Return both K8s objects (for API) and YAML (for inspection)
+    3. Parse rendered YAML to dictionaries
+    4. Return both dicts (for API) and YAML (for inspection)
     5. NO kubectl required - uses pure Python!
 
     Attributes:
@@ -103,7 +60,6 @@ class KubernetesTemplateEngine:
         builtin_templates_dir: Path to ZenML's built-in templates.
         custom_templates_dir: Optional user-provided template directory.
         env: Jinja2 environment for rendering templates.
-        api_client: Kubernetes API client for deserialization.
     """
 
     def __init__(
@@ -145,7 +101,7 @@ class KubernetesTemplateEngine:
         self.env = Environment(
             loader=FileSystemLoader(template_dirs),
             undefined=StrictUndefined if strict_undefined else Undefined,
-            autoescape=False,  # Don't HTML-escape YAML content
+            autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
@@ -155,8 +111,6 @@ class KubernetesTemplateEngine:
         self.env.filters["to_json"] = self._json_filter
         self.env.filters["k8s_name"] = self._k8s_name_filter
         self.env.filters["k8s_label_value"] = self._k8s_label_value_filter
-
-        self.api_client = k8s_client.ApiClient()
 
     @staticmethod
     def _yaml_filter(value: Any, indent: int = 2) -> str:
@@ -254,21 +208,6 @@ class KubernetesTemplateEngine:
 
         return label
 
-    @lru_cache(maxsize=32)
-    def _get_template_cached(self, template_name: str) -> Template:
-        """Get a template with LRU caching for performance.
-
-        Args:
-            template_name: Name of the template file.
-
-        Returns:
-            The loaded Jinja2 template.
-
-        Raises:
-            TemplateNotFound: If template doesn't exist.
-        """
-        return self.env.get_template(template_name)
-
     def render_to_k8s_object(
         self,
         template_name: str,
@@ -281,122 +220,46 @@ class KubernetesTemplateEngine:
             context: Dictionary of variables to pass to the template.
 
         Returns:
-            RenderedKubernetesManifest containing the Kubernetes object, the
-            original template YAML, and a canonical YAML string generated from
-            the object (which mirrors what the Python client applies).
+            RenderedKubernetesManifest containing the resource dict, the
+            original template YAML, and a canonical YAML string.
 
         Raises:
             TemplateNotFound: If the template file doesn't exist.
-            ValueError: If rendered output is invalid YAML, deserialization fails, or kind is missing.
+            ValueError: If rendered output is invalid YAML or kind is missing.
         """
-        try:
-            yaml_content = self.render_template(
-                template_name=template_name, context=context
-            )
-        except yaml.YAMLError as e:
-            raise ValueError(
-                f"Failed to render template {template_name}: {e}"
-            ) from e
+        yaml_content = self.render_template(
+            template_name=template_name, context=context
+        )
 
         try:
-            parsed = yaml.safe_load(yaml_content)
-            if not isinstance(parsed, dict) or "kind" not in parsed:
-                raise ValueError(
-                    f"Invalid Kubernetes manifest: missing 'kind' field in {template_name}"
-                )
-            parsed_api_version = parsed.get("apiVersion")
-            parsed_kind = parsed.get("kind")
-            kind = parsed["kind"]
+            resource_dict = yaml.safe_load(yaml_content)
         except yaml.YAMLError as e:
             raise ValueError(
                 f"Failed to parse YAML from template {template_name}: {e}"
             ) from e
 
-        api_version = parsed.get("apiVersion", "")
-
-        if not api_version:
-            version_prefix = "V1"
-        elif "/" in api_version:
-            parts = api_version.split("/")
-            if len(parts) != 2:
-                raise ValueError(
-                    f"Invalid API version format '{api_version}': "
-                    "expected 'group/version' or 'version'"
-                )
-            group, version = parts
-            if not version.startswith("v"):
-                raise ValueError(
-                    f"Invalid API version '{version}' in '{api_version}': "
-                    "version must start with 'v' (e.g., 'v1', 'v2')"
-                )
-            version_prefix = version.upper()
-        else:
-            version = api_version
-            if not version.startswith("v"):
-                raise ValueError(
-                    f"Invalid API version '{api_version}': "
-                    "version must start with 'v' (e.g., 'v1', 'v1beta1')"
-                )
-            version_prefix = version.upper()
-
-        k8s_object_type = f"{version_prefix}{kind}"
-
-        try:
-            k8s_object = self.api_client.deserialize(
-                response=_FakeHTTPResponse(data=yaml_content),
-                response_type=k8s_object_type,
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to deserialize YAML to {k8s_object_type}:\n{yaml_content}"
-            )
+        if not isinstance(resource_dict, dict):
             raise ValueError(
-                f"Failed to convert template to K8s object: {e}"
-            ) from e
-
-        if (
-            parsed_api_version
-            and hasattr(k8s_object, "api_version")
-            and not getattr(k8s_object, "api_version", None)
-        ):
-            setattr(k8s_object, "api_version", parsed_api_version)
-        if (
-            parsed_kind
-            and hasattr(k8s_object, "kind")
-            and not getattr(k8s_object, "kind", None)
-        ):
-            setattr(k8s_object, "kind", parsed_kind)
-
-        canonical_dict = self.api_client.sanitize_for_serialization(k8s_object)
-
-        effective_api_version = parsed_api_version or getattr(
-            k8s_object, "api_version", None
-        )
-        effective_kind = parsed_kind or getattr(k8s_object, "kind", None)
-
-        if not effective_api_version or not effective_kind:
-            raise ValueError(
-                f"Rendered manifest for '{template_name}' is missing required apiVersion/kind metadata."
+                f"Invalid Kubernetes manifest in {template_name}: expected dict, got {type(resource_dict)}"
             )
 
-        if isinstance(canonical_dict, dict):
-            canonical_dict["apiVersion"] = str(effective_api_version)
-            canonical_dict.pop("api_version", None)
-            canonical_dict["kind"] = str(effective_kind)
-        else:
-            canonical_dict = {
-                "apiVersion": str(effective_api_version),
-                "kind": str(effective_kind),
-                "manifest": canonical_dict,
-            }
+        if "kind" not in resource_dict:
+            raise ValueError(
+                f"Invalid Kubernetes manifest: missing 'kind' field in {template_name}"
+            )
+
+        if "apiVersion" not in resource_dict:
+            raise ValueError(
+                f"Invalid Kubernetes manifest: missing 'apiVersion' field in {template_name}"
+            )
 
         canonical_yaml = yaml.safe_dump(
-            canonical_dict,
+            resource_dict,
             sort_keys=False,
         )
 
         return RenderedKubernetesManifest(
-            k8s_object=k8s_object,
+            resource_dict=resource_dict,
             template_yaml=yaml_content,
             canonical_yaml=canonical_yaml,
         )
@@ -422,7 +285,7 @@ class KubernetesTemplateEngine:
             yaml.YAMLError: If validate_yaml is True and output is invalid.
         """
         try:
-            template = self._get_template_cached(template_name)
+            template = self.env.get_template(template_name)
         except TemplateNotFound as e:
             available_templates = self.list_available_templates()
             raise TemplateNotFound(
@@ -485,7 +348,8 @@ class KubernetesTemplateEngine:
             content=manifest,
         )
 
-        logger.info(f"Saved Kubernetes manifest to: {output_path}")
+        # Use debug for individual file saves (verbose)
+        logger.debug(f"💾 Saved manifest: {output_path}")
         return output_path
 
     def save_manifests(
@@ -542,33 +406,93 @@ class KubernetesTemplateEngine:
 
         if not fileio.exists(manifest_dir_str):
             fileio.makedirs(manifest_dir_str)
+
+        # Save all manifests
         for filename, content in manifests.items():
             output_path = manifest_dir / filename
             self.save_manifest(manifest=content, output_path=output_path)
 
+        # Summary with better formatting
         logger.info(
-            f"Saved {len(manifests)} Kubernetes manifests to: {manifest_dir}"
+            f"💾 Saved {len(manifests)} Kubernetes manifests\n"
+            f"   └─ Location: {manifest_dir}"
         )
         return manifest_dir
 
+    @staticmethod
+    def load_additional_resources(
+        resource_files: List[str],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Load additional resources from YAML files with Jinja2 templating.
 
-def create_manifest_directory(base_dir: Optional[str] = None) -> Path:
-    """Create a directory for storing manifests.
+        Args:
+            resource_files: List of file paths to YAML files.
+            context: Optional Jinja2 template context for variable substitution.
 
-    Args:
-        base_dir: Base directory for creating the manifest dir.
-            If None, uses system temp directory.
+        Returns:
+            List of resource dicts ready to apply.
 
-    Returns:
-        Path to the created directory.
-    """
-    if base_dir:
-        base_path = Path(base_dir)
-        base_path.mkdir(parents=True, exist_ok=True)
-        manifest_dir = base_path / f"zenml-k8s-manifests-{os.getpid()}"
-        manifest_dir.mkdir(exist_ok=True)
-    else:
-        manifest_dir = Path(tempfile.mkdtemp(prefix="zenml-k8s-manifests-"))
+        Raises:
+            ValueError: If a file cannot be loaded or parsed, or if input validation fails.
+        """
+        from pathlib import Path
 
-    logger.info(f"Created manifest directory: {manifest_dir}")
-    return manifest_dir
+        if not isinstance(resource_files, list):
+            raise ValueError(
+                f"resource_files must be a list, got {type(resource_files)}"
+            )
+
+        loaded_resources = []
+
+        for file_path in resource_files:
+            if not isinstance(file_path, str):
+                logger.warning(f"Skipping non-string file path: {file_path}")
+                continue
+
+            try:
+                expanded_path = Path(file_path).expanduser().resolve()
+                file_path_str = str(expanded_path)
+
+                if not fileio.exists(file_path_str):
+                    raise ValueError(
+                        f"Additional resource file not found: {file_path}"
+                    )
+
+                yaml_content = io_utils.read_file_contents_as_string(
+                    file_path_str
+                )
+
+                if context:
+                    from jinja2 import Template
+
+                    template = Template(yaml_content)
+                    yaml_content = template.render(**context)
+
+                yaml_docs = list(yaml.safe_load_all(yaml_content))
+
+                valid_docs = []
+                for doc in yaml_docs:
+                    if doc and isinstance(doc, dict):
+                        loaded_resources.append(doc)
+                        valid_docs.append(doc)
+                    elif doc:
+                        logger.warning(
+                            f"⚠️  Skipping invalid YAML document in {file_path}"
+                        )
+
+                if valid_docs:
+                    logger.info(
+                        f"📦 Loaded {len(valid_docs)} resource(s) from {Path(file_path).name}"
+                    )
+
+            except yaml.YAMLError as e:
+                raise ValueError(
+                    f"Failed to parse YAML file '{file_path}': {e}"
+                ) from e
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to load additional resource file '{file_path}': {e}"
+                ) from e
+
+        return loaded_resources

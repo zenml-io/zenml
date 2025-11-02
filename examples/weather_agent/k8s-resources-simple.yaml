@@ -1,0 +1,118 @@
+# Simple Kubernetes Additional Resources Example
+# 
+# This file contains additional K8s resources deployed alongside your main Deployment/Service.
+# Perfect for production deployments that need:
+#   ✅ Ingress (domain-based routing)
+#   ✅ HPA (autoscaling)
+#   ✅ PDB (high availability)
+#
+# HOW IT WORKS:
+# 1. Reference this file in your pipeline config:
+#      deployer:
+#        additional_resources:
+#          - ./k8s-resources-simple.yaml
+#
+# 2. ZenML renders Jinja2 variables:
+#      {{namespace}}       → "weather-prod"
+#      {{service_name}}    → "zenml-abc123..."
+#      {{deployment_name}} → "zenml-abc123..."
+#      {{labels}}          → {"managed-by": "zenml", ...}
+#
+# 3. With strict_additional_resources: true (default):
+#      ✅ All resources MUST apply successfully
+#      ❌ If HPA fails (no metrics-server), deployment fails
+#      → Production safety: ensures critical resources are present
+#
+# 4. With strict_additional_resources: false:
+#      ⚠️ Failed resources log warnings but don't fail deployment
+#      → Use for optional/experimental resources
+#
+# This is a REALISTIC example showing what works and what doesn't
+
+# ============================================================================
+# ✅ INGRESS - Works if you have an ingress controller
+# ============================================================================
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weather-agent-ingress
+  namespace: {{namespace}}  # ZenML fills this
+  annotations:
+    # These depend on YOUR ingress controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx  # YOUR ingress class
+  rules:
+    - host: weather.mycompany.com  # YOUR domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{service_name}}  # ✅ ZenML fills this!
+                port:
+                  number: {{service_port}}  # ✅ ZenML fills this!
+
+# ============================================================================
+# ⚠️ HPA - Requires metrics-server installed in cluster
+# ============================================================================
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: weather-agent-hpa
+  namespace: {{namespace}}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{deployment_name}}  # ✅ ZenML fills this!
+  minReplicas: {{replicas}}  # ✅ ZenML fills this!
+  maxReplicas: 10  # YOU decide max
+  metrics:
+    # ⚠️ Requires metrics-server: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+# ============================================================================
+# ✅ PDB - Works, ensures availability during updates
+# ============================================================================
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: weather-agent-pdb
+  namespace: {{namespace}}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      # ✅ Use ZenML's actual labels
+      managed-by: {{labels['managed-by']}}
+      zenml-deployment-id: {{labels['zenml-deployment-id']}}
+
+# ============================================================================
+# ❌ ServiceMonitor - Don't use unless Prometheus Operator is installed
+# ============================================================================
+# Uncomment only if you have Prometheus Operator CRDs installed
+# ---
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: weather-agent-metrics
+#   namespace: {{namespace}}
+# spec:
+#   selector:
+#     matchLabels:
+#       managed-by: {{labels['managed-by']}}
+#       zenml-deployment-id: {{labels['zenml-deployment-id']}}
+#   endpoints:
+#     - port: http
+#       path: /metrics
+

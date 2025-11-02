@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from pydantic import Field, PositiveInt, field_validator
+from pydantic import Field, PositiveInt, field_validator, model_validator
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.deployers.base_deployer import (
@@ -242,6 +242,13 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "Use this for advanced scheduling and resource requirements.",
     )
 
+    strict_additional_resources: bool = Field(
+        default=True,
+        description="If True (default), fail the deployment if any additional resource fails to apply. "
+        "If False, log warnings for failed resources but continue with core deployment. "
+        "Recommended: True for production to ensure all critical resources (HPA, NetworkPolicy, etc.) are applied.",
+    )
+
     additional_resources: List[str] = Field(
         default_factory=list,
         description="Additional Kubernetes resources to deploy alongside Deployment/Service. "
@@ -249,59 +256,71 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "Ingress, HPA, NetworkPolicy, PDB, ServiceMonitor, CRDs, etc.\n\n"
         "**Format**: List of file paths to YAML files (absolute or relative to pipeline config).\n"
         "**Multi-document YAML**: Use `---` separator to include multiple resources in one file.\n"
-        "**Jinja2 Templating**: All files are rendered with deployment context variables.\n\n"
-        "**Available Template Variables**:\n"
-        "- `{{name}}`: Deployment/Service resource name\n"
+        "**Jinja2 Templating**: Files are rendered with ZenML deployment context.\n\n"
+        "**Available Template Variables** (minimal set - only what ZenML controls):\n"
+        "- `{{name}}` or `{{deployment_name}}`: Deployment name (for HPA scaleTargetRef)\n"
+        "- `{{service_name}}`: Service name (for Ingress backend) - same as name\n"
         "- `{{namespace}}`: Kubernetes namespace\n"
-        "- `{{image}}`: Container image\n"
-        "- `{{replicas}}`: Number of replicas\n"
-        "- `{{labels}}`: ZenML labels dictionary\n"
-        "- `{{labels['zenml-deployment-id']}}`: Deployment UUID\n"
-        "- `{{labels['zenml-deployment-name']}}`: Deployment name\n"
-        "- Plus: env_vars, resource_requests, resource_limits, etc.\n\n"
-        "**Example YAML file** (`k8s-resources.yaml`):\n"
+        "- `{{deployment_id}}`: Deployment UUID (useful for unique resource names)\n"
+        "- `{{labels}}`: Dict of ZenML labels (for selectors)\n"
+        "  - `{{labels['managed-by']}}`: Always 'zenml'\n"
+        "  - `{{labels['zenml-deployment-id']}}`: UUID\n"
+        "  - `{{labels['zenml-deployment-name']}}`: Human-readable name\n"
+        "- `{{replicas}}`: Replica count (for HPA minReplicas)\n"
+        "- `{{image}}`: Container image (useful for Jobs/CronJobs)\n"
+        "- `{{service_port}}`: Service port number (for Ingress)\n"
+        "- `{{service_type}}`: Service type (LoadBalancer, NodePort, ClusterIP)\n"
+        "- `{{annotations}}`: Pod annotations dict\n\n"
+        "**What You Must Provide** (ZenML doesn't know these):\n"
+        "- Hostnames, domains, TLS certificates\n"
+        "- External service references (ingress-nginx, prometheus, etc.)\n"
+        "- Resource names (ingress name, hpa name, etc.)\n"
+        "- Cluster requirements (metrics-server, ServiceAccounts, CRDs)\n\n"
+        "**Example YAML file** (`k8s-ingress.yaml`):\n"
         "```yaml\n"
-        "# Ingress with Jinja2 templating\n"
         "apiVersion: networking.k8s.io/v1\n"
         "kind: Ingress\n"
         "metadata:\n"
-        "  name: my-ingress\n"
-        "  namespace: {{namespace}}\n"
+        "  name: my-ingress  # YOU choose this\n"
+        "  namespace: {{namespace}}  # ZenML fills this\n"
         "spec:\n"
         "  rules:\n"
-        "    - host: myapp.example.com\n"
+        "    - host: myapp.company.com  # YOU provide domain\n"
         "      http:\n"
         "        paths:\n"
         "          - path: /\n"
         "            backend:\n"
         "              service:\n"
-        "                name: {{name}}  # Auto-filled!\n"
+        "                name: {{service_name}}  # ZenML fills this (critical!)\n"
         "                port:\n"
-        "                  number: 8000\n"
+        "                  number: {{service_port}}  # ZenML fills this\n"
         "---\n"
-        "# HPA in same file\n"
+        "# HPA - scale the deployment\n"
         "apiVersion: autoscaling/v2\n"
         "kind: HorizontalPodAutoscaler\n"
         "metadata:\n"
-        "  name: my-hpa\n"
+        "  name: my-hpa  # YOU choose this\n"
         "  namespace: {{namespace}}\n"
         "spec:\n"
         "  scaleTargetRef:\n"
-        "    name: {{name}}\n"
+        "    name: {{deployment_name}}  # ZenML fills this (critical!)\n"
         "    kind: Deployment\n"
-        "  minReplicas: {{replicas}}\n"
-        "  maxReplicas: 10\n"
+        "  minReplicas: {{replicas}}  # ZenML fills this\n"
+        "  maxReplicas: 10  # YOU set max\n"
         "```\n\n"
-        "**Usage in pipeline config**:\n"
+        "**Usage**:\n"
         "```yaml\n"
         "settings:\n"
         "  deployer:\n"
         "    additional_resources:\n"
-        "      - ./k8s-resources.yaml\n"
-        "      - ./monitoring/metrics.yaml\n"
+        "      - ./k8s-ingress.yaml\n"
         "```\n\n"
-        "💡 **TIP**: Use `zenml pipeline deploy --dry-run` to validate resources "
-        "before deploying.",
+        "💡 **TIP**: Use `zenml pipeline deploy --dry-run` to validate resources.\n\n"
+        "⚠️ **IMPORTANT**: Cluster must have required components installed:\n"
+        "- Ingress: Requires ingress controller (nginx, traefik, etc.)\n"
+        "- HPA: Requires metrics-server\n"
+        "- ServiceMonitor: Requires Prometheus Operator\n"
+        "- CRDs: Must be installed beforehand",
     )
 
     # ========================================================================
@@ -348,6 +367,29 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         default=2,
         description="Interval in seconds between deployment readiness checks.",
     )
+
+    @model_validator(mode="after")
+    def validate_interdependent_settings(self) -> "KubernetesDeployerSettings":
+        """Validate settings that depend on each other.
+
+        Returns:
+            The validated settings.
+        """
+        # Warn if wait_for_load_balancer_timeout is set for non-LoadBalancer services
+        if (
+            self.service_type != "LoadBalancer"
+            and self.wait_for_load_balancer_timeout > 0
+        ):
+            from zenml.logger import get_logger
+
+            logger = get_logger(__name__)
+            logger.warning(
+                f"wait_for_load_balancer_timeout={self.wait_for_load_balancer_timeout} "
+                f"is ignored for service_type={self.service_type}. "
+                f"This setting only applies to LoadBalancer service type."
+            )
+
+        return self
 
 
 class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):

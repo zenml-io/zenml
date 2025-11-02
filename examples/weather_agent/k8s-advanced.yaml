@@ -1,11 +1,24 @@
 # Advanced Kubernetes Deployment Configuration for Weather Agent
-# This configuration demonstrates advanced Kubernetes deployment options including:
-# - Advanced pod settings (volumes, affinity, tolerations)
-# - Ingress for domain-based routing with TLS
-# - HorizontalPodAutoscaler for dynamic scaling
-# - Custom annotations and labels
+#
+# This is a PRODUCTION-READY configuration demonstrating all advanced features:
+#
+# ✅ Autoscaling (HPA) - 2 to 10 replicas based on CPU/memory
+# ✅ High Availability - PodDisruptionBudget ensures min availability
+# ✅ Ingress - Domain-based routing (weather.company.com)
+# ✅ Health Probes - Aggressive readiness/liveness checks
+# ✅ Pod Settings - Affinity, tolerations, volumes
+# ✅ Labels & Annotations - For monitoring, cost tracking
+# ✅ Strict Resource Validation - Fails if HPA/Ingress can't be created
+# ✅ Automatic Retries - Built-in resilience for transient K8s API failures
+#
+# Prerequisites:
+#   - Ingress controller (nginx) installed
+#   - Metrics server installed (for HPA)
+#   - Domain DNS configured to point to ingress
+#
+# To deploy:
+#   zenml pipeline deploy weather_agent_pipeline -c k8s-advanced.yaml
 
-# Override default pipeline parameters
 parameters:
   city: "San Francisco"
 
@@ -22,7 +35,9 @@ settings:
     min_replicas: 2
     max_replicas: 10
   
-  # Advanced Kubernetes deployer configuration
+  # ========================================================================
+  # Advanced Kubernetes Deployer Configuration
+  # ========================================================================
   deployer:
     # ========================================================================
     # Basic Configuration
@@ -30,8 +45,14 @@ settings:
     namespace: weather-prod
     
     # Use ClusterIP since we're exposing via Ingress
+    # (LoadBalancer would be redundant and costly)
     service_type: ClusterIP
     service_port: 8000
+    
+    # ⚠️ IMPORTANT: Strict mode ensures ALL additional resources apply successfully
+    # If HPA or Ingress fails, entire deployment fails (production safety)
+    # Set to false only for non-critical additional resources
+    strict_additional_resources: true  # ✅ NEW: Fail-fast for production safety
     
     # ========================================================================
     # Health Probes
@@ -139,19 +160,32 @@ settings:
     service_account_name: weather-agent-sa
     
     # ========================================================================
-    # Additional Kubernetes Resources
+    # Additional Kubernetes Resources (Ingress, HPA, PDB)
     # ========================================================================
-    # Additional Kubernetes resources (Ingress, HPA, PDB, NetworkPolicy, ServiceMonitor)
-    # Use YAML files for cleaner configuration with Jinja2 templating support
+    # Deploy additional resources alongside Deployment/Service
+    # 
+    # ✅ Supports Jinja2 templating: {{namespace}}, {{service_name}}, {{labels}}, etc.
+    # ✅ Multi-document YAML: Separate resources with ---
+    # ✅ Strict validation: With strict_additional_resources=true, deployment fails
+    #    if any resource fails (production safety!)
+    #
+    # Available files:
+    #   - k8s-resources-simple.yaml    : Ingress, HPA, PDB (realistic, tested)
+    #   - k8s-additional-resources.yaml: Full production stack (requires Prometheus Operator)
     additional_resources:
-      - ./k8s-additional-resources.yaml
+      - ./k8s-resources-simple.yaml
     
     # ========================================================================
     # Development/Debug Settings
     # ========================================================================
-    save_manifests: true  # Save to .zenml-deployments/
-    print_manifests: false  # Set to true to print manifests to console
+    save_manifests: true    # ✅ Saves manifests to .zenml-deployments/ for inspection
+    print_manifests: false  # Set to true to print manifests to console (verbose!)
     
-    # Timeouts
-    wait_for_load_balancer_timeout: 0  # Not using LoadBalancer
+    # ========================================================================
+    # Timeouts & Intervals
+    # ========================================================================
+    # We're using ClusterIP (no LoadBalancer), so skip LB timeout
+    wait_for_load_balancer_timeout: 0
+    
+    # Check deployment readiness every 2 seconds
     deployment_ready_check_interval: 2
