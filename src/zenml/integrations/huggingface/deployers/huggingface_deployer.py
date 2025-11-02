@@ -45,6 +45,8 @@ from zenml.models import DeploymentOperationalState, DeploymentResponse
 from zenml.stack.stack_validator import StackValidator
 
 if TYPE_CHECKING:
+    from huggingface_hub import HfApi
+
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -131,7 +133,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         return os.environ.get("HF_TOKEN")
 
-    def _get_hf_api(self) -> "HfApi":  # type: ignore[name-defined]
+    def _get_hf_api(self) -> "HfApi":
         """Get the Hugging Face API client.
 
         Returns:
@@ -351,9 +353,6 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             follow: Stream logs if True (not supported).
             tail: Return only last N lines if set (not supported).
 
-        Yields:
-            Log lines.
-
         Raises:
             DeploymentLogsNotFoundError: Always, as logs are not available via API.
         """
@@ -377,6 +376,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentNotFoundError: If the Space is not found.
+            Exception: If deletion fails for reasons other than 404.
         """
         space_id = deployment.deployment_metadata.get("space_id")
         if not space_id:
