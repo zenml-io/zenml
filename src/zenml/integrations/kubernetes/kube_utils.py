@@ -345,9 +345,6 @@ def _if_not_exists(create_fn: FuncT) -> FuncT:
 
     Returns:
         Wrapped Kubernetes function.
-
-    Raises:
-        ApiException: If an API error occurs.
     """
 
     def create_if_not_exists(*args: Any, **kwargs: Any) -> None:

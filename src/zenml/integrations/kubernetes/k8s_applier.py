@@ -89,7 +89,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If resource is invalid.
-            ApiException: If the operation fails.
         """
         kind = resource.get("kind")
         api_version = resource.get("apiVersion")
@@ -158,7 +157,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If YAML is invalid or missing required fields.
-            ApiException: If the operation fails.
         """
         try:
             resource_dict = yaml.safe_load(yaml_content)
@@ -186,7 +184,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If resource is invalid.
-            ApiException: If the operation fails.
         """
         if isinstance(resource, dict):
             resource_dict = resource
@@ -289,7 +286,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If YAML is invalid.
-            ApiException: If the operation fails (except 404).
         """
         # Parse YAML
         try:
@@ -339,7 +335,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If resource kind is not found.
-            ApiException: If the operation fails (except 404).
         """
         try:
             # Get the API resource for this kind
@@ -387,7 +382,6 @@ class KubernetesApplier:
 
         Raises:
             ValueError: If resource kind is not found.
-            ApiException: If the operation fails.
         """
         try:
             # Get the API resource for this kind
@@ -446,7 +440,6 @@ class KubernetesApplier:
         Raises:
             RuntimeError: If timeout is reached.
             ValueError: If resource kind is not found.
-            ApiException: If the operation fails.
         """
         logger.info(
             f"Waiting for {resource_description} '{name}' in namespace '{namespace}' "
@@ -515,13 +508,17 @@ class KubernetesApplier:
 
         Returns:
             The Deployment object when ready.
-
-        Raises:
-            RuntimeError: If timeout is reached.
         """
 
         def deployment_ready(deployment: Any) -> bool:
-            """Check if deployment is ready."""
+            """Check if deployment is ready.
+
+            Args:
+                deployment: The Deployment object to check.
+
+            Returns:
+                True if deployment is ready, False otherwise.
+            """
             if not hasattr(deployment, "status") or not deployment.status:
                 return False
 
@@ -565,7 +562,14 @@ class KubernetesApplier:
         """
 
         def service_has_loadbalancer_ip(service: Any) -> bool:
-            """Check if service has LoadBalancer IP."""
+            """Check if service has LoadBalancer IP.
+
+            Args:
+                service: The Service object to check.
+
+            Returns:
+                True if LoadBalancer has an IP assigned, False otherwise.
+            """
             if not hasattr(service, "status") or not service.status:
                 return False
 

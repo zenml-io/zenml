@@ -224,7 +224,6 @@ class KubernetesTemplateEngine:
             original template YAML, and a canonical YAML string.
 
         Raises:
-            TemplateNotFound: If the template file doesn't exist.
             ValueError: If rendered output is invalid YAML or kind is missing.
         """
         yaml_content = self.render_template(
@@ -282,7 +281,7 @@ class KubernetesTemplateEngine:
 
         Raises:
             TemplateNotFound: If the template file doesn't exist.
-            yaml.YAMLError: If validate_yaml is True and output is invalid.
+            ValueError: If validate_yaml is True and output is invalid.
         """
         try:
             template = self.env.get_template(template_name)

@@ -97,6 +97,9 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Returns:
             Authenticated Kubernetes API client.
+
+        Raises:
+            RuntimeError: If connector returns invalid client type.
         """
         if incluster is None:
             incluster = self.config.incluster
@@ -131,27 +134,47 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     @property
     def k8s_core_api(self) -> k8s_client.CoreV1Api:
-        """Get Kubernetes Core V1 API client."""
+        """Get Kubernetes Core V1 API client.
+
+        Returns:
+            Kubernetes Core V1 API client.
+        """
         return k8s_client.CoreV1Api(self.get_kube_client())
 
     @property
     def k8s_apps_api(self) -> k8s_client.AppsV1Api:
-        """Get Kubernetes Apps V1 API client."""
+        """Get Kubernetes Apps V1 API client.
+
+        Returns:
+            Kubernetes Apps V1 API client.
+        """
         return k8s_client.AppsV1Api(self.get_kube_client())
 
     @property
     def k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
-        """Get Kubernetes RBAC API client."""
+        """Get Kubernetes RBAC API client.
+
+        Returns:
+            Kubernetes RBAC API client.
+        """
         return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
 
     @property
     def k8s_networking_api(self) -> k8s_client.NetworkingV1Api:
-        """Get Kubernetes Networking API client."""
+        """Get Kubernetes Networking API client.
+
+        Returns:
+            Kubernetes Networking API client.
+        """
         return k8s_client.NetworkingV1Api(self.get_kube_client())
 
     @property
     def k8s_autoscaling_api(self) -> k8s_client.AutoscalingV2Api:
-        """Get Kubernetes Autoscaling API client."""
+        """Get Kubernetes Autoscaling API client.
+
+        Returns:
+            Kubernetes Autoscaling API client.
+        """
         return k8s_client.AutoscalingV2Api(self.get_kube_client())
 
     # ========================================================================
@@ -160,17 +183,29 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     @property
     def config(self) -> KubernetesDeployerConfig:
-        """Get the deployer configuration."""
+        """Get the deployer configuration.
+
+        Returns:
+            The deployer configuration.
+        """
         return cast(KubernetesDeployerConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type[KubernetesDeployerSettings]]:
-        """Return the settings class."""
+        """Return the settings class.
+
+        Returns:
+            The settings class for this deployer.
+        """
         return KubernetesDeployerSettings
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Stack validator for the deployer."""
+        """Stack validator for the deployer.
+
+        Returns:
+            Stack validator instance.
+        """
 
         def _validate(stack: "Stack") -> Tuple[bool, str]:
             container_registry = stack.container_registry
@@ -197,7 +232,17 @@ class KubernetesDeployer(ContainerizedDeployer):
     # ========================================================================
 
     def _get_namespace(self, deployment: DeploymentResponse) -> str:
-        """Get namespace for deployment."""
+        """Get namespace for deployment.
+
+        Args:
+            deployment: The deployment to get namespace for.
+
+        Returns:
+            The namespace name.
+
+        Raises:
+            DeployerError: If deployment has no snapshot.
+        """
         snapshot = deployment.snapshot
         if not snapshot:
             raise DeployerError(
@@ -211,7 +256,14 @@ class KubernetesDeployer(ContainerizedDeployer):
         return settings.namespace or self.config.kubernetes_namespace
 
     def _get_resource_name(self, deployment: DeploymentResponse) -> str:
-        """Get resource name for deployment."""
+        """Get resource name for deployment.
+
+        Args:
+            deployment: The deployment to get resource name for.
+
+        Returns:
+            Sanitized resource name.
+        """
         name = f"zenml-{deployment.id}"
         return kube_utils.sanitize_label(name)[:MAX_K8S_NAME_LENGTH]
 
@@ -220,7 +272,15 @@ class KubernetesDeployer(ContainerizedDeployer):
         deployment: DeploymentResponse,
         settings: KubernetesDeployerSettings,
     ) -> Dict[str, str]:
-        """Get labels for Kubernetes resources."""
+        """Get labels for Kubernetes resources.
+
+        Args:
+            deployment: The deployment to create labels for.
+            settings: Deployer settings.
+
+        Returns:
+            Dictionary of sanitized labels.
+        """
         labels = {
             "zenml-deployment-id": str(deployment.id),
             "zenml-deployment-name": kube_utils.sanitize_label(
@@ -966,9 +1026,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             stack: The stack to use.
             environment: Environment variables.
             secrets: Secret environment variables.
-
-        Raises:
-            DeploymentProvisionError: If any step fails.
         """
         logger.info(
             f"\n{'=' * 70}\n"
@@ -1156,9 +1213,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             applier: KubernetesApplier instance.
             resource_name: Resource name.
             namespace: Kubernetes namespace.
-
-        Raises:
-            DeploymentProvisionError: If validation fails.
         """
         logger.info(f"   🔸 Validating deployment '{deployment.name}'...")
         self._apply_core_resources(
@@ -1271,6 +1325,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             The operational state.
 
         Raises:
+            DeployerError: If deployment has no snapshot.
             DeploymentNotFoundError: If deployment not found.
         """
         snapshot = deployment.snapshot
@@ -1436,6 +1491,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentDeprovisionError: If deprovisioning fails.
+            DeploymentNotFoundError: If deployment not found.
         """
         snapshot = deployment.snapshot
         if not snapshot:
