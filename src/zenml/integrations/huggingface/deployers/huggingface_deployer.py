@@ -116,8 +116,9 @@ class HuggingfaceDeployer(ContainerizedDeployer):
         username = api.whoami()["name"]
 
         # Simple sanitization: alphanumeric, hyphens, underscores only
-        space_name = re.sub(r"[^a-zA-Z0-9\-_]", "-", deployment.name).lower()
-        space_name = f"{self.config.space_prefix}-{space_name}"
+        sanitized = re.sub(r"[^a-zA-Z0-9\-_]", "-", deployment.name).lower()
+        sanitized = sanitized.strip("-") or "deployment"
+        space_name = f"{self.config.space_prefix}-{sanitized}"
 
         return f"{username}/{space_name}"
 
@@ -182,7 +183,11 @@ class HuggingfaceDeployer(ContainerizedDeployer):
                 # Create Dockerfile
                 dockerfile = os.path.join(tmpdir, "Dockerfile")
                 env_vars = {**environment, **secrets}
-                env_lines = [f'ENV {k}="{v}"' for k, v in env_vars.items()]
+                # Escape backslashes and quotes in environment variable values
+                env_lines = [
+                    f'ENV {k}="{v.replace(chr(92), chr(92) * 2).replace(chr(34), chr(92) + chr(34))}"'
+                    for k, v in env_vars.items()
+                ]
                 with open(dockerfile, "w") as f:
                     f.write(
                         f"FROM {image}\n"
@@ -207,23 +212,29 @@ class HuggingfaceDeployer(ContainerizedDeployer):
             # Set hardware and storage if specified
             hardware = settings.space_hardware or self.config.space_hardware
             if hardware:
-                from huggingface_hub import SpaceHardware
+                try:
+                    from huggingface_hub import SpaceHardware
 
-                api.request_space_hardware(
-                    repo_id=space_id,
-                    hardware=getattr(
-                        SpaceHardware, hardware.upper().replace("-", "_")
-                    ),
-                )
+                    api.request_space_hardware(
+                        repo_id=space_id,
+                        hardware=getattr(
+                            SpaceHardware, hardware.upper().replace("-", "_")
+                        ),
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to set hardware {hardware}: {e}")
 
             storage = settings.space_storage or self.config.space_storage
             if storage:
-                from huggingface_hub import SpaceStorage
+                try:
+                    from huggingface_hub import SpaceStorage
 
-                api.request_space_storage(
-                    repo_id=space_id,
-                    storage=getattr(SpaceStorage, storage.upper()),
-                )
+                    api.request_space_storage(
+                        repo_id=space_id,
+                        storage=getattr(SpaceStorage, storage.upper()),
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to set storage {storage}: {e}")
 
             space_url = f"https://huggingface.co/spaces/{space_id}"
             return DeploymentOperationalState(

@@ -20,7 +20,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 HUGGINGFACE_MODEL_DEPLOYER_FLAVOR = "huggingface"
-HUGGINGFACE_DEPLOYER_FLAVOR = "huggingface"
+HUGGINGFACE_DEPLOYER_FLAVOR = "huggingface-spaces"
 HUGGINGFACE_SERVICE_ARTIFACT = "hf_deployment_service"
 
 
