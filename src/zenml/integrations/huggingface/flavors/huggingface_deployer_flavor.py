@@ -21,37 +21,32 @@ from zenml.deployers.base_deployer import (
 )
 from zenml.integrations.huggingface import HUGGINGFACE_DEPLOYER_FLAVOR
 from zenml.models import ServiceConnectorRequirements
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
-    from zenml.integrations.huggingface.deployers import HuggingfaceDeployer
+    from zenml.integrations.huggingface.deployers import HuggingFaceDeployer
 
 
-class HuggingfaceDeployerConfig(BaseDeployerConfig):
-    """Configuration for the Huggingface deployer.
+class HuggingFaceDeployerConfig(BaseDeployerConfig):
+    """Configuration for the Hugging Face deployer.
 
     Attributes:
-        token: Huggingface API token for authentication. If not provided,
-            will attempt to use token from the Huggingface CLI login or
-            from environment variables
-        space_hardware: Hardware tier to use for the Space. Examples: 'cpu-basic',
-            'cpu-upgrade', 't4-small', 't4-medium', 'a10g-small', 'a10g-large'.
-            Defaults to 'cpu-basic' for free tier
-        space_storage: Persistent storage tier for the Space. Options: 'small',
-            'medium', 'large'. If not specified, uses ephemeral storage which
-            resets on Space restart
-        space_prefix: Prefix to use for Space names to organize deployments.
-            The final Space name will be '{space_prefix}-{deployment_name}'.
-            Must be a valid Huggingface Space name component
+        token: Hugging Face API token for authentication
+        secret_name: Name of ZenML secret containing the token
+        space_hardware: Hardware tier (e.g., 'cpu-basic', 't4-small')
+        space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
+        space_prefix: Prefix for Space names to organize deployments
     """
 
-    token: Optional[str] = None
+    token: Optional[str] = SecretField(default=None)
+    secret_name: Optional[str] = None
     space_hardware: Optional[str] = None
     space_storage: Optional[str] = None
     space_prefix: str = "zenml"
 
 
-class HuggingfaceDeployerFlavor(BaseDeployerFlavor):
-    """Flavor for the Huggingface deployer."""
+class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
+    """Flavor for the Hugging Face deployer."""
 
     @property
     def name(self) -> str:
@@ -91,25 +86,25 @@ class HuggingfaceDeployerFlavor(BaseDeployerFlavor):
 
     @property
     def config_class(self) -> Type[BaseDeployerConfig]:
-        """Returns `HuggingfaceDeployerConfig` config class.
+        """Returns `HuggingFaceDeployerConfig` config class.
 
         Returns:
             The config class.
         """
-        return HuggingfaceDeployerConfig
+        return HuggingFaceDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["HuggingfaceDeployer"]:
+    def implementation_class(self) -> Type["HuggingFaceDeployer"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
         from zenml.integrations.huggingface.deployers import (
-            HuggingfaceDeployer,
+            HuggingFaceDeployer,
         )
 
-        return HuggingfaceDeployer
+        return HuggingFaceDeployer
 
     @property
     def service_connector_requirements(

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the ZenML Huggingface deployer."""
+"""Implementation of the ZenML Hugging Face deployer."""
 
 import os
 import re
@@ -21,10 +21,12 @@ from typing import (
     Dict,
     Generator,
     Optional,
+    Tuple,
     Type,
     cast,
 )
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.deployers.base_deployer import BaseDeployerSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
@@ -36,10 +38,11 @@ from zenml.deployers.exceptions import (
 )
 from zenml.enums import DeploymentStatus
 from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
-    HuggingfaceDeployerConfig,
+    HuggingFaceDeployerConfig,
 )
 from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
+from zenml.stack.stack_validator import StackValidator
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -47,8 +50,8 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class HuggingfaceDeployerSettings(BaseDeployerSettings):
-    """Huggingface deployer settings.
+class HuggingFaceDeployerSettings(BaseDeployerSettings):
+    """Hugging Face deployer settings.
 
     Attributes:
         space_hardware: Hardware tier for the Space (e.g., 'cpu-basic', 't4-small')
@@ -63,32 +66,76 @@ class HuggingfaceDeployerSettings(BaseDeployerSettings):
     app_port: int = 7860
 
 
-class HuggingfaceDeployer(ContainerizedDeployer):
-    """Deployer that runs deployments as Huggingface Spaces."""
+class HuggingFaceDeployer(ContainerizedDeployer):
+    """Deployer that runs deployments as Hugging Face Spaces."""
 
     @property
     def settings_class(self) -> Optional[Type[BaseSettings]]:
-        """Settings class for the Huggingface deployer.
+        """Settings class for the Hugging Face deployer.
 
         Returns:
             The settings class.
         """
-        return HuggingfaceDeployerSettings
+        return HuggingFaceDeployerSettings
 
     @property
-    def config(self) -> HuggingfaceDeployerConfig:
-        """Returns the `HuggingfaceDeployerConfig` config.
+    def config(self) -> HuggingFaceDeployerConfig:
+        """Returns the `HuggingFaceDeployerConfig` config.
 
         Returns:
             The configuration.
         """
-        return cast(HuggingfaceDeployerConfig, self._config)
+        return cast(HuggingFaceDeployerConfig, self._config)
 
-    def _get_hf_api(self) -> "HfApi":  # type: ignore[name-defined]
-        """Get the Huggingface API client.
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates the stack.
 
         Returns:
-            The Huggingface API client.
+            A validator that checks token or secret_name is present.
+        """
+
+        def _validate_token_or_secret(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            """Check if secret or token is present.
+
+            Args:
+                stack: The stack to validate.
+
+            Returns:
+                Tuple of (is_valid, message).
+            """
+            return bool(self.config.token or self.config.secret_name), (
+                "The Hugging Face deployer requires either a token or "
+                "secret_name to be configured."
+            )
+
+        return StackValidator(
+            custom_validation_function=_validate_token_or_secret,
+        )
+
+    def _get_token(self) -> Optional[str]:
+        """Get the Hugging Face token.
+
+        Returns:
+            The token from config, secret, or environment.
+        """
+        if self.config.token:
+            return self.config.token
+
+        if self.config.secret_name:
+            client = Client()
+            secret = client.get_secret(self.config.secret_name)
+            return secret.secret_values.get("token")
+
+        return os.environ.get("HF_TOKEN")
+
+    def _get_hf_api(self) -> "HfApi":  # type: ignore[name-defined]
+        """Get the Hugging Face API client.
+
+        Returns:
+            The Hugging Face API client.
 
         Raises:
             DeployerError: If huggingface_hub is not installed.
@@ -100,7 +147,7 @@ class HuggingfaceDeployer(ContainerizedDeployer):
                 "huggingface_hub is required. Install with: pip install huggingface_hub"
             )
 
-        token = self.config.token or os.environ.get("HF_TOKEN")
+        token = self._get_token()
         return HfApi(token=token)
 
     def _get_space_id(self, deployment: DeploymentResponse) -> str:
@@ -148,7 +195,7 @@ class HuggingfaceDeployer(ContainerizedDeployer):
         assert deployment.snapshot, "Pipeline snapshot not found"
 
         settings = cast(
-            HuggingfaceDeployerSettings,
+            HuggingFaceDeployerSettings,
             self.get_settings(deployment.snapshot),
         )
 

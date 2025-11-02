@@ -66,16 +66,16 @@ class HuggingfaceIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Huggingface integration.
+        """Declare the stack component flavors for the Hugging Face integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         from zenml.integrations.huggingface.flavors import (
-            HuggingfaceDeployerFlavor,
+            HuggingFaceDeployerFlavor,
             HuggingFaceModelDeployerFlavor,
         )
 
-        return [HuggingfaceDeployerFlavor, HuggingFaceModelDeployerFlavor]
+        return [HuggingFaceDeployerFlavor, HuggingFaceModelDeployerFlavor]
 
 

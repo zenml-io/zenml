@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Huggingface deployers."""
+"""Hugging Face deployers."""
 
 from zenml.integrations.huggingface.deployers.huggingface_deployer import (
-    HuggingfaceDeployer,
-    HuggingfaceDeployerSettings,
+    HuggingFaceDeployer,
+    HuggingFaceDeployerSettings,
 )
 
 __all__ = [
-    "HuggingfaceDeployer",
-    "HuggingfaceDeployerSettings",
+    "HuggingFaceDeployer",
+    "HuggingFaceDeployerSettings",
 ]

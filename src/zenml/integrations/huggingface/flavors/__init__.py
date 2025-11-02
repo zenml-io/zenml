@@ -14,8 +14,8 @@
 """Hugging Face integration flavors."""
 
 from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (  # noqa
-    HuggingfaceDeployerConfig,
-    HuggingfaceDeployerFlavor,
+    HuggingFaceDeployerConfig,
+    HuggingFaceDeployerFlavor,
 )
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (  # noqa
     HuggingFaceModelDeployerConfig,
@@ -24,8 +24,8 @@ from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor im
 )
 
 __all__ = [
-    "HuggingfaceDeployerConfig",
-    "HuggingfaceDeployerFlavor",
+    "HuggingFaceDeployerConfig",
+    "HuggingFaceDeployerFlavor",
     "HuggingFaceModelDeployerConfig",
     "HuggingFaceModelDeployerFlavor",
     "HuggingFaceBaseConfig",
