@@ -354,12 +354,16 @@ class KubernetesTemplateEngine:
                 f"Failed to convert template to K8s object: {e}"
             ) from e
 
-        if parsed_api_version and hasattr(k8s_object, "api_version") and not getattr(
-            k8s_object, "api_version", None
+        if (
+            parsed_api_version
+            and hasattr(k8s_object, "api_version")
+            and not getattr(k8s_object, "api_version", None)
         ):
             setattr(k8s_object, "api_version", parsed_api_version)
-        if parsed_kind and hasattr(k8s_object, "kind") and not getattr(
-            k8s_object, "kind", None
+        if (
+            parsed_kind
+            and hasattr(k8s_object, "kind")
+            and not getattr(k8s_object, "kind", None)
         ):
             setattr(k8s_object, "kind", parsed_kind)
 
@@ -496,7 +500,7 @@ class KubernetesTemplateEngine:
             manifests: Dictionary mapping filename to YAML content.
             deployment_name: Name of the deployment (used for directory name).
             output_dir: Optional custom output directory. If not provided,
-                uses the ZenML global config directory or temp directory as fallback.
+                uses project root '.zenml-deployments/' directory or temp directory as fallback.
 
         Returns:
             Path to the directory containing all saved manifests.
@@ -508,23 +512,21 @@ class KubernetesTemplateEngine:
         else:
             try:
                 from zenml.client import Client
+                from zenml.utils import source_utils
 
-                client = Client()
-                config_dir = client.config_directory
-                if config_dir:
+                # Try to get the project/repository root first
+                repo_root = Client.find_repository()
+                if repo_root:
+                    # Use project root with .zenml-deployments directory
                     manifest_dir = (
-                        Path(config_dir)
-                        / "kubernetes"
-                        / "manifests"
-                        / deployment_name
+                        repo_root / ".zenml-deployments" / deployment_name
                     )
                 else:
+                    # Fallback to source root if no repository found
+                    source_root = source_utils.get_source_root()
                     manifest_dir = (
-                        Path.home()
-                        / ".config"
-                        / "zenml"
-                        / "kubernetes"
-                        / "manifests"
+                        Path(source_root)
+                        / ".zenml-deployments"
                         / deployment_name
                     )
             except Exception:
@@ -532,7 +534,7 @@ class KubernetesTemplateEngine:
                     Path(tempfile.gettempdir()) / "zenml-k8s" / deployment_name
                 )
                 logger.warning(
-                    "Could not access ZenML config directory. "
+                    "Could not determine project root. "
                     f"Saving manifests to temp directory: {manifest_dir}"
                 )
 

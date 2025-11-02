@@ -137,8 +137,7 @@ class KubernetesApplier:
         if is_namespaced:
             get_kwargs["namespace"] = namespace
 
-        # Prepare dry_run parameter
-        dry_run_param = ["All"] if dry_run else None
+        dry_run_param = "All" if dry_run else None
 
         try:
             # Try to get existing resource (just to check if it exists)
@@ -219,7 +218,9 @@ class KubernetesApplier:
             ApiException: If the operation fails.
         """
         if hasattr(resource, "to_dict"):
-            resource_dict = self.api_client.sanitize_for_serialization(resource)
+            resource_dict = self.api_client.sanitize_for_serialization(
+                resource
+            )
         elif isinstance(resource, dict):
             resource_dict = resource
         else:
@@ -251,7 +252,9 @@ class KubernetesApplier:
         if kind_value:
             normalized_dict["kind"] = str(kind_value)
 
-        if not normalized_dict.get("apiVersion") or not normalized_dict.get("kind"):
+        if not normalized_dict.get("apiVersion") or not normalized_dict.get(
+            "kind"
+        ):
             raise ValueError(
                 "Resource must have 'kind' and 'apiVersion' fields. "
                 f"Got: kind={normalized_dict.get('kind')}, apiVersion={normalized_dict.get('apiVersion')}"

@@ -957,6 +957,35 @@ class BaseDeployer(StackComponent, ABC):
     # ------------------ Abstract Methods ------------------
 
     @abstractmethod
+    def do_dry_run_deployment(
+        self,
+        deployment: DeploymentResponse,
+        stack: "Stack",
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> None:
+        """Perform dry-run validation without actually deploying.
+
+        Concrete deployer subclasses must implement the following functionality:
+
+        - Generate deployment manifests/configurations
+        - Save manifests to disk (e.g., .zenml-deployments/)
+        - Validate manifests with the deployment platform (if supported)
+        - Print manifests if requested
+        - Do NOT create any actual resources or deployments
+
+        Args:
+            deployment: The deployment to validate (temporary, not in DB).
+            stack: The stack to use.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Raises:
+            DeploymentProvisionError: If validation fails.
+            DeployerError: If an unexpected error occurs.
+        """
+
+    @abstractmethod
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,

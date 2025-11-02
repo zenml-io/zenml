@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes deployer flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import Field, PositiveInt, field_validator
 
@@ -58,7 +58,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
           Use this to customize health probes, service annotations, etc.
 
     Development/Testing:
-        dry_run: Validate without creating resources.
         save_manifests: Save generated manifests to disk.
         manifest_output_dir: Custom directory for saved manifests.
     """
@@ -243,67 +242,67 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "Use this for advanced scheduling and resource requirements.",
     )
 
-    additional_resources: List[Union[Dict[str, Any], str]] = Field(
+    additional_resources: List[str] = Field(
         default_factory=list,
         description="Additional Kubernetes resources to deploy alongside Deployment/Service. "
-        "Works for ANY resource type: Ingress, HPA, NetworkPolicy, ServiceMonitor, CRDs, etc.\n\n"
-        "Supports three formats:\n"
-        "1. Python dicts (inline manifests)\n"
-        "2. File paths to YAML files (single or multi-document)\n"
-        "3. Mix of both\n\n"
-        "💡 TIP: Use dry_run=True to validate all resources via Kubernetes API "
-        "before actually deploying.\n\n"
-        "Example 1 - Inline dicts:\n"
-        "```python\n"
-        "additional_resources=[\n"
-        "    {'apiVersion': 'networking.k8s.io/v1', 'kind': 'Ingress', ...},\n"
-        "    {'apiVersion': 'autoscaling/v2', 'kind': 'HorizontalPodAutoscaler', ...},\n"
-        "]\n"
+        "Provide paths to YAML files containing any Kubernetes resources: "
+        "Ingress, HPA, NetworkPolicy, PDB, ServiceMonitor, CRDs, etc.\n\n"
+        "**Format**: List of file paths to YAML files (absolute or relative to pipeline config).\n"
+        "**Multi-document YAML**: Use `---` separator to include multiple resources in one file.\n"
+        "**Jinja2 Templating**: All files are rendered with deployment context variables.\n\n"
+        "**Available Template Variables**:\n"
+        "- `{{name}}`: Deployment/Service resource name\n"
+        "- `{{namespace}}`: Kubernetes namespace\n"
+        "- `{{image}}`: Container image\n"
+        "- `{{replicas}}`: Number of replicas\n"
+        "- `{{labels}}`: ZenML labels dictionary\n"
+        "- `{{labels['zenml-deployment-id']}}`: Deployment UUID\n"
+        "- `{{labels['zenml-deployment-name']}}`: Deployment name\n"
+        "- Plus: env_vars, resource_requests, resource_limits, etc.\n\n"
+        "**Example YAML file** (`k8s-resources.yaml`):\n"
+        "```yaml\n"
+        "# Ingress with Jinja2 templating\n"
+        "apiVersion: networking.k8s.io/v1\n"
+        "kind: Ingress\n"
+        "metadata:\n"
+        "  name: my-ingress\n"
+        "  namespace: {{namespace}}\n"
+        "spec:\n"
+        "  rules:\n"
+        "    - host: myapp.example.com\n"
+        "      http:\n"
+        "        paths:\n"
+        "          - path: /\n"
+        "            backend:\n"
+        "              service:\n"
+        "                name: {{name}}  # Auto-filled!\n"
+        "                port:\n"
+        "                  number: 8000\n"
+        "---\n"
+        "# HPA in same file\n"
+        "apiVersion: autoscaling/v2\n"
+        "kind: HorizontalPodAutoscaler\n"
+        "metadata:\n"
+        "  name: my-hpa\n"
+        "  namespace: {{namespace}}\n"
+        "spec:\n"
+        "  scaleTargetRef:\n"
+        "    name: {{name}}\n"
+        "    kind: Deployment\n"
+        "  minReplicas: {{replicas}}\n"
+        "  maxReplicas: 10\n"
         "```\n\n"
-        "Example 2 - YAML files:\n"
-        "```python\n"
-        "additional_resources=[\n"
-        "    'k8s/ingress.yaml',  # Single resource\n"
-        "    'k8s/all-resources.yaml',  # Multiple resources (separated by ---)\n"
-        "]\n"
+        "**Usage in pipeline config**:\n"
+        "```yaml\n"
+        "settings:\n"
+        "  deployer:\n"
+        "    additional_resources:\n"
+        "      - ./k8s-resources.yaml\n"
+        "      - ./monitoring/metrics.yaml\n"
         "```\n\n"
-        "Example 3 - Mixed:\n"
-        "```python\n"
-        "additional_resources=[\n"
-        "    'k8s/ingress.yaml',  # From file\n"
-        "    {'apiVersion': 'autoscaling/v2', 'kind': 'HorizontalPodAutoscaler', ...},  # Inline\n"
-        "]\n"
-        "```\n\n"
-        "ZenML validates and applies these for you. All resources are cleaned up on deprovision.",
+        "💡 **TIP**: Use `zenml pipeline deploy --dry-run` to validate resources "
+        "before deploying.",
     )
-
-    @field_validator("additional_resources")
-    @classmethod
-    def validate_additional_resources(
-        cls, v: List[Union[Dict[str, Any], str]]
-    ) -> List[Union[Dict[str, Any], str]]:
-        """Validate additional resources format.
-
-        Args:
-            v: List of additional resources.
-
-        Returns:
-            The validated list.
-
-        Raises:
-            ValueError: If a resource dict is missing required fields.
-        """
-        for resource in v:
-            if isinstance(resource, dict):
-                if "kind" not in resource:
-                    raise ValueError(
-                        f"Resource dict must have 'kind' field: {resource}"
-                    )
-                if "apiVersion" not in resource:
-                    raise ValueError(
-                        f"Resource dict must have 'apiVersion' field: {resource}"
-                    )
-        return v
 
     # ========================================================================
     # Template and Development Settings
@@ -316,22 +315,21 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "Example: '~/.zenml/k8s-templates'",
     )
 
-    dry_run: bool = Field(
-        default=False,
-        description="If True, validate manifests without creating resources. "
-        "Useful for testing configurations before applying them.",
-    )
-
     save_manifests: bool = Field(
         default=False,
-        description="If True, save generated YAML manifests to disk for inspection. "
-        "Always enabled when dry_run=True.",
+        description="If True, save generated YAML manifests to disk for inspection.",
+    )
+
+    print_manifests: bool = Field(
+        default=False,
+        description="If True, print generated YAML manifests to the console. "
+        "Useful for debugging and CI/CD pipelines.",
     )
 
     manifest_output_dir: Optional[str] = Field(
         default=None,
         description="Custom directory for saving manifests. "
-        "If not provided, uses ZenML config directory. "
+        "If not provided, uses project root '.zenml-deployments/' directory. "
         "Supports path expansion: '~/my-manifests'",
     )
 
@@ -339,8 +337,9 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     # Internal/Backward Compatibility Properties
     # ========================================================================
 
-    wait_for_load_balancer_timeout: PositiveInt = Field(
+    wait_for_load_balancer_timeout: int = Field(
         default=150,
+        ge=0,
         description="Timeout in seconds for LoadBalancer IP assignment. "
         "Set to 0 to skip waiting. Only applies to LoadBalancer service type.",
     )

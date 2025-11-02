@@ -44,7 +44,9 @@ spec:
   replicas: {{ replicas | default(1) }}
   selector:
     matchLabels:
-      app: {{ name | k8s_name }}
+      managed-by: zenml
+      zenml-deployment-id: {{ labels.get('zenml-deployment-id') | tojson }}
+      zenml-deployment-name: {{ labels.get('zenml-deployment-name') | tojson }}
   template:
     metadata:
       labels:
@@ -93,11 +95,13 @@ spec:
       {% endif %}
       
       {% if pod_settings and pod_settings.affinity %}
-      affinity: {{ pod_settings.affinity | to_yaml | indent(8) }}
+      affinity:
+{{ pod_settings.affinity | to_yaml | indent(8, first=True) }}
       {% endif %}
       
       {% if pod_settings and pod_settings.tolerations %}
-      tolerations: {{ pod_settings.tolerations | to_yaml | indent(8) }}
+      tolerations:
+{{ pod_settings.tolerations | to_yaml | indent(8, first=True) }}
       {% endif %}
       
       {% if pod_settings and pod_settings.scheduler_name %}
@@ -179,7 +183,8 @@ spec:
           failureThreshold: {{ liveness_probe_failure_threshold }}
         
         {% if pod_settings and pod_settings.volume_mounts %}
-        volumeMounts: {{ pod_settings.volume_mounts | to_yaml | indent(10) }}
+        volumeMounts:
+{{ pod_settings.volume_mounts | to_yaml | indent(10, first=True) }}
         {% endif %}
         
         {% if security_context %}
@@ -188,7 +193,8 @@ spec:
         {% endif %}
       
       {% if pod_settings and pod_settings.volumes %}
-      volumes: {{ pod_settings.volumes | to_yaml | indent(8) }}
+      volumes:
+{{ pod_settings.volumes | to_yaml | indent(8, first=True) }}
       {% endif %}
       
       {% if pod_settings and pod_settings.additional_pod_spec_args %}

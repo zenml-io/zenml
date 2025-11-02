@@ -387,6 +387,23 @@ def run_pipeline(
     default=None,
     help="Maximum time in seconds to wait for the pipeline to be deployed.",
 )
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Validate manifests without actually creating resources in Kubernetes. "
+    "Manifests will be saved to .zenml-deployments/ for inspection.",
+)
+@click.option(
+    "--print-manifests",
+    "print_manifests",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Print generated Kubernetes manifests to console (deployment, service, and any additional resources).",
+)
 def deploy_pipeline(
     source: str,
     deployment_name: Optional[str] = None,
@@ -398,6 +415,8 @@ def deploy_pipeline(
     overtake: bool = False,
     attach: bool = False,
     timeout: Optional[int] = None,
+    dry_run: bool = False,
+    print_manifests: bool = False,
 ) -> None:
     """Deploy a pipeline for online inference.
 
@@ -418,6 +437,10 @@ def deploy_pipeline(
         attach: If True, attach to the deployment logs.
         timeout: The maximum time in seconds to wait for the pipeline to be
             deployed.
+        dry_run: If True, validate Kubernetes manifests without creating resources.
+            Manifests are automatically saved to .zenml-deployments/.
+        print_manifests: If True, print all generated Kubernetes manifests to
+            console (deployment, service, and additional resources).
     """
     if not Client().root:
         cli_utils.warning(
@@ -448,9 +471,113 @@ def deploy_pipeline(
             build=build,
             prevent_build_reuse=prevent_build_reuse,
         )
+
+        if print_manifests:
+            existing_settings = pipeline_instance._run_args.get("settings", {})
+            deployer_settings = existing_settings.get("deployer", {})
+
+            if hasattr(deployer_settings, "model_dump"):
+                deployer_settings = deployer_settings.model_dump()
+            elif not isinstance(deployer_settings, dict):
+                deployer_settings = {}
+
+            deployer_settings["print_manifests"] = True
+            existing_settings["deployer"] = deployer_settings
+            pipeline_instance = pipeline_instance.with_options(
+                settings=existing_settings
+            )
+
         if not deployment_name:
             deployment_name = pipeline_instance.name
         client = Client()
+
+        if dry_run:
+            cli_utils.declare(
+                f"[DRY-RUN] Generating deployment artifacts for '{deployment_name}'"
+            )
+
+            pipeline_instance.prepare()
+            snapshot = pipeline_instance._create_snapshot(
+                **pipeline_instance._run_args
+            )
+
+            stack = client.active_stack
+            stack.prepare_pipeline_submission(snapshot=snapshot)
+
+            if not stack.deployer:
+                cli_utils.error(
+                    "The stack does not have a deployer. Please add a "
+                    "deployer to the stack in order to perform dry-run."
+                )
+
+            from datetime import datetime, timezone
+            from uuid import uuid4
+
+            from zenml.constants import (
+                ENV_ZENML_ACTIVE_PROJECT_ID,
+                ENV_ZENML_ACTIVE_STACK_ID,
+            )
+            from zenml.models import (
+                DeploymentResponse,
+                DeploymentResponseBody,
+                DeploymentResponseMetadata,
+                DeploymentResponseResources,
+            )
+            from zenml.orchestrators.utils import get_config_environment_vars
+
+            # Create temporary deployment with resources pre-populated
+            # (avoids DB lookup when accessing deployment.snapshot)
+            now = datetime.now(timezone.utc)
+
+            # Get the deployer's ComponentResponse representation
+            deployer_response = client.zen_store.get_stack_component(
+                stack.deployer.id
+            )
+
+            temp_deployment = DeploymentResponse(
+                id=uuid4(),
+                name=deployment_name,
+                project=snapshot.project_id,
+                snapshot_id=snapshot.id,
+                deployer_id=stack.deployer.id,
+                created=now,
+                updated=now,
+                body=DeploymentResponseBody(
+                    created=now,
+                    updated=now,
+                    user_id=client.active_user.id,
+                    project_id=snapshot.project_id,
+                ),
+                metadata=DeploymentResponseMetadata(
+                    deployment_metadata={},
+                    auth_key=None,
+                ),
+                resources=DeploymentResponseResources(
+                    snapshot=snapshot,
+                    deployer=deployer_response,
+                    tags=[],
+                ),
+            )
+
+            environment, secrets = get_config_environment_vars(
+                deployment_id=None,
+            )
+            environment[ENV_ZENML_ACTIVE_STACK_ID] = str(stack.id)
+            environment[ENV_ZENML_ACTIVE_PROJECT_ID] = str(snapshot.project_id)
+
+            stack.deployer.do_dry_run_deployment(
+                deployment=temp_deployment,
+                stack=stack,
+                environment=environment,
+                secrets=secrets,
+            )
+
+            cli_utils.declare(
+                "[DRY-RUN] Complete. Deployment artifacts generated. "
+                "No database records or actual deployments created."
+            )
+            return
+
         try:
             deployment = client.get_deployment(deployment_name)
         except KeyError:

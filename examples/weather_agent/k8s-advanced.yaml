@@ -1,0 +1,157 @@
+# Advanced Kubernetes Deployment Configuration for Weather Agent
+# This configuration demonstrates advanced Kubernetes deployment options including:
+# - Advanced pod settings (volumes, affinity, tolerations)
+# - Ingress for domain-based routing with TLS
+# - HorizontalPodAutoscaler for dynamic scaling
+# - Custom annotations and labels
+
+# Override default pipeline parameters
+parameters:
+  city: "San Francisco"
+
+settings:
+  docker:
+    parent_image: safoinme/zenml:deployer-0.4
+    allow_download_from_artifact_store: false
+    allow_including_files_in_images: true
+  
+  # Resource configuration - HPA will scale between min/max replicas
+  resources:
+    cpu_count: 1
+    memory: "2GB"
+    min_replicas: 2
+    max_replicas: 10
+  
+  # Advanced Kubernetes deployer configuration
+  deployer:
+    # ========================================================================
+    # Basic Configuration
+    # ========================================================================
+    namespace: weather-prod
+    
+    # Use ClusterIP since we're exposing via Ingress
+    service_type: ClusterIP
+    service_port: 8000
+    
+    # ========================================================================
+    # Health Probes
+    # ========================================================================
+    readiness_probe_path: /api/health
+    readiness_probe_initial_delay: 5
+    readiness_probe_period: 10
+    readiness_probe_timeout: 3
+    readiness_probe_failure_threshold: 3
+    
+    liveness_probe_path: /api/health
+    liveness_probe_initial_delay: 20
+    liveness_probe_period: 15
+    liveness_probe_timeout: 5
+    liveness_probe_failure_threshold: 3
+    
+    # ========================================================================
+    # Labels and Annotations
+    # ========================================================================
+    labels:
+      app: weather-agent
+      environment: production
+      version: "1.0"
+      team: ml-platform
+    
+    annotations:
+      # Prometheus monitoring
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8000"
+      prometheus.io/path: "/metrics"
+      # Custom annotations
+      deployed-by: zenml
+      contact: ml-team@company.com
+    
+    # ========================================================================
+    # Advanced Pod Settings
+    # ========================================================================
+    pod_settings:
+      # Custom labels (merged with deployer labels)
+      labels:
+        cost-center: ml-ops
+        data-classification: public
+      
+      # Pod annotations (for things like Istio, Linkerd, etc.)
+      annotations:
+        sidecar.istio.io/inject: "false"  # Disable service mesh if not needed
+      
+      # Node affinity - prefer nodes with GPU or high memory
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - compute-optimized
+                      - memory-optimized
+      
+      # Tolerations - allow scheduling on tainted nodes
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "ml-workloads"
+          effect: "NoSchedule"
+      
+      # Node selector - simple node selection
+      node_selector:
+        disktype: ssd
+        region: us-west
+      
+      # Volumes - persistent storage example
+      volumes:
+        - name: model-cache
+          emptyDir:
+            sizeLimit: "10Gi"
+        - name: config
+          configMap:
+            name: weather-config
+            optional: true
+      
+      # Volume mounts
+      volume_mounts:
+        - name: model-cache
+          mountPath: /app/model-cache
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+      
+      # Host aliases - for custom DNS resolution
+      host_aliases:
+        - ip: "10.0.0.1"
+          hostnames:
+            - "internal-api.company.local"
+    
+    # ========================================================================
+    # Image Configuration
+    # ========================================================================
+    image_pull_policy: IfNotPresent
+    image_pull_secrets:
+      - dockerhub-secret
+    
+    # Service account for RBAC
+    service_account_name: weather-agent-sa
+    
+    # ========================================================================
+    # Additional Kubernetes Resources
+    # ========================================================================
+    # Additional Kubernetes resources (Ingress, HPA, PDB, NetworkPolicy, ServiceMonitor)
+    # Use YAML files for cleaner configuration with Jinja2 templating support
+    additional_resources:
+      - ./k8s-additional-resources.yaml
+    
+    # ========================================================================
+    # Development/Debug Settings
+    # ========================================================================
+    save_manifests: true  # Save to .zenml-deployments/
+    print_manifests: false  # Set to true to print manifests to console
+    
+    # Timeouts
+    wait_for_load_balancer_timeout: 0  # Not using LoadBalancer
+    deployment_ready_check_interval: 2

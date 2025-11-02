@@ -205,6 +205,9 @@ examples/computer_vision/test_runs
 #generated folder by zenml
 zenml_tutorial/
 
+# Kubernetes deployment manifests (generated at runtime)
+.zenml-deployments/
+
 # Claude settings
 **/.claude/settings.local.json
 .claude/
