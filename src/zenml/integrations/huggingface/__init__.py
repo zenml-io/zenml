@@ -20,6 +20,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 HUGGINGFACE_MODEL_DEPLOYER_FLAVOR = "huggingface"
+HUGGINGFACE_DEPLOYER_FLAVOR = "huggingface"
 HUGGINGFACE_SERVICE_ARTIFACT = "hf_deployment_service"
 
 
@@ -71,9 +72,10 @@ class HuggingfaceIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.huggingface.flavors import (
+            HuggingfaceDeployerFlavor,
             HuggingFaceModelDeployerFlavor,
         )
 
-        return [HuggingFaceModelDeployerFlavor]
+        return [HuggingfaceDeployerFlavor, HuggingFaceModelDeployerFlavor]
 
 
