@@ -139,7 +139,7 @@ class HuggingfaceDeployer(ContainerizedDeployer):
                 "`pip install huggingface_hub`"
             )
 
-        token = self.config.token or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+        token = self.config.token or os.environ.get("HF_TOKEN")
         return HfApi(token=token)
 
     def _sanitize_space_name(self, name: str) -> str:
@@ -157,8 +157,11 @@ class HuggingfaceDeployer(ContainerizedDeployer):
         sanitized = re.sub(r"-+", "-", sanitized)
         # Remove leading/trailing hyphens
         sanitized = sanitized.strip("-")
+        # Handle empty result
+        if not sanitized:
+            sanitized = "zenml-deployment"
         # Ensure it starts with alphanumeric
-        if sanitized and not sanitized[0].isalnum():
+        if not sanitized[0].isalnum():
             sanitized = f"z{sanitized}"
         # Limit length (Huggingface has a max length)
         if len(sanitized) > 96:
@@ -208,11 +211,6 @@ class HuggingfaceDeployer(ContainerizedDeployer):
             README.md content.
         """
         app_port = settings.app_port
-        hardware = (
-            settings.space_hardware
-            or self.config.space_hardware
-            or "cpu-basic"
-        )
 
         return f"""---
 title: {deployment.name}
@@ -252,8 +250,8 @@ This is a ZenML deployment running on Huggingface Spaces.
         # Build ENV statements
         env_lines = []
         for key, value in all_env.items():
-            # Escape quotes in values
-            escaped_value = value.replace('"', '\\"')
+            # Escape backslashes first, then quotes
+            escaped_value = value.replace("\\", "\\\\").replace('"', '\\"')
             env_lines.append(f'ENV {key}="{escaped_value}"')
 
         env_statements = "\n".join(env_lines)
@@ -436,14 +434,26 @@ USER 1000
             runtime = api.get_space_runtime(repo_id=meta.space_id)
 
             # Determine status based on runtime stage
+            # SpaceStage enum values: NO_APP_FILE, CONFIG_ERROR, BUILDING,
+            # BUILD_ERROR, RUNNING, RUNNING_BUILDING, RUNTIME_ERROR, DELETING,
+            # STOPPED, PAUSED
             status = DeploymentStatus.PENDING
-            if runtime.stage == "RUNNING":
+            if runtime.stage in ["RUNNING", "RUNNING_BUILDING"]:
                 status = DeploymentStatus.RUNNING
-            elif runtime.stage in ["STOPPED", "PAUSED"]:
+            elif runtime.stage in [
+                "BUILD_ERROR",
+                "RUNTIME_ERROR",
+                "CONFIG_ERROR",
+                "STOPPED",
+                "PAUSED",
+            ]:
                 status = DeploymentStatus.ERROR
-            elif runtime.stage == "BUILDING":
+            elif runtime.stage in ["BUILDING", "NO_APP_FILE"]:
                 status = DeploymentStatus.PENDING
+            elif runtime.stage == "DELETING":
+                status = DeploymentStatus.ERROR
             elif runtime.stage in ["APP_STARTING", "RUNTIME_PREWARM"]:
+                # These might be legacy values, keeping for compatibility
                 status = DeploymentStatus.PENDING
 
             return DeploymentOperationalState(
@@ -484,9 +494,12 @@ USER 1000
             DeploymentLogsNotFoundError: Always, as logs are not available via API.
         """
         meta = HuggingfaceDeploymentMetadata.from_deployment(deployment)
+        log_url = (
+            f"{meta.space_url}/logs" if meta.space_url else "the Space page"
+        )
         raise DeploymentLogsNotFoundError(
             f"Logs for Huggingface Space {meta.space_id} cannot be retrieved "
-            f"via API. Please view logs at {meta.space_url}/logs"
+            f"via API. Please view logs at {log_url}"
         )
 
     def do_deprovision_deployment(
