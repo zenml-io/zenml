@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2023. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,22 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from contextlib import ExitStack as does_not_raise
+"""Initialization of the warning utils module.
 
-import pytest
-from pydantic import ValidationError
+The `warnings` module contains utilities that help centralize
+and improve warning management.
+"""
 
-from zenml.config.docker_settings import (
-    DockerSettings,
-)
+from zenml.utils.warnings.controller import WarningController
+from zenml.utils.warnings.registry import WarningCodes
 
+WARNING_CONTROLLER = WarningController.create()
 
-def test_build_skipping():
-    """Tests that a parent image is required when setting `skip_build` to
-    `True`."""
-    with pytest.raises(ValidationError):
-        DockerSettings(skip_build=True)
-
-    with does_not_raise():
-        DockerSettings(skip_build=False)
-        DockerSettings(skip_build=True, parent_image="my_parent_image")
+__all__ = [
+    "WARNING_CONTROLLER",
+    "WarningCodes"
+]
