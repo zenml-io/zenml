@@ -5,11 +5,11 @@ description: >-
 
 # Connect with an API Token
 
-API tokens provide a way to authenticate with the ZenML server for temporary automation tasks. These tokens are scoped to your user account and are valid for a maximum of 1 hour.
+API tokens provide a way to authenticate with the ZenML server for temporary automation tasks. These tokens are scoped to the user account or service account that is currently logged in and are short-lived: they have a configurable expiration time (default 1 hour) and need to be renewed periodically.
 
-## Generating an API Token
+## Generating an API Token in the ZenML UI
 
-To generate a new API token:
+To generate a new API token through the ZenML UI:
 
 1. Navigate to the server's Settings page in your ZenML dashboard (or the workspace's Settings page in your ZenML Pro dashboard)
 2. Select "API Tokens" from the left sidebar
@@ -19,6 +19,18 @@ To generate a new API token:
 3. Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token. 
 
     ![API Tokens](../../../.gitbook/assets/zenml-oss-api-token-02.png)
+
+The UI generated tokens have a fixed expiration time of 1 hour.
+
+## Generating an API Token with the CLI
+
+To generate a new API token with the CLI, run the `zenml token` command. This will print the token to the console.
+
+```bash
+zenml token
+```
+
+With the CLI, you can control the expiration time of the token by setting the `--expires-in` option. The default expiration time is 1 hour. The ZenML server also imposes a configurable maximum expiration time with a default value of 7 days. You can tweak the maximum expiration time in the ZenML server configuration to accommodate larger values (set the `ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME` server environment variable), although this is not recommended for security reasons.
 
 ## Programmatic access with API tokens
 
