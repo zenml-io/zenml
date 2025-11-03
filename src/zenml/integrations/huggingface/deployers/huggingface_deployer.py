@@ -65,13 +65,13 @@ class HuggingFaceDeployerSettings(BaseDeployerSettings):
     Attributes:
         space_hardware: Hardware tier for the Space (e.g., 'cpu-basic', 't4-small')
         space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
-        private: Whether to create a private Space
+        private: Whether to create a private Space (default: True for security)
         app_port: Port the container exposes (default 8000 for ZenML server)
     """
 
     space_hardware: Optional[str] = None
     space_storage: Optional[str] = None
-    private: bool = False
+    private: bool = True
     app_port: int = 8000
 
 

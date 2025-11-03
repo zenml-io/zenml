@@ -103,7 +103,7 @@ For additional configuration of the Hugging Face deployer, you can pass the foll
 
   * `space_hardware` (default: `None`): Hardware tier for the Space (e.g., `'cpu-basic'`, `'cpu-upgrade'`, `'t4-small'`, `'t4-medium'`, `'a10g-small'`, `'a10g-large'`). If not specified, uses free CPU tier. See [Hugging Face Spaces GPU documentation](https://huggingface.co/docs/hub/spaces-gpus) for available options and pricing.
   * `space_storage` (default: `None`): Persistent storage tier for the Space (e.g., `'small'`, `'medium'`, `'large'`). If not specified, no persistent storage is allocated.
-  * `private` (default: `False`): Whether to create the Space as private. Public Spaces are visible to everyone.
+  * `private` (default: `True`): Whether to create the Space as private. Set to `False` to make the Space publicly visible to everyone.
   * `app_port` (default: `8000`): Port number where your deployment server listens. Defaults to 8000 (ZenML server default). Hugging Face Spaces will route traffic to this port.
 
 Check out [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
@@ -116,7 +116,7 @@ from zenml.integrations.huggingface.deployers import HuggingFaceDeployerSettings
 huggingface_settings = HuggingFaceDeployerSettings(
     space_hardware="t4-small",
     space_storage="small",
-    private=True,
+    # private=True is the default for security
 )
 
 @pipeline(
@@ -167,12 +167,12 @@ The Hugging Face deployer handles secrets and environment variables **securely**
 - **Nothing is baked into the Dockerfile** - no risk of leaked credentials even in public Spaces
 
 **What this means:**
-- ✅ Safe to use with public Spaces (the default)
-- ✅ Secrets remain encrypted and hidden from public view
+- ✅ Safe to use with both private and public Spaces
+- ✅ Secrets remain encrypted and hidden from view
 - ✅ Environment variables are managed through HF's secure API
 - ✅ No credentials exposed in Dockerfile or repository files
 
-This is especially important since Hugging Face Spaces are **public by default** (`private: bool = False`). Without this secure approach, any secrets would be visible to anyone viewing your Space's repository.
+This secure approach ensures that if you choose to make your Space public (`private=False`), credentials remain protected and are never visible to anyone viewing your Space's repository.
 
 ### Container Registry Requirement
 
