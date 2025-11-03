@@ -153,39 +153,66 @@ https://huggingface.co/spaces/<YOUR_USERNAME>/<SPACE_PREFIX>-<DEPLOYMENT_NAME>
 
 By default, the space prefix is `zenml` but this can be configured using the `space_prefix` parameter when registering the deployer.
 
-## Important Limitations
+## Deployment Modes
 
-### Docker Image Accessibility
+The Hugging Face deployer supports two deployment modes depending on your stack configuration:
 
-{% hint style="warning" %}
-**Critical Limitation**: The Docker images built by ZenML must be **publicly accessible** for Hugging Face Spaces to pull them.
-{% endhint %}
+### Mode 1: Image Reference (Stack with Container Registry)
 
-Hugging Face Spaces cannot authenticate with private Docker registries when building Docker Spaces. This means:
+When your ZenML stack includes a container registry, the deployer references a pre-built Docker image:
 
-* ❌ **Private registries (AWS ECR, GCP GCR, Azure ACR) with authentication will not work**
-* ✅ **Public registries or public repositories in Docker Hub will work**
-* ✅ **Hugging Face's own registry (`registry.hf.space`) will work**
+**How it works:**
+- ZenML builds and pushes an image to your container registry
+- The Dockerfile in Hugging Face Spaces references this image with `FROM <your-image>`
+- The deployment server starts automatically with the correct entrypoint
 
-#### Workarounds
+**Requirements:**
+- Container registry must be part of your stack
+- ⚠️ **The Docker image must be publicly accessible** - Hugging Face Spaces cannot authenticate with private registries
 
-If your ZenML stack uses a private container registry, you have the following options:
+**Use when:**
+- You have a public container registry or public repository
+- You want to pre-build images in your CI/CD pipeline
+- You're using services like Docker Hub with public repositories
 
-1. **Use a public container registry**: Configure your ZenML stack with a public Docker registry or a public repository in Docker Hub:
+### Mode 2: Full Build (Stack without Container Registry)
 
+When your stack does NOT have a container registry, the deployer builds the complete image from scratch in Hugging Face Spaces:
+
+**How it works:**
+- Deployer uploads your source code to the Space
+- Generates a complete Dockerfile that installs all dependencies
+- Hugging Face Spaces builds the entire image from your code
+- ✅ **No private registry authentication needed!**
+
+**Requirements:**
+- No container registry in your stack
+- Source code and dependencies uploadable to Hugging Face
+
+**Use when:**
+- You don't want to manage a container registry
+- You want to avoid private registry authentication issues
+- Your code and dependencies aren't too large for uploading
+- You're okay with longer build times in Hugging Face Spaces
+
+### Private Registry Workaround
+
+If you're currently using a private registry and want to deploy to Hugging Face, you have two options:
+
+1. **Remove the container registry from your stack** to automatically use Full Build Mode:
+```shell
+# Create a new stack without container registry
+zenml stack copy my-stack hf-stack
+zenml stack update hf-stack --container-registry=null
+zenml stack set hf-stack
+```
+
+2. **Use a public container registry** for Hugging Face deployments:
 ```shell
 zenml container-registry register public_registry \
     --flavor=default \
     --uri=docker.io/<your-public-username>
 ```
-
-2. **Make your private repository public**: If using Docker Hub or similar, make the specific repository public (not recommended for production with sensitive code).
-
-3. **Use Hugging Face's container registry**: Push your images to `registry.hf.space` and reference them (requires additional setup).
-
-4. **Deploy without containerization**: Use the `skip_build=True` option with `DockerSettings` if your pipeline doesn't require custom dependencies (not recommended, as this limits functionality).
-
-This limitation exists because Hugging Face Spaces builds the Docker container in their infrastructure, which doesn't have access to your private registry credentials. This is different from deployers like AWS App Runner or GCP Cloud Run, which have built-in mechanisms to authenticate with private registries in their respective clouds.
 
 ## Additional Resources
 

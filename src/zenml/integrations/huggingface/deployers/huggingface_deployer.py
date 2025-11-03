@@ -36,6 +36,10 @@ from zenml.deployers.exceptions import (
     DeploymentNotFoundError,
     DeploymentProvisionError,
 )
+from zenml.deployers.server.entrypoint_configuration import (
+    DEPLOYMENT_ID_OPTION,
+    DeploymentEntrypointConfiguration,
+)
 from zenml.enums import DeploymentStatus
 from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
     HuggingFaceDeployerConfig,
@@ -43,6 +47,7 @@ from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
 from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
 from zenml.stack.stack_validator import StackValidator
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from huggingface_hub import HfApi
@@ -171,6 +176,182 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         return f"{username}/{space_name}"
 
+    def _get_entrypoint_and_command(
+        self, deployment: DeploymentResponse
+    ) -> Tuple[str, str]:
+        """Generate ENTRYPOINT and CMD for the Dockerfile.
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            Tuple of (ENTRYPOINT line, CMD line) for Dockerfile.
+        """
+        # Get entrypoint command: ["python", "-m", "zenml.entrypoints.entrypoint"]
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+
+        # Get arguments with deployment ID
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
+            **{DEPLOYMENT_ID_OPTION: deployment.id}
+        )
+
+        # Format as JSON arrays for Dockerfile exec form
+        entrypoint_line = f"ENTRYPOINT {str(entrypoint)}"
+        cmd_line = f"CMD {str(arguments)}"
+
+        return entrypoint_line, cmd_line
+
+    def _generate_image_reference_dockerfile(
+        self,
+        image: str,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        deployment: DeploymentResponse,
+    ) -> str:
+        """Generate Dockerfile that references a pre-built image.
+
+        Args:
+            image: The pre-built image to reference.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+            deployment: The deployment.
+
+        Returns:
+            The Dockerfile content.
+        """
+        lines = [f"FROM {image}"]
+
+        # Add environment variables
+        env_vars = {**environment, **secrets}
+        for k, v in env_vars.items():
+            # Escape backslashes and quotes
+            escaped_value = v.replace(chr(92), chr(92) * 2).replace(
+                chr(34), chr(92) + chr(34)
+            )
+            lines.append(f'ENV {k}="{escaped_value}"')
+
+        # Add user
+        lines.append("USER 1000")
+
+        # Add entrypoint and command
+        entrypoint_line, cmd_line = self._get_entrypoint_and_command(
+            deployment
+        )
+        lines.append(entrypoint_line)
+        lines.append(cmd_line)
+
+        return "\n".join(lines)
+
+    def _generate_full_build_dockerfile(
+        self,
+        deployment: DeploymentResponse,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> str:
+        """Generate Dockerfile that builds image from scratch.
+
+        Args:
+            deployment: The deployment.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Returns:
+            The Dockerfile content.
+        """
+        assert deployment.snapshot, "Snapshot required"
+
+        # Use Docker settings from snapshot if available
+        docker_settings = (
+            deployment.snapshot.pipeline_configuration.docker_settings
+        )
+        parent_image = (
+            docker_settings.parent_image or "zenmldocker/zenml:latest"
+        )
+
+        lines = [
+            f"FROM {parent_image}",
+            "WORKDIR /app",
+        ]
+
+        # Add environment variables
+        env_vars = {**environment, **secrets}
+        for k, v in env_vars.items():
+            escaped_value = v.replace(chr(92), chr(92) * 2).replace(
+                chr(34), chr(92) + chr(34)
+            )
+            lines.append(f'ENV {k}="{escaped_value}"')
+
+        # Install system packages if needed
+        apt_packages = docker_settings.apt_packages
+        if apt_packages:
+            apt_list = " ".join(f"'{p}'" for p in apt_packages)
+            lines.append(
+                f"RUN apt-get update && apt-get install -y --no-install-recommends {apt_list}"
+            )
+
+        # Copy and install Python requirements
+        lines.append("COPY requirements.txt .")
+        lines.append("RUN pip install --no-cache-dir -r requirements.txt")
+
+        # Copy code
+        lines.append("COPY . .")
+        lines.append("RUN chmod -R a+rw .")
+
+        # Set user
+        lines.append("USER 1000")
+
+        # Add entrypoint and command
+        entrypoint_line, cmd_line = self._get_entrypoint_and_command(
+            deployment
+        )
+        lines.append(entrypoint_line)
+        lines.append(cmd_line)
+
+        return "\n".join(lines)
+
+    def _get_requirements_for_deployment(
+        self, deployment: DeploymentResponse
+    ) -> str:
+        """Get Python requirements for the deployment.
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            Requirements as a string (one per line).
+        """
+        assert deployment.snapshot, "Snapshot required"
+
+        requirements = set()
+
+        # Add ZenML with current version
+        import zenml
+
+        requirements.add(f"zenml=={zenml.__version__}")
+
+        # Add deployer requirements
+        requirements.update(self.requirements)
+
+        # Add requirements from pipeline configuration
+        docker_settings = (
+            deployment.snapshot.pipeline_configuration.docker_settings
+        )
+        if docker_settings.requirements:
+            requirements.update(docker_settings.requirements)
+
+        # Add integration requirements if specified
+        if docker_settings.required_integrations:
+            from zenml.integrations.registry import integration_registry
+
+            for integration_name in docker_settings.required_integrations:
+                if integration_name in integration_registry.integrations:
+                    integration = integration_registry.integrations[
+                        integration_name
+                    ]
+                    requirements.update(integration.REQUIREMENTS)
+
+        return "\n".join(sorted(requirements))
+
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,
@@ -203,7 +384,22 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         api = self._get_hf_api()
         space_id = self._get_space_id(deployment)
-        image = self.get_image(deployment.snapshot)
+
+        # Determine deployment mode based on stack configuration
+        has_container_registry = stack.container_registry is not None
+        use_full_build_mode = not has_container_registry
+
+        if use_full_build_mode:
+            logger.info(
+                "No container registry in stack - using full build mode. "
+                "Image will be built from scratch in Hugging Face Spaces."
+            )
+        else:
+            logger.info(
+                "Container registry detected - using image reference mode. "
+                "Ensure the image is publicly accessible."
+            )
+            image = self.get_image(deployment.snapshot)
 
         try:
             # Create Space if it doesn't exist
@@ -229,34 +425,73 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         f"app_port: {settings.app_port}\n---\n"
                     )
 
-                # Create Dockerfile
+                # Create Dockerfile based on mode
                 dockerfile = os.path.join(tmpdir, "Dockerfile")
-                env_vars = {**environment, **secrets}
-                # Escape backslashes and quotes in environment variable values
-                env_lines = [
-                    f'ENV {k}="{v.replace(chr(92), chr(92) * 2).replace(chr(34), chr(92) + chr(34))}"'
-                    for k, v in env_vars.items()
-                ]
-                with open(dockerfile, "w") as f:
-                    f.write(
-                        f"FROM {image}\n"
-                        + "\n".join(env_lines)
-                        + "\nUSER 1000\n"
+                if use_full_build_mode:
+                    dockerfile_content = self._generate_full_build_dockerfile(
+                        deployment, environment, secrets
+                    )
+                else:
+                    dockerfile_content = (
+                        self._generate_image_reference_dockerfile(
+                            image, environment, secrets, deployment
+                        )
                     )
 
-                # Upload files
+                with open(dockerfile, "w") as f:
+                    f.write(dockerfile_content)
+
+                # Upload README
                 api.upload_file(
                     path_or_fileobj=readme,
                     path_in_repo="README.md",
                     repo_id=space_id,
                     repo_type="space",
                 )
+
+                # Upload Dockerfile
                 api.upload_file(
                     path_or_fileobj=dockerfile,
                     path_in_repo="Dockerfile",
                     repo_id=space_id,
                     repo_type="space",
                 )
+
+                # For full build mode, upload code and requirements
+                if use_full_build_mode:
+                    logger.info(
+                        "Uploading source code to Hugging Face Space..."
+                    )
+
+                    # Get source root
+                    source_root = source_utils.get_source_root()
+
+                    # Create requirements.txt
+                    requirements_content = (
+                        self._get_requirements_for_deployment(deployment)
+                    )
+                    requirements_file = os.path.join(
+                        tmpdir, "requirements.txt"
+                    )
+                    with open(requirements_file, "w") as f:
+                        f.write(requirements_content)
+
+                    # Upload requirements
+                    api.upload_file(
+                        path_or_fileobj=requirements_file,
+                        path_in_repo="requirements.txt",
+                        repo_id=space_id,
+                        repo_type="space",
+                    )
+
+                    # Upload source code folder
+                    logger.info(f"Uploading code from: {source_root}")
+                    api.upload_folder(
+                        folder_path=source_root,
+                        repo_id=space_id,
+                        repo_type="space",
+                        path_in_repo=".",
+                    )
 
             # Set hardware and storage if specified
             hardware = settings.space_hardware or self.config.space_hardware
