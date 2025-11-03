@@ -56,6 +56,9 @@ if TYPE_CHECKING:
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.models.v2.core.logs import LogsResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
@@ -268,6 +271,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=False,
         description="Whether a template can be created from this run.",
     )
+    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+        default=None,
+        title="Trigger information for the pipeline run.",
+    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):
@@ -304,6 +311,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
+    )
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default=[],
+        title="Curated visualizations associated with the pipeline run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

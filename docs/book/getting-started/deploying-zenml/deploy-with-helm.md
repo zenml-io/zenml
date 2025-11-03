@@ -530,6 +530,8 @@ To use the HashiCorp Vault service as a Secrets Store back-end, it must be confi
        vault_token: <your Vault token>
        # The Vault Enterprise namespace. Not required for Vault OSS.
        vault_namespace: <your Vault namespace>
+       # The mount point to use for the HashiCorp Vault secrets store. If not set, the default value of `secret` will be used.
+       mount_point: <your Vault mount point>
 ```
 {% endtab %}
 

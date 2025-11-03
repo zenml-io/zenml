@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ service_info.pipeline.name }} - ZenML Deployment</title>
+  
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="/assets/dashboard.css" />
+  
+  <!-- DOMPurify for HTML sanitization (security) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" 
+          integrity="sha384-jH7dNlXVGqPbF5eV+bT/jO3kPPO/HDXS7V3xEXO6/LTHqGH0k5F1pATxs2TnlCNn" 
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Service Configuration Data (parsed by dashboard.js) -->
+  <script type="application/json" id="service-info-data">{{ service_info | tojson }}</script>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="top-nav-container">
+      <div class="logo-container">
+        <svg class="logo" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M31.2005 21.0088C31.8958 18.8888 32.1416 16.6472 31.9221 14.4269C31.7026 12.2066 31.0225 10.0565 29.9255 8.11375L18.9179 7.835V7.69735L29.5131 7.42893C28.2335 5.41459 26.5217 3.71014 24.502 2.43907L15.9997 2.22571V2.08863L23.5562 1.89764C20.4599 0.23786 16.9033 -0.356312 13.4357 0.206891C9.96805 0.770094 6.7823 2.45934 4.37048 5.01372L13.8793 5.25461V5.39226L3.80209 5.64463C1.34301 8.53411 -0.00507487 12.2058 4.50478e-05 16C4.50478e-05 16.1721 4.49159e-05 16.3384 0.00864813 16.507C0.00802452 16.5183 0.00802452 16.5296 0.00864813 16.5409L3.80668 16.6372V16.7749L0.0212662 16.8707C0.0218773 16.8819 0.0218773 16.8932 0.0212662 16.9045C0.159587 19.4013 0.884457 21.8304 2.13708 23.9947L8.46733 24.1547V24.2924L2.40837 24.4461C3.89455 26.8322 5.9808 28.7865 8.45873 30.1139C8.65603 30.2211 8.85562 30.3227 9.05808 30.4202V17.1293H10.5929C10.652 17.1293 10.7105 17.1408 10.7651 17.1634C10.8197 17.186 10.8693 17.2191 10.911 17.2609C10.9528 17.3026 10.9859 17.3522 11.0085 17.4068C11.0311 17.4614 11.0426 17.5199 11.0426 17.579V31.2168C14.265 32.2611 17.735 32.2611 20.9575 31.2168V17.579C20.9574 17.5199 20.969 17.4614 20.9916 17.4068C21.0141 17.3522 21.0472 17.3026 21.089 17.2609C21.1308 17.2191 21.1804 17.186 21.235 17.1634C21.2896 17.1408 21.3481 17.1293 21.4071 17.1293H22.9408V30.4219C23.1404 30.3255 23.3394 30.2246 23.5339 30.1196C25.0987 29.2837 26.5136 28.1935 27.7207 26.8934L23.7466 26.7925V26.6548L28.0345 26.5464C29.3499 25.0482 30.373 23.3168 31.0508 21.4418L25.3291 21.2967V21.1591L31.2005 21.0088ZM25.1604 16.7072H6.8396L6.50866 15.3846H9.05808V13.9668H9.57886C9.76475 13.9669 9.9488 14.0036 10.1205 14.0748C10.2922 14.146 10.4482 14.2503 10.5796 14.3818C10.711 14.5133 10.8152 14.6694 10.8863 14.8412C10.9573 15.0129 10.9939 15.197 10.9938 15.3829H15.0086V13.4948H5.28242C5.09257 11.9835 4.19555 10.8031 4.19555 10.8031C6.8396 11.4162 15.9997 11.4638 15.9997 11.4638C15.9997 11.4638 25.1599 11.4162 27.8028 10.8031C27.8028 10.8031 26.9075 11.9835 26.7176 13.4948H16.992V15.3835H21.0068C21.0068 15.1975 21.0434 15.0133 21.1146 14.8414C21.1859 14.6696 21.2902 14.5134 21.4218 14.3819C21.5533 14.2504 21.7095 14.1461 21.8814 14.075C22.0532 14.0039 22.2374 13.9673 22.4235 13.9674H22.9431V15.3835H25.4937L25.1604 16.7072Z" fill="#431D93"/>
+        </svg>
+      </div>
+      <div class="breadcrumbs">
+        <h1 class="breadcrumb-title" id="pipeline-name">{{ service_info.pipeline.name }}</h1>
+      </div>
+      <div class="top-nav-right">
+        {% if service_info.app.docs_url_path %}
+        <a class="nav-link" href="{{ service_info.app.docs_url_path }}" target="_blank" rel="noopener">API Docs</a>
+        {% endif %}
+        {% if service_info.app.redoc_url_path %}
+        <a class="nav-link" href="{{ service_info.app.redoc_url_path }}" target="_blank" rel="noopener">ReDoc</a>
+        {% endif %}
+        <a class="nav-link" href="/health" target="_blank" rel="noopener">Health</a>
+        <a class="nav-link" href="/info" target="_blank" rel="noopener">Info</a>
+        <a class="nav-link" href="/metrics" target="_blank" rel="noopener">Metrics</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Deployment Header -->
+  <header class="deployment-header">
+    <div class="deployment-header-content">
+      <div class="deployment-header-left">
+        <h2 class="deployment-title" id="deployment-title">{{ service_info.deployment.name }}</h2>
+        <div class="status-badge" id="status-badge">
+          <span class="status-dot"></span>
+          <span>{{ service_info.status or "Running" }}</span>
+        </div>
+        {% if service_info.deployment.auth_enabled %}
+        <div class="status-badge" id="auth-status-badge" style="background: var(--color-primary-25); border-color: var(--button-border-primary-disabled); color: var(--text-brand);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2V6M8 10V14M2 8H6M10 8H14" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span id="auth-status-text">Auth Required</span>
+        </div>
+        {% endif %}
+      </div>
+      <div class="deployment-header-right">
+        {% if service_info.deployment.auth_enabled %}
+        <button class="nav-button" id="set-api-key-btn">Set API Key</button>
+        {% endif %}
+        <button class="share-button">Share</button>
+        <button class="more-button">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="6" cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="18" cy="12" r="1.5" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="main-layout">
+      <!-- Left Panel: Input -->
+    <section class="panel panel--left">
+      <div class="panel-header">
+        <div class="panel-header-content">
+          <h3 class="panel-title">Input</h3>
+        <div class="toggle-group">
+            <button class="toggle-button active" id="toggle-form">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M3 5H15M3 10H21M3 15H15M3 20H21" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <span>Form</span>
+          </button>
+            <button class="toggle-button" id="toggle-json">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <span>JSON</span>
+          </button>
+        </div>
+      </div>
+          </div>
+        
+        <div class="panel-content panel-content--left" id="input-container">
+          <div id="form-view">
+            <!-- Form fields will be dynamically generated by dashboard.js -->
+        </div>
+          <textarea class="json-editor hidden" id="json-input" spellcheck="false"></textarea>
+      </div>
+
+      <div class="panel-footer">
+        <div class="panel-footer-content">
+          <button class="btn-secondary" id="reset-btn">Reset</button>
+          <button class="btn-primary" id="run-btn">Run</button>
+        </div>
+      </div>
+    </section>
+
+      <!-- Right Panel: Output -->
+    <section class="panel panel--right">
+      <div class="panel-header">
+        <div class="panel-header-content">
+          <h3 class="panel-title">Output</h3>
+        <div class="toggle-group">
+            <button class="toggle-button active" id="toggle-preview">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M3 5H15M3 10H21M3 15H15M3 20H21" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <span>Preview</span>
+          </button>
+            <button class="toggle-button" id="toggle-json-output">
+              <svg class="toggle-icon" viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <span>JSON</span>
+          </button>
+        </div>
+      </div>
+              </div>
+        
+        <div class="panel-content panel-content--right" id="output-container">
+              <div id="preview-output">
+            <p class="empty-state">Run the pipeline to see output here</p>
+              </div>
+          <textarea class="json-editor hidden" id="json-output" spellcheck="false" readonly></textarea>
+            </div>
+
+      <div class="panel-footer">
+        <div class="panel-footer-content">
+          <button class="btn-secondary" id="rerun-btn" disabled>Re-Run</button>
+            <button class="btn-warning" id="delete-btn" disabled>Clear Output</button>
+        </div>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <!-- External JavaScript (loaded at end for performance) -->
+  <script src="/assets/dashboard.js"></script>
+</body>
+</html>

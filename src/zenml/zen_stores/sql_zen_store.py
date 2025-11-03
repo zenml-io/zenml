@@ -69,13 +69,18 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, func, update
+from sqlalchemy import QueuePool, event, func, update
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
 )
-from sqlalchemy.orm import Mapped, load_only, noload, selectinload
+from sqlalchemy.orm import (
+    Mapped,
+    load_only,
+    noload,
+    selectinload,
+)
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -148,6 +153,7 @@ from zenml.enums import (
     StepRunInputArtifactType,
     StoreType,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -199,6 +205,9 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DefaultComponentRequest,
     DefaultStackRequest,
     DeployedStack,
@@ -360,6 +369,7 @@ from zenml.zen_stores.schemas import (
     BaseSchema,
     CodeReferenceSchema,
     CodeRepositorySchema,
+    CuratedVisualizationSchema,
     DeploymentSchema,
     EventSourceSchema,
     FlavorSchema,
@@ -1303,6 +1313,19 @@ class SqlZenStore(BaseZenStore):
             and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
         ):
             self.migrate_database()
+
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # Enable foreign key checks at the SQLite database level, but only
+            # after any migration has been done.
+            @event.listens_for(self._engine, "connect")
+            def _(dbapi_connection: Any, connection_record: Any) -> None:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
+
+            # Discard existing connections created without the foreign key
+            # checks enabled
+            self._engine.dispose()
 
         secrets_store_config = self.config.secrets_store
 
@@ -3734,6 +3757,7 @@ class SqlZenStore(BaseZenStore):
                 and component.type
                 in {
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 }
             )
@@ -3895,6 +3919,7 @@ class SqlZenStore(BaseZenStore):
                 and existing_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 ]
             ):
@@ -3972,6 +3997,7 @@ class SqlZenStore(BaseZenStore):
                 and stack_component.type
                 in [
                     StackComponentType.ORCHESTRATOR,
+                    StackComponentType.DEPLOYER,
                     StackComponentType.ARTIFACT_STORE,
                 ]
             ):
@@ -5416,6 +5442,275 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.delete(deployment)
+            session.commit()
+
+        # -------------------- Curated visualizations --------------------
+
+    def _assert_curated_visualization_duplicate(
+        self,
+        session: Session,
+        *,
+        artifact_visualization_id: UUID,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
+    ) -> None:
+        """Ensure a curated visualization link does not already exist.
+
+        Args:
+            session: The database session.
+            artifact_visualization_id: The ID of the artifact visualization.
+            resource_id: The ID of the resource.
+            resource_type: The type of the resource.
+
+        Raises:
+            EntityExistsError: If a curated visualization link already exists.
+        """
+        existing = session.exec(
+            select(CuratedVisualizationSchema)
+            .where(
+                CuratedVisualizationSchema.artifact_visualization_id
+                == artifact_visualization_id
+            )
+            .where(CuratedVisualizationSchema.resource_id == resource_id)
+            .where(
+                CuratedVisualizationSchema.resource_type == resource_type.value
+            )
+        ).first()
+        if existing is not None:
+            raise EntityExistsError(
+                "A curated visualization for this resource already exists "
+                "for the specified artifact visualization."
+            )
+
+    def _assert_curated_visualization_display_order_unique(
+        self,
+        session: Session,
+        *,
+        resource_id: UUID,
+        resource_type: VisualizationResourceTypes,
+        display_order: Optional[int],
+        exclude_visualization_id: Optional[UUID] = None,
+    ) -> None:
+        """Ensure curated visualizations per resource use unique display orders.
+
+        Args:
+            session: The database session.
+            resource_id: The ID of the resource.
+            resource_type: The type of the resource.
+            display_order: The display order to check.
+            exclude_visualization_id: The ID of the visualization to exclude.
+
+        Raises:
+            EntityExistsError: If a curated visualization for this resource already uses the display order.
+        """
+        if display_order is None:
+            return
+
+        statement = (
+            select(CuratedVisualizationSchema)
+            .where(CuratedVisualizationSchema.resource_id == resource_id)
+            .where(
+                CuratedVisualizationSchema.resource_type == resource_type.value
+            )
+            .where(CuratedVisualizationSchema.display_order == display_order)
+        )
+        if exclude_visualization_id is not None:
+            statement = statement.where(
+                CuratedVisualizationSchema.id != exclude_visualization_id
+            )
+
+        existing = session.exec(statement).first()
+        if existing is not None:
+            raise EntityExistsError(
+                "A curated visualization for this resource already uses the "
+                f"display order '{display_order}'. Please choose a different value."
+            )
+
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Persist a curated visualization link.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+
+        Raises:
+            IllegalOperationError: If the curated visualization does not target the same project as the artifact visualization.
+            ValueError: If the resource type is invalid.
+            KeyError: If the resource is not found.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=visualization, session=session
+            )
+
+            artifact_visualization: ArtifactVisualizationSchema = (
+                self._get_reference_schema_by_id(
+                    resource=visualization,
+                    reference_schema=ArtifactVisualizationSchema,
+                    reference_id=visualization.artifact_visualization_id,
+                    session=session,
+                )
+            )
+
+            artifact_version = artifact_visualization.artifact_version
+            project_id = artifact_version.project_id
+
+            if visualization.project != project_id:
+                raise IllegalOperationError(
+                    "Curated visualizations must target the same project as "
+                    "the artifact visualization."
+                )
+            project_id = visualization.project
+
+            resource_schema_map: Dict[
+                VisualizationResourceTypes, Type[BaseSchema]
+            ] = {
+                VisualizationResourceTypes.DEPLOYMENT: DeploymentSchema,
+                VisualizationResourceTypes.MODEL: ModelSchema,
+                VisualizationResourceTypes.PIPELINE: PipelineSchema,
+                VisualizationResourceTypes.PIPELINE_RUN: PipelineRunSchema,
+                VisualizationResourceTypes.PIPELINE_SNAPSHOT: PipelineSnapshotSchema,
+                VisualizationResourceTypes.PROJECT: ProjectSchema,
+            }
+
+            if visualization.resource_type not in resource_schema_map:
+                raise ValueError(
+                    f"Invalid resource type: {visualization.resource_type}"
+                )
+
+            schema_class = resource_schema_map[visualization.resource_type]
+            resource_schema = session.exec(
+                select(schema_class).where(
+                    schema_class.id == visualization.resource_id
+                )
+            ).first()
+
+            if not resource_schema:
+                raise KeyError(
+                    f"Resource of type '{visualization.resource_type.value}' "
+                    f"with ID {visualization.resource_id} not found."
+                )
+
+            if hasattr(resource_schema, "project_id"):
+                resource_project_id = resource_schema.project_id
+                if resource_project_id and resource_project_id != project_id:
+                    raise IllegalOperationError(
+                        f"Resource {visualization.resource_type.value} with ID "
+                        f"{visualization.resource_id} belongs to a different project than "
+                        f"the curated visualization (project ID: {project_id})."
+                    )
+
+            self._assert_curated_visualization_duplicate(
+                session=session,
+                artifact_visualization_id=visualization.artifact_visualization_id,
+                resource_id=visualization.resource_id,
+                resource_type=visualization.resource_type,
+            )
+            if visualization.display_order is not None:
+                self._assert_curated_visualization_display_order_unique(
+                    session=session,
+                    resource_id=visualization.resource_id,
+                    resource_type=visualization.resource_type,
+                    display_order=visualization.display_order,
+                )
+
+            schema = CuratedVisualizationSchema.from_request(visualization)
+
+            session.add(schema)
+            session.commit()
+            session.refresh(schema)
+
+            return schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+            )
+
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Fetch a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to fetch.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
+        with Session(self.engine) as session:
+            schema: CuratedVisualizationSchema = self._get_schema_by_id(
+                resource_id=visualization_id,
+                schema_class=CuratedVisualizationSchema,
+                session=session,
+            )
+            return schema.to_model(
+                include_metadata=hydrate,
+                include_resources=hydrate,
+            )
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update mutable fields on a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=visualization_id,
+                schema_class=CuratedVisualizationSchema,
+                session=session,
+            )
+            update_fields = visualization_update.model_dump(exclude_unset=True)
+            if "display_order" in update_fields:
+                new_display_order = update_fields["display_order"]
+                if new_display_order is not None:
+                    self._assert_curated_visualization_display_order_unique(
+                        session=session,
+                        resource_id=schema.resource_id,
+                        resource_type=VisualizationResourceTypes(
+                            schema.resource_type
+                        ),
+                        display_order=new_display_order,
+                        exclude_visualization_id=visualization_id,
+                    )
+                # Explicit None clears the display order, so uniqueness validation is skipped.
+
+            schema.update(visualization_update)
+            session.add(schema)
+            session.commit()
+            session.refresh(schema)
+
+            return schema.to_model(
+                include_metadata=True,
+                include_resources=True,
+            )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=visualization_id,
+                schema_class=CuratedVisualizationSchema,
+                session=session,
+            )
+            session.delete(schema)
             session.commit()
 
     # -------------------- Run templates --------------------
@@ -9503,6 +9798,20 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
+            deployer = self.create_stack_component(
+                # Use `DefaultComponentRequest` instead of
+                # `ComponentRequest` here to force the `create_stack_component`
+                # call to use `None` for the user, meaning the orchestrator
+                # is owned by the server, which for RBAC indicates that
+                # everyone can read it
+                component=DefaultComponentRequest(
+                    name=DEFAULT_STACK_AND_COMPONENT_NAME,
+                    type=StackComponentType.DEPLOYER,
+                    flavor="local",
+                    configuration={},
+                ),
+            )
+
             artifact_store = self.create_stack_component(
                 # Use `DefaultComponentRequest` instead of
                 # `ComponentRequest` here to force the `create_stack_component`
@@ -9518,7 +9827,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             components = {
-                c.type: [c.id] for c in [orchestrator, artifact_store]
+                c.type: [c.id]
+                for c in [orchestrator, deployer, artifact_store]
             }
 
             # Use `DefaultStackRequest` instead of `StackRequest` here to force

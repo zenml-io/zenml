@@ -1,6 +1,1 @@
-zenml[server]>=0.90.0
-scikit-learn
-openai>=1.0.0
-matplotlib
-seaborn
-numpy
+zenml[server]>=0.91.0

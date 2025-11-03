@@ -12,7 +12,23 @@ This document provides guidance for Claude Code when working with the ZenML code
 
 Use filesystem navigation tools to explore the codebase structure as needed.
 
+## Use ZenML Docs via MCP
+Claude Code can query ZenML documentation via the built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. This enables real-time, source-of-truth lookups from the docs while you code, reducing hallucinations and speeding up feature discovery.
+
+Quick setup (CLI):
+```bash
+claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
+```
+
+Note: The MCP server indexes the latest released docs, not the develop branch. For full setup details and editor alternatives, see docs/book/reference/llms-txt.md.
+
 ## Code Style & Quality Standards
+
+### Commenting policy — explain why, not what
+- Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
+- Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
+- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid simple explanatory comments, where it is already clear from the code itself.
 
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)

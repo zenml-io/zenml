@@ -1,0 +1,5 @@
+# Core dependencies for the weather agent example
+zenml
+
+# OpenAI client for LLM integration
+openai

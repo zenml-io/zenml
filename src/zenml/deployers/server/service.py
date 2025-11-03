@@ -13,19 +13,28 @@
 #  permissions and limitations under the License.
 """Pipeline deployment service."""
 
-import contextvars
 import time
 import traceback
+from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Tuple, Type, Union
-from uuid import UUID, uuid4
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+)
+from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, WithJsonSchema
 
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
+    AppInfo,
     BaseDeploymentInvocationRequest,
     BaseDeploymentInvocationResponse,
     DeploymentInfo,
@@ -51,10 +60,14 @@ from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
 )
-from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
+from zenml.zen_stores.rest_zen_store import RestZenStore
+
+if TYPE_CHECKING:
+    from zenml.deployers.server.app import BaseDeploymentAppRunner
+    from zenml.pipelines.pipeline_definition import Pipeline
 
 logger = get_logger(__name__)
 
@@ -62,28 +75,10 @@ logger = get_logger(__name__)
 class SharedLocalOrchestrator(LocalOrchestrator):
     """Local orchestrator tweaked for deployments.
 
-    This is a slight modification of the LocalOrchestrator:
-    - uses request-scoped orchestrator run ids by storing them in contextvars
-    - bypasses the init/cleanup hook execution because they are run globally by
-    the deployment service
+    This is a slight modification of the LocalOrchestrator: it bypasses the
+    init/cleanup hook execution because they are run globally by the deployment
+    service
     """
-
-    # Use contextvars for thread-safe, request-scoped state
-    _shared_orchestrator_run_id: contextvars.ContextVar[Optional[str]] = (
-        contextvars.ContextVar("orchestrator_run_id", default=None)
-    )
-
-    def get_orchestrator_run_id(self) -> str:
-        """Get the orchestrator run id.
-
-        Returns:
-            The orchestrator run id.
-        """
-        run_id = self._shared_orchestrator_run_id.get()
-        if run_id is None:
-            run_id = str(uuid4())
-            self._shared_orchestrator_run_id.set(run_id)
-        return run_id
 
     @classmethod
     def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
@@ -108,53 +103,200 @@ class SharedLocalOrchestrator(LocalOrchestrator):
         pass
 
 
-class PipelineDeploymentService:
-    """Pipeline deployment service."""
+class BasePipelineDeploymentService(ABC):
+    """Abstract base class for pipeline deployment services.
 
-    def __init__(self, deployment_id: Union[str, UUID]) -> None:
-        """Initialize service with minimal state.
+    Subclasses must implement lifecycle management, execution, health,
+    and schema accessors. This contract enables swapping implementations
+    via import-source configuration without modifying the FastAPI app
+    wiring code.
+    """
+
+    def __init__(
+        self, app_runner: "BaseDeploymentAppRunner", **kwargs: Any
+    ) -> None:
+        """Initialize the deployment service.
 
         Args:
-            deployment_id: The ID of the running deployment.
+            app_runner: The deployment application runner used with this service.
+            **kwargs: Additional keyword arguments for the deployment service.
 
         Raises:
-            RuntimeError: If the deployment or snapshot cannot be loaded.
+            RuntimeError: If snapshot cannot be loaded.
         """
-        # Accept both str and UUID for flexibility
-        if isinstance(deployment_id, str):
-            deployment_id = UUID(deployment_id)
-
-        self._client = Client()
-
-        # Execution tracking
-        self.service_start_time = time.time()
-        self.last_execution_time: Optional[datetime] = None
-        self.total_executions = 0
-
-        # Cache a local orchestrator instance to avoid per-request construction
-        self._orchestrator = SharedLocalOrchestrator(
-            name="deployment-local",
-            id=uuid4(),
-            config=LocalOrchestratorConfig(),
-            flavor="local",
-            type=StackComponentType.ORCHESTRATOR,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
-
-        logger.info("Loading pipeline snapshot configuration...")
-
-        try:
-            self.deployment = self._client.zen_store.get_deployment(
-                deployment_id=deployment_id
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to load deployment: {e}") from e
-
+        self.app_runner = app_runner
+        self.deployment = app_runner.deployment
         if self.deployment.snapshot is None:
             raise RuntimeError("Deployment has no snapshot")
         self.snapshot = self.deployment.snapshot
+
+    @abstractmethod
+    def initialize(self) -> None:
+        """Initialize service resources and run init hooks.
+
+        Raises:
+            Exception: If the service cannot be initialized.
+        """
+
+    @abstractmethod
+    def cleanup(self) -> None:
+        """Cleanup service resources and run cleanup hooks."""
+
+    @abstractmethod
+    def execute_pipeline(
+        self, request: BaseDeploymentInvocationRequest
+    ) -> BaseDeploymentInvocationResponse:
+        """Execute the deployment with the given parameters.
+
+        Args:
+            request: Runtime parameters supplied by the caller.
+
+        Returns:
+            A BaseDeploymentInvocationResponse describing the execution result.
+        """
+
+    @abstractmethod
+    def get_service_info(self) -> ServiceInfo:
+        """Get service information.
+
+        Returns:
+            A dictionary containing service information.
+        """
+
+    @abstractmethod
+    def get_execution_metrics(self) -> ExecutionMetrics:
+        """Return lightweight execution metrics for observability.
+
+        Returns:
+            A dictionary containing execution metrics.
+        """
+
+    @abstractmethod
+    def health_check(self) -> None:
+        """Check service health.
+
+        Raises:
+            RuntimeError: If the service is not healthy.
+        """
+
+    # ----------
+    # Schemas and models for OpenAPI enrichment
+    # ----------
+
+    @property
+    def input_model(
+        self,
+    ) -> Type[BaseModel]:
+        """Construct a Pydantic model representing pipeline input parameters.
+
+        Load the pipeline class from `pipeline_spec.source` and derive the
+        entrypoint signature types to create a dynamic Pydantic model
+        (extra='forbid') to use for parameter validation.
+
+        Returns:
+            A Pydantic `BaseModel` subclass that validates the pipeline input
+            parameters.
+
+        Raises:
+            RuntimeError: If the pipeline class cannot be loaded or if no
+                parameters model can be constructed for the pipeline.
+        """
+        if (
+            not self.snapshot.pipeline_spec
+            or not self.snapshot.pipeline_spec.source
+        ):
+            raise RuntimeError(
+                f"Snapshot `{self.snapshot.id}` is missing a "
+                "pipeline_spec.source; cannot build input model."
+            )
+
+        try:
+            pipeline_class: "Pipeline" = source_utils.load(
+                self.snapshot.pipeline_spec.source
+            )
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to load pipeline class from snapshot"
+            ) from e
+
+        model = pipeline_class._compute_input_model()
+        if not model:
+            raise RuntimeError(
+                f"Failed to construct input model from pipeline "
+                f"`{self.snapshot.pipeline_configuration.name}`."
+            )
+        return model
+
+    @property
+    def input_schema(self) -> Dict[str, Any]:
+        """Return the JSON schema for pipeline input parameters.
+
+        Returns:
+            The JSON schema for pipeline parameters.
+
+        Raises:
+            RuntimeError: If the pipeline input schema is not available.
+        """
+        if (
+            self.snapshot.pipeline_spec
+            and self.snapshot.pipeline_spec.input_schema
+        ):
+            return self.snapshot.pipeline_spec.input_schema
+        # This should never happen, given that we check for this in the
+        # base deployer.
+        raise RuntimeError("The pipeline input schema is not available.")
+
+    @property
+    def output_schema(self) -> Dict[str, Any]:
+        """Return the JSON schema for the pipeline outputs.
+
+        Returns:
+            The JSON schema for the pipeline outputs.
+
+        Raises:
+            RuntimeError: If the pipeline output schema is not available.
+        """
+        if (
+            self.snapshot.pipeline_spec
+            and self.snapshot.pipeline_spec.output_schema
+        ):
+            return self.snapshot.pipeline_spec.output_schema
+        # This should never happen, given that we check for this in the
+        # base deployer.
+        raise RuntimeError("The pipeline output schema is not available.")
+
+    def get_pipeline_invoke_models(
+        self,
+    ) -> Tuple[Type[BaseModel], Type[BaseModel]]:
+        """Generate the request and response models for the pipeline invoke endpoint.
+
+        Returns:
+            A tuple containing the request and response models.
+        """
+        if TYPE_CHECKING:
+            # mypy has a difficult time with dynamic models, so we return something
+            # static for mypy to use
+            return BaseModel, BaseModel
+
+        else:
+
+            class PipelineInvokeRequest(BaseDeploymentInvocationRequest):
+                parameters: Annotated[
+                    self.input_model,
+                    WithJsonSchema(self.input_schema, mode="validation"),
+                ]
+
+            class PipelineInvokeResponse(BaseDeploymentInvocationResponse):
+                outputs: Annotated[
+                    Optional[Dict[str, Any]],
+                    WithJsonSchema(self.output_schema, mode="serialization"),
+                ]
+
+            return PipelineInvokeRequest, PipelineInvokeResponse
+
+
+class PipelineDeploymentService(BasePipelineDeploymentService):
+    """Default pipeline deployment service implementation."""
 
     def initialize(self) -> None:
         """Initialize service with proper error handling.
@@ -162,6 +304,21 @@ class PipelineDeploymentService:
         Raises:
             Exception: If the service cannot be initialized.
         """
+        self._client = Client()
+
+        if isinstance(self._client.zen_store, RestZenStore):
+            # Set the connection pool size to match the number of threads
+            self._client.zen_store.config.connection_pool_size = (
+                self.app_runner.settings.thread_pool_size
+            )
+            self._client.zen_store.reinitialize_session()
+
+        # Execution tracking
+        self.service_start_time = time.time()
+        self.last_execution_time: Optional[datetime] = None
+        self.total_executions = 0
+        self.orchestrator_class = SharedLocalOrchestrator
+
         try:
             # Execute init hook
             BaseOrchestrator.run_init_hook(self.snapshot)
@@ -241,10 +398,13 @@ class PipelineDeploymentService:
             A dictionary containing service information.
         """
         uptime = time.time() - self.service_start_time
+        settings = self.app_runner.settings
+        api_urlpath = f"{self.app_runner.settings.root_url_path}{self.app_runner.settings.api_url_path}"
         return ServiceInfo(
             deployment=DeploymentInfo(
                 id=self.deployment.id,
                 name=self.deployment.name,
+                auth_enabled=self.deployment.auth_key is not None,
             ),
             snapshot=SnapshotInfo(
                 id=self.snapshot.id,
@@ -257,6 +417,15 @@ class PipelineDeploymentService:
                 else None,
                 input_schema=self.input_schema,
                 output_schema=self.output_schema,
+            ),
+            app=AppInfo(
+                app_runner_flavor=self.app_runner.flavor.name,
+                docs_url_path=settings.docs_url_path,
+                redoc_url_path=settings.redoc_url_path,
+                invoke_url_path=api_urlpath + settings.invoke_url_path,
+                health_url_path=api_urlpath + settings.health_url_path,
+                info_url_path=api_urlpath + settings.info_url_path,
+                metrics_url_path=api_urlpath + settings.metrics_url_path,
             ),
             total_executions=self.total_executions,
             last_execution_time=self.last_execution_time,
@@ -275,13 +444,9 @@ class PipelineDeploymentService:
             last_execution_time=self.last_execution_time,
         )
 
-    def is_healthy(self) -> bool:
-        """Check service health.
-
-        Returns:
-            True if the service is healthy, otherwise False.
-        """
-        return True
+    def health_check(self) -> None:
+        """Check service health."""
+        pass
 
     def _map_outputs(
         self,
@@ -390,8 +555,16 @@ class PipelineDeploymentService:
         """
         active_stack: Stack = self._client.active_stack
 
-        if self._orchestrator is None:
-            raise RuntimeError("Orchestrator not initialized")
+        orchestrator = self.orchestrator_class(
+            name="deployment-local",
+            id=uuid4(),
+            config=LocalOrchestratorConfig(),
+            flavor="local",
+            type=StackComponentType.ORCHESTRATOR,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
 
         # Start deployment runtime context with parameters (still needed for
         # in-memory materializer)
@@ -405,7 +578,7 @@ class PipelineDeploymentService:
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
         try:
             # Use the new deployment snapshot with pre-configured settings
-            self._orchestrator.run(
+            orchestrator.run(
                 snapshot=deployment_snapshot,
                 stack=active_stack,
                 placeholder_run=placeholder_run,
@@ -520,89 +693,3 @@ class PipelineDeploymentService:
                 snapshot_name=self.snapshot.name,
             ),
         )
-
-    # ----------
-    # Schemas and models for OpenAPI enrichment
-    # ----------
-
-    @property
-    def input_model(
-        self,
-    ) -> Type[BaseModel]:
-        """Construct a Pydantic model representing pipeline input parameters.
-
-        Load the pipeline class from `pipeline_spec.source` and derive the
-        entrypoint signature types to create a dynamic Pydantic model
-        (extra='forbid') to use for parameter validation.
-
-        Returns:
-            A Pydantic `BaseModel` subclass that validates the pipeline input
-            parameters.
-
-        Raises:
-            RuntimeError: If the pipeline class cannot be loaded or if no
-                parameters model can be constructed for the pipeline.
-        """
-        if (
-            not self.snapshot.pipeline_spec
-            or not self.snapshot.pipeline_spec.source
-        ):
-            raise RuntimeError(
-                f"Snapshot `{self.snapshot.id}` is missing a "
-                "pipeline_spec.source; cannot build input model."
-            )
-
-        try:
-            pipeline_class: Pipeline = source_utils.load(
-                self.snapshot.pipeline_spec.source
-            )
-        except Exception as e:
-            raise RuntimeError(
-                "Failed to load pipeline class from snapshot"
-            ) from e
-
-        model = pipeline_class._compute_input_model()
-        if not model:
-            raise RuntimeError(
-                f"Failed to construct input model from pipeline "
-                f"`{self.snapshot.pipeline_configuration.name}`."
-            )
-        return model
-
-    @property
-    def input_schema(self) -> Dict[str, Any]:
-        """Return the JSON schema for pipeline input parameters.
-
-        Returns:
-            The JSON schema for pipeline parameters.
-
-        Raises:
-            RuntimeError: If the pipeline input schema is not available.
-        """
-        if (
-            self.snapshot.pipeline_spec
-            and self.snapshot.pipeline_spec.input_schema
-        ):
-            return self.snapshot.pipeline_spec.input_schema
-        # This should never happen, given that we check for this in the
-        # base deployer.
-        raise RuntimeError("The pipeline input schema is not available.")
-
-    @property
-    def output_schema(self) -> Dict[str, Any]:
-        """Return the JSON schema for the pipeline outputs.
-
-        Returns:
-            The JSON schema for the pipeline outputs.
-
-        Raises:
-            RuntimeError: If the pipeline output schema is not available.
-        """
-        if (
-            self.snapshot.pipeline_spec
-            and self.snapshot.pipeline_spec.output_schema
-        ):
-            return self.snapshot.pipeline_spec.output_schema
-        # This should never happen, given that we check for this in the
-        # base deployer.
-        raise RuntimeError("The pipeline output schema is not available.")

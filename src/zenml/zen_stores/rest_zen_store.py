@@ -65,6 +65,7 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
+    CURATED_VISUALIZATIONS,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
@@ -113,6 +114,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
     APITokenType,
@@ -165,6 +167,9 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
     DeploymentFilter,
     DeploymentRequest,
@@ -312,6 +317,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
         http_timeout: The timeout to use for all requests.
+        connection_pool_size: The size of the connection pool to use for all
+            requests.
 
     """
 
@@ -321,6 +328,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         default=True, union_mode="left_to_right"
     )
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+    connection_pool_size: int = 10
 
     @field_validator("url")
     @classmethod
@@ -428,7 +436,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            if api_key.startswith("ZENPROKEY_"):
+            if api_key.startswith(ZENML_PRO_API_KEY_PREFIX):
                 credentials_store.set_api_key(
                     ZENML_PRO_API_URL, api_key, is_zenml_pro=True
                 )
@@ -1854,6 +1862,77 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=deployment_id,
             route=DEPLOYMENTS,
+        )
+
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization via REST API.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+        """
+        return self._create_resource(
+            resource=visualization,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+            params={"hydrate": True},
+        )
+
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
+        return self._get_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated
+                visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
+        return self._update_resource(
+            resource_id=visualization_id,
+            resource_update=visualization_update,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+        )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        self._delete_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
         )
 
     # -------------------- Run templates --------------------
@@ -4061,7 +4140,7 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=device_id, route=DEVICES)
 
     # -------------------
-    # Pipeline API Tokens
+    # API Tokens
     # -------------------
 
     def get_api_token(
@@ -4511,12 +4590,12 @@ class RestZenStore(BaseZenStore):
                     other=3,
                     backoff_factor=1,
                 )
-                self._session.mount(
-                    "https://", HTTPAdapter(max_retries=retries)
+                http_adapter = HTTPAdapter(
+                    max_retries=retries,
+                    pool_maxsize=self.config.connection_pool_size,
                 )
-                self._session.mount(
-                    "http://", HTTPAdapter(max_retries=retries)
-                )
+                self._session.mount("https://", http_adapter)
+                self._session.mount("http://", http_adapter)
                 self._session.verify = self.config.verify_ssl
                 # Use a custom user agent to identify the ZenML client in the server
                 # logs.
@@ -4528,6 +4607,18 @@ class RestZenStore(BaseZenStore):
             # is only fetched and set in the authorization header when and if it is
             # needed.
             return self._session
+
+    def reinitialize_session(self) -> None:
+        """Reinitialize the session.
+
+        This is used to reset the session to a new one with a new connection pool.
+        """
+        with self._session_lock:
+            if self._session is not None:
+                headers = dict(self._session.headers.items())
+                self._session.close()
+                self._session = None
+                self.session.headers.update(headers)
 
     def authenticate(self, force: bool = False) -> None:
         """Authenticate or re-authenticate to the ZenML server.

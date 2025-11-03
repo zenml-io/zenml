@@ -40,6 +40,10 @@ When choosing a deployment option, consider factors such as your team's expertis
 
 ## Deployment with vLLM and ZenML
 
+{% hint style="info" %}
+**Note**: The example below uses the Model Deployer component, which is maintained for backward compatibility. For new projects, consider using [Pipeline Deployments](https://docs.zenml.io/concepts/deployment) which offer greater flexibility for deploying LLM inference workflows with custom preprocessing and business logic.
+{% endhint %}
+
 [vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library
 for running large language models (LLMs) at high throughputs and low latency.
 ZenML comes with a [vLLM integration](https://docs.zenml.io/stacks/model-deployers/vllm)

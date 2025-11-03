@@ -59,6 +59,7 @@ ENV ZENML_SERVER_SECURE_HEADERS_CSP="frame-ancestors *;"
 # ENV ZENML_SECRETS_STORE_VAULT_ADDR=""
 # ENV ZENML_SECRETS_STORE_VAULT_TOKEN=""
 # ENV ZENML_SECRETS_STORE_VAULT_NAMESPACE=""
+# ENV ZENML_SECRETS_STORE_MOUNT_POINT=""
 # ENV ZENML_SECRETS_STORE_MAX_VERSIONS=""
 
 ENTRYPOINT ["uvicorn", "zenml.zen_server.zen_server_api:app", "--log-level", "debug", "--no-server-header"]

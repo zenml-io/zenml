@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, List
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column
@@ -25,10 +25,16 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     ArtifactVisualizationResponseBody,
     ArtifactVisualizationResponseMetadata,
+    ArtifactVisualizationResponseResources,
 )
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
 
 
 class ArtifactVisualizationSchema(BaseSchema, table=True):
@@ -53,6 +59,13 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
     # Relationships
     artifact_version: ArtifactVersionSchema = Relationship(
         back_populates="visualizations"
+    )
+    curated_visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        back_populates="artifact_visualization",
+        sa_relationship_kwargs=dict(
+            order_by="CuratedVisualizationSchema.display_order",
+            cascade="delete",
+        ),
     )
 
     @classmethod
@@ -107,8 +120,22 @@ class ArtifactVisualizationSchema(BaseSchema, table=True):
                 artifact_version_id=self.artifact_version_id,
             )
 
+        resources = None
+        if include_resources:
+            if self.artifact_version is not None:
+                artifact_version = self.artifact_version.to_model(
+                    include_metadata=False,
+                    include_resources=False,
+                )
+            else:
+                artifact_version = None
+            resources = ArtifactVisualizationResponseResources(
+                artifact_version=artifact_version,
+            )
+
         return ArtifactVisualizationResponse(
             id=self.id,
             body=body,
             metadata=metadata,
+            resources=resources,
         )

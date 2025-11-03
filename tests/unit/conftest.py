@@ -401,6 +401,7 @@ def sample_step_request_model() -> StepRunRequest:
         project=uuid4(),
         user=uuid4(),
         snapshot=uuid4(),
+        start_time=datetime.now(),
     )
 
 

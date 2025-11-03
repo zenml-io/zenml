@@ -24,13 +24,14 @@ from sqlalchemy import (
     Column,
     UniqueConstraint,
 )
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
     MetadataResourceTypes,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
 )
 from zenml.models import (
     BaseResponseMetadata,
@@ -57,6 +58,9 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
+from zenml.zen_stores.schemas.curated_visualization_schemas import (
+    CuratedVisualizationSchema,
+)
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
@@ -128,6 +132,18 @@ class ModelSchema(NamedSchema, table=True):
         back_populates="model",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.MODEL.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==ModelSchema.id)"
+            ),
+            overlaps="visualizations",
+            cascade="delete",
+            order_by="CuratedVisualizationSchema.display_order",
+        ),
+    )
 
     @classmethod
     def get_query_options(
@@ -155,6 +171,7 @@ class ModelSchema(NamedSchema, table=True):
                 [
                     joinedload(jl_arg(ModelSchema.user)),
                     # joinedload(jl_arg(ModelSchema.tags)),
+                    selectinload(jl_arg(ModelSchema.visualizations)),
                 ]
             )
 
@@ -254,6 +271,13 @@ class ModelSchema(NamedSchema, table=True):
                 tags=[tag.to_model() for tag in self.tags],
                 latest_version_name=latest_version_name,
                 latest_version_id=latest_version_id,
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in self.visualizations
+                ],
             )
 
         body = ModelResponseBody(

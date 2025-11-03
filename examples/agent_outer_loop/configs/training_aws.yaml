@@ -1,0 +1,8 @@
+settings:
+  docker:
+    parent_image: "zenmldocker/prepare-release:quickstart-aws-0.91.0"
+    skip_build: true
+    requirements: requirements_aws.txt
+
+  orchestrator.sagemaker:
+    instance_type: ml.t3.medium
