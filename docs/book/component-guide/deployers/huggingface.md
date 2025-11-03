@@ -101,7 +101,7 @@ For additional configuration of the Hugging Face deployer, you can pass the foll
 
 * Hugging Face Spaces-specific settings:
 
-  * `space_hardware` (default: `None`): Hardware tier for the Space (e.g., `'cpu-basic'`, `'cpu-upgrade'`, `'t4-small'`, `'t4-medium'`, `'a10g-small'`, `'a10g-large'`). If not specified, uses free CPU tier.
+  * `space_hardware` (default: `None`): Hardware tier for the Space (e.g., `'cpu-basic'`, `'cpu-upgrade'`, `'t4-small'`, `'t4-medium'`, `'a10g-small'`, `'a10g-large'`). If not specified, uses free CPU tier. See [Hugging Face Spaces GPU documentation](https://huggingface.co/docs/hub/spaces-gpus) for available options and pricing.
   * `space_storage` (default: `None`): Persistent storage tier for the Space (e.g., `'small'`, `'medium'`, `'large'`). If not specified, no persistent storage is allocated.
   * `private` (default: `False`): Whether to create the Space as private. Public Spaces are visible to everyone.
   * `app_port` (default: `8000`): Port number where your deployment server listens. Defaults to 8000 (ZenML server default). Hugging Face Spaces will route traffic to this port.
