@@ -28,7 +28,6 @@ from typing import (
 )
 
 from zenml.config.base_settings import BaseSettings
-from zenml.deployers.base_deployer import BaseDeployerSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
@@ -44,6 +43,7 @@ from zenml.deployers.server.entrypoint_configuration import (
 from zenml.enums import DeploymentStatus
 from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
     HuggingFaceDeployerConfig,
+    HuggingFaceDeployerSettings,
 )
 from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
@@ -58,22 +58,6 @@ if TYPE_CHECKING:
 HF_SPACE_NAME_MAX_LENGTH = 96
 
 logger = get_logger(__name__)
-
-
-class HuggingFaceDeployerSettings(BaseDeployerSettings):
-    """Hugging Face deployer settings.
-
-    Attributes:
-        space_hardware: Hardware tier for the Space (e.g., 'cpu-basic', 't4-small')
-        space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
-        private: Whether to create a private Space (default: True for security)
-        app_port: Port the container exposes (default 8000 for ZenML server)
-    """
-
-    space_hardware: Optional[str] = None
-    space_storage: Optional[str] = None
-    private: bool = True
-    app_port: int = 8000
 
 
 class HuggingFaceDeployer(ContainerizedDeployer):
@@ -354,10 +338,12 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             with tempfile.TemporaryDirectory() as tmpdir:
                 # Create README
                 readme = os.path.join(tmpdir, "README.md")
+                # Get port from deployment settings
+                port = deployment.snapshot.pipeline_configuration.deployment_settings.uvicorn_port
                 with open(readme, "w") as f:
                     f.write(
                         f"---\ntitle: {deployment.name}\nsdk: docker\n"
-                        f"app_port: {settings.app_port}\n---\n"
+                        f"app_port: {port}\n---\n"
                     )
 
                 # Create Dockerfile

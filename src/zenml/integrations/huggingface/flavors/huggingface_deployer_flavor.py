@@ -20,6 +20,7 @@ from pydantic import Field
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
+    BaseDeployerSettings,
 )
 from zenml.integrations.huggingface import HUGGINGFACE_DEPLOYER_FLAVOR
 from zenml.models import ServiceConnectorRequirements
@@ -29,7 +30,42 @@ if TYPE_CHECKING:
     from zenml.integrations.huggingface.deployers import HuggingFaceDeployer
 
 
-class HuggingFaceDeployerConfig(BaseDeployerConfig):
+class HuggingFaceDeployerSettings(BaseDeployerSettings):
+    """Hugging Face deployer settings.
+
+    Attributes:
+        space_hardware: Hardware tier for the Space (e.g., 'cpu-basic', 't4-small')
+        space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
+        private: Whether to create a private Space (default: True for security)
+    """
+
+    space_hardware: Optional[str] = Field(
+        default=None,
+        description="Hardware tier for Space execution. Controls compute resources "
+        "available to the deployed pipeline. Options: 'cpu-basic' (2 vCPU, 16GB RAM), "
+        "'cpu-upgrade' (8 vCPU, 32GB RAM), 't4-small' (4 vCPU, 15GB RAM, NVIDIA T4), "
+        "'t4-medium' (8 vCPU, 30GB RAM, NVIDIA T4). See "
+        "https://huggingface.co/docs/hub/spaces-gpus for full list. Defaults to "
+        "cpu-basic if not specified",
+    )
+    space_storage: Optional[str] = Field(
+        default=None,
+        description="Persistent storage tier for Space data. Determines available disk "
+        "space for artifacts and logs. Options: 'small' (20GB), 'medium' (150GB), "
+        "'large' (1TB). Storage persists across Space restarts. If not specified, "
+        "uses ephemeral storage that resets on restart",
+    )
+    private: bool = Field(
+        default=True,
+        description="Controls whether the deployed Space is private or public. "
+        "Private Spaces are only accessible to the owner and authorized users. "
+        "Public Spaces are visible to anyone with the URL. Defaults to True for security",
+    )
+
+
+class HuggingFaceDeployerConfig(
+    BaseDeployerConfig, HuggingFaceDeployerSettings
+):
     """Configuration for the Hugging Face deployer."""
 
     token: Optional[str] = SecretField(
@@ -46,22 +82,6 @@ class HuggingFaceDeployerConfig(BaseDeployerConfig):
         "specified, Spaces are created under the authenticated user's account. "
         "Example: 'zenml' deploys to https://huggingface.co/spaces/zenml/. "
         "Requires organization membership with appropriate permissions",
-    )
-    space_hardware: Optional[str] = Field(
-        default=None,
-        description="Hardware tier for Space execution. Controls compute resources "
-        "available to the deployed pipeline. Options: 'cpu-basic' (2 vCPU, 16GB RAM), "
-        "'cpu-upgrade' (8 vCPU, 32GB RAM), 't4-small' (4 vCPU, 15GB RAM, NVIDIA T4), "
-        "'t4-medium' (8 vCPU, 30GB RAM, NVIDIA T4). See "
-        "https://huggingface.co/docs/hub/spaces-gpus for full list. Defaults to "
-        "cpu-basic if not specified",
-    )
-    space_storage: Optional[str] = Field(
-        default=None,
-        description="Persistent storage tier for Space data. Determines available disk "
-        "space for artifacts and logs. Options: 'small' (20GB), 'medium' (150GB), "
-        "'large' (1TB). Storage persists across Space restarts. If not specified, "
-        "uses ephemeral storage that resets on restart",
     )
     space_prefix: str = Field(
         default="zenml",
