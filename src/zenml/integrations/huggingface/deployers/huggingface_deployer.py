@@ -32,6 +32,7 @@ from zenml.deployers.base_deployer import BaseDeployerSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
     DeployerError,
+    DeploymentDeprovisionError,
     DeploymentLogsNotFoundError,
     DeploymentNotFoundError,
     DeploymentProvisionError,
