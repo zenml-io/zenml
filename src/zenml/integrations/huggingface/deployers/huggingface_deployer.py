@@ -275,7 +275,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             stack: The active stack.
             environment: Environment variables for the app.
             secrets: Secret environment variables for the app.
-            timeout: Maximum time to wait for deployment.
+            timeout: Maximum time to wait for deployment (unused).
 
         Returns:
             Operational state of the provisioned deployment.
