@@ -485,8 +485,8 @@ class StepContext(context_utils.BaseContext):
     def __exit__(self, *_: Any) -> None:
         """Exit the step context.
 
-        Raises:
-            RuntimeError: If the step context has not been entered.
+        Args:
+            *_: Unused keyword arguments.
         """
         self._cleanup_registry.execute_callbacks(raise_on_exception=False)
         super().__exit__(*_)
