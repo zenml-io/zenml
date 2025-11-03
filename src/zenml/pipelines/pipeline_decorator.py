@@ -52,6 +52,7 @@ def pipeline(_func: "F") -> "Pipeline": ...
 def pipeline(
     *,
     name: Optional[str] = None,
+    dynamic: Optional[bool] = None,
     depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
@@ -79,6 +80,7 @@ def pipeline(
     _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
+    dynamic: Optional[bool] = None,
     depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
@@ -106,6 +108,7 @@ def pipeline(
         _func: The decorated function.
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
+        dynamic: Whether this is a dynamic pipeline or not.
         depends_on: The steps that this pipeline depends on.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
@@ -142,11 +145,30 @@ def pipeline(
     """
 
     def inner_decorator(func: "F") -> "Pipeline":
-        from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
+        if dynamic:
+            from zenml.pipelines.dynamic.pipeline_definition import (
+                DynamicPipeline,
+            )
 
-        p = DynamicPipeline(
+            PipelineClass = DynamicPipeline
+
+            pipeline_args = {
+                "depends_on": depends_on,
+            }
+        else:
+            from zenml.pipelines.pipeline_definition import Pipeline
+
+            PipelineClass = Pipeline
+
+            if depends_on:
+                logger.warning(
+                    "The `depends_on` argument is not supported "
+                    "for static pipelines and will be ignored."
+                )
+            pipeline_args = {}
+
+        p = PipelineClass(
             name=name or func.__name__,
-            depends_on=depends_on,
             entrypoint=func,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
@@ -167,6 +189,7 @@ def pipeline(
             substitutions=substitutions,
             execution_mode=execution_mode,
             cache_policy=cache_policy,
+            **pipeline_args,
         )
 
         p.__doc__ = func.__doc__
