@@ -27,7 +27,6 @@ from typing import (
     cast,
 )
 
-from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.deployers.base_deployer import BaseDeployerSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
@@ -116,11 +115,12 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             Returns:
                 Tuple of (is_valid, message).
             """
-            # Check token or secret_name
-            if not (self.config.token or self.config.secret_name):
+            # Check token
+            if not self.config.token:
                 return False, (
-                    "The Hugging Face deployer requires either a token or "
-                    "secret_name to be configured."
+                    "The Hugging Face deployer requires a token to be "
+                    "configured. Use --token parameter with a direct token "
+                    "value or reference a ZenML secret with {{secret.key}} syntax."
                 )
 
             # Check container registry
@@ -141,17 +141,10 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         """Get the Hugging Face token.
 
         Returns:
-            The token from config, secret, or environment.
+            The token from config or environment. If config.token uses secret
+            reference syntax like {{secret.key}}, ZenML automatically resolves it.
         """
-        if self.config.token:
-            return self.config.token
-
-        if self.config.secret_name:
-            client = Client()
-            secret = client.get_secret(self.config.secret_name)
-            return secret.secret_values.get("token")
-
-        return os.environ.get("HF_TOKEN")
+        return self.config.token or os.environ.get("HF_TOKEN")
 
     def _get_hf_api(self) -> "HfApi":
         """Get the Hugging Face API client.

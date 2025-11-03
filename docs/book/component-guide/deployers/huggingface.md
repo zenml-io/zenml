@@ -48,10 +48,10 @@ To use the Hugging Face deployer, you need:
 
 You need a Hugging Face access token with write permissions to deploy pipelines. You can create one at [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
 
-You have two different options to provide credentials to the Hugging Face deployer:
+You have two options to provide credentials to the Hugging Face deployer:
 
 * Pass the token directly when registering the deployer using the `--token` parameter
-* (recommended) Store the token in a ZenML secret and reference it using the `--secret_name` parameter
+* (recommended) Store the token in a ZenML secret and reference it using secret syntax
 
 ### Registering the deployer
 
@@ -67,7 +67,7 @@ zenml deployer register <DEPLOYER_NAME> \
 zenml secret create hf_token --token=<YOUR_HF_TOKEN>
 zenml deployer register <DEPLOYER_NAME> \
     --flavor=huggingface \
-    --secret_name=hf_token
+    --token='{{hf_token.token}}'
 ```
 
 ### Configuring the stack
