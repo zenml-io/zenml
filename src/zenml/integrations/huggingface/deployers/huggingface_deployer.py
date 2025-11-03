@@ -529,9 +529,19 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 # Unknown/future stages
                 status = DeploymentStatus.UNKNOWN
 
+            # Get deployment URL from Space domains (only available when RUNNING)
+            url = None
+            if status == DeploymentStatus.RUNNING and runtime.raw.get(
+                "domains"
+            ):
+                # Extract the first domain (primary domain for the Space)
+                domains = runtime.raw.get("domains", [])
+                if domains and domains[0].get("domain"):
+                    url = f"https://{domains[0]['domain']}"
+
             return DeploymentOperationalState(
                 status=status,
-                url=f"https://huggingface.co/spaces/{space_id}",
+                url=url,
                 metadata={
                     "space_id": space_id,
                     "external_state": runtime.stage,
