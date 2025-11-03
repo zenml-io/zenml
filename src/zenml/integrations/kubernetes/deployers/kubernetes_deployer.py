@@ -1387,7 +1387,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 else:
                     available = 0
                     desired = 0
-            
+
             if available == desired and desired > 0:
                 status = DeploymentStatus.RUNNING
 
