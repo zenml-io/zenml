@@ -104,7 +104,7 @@ For additional configuration of the Hugging Face deployer, you can pass the foll
   * `space_hardware` (default: `None`): Hardware tier for the Space (e.g., `'cpu-basic'`, `'cpu-upgrade'`, `'t4-small'`, `'t4-medium'`, `'a10g-small'`, `'a10g-large'`). If not specified, uses free CPU tier.
   * `space_storage` (default: `None`): Persistent storage tier for the Space (e.g., `'small'`, `'medium'`, `'large'`). If not specified, no persistent storage is allocated.
   * `private` (default: `False`): Whether to create the Space as private. Public Spaces are visible to everyone.
-  * `app_port` (default: `7860`): Port number where your deployment server listens. Hugging Face Spaces will route traffic to this port.
+  * `app_port` (default: `8000`): Port number where your deployment server listens. Defaults to 8000 (ZenML server default). Hugging Face Spaces will route traffic to this port.
 
 Check out [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 
@@ -153,66 +153,75 @@ https://huggingface.co/spaces/<YOUR_USERNAME>/<SPACE_PREFIX>-<DEPLOYMENT_NAME>
 
 By default, the space prefix is `zenml` but this can be configured using the `space_prefix` parameter when registering the deployer.
 
-## Deployment Modes
+## Important Requirements
 
-The Hugging Face deployer supports two deployment modes depending on your stack configuration:
+### Container Registry Requirement
 
-### Mode 1: Image Reference (Stack with Container Registry)
+{% hint style="warning" %}
+The Hugging Face deployer **requires** a container registry to be part of your ZenML stack. The Docker image must be pre-built and pushed to a **publicly accessible** container registry.
+{% endhint %}
 
-When your ZenML stack includes a container registry, the deployer references a pre-built Docker image:
+**Why public access is required:**
+Hugging Face Spaces cannot authenticate with private Docker registries when building Docker Spaces. The platform pulls your Docker image during the build process, which means it needs public access.
 
-**How it works:**
-- ZenML builds and pushes an image to your container registry
-- The Dockerfile in Hugging Face Spaces references this image with `FROM <your-image>`
-- The deployment server starts automatically with the correct entrypoint
+**Recommended registries:**
+- [Docker Hub](https://hub.docker.com/) public repositories
+- [GitHub Container Registry (GHCR)](https://ghcr.io) with public images
+- Any other public container registry
 
-**Requirements:**
-- Container registry must be part of your stack
-- ⚠️ **The Docker image must be publicly accessible** - Hugging Face Spaces cannot authenticate with private registries
-
-**Use when:**
-- You have a public container registry or public repository
-- You want to pre-build images in your CI/CD pipeline
-- You're using services like Docker Hub with public repositories
-
-### Mode 2: Full Build (Stack without Container Registry)
-
-When your stack does NOT have a container registry, the deployer builds the complete image from scratch in Hugging Face Spaces:
-
-**How it works:**
-- Deployer uploads your source code to the Space
-- Generates a complete Dockerfile that installs all dependencies
-- Hugging Face Spaces builds the entire image from your code
-- ✅ **No private registry authentication needed!**
-
-**Requirements:**
-- No container registry in your stack
-- Source code and dependencies uploadable to Hugging Face
-
-**Use when:**
-- You don't want to manage a container registry
-- You want to avoid private registry authentication issues
-- Your code and dependencies aren't too large for uploading
-- You're okay with longer build times in Hugging Face Spaces
-
-### Private Registry Workaround
-
-If you're currently using a private registry and want to deploy to Hugging Face, you have two options:
-
-1. **Remove the container registry from your stack** to automatically use Full Build Mode:
+**Example setup with GitHub Container Registry:**
 ```shell
-# Create a new stack without container registry
-zenml stack copy my-stack hf-stack
-zenml stack update hf-stack --container-registry=null
-zenml stack set hf-stack
-```
-
-2. **Use a public container registry** for Hugging Face deployments:
-```shell
-zenml container-registry register public_registry \
+# Register a public container registry
+zenml container-registry register ghcr_public \
     --flavor=default \
-    --uri=docker.io/<your-public-username>
+    --uri=ghcr.io/<your-github-username>
+
+# Add it to your stack
+zenml stack update <STACK_NAME> --container-registry=ghcr_public
 ```
+
+### Configuring iframe Embedding (X-Frame-Options)
+
+By default, ZenML's deployment server sends an `X-Frame-Options` header that prevents the deployment UI from being embedded in iframes. This causes issues with Hugging Face Spaces, which displays deployments in an iframe.
+
+**To fix this**, you must configure your pipeline's `DeploymentSettings` to disable the `X-Frame-Options` header:
+
+```python
+from zenml import pipeline
+from zenml.config import DeploymentSettings, SecureHeadersConfig
+
+# Configure deployment settings
+deployment_settings = DeploymentSettings(
+    app_title="My ZenML Pipeline",
+    app_description="ML pipeline deployed to Hugging Face Spaces",
+    app_version="1.0.0",
+    secure_headers=SecureHeadersConfig(
+        xfo=False,  # Disable X-Frame-Options to allow iframe embedding
+        server=True,
+        hsts=False,
+        content=True,
+        referrer=True,
+        cache=True,
+        permissions=True,
+    ),
+    cors={
+        "allow_origins": ["*"],
+        "allow_methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["*"],
+        "allow_credentials": False,
+    },
+)
+
+@pipeline(
+    name="my_hf_pipeline",
+    settings={"deployment": deployment_settings}
+)
+def my_pipeline():
+    # Your pipeline steps here
+    pass
+```
+
+Without this configuration, the Hugging Face Spaces UI will show a blank page or errors when trying to display your deployment.
 
 ## Additional Resources
 

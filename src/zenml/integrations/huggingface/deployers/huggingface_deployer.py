@@ -21,7 +21,6 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Generator,
-    List,
     Optional,
     Tuple,
     Type,
@@ -49,10 +48,6 @@ from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (
 from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
 from zenml.stack.stack_validator import StackValidator
-from zenml.utils import source_utils
-from zenml.utils.pipeline_docker_image_builder import (
-    PipelineDockerImageBuilder,
-)
 
 if TYPE_CHECKING:
     from huggingface_hub import HfApi
@@ -69,13 +64,13 @@ class HuggingFaceDeployerSettings(BaseDeployerSettings):
         space_hardware: Hardware tier for the Space (e.g., 'cpu-basic', 't4-small')
         space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
         private: Whether to create a private Space
-        app_port: Port the container exposes (default 7860)
+        app_port: Port the container exposes (default 8000 for ZenML server)
     """
 
     space_hardware: Optional[str] = None
     space_storage: Optional[str] = None
     private: bool = False
-    app_port: int = 7860
+    app_port: int = 8000
 
 
 class HuggingFaceDeployer(ContainerizedDeployer):
@@ -104,13 +99,13 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         """Validates the stack.
 
         Returns:
-            A validator that checks token or secret_name is present.
+            A validator that checks required stack components.
         """
 
-        def _validate_token_or_secret(
+        def _validate_requirements(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            """Check if secret or token is present.
+            """Check if all requirements are met.
 
             Args:
                 stack: The stack to validate.
@@ -118,13 +113,25 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             Returns:
                 Tuple of (is_valid, message).
             """
-            return bool(self.config.token or self.config.secret_name), (
-                "The Hugging Face deployer requires either a token or "
-                "secret_name to be configured."
-            )
+            # Check token or secret_name
+            if not (self.config.token or self.config.secret_name):
+                return False, (
+                    "The Hugging Face deployer requires either a token or "
+                    "secret_name to be configured."
+                )
+
+            # Check container registry
+            if not stack.container_registry:
+                return False, (
+                    "The Hugging Face deployer requires a container registry "
+                    "to be part of the stack. The Docker image must be "
+                    "pre-built and pushed to a publicly accessible registry."
+                )
+
+            return True, ""
 
         return StackValidator(
-            custom_validation_function=_validate_token_or_secret,
+            custom_validation_function=_validate_requirements,
         )
 
     def _get_token(self) -> Optional[str]:
@@ -201,8 +208,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         )
 
         # Format as JSON arrays for Dockerfile exec form
-        entrypoint_line = f"ENTRYPOINT {str(entrypoint)}"
-        cmd_line = f"CMD {str(arguments)}"
+        # Use json.dumps() to ensure proper JSON with double quotes
+        entrypoint_line = f"ENTRYPOINT {json.dumps(entrypoint)}"
+        cmd_line = f"CMD {json.dumps(arguments)}"
 
         return entrypoint_line, cmd_line
 
@@ -247,121 +255,6 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         return "\n".join(lines)
 
-    def _generate_full_build_dockerfile(
-        self,
-        deployment: DeploymentResponse,
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
-    ) -> str:
-        """Generate Dockerfile that builds image from scratch.
-
-        Uses ZenML's internal PipelineDockerImageBuilder for consistency
-        with how ZenML builds Docker images elsewhere in the codebase.
-
-        Args:
-            deployment: The deployment.
-            environment: Environment variables.
-            secrets: Secret environment variables.
-
-        Returns:
-            The Dockerfile content.
-        """
-        assert deployment.snapshot, "Snapshot required"
-
-        # Get docker settings from snapshot and make a deep copy to modify
-        docker_settings = deployment.snapshot.pipeline_configuration.docker_settings.model_copy(
-            deep=True
-        )
-        parent_image = (
-            docker_settings.parent_image or "zenmldocker/zenml:latest"
-        )
-
-        # Add deployment environment variables to docker_settings
-        # These will be baked into the image as ENV instructions
-        docker_settings.environment.update(environment)
-        docker_settings.environment.update(secrets)
-
-        # Prepare requirements as a single file tuple
-        requirements_content = self._get_requirements_for_deployment(
-            deployment
-        )
-        requirements_files: List[Tuple[str, str, List[str]]] = [
-            ("requirements.txt", requirements_content, [])
-        ]
-
-        # Get apt packages from docker settings
-        apt_packages = list(docker_settings.apt_packages)
-
-        # Use ZenML's internal method to generate the base Dockerfile
-        # Pass entrypoint=None since we'll add ENTRYPOINT and CMD separately
-        dockerfile_content = (
-            PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
-                parent_image=parent_image,
-                docker_settings=docker_settings,
-                requirements_files=requirements_files,
-                apt_packages=apt_packages,
-                entrypoint=None,  # We'll add entrypoint/cmd manually
-            )
-        )
-
-        # Add USER if not already set by docker_settings
-        if not docker_settings.user:
-            dockerfile_content += "\nUSER 1000"
-
-        # Add ENTRYPOINT and CMD
-        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
-        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
-            **{DEPLOYMENT_ID_OPTION: deployment.id}
-        )
-
-        dockerfile_content += f"\nENTRYPOINT {json.dumps(entrypoint)}"
-        dockerfile_content += f"\nCMD {json.dumps(arguments)}"
-
-        return dockerfile_content
-
-    def _get_requirements_for_deployment(
-        self, deployment: DeploymentResponse
-    ) -> str:
-        """Get Python requirements for the deployment.
-
-        Args:
-            deployment: The deployment.
-
-        Returns:
-            Requirements as a string (one per line).
-        """
-        assert deployment.snapshot, "Snapshot required"
-
-        requirements = set()
-
-        # Add ZenML with current version
-        import zenml
-
-        requirements.add(f"zenml=={zenml.__version__}")
-
-        # Add deployer requirements
-        requirements.update(self.requirements)
-
-        # Add requirements from pipeline configuration
-        docker_settings = (
-            deployment.snapshot.pipeline_configuration.docker_settings
-        )
-        if docker_settings.requirements:
-            requirements.update(docker_settings.requirements)
-
-        # Add integration requirements if specified
-        if docker_settings.required_integrations:
-            from zenml.integrations.registry import integration_registry
-
-            for integration_name in docker_settings.required_integrations:
-                if integration_name in integration_registry.integrations:
-                    integration = integration_registry.integrations[
-                        integration_name
-                    ]
-                    requirements.update(integration.REQUIREMENTS)
-
-        return "\n".join(sorted(requirements))
-
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,
@@ -394,22 +287,12 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         api = self._get_hf_api()
         space_id = self._get_space_id(deployment)
+        image = self.get_image(deployment.snapshot)
 
-        # Determine deployment mode based on stack configuration
-        has_container_registry = stack.container_registry is not None
-        use_full_build_mode = not has_container_registry
-
-        if use_full_build_mode:
-            logger.info(
-                "No container registry in stack - using full build mode. "
-                "Image will be built from scratch in Hugging Face Spaces."
-            )
-        else:
-            logger.info(
-                "Container registry detected - using image reference mode. "
-                "Ensure the image is publicly accessible."
-            )
-            image = self.get_image(deployment.snapshot)
+        logger.info(
+            f"Deploying image {image} to Hugging Face Space. "
+            "Ensure the image is publicly accessible."
+        )
 
         try:
             # Create Space if it doesn't exist
@@ -435,18 +318,11 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         f"app_port: {settings.app_port}\n---\n"
                     )
 
-                # Create Dockerfile based on mode
+                # Create Dockerfile
                 dockerfile = os.path.join(tmpdir, "Dockerfile")
-                if use_full_build_mode:
-                    dockerfile_content = self._generate_full_build_dockerfile(
-                        deployment, environment, secrets
-                    )
-                else:
-                    dockerfile_content = (
-                        self._generate_image_reference_dockerfile(
-                            image, environment, secrets, deployment
-                        )
-                    )
+                dockerfile_content = self._generate_image_reference_dockerfile(
+                    image, environment, secrets, deployment
+                )
 
                 with open(dockerfile, "w") as f:
                     f.write(dockerfile_content)
@@ -466,42 +342,6 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                     repo_id=space_id,
                     repo_type="space",
                 )
-
-                # For full build mode, upload code and requirements
-                if use_full_build_mode:
-                    logger.info(
-                        "Uploading source code to Hugging Face Space..."
-                    )
-
-                    # Get source root
-                    source_root = source_utils.get_source_root()
-
-                    # Create requirements.txt
-                    requirements_content = (
-                        self._get_requirements_for_deployment(deployment)
-                    )
-                    requirements_file = os.path.join(
-                        tmpdir, "requirements.txt"
-                    )
-                    with open(requirements_file, "w") as f:
-                        f.write(requirements_content)
-
-                    # Upload requirements
-                    api.upload_file(
-                        path_or_fileobj=requirements_file,
-                        path_in_repo="requirements.txt",
-                        repo_id=space_id,
-                        repo_type="space",
-                    )
-
-                    # Upload source code folder
-                    logger.info(f"Uploading code from: {source_root}")
-                    api.upload_folder(
-                        folder_path=source_root,
-                        repo_id=space_id,
-                        repo_type="space",
-                        path_in_repo=".",
-                    )
 
             # Set hardware and storage if specified
             hardware = settings.space_hardware or self.config.space_hardware
