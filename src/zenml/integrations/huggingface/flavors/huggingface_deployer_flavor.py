@@ -33,6 +33,7 @@ class HuggingFaceDeployerConfig(BaseDeployerConfig):
     Attributes:
         token: Hugging Face API token for authentication
         secret_name: Name of ZenML secret containing the token
+        organization: HF organization to deploy to (uses username if not set)
         space_hardware: Hardware tier (e.g., 'cpu-basic', 't4-small')
         space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
         space_prefix: Prefix for Space names to organize deployments
@@ -40,6 +41,7 @@ class HuggingFaceDeployerConfig(BaseDeployerConfig):
 
     token: Optional[str] = SecretField(default=None)
     secret_name: Optional[str] = None
+    organization: Optional[str] = None
     space_hardware: Optional[str] = None
     space_storage: Optional[str] = None
     space_prefix: str = "zenml"

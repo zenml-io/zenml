@@ -54,6 +54,9 @@ if TYPE_CHECKING:
 
     from zenml.stack import Stack
 
+# HF Space name max length (repo name limit)
+HF_SPACE_NAME_MAX_LENGTH = 96
+
 logger = get_logger(__name__)
 
 
@@ -172,21 +175,39 @@ class HuggingFaceDeployer(ContainerizedDeployer):
     def _get_space_id(self, deployment: DeploymentResponse) -> str:
         """Get the Space ID for a deployment.
 
+        Supports deploying to either a user account or organization.
+
         Args:
             deployment: The deployment.
 
         Returns:
-            The Space ID in format 'username/space-name'.
-        """
-        api = self._get_hf_api()
-        username = api.whoami()["name"]
+            The Space ID in format 'owner/space-name' where owner is either
+            the username or organization name.
 
-        # Simple sanitization: alphanumeric, hyphens, underscores only
+        Raises:
+            DeployerError: If the space name exceeds HF's maximum length.
+        """
+        # Get owner (organization or username)
+        if self.config.organization:
+            owner = self.config.organization
+        else:
+            api = self._get_hf_api()
+            owner = api.whoami()["name"]
+
+        # Sanitize deployment name: alphanumeric, hyphens, underscores only
         sanitized = re.sub(r"[^a-zA-Z0-9\-_]", "-", deployment.name).lower()
         sanitized = sanitized.strip("-") or "deployment"
         space_name = f"{self.config.space_prefix}-{sanitized}"
 
-        return f"{username}/{space_name}"
+        # Validate length (HF has 96 char limit for repo names)
+        if len(space_name) > HF_SPACE_NAME_MAX_LENGTH:
+            raise DeployerError(
+                f"Space name '{space_name}' exceeds Hugging Face's "
+                f"maximum length of {HF_SPACE_NAME_MAX_LENGTH} characters. "
+                f"Please use a shorter deployment name or space_prefix."
+            )
+
+        return f"{owner}/{space_name}"
 
     def _get_entrypoint_and_command(
         self, deployment: DeploymentResponse
@@ -286,10 +307,22 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         )
 
         try:
-            # Create Space if it doesn't exist
+            # Create Space if it doesn't exist, or update visibility if needed
             try:
-                api.space_info(space_id)
+                space_info = api.space_info(space_id)
                 logger.info(f"Updating existing Space: {space_id}")
+
+                # Update visibility if changed
+                if space_info.private != settings.private:
+                    logger.info(
+                        f"Updating Space visibility: "
+                        f"{'private' if settings.private else 'public'}"
+                    )
+                    api.update_repo_visibility(
+                        repo_id=space_id,
+                        private=settings.private,
+                        repo_type="space",
+                    )
             except Exception:
                 logger.info(f"Creating new Space: {space_id}")
                 api.create_repo(
@@ -362,32 +395,49 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 except Exception as e:
                     logger.warning(f"Failed to set secret {key}: {e}")
 
-            # Set hardware and storage if specified
+            # Set hardware if specified (fail if this doesn't work)
             hardware = settings.space_hardware or self.config.space_hardware
             if hardware:
-                try:
-                    from huggingface_hub import SpaceHardware
+                from huggingface_hub import SpaceHardware
 
+                try:
                     api.request_space_hardware(
                         repo_id=space_id,
                         hardware=getattr(
                             SpaceHardware, hardware.upper().replace("-", "_")
                         ),
                     )
+                    logger.info(f"Requested hardware: {hardware}")
+                except AttributeError:
+                    raise DeploymentProvisionError(
+                        f"Invalid hardware tier '{hardware}'. "
+                        f"See https://huggingface.co/docs/hub/spaces-gpus"
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to set hardware {hardware}: {e}")
+                    raise DeploymentProvisionError(
+                        f"Failed to set hardware {hardware}: {e}"
+                    ) from e
 
+            # Set storage if specified (fail if this doesn't work)
             storage = settings.space_storage or self.config.space_storage
             if storage:
-                try:
-                    from huggingface_hub import SpaceStorage
+                from huggingface_hub import SpaceStorage
 
+                try:
                     api.request_space_storage(
                         repo_id=space_id,
                         storage=getattr(SpaceStorage, storage.upper()),
                     )
+                    logger.info(f"Requested storage: {storage}")
+                except AttributeError:
+                    raise DeploymentProvisionError(
+                        f"Invalid storage tier '{storage}'. "
+                        f"Valid options: small, medium, large"
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to set storage {storage}: {e}")
+                    raise DeploymentProvisionError(
+                        f"Failed to set storage {storage}: {e}"
+                    ) from e
 
             space_url = f"https://huggingface.co/spaces/{space_id}"
             return DeploymentOperationalState(
@@ -473,14 +523,13 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment to stop.
-            timeout: Maximum time to wait for deprovision.
+            timeout: Maximum time to wait for deprovision (unused - deletion is immediate).
 
         Returns:
             None, indicating immediate deletion completed.
 
         Raises:
             DeploymentNotFoundError: If the Space is not found.
-            Exception: If deletion fails for reasons other than 404.
         """
         space_id = deployment.deployment_metadata.get("space_id")
         if not space_id:
@@ -489,11 +538,15 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         api = self._get_hf_api()
 
         try:
+            from huggingface_hub.utils import HfHubHTTPError
+
             api.delete_repo(repo_id=space_id, repo_type="space")
             logger.info(f"Deleted Space: {space_id}")
             return None
-        except Exception as e:
-            if "404" in str(e):
+        except HfHubHTTPError as e:
+            if e.response.status_code == 404:
                 logger.info(f"Space {space_id} already deleted")
                 return None
-            raise
+            raise DeploymentNotFoundError(
+                f"Failed to delete Space {space_id}: {e}"
+            ) from e
