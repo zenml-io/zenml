@@ -351,15 +351,24 @@ class KubernetesDeployer(ContainerizedDeployer):
                 }
             )
 
-        pod_settings_dict = (
-            settings.pod_settings.model_dump() if settings.pod_settings else {}
-        )
+        # Merge secret env vars into pod_settings if needed
+        pod_settings_for_template = settings.pod_settings
+        if secret_env_list and settings.pod_settings:
+            # Create a copy with merged env vars
+            from copy import deepcopy
 
-        if secret_env_list:
-            existing_env = pod_settings_dict.get("env", [])
-            if not isinstance(existing_env, list):
-                existing_env = []
-            pod_settings_dict["env"] = existing_env + secret_env_list
+            pod_settings_for_template = deepcopy(settings.pod_settings)
+            existing_env = pod_settings_for_template.env or []
+            pod_settings_for_template.env = existing_env + secret_env_list
+        elif secret_env_list:
+            # Create a minimal pod_settings with just env vars
+            from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
+                KubernetesPodSettings,
+            )
+
+            pod_settings_for_template = KubernetesPodSettings(
+                env=secret_env_list
+            )
 
         context = {
             "name": resource_name,
@@ -390,14 +399,14 @@ class KubernetesDeployer(ContainerizedDeployer):
             "liveness_probe_failure_threshold": settings.liveness_probe_failure_threshold,
             "probe_port": settings.service_port,
             "security_context": (
-                pod_settings_dict.get("security_context")
-                if pod_settings_dict
+                settings.pod_settings.security_context
+                if settings.pod_settings
                 else None
             ),
             "service_type": settings.service_type,
             "service_port": settings.service_port,
             "target_port": settings.service_port,
-            "pod_settings": pod_settings_dict,
+            "pod_settings": pod_settings_for_template,
         }
 
         return context
@@ -661,37 +670,50 @@ class KubernetesDeployer(ContainerizedDeployer):
         namespace: str,
         applier: KubernetesApplier,
         dry_run: bool,
-    ) -> None:
-        """Ensure namespace exists.
+    ) -> Dict[str, Any]:
+        """Ensure namespace exists (or generate manifest in dry-run mode).
 
         Args:
             namespace: Kubernetes namespace name.
             applier: KubernetesApplier instance.
-            dry_run: If True, skip namespace creation.
+            dry_run: If True, create namespace with dry_run=True (validate only).
+
+        Returns:
+            The namespace manifest dict.
 
         Raises:
             DeploymentProvisionError: If namespace creation fails.
         """
-        if dry_run:
-            return
+        namespace_manifest = {
+            "apiVersion": "v1",
+            "kind": "Namespace",
+            "metadata": {"name": namespace},
+        }
 
         try:
-            namespace_manifest = {
-                "apiVersion": "v1",
-                "kind": "Namespace",
-                "metadata": {"name": namespace},
-            }
-            applier.apply_resource(resource=namespace_manifest, dry_run=False)
+            applier.apply_resource(
+                resource=namespace_manifest, dry_run=dry_run
+            )
         except ApiException as e:
-            raise DeploymentProvisionError(
-                f"Failed to create namespace '{namespace}': {e}"
-            ) from e
+            # In dry-run mode, if namespace doesn't exist, validation will fail
+            # That's OK - we'll still save the manifest for the user
+            if dry_run:
+                logger.debug(
+                    f"Namespace '{namespace}' validation skipped (may not exist yet): {e}"
+                )
+            else:
+                raise DeploymentProvisionError(
+                    f"Failed to create namespace '{namespace}': {e}"
+                ) from e
+
+        return namespace_manifest
 
     def _render_k8s_resources(
         self,
         deployment: DeploymentResponse,
         settings: KubernetesDeployerSettings,
         context: Dict[str, Any],
+        namespace_manifest: Optional[Dict[str, Any]] = None,
         engine: Optional[KubernetesTemplateEngine] = None,
     ) -> Tuple[
         Dict[str, Any], str, Dict[str, Any], str, KubernetesTemplateEngine
@@ -702,6 +724,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment: The deployment response.
             settings: Kubernetes deployer settings.
             context: Template rendering context.
+            namespace_manifest: Optional namespace manifest to include in saved manifests.
             engine: Optional pre-initialized template engine. If None, creates one.
 
         Returns:
@@ -731,10 +754,18 @@ class KubernetesDeployer(ContainerizedDeployer):
             ) from e
 
         if settings.save_manifests:
-            manifests = {
-                "deployment.yaml": deployment_manifest.canonical_yaml,
-                "service.yaml": service_manifest.canonical_yaml,
-            }
+            manifests = {}
+
+            # Include namespace manifest first if provided
+            if namespace_manifest:
+                manifests["namespace.yaml"] = yaml.dump(
+                    namespace_manifest,
+                    default_flow_style=False,
+                    sort_keys=False,
+                )
+
+            manifests["deployment.yaml"] = deployment_manifest.canonical_yaml
+            manifests["service.yaml"] = service_manifest.canonical_yaml
 
             if settings.additional_resources:
                 try:
@@ -770,6 +801,17 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         if settings.print_manifests:
+            if namespace_manifest:
+                logger.info("=" * 80)
+                logger.info("KUBERNETES NAMESPACE MANIFEST")
+                logger.info("=" * 80)
+                logger.info(
+                    yaml.dump(
+                        namespace_manifest,
+                        default_flow_style=False,
+                        sort_keys=False,
+                    )
+                )
             logger.info("=" * 80)
             logger.info("KUBERNETES DEPLOYMENT MANIFEST")
             logger.info("=" * 80)
@@ -853,7 +895,20 @@ class KubernetesDeployer(ContainerizedDeployer):
                 logger.debug(f"   🔹 Validating Service: {resource_name}")
                 applier.apply_resource(resource=k8s_service, dry_run=True)
                 logger.debug("   ✅ Core resources validated")
-            except (ValueError, ApiException) as e:
+            except ApiException as e:
+                # If namespace doesn't exist, that's expected in dry-run mode
+                # The namespace manifest will be generated for the user
+                if e.status == 404 and "namespace" in str(e.body).lower():
+                    logger.warning(
+                        f"   ⚠️  Namespace '{namespace}' doesn't exist yet. "
+                        f"A namespace.yaml manifest has been generated.\n"
+                        f"   When you deploy (without --dry-run), the namespace will be created automatically."
+                    )
+                else:
+                    raise DeploymentProvisionError(
+                        f"❌ Validation failed for '{deployment.name}': {e}"
+                    ) from e
+            except ValueError as e:
                 raise DeploymentProvisionError(
                     f"❌ Validation failed for '{deployment.name}': {e}"
                 ) from e
@@ -1134,7 +1189,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_name = f"zenml-{deployment.id}"
         applier = KubernetesApplier(api_client=self.get_kube_client())
 
-        self._prepare_namespace(namespace, applier, skip_secrets)
+        namespace_manifest = self._prepare_namespace(
+            namespace, applier, skip_secrets
+        )
 
         sanitized_secrets = {}
         if secrets and not skip_secrets:
@@ -1176,7 +1233,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         k8s_deployment, _, k8s_service, _, engine = self._render_k8s_resources(
-            deployment, settings, context
+            deployment, settings, context, namespace_manifest
         )
 
         if not skip_secrets:

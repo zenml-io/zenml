@@ -510,6 +510,15 @@ def deploy_pipeline(
                     "deployer to the stack in order to perform dry-run."
                 )
 
+            # Check if the deployer supports dry-run mode
+            if not hasattr(stack.deployer, "do_dry_run_deployment"):
+                cli_utils.error(
+                    f"The '{stack.deployer.name}' deployer does not support dry-run mode.\n"
+                    f"Dry-run is only available for deployers that implement the "
+                    f"'do_dry_run_deployment' method.\n"
+                    f"Please remove the --dry-run flag to deploy normally."
+                )
+
             from datetime import datetime, timezone
             from uuid import uuid4
 

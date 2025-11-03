@@ -1339,25 +1339,56 @@ def build_url_from_loadbalancer_service(
     """Get URL from LoadBalancer service.
 
     Args:
-        service: Kubernetes Service resource.
+        service: Kubernetes Service resource (typed or from dynamic client).
 
     Returns:
         LoadBalancer URL or None if IP not yet assigned.
     """
-    if not service.spec or not service.spec.ports:
+    # Handle both typed client objects and dynamic client ResourceInstance
+    if hasattr(service, "to_dict"):
+        service_dict = service.to_dict()
+    elif isinstance(service, dict):
+        service_dict = service
+    else:
+        # Try attribute access (typed client object)
+        if not service.spec or not service.spec.ports:
+            return None
+
+        service_port = service.spec.ports[0].port
+
+        if (
+            service.status
+            and service.status.load_balancer
+            and service.status.load_balancer.ingress
+        ):
+            lb_ingress = service.status.load_balancer.ingress[0]
+            host = lb_ingress.ip or lb_ingress.hostname
+            if host:
+                return f"http://{host}:{service_port}"
         return None
 
-    service_port = service.spec.ports[0].port
+    # Handle dictionary-like access (dynamic client)
+    spec = service_dict.get("spec")
+    if not spec or not spec.get("ports"):
+        return None
 
-    if (
-        service.status
-        and service.status.load_balancer
-        and service.status.load_balancer.ingress
-    ):
-        lb_ingress = service.status.load_balancer.ingress[0]
-        host = lb_ingress.ip or lb_ingress.hostname
-        if host:
-            return f"http://{host}:{service_port}"
+    service_port = spec["ports"][0].get("port")
+    if not service_port:
+        return None
+
+    status = service_dict.get("status")
+    if status:
+        load_balancer = status.get("loadBalancer") or status.get(
+            "load_balancer"
+        )
+        if load_balancer:
+            ingress = load_balancer.get("ingress")
+            if ingress and len(ingress) > 0:
+                lb_ingress = ingress[0]
+                host = lb_ingress.get("ip") or lb_ingress.get("hostname")
+                if host:
+                    return f"http://{host}:{service_port}"
+
     return None
 
 
@@ -1370,18 +1401,39 @@ def build_url_from_nodeport_service(
 
     Args:
         core_api: Kubernetes Core V1 API client.
-        service: Kubernetes Service resource.
+        service: Kubernetes Service resource (typed or from dynamic client).
         namespace: Kubernetes namespace.
 
     Returns:
         NodePort URL or None if not accessible.
     """
-    if not service.spec or not service.spec.ports:
-        return None
+    # Handle both typed client objects and dynamic client ResourceInstance
+    if hasattr(service, "to_dict"):
+        service_dict = service.to_dict()
+    elif isinstance(service, dict):
+        service_dict = service
+    else:
+        service_dict = None
 
-    node_port = service.spec.ports[0].node_port
-    service_port = service.spec.ports[0].port
-    service_name = service.metadata.name if service.metadata else "unknown"
+    if service_dict:
+        # Dictionary-like access (dynamic client)
+        spec = service_dict.get("spec")
+        if not spec or not spec.get("ports"):
+            return None
+
+        port_info = spec["ports"][0]
+        node_port = port_info.get("nodePort")
+        service_port = port_info.get("port")
+        metadata = service_dict.get("metadata", {})
+        service_name = metadata.get("name", "unknown")
+    else:
+        # Attribute access (typed client)
+        if not service.spec or not service.spec.ports:
+            return None
+
+        node_port = service.spec.ports[0].node_port
+        service_port = service.spec.ports[0].port
+        service_name = service.metadata.name if service.metadata else "unknown"
 
     if not node_port:
         return None
@@ -1433,18 +1485,36 @@ def build_url_from_clusterip_service(
     """Get internal DNS URL from ClusterIP service.
 
     Args:
-        service: Kubernetes Service resource.
+        service: Kubernetes Service resource (typed or from dynamic client).
         namespace: Kubernetes namespace.
 
     Returns:
         Internal cluster DNS URL.
     """
-    service_name = service.metadata.name if service.metadata else "unknown"
+    # Handle both typed client objects and dynamic client ResourceInstance
+    if hasattr(service, "to_dict"):
+        service_dict = service.to_dict()
+    elif isinstance(service, dict):
+        service_dict = service
+    else:
+        service_dict = None
 
-    if not service.spec or not service.spec.ports:
-        return f"http://{service_name}.{namespace}.svc.cluster.local"
+    if service_dict:
+        # Dictionary-like access (dynamic client)
+        metadata = service_dict.get("metadata", {})
+        service_name = metadata.get("name", "unknown")
+        spec = service_dict.get("spec")
+        if not spec or not spec.get("ports"):
+            return f"http://{service_name}.{namespace}.svc.cluster.local"
+        service_port = spec["ports"][0].get("port")
+    else:
+        # Attribute access (typed client)
+        service_name = service.metadata.name if service.metadata else "unknown"
 
-    service_port = service.spec.ports[0].port
+        if not service.spec or not service.spec.ports:
+            return f"http://{service_name}.{namespace}.svc.cluster.local"
+
+        service_port = service.spec.ports[0].port
 
     logger.warning(
         f"Service '{service_name}' uses ClusterIP, which is only "
@@ -1467,7 +1537,7 @@ def build_service_url(
 
     Args:
         core_api: Kubernetes Core V1 API client.
-        service: Kubernetes Service resource.
+        service: Kubernetes Service resource (typed or from dynamic client).
         namespace: Kubernetes namespace.
         ingress: Optional Kubernetes Ingress resource.
 
@@ -1478,16 +1548,40 @@ def build_service_url(
     if ingress:
         return build_url_from_ingress(ingress)
 
-    if not service.spec or not service.spec.type:
-        service_name = service.metadata.name if service.metadata else "unknown"
-        logger.warning(
-            f"Service '{service_name}' has no type specified in spec. "
-            f"Cannot build service URL."
-        )
-        return None
+    # Handle both typed client objects and dynamic client ResourceInstance
+    if hasattr(service, "to_dict"):
+        service_dict = service.to_dict()
+    elif isinstance(service, dict):
+        service_dict = service
+    else:
+        service_dict = None
 
-    # Otherwise, build URL based on service type
-    service_type = service.spec.type
+    if service_dict:
+        # Dictionary-like access (dynamic client)
+        spec = service_dict.get("spec")
+        metadata = service_dict.get("metadata", {})
+        service_name = metadata.get("name", "unknown")
+        if not spec or not spec.get("type"):
+            logger.warning(
+                f"Service '{service_name}' has no type specified in spec. "
+                f"Cannot build service URL."
+            )
+            return None
+        service_type = spec["type"]
+    else:
+        # Attribute access (typed client)
+        if not service.spec or not service.spec.type:
+            service_name = (
+                service.metadata.name if service.metadata else "unknown"
+            )
+            logger.warning(
+                f"Service '{service_name}' has no type specified in spec. "
+                f"Cannot build service URL."
+            )
+            return None
+
+        # Otherwise, build URL based on service type
+        service_type = service.spec.type
 
     if service_type == "LoadBalancer":
         return build_url_from_loadbalancer_service(service)
