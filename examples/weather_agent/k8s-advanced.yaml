@@ -156,9 +156,6 @@ settings:
     image_pull_secrets:
       - dockerhub-secret
     
-    # Service account for RBAC
-    service_account_name: weather-agent-sa
-    
     # ========================================================================
     # Additional Kubernetes Resources (Ingress, HPA, PDB)
     # ========================================================================

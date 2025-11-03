@@ -519,14 +519,62 @@ class KubernetesApplier:
             Returns:
                 True if deployment is ready, False otherwise.
             """
-            if not hasattr(deployment, "status") or not deployment.status:
-                return False
+            # Convert ResourceField to dict for reliable access
+            if hasattr(deployment, "to_dict"):
+                deployment_dict = deployment.to_dict()
+                status = deployment_dict.get("status", {})
+                spec = deployment_dict.get("spec", {})
+                desired = spec.get("replicas", 0)
+                available = status.get("availableReplicas", 0)
+            else:
+                # Fallback: try direct access
+                if not hasattr(deployment, "status") or not deployment.status:
+                    logger.info(f"Deployment {name} has no status yet")
+                    return False
 
-            status = deployment.status
-            desired = getattr(deployment.spec, "replicas", 0)
-            available = getattr(status, "available_replicas", 0)
+                status = deployment.status
+                spec = (
+                    deployment.spec
+                    if hasattr(deployment, "spec")
+                    else deployment.get("spec", {})
+                )
 
-            return available == desired and desired > 0
+                # Try multiple ways to get desired replicas
+                desired = None
+                if hasattr(spec, "replicas"):
+                    desired = spec.replicas
+                elif isinstance(spec, dict):
+                    desired = spec.get("replicas")
+                elif hasattr(spec, "get"):
+                    desired = spec.get("replicas")
+
+                if desired is None:
+                    desired = 0
+
+                # Try multiple ways to get available replicas
+                available = None
+                # Try snake_case attribute
+                if hasattr(status, "available_replicas"):
+                    available = status.available_replicas
+                # Try camelCase attribute
+                elif hasattr(status, "availableReplicas"):
+                    available = status.availableReplicas
+                # Try dict-like access with camelCase
+                elif isinstance(status, dict):
+                    available = status.get("availableReplicas")
+                # Try get() method with camelCase
+                elif hasattr(status, "get"):
+                    available = status.get("availableReplicas")
+
+                if available is None:
+                    available = 0
+
+            ready = available == desired and desired > 0
+            if not ready:
+                logger.info(
+                    f"⏳ Deployment {name} not ready: {available}/{desired} replicas available"
+                )
+            return ready
 
         return self.wait_for_resource_condition(
             name=name,

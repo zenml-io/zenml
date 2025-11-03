@@ -648,14 +648,16 @@ def retry_on_api_exception(
 
                 retries += 1
                 if retries <= max_retries:
-                    logger.warning("Error calling %s: %s.", func.__name__, e)
+                    func_name = getattr(func, "__name__", repr(func))
+                    logger.warning("Error calling %s: %s.", func_name, e)
                     time.sleep(_delay)
                     _delay *= backoff
                 else:
                     raise
 
+        func_name = getattr(func, "__name__", repr(func))
         raise RuntimeError(
-            f"Failed to call {func.__name__} after {max_retries} retries."
+            f"Failed to call {func_name} after {max_retries} retries."
         )
 
     return wrapper
