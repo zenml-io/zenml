@@ -5597,6 +5597,7 @@ class TestRunMetadata:
                             config=StepConfiguration(name=step_name),
                         )
                     },
+                    is_dynamic=False,
                 )
             )
             pr, _ = client.zen_store.get_or_create_run(
@@ -5657,6 +5658,7 @@ class TestRunMetadata:
                         )
                     },
                     schedule=resource.id,
+                    is_dynamic=False,
                 )
             )
         else:
@@ -5890,6 +5892,7 @@ class TestCuratedVisualizations:
                         config=StepConfiguration(name=step_name),
                     )
                 },
+                is_dynamic=False,
             )
         )
 

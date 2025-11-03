@@ -453,6 +453,7 @@ def sample_pipeline_snapshot_request_model() -> PipelineSnapshotRequest:
         server_version="0.12.3",
         stack=uuid4(),
         pipeline=uuid4(),
+        is_dynamic=False,
     )
 
 
