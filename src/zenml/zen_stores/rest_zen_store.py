@@ -114,6 +114,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
     APITokenType,
@@ -435,7 +436,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            if api_key.startswith("ZENPROKEY_"):
+            if api_key.startswith(ZENML_PRO_API_KEY_PREFIX):
                 credentials_store.set_api_key(
                     ZENML_PRO_API_URL, api_key, is_zenml_pro=True
                 )
@@ -4139,7 +4140,7 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=device_id, route=DEVICES)
 
     # -------------------
-    # Pipeline API Tokens
+    # API Tokens
     # -------------------
 
     def get_api_token(

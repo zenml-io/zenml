@@ -1,0 +1,30 @@
+---
+description: Project-wide commenting policy — explain WHY the code is the way it is; avoid change-log comments.
+alwaysApply: true
+---
+
+# Commenting Policy: Explain **Why**, Not **What**
+
+**Goal:** Comments should help a future maintainer understand intent and constraints months later—not narrate edits.
+
+## Use comments to explain
+- Non-obvious design decisions / trade-offs and invariants
+- Complex logic or algorithms (what makes them tricky)
+- Business rules and constraints that drive the design
+- Purpose and contract of functions/classes (especially public APIs)
+- Edge cases and gotchas being handled and why they matter
+
+## Avoid change-tracking comments
+- “Updated from previous version”
+- “New implementation”
+- “Changed to use X instead of Y”
+- “Refactored this section”
+
+## Avoid simple explanatory comments
+- Avoid comments that are obvious descriptions of what the code does when it's
+  already clear from the code itself.
+
+## Guidance
+- Prefer self-explanatory code; add comments only where extra context is genuinely needed.
+- Write for “future you” 6+ months from now.
+- In Python, prefer docstrings for API intent and inline comments only for truly non-obvious lines.
