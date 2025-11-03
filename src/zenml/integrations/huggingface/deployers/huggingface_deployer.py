@@ -501,9 +501,15 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             runtime = api.get_space_runtime(repo_id=space_id)
 
             # Map HuggingFace Space stages to ZenML standard deployment states
-            # Only RUNNING means fully provisioned with health endpoint available
+            # Only RUNNING + domain READY means fully provisioned with health endpoint available
             if runtime.stage == SpaceStage.RUNNING:
-                status = DeploymentStatus.RUNNING
+                # Check if domain is also ready (not just Space running)
+                domains = runtime.raw.get("domains", [])
+                if domains and domains[0].get("stage") == "READY":
+                    status = DeploymentStatus.RUNNING
+                else:
+                    # Space is running but domain not ready yet (DNS propagating, etc.)
+                    status = DeploymentStatus.PENDING
             # Building/updating states - health endpoint not yet available
             elif runtime.stage in [
                 SpaceStage.BUILDING,
@@ -529,15 +535,16 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 # Unknown/future stages
                 status = DeploymentStatus.UNKNOWN
 
-            # Get deployment URL from Space domains (only available when RUNNING)
+            # Get deployment URL from Space domains (only when fully ready)
             url = None
-            if status == DeploymentStatus.RUNNING and runtime.raw.get(
-                "domains"
-            ):
-                # Extract the first domain (primary domain for the Space)
+            domain_stage = None
+            if runtime.raw.get("domains"):
                 domains = runtime.raw.get("domains", [])
-                if domains and domains[0].get("domain"):
-                    url = f"https://{domains[0]['domain']}"
+                if domains:
+                    domain_stage = domains[0].get("stage")
+                    # Only set URL if domain is ready for traffic
+                    if domain_stage == "READY" and domains[0].get("domain"):
+                        url = f"https://{domains[0]['domain']}"
 
             return DeploymentOperationalState(
                 status=status,
@@ -545,6 +552,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 metadata={
                     "space_id": space_id,
                     "external_state": runtime.stage,
+                    "domain_stage": domain_stage,
                 },
             )
 
