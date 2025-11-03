@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Hugging Face deployer."""
 
+import json
 import os
 import re
 import tempfile
@@ -20,6 +21,7 @@ from typing import (
     TYPE_CHECKING,
     Dict,
     Generator,
+    List,
     Optional,
     Tuple,
     Type,
@@ -48,6 +50,9 @@ from zenml.logger import get_logger
 from zenml.models import DeploymentOperationalState, DeploymentResponse
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils import source_utils
+from zenml.utils.pipeline_docker_image_builder import (
+    PipelineDockerImageBuilder,
+)
 
 if TYPE_CHECKING:
     from huggingface_hub import HfApi
@@ -250,6 +255,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
     ) -> str:
         """Generate Dockerfile that builds image from scratch.
 
+        Uses ZenML's internal PipelineDockerImageBuilder for consistency
+        with how ZenML builds Docker images elsewhere in the codebase.
+
         Args:
             deployment: The deployment.
             environment: Environment variables.
@@ -260,54 +268,56 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         """
         assert deployment.snapshot, "Snapshot required"
 
-        # Use Docker settings from snapshot if available
-        docker_settings = (
-            deployment.snapshot.pipeline_configuration.docker_settings
+        # Get docker settings from snapshot and make a deep copy to modify
+        docker_settings = deployment.snapshot.pipeline_configuration.docker_settings.model_copy(
+            deep=True
         )
         parent_image = (
             docker_settings.parent_image or "zenmldocker/zenml:latest"
         )
 
-        lines = [
-            f"FROM {parent_image}",
-            "WORKDIR /app",
-        ]
+        # Add deployment environment variables to docker_settings
+        # These will be baked into the image as ENV instructions
+        docker_settings.environment.update(environment)
+        docker_settings.environment.update(secrets)
 
-        # Add environment variables
-        env_vars = {**environment, **secrets}
-        for k, v in env_vars.items():
-            escaped_value = v.replace(chr(92), chr(92) * 2).replace(
-                chr(34), chr(92) + chr(34)
-            )
-            lines.append(f'ENV {k}="{escaped_value}"')
-
-        # Install system packages if needed
-        apt_packages = docker_settings.apt_packages
-        if apt_packages:
-            apt_list = " ".join(f"'{p}'" for p in apt_packages)
-            lines.append(
-                f"RUN apt-get update && apt-get install -y --no-install-recommends {apt_list}"
-            )
-
-        # Copy and install Python requirements
-        lines.append("COPY requirements.txt .")
-        lines.append("RUN pip install --no-cache-dir -r requirements.txt")
-
-        # Copy code
-        lines.append("COPY . .")
-        lines.append("RUN chmod -R a+rw .")
-
-        # Set user
-        lines.append("USER 1000")
-
-        # Add entrypoint and command
-        entrypoint_line, cmd_line = self._get_entrypoint_and_command(
+        # Prepare requirements as a single file tuple
+        requirements_content = self._get_requirements_for_deployment(
             deployment
         )
-        lines.append(entrypoint_line)
-        lines.append(cmd_line)
+        requirements_files: List[Tuple[str, str, List[str]]] = [
+            ("requirements.txt", requirements_content, [])
+        ]
 
-        return "\n".join(lines)
+        # Get apt packages from docker settings
+        apt_packages = list(docker_settings.apt_packages)
+
+        # Use ZenML's internal method to generate the base Dockerfile
+        # Pass entrypoint=None since we'll add ENTRYPOINT and CMD separately
+        dockerfile_content = (
+            PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+                parent_image=parent_image,
+                docker_settings=docker_settings,
+                requirements_files=requirements_files,
+                apt_packages=apt_packages,
+                entrypoint=None,  # We'll add entrypoint/cmd manually
+            )
+        )
+
+        # Add USER if not already set by docker_settings
+        if not docker_settings.user:
+            dockerfile_content += "\nUSER 1000"
+
+        # Add ENTRYPOINT and CMD
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
+            **{DEPLOYMENT_ID_OPTION: deployment.id}
+        )
+
+        dockerfile_content += f"\nENTRYPOINT {json.dumps(entrypoint)}"
+        dockerfile_content += f"\nCMD {json.dumps(arguments)}"
+
+        return dockerfile_content
 
     def _get_requirements_for_deployment(
         self, deployment: DeploymentResponse
