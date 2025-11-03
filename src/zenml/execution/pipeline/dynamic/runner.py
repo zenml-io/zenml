@@ -34,6 +34,7 @@ from zenml import ExternalArtifact
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
+from zenml.enums import ExecutionMode
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
     OutputArtifact,
@@ -91,6 +92,18 @@ class DynamicPipelineRunner:
         """
         if not snapshot.stack:
             raise RuntimeError("Missing stack for snapshot.")
+
+        if (
+            snapshot.pipeline_configuration.execution_mode
+            != ExecutionMode.STOP_ON_FAILURE
+        ):
+            logger.warning(
+                "Only the STOP_ON_FAILURE execution mode is supported for "
+                "dynamic pipelines right now. "
+                "The execution mode `%s` will be ignored.",
+                snapshot.pipeline_configuration.execution_mode.value,
+            )
+
         self._snapshot = snapshot
         self._run = run
         # TODO: make this configurable
@@ -122,7 +135,8 @@ class DynamicPipelineRunner:
             pipeline = source_utils.load(self._snapshot.pipeline_spec.source)
             if not isinstance(pipeline, DynamicPipeline):
                 raise RuntimeError(
-                    f"Invalid pipeline source: {self._snapshot.pipeline_spec.source}"
+                    "Invalid pipeline source: "
+                    f"{self._snapshot.pipeline_spec.source.import_path}"
                 )
             self._pipeline = pipeline
 
@@ -161,12 +175,17 @@ class DynamicPipelineRunner:
                     self.pipeline._call_entrypoint(**pipeline_parameters)
                 except:
                     publish_failed_pipeline_run(run.id)
+                    logger.error(
+                        "Pipeline run failed. All in-progress step runs will "
+                        "still finish executing."
+                    )
                     raise
                 finally:
                     self._orchestrator.run_cleanup_hook(
                         snapshot=self._snapshot
                     )
-                self.await_all_step_run_futures()
+                    self._executor.shutdown(wait=True, cancel_futures=True)
+                # self.await_all_step_run_futures()
                 publish_successful_pipeline_run(run.id)
 
     @overload
