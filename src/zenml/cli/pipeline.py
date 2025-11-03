@@ -487,6 +487,16 @@ def deploy_pipeline(
 
         cli_utils.pretty_print_deployment(deployment, show_secret=False)
 
+        # Print the ZenML Cloud dashboard URL if available
+        from zenml.utils.dashboard_utils import get_deployment_url
+
+        dashboard_url = get_deployment_url(deployment)
+        if dashboard_url:
+            cli_utils.declare(
+                f"\n✅ [bold green]View in ZenML Cloud:[/bold green] "
+                f"[link]{dashboard_url}[/link]"
+            )
+
         if attach:
             deployer = BaseDeployer.get_active_deployer()
             for log in deployer.get_deployment_logs(
@@ -1230,6 +1240,15 @@ def deploy_snapshot(
                 f"Provisioned deployment '{deployment_name_or_id}'."
             )
             cli_utils.pretty_print_deployment(deployment, show_secret=True)
+
+            from zenml.utils.dashboard_utils import get_deployment_url
+
+            dashboard_url = get_deployment_url(deployment)
+            if dashboard_url:
+                cli_utils.declare(
+                    f"\n✅ [bold green]View in ZenML Cloud:[/bold green] "
+                    f"[link]{dashboard_url}[/link]"
+                )
 
 
 @snapshot.command("list", help="List pipeline snapshots.")
