@@ -298,12 +298,28 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         space_id = self._get_space_id(deployment)
         image = self.get_image(deployment.snapshot)
 
+        # Handle space_id mismatch (e.g., renamed deployment or changed prefix)
+        old_space_id = deployment.deployment_metadata.get("space_id")
+        if old_space_id and old_space_id != space_id:
+            logger.info(
+                f"Space ID changed from {old_space_id} to {space_id}. "
+                f"Cleaning up old Space..."
+            )
+            try:
+                self.do_deprovision_deployment(deployment, timeout=0)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to clean up old Space {old_space_id}: {e}"
+                )
+
         logger.info(
             f"Deploying image {image} to Hugging Face Space. "
             "Ensure the image is publicly accessible."
         )
 
         try:
+            from huggingface_hub.utils import HfHubHTTPError
+
             # Create Space if it doesn't exist, or update visibility if needed
             try:
                 space_info = api.space_info(space_id)
@@ -320,7 +336,11 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         private=settings.private,
                         repo_type="space",
                     )
-            except Exception:
+            except HfHubHTTPError as e:
+                if e.response.status_code != 404:
+                    raise DeploymentProvisionError(
+                        f"Failed to check Space {space_id}: {e}"
+                    ) from e
                 logger.info(f"Creating new Space: {space_id}")
                 api.create_repo(
                     repo_id=space_id,
@@ -366,6 +386,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
             # Set environment variables using Space variables API
             # This is secure - variables are not exposed in the Dockerfile
+            # Note: add_space_variable is an upsert operation (adds or updates)
             logger.info(f"Setting {len(environment)} environment variables...")
             for key, value in environment.items():
                 try:
@@ -375,12 +396,13 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         value=value,
                     )
                 except Exception as e:
-                    logger.warning(
+                    raise DeploymentProvisionError(
                         f"Failed to set environment variable {key}: {e}"
-                    )
+                    ) from e
 
             # Set secrets using Space secrets API
             # This is secure - secrets are encrypted and not exposed
+            # Note: add_space_secret is an upsert operation (adds or updates)
             logger.info(f"Setting {len(secrets)} secrets...")
             for key, value in secrets.items():
                 try:
@@ -390,9 +412,12 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         value=value,
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to set secret {key}: {e}")
+                    raise DeploymentProvisionError(
+                        f"Failed to set secret {key}: {e}"
+                    ) from e
 
             # Set hardware if specified (fail if this doesn't work)
+            # Note: request_space_hardware replaces the current hardware tier
             hardware = settings.space_hardware or self.config.space_hardware
             if hardware:
                 from huggingface_hub import SpaceHardware
@@ -416,6 +441,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                     ) from e
 
             # Set storage if specified (fail if this doesn't work)
+            # Note: request_space_storage replaces the current storage tier
             storage = settings.space_storage or self.config.space_storage
             if storage:
                 from huggingface_hub import SpaceStorage
@@ -472,9 +498,13 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             runtime = api.get_space_runtime(repo_id=space_id)
 
             # Map Space stage to deployment status
-            if runtime.stage in ["RUNNING", "RUNNING_BUILDING"]:
+            if runtime.stage == "RUNNING":
                 status = DeploymentStatus.RUNNING
-            elif runtime.stage in ["BUILDING", "NO_APP_FILE"]:
+            elif runtime.stage in [
+                "BUILDING",
+                "RUNNING_BUILDING",
+                "NO_APP_FILE",
+            ]:
                 status = DeploymentStatus.PENDING
             else:
                 # BUILD_ERROR, RUNTIME_ERROR, STOPPED, etc.
@@ -483,7 +513,10 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             return DeploymentOperationalState(
                 status=status,
                 url=f"https://huggingface.co/spaces/{space_id}",
-                metadata={"space_id": space_id},
+                metadata={
+                    "space_id": space_id,
+                    "external_state": runtime.stage,
+                },
             )
 
         except Exception as e:
@@ -526,7 +559,8 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             None, indicating immediate deletion completed.
 
         Raises:
-            DeploymentNotFoundError: If the Space is not found.
+            DeploymentNotFoundError: If the Space ID is not in metadata.
+            DeploymentDeprovisionError: If deletion fails.
         """
         space_id = deployment.deployment_metadata.get("space_id")
         if not space_id:
@@ -544,6 +578,6 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             if e.response.status_code == 404:
                 logger.info(f"Space {space_id} already deleted")
                 return None
-            raise DeploymentNotFoundError(
+            raise DeploymentDeprovisionError(
                 f"Failed to delete Space {space_id}: {e}"
             ) from e
