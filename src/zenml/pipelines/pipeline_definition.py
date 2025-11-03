@@ -593,6 +593,12 @@ class Pipeline:
         Args:
             *args: Entrypoint function arguments.
             **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            ValueError: If the arguments are invalid or missing.
+
+        Returns:
+            The validated arguments.
         """
         try:
             validated_args = pydantic_utils.validate_function_args(
@@ -671,7 +677,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         return kwargs
 
     def _prepare_invocations(self, **kwargs: Any) -> None:
-        """Prepares the invocations of the pipeline."""
+        """Prepares the invocations of the pipeline.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         outputs = self._call_entrypoint(**kwargs)
 
         output_artifacts = []
@@ -1621,9 +1631,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             *args: Entrypoint function arguments.
             **kwargs: Entrypoint function keyword arguments.
 
-        Raises:
-            ValueError: If an input argument is missing or not JSON
-                serializable.
+        Returns:
+            The return value of the entrypoint function.
         """
         self._clear_state()
         self._parameters = self._validate_entrypoint_args(*args, **kwargs)

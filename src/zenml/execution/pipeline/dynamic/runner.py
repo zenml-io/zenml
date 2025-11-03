@@ -41,6 +41,7 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepRunFuture,
     StepRunOutputs,
     StepRunOutputsFuture,
+    _BaseStepRunFuture,
 )
 from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
@@ -292,22 +293,22 @@ def compile_dynamic_step_invocation(
         pipeline: The dynamic pipeline.
         step: The step to compile.
         id: Custom invocation ID.
-        upstream_steps: The upstream steps.
-        inputs: Inputs to the step function.
-        default_parameters: Default parameters of the step function.
+        args: The arguments for the step function.
+        kwargs: The keyword arguments for the step function.
+        after: The step run output futures to wait for.
 
     Returns:
         The compiled step.
     """
     upstream_steps = set()
 
-    if isinstance(after, StepRunFuture):
+    if isinstance(after, _BaseStepRunFuture):
         after._wait()
-        upstream_steps.add(after._invocation_id)
+        upstream_steps.add(after.invocation_id)
     elif isinstance(after, Sequence):
         for item in after:
             item._wait()
-            upstream_steps.add(item._invocation_id)
+            upstream_steps.add(item.invocation_id)
 
     def _await_and_validate_input(input: Any) -> Any:
         if isinstance(input, StepRunOutputsFuture):

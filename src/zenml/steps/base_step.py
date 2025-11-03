@@ -945,7 +945,11 @@ class BaseStep:
 
     @contextmanager
     def _suspend_dynamic_configuration(self) -> Generator[None, None, None]:
-        """Context manager to suspend applying to the dynamic configuration."""
+        """Context manager to suspend applying to the dynamic configuration.
+
+        Yields:
+            None.
+        """
         previous_value = self._capture_dynamic_configuration
         self._capture_dynamic_configuration = False
         try:

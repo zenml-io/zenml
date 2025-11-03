@@ -433,10 +433,6 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step: The step to run.
-
-        Raises:
-            RunStoppedException: If the run was stopped.
-            BaseException: If the step failed all retries.
         """
         from zenml.execution.step.utils import launch_step
 
@@ -482,6 +478,10 @@ class BaseOrchestrator(StackComponent, ABC):
             step_run_info: The step run information.
             environment: The environment variables to set in the execution
                 environment.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
         """
         raise NotImplementedError(
             "Launching dynamic steps is not implemented for "

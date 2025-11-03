@@ -62,7 +62,11 @@ def should_prevent_pipeline_execution() -> bool:
 
 @contextmanager
 def prevent_pipeline_execution() -> Generator[None, None, None]:
-    """Context manager to prevent pipeline execution."""
+    """Context manager to prevent pipeline execution.
+
+    Yields:
+        None.
+    """
     with env_utils.temporary_environment(
         {ENV_ZENML_PREVENT_PIPELINE_EXECUTION: "True"}
     ):

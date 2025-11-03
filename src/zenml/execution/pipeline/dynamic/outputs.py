@@ -34,7 +34,40 @@ class OutputArtifact(ArtifactVersionResponse):
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
 
 
-class ArtifactFuture:
+class _BaseStepRunFuture:
+    """Base step run future."""
+
+    def __init__(
+        self,
+        wrapped: Future[StepRunOutputs],
+        invocation_id: str,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the dynamic step run future.
+
+        Args:
+            wrapped: The wrapped future object.
+            invocation_id: The invocation ID of the step run.
+            **kwargs: Additional keyword arguments.
+        """
+        self._wrapped = wrapped
+        self._invocation_id = invocation_id
+
+    @property
+    def invocation_id(self) -> str:
+        """The step run invocation ID.
+
+        Returns:
+            The step run invocation ID.
+        """
+        return self._invocation_id
+
+    def _wait(self) -> None:
+        """Wait for the step run future to complete."""
+        self._wrapped.result()
+
+
+class ArtifactFuture(_BaseStepRunFuture):
     """Future for a step run output artifact."""
 
     def __init__(
@@ -45,16 +78,16 @@ class ArtifactFuture:
         Args:
             wrapped: The wrapped future object.
             invocation_id: The invocation ID of the step run.
+            index: The index of the output artifact.
         """
-        self._wrapped = wrapped
-        self._invocation_id = invocation_id
+        super().__init__(wrapped=wrapped, invocation_id=invocation_id)
         self._index = index
-
-    def _wait(self) -> None:
-        self._wrapped.result()
 
     def result(self) -> OutputArtifact:
         """Get the step run output artifact.
+
+        Raises:
+            RuntimeError: If the future returned an invalid output.
 
         Returns:
             The step run output artifact.
@@ -66,7 +99,8 @@ class ArtifactFuture:
             return result[self._index]
         else:
             raise RuntimeError(
-                f"Step {self._invocation_id} returned an invalid output: {result}"
+                f"Step {self._invocation_id} returned an invalid output: "
+                f"{result}."
             )
 
     def load(self) -> Any:
@@ -78,7 +112,7 @@ class ArtifactFuture:
         return self.result().load()
 
 
-class StepRunOutputsFuture:
+class StepRunOutputsFuture(_BaseStepRunFuture):
     """Future for a step run output."""
 
     def __init__(
@@ -92,13 +126,10 @@ class StepRunOutputsFuture:
         Args:
             wrapped: The wrapped future object.
             invocation_id: The invocation ID of the step run.
+            output_keys: The output keys of the step run.
         """
-        self._wrapped = wrapped
-        self._invocation_id = invocation_id
+        super().__init__(wrapped=wrapped, invocation_id=invocation_id)
         self._output_keys = output_keys
-
-    def _wait(self) -> None:
-        self._wrapped.result()
 
     def artifacts(self) -> StepRunOutputs:
         """Get the step run output artifacts.

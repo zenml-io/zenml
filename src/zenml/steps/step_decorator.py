@@ -143,6 +143,7 @@ def step(
         cache_policy: Cache policy for this step.
         in_process: Whether to run the step in process. This is only
             applicable for dynamic pipelines.
+
     Returns:
         The step instance.
     """

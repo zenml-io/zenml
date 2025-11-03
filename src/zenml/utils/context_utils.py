@@ -60,6 +60,9 @@ class BaseContext:
     def __exit__(self, *_: Any) -> None:
         """Exit the context.
 
+        Args:
+            *_: Unused keyword arguments.
+
         Raises:
             RuntimeError: If the context has not been entered.
         """

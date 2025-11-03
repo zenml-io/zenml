@@ -125,6 +125,9 @@ def publish_successful_pipeline_run(
 
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
+
+    Returns:
+        The updated pipeline run.
     """
     return Client().zen_store.update_run(
         run_id=pipeline_run_id,

@@ -106,6 +106,7 @@ def pipeline(
         _func: The decorated function.
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
+        depends_on: The steps that this pipeline depends on.
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         enable_step_logs: If step logs should be enabled for this pipeline.

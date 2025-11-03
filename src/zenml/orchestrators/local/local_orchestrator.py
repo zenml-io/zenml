@@ -193,7 +193,18 @@ class LocalOrchestrator(BaseOrchestrator):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Submits a dynamic pipeline to the orchestrator."""
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Returns:
+            Optional submission result.
+        """
         from zenml.execution.pipeline.dynamic.runner import (
             DynamicPipelineRunner,
         )

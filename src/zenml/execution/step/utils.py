@@ -48,6 +48,10 @@ def launch_step(
         orchestrator_run_id: The orchestrator run ID.
         retry: Whether to retry the step if it fails.
 
+    Raises:
+        RunStoppedException: If the run was stopped.
+        BaseException: If the step failed all retries.
+
     Returns:
         The step run response.
     """

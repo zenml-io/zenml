@@ -103,7 +103,11 @@ class DynamicPipeline(Pipeline):
         return True
 
     def _prepare_invocations(self, **kwargs: Any) -> None:
-        """Prepares the invocations of the pipeline."""
+        """Prepares the invocations of the pipeline.
+
+        Args:
+            **kwargs: Keyword arguments.
+        """
         for step in self._depends_on:
             self.add_step_invocation(
                 step,
