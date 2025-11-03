@@ -51,6 +51,9 @@ from zenml.integrations.kubernetes.k8s_applier import KubernetesApplier
 from zenml.integrations.kubernetes.manifest_utils import (
     build_secret_manifest,
 )
+from zenml.integrations.kubernetes.pod_settings import (
+    KubernetesPodSettings,
+)
 from zenml.integrations.kubernetes.template_engine import (
     KubernetesTemplateEngine,
 )
@@ -351,21 +354,13 @@ class KubernetesDeployer(ContainerizedDeployer):
                 }
             )
 
-        # Merge secret env vars into pod_settings if needed
         pod_settings_for_template = settings.pod_settings
         if secret_env_list and settings.pod_settings:
-            # Create a copy with merged env vars
-            from copy import deepcopy
-
-            pod_settings_for_template = deepcopy(settings.pod_settings)
-            existing_env = pod_settings_for_template.env or []
-            pod_settings_for_template.env = existing_env + secret_env_list
-        elif secret_env_list:
-            # Create a minimal pod_settings with just env vars
-            from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
-                KubernetesPodSettings,
+            existing_env = list(settings.pod_settings.env or [])
+            pod_settings_for_template = settings.pod_settings.model_copy(
+                update={"env": existing_env + secret_env_list}
             )
-
+        elif secret_env_list:
             pod_settings_for_template = KubernetesPodSettings(
                 env=secret_env_list
             )
@@ -398,11 +393,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             "liveness_probe_timeout": settings.liveness_probe_timeout,
             "liveness_probe_failure_threshold": settings.liveness_probe_failure_threshold,
             "probe_port": settings.service_port,
-            "security_context": (
-                settings.pod_settings.security_context
-                if settings.pod_settings
-                else None
-            ),
+            "security_context": None,
             "service_type": settings.service_type,
             "service_port": settings.service_port,
             "target_port": settings.service_port,
@@ -549,7 +540,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_name = f"zenml-{deployment.id}"
         secret_manifest = build_secret_manifest(
             name=secret_name,
-            data=cast(Dict[str, Optional[str]], sanitized),
+            data=sanitized,
         )
         secret_manifest.metadata.namespace = namespace
 
@@ -650,8 +641,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"[Deployment {deployment.name}] Validated additional resource: {kind}/{name}"
                 )
             except ApiException as e:
-                # 409 Conflict during dry-run means resource exists with different field manager
-                # This is acceptable - actual deployment will use force=True to take ownership
                 if e.status == 409:
                     logger.debug(
                         f"[Deployment {deployment.name}] Resource {kind}/{name} exists with different field manager - will be updated during deployment"
@@ -695,8 +684,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 resource=namespace_manifest, dry_run=dry_run
             )
         except ApiException as e:
-            # In dry-run mode, if namespace doesn't exist, validation will fail
-            # That's OK - we'll still save the manifest for the user
             if dry_run:
                 logger.debug(
                     f"Namespace '{namespace}' validation skipped (may not exist yet): {e}"
@@ -756,7 +743,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         if settings.save_manifests:
             manifests = {}
 
-            # Include namespace manifest first if provided
             if namespace_manifest:
                 manifests["namespace.yaml"] = yaml.dump(
                     namespace_manifest,
@@ -896,8 +882,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 applier.apply_resource(resource=k8s_service, dry_run=True)
                 logger.debug("   ✅ Core resources validated")
             except ApiException as e:
-                # If namespace doesn't exist, that's expected in dry-run mode
-                # The namespace manifest will be generated for the user
                 if e.status == 404 and "namespace" in str(e.body).lower():
                     logger.warning(
                         f"   ⚠️  Namespace '{namespace}' doesn't exist yet. "
@@ -1629,12 +1613,18 @@ class KubernetesDeployer(ContainerizedDeployer):
                             namespace=namespace,
                             api_version=api_version,
                         )
+                        logger.info(f"✅ {kind} '{name}' deleted successfully")
                     except ApiException as e:
-                        if e.status != 404:
+                        if e.status == 404:
+                            logger.info(
+                                f"{kind} '{name}' not found (already deleted)"
+                            )
+                        else:
                             logger.warning(
                                 f"Failed to delete {kind} '{name}': {e}"
                             )
 
+            logger.info(f"Deleting Service: {resource_name}")
             try:
                 applier.delete_resource(
                     name=resource_name,
@@ -1642,9 +1632,20 @@ class KubernetesDeployer(ContainerizedDeployer):
                     kind="Service",
                     api_version="v1",
                 )
+                logger.info(
+                    f"✅ Service '{resource_name}' deleted successfully"
+                )
             except ApiException as e:
-                if e.status != 404:
-                    logger.warning(f"Failed to delete Service: {e}")
+                if e.status == 404:
+                    logger.info(
+                        f"Service '{resource_name}' not found (already deleted)"
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to delete Service '{resource_name}': {e}"
+                    )
+
+            logger.info(f"Deleting Deployment: {resource_name}")
             try:
                 applier.delete_resource(
                     name=resource_name,
@@ -1652,11 +1653,21 @@ class KubernetesDeployer(ContainerizedDeployer):
                     kind="Deployment",
                     api_version="apps/v1",
                 )
+                logger.info(
+                    f"✅ Deployment '{resource_name}' deleted successfully"
+                )
             except ApiException as e:
-                if e.status != 404:
-                    logger.warning(f"Failed to delete Deployment: {e}")
+                if e.status == 404:
+                    logger.info(
+                        f"Deployment '{resource_name}' not found (already deleted)"
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to delete Deployment '{resource_name}': {e}"
+                    )
 
             secret_name = f"zenml-{deployment.id}"
+            logger.info(f"Deleting Secret: {secret_name}")
             try:
                 applier.delete_resource(
                     name=secret_name,
@@ -1664,9 +1675,16 @@ class KubernetesDeployer(ContainerizedDeployer):
                     kind="Secret",
                     api_version="v1",
                 )
+                logger.info(f"✅ Secret '{secret_name}' deleted successfully")
             except ApiException as e:
-                if e.status != 404:
-                    logger.warning(f"Failed to delete secret: {e}")
+                if e.status == 404:
+                    logger.info(
+                        f"Secret '{secret_name}' not found (already deleted)"
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to delete Secret '{secret_name}': {e}"
+                    )
 
             logger.info(f"Deprovisioned deployment '{deployment.name}'")
             return None

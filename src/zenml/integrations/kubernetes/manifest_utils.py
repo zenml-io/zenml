@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
+import base64
 import os
 import sys
 from typing import Any, Dict, List, Mapping, Optional
@@ -343,19 +344,22 @@ def build_secret_manifest(
 ) -> k8s_client.V1Secret:
     """Builds a Kubernetes secret manifest using the typed V1Secret model.
 
-    Uses string_data instead of data to avoid manual base64 encoding.
-    The Kubernetes API automatically handles base64 encoding for string_data.
+    For patch operations, keys with None values signal deletion of that key.
+    This uses the 'data' field (base64-encoded) rather than 'string_data' to
+    support None values for key deletion in patch operations.
 
     Args:
         name: Name of the secret.
-        data: The secret data as plain strings.
+        data: The secret data as plain strings. Keys with None values will
+            signal deletion when used in patch operations.
         secret_type: The secret type.
 
     Returns:
         The typed V1Secret object.
     """
-    string_data = {
-        key: value if value is not None else "" for key, value in data.items()
+    encoded_data = {
+        key: base64.b64encode(value.encode()).decode() if value else None
+        for key, value in data.items()
     }
 
     return k8s_client.V1Secret(
@@ -363,7 +367,7 @@ def build_secret_manifest(
         kind="Secret",
         metadata=k8s_client.V1ObjectMeta(name=name),
         type=secret_type,
-        string_data=string_data,
+        data=encoded_data,
     )
 
 
