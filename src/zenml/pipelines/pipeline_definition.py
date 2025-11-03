@@ -289,7 +289,12 @@ class Pipeline:
         Returns:
             The pipeline source.
         """
-        return source_utils.resolve(self.entrypoint, skip_validation=True)
+        # We need to validate that the source is loadable for dynamic pipelines,
+        # as the orchestration environment will need to load the source.
+        skip_validation = not self.is_dynamic
+        return source_utils.resolve(
+            self.entrypoint, skip_validation=skip_validation
+        )
 
     @property
     def source_object(self) -> Any:
