@@ -319,7 +319,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         )
 
         try:
-            from huggingface_hub.utils import HfHubHTTPError
+            from huggingface_hub.errors import HfHubHTTPError
 
             # Create Space if it doesn't exist, or update visibility if needed
             try:
@@ -606,7 +606,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         api = self._get_hf_api()
 
         try:
-            from huggingface_hub.utils import HfHubHTTPError
+            from huggingface_hub.errors import HfHubHTTPError
 
             api.delete_repo(repo_id=space_id, repo_type="space")
             logger.info(f"Deleted Space: {space_id}")
