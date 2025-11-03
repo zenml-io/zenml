@@ -217,31 +217,22 @@ class HuggingFaceDeployer(ContainerizedDeployer):
     def _generate_image_reference_dockerfile(
         self,
         image: str,
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
         deployment: DeploymentResponse,
     ) -> str:
         """Generate Dockerfile that references a pre-built image.
 
+        Note: Environment variables and secrets are NOT included in the
+        Dockerfile for security reasons. They are set using Hugging Face's
+        Space secrets and variables API instead.
+
         Args:
             image: The pre-built image to reference.
-            environment: Environment variables.
-            secrets: Secret environment variables.
             deployment: The deployment.
 
         Returns:
             The Dockerfile content.
         """
         lines = [f"FROM {image}"]
-
-        # Add environment variables
-        env_vars = {**environment, **secrets}
-        for k, v in env_vars.items():
-            # Escape backslashes and quotes
-            escaped_value = v.replace(chr(92), chr(92) * 2).replace(
-                chr(34), chr(92) + chr(34)
-            )
-            lines.append(f'ENV {k}="{escaped_value}"')
 
         # Add user
         lines.append("USER 1000")
@@ -321,7 +312,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 # Create Dockerfile
                 dockerfile = os.path.join(tmpdir, "Dockerfile")
                 dockerfile_content = self._generate_image_reference_dockerfile(
-                    image, environment, secrets, deployment
+                    image, deployment
                 )
 
                 with open(dockerfile, "w") as f:
@@ -342,6 +333,34 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                     repo_id=space_id,
                     repo_type="space",
                 )
+
+            # Set environment variables using Space variables API
+            # This is secure - variables are not exposed in the Dockerfile
+            logger.info(f"Setting {len(environment)} environment variables...")
+            for key, value in environment.items():
+                try:
+                    api.add_space_variable(
+                        repo_id=space_id,
+                        key=key,
+                        value=value,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to set environment variable {key}: {e}"
+                    )
+
+            # Set secrets using Space secrets API
+            # This is secure - secrets are encrypted and not exposed
+            logger.info(f"Setting {len(secrets)} secrets...")
+            for key, value in secrets.items():
+                try:
+                    api.add_space_secret(
+                        repo_id=space_id,
+                        key=key,
+                        value=value,
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to set secret {key}: {e}")
 
             # Set hardware and storage if specified
             hardware = settings.space_hardware or self.config.space_hardware

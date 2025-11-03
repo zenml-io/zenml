@@ -155,6 +155,25 @@ By default, the space prefix is `zenml` but this can be configured using the `sp
 
 ## Important Requirements
 
+### Secure Secrets and Environment Variables
+
+{% hint style="success" %}
+The Hugging Face deployer handles secrets and environment variables **securely** using Hugging Face's Space Secrets and Variables API. Credentials are **never** written to the Dockerfile.
+{% endhint %}
+
+**How it works:**
+- Environment variables are set using `HfApi.add_space_variable()` - stored securely by Hugging Face
+- Secrets are set using `HfApi.add_space_secret()` - encrypted and never exposed in the Space repository
+- **Nothing is baked into the Dockerfile** - no risk of leaked credentials even in public Spaces
+
+**What this means:**
+- ✅ Safe to use with public Spaces (the default)
+- ✅ Secrets remain encrypted and hidden from public view
+- ✅ Environment variables are managed through HF's secure API
+- ✅ No credentials exposed in Dockerfile or repository files
+
+This is especially important since Hugging Face Spaces are **public by default** (`private: bool = False`). Without this secure approach, any secrets would be visible to anyone viewing your Space's repository.
+
 ### Container Registry Requirement
 
 {% hint style="warning" %}
