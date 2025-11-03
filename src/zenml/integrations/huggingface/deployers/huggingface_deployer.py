@@ -495,20 +495,38 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         api = self._get_hf_api()
 
         try:
+            from huggingface_hub import SpaceStage
+
             runtime = api.get_space_runtime(repo_id=space_id)
 
-            # Map Space stage to deployment status
-            if runtime.stage == "RUNNING":
+            # Map HuggingFace Space stages to ZenML standard deployment states
+            # Only RUNNING means fully provisioned with health endpoint available
+            if runtime.stage == SpaceStage.RUNNING:
                 status = DeploymentStatus.RUNNING
+            # Building/updating states - health endpoint not yet available
             elif runtime.stage in [
-                "BUILDING",
-                "RUNNING_BUILDING",
-                "NO_APP_FILE",
+                SpaceStage.BUILDING,
+                SpaceStage.RUNNING_BUILDING,  # Rebuilding, not fully ready
             ]:
                 status = DeploymentStatus.PENDING
-            else:
-                # BUILD_ERROR, RUNTIME_ERROR, STOPPED, etc.
+            # Error states - deployment failed or misconfigured
+            elif runtime.stage in [
+                SpaceStage.BUILD_ERROR,
+                SpaceStage.RUNTIME_ERROR,
+                SpaceStage.CONFIG_ERROR,
+                SpaceStage.NO_APP_FILE,
+            ]:
                 status = DeploymentStatus.ERROR
+            # Stopped/paused states - deployment exists but not running
+            elif runtime.stage in [
+                SpaceStage.STOPPED,
+                SpaceStage.PAUSED,
+                SpaceStage.DELETING,
+            ]:
+                status = DeploymentStatus.ABSENT
+            else:
+                # Unknown/future stages
+                status = DeploymentStatus.UNKNOWN
 
             return DeploymentOperationalState(
                 status=status,
