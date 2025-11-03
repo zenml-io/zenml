@@ -160,6 +160,18 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
             raise ValueError(f"Invalid step run output: {result}")
 
     def __getitem__(self, key: Union[str, int]) -> ArtifactFuture:
+        """Get an artifact future by key or index.
+
+        Args:
+            key: The key or index of the artifact future.
+
+        Raises:
+            ValueError: If the key or index is of an invalid type.
+            IndexError: If the index is out of range.
+
+        Returns:
+            The artifact future.
+        """
         if isinstance(key, str):
             index = self._output_keys.index(key)
         elif isinstance(key, int):
@@ -177,6 +189,14 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         )
 
     def __iter__(self) -> Any:
+        """Iterate over the artifact futures.
+
+        Raises:
+            ValueError: If the step does not return any outputs.
+
+        Yields:
+            The artifact futures.
+        """
         if not self._output_keys:
             raise ValueError(
                 f"Step {self._invocation_id} does not return any outputs."
@@ -190,6 +210,11 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
             )
 
     def __len__(self) -> int:
+        """Get the number of artifact futures.
+
+        Returns:
+            The number of artifact futures.
+        """
         return len(self._output_keys)
 
 

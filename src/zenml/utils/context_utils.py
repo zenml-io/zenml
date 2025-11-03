@@ -16,7 +16,9 @@
 import contextvars
 import threading
 from contextvars import ContextVar
-from typing import Any, ClassVar, Generic, List, Optional, Self, TypeVar
+from typing import Any, ClassVar, Generic, List, Optional, TypeVar
+
+from typing_extensions import Self
 
 T = TypeVar("T")
 

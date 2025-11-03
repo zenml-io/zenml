@@ -14,7 +14,9 @@
 """Dynamic pipeline run context."""
 
 import contextvars
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
+
+from typing_extensions import Self
 
 from zenml.utils import context_utils
 

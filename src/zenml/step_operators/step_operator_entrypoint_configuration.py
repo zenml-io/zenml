@@ -36,6 +36,12 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
     """Base class for step operator entrypoint configurations."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the step operator entrypoint configuration.
+
+        Args:
+            *args: The arguments to pass to the superclass.
+            **kwargs: The keyword arguments to pass to the superclass.
+        """
         super().__init__(*args, **kwargs)
         self._step_run: Optional["StepRunResponse"] = None
 

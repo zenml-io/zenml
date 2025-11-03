@@ -21,10 +21,11 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Self,
     Sequence,
     Type,
 )
+
+from typing_extensions import Self
 
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger

@@ -685,7 +685,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         args: List[str],
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> None:
+    ) -> Optional[SubmissionResult]:
         """Submits an orchestrator job to Kubernetes.
 
         Args:
@@ -830,7 +830,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         logger.info(
-            f"Launching job for step `%s`.",
+            "Launching job for step `%s`.",
             step_run_info.pipeline_step_name,
         )
 

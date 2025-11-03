@@ -633,6 +633,22 @@ class BaseStep:
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
+        """Submit the step to run concurrently in a separate thread.
+
+        Args:
+            *args: The arguments to pass to the step function.
+            id: The invocation ID of the step.
+            after: The step run output futures to wait for before executing the
+                step.
+            **kwargs: The keyword arguments to pass to the step function.
+
+        Raises:
+            RuntimeError: If this method is called outside of a dynamic
+                pipeline.
+
+        Returns:
+            The step run output future.
+        """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )

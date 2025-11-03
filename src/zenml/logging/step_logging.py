@@ -940,6 +940,20 @@ def setup_pipeline_logging(
     run_id: Optional[UUID] = None,
     logs_response: Optional[LogsResponse] = None,
 ) -> Generator[Optional[LogsRequest], None, None]:
+    """Set up logging for a pipeline run.
+
+    Args:
+        source: The log source.
+        snapshot: The snapshot of the pipeline run.
+        run_id: The ID of the pipeline run.
+        logs_response: The logs response to continue from.
+
+    Raises:
+        Exception: If updating the run with the logs request fails.
+
+    Yields:
+        The logs request.
+    """
     logging_enabled = True
 
     if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
