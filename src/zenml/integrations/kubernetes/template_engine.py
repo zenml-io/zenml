@@ -14,6 +14,8 @@
 """Kubernetes template engine."""
 
 import json
+import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -29,16 +31,17 @@ from jinja2 import (
 from pydantic import BaseModel, ConfigDict
 
 from zenml.io import fileio
+from zenml.io.filesystem import PathType
 from zenml.logger import get_logger
-from zenml.utils import io_utils
+from zenml.utils import io_utils, source_utils, yaml_utils
 
 logger = get_logger(__name__)
 
 
 class RenderedKubernetesManifest(BaseModel):
-    """Bundle containing various representations of a rendered manifest."""
+    """Bundle containing various representations of rendered manifest resources."""
 
-    resource_dict: Dict[str, Any]
+    resources: List[Dict[str, Any]]
     template_yaml: str
     canonical_yaml: str
 
@@ -81,18 +84,39 @@ class KubernetesTemplateEngine:
         template_dirs: List[str] = []
         self.custom_templates_dir = None
         if custom_templates_dir:
-            custom_path = Path(custom_templates_dir).expanduser().resolve()
-            if custom_path.exists():
-                template_dirs.append(str(custom_path))
-                self.custom_templates_dir = str(custom_path)
-                logger.info(
-                    f"Using custom Kubernetes templates from: {custom_path}"
+            custom_templates_path = str(custom_templates_dir)
+            if io_utils.is_remote(custom_templates_path):
+                sanitized_custom_path = io_utils.sanitize_remote_path(
+                    custom_templates_path
                 )
+                if fileio.exists(sanitized_custom_path):
+                    template_dirs.append(sanitized_custom_path)
+                    self.custom_templates_dir = sanitized_custom_path
+                    logger.info(
+                        "Using custom Kubernetes templates from: %s",
+                        sanitized_custom_path,
+                    )
+                else:
+                    logger.warning(
+                        "Custom template directory not found: %s, falling back to built-in templates",
+                        sanitized_custom_path,
+                    )
             else:
-                logger.warning(
-                    f"Custom template directory not found: {custom_path}, "
-                    "falling back to built-in templates"
+                resolved_custom_path = io_utils.resolve_relative_path(
+                    custom_templates_path
                 )
+                if fileio.exists(resolved_custom_path):
+                    template_dirs.append(resolved_custom_path)
+                    self.custom_templates_dir = resolved_custom_path
+                    logger.info(
+                        "Using custom Kubernetes templates from: %s",
+                        resolved_custom_path,
+                    )
+                else:
+                    logger.warning(
+                        "Custom template directory not found: %s, falling back to built-in templates",
+                        resolved_custom_path,
+                    )
 
         template_dirs.append(str(self.builtin_templates_dir))
 
@@ -123,7 +147,7 @@ class KubernetesTemplateEngine:
         Returns:
             YAML string representation.
         """
-        return yaml.dump(
+        return yaml.safe_dump(
             value,
             default_flow_style=False,
             sort_keys=False,
@@ -158,8 +182,6 @@ class KubernetesTemplateEngine:
         Returns:
             Sanitized Kubernetes name.
         """
-        import re
-
         # Convert to lowercase
         name = value.lower()
 
@@ -189,8 +211,6 @@ class KubernetesTemplateEngine:
         Returns:
             Sanitized label value.
         """
-        import re
-
         # Label values can be empty
         if not value:
             return ""
@@ -231,34 +251,45 @@ class KubernetesTemplateEngine:
         )
 
         try:
-            resource_dict = yaml.safe_load(yaml_content)
+            documents = list(yaml.safe_load_all(yaml_content))
         except yaml.YAMLError as e:
             raise ValueError(
                 f"Failed to parse YAML from template {template_name}: {e}"
             ) from e
 
-        if not isinstance(resource_dict, dict):
+        resources: List[Dict[str, Any]] = []
+        for index, document in enumerate(documents):
+            if document is None:
+                continue
+            if not isinstance(document, dict):
+                raise ValueError(
+                    f"Invalid Kubernetes manifest in {template_name}: "
+                    f"document {index + 1} is of type {type(document)}; expected dict."
+                )
+            if "kind" not in document:
+                raise ValueError(
+                    f"Invalid Kubernetes manifest: missing 'kind' field "
+                    f"in document {index + 1} of {template_name}"
+                )
+            if "apiVersion" not in document:
+                raise ValueError(
+                    f"Invalid Kubernetes manifest: missing 'apiVersion' field "
+                    f"in document {index + 1} of {template_name}"
+                )
+            resources.append(document)
+
+        if not resources:
             raise ValueError(
-                f"Invalid Kubernetes manifest in {template_name}: expected dict, got {type(resource_dict)}"
+                f"No valid Kubernetes resources found in template {template_name}."
             )
 
-        if "kind" not in resource_dict:
-            raise ValueError(
-                f"Invalid Kubernetes manifest: missing 'kind' field in {template_name}"
-            )
-
-        if "apiVersion" not in resource_dict:
-            raise ValueError(
-                f"Invalid Kubernetes manifest: missing 'apiVersion' field in {template_name}"
-            )
-
-        canonical_yaml = yaml.safe_dump(
-            resource_dict,
+        canonical_yaml = yaml_utils.dump_yaml_documents(
+            resources,
             sort_keys=False,
         )
 
         return RenderedKubernetesManifest(
-            resource_dict=resource_dict,
+            resources=resources,
             template_yaml=yaml_content,
             canonical_yaml=canonical_yaml,
         )
@@ -296,10 +327,12 @@ class KubernetesTemplateEngine:
 
         if validate_yaml:
             try:
-                yaml.safe_load(rendered)
+                list(yaml.safe_load_all(rendered))
             except yaml.YAMLError as e:
                 logger.error(
-                    f"Invalid YAML generated from template:\n{rendered}"
+                    "Invalid YAML generated from template '%s':\n%s",
+                    template_name,
+                    rendered,
                 )
                 raise yaml.YAMLError(
                     f"Template '{template_name}' generated invalid YAML: {e}"
@@ -322,11 +355,90 @@ class KubernetesTemplateEngine:
                     templates.add(str(rel_path))
         return sorted(templates)
 
+    @staticmethod
+    def _join_path(base: str, *parts: str) -> str:
+        """Join path segments while preserving remote URI schemes.
+
+        Args:
+            base: The base path.
+            *parts: The path segments to join.
+
+        Returns:
+            The joined path.
+        """
+        segments = [segment for segment in parts if segment]
+        if io_utils.is_remote(base):
+            sanitized_base = io_utils.sanitize_remote_path(base).rstrip("/")
+            sanitized_segments = []
+            for segment in segments:
+                if io_utils.is_remote(segment):
+                    sanitized_segments.append(
+                        io_utils.sanitize_remote_path(segment).strip("/")
+                    )
+                else:
+                    sanitized_segments.append(
+                        segment.replace("\\", "/").strip("/")
+                    )
+            components = [sanitized_base] + [
+                segment for segment in sanitized_segments if segment
+            ]
+            return "/".join(components) if components else sanitized_base
+        return os.path.join(base, *segments)
+
+    def _determine_default_manifest_dir(self, deployment_name: str) -> str:
+        """Determine the default manifest directory for a deployment.
+
+        Args:
+            deployment_name: Name of the deployment.
+
+        Returns:
+            Path to the default manifest directory.
+        """
+        from zenml.client import Client
+
+        if Client is not None:
+            try:
+                repo_root = Client.find_repository()
+                if repo_root:
+                    return self._join_path(
+                        str(repo_root),
+                        ".zenml-deployments",
+                        deployment_name,
+                    )
+            except Exception:
+                logger.debug(
+                    "Unable to determine repository root for manifest directory.",
+                    exc_info=True,
+                )
+
+        if source_utils is not None:
+            try:
+                source_root = source_utils.get_source_root()
+                if source_root:
+                    return self._join_path(
+                        str(source_root),
+                        ".zenml-deployments",
+                        deployment_name,
+                    )
+            except Exception:
+                logger.debug(
+                    "Unable to determine source root for manifest directory.",
+                    exc_info=True,
+                )
+
+        temp_base = os.path.join(tempfile.gettempdir(), "zenml-k8s")
+        fallback_dir = self._join_path(temp_base, deployment_name)
+        logger.warning(
+            "Could not determine project root. Saving manifests to temporary directory: %s",
+            fallback_dir,
+        )
+        return fallback_dir
+
     def save_manifest(
         self,
         manifest: str,
-        output_path: Path,
-    ) -> Path:
+        output_path: PathType,
+    ) -> str:
         """Save a rendered manifest to disk.
 
         Args:
@@ -334,29 +446,30 @@ class KubernetesTemplateEngine:
             output_path: Full path where the manifest should be saved.
 
         Returns:
-            Path to the saved file.
+            Path to the saved file as a string.
         """
         output_path_str = str(output_path)
-        parent_dir = str(output_path.parent)
+        if io_utils.is_remote(output_path_str):
+            output_path_str = io_utils.sanitize_remote_path(output_path_str)
 
-        if not fileio.exists(parent_dir):
-            fileio.makedirs(parent_dir)
+        parent_dir = os.path.dirname(output_path_str)
+        if parent_dir:
+            io_utils.create_dir_recursive_if_not_exists(parent_dir)
 
         io_utils.write_file_contents_as_string(
             file_path=output_path_str,
             content=manifest,
         )
 
-        # Use debug for individual file saves (verbose)
-        logger.debug(f"💾 Saved manifest: {output_path}")
-        return output_path
+        logger.debug("Saved manifest to %s", output_path_str)
+        return output_path_str
 
     def save_manifests(
         self,
         manifests: Dict[str, str],
         deployment_name: str,
-        output_dir: Optional[str] = None,
-    ) -> Path:
+        output_dir: Optional[PathType] = None,
+    ) -> str:
         """Save multiple rendered manifests to disk.
 
         Args:
@@ -366,64 +479,39 @@ class KubernetesTemplateEngine:
                 uses project root '.zenml-deployments/' directory or temp directory as fallback.
 
         Returns:
-            Path to the directory containing all saved manifests.
+            Path string to the directory containing all saved manifests.
         """
-        if output_dir:
-            manifest_dir = (
-                Path(output_dir).expanduser().resolve() / deployment_name
-            )
+        if output_dir is not None:
+            output_dir_str = str(output_dir)
+            if io_utils.is_remote(output_dir_str):
+                base_dir = io_utils.sanitize_remote_path(output_dir_str)
+            else:
+                base_dir = io_utils.resolve_relative_path(output_dir_str)
+            manifest_dir = self._join_path(base_dir, deployment_name)
         else:
-            try:
-                from zenml.client import Client
-                from zenml.utils import source_utils
+            manifest_dir = self._determine_default_manifest_dir(
+                deployment_name
+            )
 
-                # Try to get the project/repository root first
-                repo_root = Client.find_repository()
-                if repo_root:
-                    # Use project root with .zenml-deployments directory
-                    manifest_dir = (
-                        repo_root / ".zenml-deployments" / deployment_name
-                    )
-                else:
-                    # Fallback to source root if no repository found
-                    source_root = source_utils.get_source_root()
-                    manifest_dir = (
-                        Path(source_root)
-                        / ".zenml-deployments"
-                        / deployment_name
-                    )
-            except Exception:
-                manifest_dir = (
-                    Path(tempfile.gettempdir()) / "zenml-k8s" / deployment_name
-                )
-                logger.warning(
-                    "Could not determine project root. "
-                    f"Saving manifests to temp directory: {manifest_dir}"
-                )
+        io_utils.create_dir_recursive_if_not_exists(manifest_dir)
 
-        manifest_dir_str = str(manifest_dir)
-
-        if not fileio.exists(manifest_dir_str):
-            fileio.makedirs(manifest_dir_str)
-
-        # Save all manifests
         for filename, content in manifests.items():
-            output_path = manifest_dir / filename
-            self.save_manifest(manifest=content, output_path=output_path)
+            destination_path = self._join_path(manifest_dir, filename)
+            self.save_manifest(manifest=content, output_path=destination_path)
 
-        # Summary with better formatting
         logger.info(
-            f"💾 Saved {len(manifests)} Kubernetes manifests\n"
-            f"   └─ Location: {manifest_dir}"
+            "Saved %s Kubernetes manifest(s) to %s",
+            len(manifests),
+            manifest_dir,
         )
         return manifest_dir
 
-    @staticmethod
     def load_additional_resources(
+        self,
         resource_files: List[str],
         context: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Load additional resources from YAML files with Jinja2 templating.
+        """Load additional resources from YAML files with optional templating.
 
         Args:
             resource_files: List of file paths to YAML files.
@@ -435,23 +523,18 @@ class KubernetesTemplateEngine:
         Raises:
             ValueError: If a file cannot be loaded or parsed, or if input validation fails.
         """
-        from pathlib import Path
-
-        if not isinstance(resource_files, list):
-            raise ValueError(
-                f"resource_files must be a list, got {type(resource_files)}"
-            )
-
-        loaded_resources = []
+        loaded_resources: List[Dict[str, Any]] = []
 
         for file_path in resource_files:
             if not isinstance(file_path, str):
-                logger.warning(f"Skipping non-string file path: {file_path}")
+                logger.warning("Skipping non-string file path: %s", file_path)
                 continue
 
             try:
-                expanded_path = Path(file_path).expanduser().resolve()
-                file_path_str = str(expanded_path)
+                if io_utils.is_remote(file_path):
+                    file_path_str = io_utils.sanitize_remote_path(file_path)
+                else:
+                    file_path_str = io_utils.resolve_relative_path(file_path)
 
                 if not fileio.exists(file_path_str):
                     raise ValueError(
@@ -463,26 +546,28 @@ class KubernetesTemplateEngine:
                 )
 
                 if context:
-                    from jinja2 import Template
-
-                    template = Template(yaml_content)
+                    template = self.env.from_string(yaml_content)
                     yaml_content = template.render(**context)
 
                 yaml_docs = list(yaml.safe_load_all(yaml_content))
 
-                valid_docs = []
+                valid_docs: List[Dict[str, Any]] = []
                 for doc in yaml_docs:
-                    if doc and isinstance(doc, dict):
+                    if doc is None:
+                        continue
+                    if isinstance(doc, dict):
                         loaded_resources.append(doc)
                         valid_docs.append(doc)
-                    elif doc:
+                    else:
                         logger.warning(
-                            f"⚠️  Skipping invalid YAML document in {file_path}"
+                            "Skipping invalid YAML document in %s", file_path
                         )
 
                 if valid_docs:
                     logger.info(
-                        f"📦 Loaded {len(valid_docs)} resource(s) from {Path(file_path).name}"
+                        "Loaded %s resource(s) from %s",
+                        len(valid_docs),
+                        Path(file_path).name,
                     )
 
             except yaml.YAMLError as e:

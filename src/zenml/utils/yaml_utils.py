@@ -16,7 +16,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 from uuid import UUID
 
 import yaml
@@ -199,3 +199,62 @@ def is_json_serializable(obj: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
+    """Load one or more YAML documents from a string.
+
+    Handles both single-document and multi-document YAML (with --- separators).
+
+    Args:
+        yaml_content: YAML string potentially containing multiple documents.
+
+    Returns:
+        List of resource dictionaries (skips None documents).
+
+    Raises:
+        ValueError: If YAML is invalid or contains non-dict documents.
+    """
+    try:
+        documents = list(yaml.safe_load_all(yaml_content))
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML: {e}") from e
+
+    resources: List[Dict[str, Any]] = []
+    for index, document in enumerate(documents):
+        if document is None:
+            continue
+        if not isinstance(document, dict):
+            raise ValueError(
+                f"YAML document {index + 1} must be a dictionary, got {type(document).__name__}"
+            )
+        resources.append(document)
+
+    if not resources:
+        raise ValueError("YAML contains no valid documents")
+
+    return resources
+
+
+def dump_yaml_documents(
+    documents: Sequence[Any],
+    sort_keys: bool = False,
+) -> str:
+    """Serialize multiple YAML documents into a single YAML string.
+
+    Args:
+        documents: YAML document payloads (dicts or lists) to serialize.
+        sort_keys: Whether to sort dictionary keys when dumping each document.
+
+    Returns:
+        A YAML string containing all documents separated by YAML document markers.
+    """
+    serialized_documents = []
+    for document in documents:
+        serialized = yaml.safe_dump(
+            document,
+            sort_keys=sort_keys,
+            default_flow_style=False,
+        ).rstrip()
+        serialized_documents.append(serialized)
+    return "\n---\n".join(serialized_documents)

@@ -75,14 +75,15 @@ apiVersion: example/v1
 kind: Example
 metadata:
   name: sample
+  namespace: default
 spec:
   value: 1
 """
 
-    applier.apply_yaml(yaml_content)
+    results = applier.apply_yaml(yaml_content)
 
+    assert len(results) == 1
     resource = dynamic_client_fixture[("example/v1", "Example")]
-    # Now using Server-Side Apply, so we expect patch_calls instead of create_calls
     assert len(resource.patch_calls) == 1
     assert resource.patch_calls[0]["namespace"] == "default"
 
@@ -98,15 +99,16 @@ apiVersion: example/v1
 kind: Example
 metadata:
   name: sample
+  namespace: default
 spec:
   value: 1
 """
 
-    applier.apply_yaml(yaml_content, dry_run=True)
+    results = applier.apply_yaml(yaml_content, dry_run=True)
 
+    assert len(results) == 1
     resource = dynamic_client_fixture[("example/v1", "Example")]
     assert len(resource.patch_calls) == 1
-    # dry_run is now passed as "All" (string) not ["All"] (list)
     assert resource.patch_calls[0]["dry_run"] == "All"
 
 
@@ -124,12 +126,12 @@ metadata:
 rules: []
 """
 
-    applier.apply_yaml(yaml_content)
+    results = applier.apply_yaml(yaml_content)
 
+    assert len(results) == 1
     resource = dynamic_client_fixture[
         ("rbac.authorization.k8s.io/v1", "ClusterRole")
     ]
-    # Now using Server-Side Apply, so we expect patch_calls instead of create_calls
     assert len(resource.patch_calls) == 1
     assert "namespace" not in resource.patch_calls[0]
 
@@ -142,7 +144,7 @@ def test_apply_yaml_missing_name_raises(dynamic_client_fixture) -> None:
     applier = KubernetesApplier(api_client=object())
     yaml_content = "apiVersion: example/v1\nkind: Example\nmetadata: {}\n"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="metadata.name"):
         applier.apply_yaml(yaml_content)
 
 
@@ -373,11 +375,12 @@ def test_wait_for_service_loadbalancer_ip_success(
     applier = KubernetesApplier(api_client=object())
 
     service = SimpleNamespace(
+        spec=SimpleNamespace(ports=[SimpleNamespace(port=80)]),
         status=SimpleNamespace(
             load_balancer=SimpleNamespace(
-                ingress=[SimpleNamespace(ip="1.2.3.4")]
+                ingress=[SimpleNamespace(ip="1.2.3.4", hostname=None)]
             )
-        )
+        ),
     )
 
     monkeypatch.setattr(
@@ -399,7 +402,8 @@ def test_wait_for_service_loadbalancer_ip_failure(
 ) -> None:
     applier = KubernetesApplier(api_client=object())
     service = SimpleNamespace(
-        status=SimpleNamespace(load_balancer=SimpleNamespace(ingress=[]))
+        spec=SimpleNamespace(ports=[SimpleNamespace(port=80)]),
+        status=SimpleNamespace(load_balancer=SimpleNamespace(ingress=[])),
     )
 
     monkeypatch.setattr(
@@ -409,7 +413,221 @@ def test_wait_for_service_loadbalancer_ip_failure(
         raising=False,
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError, match="no LoadBalancer IP/hostname found"
+    ):
         applier.wait_for_service_loadbalancer_ip(
             "svc", "ns", timeout=10, check_interval=1
+        )
+
+
+def test_apply_yaml_multi_document(dynamic_client_fixture) -> None:
+    """Test that apply_yaml handles multi-document YAML."""
+    dynamic_client_fixture[("v1", "ConfigMap")] = DummyResource(
+        namespaced=True, exists=False
+    )
+    dynamic_client_fixture[("v1", "Secret")] = DummyResource(
+        namespaced=True, exists=False
+    )
+
+    applier = KubernetesApplier(api_client=object())
+    yaml_content = """\
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config1
+  namespace: default
+data:
+  key: value
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret1
+  namespace: default
+type: Opaque
+data:
+  password: cGFzcw==
+"""
+
+    results = applier.apply_yaml(yaml_content)
+
+    assert len(results) == 2
+    configmap = dynamic_client_fixture[("v1", "ConfigMap")]
+    assert len(configmap.patch_calls) == 1
+    secret = dynamic_client_fixture[("v1", "Secret")]
+    assert len(secret.patch_calls) == 1
+
+
+def test_delete_from_yaml_multi_document(dynamic_client_fixture) -> None:
+    """Test that delete_from_yaml handles multi-document YAML."""
+    cm_resource = DummyResource(namespaced=True, exists=True, delete_404=False)
+    secret_resource = DummyResource(
+        namespaced=True, exists=True, delete_404=False
+    )
+    dynamic_client_fixture[("v1", "ConfigMap")] = cm_resource
+    dynamic_client_fixture[("v1", "Secret")] = secret_resource
+
+    applier = KubernetesApplier(api_client=object())
+    yaml_content = """\
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config1
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret1
+  namespace: default
+"""
+
+    applier.delete_from_yaml(yaml_content, namespace="default")
+
+    assert len(cm_resource.delete_calls) == 1
+    assert len(secret_resource.delete_calls) == 1
+
+
+def test_ensure_namespace_alignment_strips_cluster_resource_namespace(
+    dynamic_client_fixture,
+) -> None:
+    """Test that ensure_namespace_alignment removes namespace from cluster-scoped resources."""
+    dynamic_client_fixture[("rbac.authorization.k8s.io/v1", "ClusterRole")] = (
+        DummyResource(namespaced=False, exists=False)
+    )
+
+    applier = KubernetesApplier(api_client=object())
+    resource_dict = {
+        "apiVersion": "rbac.authorization.k8s.io/v1",
+        "kind": "ClusterRole",
+        "metadata": {
+            "name": "demo",
+            "namespace": "should-be-removed",
+        },
+        "rules": [],
+    }
+
+    applier.ensure_namespace_alignment(
+        resource_dict=resource_dict,
+        namespace="default",
+        deployment_name="test-deployment",
+    )
+
+    assert "namespace" not in resource_dict["metadata"]
+
+
+def test_ensure_namespace_alignment_adds_namespace_to_namespaced_resource(
+    dynamic_client_fixture,
+) -> None:
+    """Test that ensure_namespace_alignment adds namespace to namespaced resources."""
+    dynamic_client_fixture[("v1", "ConfigMap")] = DummyResource(
+        namespaced=True, exists=False
+    )
+
+    applier = KubernetesApplier(api_client=object())
+    resource_dict = {
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {"name": "config1"},
+        "data": {},
+    }
+
+    applier.ensure_namespace_alignment(
+        resource_dict=resource_dict,
+        namespace="my-namespace",
+        deployment_name="test-deployment",
+    )
+
+    assert resource_dict["metadata"]["namespace"] == "my-namespace"
+
+
+def test_apply_yaml_missing_namespace_raises(dynamic_client_fixture) -> None:
+    """Test that apply_yaml raises when namespace is required but missing."""
+    dynamic_client_fixture[("v1", "ConfigMap")] = DummyResource(
+        namespaced=True, exists=False
+    )
+
+    applier = KubernetesApplier(api_client=object())
+    yaml_content = """\
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config1
+data:
+  key: value
+"""
+
+    with pytest.raises(
+        ValueError, match="requires an explicit namespace parameter"
+    ):
+        applier.apply_yaml(yaml_content)
+
+
+def test_delete_from_yaml_missing_namespace_raises(
+    dynamic_client_fixture,
+) -> None:
+    """Test that delete_from_yaml raises when namespace is required but missing."""
+    dynamic_client_fixture[("v1", "ConfigMap")] = DummyResource(
+        namespaced=True, exists=True
+    )
+
+    applier = KubernetesApplier(api_client=object())
+    yaml_content = """\
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config1
+"""
+
+    with pytest.raises(
+        ValueError, match="requires an explicit namespace parameter"
+    ):
+        applier.delete_from_yaml(yaml_content)
+
+
+def test_ensure_namespace_alignment_allows_unknown_resources(
+    dynamic_client_fixture,
+) -> None:
+    """Test that ensure_namespace_alignment allows unknown CRD resources by default."""
+    applier = KubernetesApplier(api_client=object())
+
+    # Simulate a CRD that doesn't exist yet
+    resource_dict = {
+        "apiVersion": "custom.io/v1",
+        "kind": "CustomResource",
+        "metadata": {"name": "my-resource"},
+    }
+
+    # Should not raise, should add namespace
+    applier.ensure_namespace_alignment(
+        resource_dict=resource_dict,
+        namespace="my-namespace",
+        deployment_name="test-deployment",
+        allow_unknown_resources=True,
+    )
+
+    assert resource_dict["metadata"]["namespace"] == "my-namespace"
+
+
+def test_ensure_namespace_alignment_strict_mode_unknown_raises(
+    dynamic_client_fixture,
+) -> None:
+    """Test that ensure_namespace_alignment raises for unknown resources in strict mode."""
+    applier = KubernetesApplier(api_client=object())
+
+    # Simulate a CRD that doesn't exist yet
+    resource_dict = {
+        "apiVersion": "custom.io/v1",
+        "kind": "CustomResource",
+        "metadata": {"name": "my-resource"},
+    }
+
+    # Should raise in strict mode
+    with pytest.raises(ValueError, match="Cannot determine scope"):
+        applier.ensure_namespace_alignment(
+            resource_dict=resource_dict,
+            namespace="my-namespace",
+            deployment_name="test-deployment",
+            allow_unknown_resources=False,
         )

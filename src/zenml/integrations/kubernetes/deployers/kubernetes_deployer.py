@@ -811,10 +811,13 @@ class KubernetesDeployer(ContainerizedDeployer):
                         f"Could not print additional resources: {e}"
                     )
 
+        k8s_deployment = deployment_manifest.resources[0]
+        k8s_service = service_manifest.resources[0]
+
         return (
-            deployment_manifest.resource_dict,
+            k8s_deployment,
             deployment_manifest.canonical_yaml,
-            service_manifest.resource_dict,
+            k8s_service,
             service_manifest.canonical_yaml,
             engine,
         )
