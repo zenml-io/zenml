@@ -51,7 +51,7 @@ You need a Hugging Face access token with write permissions to deploy pipelines.
 You have two options to provide credentials to the Hugging Face deployer:
 
 * Pass the token directly when registering the deployer using the `--token` parameter
-* (recommended) Store the token in a ZenML secret and reference it using secret syntax
+* (recommended) Store the token in a ZenML secret and reference it using [secret reference syntax](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets)
 
 ### Registering the deployer
 

@@ -175,7 +175,8 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         Returns:
             The Space ID in format 'owner/space-name' where owner is either
-            the username or organization name.
+            the username or organization name, and space-name includes a
+            UUID suffix for uniqueness.
 
         Raises:
             DeployerError: If the space name exceeds HF's maximum length.
@@ -190,7 +191,10 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         # Sanitize deployment name: alphanumeric, hyphens, underscores only
         sanitized = re.sub(r"[^a-zA-Z0-9\-_]", "-", deployment.name).lower()
         sanitized = sanitized.strip("-") or "deployment"
-        space_name = f"{self.config.space_prefix}-{sanitized}"
+
+        # Add UUID suffix for uniqueness (first 8 chars of deployment ID)
+        uuid_suffix = str(deployment.id)[:8]
+        space_name = f"{self.config.space_prefix}-{sanitized}-{uuid_suffix}"
 
         # Validate length (HF has 96 char limit for repo names)
         if len(space_name) > HF_SPACE_NAME_MAX_LENGTH:
@@ -311,7 +315,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                         f"Updating Space visibility: "
                         f"{'private' if settings.private else 'public'}"
                     )
-                    api.update_repo_visibility(
+                    api.update_repo_settings(
                         repo_id=space_id,
                         private=settings.private,
                         repo_type="space",
