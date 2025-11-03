@@ -157,6 +157,7 @@ class Pipeline:
         substitutions: Optional[Dict[str, str]] = None,
         execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
+        **kwargs: Any,
     ) -> None:
         """Initializes a pipeline.
 
@@ -196,6 +197,7 @@ class Pipeline:
             substitutions: Extra placeholders to use in the name templates.
             execution_mode: The execution mode of the pipeline.
             cache_policy: Cache policy for this pipeline.
+            **kwargs: Additional keyword arguments.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}

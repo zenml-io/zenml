@@ -145,6 +145,11 @@ def pipeline(
     """
 
     def inner_decorator(func: "F") -> "Pipeline":
+        from zenml.pipelines.pipeline_definition import Pipeline
+
+        PipelineClass = Pipeline
+        pipeline_args: Dict[str, Any] = {}
+
         if dynamic:
             from zenml.pipelines.dynamic.pipeline_definition import (
                 DynamicPipeline,
@@ -155,17 +160,11 @@ def pipeline(
             pipeline_args = {
                 "depends_on": depends_on,
             }
-        else:
-            from zenml.pipelines.pipeline_definition import Pipeline
-
-            PipelineClass = Pipeline
-
-            if depends_on:
-                logger.warning(
-                    "The `depends_on` argument is not supported "
-                    "for static pipelines and will be ignored."
-                )
-            pipeline_args = {}
+        elif depends_on:
+            logger.warning(
+                "The `depends_on` argument is not supported "
+                "for static pipelines and will be ignored."
+            )
 
         p = PipelineClass(
             name=name or func.__name__,
