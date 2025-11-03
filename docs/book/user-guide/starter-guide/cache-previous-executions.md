@@ -112,6 +112,8 @@ ZenML generates a unique cache key for each step execution based on various fact
 - **Step code**: The actual implementation of your step function
 - **Step parameters**: Configuration parameters passed to the step
 - **Input artifact values or IDs**: The content/data of input artifacts or their IDs
+- **Additional file or source dependencies**: The file content or source code of additional dependencies that you can specify in your cache policy.
+- **Custom cache function value**: The value returned by a custom cache function that you can specify in your cache policy. 
 
 When any of these factors change, the cache key changes, and the step will be re-executed.
 
@@ -159,6 +161,59 @@ Setting `include_step_code=False` can lead to unexpected behavior if you modify 
 artifact doesn't support generating a content hash, the artifact ID will be used as a fallback if enabled.
 * `include_artifact_ids` (default: `True`): Whether to include the artifact IDs in the cache key.
 * `ignored_inputs`: Allows you to exclude specific step inputs from cache key calculation.
+* `file_dependencies`: Allows you to specify a list of files that your step depends on. The content of these files will be read and included in the cache key,
+which means changes to any of the files will lead to a new cache key and therefore not cache from previous step executions.
+
+{% hint style="info" %}
+Files specified in this list must be relative to your [source root](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-root)
+{% endhint %}
+
+* `source_dependencies`: Allows you to specify a list of Python objects (modules, classes, functions) that your step depends on. The source code of these objects
+will be read and included in the cache key, which means changes to any of the objects will lead to a new cache key and therefore not cache from previous step executions.
+* `cache_func`: Allows you to specify a function (without arguments) that returns a string. This function will be called as part of the cache key computation, and the
+return value will be included in the cache key.
+
+Both source dependencies as well as the cache function can be passed directly directly in code or as a [source](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-paths) string:
+```python
+from zenml.config import CachePolicy
+
+def my_helper_function():
+    ...
+
+# pass function directly..
+cache_policy = CachePolicy(source_dependencies=[my_helper_function])
+# ..or pass the function source. This also works when
+# configuring the cache policy with a config file
+cache_policy = CachePolicy(source_dependencies=["run.my_helper_function"]) 
+```
+
+#### Cache expiration
+
+By default, any step that executes successfully is a caching candidate for future step runs. Any step with the same [cache key](#understanding-cache-keys) running afterwards
+can reuse the output artifacts produced by the caching candidate instead of actually executing the step code. In some cases however you might want to limit for how long a step run is a valid cache candidate for future steps. You can do that by configuring an expiration time for your step runs:
+
+```python
+from zenml.config import CachePolicy
+from zenml import step
+
+# Expire the cache after 24 hours
+custom_cache_policy = CachePolicy(expires_after=60*60*24)
+
+@step(cache_policy=custom_cache_policy)
+def my_step():
+    ...
+```
+
+{% hint style="info" %}
+If you want to expire one of your step runs as a cache candidate manually, you can do so by setting it's cache expiration date (in UTC timezone):
+```python
+from zenml import Client
+from datetime import datetime, timezone
+
+now = datetime.now(timezone.utc)
+Client().update_step_run(<STEP-RUN-ID>, cache_expires_at=now)
+```
+{% endhint %}
 
 ## Code Example
 

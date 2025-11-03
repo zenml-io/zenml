@@ -302,7 +302,7 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
     ):
         return response
 
-    secure_headers().framework.fastapi(response)
+    await secure_headers().set_headers_async(response)
     return response
 
 

@@ -45,9 +45,7 @@ from zenml.deployers.exceptions import (
     DeploymentProvisionError,
 )
 from zenml.deployers.server.entrypoint_configuration import (
-    AUTH_KEY_OPTION,
     DEPLOYMENT_ID_OPTION,
-    PORT_OPTION,
     DeploymentEntrypointConfiguration,
 )
 from zenml.enums import DeploymentStatus, StackComponentType
@@ -248,8 +246,6 @@ class CloudRunDeploymentMetadata(BaseModel):
 
 class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
     """Deployer responsible for deploying pipelines on GCP Cloud Run."""
-
-    CONTAINER_REQUIREMENTS: List[str] = ["uvicorn", "fastapi"]
 
     _credentials: Optional[Any] = None
     _project_id: Optional[str] = None
@@ -477,7 +473,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         raw_name = f"{prefix}{deployment_name}"
 
         return self._sanitize_name(
-            raw_name, deployment_id_short, max_length=63
+            raw_name, deployment_id_short, max_length=49
         )
 
     def _get_secret_name(
@@ -1048,8 +1044,6 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
             **{
                 DEPLOYMENT_ID_OPTION: deployment.id,
-                PORT_OPTION: settings.port,
-                AUTH_KEY_OPTION: deployment.auth_key,
             }
         )
 
@@ -1073,13 +1067,16 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
         if settings.vpc_connector:
             vpc_access = run_v2.VpcAccess(connector=settings.vpc_connector)
 
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
         container = run_v2.Container(
             image=image,
             command=entrypoint,
             args=arguments,
             env=env_vars,
             resources=resources,
-            ports=[run_v2.ContainerPort(container_port=settings.port)],
+            ports=[run_v2.ContainerPort(container_port=container_port)],
         )
 
         template = run_v2.RevisionTemplate(

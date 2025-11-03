@@ -1,28 +1,36 @@
 ---
-description: Build your first AI pipeline and service with ZenML in minutes.
+description: Choose your path and build your first pipeline with ZenML in minutes.
 icon: rocket
 ---
 
 ## Your First AI Pipeline
 
-Build and deploy a real AI pipeline as a managed ZenML HTTP endpoint. You can invoke it via the ZenML CLI or `curl`, optionally use a Streamlit web UI, and it also runs fully offline with a deterministic analyzer when no OpenAI key is configured.
+ZenML pipelines work the same for **classical ML**, **AI agents**, and **hybrid approaches**. Choose your path below to get started:
 
 {% hint style="info" %}
-Why pipelines?
+Why ZenML pipelines?
 - **Reproducible & portable**: Run the same code locally or on the cloud by switching stacks.
-- **One approach for models and agents**: Steps, pipelines, and artifacts work for sklearn and LLMs alike.
-- **Observe by default**: Lineage and step metadata (e.g., tokens, latency) are tracked and visible in the dashboard.
+- **One approach for models and agents**: Steps, pipelines, and artifacts work for sklearn, classical ML, and LLMs alike.
+- **Observe by default**: Lineage and step metadata (e.g., latency, tokens, metrics) are tracked and visible in the dashboard.
 {% endhint %}
 
-Modeling agents as pipelines makes non-deterministic workflows debuggable and shippable: prompts, tools, and routing become explicit steps; runs produce versioned artifacts (including traces and metrics) you can compare and inspect. This is the same pattern you use for classical ML, so agents and models share the lifecycle and tooling.
+---
 
-### What you'll build
-- **Document analysis pipeline deployed as an HTTP endpoint** managed by ZenML
-- **OpenAI SDK with deterministic fallback**: Uses OpenAI when a key is set, otherwise runs offline via a rule-based analyzer
-- **Tracked artifacts and metadata**: Summary, keywords, sentiment, readability score, plus latency and token usage
-- **Optional Streamlit UI client** to call the deployment from your browser
+## What do you want to build?
 
-### Architecture (at a glance)
+Choose one of the paths below. The same ZenML pipeline pattern works for all of them—the difference is in your steps and how you orchestrate them.
+
+- **[Build AI Agents](#path-1-build-ai-agents)** - Use LLMs and tools to create autonomous agents
+- **[Build Classical ML Pipelines](#path-2-build-classical-ml-pipelines)** - Train and serve ML models with scikit-learn, TensorFlow, or PyTorch
+- **[Build Hybrid Systems](#path-3-build-hybrid-systems)** - Combine ML classifiers with agents
+
+---
+
+## Path 1: Build AI Agents
+
+Use large language models, prompts, and tools to build intelligent autonomous agents that can reason, take action, and interact with your systems.
+
+### Architecture example
 
 ```mermaid
 ---
@@ -31,221 +39,269 @@ config:
   theme: mc
 ---
 flowchart TB
-  U["CLI / curl / code"] --> D["ZenML Deployment Endpoint (doc_analyzer)"]
-  S["Streamlit UI (optional)"] --> D
+  U["CLI / curl / web UI"] --> D["ZenML Deployment<br/>(doc_analyzer)"]
 
-  subgraph DEPLOY["Managed Deployment"]
-    D --> T["Triggers pipeline run"]
-  end
-
-  subgraph PIPE["Pipeline: pipelines.doc_analyzer.doc_analyzer"]
+  subgraph PIPE["Pipeline: doc_analyzer"]
     I["ingest_document_step"]
-    A["analyze_document_step (OpenAI or deterministic)"]
+    A["analyze_document_step"]
     R["render_analysis_report_step"]
     I --> A --> R
   end
 
-  T --> PIPE
+  D --> PIPE
 
   subgraph STACK["Stack"]
-    O[("Orchestrator")]
+    OR[("Deployer")]
     AR[("Artifact Store")]
   end
 
   PIPE --> AR
-  DEPLOY --> O
+  D --> OR
 ```
 
-### Prerequisites
+<details>
 
-```bash
-pip install "zenml[server]"
-zenml init
-```
+<summary><strong>View Quick Start & Examples</strong></summary>
 
-Optional (for LLM mode with the OpenAI Python SDK):
-```bash
-export OPENAI_API_KEY="your-key"
-```
-
-### Get the example
+### Quick start
 
 ```bash
 git clone --depth 1 https://github.com/zenml-io/zenml.git
-cd zenml/examples/minimal_agent_production
-pip install -r requirements.txt
+cd zenml/examples/deploying_agent
+uv pip install -r requirements.txt
 ```
-{% hint style="info" %}
-Already have the repo? Just `cd examples/minimal_agent_production` and continue.
-{% endhint %}
 
-### Deploy the pipeline
+Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent):
 
-Deploy the pipeline as a managed HTTP endpoint and get its URL:
+1. **Define your steps**: Use LLM APIs (OpenAI, Claude, etc.) to build reasoning steps
+2. **Deploy as HTTP service**: Turn your agent into a managed endpoint
+3. **Invoke and monitor**: Use the CLI, curl, or the embedded web UI to interact with your agent
+4. **Inspect traces**: View agent reasoning, tool calls, and metadata in the ZenML dashboard
+
+### Example output
+
+- Automated document analysis (see `deploying_agent`)
+- Multi-turn chatbots with context
+- Autonomous workflows with tool integrations
+- Agentic RAG systems with retrieval steps
+
+### Related examples
+
+- **[agent_outer_loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop)**: Combine ML classifiers with agents for hybrid intelligent systems
+- **[agent_comparison](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison)**: Compare different agent architectures and LLM providers
+- **[agent_framework_integrations](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations)**: Integrate with popular agent frameworks
+- **[llm_finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)**: Fine-tune LLMs for specialized tasks
+
+</details>
+
+---
+
+## Path 2: Build Classical ML Pipelines
+
+Use scikit-learn, TensorFlow, PyTorch, or other ML frameworks to build data processing, feature engineering, training, and inference pipelines.
+
+### Architecture example
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: mc
+---
+flowchart TB
+  subgraph TRAIN["Training"]
+    D["generate_churn_data"]
+    T["train_churn_model"]
+    D --> T
+  end
+
+  subgraph INFER["Inference"]
+    P["predict_churn"]
+  end
+
+  U["Customer Features<br/>(curl / SDK)"] --> INFER
+
+  subgraph STACK["Stack"]
+    OR[("Orchestrator")]
+    AR[("Artifact Store")]
+    DE[("Deployer")]
+  end
+
+  TRAIN --> AR
+  TRAIN --> OR
+  INFER --> DE
+  INFER --> AR
+```
+
+<details>
+
+<summary><strong>View Quick Start & Examples</strong></summary>
+
+### Quick start
 
 ```bash
-zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer
-zenml deployment describe doc_analyzer
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/deploying_ml_model
+uv pip install -r requirements.txt
 ```
 
-### Analyze a document
+Then follow the guide in [`examples/deploying_ml_model`](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model):
 
-Use the ZenML CLI to invoke your deployment:
+1. **Build your pipeline**: Data loading → preprocessing → training → evaluation
+2. **Deploy the model**: Serve your trained model as a real-time HTTP endpoint
+3. **Monitor performance**: Track predictions, latency, and data drift in the dashboard
+4. **Iterate**: Retrain and redeploy without code changes—just switch your orchestrator
+
+### Example output
+
+- Predictive models (regression, classification)
+- Time series forecasting
+- NLP pipelines (sentiment analysis, text classification)
+- Computer vision workflows
+- Model scoring and ranking systems
+
+### Related examples
+
+- **[e2e](https://github.com/zenml-io/zenml/tree/main/examples/e2e)**: End-to-end ML pipeline with data validation and model deployment
+- **[e2e_nlp](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)**: Domain-specific NLP pipeline example
+- **[mlops_starter](https://github.com/zenml-io/zenml/tree/main/examples/mlops_starter)**: Production-ready MLOps setup with monitoring and governance
+
+</details>
+
+---
+
+## Path 3: Build Hybrid Systems
+
+Combine classical ML models and AI agents in a single pipeline. For example, use a classifier to route requests to specialized agents, or use agents to augment ML predictions.
+
+### Architecture example
+
+```mermaid
+---
+config:
+  layout: elk
+  theme: mc
+---
+flowchart TB
+  U["Customer Input<br/>(curl / SDK)"] --> SA["Agent Service"]
+
+  subgraph TRAIN["Training"]
+    D["load_data"]
+    T["train_classifier"]
+    D --> T
+  end
+
+  subgraph SERVE["Serving"]
+    C["classify_intent"]
+    R["generate_response"]
+    C --> R
+  end
+
+  SA --> SERVE
+
+  subgraph STACK["Stack"]
+    OR[("Orchestrator")]
+    AR[("Artifact Store")]
+    DE[("Deployer")]
+  end
+
+  TRAIN --> AR
+  TRAIN --> OR
+  SERVE --> AR
+  SERVE --> DE
+```
+
+<details>
+
+<summary><strong>View Quick Start & Examples</strong></summary>
+
+### Quick start
 
 ```bash
-zenml deployment invoke doc_analyzer \
-  --content="Artificial Intelligence is transforming how we work..." \
-  --filename="ai-overview.txt" \
-  --document_type="text"
+git clone --depth 1 https://github.com/zenml-io/zenml.git
+cd zenml/examples/agent_outer_loop
+uv pip install -r requirements.txt
 ```
 
-Or call the HTTP endpoint directly with curl. Send a JSON body that wraps inputs under parameters:
+Then follow the guide in [`examples/agent_outer_loop`](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop):
+
+1. **Define both components**: Classical ML classifier + AI agent steps
+2. **Wire them together**: Use the classifier output to influence agent behavior
+3. **Deploy as one service**: The entire hybrid system becomes a single endpoint
+4. **Monitor both**: Track ML metrics and agent traces in the same dashboard
+
+### Example output
+
+- Intent classification with specialized agent handling
+- Upgrade paths: generic agent → train classifier → automatic routing
+- Ensemble systems combining multiple models and agents
+- Fact-checking pipelines with verification steps
+
+### Related examples
+
+- **[agent_outer_loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop)**: Full hybrid example with automatic intent detection
+- **[deploying_agent](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)**: Start here for the agent piece
+- **[deploying_ml_model](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)**: Start here for the ML piece
+
+</details>
+
+---
+
+## Common Next Steps
+
+Once you've chosen your path and gotten your first pipeline running:
+
+### Deploy remotely
+
+All three paths use the same deployment pattern. Configure a remote stack and deploy:
 
 ```bash
-ENDPOINT=http://localhost:8000   # replace with your deployment URL
-curl -X POST "$ENDPOINT/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parameters": {
-      "content": "Your text here...",
-      "filename": "document.txt",
-      "document_type": "text"
-    }
-  }'
+# Create a remote stack (e.g., AWS)
+zenml stack register my-remote-stack \
+  --orchestrator aws-sagemaker \
+  --artifact-store s3-bucket \
+  --deployer aws
+
+# Set it and deploy—your code doesn't change
+zenml stack set my-remote-stack
 ```
 
-If your deployment requires auth, include an Authorization header:
+Run in batch mode with:
 
 ```bash
--H "Authorization: Bearer <YOUR_KEY>"
+python run.py
 ```
 
-Endpoint contract (summary):
-- Method and path: POST {ENDPOINT}/invoke
-- Parameters (any combination):
-  - content: string
-  - url: string
-  - path: string
-  - filename: string
-  - document_type: string (e.g., text, markdown, report, article)
-- Response: JSON with outputs.{document_analysis*} containing a DocumentAnalysis object with:
-  - summary: string
-  - keywords: string[]
-  - sentiment: "positive" | "negative" | "neutral"
-  - readability_score: number
-  - word_count: number
-  - model: string
-  - latency_ms: number
-  - tokens_prompt: number
-  - tokens_completion: number
-  - metadata: { analysis_method: "llm" | "deterministic_fallback", document_type: string, ... }
-  - document: { filename: string, document_type: string, created_at: ISO8601, ... }
-  - Note: The exact output key may be namespaced; look for a key containing "document_analysis".
-
-### Use the web interface (optional)
-
-![Streamlit app interface](../.gitbook/assets/minimal_agent_production_streamlit.png)
-
-Launch the Streamlit frontend:
+Deploy as a real-time endpoint with:
 
 ```bash
-streamlit run streamlit_app.py
+zenml pipeline deploy pipelines.my_pipeline.my_pipeline --config deploy_config.yaml
 ```
 
-Enter your deployment URL (defaults from the `DOCUMENT_ANALYSIS_ENDPOINT` environment variable) and optionally an auth key in the sidebar. The app wraps requests under parameters and POSTs to the `/invoke` endpoint.
+See [Deploying ZenML](deploying-zenml/README.md) for cloud setup details.
 
-### Inspect your pipeline runs
+### View the dashboard
+
+Start the dashboard to explore your pipeline runs:
 
 ```bash
-zenml login --local
+zenml login
 ```
 
-In the dashboard, open the latest run to explore:
-* **Steps** like `ingest_document_step`, `analyze_document_step`, `render_analysis_report_step`
-* **Artifacts** including `document_analysis` (structured JSON result) and `document_analysis_report` (HTML report)
-* **Metadata** such as `latency_ms`, `tokens_prompt`, `tokens_completion`, the model label, and the `analysis_method` used
+In the dashboard, you'll see:
+- **Pipeline DAGs**: Visual representation of your steps and data flow
+- **Artifacts**: Versioned outputs from each step (models, reports, traces)
+- **Metadata**: Latency, tokens, metrics, or custom metadata you track
+- **Timeline view**: Compare step durations and identify bottlenecks
 
-Tip: Switch to the [Timeline view](../how-to/dashboard/dashboard-features.md#timeline-view) to compare step durations, spot bottlenecks, and understand parallel execution at a glance.
+## Core Concepts Recap
 
-<figure>
-  <img src="../.gitbook/assets/your_first_pipeline_analysis.png" alt="Document analysis pipeline DAG in ZenML dashboard">
-  <figcaption>Document analysis pipeline DAG with step-level artifacts and metadata in the ZenML dashboard.</figcaption>
-</figure>
+Regardless of which path you choose:
 
-### How it works (at a glance)
+- **[Pipelines](../how-to/steps-pipelines/steps_and_pipelines.md)** - Orchestrate your workflow steps with automatic tracking
+- **[Steps](../how-to/steps-pipelines/steps_and_pipelines.md)** - Modular, reusable units (data loading, model training, LLM inference, etc.)
+- **[Artifacts](../how-to/artifacts/artifacts.md)** - Versioned outputs (models, predictions, traces, reports) with automatic logging
+- **[Stacks](../how-to/stack-components/stack_components.md)** - Switch execution environments (local, remote, cloud) without code changes
+- **[Deployments](../how-to/deployment/deployment.md)** - Turn pipelines into HTTP services with built-in UIs and monitoring
 
-- The `doc_analyzer` pipeline orchestrates three steps: ingestion → analysis → report.
-- The `analyze_document_step` uses the OpenAI Python SDK when `OPENAI_API_KEY` is set, and falls back to a deterministic analyzer when no key is available or if the API call fails. It records latency and token usage where available.
-- The `render_analysis_report_step` produces an HTML report artifact you can view in the ZenML dashboard.
-
-The pipeline is configured to inject your OpenAI key at build/deploy time:
-
-```python
-from zenml.config import DockerSettings
-
-docker_settings = DockerSettings(
-    requirements="requirements.txt",
-    environment={
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-    },
-)
-```
-
-And the pipeline definition wires together the three steps and returns the main analysis artifact:
-
-```python
-from typing import Annotated, Optional
-from zenml import ArtifactConfig, pipeline
-
-@pipeline(
-    settings={"docker": docker_settings},
-    enable_cache=False,
-)
-def doc_analyzer(
-    content: Optional[str] = None,
-    url: Optional[str] = None,
-    path: Optional[str] = None,
-    filename: Optional[str] = None,
-    document_type: str = "text",
-) -> Annotated[
-    DocumentAnalysis,
-    ArtifactConfig(name="document_analysis", tags=["analysis", "serving"]),
-]:
-    document = ingest_document_step(
-        content=content,
-        url=url,
-        path=path,
-        filename=filename,
-        document_type=document_type,
-    )
-    analysis = analyze_document_step(document)
-    render_analysis_report_step(analysis)
-    return analysis
-```
-
-### Production next steps
-- **Run remotely**: Configure a remote stack/orchestrator and deploy the same pipeline as a managed endpoint. See [Deploy](deploying-zenml/README.md).
-- **Configure deployment settings**: Enable authentication and other deployer options via config:
-  ```yaml
-  # my_config.yaml
-  settings:
-    deployer:
-      generate_auth_key: true
-  ```
-  Deploy with:
-  ```bash
-  zenml pipeline deploy pipelines.doc_analyzer.doc_analyzer --config my_config.yaml
-  ```
-- **Automate triggering**: [Create a snapshot](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) and trigger via API/webhooks from your app (ZenML Pro only).
-- **Future enhancement**: Add an evaluation pipeline to score outputs and render reports if you need automated quality checks.
-
-### Extend it
-
-- **Switch models** via the `DOC_ANALYSIS_LLM_MODEL` environment variable (see `constants.py`).
-- **Adapt the LLM integration** by extending `perform_llm_analysis` to use other providers.
-- **Add ingestion modes** (e.g., richer URL handling or PDF parsing) as new steps before analysis.
-- **Add guardrails/validation** steps or enrich metadata captured during analysis.
-- **Introduce retrieval/tooling** steps ahead of analysis for more advanced workflows.
-
-Looking for the code? Browse the complete example at
-[`examples/minimal_agent_production`](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production).
+For deeper dives, explore the [Concepts](../how-to/steps-pipelines/steps_and_pipelines.md) section in the docs.

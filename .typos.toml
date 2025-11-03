@@ -38,6 +38,7 @@ cachable = "cachable"
 OT = "OT"
 cll = "cll"
 ser = "ser"
+fo = "fo"
 
 [default]
 locale = "en-us"

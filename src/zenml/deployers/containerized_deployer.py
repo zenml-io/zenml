@@ -26,6 +26,7 @@ from zenml.constants import (
     DEPLOYER_DOCKER_IMAGE_KEY,
 )
 from zenml.deployers.base_deployer import BaseDeployer
+from zenml.deployers.utils import load_deployment_requirements
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotBase,
@@ -37,8 +38,6 @@ logger = get_logger(__name__)
 
 class ContainerizedDeployer(BaseDeployer, ABC):
     """Base class for all containerized deployers."""
-
-    CONTAINER_REQUIREMENTS: List[str] = []
 
     @staticmethod
     def get_image(snapshot: PipelineSnapshotResponse) -> str:
@@ -70,7 +69,6 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             A set of PyPI requirements for the deployer.
         """
         requirements = super().requirements
-        requirements.update(self.CONTAINER_REQUIREMENTS)
 
         if self.config.is_local and GlobalConfiguration().uses_sql_store:
             # If we're directly connected to a DB, we need to install the
@@ -90,9 +88,22 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         Returns:
             The required Docker builds.
         """
+        deployment_settings = (
+            snapshot.pipeline_configuration.deployment_settings
+        )
+        docker_settings = snapshot.pipeline_configuration.docker_settings
+        if not docker_settings.install_deployment_requirements:
+            return []
+
+        deployment_requirements = load_deployment_requirements(
+            deployment_settings
+        )
         return [
             BuildConfiguration(
                 key=DEPLOYER_DOCKER_IMAGE_KEY,
                 settings=snapshot.pipeline_configuration.docker_settings,
+                extra_requirements_files={
+                    ".zenml_deployment_requirements": deployment_requirements,
+                },
             )
         ]

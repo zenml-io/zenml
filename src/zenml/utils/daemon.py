@@ -37,6 +37,8 @@ logger = get_logger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+CHILD_PROCESS_WAIT_TIMEOUT = 5
+
 
 def daemonize(
     pid_file: str,
@@ -110,37 +112,202 @@ def daemonize(
     return inner_decorator
 
 
+def setup_daemon(
+    pid_file: Optional[str] = None, log_file: Optional[str] = None
+) -> None:
+    """Sets up a daemon process.
+
+    Args:
+        pid_file: Path to file in which to store the PID of the daemon
+            process.
+        log_file: Optional file to which the daemons stdout/stderr will be
+            redirected to.
+    """
+    # redirect standard file descriptors to devnull (or the given logfile)
+    devnull = "/dev/null"
+    if hasattr(os, "devnull"):
+        devnull = os.devnull
+
+    devnull_fd = os.open(devnull, os.O_RDWR)
+    log_fd = (
+        os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
+        if log_file
+        else None
+    )
+    out_fd = log_fd or devnull_fd
+
+    try:
+        os.dup2(devnull_fd, sys.stdin.fileno())
+    except io.UnsupportedOperation:
+        # stdin is not a file descriptor
+        pass
+    try:
+        os.dup2(out_fd, sys.stdout.fileno())
+    except io.UnsupportedOperation:
+        # stdout is not a file descriptor
+        pass
+    try:
+        os.dup2(out_fd, sys.stderr.fileno())
+    except io.UnsupportedOperation:
+        # stderr is not a file descriptor
+        pass
+
+    # Close original FDs after duplication to avoid leaks.
+    try:
+        os.close(devnull_fd)
+    except OSError:
+        pass
+
+    if log_fd is not None:
+        try:
+            os.close(log_fd)
+        except OSError:
+            pass
+
+    if pid_file:
+        # write the PID file
+        with open(pid_file, "w+") as f:
+            f.write(f"{os.getpid()}\n")
+
+    # register actions in case this process exits/gets killed
+    def cleanup() -> None:
+        """Daemon cleanup."""
+        sys.stderr.write("Cleanup: terminating children processes...\n")
+        terminate_children()
+        if pid_file and os.path.exists(pid_file):
+            sys.stderr.write(f"Cleanup: removing PID file {pid_file}...\n")
+            os.remove(pid_file)
+        sys.stderr.flush()
+
+    def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
+        """Daemon signal handler.
+
+        Args:
+            signum: Signal number.
+            frame: Frame object.
+        """
+        sys.stderr.write(f"Handling signal {signum}...\n")
+        cleanup()
+
+    signal.signal(signal.SIGTERM, sighndl)
+    signal.signal(signal.SIGINT, sighndl)
+    atexit.register(cleanup)
+
+
+def stop_process(pid: int) -> None:
+    """Stops a process.
+
+    Args:
+        pid: PID of the process to stop.
+    """
+    if not psutil.pid_exists(pid):
+        logger.debug("PID %s does not exist.", pid)
+        return
+
+    process = psutil.Process(pid)
+    process.terminate()
+
+    try:
+        process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+    except psutil.TimeoutExpired:
+        logger.debug("Daemon PID %s did not terminate in time; killing.", pid)
+        try:
+            process.kill()
+            try:
+                process.wait(CHILD_PROCESS_WAIT_TIMEOUT)
+            except psutil.TimeoutExpired:
+                logger.error("Failed to kill daemon PID %s.", pid)
+        except Exception as e:
+            logger.error("Failed to kill daemon PID %s: %s", pid, e)
+
+
+def stop_daemon(pid_file: str) -> None:
+    """Stops a daemon process.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon process to
+            kill.
+    """
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+    except (IOError, FileNotFoundError):
+        logger.debug("Daemon PID file '%s' does not exist.", pid_file)
+        return
+
+    stop_process(pid)
+
+
+def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
+    """Read and return the PID value from a PID file.
+
+    It does this if the daemon process tracked by the PID file is running.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon
+            process to check.
+
+    Returns:
+        The PID of the daemon process if it is running, otherwise None.
+    """
+    try:
+        with open(pid_file, "r") as f:
+            pid = int(f.read().strip())
+    except (IOError, FileNotFoundError):
+        logger.debug(
+            f"Daemon PID file '{pid_file}' does not exist or cannot be read.",
+        )
+        return None
+    except ValueError:
+        logger.debug(f"Daemon PID file '{pid_file}' contains invalid data.")
+        return None
+
+    if not pid or not psutil.pid_exists(pid):
+        logger.debug(f"Daemon with PID '{pid}' is no longer running.")
+        return None
+
+    logger.debug(f"Daemon with PID '{pid}' is running.")
+    return pid
+
+
+def check_if_daemon_is_running(pid_file: str) -> bool:
+    """Checks whether a daemon process indicated by the PID file is running.
+
+    Args:
+        pid_file: Path to file containing the PID of the daemon
+            process to check.
+
+    Returns:
+        True if the daemon process is running, otherwise False.
+    """
+    return get_daemon_pid_if_running(pid_file) is not None
+
+
+def terminate_children() -> None:
+    """Terminate all processes that are children of the currently running process."""
+    pid = os.getpid()
+    try:
+        parent = psutil.Process(pid)
+    except psutil.Error:
+        # could not find parent process id
+        return
+    children = parent.children(recursive=False)
+
+    for p in children:
+        sys.stderr.write(f"Terminating child process with PID {p.pid}...\n")
+        p.terminate()
+    _, alive = psutil.wait_procs(children, timeout=CHILD_PROCESS_WAIT_TIMEOUT)
+    for p in alive:
+        sys.stderr.write(f"Killing child process with PID {p.pid}...\n")
+        p.kill()
+    _, alive = psutil.wait_procs(children, timeout=CHILD_PROCESS_WAIT_TIMEOUT)
+
+
 if sys.platform == "win32":
     logger.warning(
         "Daemon functionality is currently not supported on Windows."
     )
 else:
-    CHILD_PROCESS_WAIT_TIMEOUT = 5
-
-    def terminate_children() -> None:
-        """Terminate all processes that are children of the currently running process."""
-        pid = os.getpid()
-        try:
-            parent = psutil.Process(pid)
-        except psutil.Error:
-            # could not find parent process id
-            return
-        children = parent.children(recursive=False)
-
-        for p in children:
-            sys.stderr.write(
-                f"Terminating child process with PID {p.pid}...\n"
-            )
-            p.terminate()
-        _, alive = psutil.wait_procs(
-            children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
-        )
-        for p in alive:
-            sys.stderr.write(f"Killing child process with PID {p.pid}...\n")
-            p.kill()
-        _, alive = psutil.wait_procs(
-            children, timeout=CHILD_PROCESS_WAIT_TIMEOUT
-        )
 
     def run_as_daemon(
         daemon_function: F,
@@ -173,9 +340,9 @@ else:
             log_file = os.path.abspath(log_file)
 
         # create parent directory if necessary
-        dir_name = os.path.dirname(pid_file)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
+        for f in (pid_file, log_file):
+            if f:
+                os.makedirs(os.path.dirname(f), exist_ok=True)
 
         # check if PID file exists
         if pid_file and os.path.exists(pid_file):
@@ -227,124 +394,9 @@ else:
             # catching the SystemExit exception and doing something else.
             os._exit(1)
 
-        # redirect standard file descriptors to devnull (or the given logfile)
-        devnull = "/dev/null"
-        if hasattr(os, "devnull"):
-            devnull = os.devnull
-
-        devnull_fd = os.open(devnull, os.O_RDWR)
-        log_fd = (
-            os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
-            if log_file
-            else None
-        )
-        out_fd = log_fd or devnull_fd
-
-        try:
-            os.dup2(devnull_fd, sys.stdin.fileno())
-        except io.UnsupportedOperation:
-            # stdin is not a file descriptor
-            pass
-        try:
-            os.dup2(out_fd, sys.stdout.fileno())
-        except io.UnsupportedOperation:
-            # stdout is not a file descriptor
-            pass
-        try:
-            os.dup2(out_fd, sys.stderr.fileno())
-        except io.UnsupportedOperation:
-            # stderr is not a file descriptor
-            pass
-
-        if pid_file:
-            # write the PID file
-            with open(pid_file, "w+") as f:
-                f.write(f"{os.getpid()}\n")
-
-        # register actions in case this process exits/gets killed
-        def cleanup() -> None:
-            """Daemon cleanup."""
-            sys.stderr.write("Cleanup: terminating children processes...\n")
-            terminate_children()
-            if pid_file and os.path.exists(pid_file):
-                sys.stderr.write(f"Cleanup: removing PID file {pid_file}...\n")
-                os.remove(pid_file)
-            sys.stderr.flush()
-
-        def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
-            """Daemon signal handler.
-
-            Args:
-                signum: Signal number.
-                frame: Frame object.
-            """
-            sys.stderr.write(f"Handling signal {signum}...\n")
-            cleanup()
-
-        signal.signal(signal.SIGTERM, sighndl)
-        signal.signal(signal.SIGINT, sighndl)
-        atexit.register(cleanup)
+        # setup the daemon
+        setup_daemon(pid_file, log_file)
 
         # finally run the actual daemon code
         daemon_function(*args, **kwargs)
         sys.exit(0)
-
-    def stop_daemon(pid_file: str) -> None:
-        """Stops a daemon process.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon process to
-                kill.
-        """
-        try:
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-        except (IOError, FileNotFoundError):
-            logger.warning("Daemon PID file '%s' does not exist.", pid_file)
-            return
-
-        if psutil.pid_exists(pid):
-            process = psutil.Process(pid)
-            process.terminate()
-        else:
-            logger.warning("PID from '%s' does not exist.", pid_file)
-
-    def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
-        """Read and return the PID value from a PID file.
-
-        It does this if the daemon process tracked by the PID file is running.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon
-                process to check.
-
-        Returns:
-            The PID of the daemon process if it is running, otherwise None.
-        """
-        try:
-            with open(pid_file, "r") as f:
-                pid = int(f.read().strip())
-        except (IOError, FileNotFoundError):
-            logger.debug(
-                f"Daemon PID file '{pid_file}' does not exist or cannot be read."
-            )
-            return None
-
-        if not pid or not psutil.pid_exists(pid):
-            logger.debug(f"Daemon with PID '{pid}' is no longer running.")
-            return None
-
-        logger.debug(f"Daemon with PID '{pid}' is running.")
-        return pid
-
-    def check_if_daemon_is_running(pid_file: str) -> bool:
-        """Checks whether a daemon process indicated by the PID file is running.
-
-        Args:
-            pid_file: Path to file containing the PID of the daemon
-                process to check.
-
-        Returns:
-            True if the daemon process is running, otherwise False.
-        """
-        return get_daemon_pid_if_running(pid_file) is not None

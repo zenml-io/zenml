@@ -41,6 +41,8 @@ from zenml.constants import (
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
+    ZENML_API_KEY_PREFIX,
+    ZENML_PRO_API_KEY_PREFIX,
     handle_int_env_var,
 )
 from zenml.enums import (
@@ -186,12 +188,14 @@ def authenticate_credentials(
        grant
      * access token (with embedded user id) - after successful authentication
        using one of the supported grants
+     * API key (e.g. used directly in the authorization header instead of a
+       regular access token)
      * username+activation token - for user activation
 
     Args:
         user_name_or_id: The username or user ID.
         password: The password.
-        access_token: The access token.
+        access_token: The access token or API key.
         csrf_token: The CSRF token.
         activation_token: The activation token.
 
@@ -244,6 +248,16 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+    elif access_token is not None and access_token.startswith(
+        ZENML_API_KEY_PREFIX
+    ):
+        # This is an API key used in place of an access token.
+        return authenticate_api_key(api_key=access_token)
+    elif access_token is not None and access_token.startswith(
+        ZENML_PRO_API_KEY_PREFIX
+    ):
+        # This is a ZenML Pro API key used in place of an access token.
+        return authenticate_external_user(external_access_token=access_token)
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
@@ -641,7 +655,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
 
 
 def authenticate_external_user(
-    external_access_token: str, request: Request
+    external_access_token: str, request: Optional[Request] = None
 ) -> AuthContext:
     """Implement external authentication.
 
@@ -872,18 +886,19 @@ def authenticate_external_user(
             )
             context.alias(user_id=external_user.id, previous_id=user.id)
 
-    # This is the best spot to update the onboarding state to mark the
-    # "zenml login" step as completed for ZenML Pro servers, because the
-    # user has just successfully logged in. However, we need to differentiate
-    # between web clients (i.e. the dashboard) and CLI clients (i.e. the
-    # zenml CLI).
-    user_agent = request.headers.get("User-Agent", "").lower()
-    if "zenml/" in user_agent:
-        store.update_onboarding_state(
-            completed_steps={
-                OnboardingStep.DEVICE_VERIFIED,
-            }
-        )
+    if request:
+        # This is the best spot to update the onboarding state to mark the
+        # "zenml login" step as completed for ZenML Pro servers, because the
+        # user has just successfully logged in. However, we need to differentiate
+        # between web clients (i.e. the dashboard) and CLI clients (i.e. the
+        # zenml CLI).
+        user_agent = request.headers.get("User-Agent", "").lower()
+        if "zenml/" in user_agent:
+            store.update_onboarding_state(
+                completed_steps={
+                    OnboardingStep.DEVICE_VERIFIED,
+                }
+            )
 
     return AuthContext(user=user)
 

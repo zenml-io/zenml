@@ -14,6 +14,12 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 
 ## Code Style & Quality Standards
 
+### Commenting policy — explain why, not what
+- Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
+- Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
+- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid simple explanatory comments, where it is already clear from the code itself.
+
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
   - Run this before every commit to ensure proper formatting
@@ -61,6 +67,9 @@ Use filesystem navigation tools to explore the codebase structure as needed.
   - `uv` is also used in CI workflows
   - It resolves dependencies more quickly and reliably than pip
   - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
+
+### Documentation Access via MCP
+ZenML documentation is available via a built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. IDE agents like Cursor and Claude Code can add this as an HTTP MCP server named 'ZenML Docs' to answer questions directly from the docs while you code. This enables live, source-of-truth lookups with fewer hallucinations and faster feature discovery. Note that the MCP server indexes the latest released docs, not the develop branch. For full setup details and examples, see docs/book/reference/llms-txt.md.
 
 ### Environment Variables
 - Several environment variables are useful during ZenML development:

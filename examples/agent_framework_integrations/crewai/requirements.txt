@@ -1,2 +1,4 @@
-crewai>=0.28.8
+crewai>=1.2.0
 zenml[local]
+jinja2>=3.1.0
+secure>=0.3.0
