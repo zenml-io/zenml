@@ -74,11 +74,11 @@ provider "zenml" {
 }
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/core-concepts/service-accounts).
 {% endhint %}
 ```
 
-To generate an API key, use the command:
+To generate an API key for an OSS server, use the command:
 
 ```bash
 zenml service-account create <SERVICE_ACCOUNT_NAME>
@@ -92,6 +92,9 @@ The API key is shown only once during creation. Make sure to save it securely, a
 
 You can learn more about how to generate a `ZENML_API_KEY` via service accounts
 [here](https://docs.zenml.io//how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+
+
+If you're using a ZenML Pro server, you will need to create an organization-level service account and an API key for it. You can find more about organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
 
 ### Create the service connectors
 

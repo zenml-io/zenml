@@ -16,7 +16,9 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from pydantic import ValidationError
 
-from zenml.config import DockerSettings
+from zenml.config.docker_settings import (
+    DockerSettings,
+)
 
 
 def test_build_skipping():
