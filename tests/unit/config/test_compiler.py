@@ -34,8 +34,7 @@ def test_compiling_pipeline_with_invalid_run_name_fails(
 ):
     """Tests that compiling a pipeline with an invalid run name fails."""
     pipeline_instance = empty_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(ValueError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -54,8 +53,7 @@ def _no_step_pipeline():
 def test_compiling_pipeline_without_steps_fails(local_stack):
     """Tests that compiling a pipeline without steps fails."""
     pipeline_instance = _no_step_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(ValueError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -71,8 +69,7 @@ def test_compiling_pipeline_with_missing_step_operator(
     pipeline_instance = one_step_pipeline(
         empty_step.configure(step_operator="s")
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -89,8 +86,7 @@ def test_compiling_pipeline_with_missing_experiment_tracker(
     pipeline_instance = one_step_pipeline(
         empty_step.configure(experiment_tracker="e")
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -113,8 +109,7 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
             "_empty_step": StepConfigurationUpdate(extra={"key": "new_value"})
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -148,8 +143,7 @@ def test_step_sorting(empty_step, local_stack):
         empty_step(id="step_1")
         empty_step(id="step_2", after="step_1")
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -204,8 +198,7 @@ def test_stack_component_settings_merging(
             )
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -252,8 +245,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
             )
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -299,8 +291,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         steps={"_empty_step": StepConfigurationUpdate(extra=run_step_extra)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
 
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
@@ -358,8 +349,7 @@ def test_success_hook_merging(
         },
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -409,8 +399,7 @@ def test_failure_hook_merging(
         },
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -453,8 +442,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -500,8 +488,7 @@ def test_invalid_settings_keys_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -551,8 +538,7 @@ def test_empty_settings_classes_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -585,8 +571,7 @@ def test_spec_compilation(local_stack):
     def pipeline_instance():
         s2(s1())
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     spec = (
         Compiler()
         .compile(
@@ -652,8 +637,7 @@ def test_stack_component_shortcut_keys(
         settings={"orchestrator": shortcut_settings}
     )
 
-    with pipeline_instance_with_shortcut_settings:
-        pipeline_instance_with_shortcut_settings.entrypoint()
+    pipeline_instance_with_shortcut_settings.prepare()
 
     with does_not_raise():
         snapshot = Compiler().compile(
@@ -677,8 +661,7 @@ def test_stack_component_shortcut_keys(
         }
     )
 
-    with pipeline_instance_with_duplicate_settings:
-        pipeline_instance_with_duplicate_settings.entrypoint()
+    pipeline_instance_with_duplicate_settings.prepare()
 
     with pytest.raises(ValueError):
         snapshot = Compiler().compile(

@@ -69,4 +69,4 @@ def test_loading_the_snapshot(clean_client):
         arguments=["--snapshot_id", str(snapshot.id)]
     )
 
-    assert entrypoint_config.load_snapshot() == snapshot
+    assert entrypoint_config.snapshot == snapshot
