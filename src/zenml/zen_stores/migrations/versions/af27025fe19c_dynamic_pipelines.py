@@ -26,7 +26,6 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("step_configuration", schema=None) as batch_op:
-        # TODO: missing check constraint
         batch_op.add_column(
             sa.Column(
                 "step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
