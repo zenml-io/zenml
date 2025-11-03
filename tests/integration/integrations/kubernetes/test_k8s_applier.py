@@ -1,7 +1,6 @@
 from types import SimpleNamespace
 
 import pytest
-import yaml
 from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes import k8s_applier
@@ -83,8 +82,9 @@ spec:
     applier.apply_yaml(yaml_content)
 
     resource = dynamic_client_fixture[("example/v1", "Example")]
-    assert len(resource.create_calls) == 1
-    assert resource.create_calls[0]["namespace"] == "default"
+    # Now using Server-Side Apply, so we expect patch_calls instead of create_calls
+    assert len(resource.patch_calls) == 1
+    assert resource.patch_calls[0]["namespace"] == "default"
 
 
 def test_apply_yaml_updates_existing_resource(dynamic_client_fixture) -> None:
@@ -106,7 +106,8 @@ spec:
 
     resource = dynamic_client_fixture[("example/v1", "Example")]
     assert len(resource.patch_calls) == 1
-    assert resource.patch_calls[0]["dry_run"] == ["All"]
+    # dry_run is now passed as "All" (string) not ["All"] (list)
+    assert resource.patch_calls[0]["dry_run"] == "All"
 
 
 def test_apply_yaml_cluster_scoped_resource(dynamic_client_fixture) -> None:
@@ -128,8 +129,9 @@ rules: []
     resource = dynamic_client_fixture[
         ("rbac.authorization.k8s.io/v1", "ClusterRole")
     ]
-    assert len(resource.create_calls) == 1
-    assert "namespace" not in resource.create_calls[0]
+    # Now using Server-Side Apply, so we expect patch_calls instead of create_calls
+    assert len(resource.patch_calls) == 1
+    assert "namespace" not in resource.patch_calls[0]
 
 
 def test_apply_yaml_missing_name_raises(dynamic_client_fixture) -> None:
@@ -155,6 +157,8 @@ def test_apply_resource_preserves_api_version_and_kind(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeApiClient:
+        configuration = SimpleNamespace()  # Required by DynamicClient
+
         def sanitize_for_serialization(self, resource):
             return {"metadata": {"name": "demo"}}
 
@@ -167,24 +171,35 @@ def test_apply_resource_preserves_api_version_and_kind(
 
     captured: dict[str, object] = {}
 
+    # Mock DynamicClient to avoid initialization errors
+    class FakeDynamicClient:
+        def __init__(self, api_client):
+            pass
+
+    monkeypatch.setattr(
+        "zenml.integrations.kubernetes.k8s_applier.dynamic.DynamicClient",
+        FakeDynamicClient,
+    )
+
     applier = KubernetesApplier(api_client=FakeApiClient())
 
-    def fake_apply_yaml(yaml_content: str, dry_run: bool) -> None:
-        captured["yaml"] = yaml.safe_load(yaml_content)
-        captured["dry_run"] = dry_run
+    # Mock ssa_apply instead of apply_yaml (apply_resource now uses ssa_apply)
+    def fake_ssa_apply(resource: dict, **kwargs) -> None:
+        captured["resource"] = resource
+        captured["dry_run"] = kwargs.get("dry_run", False)
 
     monkeypatch.setattr(
         applier,
-        "apply_yaml",
-        fake_apply_yaml,
+        "ssa_apply",
+        fake_ssa_apply,
         raising=False,
     )
 
     applier.apply_resource(FakeResource(), dry_run=False)
 
-    assert "yaml" in captured
-    assert captured["yaml"]["apiVersion"] == "apps/v1"
-    assert captured["yaml"]["kind"] == "Deployment"
+    assert "resource" in captured
+    assert captured["resource"]["apiVersion"] == "apps/v1"
+    assert captured["resource"]["kind"] == "Deployment"
     assert captured["dry_run"] is False
 
 
@@ -192,6 +207,8 @@ def test_apply_resource_normalizes_metadata_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeApiClient:
+        configuration = SimpleNamespace()  # Required by DynamicClient
+
         def sanitize_for_serialization(self, resource):
             return {
                 "api_version": "batch/v1",
@@ -203,33 +220,59 @@ def test_apply_resource_normalizes_metadata_keys(
         def to_dict(self):
             return {"metadata": {"name": "demo"}}
 
+    # Mock DynamicClient to avoid initialization errors
+    class FakeDynamicClient:
+        def __init__(self, api_client):
+            pass
+
+    monkeypatch.setattr(
+        "zenml.integrations.kubernetes.k8s_applier.dynamic.DynamicClient",
+        FakeDynamicClient,
+    )
+
     applier = KubernetesApplier(api_client=FakeApiClient())
-    captured_yaml: dict[str, object] = {}
+    captured_resource: dict[str, object] = {}
+
+    # Mock ssa_apply instead of apply_yaml (apply_resource now uses ssa_apply)
+    def fake_ssa_apply(resource: dict, **kwargs) -> None:
+        captured_resource.update(resource)
 
     monkeypatch.setattr(
         applier,
-        "apply_yaml",
-        lambda yaml_content, dry_run: captured_yaml.update(
-            yaml.safe_load(yaml_content)
-        ),
+        "ssa_apply",
+        fake_ssa_apply,
         raising=False,
     )
 
     applier.apply_resource(FakeResource(), dry_run=True)
 
-    assert captured_yaml["apiVersion"] == "batch/v1"
-    assert "api_version" not in captured_yaml
-    assert captured_yaml["kind"] == "Job"
+    assert captured_resource["apiVersion"] == "batch/v1"
+    assert "api_version" not in captured_resource
+    assert captured_resource["kind"] == "Job"
 
 
-def test_apply_resource_raises_for_missing_metadata() -> None:
+def test_apply_resource_raises_for_missing_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FakeApiClient:
+        configuration = SimpleNamespace()  # Required by DynamicClient
+
         def sanitize_for_serialization(self, resource):
             return {"metadata": {"name": "demo"}}
 
     class IncompleteResource:
         def to_dict(self):
             return {"metadata": {"name": "demo"}}
+
+    # Mock DynamicClient to avoid initialization errors
+    class FakeDynamicClient:
+        def __init__(self, api_client):
+            pass
+
+    monkeypatch.setattr(
+        "zenml.integrations.kubernetes.k8s_applier.dynamic.DynamicClient",
+        FakeDynamicClient,
+    )
 
     applier = KubernetesApplier(api_client=FakeApiClient())
 

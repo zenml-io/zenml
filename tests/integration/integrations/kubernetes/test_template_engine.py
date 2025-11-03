@@ -7,7 +7,6 @@ from jinja2 import TemplateNotFound
 
 from zenml.integrations.kubernetes.template_engine import (
     KubernetesTemplateEngine,
-    create_manifest_directory,
 )
 
 
@@ -68,7 +67,8 @@ def test_render_to_k8s_object_roundtrip(custom_template_dir: Path) -> None:
         context={"name": "svc", "port": 80},
     )
 
-    assert manifest.k8s_object.metadata.name == "svc"
+    # Use resource_dict instead of k8s_object
+    assert manifest.resource_dict["metadata"]["name"] == "svc"
     assert "port: 80" in manifest.template_yaml
     assert "kind: Service" in manifest.canonical_yaml
 
@@ -94,9 +94,8 @@ def test_render_to_k8s_object_returns_canonical_yaml(
     )
 
     assert "demo-deploy" in manifest.template_yaml
-    expected_yaml = yaml.safe_dump(
-        manifest.k8s_object.to_dict(), sort_keys=False
-    )
+    # Use resource_dict instead of k8s_object
+    expected_yaml = yaml.safe_dump(manifest.resource_dict, sort_keys=False)
     assert manifest.canonical_yaml == expected_yaml
 
 
@@ -130,8 +129,9 @@ def test_render_to_k8s_object_sets_metadata_attributes(
         context={},
     )
 
-    assert getattr(manifest.k8s_object, "api_version", None) == "batch/v1"
-    assert getattr(manifest.k8s_object, "kind", None) == "Job"
+    # Use resource_dict instead of k8s_object
+    assert manifest.resource_dict.get("apiVersion") == "batch/v1"
+    assert manifest.resource_dict.get("kind") == "Job"
 
 
 def test_render_to_k8s_object_canonical_yaml_includes_metadata(
@@ -168,7 +168,8 @@ def test_render_to_k8s_object_invalid_yaml(custom_template_dir: Path) -> None:
         custom_templates_dir=str(custom_template_dir)
     )
 
-    with pytest.raises(ValueError):
+    # Now raises yaml.YAMLError instead of ValueError
+    with pytest.raises(yaml.YAMLError):
         engine.render_to_k8s_object("broken.yaml.j2", {})
 
 
@@ -212,13 +213,3 @@ def test_save_manifests_and_directory(
         manifests, deployment_name="demo-two"
     )
     assert (fallback_path / "deployment.yaml").exists()
-
-
-def test_create_manifest_directory(tmp_path: Path) -> None:
-    base_dir = tmp_path / "base"
-    created = create_manifest_directory(str(base_dir))
-    assert created.exists()
-    assert created.parent == base_dir
-
-    temp_dir = create_manifest_directory()
-    assert temp_dir.exists()
