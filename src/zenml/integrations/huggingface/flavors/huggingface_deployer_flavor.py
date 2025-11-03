@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.deployers.base_deployer import (
     BaseDeployerConfig,
     BaseDeployerFlavor,
@@ -28,22 +30,46 @@ if TYPE_CHECKING:
 
 
 class HuggingFaceDeployerConfig(BaseDeployerConfig):
-    """Configuration for the Hugging Face deployer.
+    """Configuration for the Hugging Face deployer."""
 
-    Attributes:
-        token: Hugging Face API token for authentication. Can be a direct token
-            value or a reference to a ZenML secret using {{secret_name.key}}
-        organization: HF organization to deploy to (uses username if not set)
-        space_hardware: Hardware tier (e.g., 'cpu-basic', 't4-small')
-        space_storage: Persistent storage tier (e.g., 'small', 'medium', 'large')
-        space_prefix: Prefix for Space names to organize deployments
-    """
-
-    token: Optional[str] = SecretField(default=None)
-    organization: Optional[str] = None
-    space_hardware: Optional[str] = None
-    space_storage: Optional[str] = None
-    space_prefix: str = "zenml"
+    token: Optional[str] = SecretField(
+        default=None,
+        description="Hugging Face API token for authentication with write permissions. "
+        "Can reference a ZenML secret using {{secret_name.key}} syntax or provide "
+        "the token directly. Create tokens at https://huggingface.co/settings/tokens "
+        "with 'write' access enabled. Example: '{{hf_token.token}}' references the "
+        "'token' key in the 'hf_token' secret",
+    )
+    organization: Optional[str] = Field(
+        default=None,
+        description="Hugging Face organization name to deploy Spaces under. If not "
+        "specified, Spaces are created under the authenticated user's account. "
+        "Example: 'zenml' deploys to https://huggingface.co/spaces/zenml/. "
+        "Requires organization membership with appropriate permissions",
+    )
+    space_hardware: Optional[str] = Field(
+        default=None,
+        description="Hardware tier for Space execution. Controls compute resources "
+        "available to the deployed pipeline. Options: 'cpu-basic' (2 vCPU, 16GB RAM), "
+        "'cpu-upgrade' (8 vCPU, 32GB RAM), 't4-small' (4 vCPU, 15GB RAM, NVIDIA T4), "
+        "'t4-medium' (8 vCPU, 30GB RAM, NVIDIA T4). See "
+        "https://huggingface.co/docs/hub/spaces-gpus for full list. Defaults to "
+        "cpu-basic if not specified",
+    )
+    space_storage: Optional[str] = Field(
+        default=None,
+        description="Persistent storage tier for Space data. Determines available disk "
+        "space for artifacts and logs. Options: 'small' (20GB), 'medium' (150GB), "
+        "'large' (1TB). Storage persists across Space restarts. If not specified, "
+        "uses ephemeral storage that resets on restart",
+    )
+    space_prefix: str = Field(
+        default="zenml",
+        description="Prefix for Space names to organize deployments and avoid naming "
+        "conflicts. Combined with deployment name to form the full Space ID. "
+        "Example: prefix 'zenml' with deployment 'my-pipeline' creates Space "
+        "'zenml-my-pipeline'. Maximum combined length is 96 characters",
+    )
 
 
 class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
