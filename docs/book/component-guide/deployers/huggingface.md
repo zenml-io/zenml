@@ -15,7 +15,7 @@ This component is only meant to be used within the context of a [remote ZenML in
 You should use the Hugging Face deployer if:
 
 * you're already using Hugging Face for model hosting or datasets.
-* you want to share your ML pipelines as publicly accessible or private Spaces.
+* you want to share your AI pipelines as publicly accessible or private Spaces.
 * you're looking for a simple, managed platform for deploying Docker-based applications.
 * you want to leverage Hugging Face's infrastructure for hosting your pipeline deployments.
 * you need an easy way to showcase ML workflows to the community.
