@@ -486,16 +486,31 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
             runtime = api.get_space_runtime(repo_id=space_id)
 
+            # Debug logging
+            domains = runtime.raw.get("domains", [])
+            domain_stage = domains[0].get("stage") if domains else None
+            logger.debug(
+                f"Space {space_id} state: stage={runtime.stage}, "
+                f"domain_stage={domain_stage}, has_domains={bool(domains)}"
+            )
+
             # Map HuggingFace Space stages to ZenML standard deployment states
             # Only RUNNING + domain READY means fully provisioned with health endpoint available
             if runtime.stage == SpaceStage.RUNNING:
                 # Check if domain is also ready (not just Space running)
-                domains = runtime.raw.get("domains", [])
                 if domains and domains[0].get("stage") == "READY":
                     status = DeploymentStatus.RUNNING
+                    logger.debug(
+                        f"Space {space_id} is fully ready: "
+                        f"stage=RUNNING, domain_stage=READY"
+                    )
                 else:
                     # Space is running but domain not ready yet (DNS propagating, etc.)
                     status = DeploymentStatus.PENDING
+                    logger.debug(
+                        f"Space {space_id} is running but domain not ready: "
+                        f"domain_stage={domain_stage}"
+                    )
             # Building/updating states - health endpoint not yet available
             elif runtime.stage in [
                 SpaceStage.BUILDING,
@@ -523,14 +538,13 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
             # Get deployment URL from Space domains (only when fully ready)
             url = None
-            domain_stage = None
-            if runtime.raw.get("domains"):
-                domains = runtime.raw.get("domains", [])
-                if domains:
-                    domain_stage = domains[0].get("stage")
-                    # Only set URL if domain is ready for traffic
-                    if domain_stage == "READY" and domains[0].get("domain"):
-                        url = f"https://{domains[0]['domain']}"
+            # Only set URL if domain is ready for traffic
+            if (
+                domain_stage == "READY"
+                and domains
+                and domains[0].get("domain")
+            ):
+                url = f"https://{domains[0]['domain']}"
 
             return DeploymentOperationalState(
                 status=status,
