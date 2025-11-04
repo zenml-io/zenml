@@ -712,7 +712,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if run_update.status_reason:
                     self.status_reason = run_update.status_reason
 
-            if run_update.finished:
+            if run_update.is_finished:
                 self.in_progress = False
             elif self.snapshot and self.snapshot.is_dynamic:
                 # In dynamic pipelines, we can't actually check if the run is

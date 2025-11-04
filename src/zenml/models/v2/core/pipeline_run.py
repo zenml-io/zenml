@@ -178,7 +178,7 @@ class PipelineRunUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     end_time: Optional[datetime] = None
-    finished: Optional[bool] = Field(
+    is_finished: Optional[bool] = Field(
         default=None,
         title="Whether the pipeline run is finished.",
     )
