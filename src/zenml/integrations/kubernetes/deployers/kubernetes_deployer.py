@@ -28,6 +28,7 @@ from typing import (
 
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
+from pydantic import BaseModel, ConfigDict
 
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
 from zenml.deployers.exceptions import (
@@ -73,10 +74,21 @@ MAX_K8S_NAME_LENGTH = 63
 MAX_LOAD_BALANCER_TIMEOUT = 600  # 10 minutes
 
 
+class _DeploymentCtx(BaseModel):
+    """Deployment context."""
+
+    settings: KubernetesDeployerSettings
+    namespace: str
+    resource_name: str
+    labels: Dict[str, str]
+    secret_name: str
+    image: str
+
+    model_config = ConfigDict(frozen=True)  # immutable once built
+
+
 class KubernetesDeployer(ContainerizedDeployer):
     """Kubernetes deployer using template-based resource management."""
-
-    _k8s_client: Optional[k8s_client.ApiClient] = None
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Kubernetes deployer.
@@ -86,15 +98,33 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         super().__init__(**kwargs)
 
-        self._namespace: Optional[str] = None
-        self._resource_name: Optional[str] = None
-        self._labels: Optional[Dict[str, str]] = None
-        self._settings: Optional[KubernetesDeployerSettings] = None
-        self._deployment_id: Optional[str] = None
-        self._image: Optional[str] = None
-        self._secret_name: Optional[str] = None
+        self._ctx: Optional[_DeploymentCtx] = None
+        self._k8s_client: Optional[k8s_client.ApiClient] = None
         self._engine: Optional[KubernetesTemplateEngine] = None
         self._applier: Optional[KubernetesApplier] = None
+
+    def require_ctx(self) -> _DeploymentCtx:
+        """Require the deployment context.
+
+        Returns:
+            The deployment context.
+
+        Raises:
+            DeployerError: If the deployment context is not initialized.
+        """
+        if self._ctx is None:
+            raise DeployerError("Deployment context not initialized.")
+        return self._ctx
+
+    def _clear_deployment_context(self) -> None:
+        """Clear deployment context after operation completes.
+
+        This prevents state leakage between deployments when a deployer
+        instance is reused. The k8s_client and k8s_applier are preserved
+        as they can safely be reused across deployments.
+        """
+        self._ctx = None
+        self._engine = None
 
     # ========================================================================
     # Kubernetes Client Management
@@ -343,19 +373,19 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentProvisionError: If sanitization causes a collision with an existing key.
         """
-        original = key
         sanitized = re.sub(r"[^A-Za-z0-9_]", "_", key)
-        if not sanitized or not re.match(r"^[A-Za-z_]", sanitized):
-            sanitized = f"_{sanitized}" if sanitized else "_VAR"
-        if sanitized in secret_key_map:
-            if secret_key_map[sanitized] != original:
-                raise DeploymentProvisionError(
-                    f"Secret key collision: '{original}' and '{secret_key_map[sanitized]}' "
-                    f"both sanitize to '{sanitized}'. Please rename one of them."
-                )
-        else:
-            secret_key_map[sanitized] = original
 
+        # Ensure starts with letter or underscore
+        if sanitized and not re.match(r"^[A-Za-z_]", sanitized):
+            sanitized = f"_{sanitized}"
+        elif not sanitized:  # Empty after sanitization
+            sanitized = "_VAR"
+
+        # Check collision
+        if sanitized in secret_key_map and secret_key_map[sanitized] != key:
+            raise DeploymentProvisionError(...)
+
+        secret_key_map[sanitized] = key
         return sanitized
 
     # ========================================================================
@@ -366,8 +396,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         settings: KubernetesDeployerSettings,
-        resource_name: str,
-        namespace: str,
         timeout: int,
     ) -> None:
         """Wait for deployment and service to become ready.
@@ -375,8 +403,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment response.
             settings: Kubernetes deployer settings.
-            resource_name: Resource name.
-            namespace: Kubernetes namespace.
             timeout: Timeout in seconds.
 
         Raises:
@@ -385,18 +411,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         if timeout <= 0:
             return
 
+        ctx = self.require_ctx()
+
         try:
             logger.info(
                 f"\n⏳ Waiting for deployment to become ready...\n"
                 f"   📋 Deployment: {deployment.name}\n"
-                f"   📦 Namespace: {namespace}\n"
+                f"   📦 Namespace: {ctx.namespace}\n"
                 f"   ⏱️  Timeout: {timeout}s"
             )
             self.k8s_applier.wait_for_deployment_ready(
-                name=resource_name,
-                namespace=self._namespace,
+                name=ctx.resource_name,
+                namespace=ctx.namespace,
                 timeout=timeout,
-                check_interval=self._settings.deployment_ready_check_interval,
+                check_interval=ctx.settings.deployment_ready_check_interval,
             )
             logger.info("✅ Deployment is ready!")
         except RuntimeError as e:
@@ -418,8 +446,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"⏳ Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
                 )
                 self.k8s_applier.wait_for_service_loadbalancer_ip(
-                    name=resource_name,
-                    namespace=namespace,
+                    name=ctx.resource_name,
+                    namespace=ctx.namespace,
                     timeout=lb_timeout,
                     check_interval=settings.deployment_ready_check_interval,
                 )
@@ -430,10 +458,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"   Service may still be accessible via cluster IP."
                 )
 
-    # ========================================================================
-    # Provisioning
-    # ========================================================================
-
     def _cleanup_failed_deployment(
         self, deployment: DeploymentResponse
     ) -> None:
@@ -442,6 +466,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         Args:
             deployment: The deployment whose resources should be cleaned up.
         """
+        ctx = self.require_ctx()
         label_selector = f"zenml-deployment-id={deployment.id}"
         logger.warning(
             f"Provisioning failed, cleaning up resources with label: {label_selector}"
@@ -449,7 +474,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         try:
             deleted_count = self.k8s_applier.delete_by_label_selector(
                 label_selector=label_selector,
-                namespace=self._namespace,
+                namespace=ctx.namespace,
                 propagation_policy="Foreground",
             )
             logger.info(f"Cleanup deleted {deleted_count} resource(s)")
@@ -457,7 +482,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             logger.error(
                 f"Cleanup failed: {cleanup_error}. "
                 f"Manual cleanup: kubectl delete all,configmap,secret "
-                f"-n {self._namespace} -l {label_selector}"
+                f"-n {ctx.namespace} -l {label_selector}"
             )
 
     def _initialize_deployment_context(
@@ -480,26 +505,35 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Deployment '{deployment.name}' has no snapshot"
             )
 
-        self._settings = cast(
+        settings = cast(
             KubernetesDeployerSettings, self.get_settings(snapshot)
         )
-        self._namespace = (
-            self._settings.namespace or self.config.kubernetes_namespace
-        )
-        self._resource_name = kube_utils.sanitize_label(
-            f"zenml-{deployment.id}"
-        )[:MAX_K8S_NAME_LENGTH]
-        self._secret_name = self._resource_name
+        namespace = settings.namespace or self.config.kubernetes_namespace
+        resource_name = kube_utils.sanitize_label(f"zenml-{deployment.id}")[
+            :MAX_K8S_NAME_LENGTH
+        ]
+        secret_name = resource_name
 
-        self._labels = {
+        labels = {
             "zenml-deployment-id": str(deployment.id),
             "zenml-deployment-name": kube_utils.sanitize_label(
                 deployment.name
             ),
             "managed-by": "zenml",
         }
-        if self._settings.labels:
-            self._labels.update(**self._settings.labels)
+        if settings.labels:
+            labels.update(**settings.labels)
+
+        image = self.get_image(snapshot)
+
+        self._ctx = _DeploymentCtx(
+            settings=settings,
+            namespace=namespace,
+            resource_name=resource_name,
+            secret_name=secret_name,
+            labels=labels,
+            image=image,
+        )
 
     def _save_and_print_manifests(
         self,
@@ -512,19 +546,21 @@ class KubernetesDeployer(ContainerizedDeployer):
             resources: Kubernetes resources to save/print.
             deployment: The deployment these manifests belong to.
         """
-        if self._settings.save_manifests:
+        ctx = self.require_ctx()
+
+        if ctx.settings.save_manifests:
             saved_files = cast(
                 KubernetesTemplateEngine, self._engine
             ).save_k8s_objects(
                 resources,
                 deployment.name,
-                output_dir=self._settings.manifest_output_dir,
+                output_dir=ctx.settings.manifest_output_dir,
             )
             logger.info(f"✅ Saved {len(saved_files)} manifest file(s):")
             for filepath in saved_files:
                 logger.info(f"   └─ {filepath}")
 
-        if self._settings.print_manifests:
+        if ctx.settings.print_manifests:
             yaml_content = KubernetesTemplateEngine.dump_yaml_documents(
                 [
                     self.k8s_applier.api_client.sanitize_for_serialization(r)
@@ -560,12 +596,12 @@ class KubernetesDeployer(ContainerizedDeployer):
         assert snapshot, "Pipeline snapshot not found"
 
         self._initialize_deployment_context(deployment)
+        ctx = self.require_ctx()
 
         self._engine = KubernetesTemplateEngine(
-            custom_templates_dir=self._settings.custom_templates_dir
+            custom_templates_dir=ctx.settings.custom_templates_dir
             or self.config.custom_templates_dir
         )
-        self._image = self.get_image(snapshot)
 
         try:
             resource_requests, resource_limits, replicas = (
@@ -585,14 +621,14 @@ class KubernetesDeployer(ContainerizedDeployer):
             sanitized[sanitized_key] = value
 
         context = self._build_template_context(
-            settings=self._settings,
-            resource_name=self._resource_name,
-            namespace=self._namespace,
-            labels=self._labels,
-            image=self._image,
+            settings=ctx.settings,
+            resource_name=ctx.resource_name,
+            namespace=ctx.namespace,
+            labels=ctx.labels,
+            image=ctx.image,
             env_vars=environment,
             secret_env_vars=sanitized,
-            secret_name=self._secret_name,
+            secret_name=ctx.secret_name,
             resource_requests=resource_requests,
             resource_limits=resource_limits,
             replicas=replicas,
@@ -613,7 +649,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         rendered_resources: List[Dict[str, Any]] = [
-            namespace_resource(namespace=self._namespace)
+            namespace_resource(namespace=ctx.namespace)
         ]
 
         if sanitized:
@@ -622,9 +658,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
             secret_manifest = build_secret_manifest(
-                name=self._secret_name,
+                name=ctx.secret_name,
                 data=sanitized,
-                namespace=self._namespace,
+                namespace=ctx.namespace,
             )
             rendered_resources.append(
                 self.k8s_applier.api_client.sanitize_for_serialization(
@@ -639,14 +675,14 @@ class KubernetesDeployer(ContainerizedDeployer):
             self._engine.render_template("service.yaml.j2", context)
         )
 
-        for additional_resource in self._settings.additional_resources:
+        for additional_resource in ctx.settings.additional_resources:
             try:
                 rendered_resources.extend(
                     self._engine.render_template(additional_resource, context)
                 )
             except Exception as e:
                 error_msg = f"Failed to render additional resource '{additional_resource}': {e}"
-                if self._settings.strict_additional_resources:
+                if ctx.settings.strict_additional_resources:
                     raise DeploymentProvisionError(error_msg) from e
                 else:
                     logger.warning(
@@ -687,21 +723,22 @@ class KubernetesDeployer(ContainerizedDeployer):
         rendered_resources = self._prepare_deployment_resources(
             deployment, environment, secrets
         )
+        ctx = self.require_ctx()
 
-        logger.info(f"✅ Image built and pushed:\n   └─ {self._image}")
+        logger.info(f"✅ Image built and pushed:\n   └─ {ctx.image}")
         logger.info("✅ Manifests generated")
 
         logger.info("\n🔍 Validating manifests with Kubernetes API...")
         validated_objects = self.k8s_applier.provision(
             rendered_resources,
-            default_namespace=self._namespace,
+            default_namespace=ctx.namespace,
             dry_run=True,
         )
 
         self._save_and_print_manifests(validated_objects, deployment)
 
         manifest_info = ""
-        if self._settings.save_manifests:
+        if ctx.settings.save_manifests:
             manifest_info = (
                 f"💾 Manifests: .zenml-deployments/{deployment.name}/\n"
             )
@@ -710,8 +747,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             f"\n{'=' * 70}\n"
             f"✅ DRY-RUN SUCCESSFUL!\n"
             f"{'=' * 70}\n"
-            f"📋 Namespace: {self._namespace}\n"
-            f"📦 Deployment: {self._resource_name}\n"
+            f"📋 Namespace: {ctx.namespace}\n"
+            f"📦 Deployment: {ctx.resource_name}\n"
             f"🔍 Validated {len(validated_objects)} resource(s)\n"
             f"{manifest_info}"
             f"\n💡 To deploy for real: Remove --dry-run flag\n"
@@ -744,13 +781,14 @@ class KubernetesDeployer(ContainerizedDeployer):
         rendered_resources = self._prepare_deployment_resources(
             deployment, environment, secrets
         )
+        ctx = self.require_ctx()
 
         self._save_and_print_manifests(rendered_resources, deployment)
 
         try:
             created_objects = self.k8s_applier.provision(
                 rendered_resources,
-                default_namespace=self._namespace,
+                default_namespace=ctx.namespace,
                 dry_run=False,
                 timeout=timeout,
             )
@@ -758,7 +796,13 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Successfully created {len(created_objects)} Kubernetes resource(s)"
             )
         except Exception as e:
-            self._cleanup_failed_deployment(deployment)
+            try:
+                self._cleanup_failed_deployment(deployment)
+            except Exception as cleanup_error:
+                logger.error(
+                    f"Additional error during cleanup: {cleanup_error}. "
+                    f"Original error will be raised."
+                )
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -766,16 +810,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         try:
             self._wait_for_deployment_readiness(
                 deployment,
-                self._settings,
-                self._resource_name,
-                self._namespace,
+                ctx.settings,
                 timeout,
             )
 
             return self.do_get_deployment_state(deployment)
 
         except Exception as e:
-            self._cleanup_failed_deployment(deployment)
+            try:
+                self._cleanup_failed_deployment(deployment)
+            except Exception as cleanup_error:
+                logger.error(
+                    f"Additional error during cleanup: {cleanup_error}. "
+                    f"Original error will be raised."
+                )
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -800,17 +848,18 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentNotFoundError: If deployment not found.
         """
         self._initialize_deployment_context(deployment)
+        ctx = self.require_ctx()
 
         try:
             k8s_deployment = self.k8s_applier.get_resource(
-                name=self._resource_name,
-                namespace=self._namespace,
+                name=ctx.resource_name,
+                namespace=ctx.namespace,
                 kind="Deployment",
                 api_version="apps/v1",
             )
             k8s_service = self.k8s_applier.get_resource(
-                name=self._resource_name,
-                namespace=self._namespace,
+                name=ctx.resource_name,
+                namespace=ctx.namespace,
                 kind="Service",
                 api_version="v1",
             )
@@ -841,17 +890,17 @@ class KubernetesDeployer(ContainerizedDeployer):
             url = kube_utils.build_service_url(
                 core_api=self.k8s_core_api,
                 service=k8s_service,
-                namespace=self._namespace,
+                namespace=ctx.namespace,
                 ingress=None,
             )
 
             metadata = {
-                "deployment_name": self._resource_name,
-                "namespace": self._namespace,
-                "service_name": self._resource_name,
-                "port": self._settings.service_port,
-                "service_type": self._settings.service_type,
-                "labels": self._labels,
+                "deployment_name": ctx.resource_name,
+                "namespace": ctx.namespace,
+                "service_name": ctx.resource_name,
+                "port": ctx.settings.service_port,
+                "service_type": ctx.settings.service_type,
+                "labels": ctx.labels,
             }
 
             return DeploymentOperationalState(
@@ -893,12 +942,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentLogsNotFoundError: If logs not found.
         """
         self._initialize_deployment_context(deployment)
+        ctx = self.require_ctx()
 
         label_selector = f"zenml-deployment-id={deployment.id}"
 
         try:
             pods = self.k8s_applier.list_resources(
-                namespace=self._namespace,
+                namespace=ctx.namespace,
                 kind="Pod",
                 api_version="v1",
                 label_selector=label_selector,
@@ -913,7 +963,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             if follow:
                 resp = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
-                    namespace=self._namespace,
+                    namespace=ctx.namespace,
                     follow=True,
                     tail_lines=tail,
                     _preload_content=False,
@@ -926,7 +976,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             else:
                 logs = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
-                    namespace=self._namespace,
+                    namespace=ctx.namespace,
                     tail_lines=tail,
                 )
                 for line in logs.split("\n"):
@@ -965,8 +1015,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentDeprovisionError: If deprovisioning fails.
         """
-        # Initialize context to get namespace
         self._initialize_deployment_context(deployment)
+        ctx = self.require_ctx()
 
         label_selector = f"zenml-deployment-id={deployment.id}"
 
@@ -977,7 +1027,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             deleted_count = self.k8s_applier.delete_by_label_selector(
                 label_selector=label_selector,
-                namespace=self._namespace,
+                namespace=ctx.namespace,
                 propagation_policy="Foreground",
             )
 
@@ -1008,7 +1058,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             logger.error(
                 f"Failed to deprovision '{deployment.name}': {e}. "
                 f"You may need to manually delete resources:\n"
-                f"  kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
+                f"  kubectl delete all,configmap,secret -n {ctx.namespace} -l {label_selector}"
             )
             raise DeploymentDeprovisionError(
                 f"Unexpected error deprovisioning '{deployment.name}': {e}"

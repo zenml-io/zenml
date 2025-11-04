@@ -293,6 +293,122 @@ class KubernetesApplier:
     # DELETE (optionally server-side dry-run)
     # --------------------------------------------------------------------- #
 
+    def _discover_deletable_resource_types(
+        self, namespace: str
+    ) -> List[Tuple[str, str]]:
+        """Dynamically discover all namespaced resource types in the cluster.
+
+        This queries the Kubernetes API to find all available resource types,
+        filters for namespaced resources, and returns them in deletion order
+        (workloads first, then supporting resources).
+
+        Args:
+            namespace: Namespace to check for resources (used for ordering).
+
+        Returns:
+            List of (kind, apiVersion) tuples in deletion order.
+        """
+        discovered_kinds: List[Tuple[str, str]] = []
+
+        # Priority order: delete workloads first, then supporting resources
+        priority_order = {
+            # Workloads (highest priority - delete first)
+            "Ingress": 1,
+            "Service": 1,
+            "Deployment": 2,
+            "StatefulSet": 2,
+            "DaemonSet": 2,
+            "ReplicaSet": 3,
+            "Job": 2,
+            "CronJob": 2,
+            "Pod": 4,
+            # Autoscaling and policies
+            "HorizontalPodAutoscaler": 5,
+            "PodDisruptionBudget": 5,
+            "NetworkPolicy": 5,
+            # Configuration and storage
+            "ConfigMap": 6,
+            "Secret": 6,
+            "PersistentVolumeClaim": 6,
+            # RBAC
+            "ServiceAccount": 7,
+            "Role": 7,
+            "RoleBinding": 7,
+            "ClusterRole": 8,
+            "ClusterRoleBinding": 8,
+        }
+
+        try:
+            # Get all API resources using the discovery API
+            # This is equivalent to: kubectl api-resources --namespaced=true
+            api_groups = self.api_client.resources.get()
+
+            for resource in api_groups.resources:
+                # Skip if not namespaced
+                if not resource.namespaced:
+                    continue
+
+                # Skip subresources (e.g., pods/log, pods/status)
+                if "/" in resource.name:
+                    continue
+
+                # Get the kind and API version
+                kind = resource.kind
+                api_version = (
+                    resource.group_version
+                    if hasattr(resource, "group_version")
+                    else resource.api_version
+                )
+
+                # Skip if we can't determine API version
+                if not api_version:
+                    continue
+
+                discovered_kinds.append((kind, api_version))
+
+            logger.debug(
+                f"Discovered {len(discovered_kinds)} deletable resource types"
+            )
+
+            # Sort by priority (lower number = delete first), then by name
+            def sort_key(item: Tuple[str, str]) -> Tuple[int, str]:
+                kind, _ = item
+                priority = priority_order.get(
+                    kind, 10
+                )  # Default to low priority
+                return (priority, kind)
+
+            discovered_kinds.sort(key=sort_key)
+
+            return discovered_kinds
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to dynamically discover resource types: {e}. "
+                f"Falling back to predefined list."
+            )
+            # Fallback to predefined list
+            return [
+                ("Ingress", "networking.k8s.io/v1"),
+                ("Service", "v1"),
+                ("Deployment", "apps/v1"),
+                ("StatefulSet", "apps/v1"),
+                ("DaemonSet", "apps/v1"),
+                ("ReplicaSet", "apps/v1"),
+                ("Job", "batch/v1"),
+                ("CronJob", "batch/v1"),
+                ("Pod", "v1"),
+                ("HorizontalPodAutoscaler", "autoscaling/v2"),
+                ("PodDisruptionBudget", "policy/v1"),
+                ("NetworkPolicy", "networking.k8s.io/v1"),
+                ("ConfigMap", "v1"),
+                ("Secret", "v1"),
+                ("PersistentVolumeClaim", "v1"),
+                ("ServiceAccount", "v1"),
+                ("Role", "rbac.authorization.k8s.io/v1"),
+                ("RoleBinding", "rbac.authorization.k8s.io/v1"),
+            ]
+
     def delete_by_label_selector(
         self,
         label_selector: str,
@@ -302,6 +418,7 @@ class KubernetesApplier:
         propagation_policy: Optional[str] = "Foreground",
         grace_period_seconds: Optional[int] = None,
         kinds: Optional[List[Tuple[str, str]]] = None,
+        dynamic_discovery: bool = False,
     ) -> int:
         """Delete resources in a namespace by label selector.
 
@@ -315,24 +432,47 @@ class KubernetesApplier:
             propagation_policy: 'Foreground', 'Background', or None.
             grace_period_seconds: Optional grace period override.
             kinds: Optional list of (kind, apiVersion) tuples to delete.
-                   If None, deletes common resource types.
+                   If None and dynamic_discovery=False, uses a predefined list.
+                   If None and dynamic_discovery=True, discovers all resource types.
+            dynamic_discovery: If True, dynamically discover all namespaced resource
+                   types in the cluster and check each for the label selector.
+                   This is more thorough but slower (10-30s vs 1-3s).
 
         Returns:
             Total number of resources deleted.
         """
         if kinds is None:
-            kinds = [
-                ("Ingress", "networking.k8s.io/v1"),
-                ("Service", "v1"),
-                ("Deployment", "apps/v1"),
-                ("StatefulSet", "apps/v1"),
-                ("DaemonSet", "apps/v1"),
-                ("Job", "batch/v1"),
-                ("CronJob", "batch/v1"),
-                ("ConfigMap", "v1"),
-                ("Secret", "v1"),
-                ("PersistentVolumeClaim", "v1"),
-            ]
+            if dynamic_discovery:
+                kinds = self._discover_deletable_resource_types(namespace)
+            else:
+                # Common resource types to delete, ordered by dependency
+                # (delete workloads first, then supporting resources)
+                kinds = [
+                    # Workloads
+                    ("Ingress", "networking.k8s.io/v1"),
+                    ("Service", "v1"),
+                    ("Deployment", "apps/v1"),
+                    ("StatefulSet", "apps/v1"),
+                    ("DaemonSet", "apps/v1"),
+                    ("ReplicaSet", "apps/v1"),
+                    ("Job", "batch/v1"),
+                    ("CronJob", "batch/v1"),
+                    ("Pod", "v1"),
+                    # Autoscaling and policies
+                    ("HorizontalPodAutoscaler", "autoscaling/v2"),
+                    ("PodDisruptionBudget", "policy/v1"),
+                    ("NetworkPolicy", "networking.k8s.io/v1"),
+                    # Configuration and storage
+                    ("ConfigMap", "v1"),
+                    ("Secret", "v1"),
+                    ("PersistentVolumeClaim", "v1"),
+                    # Service accounts and RBAC (if deployment created them)
+                    ("ServiceAccount", "v1"),
+                    ("Role", "rbac.authorization.k8s.io/v1"),
+                    ("RoleBinding", "rbac.authorization.k8s.io/v1"),
+                ]
+                # Note: Custom resources and CRDs may not be in this list.
+                # Use dynamic_discovery=True for comprehensive cleanup.
 
         total_deleted = 0
         body = k8s_client.V1DeleteOptions()
