@@ -216,10 +216,8 @@ class KubernetesTemplateEngine:
         Returns:
             Sanitized Kubernetes name.
         """
-        # Use ZenML's standard sanitization logic
         sanitized = kube_utils.sanitize_label(value)
 
-        # Apply custom max_length if different from default
         if max_length != 63 and len(sanitized) > max_length:
             sanitized = sanitized[:max_length].rstrip("-")
 
@@ -249,13 +247,13 @@ class KubernetesTemplateEngine:
         label = re.sub(r"^[^a-zA-Z0-9]+", "", label)
         label = re.sub(r"[^a-zA-Z0-9]+$", "", label)
 
-        # Truncate and clean up trailing special chars
         if len(label) > max_length:
             label = label[:max_length].rstrip("._-")
 
         return label
 
-    def _determine_default_manifest_dir(self, deployment_name: str) -> str:
+    @staticmethod
+    def _determine_default_manifest_dir(deployment_name: str) -> str:
         """Determine the default local manifest directory for a deployment.
 
         Tries in order:
@@ -271,7 +269,6 @@ class KubernetesTemplateEngine:
         """
         from zenml.client import Client
 
-        # Try: ZenML repository root
         try:
             repo_root = Client.find_repository()
             if repo_root is not None:
@@ -282,7 +279,6 @@ class KubernetesTemplateEngine:
         except Exception as e:
             logger.debug("Could not use repository root for manifests: %s", e)
 
-        # Try: Source code root
         try:
             source_root = source_utils.get_source_root()
             if source_root:
@@ -293,7 +289,6 @@ class KubernetesTemplateEngine:
         except Exception as e:
             logger.debug("Could not use source root for manifests: %s", e)
 
-        # Fallback: Temp directory with warning
         temp_base = os.path.join(tempfile.gettempdir(), "zenml-k8s")
         fallback_dir = os.path.join(temp_base, deployment_name)
         logger.warning(
@@ -303,96 +298,6 @@ class KubernetesTemplateEngine:
             fallback_dir,
         )
         return fallback_dir
-
-    def save_manifest(
-        self,
-        manifest: str,
-        output_path: PathType,
-    ) -> str:
-        """Save a rendered manifest to local filesystem.
-
-        Args:
-            manifest: The rendered YAML manifest.
-            output_path: Local filesystem path where the manifest should be saved.
-
-        Returns:
-            Path to the saved file as a string.
-
-        Raises:
-            ValueError: If a remote path is provided.
-        """
-        output_path_str = str(output_path)
-
-        # Enforce local-only storage
-        if io_utils.is_remote(output_path_str):
-            raise ValueError(
-                f"Remote paths are not supported for manifest storage: {output_path_str}. "
-                "Manifests must be saved to the local filesystem. "
-                "If you need to persist manifests remotely, commit them to Git or use CI artifact storage."
-            )
-        output_path_str = io_utils.resolve_relative_path(output_path_str)
-
-        parent_dir = os.path.dirname(output_path_str)
-        if parent_dir:
-            os.makedirs(parent_dir, exist_ok=True)
-
-        with open(output_path_str, "w") as f:
-            f.write(manifest)
-
-        logger.debug("Saved manifest to %s", output_path_str)
-        return output_path_str
-
-    def save_manifests(
-        self,
-        manifests: Dict[str, str],
-        deployment_name: str,
-        output_dir: Optional[PathType] = None,
-    ) -> str:
-        """Save multiple rendered manifests to local filesystem.
-
-        Args:
-            manifests: Dictionary mapping filename to YAML content.
-            deployment_name: Name of the deployment (used for directory name).
-            output_dir: Optional custom local directory. If not provided,
-                uses project root '.zenml-deployments/' directory or temp directory as fallback.
-
-        Returns:
-            Local filesystem path to the directory containing all saved manifests.
-
-        Raises:
-            ValueError: If a remote path is provided.
-        """
-        if output_dir is not None:
-            output_dir_str = str(output_dir)
-            if io_utils.is_remote(output_dir_str):
-                raise ValueError(
-                    f"Remote paths are not supported for manifest storage: {output_dir_str}. "
-                    "Manifests must be saved to the local filesystem. "
-                    "If you need to persist manifests remotely, commit them to Git or use CI artifact storage."
-                )
-
-            base_dir = io_utils.resolve_relative_path(output_dir_str)
-            manifest_dir = os.path.join(base_dir, deployment_name)
-        else:
-            manifest_dir = self._determine_default_manifest_dir(
-                deployment_name
-            )
-
-        os.makedirs(manifest_dir, exist_ok=True)
-
-        for filename, content in manifests.items():
-            destination_path = os.path.join(manifest_dir, filename)
-            self.save_manifest(manifest=content, output_path=destination_path)
-
-        logger.info(
-            "Saved %s Kubernetes manifest(s) to %s",
-            len(manifests),
-            manifest_dir,
-        )
-        logger.info(
-            "💡 Tip: Commit manifests to Git for version control and team collaboration."
-        )
-        return manifest_dir
 
     def save_k8s_objects(
         self,
@@ -427,31 +332,29 @@ class KubernetesTemplateEngine:
             base_dir = io_utils.resolve_relative_path(output_dir_str)
             manifest_dir = os.path.join(base_dir, deployment_name)
         else:
-            manifest_dir = self._determine_default_manifest_dir(
-                deployment_name
+            manifest_dir = (
+                KubernetesTemplateEngine._determine_default_manifest_dir(
+                    deployment_name
+                )
             )
 
         os.makedirs(manifest_dir, exist_ok=True)
 
         saved_files = []
         for idx, k8s_obj in enumerate(k8s_objects):
-            # Convert Kubernetes API object to dictionary
             if not hasattr(k8s_obj, "to_dict"):
                 raise ValueError(
                     f"Object at index {idx} does not have a to_dict() method"
                 )
             obj_dict = k8s_obj.to_dict()
 
-            # Clean up Kubernetes internal metadata for readable output
             obj_dict = self._clean_k8s_resource_dict(obj_dict)
 
-            # Generate filename based on resource kind and name
             kind = obj_dict.get("kind", "unknown").lower()
             name = obj_dict.get("metadata", {}).get("name", f"resource-{idx}")
             filename = f"{kind}-{name}.yaml"
             filepath = os.path.join(manifest_dir, filename)
 
-            # Write to YAML file
             with open(filepath, "w") as f:
                 yaml.dump(
                     obj_dict, f, default_flow_style=False, sort_keys=False
@@ -480,24 +383,20 @@ class KubernetesTemplateEngine:
         Returns:
             Cleaned dictionary with only user-relevant fields.
         """
-        # Remove top-level status (server-managed runtime state)
         obj_dict.pop("status", None)
 
-        # Clean metadata
         metadata = obj_dict.get("metadata", {})
         if metadata:
-            # Remove server-managed metadata fields
             for field in [
-                "managedFields",  # SSA field ownership tracking
-                "uid",  # Server-assigned unique ID
-                "resourceVersion",  # Internal versioning
-                "generation",  # Update counter
-                "creationTimestamp",  # Server timestamp
-                "selfLink",  # Deprecated API link
+                "managedFields",
+                "uid",
+                "resourceVersion",
+                "generation",
+                "creationTimestamp",
+                "selfLink",
             ]:
                 metadata.pop(field, None)
 
-            # Keep only non-empty metadata fields
             obj_dict["metadata"] = {
                 k: v
                 for k, v in metadata.items()
@@ -535,7 +434,6 @@ class KubernetesTemplateEngine:
         """
         context = context or {}
 
-        # Check if this is a Jinja2 template file
         if template_or_file.endswith(".j2"):
             return self._render_jinja_template(template_or_file, context)
         else:
@@ -571,7 +469,7 @@ class KubernetesTemplateEngine:
         rendered = template.render(**context)
 
         try:
-            resources = self.load_yaml_documents(rendered)
+            resources = KubernetesTemplateEngine.load_yaml_documents(rendered)
         except ValueError as e:
             raise ValueError(
                 f"Failed to parse template {template_name}: {e}"
@@ -607,19 +505,19 @@ class KubernetesTemplateEngine:
 
             yaml_content = io_utils.read_file_contents_as_string(file_path_str)
 
-            # Apply templating if context provided
             if context:
                 template = self.env.from_string(yaml_content)
                 yaml_content = template.render(**context)
 
             try:
-                yaml_docs = self.load_yaml_documents(yaml_content)
+                yaml_docs = KubernetesTemplateEngine.load_yaml_documents(
+                    yaml_content
+                )
             except ValueError as e:
                 raise ValueError(
                     f"Failed to parse YAML from {file_path}: {e}"
                 ) from e
 
-            # Validate and collect resources
             resources: List[Dict[str, Any]] = []
             for index, doc in enumerate(yaml_docs):
                 try:
@@ -649,35 +547,6 @@ class KubernetesTemplateEngine:
                 f"Failed to load resource file '{file_path}': {e}"
             ) from e
 
-    def render_templates(
-        self,
-        templates_or_files: List[str],
-        context: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Render multiple templates or files and return all resources.
-
-        Args:
-            templates_or_files: List of template names or file paths.
-            context: Dictionary of variables to pass to templates.
-
-        Returns:
-            List of all resource dictionaries from all templates/files.
-
-        Raises:
-            ValueError: If any template/file is invalid.
-        """
-        all_resources: List[Dict[str, Any]] = []
-
-        for item in templates_or_files:
-            if not isinstance(item, str):
-                logger.warning("Skipping non-string template/file: %s", item)
-                continue
-
-            resources = self.render_template(item, context)
-            all_resources.extend(resources)
-
-        return all_resources
-
     def list_available_templates(self) -> List[str]:
         """List all available template files.
 
@@ -693,7 +562,8 @@ class KubernetesTemplateEngine:
                     templates.add(str(rel_path))
         return sorted(templates)
 
-    def load_yaml_documents(self, yaml_content: str) -> List[Dict[str, Any]]:
+    @staticmethod
+    def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
         """Load one or more YAML documents from a string.
 
         Handles both single-document and multi-document YAML (with --- separators).
@@ -727,8 +597,8 @@ class KubernetesTemplateEngine:
 
         return resources
 
+    @staticmethod
     def dump_yaml_documents(
-        self,
         documents: List[Dict[str, Any]],
         sort_keys: bool = False,
     ) -> str:

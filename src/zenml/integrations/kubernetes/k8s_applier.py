@@ -37,8 +37,8 @@ def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
     Args:
         objs: Iterable of resource dicts (already normalized). Supports 'kind: List'.
 
-    Returns:
-        Iterable of individual resource dicts.
+    Yields:
+        Individual resource dicts.
     """
     for o in objs:
         if (
@@ -124,15 +124,10 @@ class KubernetesApplier:
 
         Returns:
             The applied Kubernetes resource
-
-        Raises:
-            ApiException: On API errors
         """
-        # Use DynamicClient to get the right API for this resource type
         api_version = resource.get("apiVersion", "v1")
         kind = resource.get("kind")
 
-        # Get resource API from dynamic client
         api_resource = self.dynamic.resources.get(
             api_version=api_version, kind=kind
         )
@@ -141,7 +136,6 @@ class KubernetesApplier:
         resource_name = metadata.get("name")
         resource_namespace = metadata.get("namespace") or namespace
 
-        # Use server_side_apply method which properly handles SSA
         kwargs = {
             "body": resource,
             "name": resource_name,
@@ -153,15 +147,12 @@ class KubernetesApplier:
         if field_manager:
             kwargs["field_manager"] = field_manager
         if force:
-            kwargs["force_conflicts"] = (
-                True  # DynamicClient uses force_conflicts parameter
-            )
+            kwargs["force_conflicts"] = True
         if dry_run:
             kwargs["dry_run"] = "All"
         if timeout is not None:
             kwargs["_request_timeout"] = timeout
 
-        # Use server_side_apply from DynamicClient
         return self.dynamic.server_side_apply(resource=api_resource, **kwargs)
 
     # --------------------------------------------------------------------- #
@@ -195,13 +186,12 @@ class KubernetesApplier:
             A list of Kubernetes API objects returned by the server.
 
         Raises:
-            FailToCreateError: If the server rejects creation/patch of a resource.
             ValueError: If an input resource is invalid.
-            ApiException: For underlying API errors (e.g., RBAC, validation).
+            RuntimeError: If provisioning of a resource fails.
+            Exception: For unexpected errors during provisioning.
         """
         results: List[Any] = []
 
-        # Convert all resources to dicts and flatten
         all_resources = list(
             _flatten_items([_to_dict(o, self.api_client) for o in objs])
         )
@@ -233,8 +223,6 @@ class KubernetesApplier:
                     kwargs["_request_timeout"] = timeout
 
                 try:
-                    # Use Server-Side Apply (SSA) by calling patch with apply content-type
-                    # This handles both create and update operations
                     created = self._apply_resource(
                         raw,
                         field_manager=field_manager,
@@ -244,7 +232,6 @@ class KubernetesApplier:
                         timeout=timeout,
                     )
 
-                    # Track namespaces we created during dry-run
                     if dry_run and is_namespace:
                         ns_name = (raw.get("metadata") or {}).get("name")
                         if ns_name:
@@ -253,7 +240,6 @@ class KubernetesApplier:
                                 f"Created namespace '{ns_name}' for dry-run validation"
                             )
 
-                    # _apply_resource returns a single object
                     results.append(created)
 
                 except ApiException as e:
@@ -274,7 +260,6 @@ class KubernetesApplier:
                         results.append(None)
                         continue
 
-                    # Re-raise other API errors
                     raise
                 except Exception as exc:
                     if isinstance(exc, (KeyboardInterrupt, SystemExit)):
@@ -305,7 +290,6 @@ class KubernetesApplier:
                             f"Failed to clean up namespace '{ns_name}': {e}"
                         )
 
-        # Filter out None values (from skipped validation)
         return [r for r in results if r is not None]
 
     # --------------------------------------------------------------------- #
@@ -338,9 +322,6 @@ class KubernetesApplier:
 
         Returns:
             Total number of resources deleted.
-
-        Raises:
-            ApiException: For API failures.
         """
         if kinds is None:
             # Common namespaced resource types (in reverse dependency order)
@@ -370,7 +351,6 @@ class KubernetesApplier:
                     api_version=api_version, kind=kind
                 )
 
-                # List resources matching the label selector
                 items = res.get(
                     namespace=namespace,
                     label_selector=label_selector,
@@ -380,7 +360,6 @@ class KubernetesApplier:
                 if not resources_list:
                     continue
 
-                # Delete each resource
                 for item in resources_list:
                     name = item.metadata.name
                     kwargs: Dict[str, Any] = {"namespace": namespace}
@@ -398,12 +377,10 @@ class KubernetesApplier:
 
             except ApiException as e:
                 if e.status == 404:
-                    # Resource type doesn't exist in this cluster
                     logger.debug(
                         f"Resource type {kind} ({api_version}) not found, skipping"
                     )
                     continue
-                # Log but don't fail on individual resource type errors
                 logger.warning(
                     f"Failed to delete {kind} resources: {e.reason}"
                 )
@@ -421,7 +398,20 @@ class KubernetesApplier:
         kind: str,
         api_version: str,
     ) -> Optional[Any]:
-        """Fetch a single resource or return None if not found."""
+        """Fetch a single resource or return None if not found.
+
+        Args:
+            name: Resource name.
+            namespace: Namespace (ignored for cluster-scoped kinds).
+            kind: Kinds like 'Deployment', 'Service', etc.
+            api_version: API version string, e.g., 'apps/v1'.
+
+        Returns:
+            The resource object if found, None otherwise.
+
+        Raises:
+            ApiException: On API errors.
+        """
         res = self.dynamic.resources.get(api_version=api_version, kind=kind)
         kwargs: Dict[str, Any] = {"name": name}
         if namespace and res.namespaced:
@@ -440,7 +430,17 @@ class KubernetesApplier:
         namespace: Optional[str] = None,
         label_selector: Optional[str] = None,
     ) -> List[Any]:
-        """List resources of a given kind/apiVersion (optionally by namespace/labels)."""
+        """List resources of a given kind/apiVersion (optionally by namespace/labels).
+
+        Args:
+            kind: Kinds like 'Deployment', 'Service', etc.
+            api_version: API version string, e.g., 'apps/v1'.
+            namespace: Namespace (ignored for cluster-scoped kinds).
+            label_selector: Optional label selector to filter resources.
+
+        Returns:
+            A list of resources.
+        """
         res = self.dynamic.resources.get(api_version=api_version, kind=kind)
         kwargs: Dict[str, Any] = {}
         if namespace and res.namespaced:
@@ -499,7 +499,17 @@ class KubernetesApplier:
         timeout: int = 300,
         check_interval: int = 5,
     ) -> Any:
-        """Wait for a Deployment (apps/v1) to report Available=True."""
+        """Wait for a Deployment (apps/v1) to report Available=True.
+
+        Args:
+            name: Resource name.
+            namespace: Namespace (ignored for cluster-scoped kinds).
+            timeout: Max seconds to wait.
+            check_interval: Seconds between polls.
+
+        Returns:
+            The resource object if found, None otherwise.
+        """
 
         def _ready(dep: Any) -> bool:
             d = dep.to_dict() if hasattr(dep, "to_dict") else dep
@@ -527,7 +537,20 @@ class KubernetesApplier:
         timeout: int = 300,
         check_interval: int = 5,
     ) -> str:
-        """Wait for a LoadBalancer Service to publish an external IP/hostname."""
+        """Wait for a LoadBalancer Service to publish an external IP/hostname.
+
+        Args:
+            name: Service name.
+            namespace: Kubernetes namespace.
+            timeout: Maximum time to wait in seconds.
+            check_interval: Time between checks in seconds.
+
+        Returns:
+            The external IP or hostname of the LoadBalancer.
+
+        Raises:
+            RuntimeError: If timeout is reached or service has no external IP.
+        """
         svc = self.wait_for_resource_condition(
             name,
             namespace,

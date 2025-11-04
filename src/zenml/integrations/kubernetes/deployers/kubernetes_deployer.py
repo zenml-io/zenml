@@ -489,10 +489,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         snapshot = deployment.snapshot
         assert snapshot, "Pipeline snapshot not found"
 
-        # Initialize basic context
         self._initialize_deployment_context(deployment)
 
-        # Set up engine and image for rendering
         self._engine = KubernetesTemplateEngine(
             custom_templates_dir=self._settings.custom_templates_dir
             or self.config.custom_templates_dir
@@ -510,7 +508,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Invalid resource settings for deployment '{deployment.name}': {e}"
             ) from e
 
-        # Prepare secrets
         secret_key_map: Dict[str, str] = {}
         sanitized = {}
         for key, value in secrets.items():
@@ -553,7 +550,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             namespace_resource(namespace=self._namespace)
         ]
 
-        # Create Secret resource if there are secret environment variables
         if sanitized:
             from zenml.integrations.kubernetes.manifest_utils import (
                 build_secret_manifest,
@@ -564,7 +560,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 data=sanitized,
                 namespace=self._namespace,
             )
-            # Convert to dict for consistency with other resources
             rendered_resources.append(
                 self.k8s_applier.api_client.sanitize_for_serialization(
                     secret_manifest
@@ -627,10 +622,9 @@ class KubernetesDeployer(ContainerizedDeployer):
             dry_run=True,
         )
 
-        # Save validated resources as YAML files
-        saved_files = self._engine.save_k8s_objects(
-            validated_objects, deployment.name
-        )
+        saved_files = cast(
+            KubernetesTemplateEngine, self._engine
+        ).save_k8s_objects(validated_objects, deployment.name)
 
         logger.info(f"✅ Saved {len(saved_files)} validated YAML file(s):")
         for filepath in saved_files:
@@ -792,7 +786,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
 
             status = DeploymentStatus.PENDING
-            # Convert ResourceField to dict for reliable access
             if hasattr(k8s_deployment, "to_dict"):
                 deployment_dict = k8s_deployment.to_dict()
                 status_data = deployment_dict.get("status", {})
@@ -800,7 +793,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 available = status_data.get("availableReplicas", 0)
                 desired = spec_data.get("replicas", 0)
             else:
-                # Fallback to attribute access
                 if k8s_deployment.status:
                     available = k8s_deployment.status.available_replicas or 0
                     desired = k8s_deployment.spec.replicas or 0
@@ -937,7 +929,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentDeprovisionError: If deprovisioning fails.
-            DeploymentNotFoundError: If deployment not found.
         """
         # Initialize context to get namespace
         self._initialize_deployment_context(deployment)
