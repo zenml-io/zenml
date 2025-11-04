@@ -249,6 +249,153 @@ class DockerDeployer(ContainerizedDeployer):
 
         return state
 
+    def do_dry_run_deployment(
+        self,
+        deployment: DeploymentResponse,
+        stack: "Stack",
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> None:
+        """Perform dry-run validation without actually deploying.
+
+        Validates Docker configuration, checks image availability, validates ports,
+        and logs what would be executed without actually running the container.
+
+        Args:
+            deployment: The deployment to validate.
+            stack: The stack to use.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Raises:
+            DeploymentProvisionError: If validation fails.
+        """
+        assert deployment.snapshot, "Pipeline snapshot not found"
+        snapshot = deployment.snapshot
+
+        logger.info(
+            f"\n{'=' * 70}\n"
+            f"🧪 DRY-RUN MODE: Validating '{deployment.name}'\n"
+            f"{'=' * 70}"
+        )
+
+        # Merge secrets into environment variables
+        environment.update(secrets)
+
+        settings = cast(
+            DockerDeployerSettings,
+            self.get_settings(snapshot),
+        )
+
+        # Validate image exists or can be pulled
+        image = self.get_image(deployment.snapshot)
+        try:
+            self.docker_client.images.get(image)
+            logger.info(f"✅ Docker image found locally: {image}")
+        except docker_errors.ImageNotFound:
+            logger.info(
+                f"⚠️  Docker image not found locally: {image}\n"
+                f"   Would pull image on actual deployment"
+            )
+
+        # Check port availability
+        preferred_ports: List[int] = []
+        if settings.port:
+            preferred_ports.append(settings.port)
+
+        try:
+            port = lookup_preferred_or_free_port(
+                preferred_ports=preferred_ports,
+                allocate_port_if_busy=settings.allocate_port_if_busy,
+                range=settings.port_range,
+                address="0.0.0.0",  # nosec
+            )
+        except IOError as e:
+            raise DeploymentProvisionError(
+                f"Port validation failed: {e}"
+            ) from e
+
+        container_port = (
+            snapshot.pipeline_configuration.deployment_settings.uvicorn_port
+        )
+
+        # Validate local stores path
+        stack.check_local_paths()
+        local_stores_path = GlobalConfiguration().local_stores_path
+
+        # Build entrypoint and arguments
+        entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
+        entrypoint_kwargs = {
+            DEPLOYMENT_ID_OPTION: deployment.id,
+        }
+        arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(
+            **entrypoint_kwargs
+        )
+
+        # Build volume mounts
+        volumes = {
+            local_stores_path: {
+                "bind": local_stores_path,
+                "mode": "rw",
+            }
+        }
+
+        # Build environment with local stores path
+        full_environment = dict(environment)
+        full_environment[ENV_ZENML_LOCAL_STORES_PATH] = local_stores_path
+
+        # Get additional run args
+        run_args = copy.deepcopy(settings.run_args)
+        docker_environment = run_args.pop("environment", {})
+        docker_environment.update(full_environment)
+        docker_volumes = run_args.pop("volumes", {})
+        docker_volumes.update(volumes)
+
+        # Log configuration details
+        logger.info("✅ Configuration validated:")
+        logger.info(f"   └─ Container image: {image}")
+        logger.info(
+            f"   └─ Container name: {self._get_container_id(deployment)}"
+        )
+        logger.info(f"   └─ Host port: {port}")
+        logger.info(f"   └─ Container port: {container_port}")
+        logger.info(f"   └─ Environment variables: {len(docker_environment)}")
+        logger.info(f"   └─ Volume mounts: {len(docker_volumes)}")
+        logger.info(f"   └─ Additional run args: {len(run_args)}")
+
+        # Build docker run command for reference
+        cmd_parts = ["docker", "run", "-d"]
+        cmd_parts.extend(["--name", self._get_container_id(deployment)])
+        cmd_parts.extend(["-p", f"{port}:{container_port}/tcp"])
+
+        for key, value in docker_environment.items():
+            # Truncate secret values for display
+            display_value = (
+                value if len(value) <= 20 else f"{value[:10]}...{value[-10:]}"
+            )
+            cmd_parts.extend(["-e", f"{key}={display_value}"])
+
+        for host_path, mount_config in docker_volumes.items():
+            bind_path = mount_config.get("bind", host_path)
+            mode = mount_config.get("mode", "rw")
+            cmd_parts.extend(["-v", f"{host_path}:{bind_path}:{mode}"])
+
+        cmd_parts.extend(["--entrypoint", " ".join(entrypoint)])
+        cmd_parts.append(image)
+        cmd_parts.extend(arguments)
+
+        logger.info(
+            f"\n{'=' * 70}\n"
+            f"✅ DRY-RUN SUCCESSFUL!\n"
+            f"{'=' * 70}\n"
+            f"📋 Deployment: {deployment.name}\n"
+            f"🐳 Container: {self._get_container_id(deployment)}\n"
+            f"🌐 Would be accessible at: http://localhost:{port}\n"
+            f"📦 Image: {image}\n"
+            f"\n💡 To deploy for real: Remove --dry-run flag\n"
+            f"{'=' * 70}"
+        )
+
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,

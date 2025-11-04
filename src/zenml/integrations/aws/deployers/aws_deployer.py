@@ -1198,6 +1198,31 @@ class AWSDeployer(ContainerizedDeployer):
 
         return min_replicas, max_replicas, max_concurrency
 
+    def do_dry_run_deployment(
+        self,
+        deployment: DeploymentResponse,
+        stack: "Stack",
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> None:
+        """Perform dry-run validation without actually deploying.
+
+        Note: Dry-run mode is not yet implemented for AWS App Runner deployer.
+
+        Args:
+            deployment: The deployment to validate.
+            stack: The stack to use.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Raises:
+            DeployerError: Always raises to indicate dry-run is not implemented.
+        """
+        raise DeployerError(
+            "Dry-run mode is not yet implemented for the AWS App Runner deployer. "
+            "Please deploy without the --dry-run flag."
+        )
+
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,

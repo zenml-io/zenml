@@ -196,6 +196,92 @@ class LocalDeployer(BaseDeployer):
         return os.path.join(self._runtime_dir(deployment_id), "daemon.log")
 
     # ---------- LCM Operations ----------
+    def do_dry_run_deployment(
+        self,
+        deployment: DeploymentResponse,
+        stack: "Stack",
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> None:
+        """Perform dry-run validation without actually deploying.
+
+        Validates deployment configuration, checks port availability, and logs
+        what would be done without starting the actual daemon process.
+
+        Args:
+            deployment: The deployment to validate.
+            stack: The stack to use (unused for local deployer).
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Raises:
+            DeploymentProvisionError: If validation fails.
+        """
+        assert deployment.snapshot, "Pipeline snapshot not found"
+
+        logger.info(
+            f"\n{'=' * 70}\n"
+            f"🧪 DRY-RUN MODE: Validating '{deployment.name}'\n"
+            f"{'=' * 70}"
+        )
+
+        settings = cast(
+            LocalDeployerSettings,
+            self.get_settings(deployment.snapshot),
+        )
+
+        # Validate address is a valid IP address
+        try:
+            ipaddress.ip_address(settings.address)
+        except ValueError as e:
+            raise DeploymentProvisionError(
+                f"Invalid address: {settings.address}. Must be a valid IP address."
+            ) from e
+
+        # Check port availability
+        preferred_ports: List[int] = []
+        if settings.port:
+            preferred_ports.append(settings.port)
+
+        try:
+            port = lookup_preferred_or_free_port(
+                preferred_ports=preferred_ports,
+                allocate_port_if_busy=settings.allocate_port_if_busy,
+                range=settings.port_range,
+                address=settings.address,
+            )
+        except IOError as e:
+            raise DeploymentProvisionError(
+                f"Port validation failed: {e}"
+            ) from e
+
+        address = settings.address
+        if address == "0.0.0.0":  # nosec
+            address = "localhost"
+        url = f"http://{address}:{port}"
+
+        # Log configuration details
+        logger.info("✅ Configuration validated:")
+        logger.info(f"   └─ Port: {port}")
+        logger.info(f"   └─ Address: {settings.address}")
+        logger.info(f"   └─ URL: {url}")
+        logger.info(f"   └─ Blocking: {settings.blocking}")
+        logger.info(f"   └─ Auto-reload: {settings.auto_reload}")
+        logger.info(f"   └─ Environment variables: {len(environment)}")
+        logger.info(f"   └─ Secrets: {len(secrets)}")
+
+        logger.info(
+            f"\n{'=' * 70}\n"
+            f"✅ DRY-RUN SUCCESSFUL!\n"
+            f"{'=' * 70}\n"
+            f"📋 Deployment: {deployment.name}\n"
+            f"🌐 Would be accessible at: {url}\n"
+            f"🔧 Runtime directory: {self._runtime_dir(deployment.id)}\n"
+            f"📝 Log file: {self._log_file_path(deployment.id)}\n"
+            f"\n💡 To deploy for real: Remove --dry-run flag\n"
+            f"{'=' * 70}"
+        )
+
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,
