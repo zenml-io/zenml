@@ -512,10 +512,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         sanitized = {}
         for key, value in secrets.items():
             sanitized_key = self._sanitize_secret_key(key, secret_key_map)
-            if sanitized_key != key:
-                logger.warning(
-                    f"Secret key '{key}' sanitized to '{sanitized_key}'"
-                )
             sanitized[sanitized_key] = value
 
         context = self._build_template_context(
