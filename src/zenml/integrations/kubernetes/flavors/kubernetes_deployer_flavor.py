@@ -53,7 +53,7 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
 
     Advanced Settings:
         pod_settings: Advanced pod configuration (volumes, affinity, tolerations, etc.).
-        additional_resources: List of complete K8s resource manifests as dicts or file paths.
+        additional_resources: Paths to YAML files with additional K8s resources.
         custom_templates_dir: Path to custom Jinja2 templates for Deployment/Service.
           Use this to customize health probes, service annotations, etc.
 
@@ -377,6 +377,8 @@ class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
         Returns:
             True if using a local Kubernetes cluster, False otherwise.
         """
+        if self.local:
+            return True
         if self.kubernetes_context:
             local_context_indicators = [
                 "k3d-",
