@@ -51,6 +51,7 @@
   * [Comet](experiment-trackers/comet.md)
   * [MLflow](experiment-trackers/mlflow.md)
   * [Neptune](experiment-trackers/neptune.md)
+  * [Trackio](experiment-trackers/trackio.md)
   * [Weights & Biases](experiment-trackers/wandb.md)
   * [Google Cloud VertexAI Experiment Tracker](experiment-trackers/vertexai.md)
   * [Develop a custom experiment tracker](experiment-trackers/custom.md)
