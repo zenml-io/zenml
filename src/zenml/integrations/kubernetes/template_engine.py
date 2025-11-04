@@ -28,7 +28,6 @@ from jinja2 import (
     TemplateNotFound,
     Undefined,
 )
-from pydantic import BaseModel, ConfigDict
 
 from zenml.integrations.kubernetes import kube_utils
 from zenml.io import fileio
@@ -37,16 +36,6 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils, source_utils
 
 logger = get_logger(__name__)
-
-
-class RenderedKubernetesManifest(BaseModel):
-    """Bundle containing various representations of rendered manifest resources."""
-
-    resources: List[Dict[str, Any]]
-    template_yaml: str
-    canonical_yaml: str
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class KubernetesTemplateEngine:
@@ -127,12 +116,11 @@ class KubernetesTemplateEngine:
             resolved = io_utils.resolve_relative_path(path)
 
         if fileio.exists(resolved):
-            logger.info("Using custom Kubernetes templates from: %s", resolved)
+            logger.info(f"Using custom Kubernetes templates from: {resolved}")
             return resolved
         else:
             logger.warning(
-                "Custom template directory not found: %s, falling back to built-in templates",
-                resolved,
+                f"Custom template directory not found: {resolved}, falling back to built-in templates"
             )
             return None
 
@@ -277,7 +265,7 @@ class KubernetesTemplateEngine:
                 )
                 return str(manifest_path)
         except Exception as e:
-            logger.debug("Could not use repository root for manifests: %s", e)
+            logger.debug(f"Could not use repository root for manifests: {e}")
 
         try:
             source_root = source_utils.get_source_root()
@@ -287,15 +275,14 @@ class KubernetesTemplateEngine:
                 )
                 return str(manifest_path)
         except Exception as e:
-            logger.debug("Could not use source root for manifests: %s", e)
+            logger.debug(f"Could not use source root for manifests: {e}")
 
         temp_base = os.path.join(tempfile.gettempdir(), "zenml-k8s")
         fallback_dir = os.path.join(temp_base, deployment_name)
         logger.warning(
-            "Could not determine project root. Saving manifests to temporary directory: %s. "
-            "These manifests may be lost on system restart. "
-            "Consider running from a ZenML repository or specifying manifest_output_dir.",
-            fallback_dir,
+            f"Could not determine project root. Saving manifests to temporary directory: {fallback_dir}. "
+            f"These manifests may be lost on system restart. "
+            f"Consider running from a ZenML repository or specifying manifest_output_dir."
         )
         return fallback_dir
 
@@ -363,9 +350,7 @@ class KubernetesTemplateEngine:
             saved_files.append(filepath)
 
         logger.info(
-            "Saved %s validated Kubernetes manifest(s) to %s",
-            len(saved_files),
-            manifest_dir,
+            f"Saved {len(saved_files)} validated Kubernetes manifest(s) to {manifest_dir}"
         )
         return saved_files
 
@@ -521,17 +506,12 @@ class KubernetesTemplateEngine:
                     resources.append(doc)
                 except ValueError as e:
                     logger.warning(
-                        "Skipping invalid Kubernetes resource in %s (doc %d): %s",
-                        file_path,
-                        index,
-                        e,
+                        f"Skipping invalid Kubernetes resource in {file_path} (doc {index}): {e}"
                     )
 
             if resources:
                 logger.info(
-                    "Loaded %d resource(s) from %s",
-                    len(resources),
-                    Path(file_path).name,
+                    f"Loaded {len(resources)} resource(s) from {Path(file_path).name}"
                 )
 
             return resources

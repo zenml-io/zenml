@@ -77,8 +77,6 @@ class KubernetesDeployer(ContainerizedDeployer):
     """Kubernetes deployer using template-based resource management."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
-    _applier: Optional[KubernetesApplier] = None
-    _engine: Optional[KubernetesTemplateEngine] = None
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Kubernetes deployer.
@@ -87,6 +85,16 @@ class KubernetesDeployer(ContainerizedDeployer):
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
+
+        self._namespace: Optional[str] = None
+        self._resource_name: Optional[str] = None
+        self._labels: Optional[Dict[str, str]] = None
+        self._settings: Optional[KubernetesDeployerSettings] = None
+        self._deployment_id: Optional[str] = None
+        self._image: Optional[str] = None
+        self._secret_name: Optional[str] = None
+        self._engine: Optional[KubernetesTemplateEngine] = None
+        self._applier: Optional[KubernetesApplier] = None
 
     # ========================================================================
     # Kubernetes Client Management
@@ -317,7 +325,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         return context
 
     # ========================================================================
-    # Resource Deletion
+    # Secret Key Sanitization
     # ========================================================================
 
     def _sanitize_secret_key(
@@ -426,6 +434,32 @@ class KubernetesDeployer(ContainerizedDeployer):
     # Provisioning
     # ========================================================================
 
+    def _cleanup_failed_deployment(
+        self, deployment: DeploymentResponse
+    ) -> None:
+        """Cleanup resources after deployment failure.
+
+        Args:
+            deployment: The deployment whose resources should be cleaned up.
+        """
+        label_selector = f"zenml-deployment-id={deployment.id}"
+        logger.warning(
+            f"Provisioning failed, cleaning up resources with label: {label_selector}"
+        )
+        try:
+            deleted_count = self.k8s_applier.delete_by_label_selector(
+                label_selector=label_selector,
+                namespace=self._namespace,
+                propagation_policy="Foreground",
+            )
+            logger.info(f"Cleanup deleted {deleted_count} resource(s)")
+        except Exception as cleanup_error:
+            logger.error(
+                f"Cleanup failed: {cleanup_error}. "
+                f"Manual cleanup: kubectl delete all,configmap,secret "
+                f"-n {self._namespace} -l {label_selector}"
+            )
+
     def _initialize_deployment_context(
         self, deployment: DeploymentResponse
     ) -> None:
@@ -466,6 +500,42 @@ class KubernetesDeployer(ContainerizedDeployer):
         }
         if self._settings.labels:
             self._labels.update(**self._settings.labels)
+
+    def _save_and_print_manifests(
+        self,
+        resources: List[Any],
+        deployment: DeploymentResponse,
+    ) -> None:
+        """Conditionally save and/or print manifests based on settings.
+
+        Args:
+            resources: Kubernetes resources to save/print.
+            deployment: The deployment these manifests belong to.
+        """
+        if self._settings.save_manifests:
+            saved_files = cast(
+                KubernetesTemplateEngine, self._engine
+            ).save_k8s_objects(
+                resources,
+                deployment.name,
+                output_dir=self._settings.manifest_output_dir,
+            )
+            logger.info(f"✅ Saved {len(saved_files)} manifest file(s):")
+            for filepath in saved_files:
+                logger.info(f"   └─ {filepath}")
+
+        if self._settings.print_manifests:
+            yaml_content = KubernetesTemplateEngine.dump_yaml_documents(
+                [
+                    self.k8s_applier.api_client.sanitize_for_serialization(r)
+                    for r in resources
+                ]
+            )
+            logger.info(f"\n{'=' * 70}")
+            logger.info("Generated Kubernetes Manifests:")
+            logger.info(f"{'=' * 70}\n")
+            logger.info(yaml_content)
+            logger.info(f"\n{'=' * 70}")
 
     def _prepare_deployment_resources(
         self,
@@ -568,10 +638,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         rendered_resources.extend(
             self._engine.render_template("service.yaml.j2", context)
         )
+
         for additional_resource in self._settings.additional_resources:
-            rendered_resources.extend(
-                self._engine.render_template(additional_resource, context)
-            )
+            try:
+                rendered_resources.extend(
+                    self._engine.render_template(additional_resource, context)
+                )
+            except Exception as e:
+                error_msg = f"Failed to render additional resource '{additional_resource}': {e}"
+                if self._settings.strict_additional_resources:
+                    raise DeploymentProvisionError(error_msg) from e
+                else:
+                    logger.warning(
+                        f"{error_msg}. Skipping (strict_additional_resources=False)"
+                    )
 
         return rendered_resources
 
@@ -609,7 +689,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         )
 
         logger.info(f"✅ Image built and pushed:\n   └─ {self._image}")
-        logger.info("✅ Manifests generated and saved to .zenml-deployments/")
+        logger.info("✅ Manifests generated")
 
         logger.info("\n🔍 Validating manifests with Kubernetes API...")
         validated_objects = self.k8s_applier.provision(
@@ -618,13 +698,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             dry_run=True,
         )
 
-        saved_files = cast(
-            KubernetesTemplateEngine, self._engine
-        ).save_k8s_objects(validated_objects, deployment.name)
+        self._save_and_print_manifests(validated_objects, deployment)
 
-        logger.info(f"✅ Saved {len(saved_files)} validated YAML file(s):")
-        for filepath in saved_files:
-            logger.info(f"   └─ {filepath}")
+        manifest_info = ""
+        if self._settings.save_manifests:
+            manifest_info = (
+                f"💾 Manifests: .zenml-deployments/{deployment.name}/\n"
+            )
 
         logger.info(
             f"\n{'=' * 70}\n"
@@ -633,7 +713,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             f"📋 Namespace: {self._namespace}\n"
             f"📦 Deployment: {self._resource_name}\n"
             f"🔍 Validated {len(validated_objects)} resource(s)\n"
-            f"💾 Manifests: .zenml-deployments/{deployment.name}/\n"
+            f"{manifest_info}"
             f"\n💡 To deploy for real: Remove --dry-run flag\n"
             f"{'=' * 70}"
         )
@@ -665,6 +745,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment, environment, secrets
         )
 
+        self._save_and_print_manifests(rendered_resources, deployment)
+
         try:
             created_objects = self.k8s_applier.provision(
                 rendered_resources,
@@ -675,9 +757,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             logger.info(
                 f"Successfully created {len(created_objects)} Kubernetes resource(s)"
             )
-        except DeploymentProvisionError:
-            raise
         except Exception as e:
+            self._cleanup_failed_deployment(deployment)
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -693,52 +774,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             return self.do_get_deployment_state(deployment)
 
-        except DeploymentProvisionError:
-            raise
-        except ApiException as e:
-            # Cleanup: delete all resources by label selector
-            label_selector = f"zenml-deployment-id={deployment.id}"
-            logger.warning(
-                f"Provisioning failed, cleaning up resources with label: {label_selector}"
-            )
-            try:
-                deleted_count = self.k8s_applier.delete_by_label_selector(
-                    label_selector=label_selector,
-                    namespace=self._namespace,
-                    propagation_policy="Foreground",
-                )
-                logger.info(f"Cleanup deleted {deleted_count} resource(s)")
-            except Exception as cleanup_error:
-                logger.error(
-                    f"Cleanup failed: {cleanup_error}. "
-                    f"Manual cleanup: kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
-                )
-
-            raise DeploymentProvisionError(
-                f"Kubernetes API error while provisioning '{deployment.name}': "
-                f"{e.status} - {e.reason}"
-            ) from e
         except Exception as e:
-            # Cleanup: delete all resources by label selector
-            label_selector = f"zenml-deployment-id={deployment.id}"
-            logger.warning(
-                f"Provisioning failed, cleaning up resources with label: {label_selector}"
-            )
-            try:
-                deleted_count = self.k8s_applier.delete_by_label_selector(
-                    label_selector=label_selector,
-                    namespace=self._namespace,
-                    propagation_policy="Foreground",
-                )
-                logger.info(f"Cleanup deleted {deleted_count} resource(s)")
-            except Exception as cleanup_error:
-                logger.error(
-                    f"Cleanup failed: {cleanup_error}. "
-                    f"Manual cleanup: kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
-                )
-
+            self._cleanup_failed_deployment(deployment)
             raise DeploymentProvisionError(
-                f"Unexpected error provisioning deployment '{deployment.name}': {e}"
+                f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
 
     # ========================================================================

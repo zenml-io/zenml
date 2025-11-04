@@ -15,7 +15,7 @@
 
 import logging
 import time
-from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from kubernetes import client as k8s_client
 from kubernetes.client.exceptions import ApiException
@@ -215,6 +215,12 @@ class KubernetesApplier:
                     kwargs["_request_timeout"] = timeout
 
                 try:
+                    # NOTE: Namespace handling during dry-run
+                    # Namespaces must be created for real (not dry-run) to validate
+                    # resources that reference them. They are deleted in the finally
+                    # block below. This is necessary because Kubernetes API validation
+                    # requires namespaces to exist when validating resources that
+                    # reference them.
                     created = self._apply_resource(
                         raw,
                         field_manager=field_manager,
@@ -229,7 +235,8 @@ class KubernetesApplier:
                         if ns_name:
                             created_namespaces.append(ns_name)
                             logger.debug(
-                                f"Created namespace '{ns_name}' for dry-run validation"
+                                f"Created namespace '{ns_name}' for dry-run validation "
+                                f"(will be deleted after validation)"
                             )
 
                     results.append(created)
@@ -294,7 +301,7 @@ class KubernetesApplier:
         dry_run: bool = False,
         propagation_policy: Optional[str] = "Foreground",
         grace_period_seconds: Optional[int] = None,
-        kinds: Optional[List[tuple[str, str]]] = None,
+        kinds: Optional[List[Tuple[str, str]]] = None,
     ) -> int:
         """Delete resources in a namespace by label selector.
 
