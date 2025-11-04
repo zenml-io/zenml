@@ -140,11 +140,17 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         Args:
             key: The key of the artifact future.
 
+        Raises:
+            KeyError: If no artifact for the given name exists.
+
         Returns:
             The artifact future.
         """
         if key not in self._output_keys:
-            raise KeyError(f"Invalid key: {key}")
+            raise KeyError(
+                f"Step run {self._invocation_id} does not have an output with "
+                f"the name: {key}."
+            )
 
         return ArtifactFuture(
             wrapped=self._wrapped,

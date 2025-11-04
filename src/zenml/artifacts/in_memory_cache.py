@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """In-memory artifact cache."""
 
-from typing import Any
+import contextvars
+from typing import Any, Dict
 from uuid import UUID
 
 from zenml.utils import context_utils
@@ -22,12 +23,12 @@ from zenml.utils import context_utils
 class InMemoryArtifactCache(context_utils.BaseContext):
     """In-memory artifact cache."""
 
-    __context_var__ = context_utils.ContextVar("in_memory_artifact_cache")
+    __context_var__ = contextvars.ContextVar("in_memory_artifact_cache")
 
     def __init__(self) -> None:
         """Initialize the artifact cache."""
         super().__init__()
-        self._cache = {}
+        self._cache: Dict[UUID, Any] = {}
 
     def clear(self) -> None:
         """Clear the artifact cache."""

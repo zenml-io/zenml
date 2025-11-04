@@ -455,11 +455,11 @@ class ArtifactVersionResponse(
         cache = InMemoryArtifactCache.get()
 
         if cache and (data := cache.get_artifact_data(self.id)):
-            logger.debug(f"Returning artifact data (%s) from cache", self.id)
+            logger.debug("Returning artifact data (%s) from cache", self.id)
             return data
 
         data = load_artifact_from_response(self)
-        if not disable_cache:
+        if cache and not disable_cache:
             cache.set_artifact_data(self.id, data)
         return data
 
