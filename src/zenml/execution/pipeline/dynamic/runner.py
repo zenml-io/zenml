@@ -31,6 +31,7 @@ from typing import (
 from uuid import UUID
 
 from zenml import ExternalArtifact
+from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
@@ -150,44 +151,45 @@ class DynamicPipelineRunner:
             snapshot=self._snapshot,
             run_id=self._run.id if self._run else None,
         ) as logs_request:
-            run = self._run or create_placeholder_run(
-                snapshot=self._snapshot,
-                orchestrator_run_id=self._orchestrator_run_id,
-                logs=logs_request,
-            )
+            with InMemoryArtifactCache():
+                run = self._run or create_placeholder_run(
+                    snapshot=self._snapshot,
+                    orchestrator_run_id=self._orchestrator_run_id,
+                    logs=logs_request,
+                )
 
-            assert (
-                self._snapshot.pipeline_spec
-            )  # Always exists for new snapshots
-            pipeline_parameters = self._snapshot.pipeline_spec.parameters
+                assert (
+                    self._snapshot.pipeline_spec
+                )  # Always exists for new snapshots
+                pipeline_parameters = self._snapshot.pipeline_spec.parameters
 
-            with DynamicPipelineRunContext(
-                pipeline=self.pipeline,
-                run=run,
-                snapshot=self._snapshot,
-                runner=self,
-            ):
-                self._orchestrator.run_init_hook(snapshot=self._snapshot)
-                try:
-                    # TODO: step logging isn't threadsafe
-                    # TODO: what should be allowed as pipeline returns?
-                    #  (artifacts, json serializable, anything?)
-                    #  how do we show it in the UI?
-                    self.pipeline._call_entrypoint(**pipeline_parameters)
-                except:
-                    publish_failed_pipeline_run(run.id)
-                    logger.error(
-                        "Pipeline run failed. All in-progress step runs will "
-                        "still finish executing."
-                    )
-                    raise
-                finally:
-                    self._orchestrator.run_cleanup_hook(
-                        snapshot=self._snapshot
-                    )
-                    self._executor.shutdown(wait=True, cancel_futures=True)
-                # self.await_all_step_run_futures()
-                publish_successful_pipeline_run(run.id)
+                with DynamicPipelineRunContext(
+                    pipeline=self.pipeline,
+                    run=run,
+                    snapshot=self._snapshot,
+                    runner=self,
+                ):
+                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+                    try:
+                        # TODO: step logging isn't threadsafe
+                        # TODO: what should be allowed as pipeline returns?
+                        #  (artifacts, json serializable, anything?)
+                        #  how do we show it in the UI?
+                        self.pipeline._call_entrypoint(**pipeline_parameters)
+                    except:
+                        publish_failed_pipeline_run(run.id)
+                        logger.error(
+                            "Pipeline run failed. All in-progress step runs "
+                            "will still finish executing."
+                        )
+                        raise
+                    finally:
+                        self._orchestrator.run_cleanup_hook(
+                            snapshot=self._snapshot
+                        )
+                        self._executor.shutdown(wait=True, cancel_futures=True)
+                    # self.await_all_step_run_futures()
+                    publish_successful_pipeline_run(run.id)
 
     @overload
     def launch_step(

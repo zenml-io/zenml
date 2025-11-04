@@ -103,13 +103,16 @@ class ArtifactFuture(_BaseStepRunFuture):
                 f"{result}."
             )
 
-    def load(self) -> Any:
+    def load(self, disable_cache: bool = False) -> Any:
         """Load the step run output artifact data.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
 
         Returns:
             The step run output artifact data.
         """
-        return self.result().load()
+        return self.result().load(disable_cache=disable_cache)
 
 
 class StepRunOutputsFuture(_BaseStepRunFuture):
@@ -157,8 +160,11 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         """
         return self._wrapped.result()
 
-    def load(self) -> Any:
+    def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
 
         Raises:
             ValueError: If the step run output is invalid.
@@ -171,9 +177,11 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         if result is None:
             return None
         elif isinstance(result, ArtifactVersionResponse):
-            return result.load()
+            return result.load(disable_cache=disable_cache)
         elif isinstance(result, tuple):
-            return tuple(item.load() for item in result)
+            return tuple(
+                item.load(disable_cache=disable_cache) for item in result
+            )
         else:
             raise ValueError(f"Invalid step run output: {result}")
 

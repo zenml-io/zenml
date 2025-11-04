@@ -440,15 +440,28 @@ class ArtifactVersionResponse(
 
         return Client().get_pipeline_run(self.step.pipeline_run_id)
 
-    def load(self) -> Any:
+    def load(self, disable_cache: bool = False) -> Any:
         """Materializes (loads) the data stored in this artifact.
+
+        Args:
+            disable_cache: Whether to disable the artifact cache.
 
         Returns:
             The materialized data.
         """
+        from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
         from zenml.artifacts.utils import load_artifact_from_response
 
-        return load_artifact_from_response(self)
+        cache = InMemoryArtifactCache.get()
+
+        if cache and (data := cache.get_artifact_data(self.id)):
+            logger.debug(f"Returning artifact data (%s) from cache", self.id)
+            return data
+
+        data = load_artifact_from_response(self)
+        if not disable_cache:
+            cache.set_artifact_data(self.id, data)
+        return data
 
     def download_files(self, path: str, overwrite: bool = False) -> None:
         """Downloads data for an artifact with no materializing.
