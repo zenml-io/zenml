@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Kubernetes resource applier."""
 
-from __future__ import annotations
-
 import logging
 import time
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
@@ -75,7 +73,6 @@ def _to_dict(
             raise ValueError(
                 f"Expected dict after serialization, got {type(d)}"
             )
-        # Normalize apiVersion (older client models may expose 'api_version')
         if "api_version" in d and "apiVersion" not in d:
             d["apiVersion"] = d.pop("api_version")
         return d
@@ -196,15 +193,12 @@ class KubernetesApplier:
             _flatten_items([_to_dict(o, self.api_client) for o in objs])
         )
 
-        # Sort resources: Namespaces first, then everything else
-        # This ensures namespaces exist before resources in those namespaces are validated
         namespaces = [r for r in all_resources if r.get("kind") == "Namespace"]
         other_resources = [
             r for r in all_resources if r.get("kind") != "Namespace"
         ]
         sorted_resources = namespaces + other_resources
 
-        # Track namespaces we create during dry-run for cleanup
         created_namespaces: List[str] = []
 
         try:
@@ -213,8 +207,6 @@ class KubernetesApplier:
                 if default_namespace:
                     kwargs["namespace"] = default_namespace
 
-                # For Namespace resources during dry-run, create them for real
-                # so subsequent resources can be validated
                 is_namespace = raw.get("kind") == "Namespace"
                 if dry_run and not is_namespace:
                     kwargs["dry_run"] = "All"
@@ -247,7 +239,6 @@ class KubernetesApplier:
                     kind = raw.get("kind", "unknown")
                     name = (raw.get("metadata") or {}).get("name", "unknown")
 
-                    # During dry-run, if namespace doesn't exist, provide helpful message
                     if (
                         dry_run
                         and "namespaces" in error_str
@@ -271,7 +262,6 @@ class KubernetesApplier:
                     ) from exc
 
         finally:
-            # Clean up namespaces created during dry-run
             if dry_run and created_namespaces:
                 logger.debug(
                     f"Cleaning up {len(created_namespaces)} namespace(s) created for dry-run"
@@ -324,7 +314,6 @@ class KubernetesApplier:
             Total number of resources deleted.
         """
         if kinds is None:
-            # Common namespaced resource types (in reverse dependency order)
             kinds = [
                 ("Ingress", "networking.k8s.io/v1"),
                 ("Service", "v1"),
