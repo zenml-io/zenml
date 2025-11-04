@@ -131,6 +131,24 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         super().__init__(wrapped=wrapped, invocation_id=invocation_id)
         self._output_keys = output_keys
 
+    def get_artifact(self, key: str) -> ArtifactFuture:
+        """Get an artifact future by key.
+
+        Args:
+            key: The key of the artifact future.
+
+        Returns:
+            The artifact future.
+        """
+        if key not in self._output_keys:
+            raise KeyError(f"Invalid key: {key}")
+
+        return ArtifactFuture(
+            wrapped=self._wrapped,
+            invocation_id=self._invocation_id,
+            index=self._output_keys.index(key),
+        )
+
     def artifacts(self) -> StepRunOutputs:
         """Get the step run output artifacts.
 
@@ -159,33 +177,33 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         else:
             raise ValueError(f"Invalid step run output: {result}")
 
-    def __getitem__(self, key: Union[str, int]) -> ArtifactFuture:
+    def __getitem__(self, key: Any) -> ArtifactFuture:
         """Get an artifact future by key or index.
 
         Args:
             key: The key or index of the artifact future.
 
         Raises:
-            ValueError: If the key or index is of an invalid type.
+            TypeError: If the key is not an integer.
             IndexError: If the index is out of range.
 
         Returns:
             The artifact future.
         """
-        if isinstance(key, str):
-            index = self._output_keys.index(key)
-        elif isinstance(key, int):
-            index = key
-        else:
-            raise ValueError(f"Invalid key type: {type(key)}")
+        if not isinstance(key, int):
+            raise TypeError(f"Invalid key type: {type(key)}")
 
-        if index > len(self._output_keys):
-            raise IndexError(f"Index out of range: {index}")
+        # Convert to positive index if necessary
+        if key < 0:
+            key += len(self._output_keys)
+
+        if key > len(self._output_keys):
+            raise IndexError(f"Index out of range: {key}")
 
         return ArtifactFuture(
             wrapped=self._wrapped,
             invocation_id=self._invocation_id,
-            index=index,
+            index=key,
         )
 
     def __iter__(self) -> Any:
