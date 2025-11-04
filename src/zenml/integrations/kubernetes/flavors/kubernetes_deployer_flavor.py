@@ -169,24 +169,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         description="HTTP path for readiness probe.",
     )
 
-    @field_validator("readiness_probe_path", "liveness_probe_path")
-    @classmethod
-    def validate_probe_path(cls, v: str) -> str:
-        """Validate that probe paths start with /.
-
-        Args:
-            v: The probe path value.
-
-        Returns:
-            The validated probe path.
-
-        Raises:
-            ValueError: If the path doesn't start with /.
-        """
-        if not v.startswith("/"):
-            raise ValueError(f"Probe path must start with '/': {v}")
-        return v
-
     readiness_probe_initial_delay: PositiveInt = Field(
         default=10,
         description="Initial delay in seconds before starting readiness probe.",
@@ -347,9 +329,11 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
 
     manifest_output_dir: Optional[str] = Field(
         default=None,
-        description="Custom directory for saving manifests. "
+        description="Custom local directory for saving manifests. "
+        "Must be a local filesystem path (remote paths like s3:// are not supported). "
         "If not provided, uses project root '.zenml-deployments/' directory. "
-        "Supports path expansion: '~/my-manifests'",
+        "Supports path expansion: '~/my-manifests'. "
+        "For remote persistence, commit manifests to Git or use CI artifact storage.",
     )
 
     # ========================================================================
@@ -367,6 +351,24 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         default=2,
         description="Interval in seconds between deployment readiness checks.",
     )
+
+    @field_validator("readiness_probe_path", "liveness_probe_path")
+    @classmethod
+    def validate_probe_path(cls, v: str) -> str:
+        """Validate that probe paths start with /.
+
+        Args:
+            v: The probe path value.
+
+        Returns:
+            The validated probe path.
+
+        Raises:
+            ValueError: If the path doesn't start with /.
+        """
+        if not v.startswith("/"):
+            raise ValueError(f"Probe path must start with '/': {v}")
+        return v
 
     @model_validator(mode="after")
     def validate_interdependent_settings(self) -> "KubernetesDeployerSettings":

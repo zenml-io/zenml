@@ -19,13 +19,13 @@ from typing import (
     Any,
     Dict,
     Generator,
+    List,
     Optional,
     Tuple,
     Type,
     cast,
 )
 
-import yaml
 from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
@@ -49,7 +49,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 )
 from zenml.integrations.kubernetes.k8s_applier import KubernetesApplier
 from zenml.integrations.kubernetes.manifest_utils import (
-    build_secret_manifest,
+    namespace_resource,
 )
 from zenml.integrations.kubernetes.pod_settings import (
     KubernetesPodSettings,
@@ -77,6 +77,8 @@ class KubernetesDeployer(ContainerizedDeployer):
     """Kubernetes deployer using template-based resource management."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+    _applier: Optional[KubernetesApplier] = None
+    _engine: Optional[KubernetesTemplateEngine] = None
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Kubernetes deployer.
@@ -145,40 +147,17 @@ class KubernetesDeployer(ContainerizedDeployer):
         return k8s_client.CoreV1Api(self.get_kube_client())
 
     @property
-    def k8s_apps_api(self) -> k8s_client.AppsV1Api:
-        """Get Kubernetes Apps V1 API client.
+    def k8s_applier(self) -> KubernetesApplier:
+        """Get or create Kubernetes Applier instance.
 
         Returns:
-            Kubernetes Apps V1 API client.
+            Kubernetes Applier instance.
         """
-        return k8s_client.AppsV1Api(self.get_kube_client())
-
-    @property
-    def k8s_rbac_api(self) -> k8s_client.RbacAuthorizationV1Api:
-        """Get Kubernetes RBAC API client.
-
-        Returns:
-            Kubernetes RBAC API client.
-        """
-        return k8s_client.RbacAuthorizationV1Api(self.get_kube_client())
-
-    @property
-    def k8s_networking_api(self) -> k8s_client.NetworkingV1Api:
-        """Get Kubernetes Networking API client.
-
-        Returns:
-            Kubernetes Networking API client.
-        """
-        return k8s_client.NetworkingV1Api(self.get_kube_client())
-
-    @property
-    def k8s_autoscaling_api(self) -> k8s_client.AutoscalingV2Api:
-        """Get Kubernetes Autoscaling API client.
-
-        Returns:
-            Kubernetes Autoscaling API client.
-        """
-        return k8s_client.AutoscalingV2Api(self.get_kube_client())
+        if not self._applier:
+            self._applier = KubernetesApplier(
+                api_client=self.get_kube_client()
+            )
+        return self._applier
 
     # ========================================================================
     # Configuration and Validation
@@ -229,71 +208,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             },
             custom_validation_function=_validate,
         )
-
-    # ========================================================================
-    # Resource Naming
-    # ========================================================================
-
-    def _get_namespace(self, deployment: DeploymentResponse) -> str:
-        """Get namespace for deployment.
-
-        Args:
-            deployment: The deployment to get namespace for.
-
-        Returns:
-            The namespace name.
-
-        Raises:
-            DeployerError: If deployment has no snapshot.
-        """
-        snapshot = deployment.snapshot
-        if not snapshot:
-            raise DeployerError(
-                f"Deployment '{deployment.name}' has no snapshot"
-            )
-
-        settings = cast(
-            KubernetesDeployerSettings,
-            self.get_settings(snapshot),
-        )
-        return settings.namespace or self.config.kubernetes_namespace
-
-    def _get_resource_name(self, deployment: DeploymentResponse) -> str:
-        """Get resource name for deployment.
-
-        Args:
-            deployment: The deployment to get resource name for.
-
-        Returns:
-            Sanitized resource name.
-        """
-        name = f"zenml-{deployment.id}"
-        return kube_utils.sanitize_label(name)[:MAX_K8S_NAME_LENGTH]
-
-    def _get_labels(
-        self,
-        deployment: DeploymentResponse,
-        settings: KubernetesDeployerSettings,
-    ) -> Dict[str, str]:
-        """Get labels for Kubernetes resources.
-
-        Args:
-            deployment: The deployment to create labels for.
-            settings: Deployer settings.
-
-        Returns:
-            Dictionary of sanitized labels.
-        """
-        labels = {
-            "zenml-deployment-id": str(deployment.id),
-            "zenml-deployment-name": kube_utils.sanitize_label(
-                deployment.name
-            ),
-            "managed-by": "zenml",
-        }
-        if settings.labels:
-            labels.update(settings.labels)
-        return labels
 
     # ========================================================================
     # Template Context Building
@@ -403,78 +317,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         return context
 
     # ========================================================================
-    # Secret Management
+    # Resource Deletion
     # ========================================================================
-
-    def _cleanup_deployment_resources(
-        self,
-        deployment: DeploymentResponse,
-        namespace: str,
-        resource_name: str,
-        applier: KubernetesApplier,
-    ) -> None:
-        """Clean up partially created deployment resources.
-
-        This is called when provisioning fails to remove any resources
-        that were created before the failure occurred.
-
-        Args:
-            deployment: The deployment response.
-            namespace: Kubernetes namespace.
-            resource_name: Name of the resources.
-            applier: KubernetesApplier instance.
-        """
-        logger.warning(
-            f"[Deployment {deployment.name}] Cleaning up partially created resources "
-            f"(namespace: {namespace}, resource: {resource_name})"
-        )
-        cleanup_errors = []
-
-        try:
-            applier.delete_resource(
-                name=resource_name,
-                namespace=namespace,
-                kind="Service",
-                api_version="v1",
-            )
-            logger.debug(f"Deleted Service: {resource_name}")
-        except ApiException as e:
-            if e.status != 404:
-                cleanup_errors.append(f"Service: {e}")
-
-        try:
-            applier.delete_resource(
-                name=resource_name,
-                namespace=namespace,
-                kind="Deployment",
-                api_version="apps/v1",
-            )
-            logger.debug(f"Deleted Deployment: {resource_name}")
-        except ApiException as e:
-            if e.status != 404:
-                cleanup_errors.append(f"Deployment: {e}")
-
-        secret_name = f"zenml-{deployment.id}"
-        try:
-            applier.delete_resource(
-                name=secret_name,
-                namespace=namespace,
-                kind="Secret",
-                api_version="v1",
-            )
-            logger.debug(f"Deleted Secret: {secret_name}")
-        except ApiException as e:
-            if e.status != 404:
-                cleanup_errors.append(f"Secret: {e}")
-
-        if cleanup_errors:
-            logger.warning(
-                f"Some resources could not be cleaned up: {', '.join(cleanup_errors)}"
-            )
-        else:
-            logger.info(
-                f"Successfully cleaned up resources for '{deployment.name}'"
-            )
 
     def _sanitize_secret_key(
         self, key: str, secret_key_map: Dict[str, str]
@@ -506,473 +350,9 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return sanitized
 
-    def _prepare_secrets(
-        self,
-        deployment: DeploymentResponse,
-        namespace: str,
-        secrets: Dict[str, str],
-        applier: KubernetesApplier,
-    ) -> Dict[str, str]:
-        """Sanitize and create Kubernetes secret.
-
-        Args:
-            deployment: The deployment response.
-            namespace: Kubernetes namespace.
-            secrets: Secret environment variables.
-            applier: KubernetesApplier instance.
-
-        Returns:
-            Sanitized secrets dict.
-        """
-        if not secrets:
-            return {}
-
-        secret_key_map: Dict[str, str] = {}
-        sanitized = {}
-        for key, value in secrets.items():
-            sanitized_key = self._sanitize_secret_key(key, secret_key_map)
-            if sanitized_key != key:
-                logger.warning(
-                    f"Secret key '{key}' sanitized to '{sanitized_key}'"
-                )
-            sanitized[sanitized_key] = value
-
-        secret_name = f"zenml-{deployment.id}"
-        secret_manifest = build_secret_manifest(
-            name=secret_name,
-            data=sanitized,
-        )
-        secret_manifest.metadata.namespace = namespace
-
-        applier.apply_resource(resource=secret_manifest, dry_run=False)
-        return sanitized
-
     # ========================================================================
     # Provisioning
     # ========================================================================
-
-    def _validate_and_prepare_deployment(
-        self,
-        deployment: DeploymentResponse,
-    ) -> Tuple[KubernetesDeployerSettings, str, str, Dict[str, str], str]:
-        """Validate deployment and prepare basic settings.
-
-        Args:
-            deployment: The deployment response.
-
-        Returns:
-            Tuple of (settings, namespace, resource_name, labels, image).
-
-        Raises:
-            DeploymentProvisionError: If validation fails.
-        """
-        snapshot = deployment.snapshot
-        if not snapshot:
-            raise DeploymentProvisionError(
-                f"Deployment '{deployment.name}' has no snapshot"
-            )
-
-        settings = cast(
-            KubernetesDeployerSettings,
-            self.get_settings(snapshot),
-        )
-
-        namespace = self._get_namespace(deployment)
-        resource_name = self._get_resource_name(deployment)
-        labels = self._get_labels(deployment, settings)
-        image = self.get_image(snapshot)
-
-        return settings, namespace, resource_name, labels, image
-
-    def _validate_additional_resources(
-        self,
-        deployment: DeploymentResponse,
-        settings: KubernetesDeployerSettings,
-        context: Dict[str, Any],
-        applier: KubernetesApplier,
-        engine: KubernetesTemplateEngine,
-    ) -> None:
-        """Validate additional resources before provisioning.
-
-        Validates that:
-        1. Additional resource files can be loaded
-        2. Resources have valid schema (kind, apiVersion)
-        3. Resources can be validated with Kubernetes API (dry-run)
-
-        Args:
-            deployment: The deployment response.
-            settings: Kubernetes deployer settings.
-            context: Template rendering context.
-            applier: KubernetesApplier instance.
-            engine: Template engine instance.
-
-        Raises:
-            DeploymentProvisionError: If validation fails.
-        """
-        if not settings.additional_resources:
-            return
-
-        try:
-            loaded_resources = engine.load_additional_resources(
-                settings.additional_resources,
-                context=context,
-            )
-        except ValueError as e:
-            raise DeploymentProvisionError(
-                f"Failed to load additional resources for validation: {e}"
-            ) from e
-
-        for resource_dict in loaded_resources:
-            kind = resource_dict.get("kind")
-            api_version = resource_dict.get("apiVersion")
-            metadata = resource_dict.get("metadata", {})
-            name = metadata.get("name", "unnamed")
-
-            if not kind or not api_version:
-                raise DeploymentProvisionError(
-                    f"Invalid additional resource '{name}': missing 'kind' or 'apiVersion'"
-                )
-
-            try:
-                applier.ssa_apply(
-                    resource=resource_dict, dry_run=True, force=True
-                )
-                logger.debug(
-                    f"[Deployment {deployment.name}] Validated additional resource: {kind}/{name}"
-                )
-            except ApiException as e:
-                if e.status == 409:
-                    logger.debug(
-                        f"[Deployment {deployment.name}] Resource {kind}/{name} exists with different field manager - will be updated during deployment"
-                    )
-                else:
-                    raise DeploymentProvisionError(
-                        f"Invalid additional resource {kind}/{name}: {e.reason}"
-                    ) from e
-            except ValueError as e:
-                raise DeploymentProvisionError(
-                    f"Invalid additional resource {kind}/{name}: {e}"
-                ) from e
-
-    def _prepare_namespace(
-        self,
-        namespace: str,
-        applier: KubernetesApplier,
-        dry_run: bool,
-    ) -> Dict[str, Any]:
-        """Ensure namespace exists (or generate manifest in dry-run mode).
-
-        Args:
-            namespace: Kubernetes namespace name.
-            applier: KubernetesApplier instance.
-            dry_run: If True, create namespace with dry_run=True (validate only).
-
-        Returns:
-            The namespace manifest dict.
-
-        Raises:
-            DeploymentProvisionError: If namespace creation fails.
-        """
-        namespace_manifest = {
-            "apiVersion": "v1",
-            "kind": "Namespace",
-            "metadata": {"name": namespace},
-        }
-
-        try:
-            applier.apply_resource(
-                resource=namespace_manifest, dry_run=dry_run
-            )
-        except ApiException as e:
-            if dry_run:
-                logger.debug(
-                    f"Namespace '{namespace}' validation skipped (may not exist yet): {e}"
-                )
-            else:
-                raise DeploymentProvisionError(
-                    f"Failed to create namespace '{namespace}': {e}"
-                ) from e
-
-        return namespace_manifest
-
-    def _render_k8s_resources(
-        self,
-        deployment: DeploymentResponse,
-        settings: KubernetesDeployerSettings,
-        context: Dict[str, Any],
-        namespace_manifest: Optional[Dict[str, Any]] = None,
-        engine: Optional[KubernetesTemplateEngine] = None,
-    ) -> Tuple[
-        Dict[str, Any], str, Dict[str, Any], str, KubernetesTemplateEngine
-    ]:
-        """Render Kubernetes deployment and service templates.
-
-        Args:
-            deployment: The deployment response.
-            settings: Kubernetes deployer settings.
-            context: Template rendering context.
-            namespace_manifest: Optional namespace manifest to include in saved manifests.
-            engine: Optional pre-initialized template engine. If None, creates one.
-
-        Returns:
-            Tuple of (deployment dict, deployment canonical YAML,
-            service dict, service canonical YAML, template engine).
-
-        Raises:
-            DeploymentProvisionError: If template rendering fails.
-        """
-        if engine is None:
-            engine = KubernetesTemplateEngine(
-                custom_templates_dir=settings.custom_templates_dir
-            )
-
-        try:
-            deployment_manifest = engine.render_to_k8s_object(
-                template_name="deployment.yaml.j2",
-                context=context,
-            )
-            service_manifest = engine.render_to_k8s_object(
-                template_name="service.yaml.j2",
-                context=context,
-            )
-        except Exception as e:
-            raise DeploymentProvisionError(
-                f"Failed to render Kubernetes templates for '{deployment.name}': {e}"
-            ) from e
-
-        if settings.save_manifests:
-            manifests = {}
-
-            if namespace_manifest:
-                manifests["namespace.yaml"] = yaml.dump(
-                    namespace_manifest,
-                    default_flow_style=False,
-                    sort_keys=False,
-                )
-
-            manifests["deployment.yaml"] = deployment_manifest.canonical_yaml
-            manifests["service.yaml"] = service_manifest.canonical_yaml
-
-            if settings.additional_resources:
-                try:
-                    loaded_resources = engine.load_additional_resources(
-                        settings.additional_resources,
-                        context=context,
-                    )
-                    for idx, resource_dict in enumerate(loaded_resources, 1):
-                        kind = resource_dict.get("kind", "Unknown").lower()
-                        name = resource_dict.get("metadata", {}).get(
-                            "name", "unnamed"
-                        )
-                        filename = f"additional-{idx:02d}-{kind}-{name}.yaml"
-                        manifests[filename] = yaml.dump(
-                            resource_dict,
-                            default_flow_style=False,
-                            sort_keys=False,
-                        )
-                except ValueError as e:
-                    logger.warning(
-                        f"Could not load additional resources for saving: {e}"
-                    )
-                except Exception as e:
-                    logger.warning(f"Could not save additional resources: {e}")
-
-            save_dir = engine.save_manifests(
-                manifests=manifests,
-                deployment_name=context["name"],
-                output_dir=settings.manifest_output_dir,
-            )
-            logger.info(
-                f"[Deployment {deployment.name}] Saved {len(manifests)} manifests to: {save_dir}"
-            )
-
-        if settings.print_manifests:
-            if namespace_manifest:
-                logger.info("=" * 80)
-                logger.info("KUBERNETES NAMESPACE MANIFEST")
-                logger.info("=" * 80)
-                logger.info(
-                    yaml.dump(
-                        namespace_manifest,
-                        default_flow_style=False,
-                        sort_keys=False,
-                    )
-                )
-            logger.info("=" * 80)
-            logger.info("KUBERNETES DEPLOYMENT MANIFEST")
-            logger.info("=" * 80)
-            logger.info(deployment_manifest.canonical_yaml)
-            logger.info("=" * 80)
-            logger.info("KUBERNETES SERVICE MANIFEST")
-            logger.info("=" * 80)
-            logger.info(service_manifest.canonical_yaml)
-            logger.info("=" * 80)
-
-            if settings.additional_resources:
-                try:
-                    loaded_resources = engine.load_additional_resources(
-                        settings.additional_resources,
-                        context=context,
-                    )
-                    for idx, resource_dict in enumerate(loaded_resources, 1):
-                        kind = resource_dict.get("kind", "Unknown")
-                        name = resource_dict.get("metadata", {}).get(
-                            "name", "unnamed"
-                        )
-                        logger.info(
-                            f"ADDITIONAL RESOURCE #{idx}: {kind.upper()} ({name})"
-                        )
-                        logger.info("=" * 80)
-                        resource_yaml = yaml.dump(
-                            resource_dict,
-                            default_flow_style=False,
-                            sort_keys=False,
-                        )
-                        logger.info(resource_yaml)
-                        logger.info("=" * 80)
-                except ValueError as e:
-                    logger.warning(
-                        f"Could not load additional resources for printing: {e}"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Could not print additional resources: {e}"
-                    )
-
-        k8s_deployment = deployment_manifest.resources[0]
-        k8s_service = service_manifest.resources[0]
-
-        return (
-            k8s_deployment,
-            deployment_manifest.canonical_yaml,
-            k8s_service,
-            service_manifest.canonical_yaml,
-            engine,
-        )
-
-    def _apply_core_resources(
-        self,
-        deployment: DeploymentResponse,
-        k8s_deployment: Dict[str, Any],
-        k8s_service: Dict[str, Any],
-        applier: KubernetesApplier,
-        resource_name: str,
-        namespace: str,
-        dry_run: bool,
-    ) -> None:
-        """Apply core Kubernetes resources (Deployment and Service).
-
-        Args:
-            deployment: The deployment response.
-            k8s_deployment: Kubernetes Deployment dict.
-            k8s_service: Kubernetes Service dict.
-            applier: KubernetesApplier instance.
-            resource_name: Resource name.
-            namespace: Kubernetes namespace.
-            dry_run: If True, only validate resources.
-
-        Raises:
-            DeploymentProvisionError: If applying resources fails.
-        """
-        if dry_run:
-            logger.debug(f"   🔹 Validating Deployment: {resource_name}")
-            try:
-                applier.apply_resource(resource=k8s_deployment, dry_run=True)
-                logger.debug(f"   🔹 Validating Service: {resource_name}")
-                applier.apply_resource(resource=k8s_service, dry_run=True)
-                logger.debug("   ✅ Core resources validated")
-            except ApiException as e:
-                if e.status == 404 and "namespace" in str(e.body).lower():
-                    logger.warning(
-                        f"   ⚠️  Namespace '{namespace}' doesn't exist yet. "
-                        f"A namespace.yaml manifest has been generated.\n"
-                        f"   When you deploy (without --dry-run), the namespace will be created automatically."
-                    )
-                else:
-                    raise DeploymentProvisionError(
-                        f"❌ Validation failed for '{deployment.name}': {e}"
-                    ) from e
-            except ValueError as e:
-                raise DeploymentProvisionError(
-                    f"❌ Validation failed for '{deployment.name}': {e}"
-                ) from e
-            return
-
-        try:
-            applier.apply_resource(resource=k8s_deployment, dry_run=False)
-            applier.apply_resource(resource=k8s_service, dry_run=False)
-        except ApiException as e:
-            self._cleanup_deployment_resources(
-                deployment, namespace, resource_name, applier
-            )
-            raise DeploymentProvisionError(
-                f"Failed to apply Kubernetes resources for '{deployment.name}': {e.reason}"
-            ) from e
-
-    def _apply_additional_resources(
-        self,
-        deployment: DeploymentResponse,
-        settings: KubernetesDeployerSettings,
-        namespace: str,
-        applier: KubernetesApplier,
-        context: Dict[str, Any],
-        engine: KubernetesTemplateEngine,
-    ) -> None:
-        """Apply additional Kubernetes resources.
-
-        Args:
-            deployment: The deployment response.
-            settings: Kubernetes deployer settings.
-            namespace: Kubernetes namespace.
-            applier: KubernetesApplier instance.
-            context: Jinja2 template context for variable substitution.
-            engine: Template engine instance to reuse.
-
-        Raises:
-            DeploymentProvisionError: If loading additional resources fails,
-                or if strict_additional_resources=True and any resource fails to apply.
-        """
-        if not settings.additional_resources:
-            return
-
-        try:
-            loaded_resources = engine.load_additional_resources(
-                settings.additional_resources,
-                context=context,
-            )
-        except ValueError as e:
-            raise DeploymentProvisionError(
-                f"Failed to load additional resources for deployment '{deployment.name}': {e}"
-            ) from e
-
-        strict = settings.strict_additional_resources
-
-        for resource_dict in loaded_resources:
-            kind = resource_dict.get("kind", "Unknown")
-            metadata = resource_dict.get("metadata", {})
-            name = metadata.get("name", "unnamed")
-
-            try:
-                applier.ensure_namespace_alignment(
-                    resource_dict=resource_dict,
-                    namespace=namespace,
-                    deployment_name=deployment.name,
-                )
-
-                logger.info(f"📦 Applying additional resource: {kind}/{name}")
-
-                applier.apply_resource(resource=resource_dict, dry_run=False)
-                logger.debug(f"   ✅ Applied: {kind}/{name}")
-            except Exception as e:
-                if strict:
-                    raise DeploymentProvisionError(
-                        f"Failed to apply additional resource {kind}/{name}: {e}"
-                    ) from e
-                else:
-                    logger.warning(
-                        f"[Deployment {deployment.name}] Failed to apply {kind} '{name}': {e}. "
-                        "Continuing with deployment..."
-                    )
 
     def _wait_for_deployment_readiness(
         self,
@@ -980,7 +360,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         settings: KubernetesDeployerSettings,
         resource_name: str,
         namespace: str,
-        applier: KubernetesApplier,
         timeout: int,
     ) -> None:
         """Wait for deployment and service to become ready.
@@ -990,7 +369,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             settings: Kubernetes deployer settings.
             resource_name: Resource name.
             namespace: Kubernetes namespace.
-            applier: KubernetesApplier instance.
             timeout: Timeout in seconds.
 
         Raises:
@@ -1006,11 +384,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"   📦 Namespace: {namespace}\n"
                 f"   ⏱️  Timeout: {timeout}s"
             )
-            applier.wait_for_deployment_ready(
+            self.k8s_applier.wait_for_deployment_ready(
                 name=resource_name,
-                namespace=namespace,
+                namespace=self._namespace,
                 timeout=timeout,
-                check_interval=settings.deployment_ready_check_interval,
+                check_interval=self._settings.deployment_ready_check_interval,
             )
             logger.info("✅ Deployment is ready!")
         except RuntimeError as e:
@@ -1031,7 +409,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 logger.info(
                     f"⏳ Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
                 )
-                applier.wait_for_service_loadbalancer_ip(
+                self.k8s_applier.wait_for_service_loadbalancer_ip(
                     name=resource_name,
                     namespace=namespace,
                     timeout=lb_timeout,
@@ -1047,6 +425,164 @@ class KubernetesDeployer(ContainerizedDeployer):
     # ========================================================================
     # Provisioning
     # ========================================================================
+
+    def _initialize_deployment_context(
+        self, deployment: DeploymentResponse
+    ) -> None:
+        """Initialize basic deployment context from deployment snapshot.
+
+        Sets up instance variables: _settings, _namespace, _resource_name,
+        _labels, and _engine (if needed).
+
+        Args:
+            deployment: The deployment to initialize context for.
+
+        Raises:
+            DeployerError: If deployment has no snapshot.
+        """
+        snapshot = deployment.snapshot
+        if not snapshot:
+            raise DeployerError(
+                f"Deployment '{deployment.name}' has no snapshot"
+            )
+
+        self._settings = cast(
+            KubernetesDeployerSettings, self.get_settings(snapshot)
+        )
+        self._namespace = (
+            self._settings.namespace or self.config.kubernetes_namespace
+        )
+        self._resource_name = kube_utils.sanitize_label(
+            f"zenml-{deployment.id}"
+        )[:MAX_K8S_NAME_LENGTH]
+        self._secret_name = self._resource_name
+
+        self._labels = {
+            "zenml-deployment-id": str(deployment.id),
+            "zenml-deployment-name": kube_utils.sanitize_label(
+                deployment.name
+            ),
+            "managed-by": "zenml",
+        }
+        if self._settings.labels:
+            self._labels.update(**self._settings.labels)
+
+    def _prepare_deployment_resources(
+        self,
+        deployment: DeploymentResponse,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+    ) -> List[Dict[str, Any]]:
+        """Prepare all resources needed for deployment (used by both dry-run and normal provisioning).
+
+        Args:
+            deployment: The deployment to prepare.
+            environment: Environment variables.
+            secrets: Secret environment variables.
+
+        Returns:
+            List of rendered kubernetes resources.
+
+        Raises:
+            DeploymentProvisionError: If preparation fails.
+        """
+        snapshot = deployment.snapshot
+        assert snapshot, "Pipeline snapshot not found"
+
+        # Initialize basic context
+        self._initialize_deployment_context(deployment)
+
+        # Set up engine and image for rendering
+        self._engine = KubernetesTemplateEngine(
+            custom_templates_dir=self._settings.custom_templates_dir
+            or self.config.custom_templates_dir
+        )
+        self._image = self.get_image(snapshot)
+
+        try:
+            resource_requests, resource_limits, replicas = (
+                kube_utils.convert_resource_settings_to_k8s_format(
+                    snapshot.pipeline_configuration.resource_settings
+                )
+            )
+        except ValueError as e:
+            raise DeploymentProvisionError(
+                f"Invalid resource settings for deployment '{deployment.name}': {e}"
+            ) from e
+
+        # Prepare secrets
+        secret_key_map: Dict[str, str] = {}
+        sanitized = {}
+        for key, value in secrets.items():
+            sanitized_key = self._sanitize_secret_key(key, secret_key_map)
+            if sanitized_key != key:
+                logger.warning(
+                    f"Secret key '{key}' sanitized to '{sanitized_key}'"
+                )
+            sanitized[sanitized_key] = value
+
+        context = self._build_template_context(
+            settings=self._settings,
+            resource_name=self._resource_name,
+            namespace=self._namespace,
+            labels=self._labels,
+            image=self._image,
+            env_vars=environment,
+            secret_env_vars=sanitized,
+            secret_name=self._secret_name,
+            resource_requests=resource_requests,
+            resource_limits=resource_limits,
+            replicas=replicas,
+            deployment_id=str(deployment.id),
+        )
+
+        if not context.get("command"):
+            context["command"] = cast(
+                Any,
+                DeploymentEntrypointConfiguration.get_entrypoint_command(),
+            )
+        if not context.get("args"):
+            context["args"] = cast(
+                Any,
+                DeploymentEntrypointConfiguration.get_entrypoint_arguments(
+                    **{DEPLOYMENT_ID_OPTION: deployment.id}
+                ),
+            )
+
+        rendered_resources: List[Dict[str, Any]] = [
+            namespace_resource(namespace=self._namespace)
+        ]
+
+        # Create Secret resource if there are secret environment variables
+        if sanitized:
+            from zenml.integrations.kubernetes.manifest_utils import (
+                build_secret_manifest,
+            )
+
+            secret_manifest = build_secret_manifest(
+                name=self._secret_name,
+                data=sanitized,
+                namespace=self._namespace,
+            )
+            # Convert to dict for consistency with other resources
+            rendered_resources.append(
+                self.k8s_applier.api_client.sanitize_for_serialization(
+                    secret_manifest
+                )
+            )
+
+        rendered_resources.extend(
+            self._engine.render_template("deployment.yaml.j2", context)
+        )
+        rendered_resources.extend(
+            self._engine.render_template("service.yaml.j2", context)
+        )
+        for additional_resource in self._settings.additional_resources:
+            rendered_resources.extend(
+                self._engine.render_template(additional_resource, context)
+            )
+
+        return rendered_resources
 
     def do_dry_run_deployment(
         self,
@@ -1077,197 +613,40 @@ class KubernetesDeployer(ContainerizedDeployer):
             f"{'=' * 70}"
         )
 
-        (
-            settings,
-            namespace,
-            resource_name,
-            labels,
-            image,
-            applier,
-            k8s_deployment,
-            k8s_service,
-            context,
-            engine,
-        ) = self._prepare_deployment_resources(
-            deployment, environment, secrets, skip_secrets=True
+        rendered_resources = self._prepare_deployment_resources(
+            deployment, environment, secrets
         )
 
-        logger.info(f"✅ Image built and pushed:\n   └─ {image}")
+        logger.info(f"✅ Image built and pushed:\n   └─ {self._image}")
         logger.info("✅ Manifests generated and saved to .zenml-deployments/")
 
         logger.info("\n🔍 Validating manifests with Kubernetes API...")
-        self._validate_manifests_dry_run(
-            deployment,
-            k8s_deployment,
-            k8s_service,
-            applier,
-            resource_name,
-            namespace,
+        validated_objects = self.k8s_applier.provision(
+            rendered_resources,
+            default_namespace=self._namespace,
+            dry_run=True,
         )
+
+        # Save validated resources as YAML files
+        saved_files = self._engine.save_k8s_objects(
+            validated_objects, deployment.name
+        )
+
+        logger.info(f"✅ Saved {len(saved_files)} validated YAML file(s):")
+        for filepath in saved_files:
+            logger.info(f"   └─ {filepath}")
 
         logger.info(
             f"\n{'=' * 70}\n"
             f"✅ DRY-RUN SUCCESSFUL!\n"
             f"{'=' * 70}\n"
-            f"📋 Namespace: {namespace}\n"
-            f"📦 Deployment: {resource_name}\n"
-            f"💾 Manifests: .zenml-deployments/\n"
+            f"📋 Namespace: {self._namespace}\n"
+            f"📦 Deployment: {self._resource_name}\n"
+            f"🔍 Validated {len(validated_objects)} resource(s)\n"
+            f"💾 Manifests: .zenml-deployments/{deployment.name}/\n"
             f"\n💡 To deploy for real: Remove --dry-run flag\n"
             f"{'=' * 70}"
         )
-
-    def _prepare_deployment_resources(
-        self,
-        deployment: DeploymentResponse,
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
-        skip_secrets: bool = False,
-    ) -> Tuple[
-        KubernetesDeployerSettings,
-        str,
-        str,
-        Dict[str, str],
-        str,
-        KubernetesApplier,
-        Dict[str, Any],
-        Dict[str, Any],
-        Dict[str, Any],
-        KubernetesTemplateEngine,
-    ]:
-        """Prepare all resources needed for deployment (used by both dry-run and normal provisioning).
-
-        Args:
-            deployment: The deployment to prepare.
-            environment: Environment variables.
-            secrets: Secret environment variables.
-            skip_secrets: If True, skip creating secrets.
-
-        Returns:
-            Tuple of (settings, namespace, resource_name, labels, image, applier,
-                     k8s_deployment_dict, k8s_service_dict, context, engine)
-
-        Raises:
-            DeploymentProvisionError: If preparation fails.
-        """
-        settings, namespace, resource_name, labels, image = (
-            self._validate_and_prepare_deployment(deployment)
-        )
-
-        snapshot = deployment.snapshot
-        if not snapshot:
-            raise DeploymentProvisionError(
-                f"Deployment '{deployment.name}' has no snapshot"
-            )
-
-        try:
-            resource_requests, resource_limits, replicas = (
-                kube_utils.convert_resource_settings_to_k8s_format(
-                    snapshot.pipeline_configuration.resource_settings
-                )
-            )
-        except ValueError as e:
-            raise DeploymentProvisionError(
-                f"Invalid resource settings for deployment '{deployment.name}': {e}"
-            ) from e
-
-        secret_name = f"zenml-{deployment.id}"
-        applier = KubernetesApplier(api_client=self.get_kube_client())
-
-        namespace_manifest = self._prepare_namespace(
-            namespace, applier, skip_secrets
-        )
-
-        sanitized_secrets = {}
-        if secrets and not skip_secrets:
-            try:
-                sanitized_secrets = self._prepare_secrets(
-                    deployment, namespace, secrets, applier
-                )
-            except ApiException as e:
-                raise DeploymentProvisionError(
-                    f"Failed to create secrets for deployment '{deployment.name}': {e}"
-                ) from e
-
-        context = self._build_template_context(
-            settings=settings,
-            resource_name=resource_name,
-            namespace=namespace,
-            labels=labels,
-            image=image,
-            env_vars=environment,
-            secret_env_vars=sanitized_secrets,
-            secret_name=secret_name,
-            resource_requests=resource_requests,
-            resource_limits=resource_limits,
-            replicas=replicas,
-            deployment_id=str(deployment.id),
-        )
-
-        if not context.get("command"):
-            context["command"] = cast(
-                Any,
-                DeploymentEntrypointConfiguration.get_entrypoint_command(),
-            )
-        if not context.get("args"):
-            context["args"] = cast(
-                Any,
-                DeploymentEntrypointConfiguration.get_entrypoint_arguments(
-                    **{DEPLOYMENT_ID_OPTION: deployment.id}
-                ),
-            )
-
-        k8s_deployment, _, k8s_service, _, engine = self._render_k8s_resources(
-            deployment, settings, context, namespace_manifest
-        )
-
-        if not skip_secrets:
-            self._validate_additional_resources(
-                deployment, settings, context, applier, engine
-            )
-
-        return (
-            settings,
-            namespace,
-            resource_name,
-            labels,
-            image,
-            applier,
-            k8s_deployment,
-            k8s_service,
-            context,
-            engine,
-        )
-
-    def _validate_manifests_dry_run(
-        self,
-        deployment: DeploymentResponse,
-        k8s_deployment: Dict[str, Any],
-        k8s_service: Dict[str, Any],
-        applier: KubernetesApplier,
-        resource_name: str,
-        namespace: str,
-    ) -> None:
-        """Validate Kubernetes manifests using dry-run API call.
-
-        Args:
-            deployment: The deployment.
-            k8s_deployment: Kubernetes deployment dict.
-            k8s_service: Kubernetes service dict.
-            applier: KubernetesApplier instance.
-            resource_name: Resource name.
-            namespace: Kubernetes namespace.
-        """
-        logger.info(f"   🔸 Validating deployment '{deployment.name}'...")
-        self._apply_core_resources(
-            deployment,
-            k8s_deployment,
-            k8s_service,
-            applier,
-            resource_name,
-            namespace,
-            dry_run=True,
-        )
-        logger.info("   ✅ Validation successful")
 
     def do_provision_deployment(
         self,
@@ -1292,42 +671,33 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentProvisionError: If provisioning fails.
         """
+        rendered_resources = self._prepare_deployment_resources(
+            deployment, environment, secrets
+        )
+
         try:
-            (
-                settings,
-                namespace,
-                resource_name,
-                labels,
-                image,
-                applier,
-                k8s_deployment,
-                k8s_service,
-                context,
-                engine,
-            ) = self._prepare_deployment_resources(
-                deployment, environment, secrets
-            )
-
-            self._apply_core_resources(
-                deployment,
-                k8s_deployment,
-                k8s_service,
-                applier,
-                resource_name,
-                namespace,
+            created_objects = self.k8s_applier.provision(
+                rendered_resources,
+                default_namespace=self._namespace,
                 dry_run=False,
+                timeout=timeout,
             )
-
-            self._apply_additional_resources(
-                deployment, settings, namespace, applier, context, engine
+            logger.info(
+                f"Successfully created {len(created_objects)} Kubernetes resource(s)"
             )
+        except DeploymentProvisionError:
+            raise
+        except Exception as e:
+            raise DeploymentProvisionError(
+                f"Failed to provision deployment '{deployment.name}': {e}"
+            ) from e
 
+        try:
             self._wait_for_deployment_readiness(
                 deployment,
-                settings,
-                resource_name,
-                namespace,
-                applier,
+                self._settings,
+                self._resource_name,
+                self._namespace,
                 timeout,
             )
 
@@ -1336,27 +706,47 @@ class KubernetesDeployer(ContainerizedDeployer):
         except DeploymentProvisionError:
             raise
         except ApiException as e:
-            if (
-                "namespace" in locals()
-                and "resource_name" in locals()
-                and "applier" in locals()
-            ):
-                self._cleanup_deployment_resources(
-                    deployment, namespace, resource_name, applier
+            # Cleanup: delete all resources by label selector
+            label_selector = f"zenml-deployment-id={deployment.id}"
+            logger.warning(
+                f"Provisioning failed, cleaning up resources with label: {label_selector}"
+            )
+            try:
+                deleted_count = self.k8s_applier.delete_by_label_selector(
+                    label_selector=label_selector,
+                    namespace=self._namespace,
+                    propagation_policy="Foreground",
                 )
+                logger.info(f"Cleanup deleted {deleted_count} resource(s)")
+            except Exception as cleanup_error:
+                logger.error(
+                    f"Cleanup failed: {cleanup_error}. "
+                    f"Manual cleanup: kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
+                )
+
             raise DeploymentProvisionError(
                 f"Kubernetes API error while provisioning '{deployment.name}': "
                 f"{e.status} - {e.reason}"
             ) from e
         except Exception as e:
-            if (
-                "namespace" in locals()
-                and "resource_name" in locals()
-                and "applier" in locals()
-            ):
-                self._cleanup_deployment_resources(
-                    deployment, namespace, resource_name, applier
+            # Cleanup: delete all resources by label selector
+            label_selector = f"zenml-deployment-id={deployment.id}"
+            logger.warning(
+                f"Provisioning failed, cleaning up resources with label: {label_selector}"
+            )
+            try:
+                deleted_count = self.k8s_applier.delete_by_label_selector(
+                    label_selector=label_selector,
+                    namespace=self._namespace,
+                    propagation_policy="Foreground",
                 )
+                logger.info(f"Cleanup deleted {deleted_count} resource(s)")
+            except Exception as cleanup_error:
+                logger.error(
+                    f"Cleanup failed: {cleanup_error}. "
+                    f"Manual cleanup: kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
+                )
+
             raise DeploymentProvisionError(
                 f"Unexpected error provisioning deployment '{deployment.name}': {e}"
             ) from e
@@ -1380,32 +770,18 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeployerError: If deployment has no snapshot.
             DeploymentNotFoundError: If deployment not found.
         """
-        snapshot = deployment.snapshot
-        if not snapshot:
-            raise DeployerError(
-                f"Deployment '{deployment.name}' has no snapshot"
-            )
-
-        settings = cast(
-            KubernetesDeployerSettings,
-            self.get_settings(snapshot),
-        )
-        namespace = self._get_namespace(deployment)
-        resource_name = self._get_resource_name(deployment)
-        labels = self._get_labels(deployment, settings)
-
-        applier = KubernetesApplier(api_client=self.get_kube_client())
+        self._initialize_deployment_context(deployment)
 
         try:
-            k8s_deployment = applier.get_resource(
-                name=resource_name,
-                namespace=namespace,
+            k8s_deployment = self.k8s_applier.get_resource(
+                name=self._resource_name,
+                namespace=self._namespace,
                 kind="Deployment",
                 api_version="apps/v1",
             )
-            k8s_service = applier.get_resource(
-                name=resource_name,
-                namespace=namespace,
+            k8s_service = self.k8s_applier.get_resource(
+                name=self._resource_name,
+                namespace=self._namespace,
                 kind="Service",
                 api_version="v1",
             )
@@ -1438,17 +814,17 @@ class KubernetesDeployer(ContainerizedDeployer):
             url = kube_utils.build_service_url(
                 core_api=self.k8s_core_api,
                 service=k8s_service,
-                namespace=namespace,
+                namespace=self._namespace,
                 ingress=None,
             )
 
             metadata = {
-                "deployment_name": resource_name,
-                "namespace": namespace,
-                "service_name": resource_name,
-                "port": settings.service_port,
-                "service_type": settings.service_type,
-                "labels": labels,
+                "deployment_name": self._resource_name,
+                "namespace": self._namespace,
+                "service_name": self._resource_name,
+                "port": self._settings.service_port,
+                "service_type": self._settings.service_type,
+                "labels": self._labels,
             }
 
             return DeploymentOperationalState(
@@ -1489,14 +865,13 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentLogsNotFoundError: If logs not found.
         """
-        namespace = self._get_namespace(deployment)
+        self._initialize_deployment_context(deployment)
+
         label_selector = f"zenml-deployment-id={deployment.id}"
 
-        applier = KubernetesApplier(api_client=self.get_kube_client())
-
         try:
-            pods = applier.list_resources(
-                namespace=namespace,
+            pods = self.k8s_applier.list_resources(
+                namespace=self._namespace,
                 kind="Pod",
                 api_version="v1",
                 label_selector=label_selector,
@@ -1511,7 +886,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             if follow:
                 resp = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
-                    namespace=namespace,
+                    namespace=self._namespace,
                     follow=True,
                     tail_lines=tail,
                     _preload_content=False,
@@ -1524,7 +899,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             else:
                 logs = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
-                    namespace=namespace,
+                    namespace=self._namespace,
                     tail_lines=tail,
                 )
                 for line in logs.split("\n"):
@@ -1547,6 +922,12 @@ class KubernetesDeployer(ContainerizedDeployer):
     ) -> Optional[DeploymentOperationalState]:
         """Deprovision a deployment.
 
+        Uses label selector to delete all resources, which is more robust than
+        trying to re-render resources since:
+        - Works even if templates or settings have changed
+        - Catches any resources we might have missed tracking
+        - Handles dependencies correctly with propagation policy
+
         Args:
             deployment: The deployment to deprovision.
             timeout: Timeout in seconds.
@@ -1558,149 +939,51 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentDeprovisionError: If deprovisioning fails.
             DeploymentNotFoundError: If deployment not found.
         """
-        snapshot = deployment.snapshot
-        if not snapshot:
-            raise DeploymentDeprovisionError(
-                f"Deployment '{deployment.name}' has no snapshot"
-            )
+        # Initialize context to get namespace
+        self._initialize_deployment_context(deployment)
 
-        settings = cast(
-            KubernetesDeployerSettings,
-            self.get_settings(snapshot),
-        )
-        namespace = self._get_namespace(deployment)
-        resource_name = self._get_resource_name(deployment)
+        label_selector = f"zenml-deployment-id={deployment.id}"
 
         try:
-            applier = KubernetesApplier(api_client=self.get_kube_client())
+            logger.info(
+                f"Deprovisioning deployment '{deployment.name}' using label selector: {label_selector}"
+            )
 
-            if settings.additional_resources:
-                try:
-                    engine = KubernetesTemplateEngine(
-                        custom_templates_dir=settings.custom_templates_dir
-                    )
-                    loaded_resources = engine.load_additional_resources(
-                        settings.additional_resources,
-                        context=None,
-                    )
-                except ValueError as e:
-                    logger.warning(
-                        f"Failed to load additional resources for deletion: {e}. "
-                        "Continuing with deletion of core resources..."
-                    )
-                    loaded_resources = []
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to load additional resources for deletion: {e}. "
-                        "Continuing with deletion of core resources..."
-                    )
-                    loaded_resources = []
+            deleted_count = self.k8s_applier.delete_by_label_selector(
+                label_selector=label_selector,
+                namespace=self._namespace,
+                propagation_policy="Foreground",
+            )
 
-                for resource_dict in reversed(loaded_resources):
-                    try:
-                        kind = resource_dict.get("kind", "Unknown")
-                        api_version = resource_dict.get("apiVersion", "v1")
-                        name = resource_dict.get("metadata", {}).get(
-                            "name", resource_name
-                        )
-
-                        logger.info(
-                            f"Deleting additional resource: {kind}/{name}"
-                        )
-                        applier.delete_resource(
-                            kind=kind,
-                            name=name,
-                            namespace=namespace,
-                            api_version=api_version,
-                        )
-                        logger.info(f"✅ {kind} '{name}' deleted successfully")
-                    except ApiException as e:
-                        if e.status == 404:
-                            logger.info(
-                                f"{kind} '{name}' not found (already deleted)"
-                            )
-                        else:
-                            logger.warning(
-                                f"Failed to delete {kind} '{name}': {e}"
-                            )
-
-            logger.info(f"Deleting Service: {resource_name}")
-            try:
-                applier.delete_resource(
-                    name=resource_name,
-                    namespace=namespace,
-                    kind="Service",
-                    api_version="v1",
-                )
+            if deleted_count > 0:
                 logger.info(
-                    f"✅ Service '{resource_name}' deleted successfully"
+                    f"✅ Deprovisioned deployment '{deployment.name}' "
+                    f"({deleted_count} resource(s) deleted)"
                 )
-            except ApiException as e:
-                if e.status == 404:
-                    logger.info(
-                        f"Service '{resource_name}' not found (already deleted)"
-                    )
-                else:
-                    logger.warning(
-                        f"Failed to delete Service '{resource_name}': {e}"
-                    )
-
-            logger.info(f"Deleting Deployment: {resource_name}")
-            try:
-                applier.delete_resource(
-                    name=resource_name,
-                    namespace=namespace,
-                    kind="Deployment",
-                    api_version="apps/v1",
-                )
+            else:
                 logger.info(
-                    f"✅ Deployment '{resource_name}' deleted successfully"
+                    f"Deployment '{deployment.name}' not found (already deleted)"
                 )
-            except ApiException as e:
-                if e.status == 404:
-                    logger.info(
-                        f"Deployment '{resource_name}' not found (already deleted)"
-                    )
-                else:
-                    logger.warning(
-                        f"Failed to delete Deployment '{resource_name}': {e}"
-                    )
 
-            secret_name = f"zenml-{deployment.id}"
-            logger.info(f"Deleting Secret: {secret_name}")
-            try:
-                applier.delete_resource(
-                    name=secret_name,
-                    namespace=namespace,
-                    kind="Secret",
-                    api_version="v1",
-                )
-                logger.info(f"✅ Secret '{secret_name}' deleted successfully")
-            except ApiException as e:
-                if e.status == 404:
-                    logger.info(
-                        f"Secret '{secret_name}' not found (already deleted)"
-                    )
-                else:
-                    logger.warning(
-                        f"Failed to delete Secret '{secret_name}': {e}"
-                    )
-
-            logger.info(f"Deprovisioned deployment '{deployment.name}'")
             return None
 
-        except DeploymentNotFoundError:
-            raise
         except ApiException as e:
             if e.status == 404:
-                raise DeploymentNotFoundError(
-                    f"Deployment '{deployment.name}' not found"
-                ) from e
+                # Resource already gone - that's fine for deprovisioning
+                logger.info(
+                    f"Deployment '{deployment.name}' not found (already deleted)"
+                )
+                return None
             raise DeploymentDeprovisionError(
                 f"Kubernetes API error while deprovisioning '{deployment.name}': "
                 f"{e.status} - {e.reason}"
             ) from e
         except Exception as e:
+            logger.error(
+                f"Failed to deprovision '{deployment.name}': {e}. "
+                f"You may need to manually delete resources:\n"
+                f"  kubectl delete all,configmap,secret -n {self._namespace} -l {label_selector}"
+            )
             raise DeploymentDeprovisionError(
                 f"Unexpected error deprovisioning '{deployment.name}': {e}"
             ) from e

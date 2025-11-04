@@ -403,8 +403,6 @@ def create_secret(
 ) -> None:
     """Create a Kubernetes secret.
 
-    Used by the Kubernetes orchestrator for pipeline secrets.
-
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
         namespace: The namespace in which to create the secret.
@@ -424,8 +422,6 @@ def update_secret(
     data: Dict[str, Optional[str]],
 ) -> None:
     """Update a Kubernetes secret.
-
-    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -448,8 +444,6 @@ def create_or_update_secret(
     data: Dict[str, Optional[str]],
 ) -> None:
     """Create a Kubernetes secret if it doesn't exist, or update it if it does.
-
-    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -476,8 +470,6 @@ def delete_secret(
     secret_name: str,
 ) -> None:
     """Delete a Kubernetes secret.
-
-    Used by the Kubernetes orchestrator for pipeline secrets.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.

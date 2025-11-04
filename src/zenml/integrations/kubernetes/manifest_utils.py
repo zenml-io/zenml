@@ -319,14 +319,14 @@ def build_service_account_manifest(
     }
 
 
-def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
-    """Build the manifest for a new namespace.
+def namespace_resource(namespace: str) -> dict[str, Any]:
+    """Build the resource for a new namespace.
 
     Args:
         namespace: Kubernetes namespace.
 
     Returns:
-        Manifest of the new namespace.
+        Resource for a namespace.
     """
     return {
         "apiVersion": "v1",
@@ -340,35 +340,32 @@ def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
 def build_secret_manifest(
     name: str,
     data: Mapping[str, Optional[str]],
+    namespace: Optional[str] = None,
     secret_type: str = "Opaque",
-) -> k8s_client.V1Secret:
-    """Builds a Kubernetes secret manifest using the typed V1Secret model.
-
-    For patch operations, keys with None values signal deletion of that key.
-    This uses the 'data' field (base64-encoded) rather than 'string_data' to
-    support None values for key deletion in patch operations.
+) -> Dict[str, Any]:
+    """Builds a Kubernetes secret manifest.
 
     Args:
         name: Name of the secret.
-        data: The secret data as plain strings. Keys with None values will
-            signal deletion when used in patch operations.
+        data: The secret data.
+        namespace: The namespace to create the secret in.
         secret_type: The secret type.
 
     Returns:
-        The typed V1Secret object.
+        The secret manifest.
     """
     encoded_data = {
         key: base64.b64encode(value.encode()).decode() if value else None
         for key, value in data.items()
     }
 
-    return k8s_client.V1Secret(
-        api_version="v1",
-        kind="Secret",
-        metadata=k8s_client.V1ObjectMeta(name=name),
-        type=secret_type,
-        data=encoded_data,
-    )
+    return {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {"name": name, "namespace": namespace},
+        "type": secret_type,
+        "data": encoded_data,
+    }
 
 
 def pod_template_manifest_from_pod(
