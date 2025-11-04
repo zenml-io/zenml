@@ -183,9 +183,9 @@ class KubernetesApplier:
             A list of Kubernetes API objects returned by the server.
 
         Raises:
-            ValueError: If an input resource is invalid.
             RuntimeError: If provisioning of a resource fails.
             Exception: For unexpected errors during provisioning.
+            ApiException: For API failures.
         """
         results: List[Any] = []
 

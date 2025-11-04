@@ -427,10 +427,6 @@ class KubernetesTemplateEngine:
 
         Returns:
             List of resource dictionaries ready to apply.
-
-        Raises:
-            ValueError: If the template/file is invalid or produces invalid YAML.
-            TemplateNotFound: If a .j2 template cannot be found.
         """
         context = context or {}
 
