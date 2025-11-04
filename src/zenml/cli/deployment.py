@@ -32,6 +32,7 @@ from zenml.models import (
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils
+from zenml.utils.dashboard_utils import get_deployment_url
 
 logger = get_logger(__name__)
 
@@ -251,8 +252,6 @@ def provision_deployment(
                 f"Provisioned deployment '{deployment_name_or_id}'."
             )
             cli_utils.pretty_print_deployment(deployment, show_secret=True)
-
-            from zenml.utils.dashboard_utils import get_deployment_url
 
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
