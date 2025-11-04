@@ -18,7 +18,7 @@ docker_settings = DockerSettings(
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         # Set home directory to a writable location for Haystack storage
-        "HOME": "/tmp",
+        "HOME": "/tmp",  # nosec B108 - Docker env var, not insecure file operation
         # Override Haystack-specific environment variables
         "HAYSTACK_CONTENT_TRACING_ENABLED": "false",
         "HAYSTACK_TELEMETRY_ENABLED": "false",
