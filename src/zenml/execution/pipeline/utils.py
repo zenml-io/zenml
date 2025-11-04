@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline execution utilities."""
 
+import contextvars
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
@@ -25,10 +26,6 @@ from typing import (
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.constants import (
-    ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-    handle_bool_env_var,
-)
 from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -37,9 +34,6 @@ from zenml.models import (
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.stack import Stack
-from zenml.utils import (
-    env_utils,
-)
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -49,15 +43,18 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+_prevent_pipeline_execution = contextvars.ContextVar(
+    "prevent_pipeline_execution", default=False
+)
+
+
 def should_prevent_pipeline_execution() -> bool:
     """Whether to prevent pipeline execution.
 
     Returns:
         Whether to prevent pipeline execution.
     """
-    return handle_bool_env_var(
-        ENV_ZENML_PREVENT_PIPELINE_EXECUTION, default=False
-    )
+    return _prevent_pipeline_execution.get()
 
 
 @contextmanager
@@ -67,10 +64,11 @@ def prevent_pipeline_execution() -> Generator[None, None, None]:
     Yields:
         None.
     """
-    with env_utils.temporary_environment(
-        {ENV_ZENML_PREVENT_PIPELINE_EXECUTION: "True"}
-    ):
+    token = _prevent_pipeline_execution.set(True)
+    try:
         yield
+    finally:
+        _prevent_pipeline_execution.reset(token)
 
 
 def submit_pipeline(
