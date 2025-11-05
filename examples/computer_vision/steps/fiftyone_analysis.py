@@ -21,7 +21,11 @@ from typing import Annotated, Any, Dict
 from annotators import FiftyOneAnnotator
 from ultralytics import YOLO
 
-from zenml import step
+from zenml import (
+    get_step_context,  # Added
+    step,
+)
+from zenml.client import Client  # Added
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -51,11 +55,73 @@ def run_inference_on_fiftyone_dataset(
     # Initialize FiftyOne annotator
     annotator = FiftyOneAnnotator()
 
-    # Run inference and add predictions using the annotator
+    # Capture ZenML context and construct version suffix and metadata (gracefully handle local runs)
+    version_suffix = None
+    zenml_metadata: Dict[str, Any] = {}
+    try:
+        ctx = get_step_context()
+        # Instantiate client to ensure context and server connectivity if available (optional)
+        try:
+            _ = Client()
+        except Exception:
+            # Client may not be available in local/no-server contexts; ignore
+            pass
+
+        pipeline_run = getattr(ctx, "pipeline_run", None)
+        step_run = getattr(ctx, "step_run", None)
+
+        pipeline_run_id = getattr(pipeline_run, "id", None)
+        pipeline_name = getattr(pipeline_run, "name", None)
+        step_run_id = getattr(step_run, "id", None)
+        step_name = getattr(step_run, "name", None) or getattr(
+            ctx, "step_name", None
+        )
+
+        # Model version may not be present on YOLO models; fallback to "unknown"
+        model_version = getattr(trained_model, "version", None) or "unknown"
+        short_run_id = str(pipeline_run_id)[:8] if pipeline_run_id else None
+
+        if model_version and short_run_id:
+            version_suffix = f"v{model_version}_{short_run_id}"
+
+        zenml_metadata = {
+            "pipeline_run_id": str(pipeline_run_id)
+            if pipeline_run_id
+            else None,
+            "pipeline_name": pipeline_name,
+            "step_run_id": str(step_run_id) if step_run_id else None,
+            "step_name": step_name,
+        }
+    except Exception as e:
+        logger.info(
+            f"ZenML context not available; proceeding without context-specific suffix. Details: {e}"
+        )
+
+    if version_suffix:
+        logger.info(
+            f"Using prediction version suffix from ZenML context: {version_suffix}"
+        )
+    else:
+        logger.info(
+            "No ZenML-derived suffix available; annotator will generate a default version suffix."
+        )
+
+    if zenml_metadata:
+        logger.info(
+            f"ZenML metadata captured for predictions: {zenml_metadata}"
+        )
+    else:
+        logger.info("No ZenML metadata captured for this run.")
+
+    # Run inference and add predictions using the annotator with versioning and metadata
     return annotator.run_inference_and_add_predictions(
         dataset_name=fiftyone_dataset_name,
         model=trained_model,
         confidence_threshold=confidence_threshold,
+        version_suffix=version_suffix,
+        record_metadata=True,
+        zenml_metadata=zenml_metadata or None,
+        also_update_latest_alias=True,
     )
 
 
@@ -79,8 +145,18 @@ def analyze_predictions_with_fiftyone(
     # Initialize FiftyOne annotator
     annotator = FiftyOneAnnotator()
 
+    # Resolve which predictions field to evaluate
+    resolved_field = (
+        annotator.get_latest_prediction_field(fiftyone_dataset_name)
+        or "predictions"
+    )
+    logger.info(f"Evaluating predictions field: '{resolved_field}'")
+
     # Use annotator to evaluate predictions
-    return annotator.evaluate_predictions(dataset_name=fiftyone_dataset_name)
+    return annotator.evaluate_predictions(
+        dataset_name=fiftyone_dataset_name,
+        predictions_field=resolved_field,
+    )
 
 
 def create_fiftyone_dashboard_session(
@@ -102,7 +178,26 @@ def create_fiftyone_dashboard_session(
     # Initialize FiftyOne annotator
     annotator = FiftyOneAnnotator()
 
-    # Get dataset stats using annotator
+    # Describe available prediction versions
+    versions = annotator.describe_prediction_versions(fiftyone_dataset_name)
+    if versions:
+        logger.info("Prediction versions available for this dataset:")
+        for v in versions:
+            field = v.get("field")
+            created = v.get("created_at")
+            is_latest = v.get("is_latest")
+            latest_marker = " (latest)" if is_latest else ""
+            if created:
+                logger.info(
+                    f"  • {field}{latest_marker} - created_at: {created}"
+                )
+            else:
+                logger.info(f"  • {field}{latest_marker}")
+        logger.info(f"  • Total versions: {len(versions)}")
+    else:
+        logger.info("No prediction versions found for this dataset yet.")
+
+    # Get dataset stats using annotator (version-aware)
     labeled_count, unlabeled_count = annotator.get_dataset_stats(
         fiftyone_dataset_name
     )

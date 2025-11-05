@@ -16,8 +16,11 @@
 
 """FiftyOne annotator implementation for computer vision workflows."""
 
+import re
 import shutil
+import uuid
 import webbrowser
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -150,6 +153,278 @@ class FiftyOneAnnotator:
         """
         self.config = config or FiftyOneAnnotatorConfig()
 
+    def _sanitize(self, value: str, max_len: int = 63) -> str:
+        """Sanitize a string for safe use as a FiftyOne field name.
+
+        Field names should be concise and contain only letters, digits, or underscores.
+        This method:
+          - replaces any invalid characters with underscores
+          - collapses repeated underscores into a single underscore
+          - strips leading/trailing underscores
+          - truncates to a maximum length
+          - falls back to 'field' if the result would be empty
+
+        Args:
+            value: Input string to sanitize
+            max_len: Maximum allowed length of the result
+
+        Returns:
+            A sanitized string suitable for use as a field name
+        """
+        try:
+            s = "" if value is None else str(value)
+            # Replace non-alphanumeric/underscore characters with underscores
+            s = re.sub(r"[^A-Za-z0-9_]+", "_", s)
+            # Collapse consecutive underscores
+            s = re.sub(r"_+", "_", s)
+            # Strip leading/trailing underscores
+            s = s.strip("_")
+
+            # Ensure non-empty fallback
+            if not s:
+                s = "field"
+
+            # Truncate to the allowed maximum length
+            if max_len > 0 and len(s) > max_len:
+                s = s[:max_len]
+
+            return s
+        except Exception as e:
+            # Defensive fallback to avoid hard failures on unexpected inputs
+            logger.warning(f"Sanitization failed for value '{value}': {e}")
+            return "field"
+
+    def _default_version_suffix(self) -> str:
+        """Generate a default version suffix suitable for field names.
+
+        Combines a UTC timestamp and an 8-character UUID fragment to minimize
+        collisions while keeping the result reasonably short:
+        Example: '20250310T134501Z_1a2b3c4d'
+
+        Returns:
+            A version suffix string
+        """
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        short_uuid = uuid.uuid4().hex[:8]
+        return f"{ts}_{short_uuid}"
+
+    def list_prediction_fields(
+        self, dataset_name: str, base_field: str = "predictions"
+    ) -> List[str]:
+        """List all prediction fields on a dataset.
+
+        A prediction field is defined as either the exact base_field or any field
+        starting with base_field followed by an underscore (e.g., 'predictions_...').
+
+        Args:
+            dataset_name: Name of the FiftyOne dataset
+            base_field: Base field name to match
+
+        Returns:
+            Sorted list of prediction field names
+        """
+        try:
+            dataset = self.get_dataset(dataset_name)
+            schema = dataset.get_field_schema()
+            if not isinstance(schema, dict):
+                return []
+
+            fields: List[str] = []
+            prefix = f"{base_field}_"
+            for fname in schema.keys():
+                if fname == base_field or fname.startswith(prefix):
+                    fields.append(fname)
+
+            fields = sorted(set(fields))
+            return fields
+        except Exception as e:
+            logger.error(
+                f"Failed to list prediction fields for dataset '{dataset_name}': {e}"
+            )
+            return []
+
+    def get_latest_prediction_field(
+        self, dataset_name: str, base_field: str = "predictions"
+    ) -> Optional[str]:
+        """Resolve the latest prediction field for a dataset.
+
+        Resolution order:
+          1) dataset.info['latest_predictions_field'] if present and exists in schema
+          2) base_field if it exists in schema
+          3) None if no prediction fields are found
+
+        Args:
+            dataset_name: Name of the FiftyOne dataset
+            base_field: Base field name to consider
+
+        Returns:
+            The name of the latest prediction field, or None if unavailable
+        """
+        try:
+            dataset = self.get_dataset(dataset_name)
+            schema = dataset.get_field_schema()
+            info_latest = dataset.info.get("latest_predictions_field")
+
+            if isinstance(info_latest, str):
+                if info_latest in schema:
+                    return info_latest
+                else:
+                    logger.warning(
+                        f"latest_predictions_field '{info_latest}' not found in schema "
+                        f"for dataset '{dataset_name}'"
+                    )
+
+            if base_field in schema:
+                return base_field
+
+            # As a best-effort fallback, try to detect any matching fields
+            candidates = self.list_prediction_fields(
+                dataset_name=dataset_name, base_field=base_field
+            )
+            if candidates:
+                # Return the last lexicographically as a heuristic; caller can override
+                return candidates[-1]
+
+            return None
+        except Exception as e:
+            logger.error(
+                f"Failed to determine latest prediction field for dataset '{dataset_name}': {e}"
+            )
+            return None
+
+    def set_latest_prediction_field(
+        self, dataset_name: str, field_name: str
+    ) -> None:
+        """Set the latest prediction field pointer in dataset.info.
+
+        Note: This method updates dataset.info and persists the dataset.
+
+        Args:
+            dataset_name: Name of the dataset
+            field_name: Field name to mark as latest
+        """
+        dataset = self.get_dataset(dataset_name)
+        try:
+            schema = dataset.get_field_schema()
+            if field_name not in schema:
+                logger.warning(
+                    f"Setting latest_predictions_field to '{field_name}', "
+                    f"but it does not exist in dataset '{dataset_name}' schema"
+                )
+            dataset.info["latest_predictions_field"] = field_name
+            dataset.save()
+        except Exception as e:
+            logger.error(
+                f"Failed to set latest prediction field for dataset '{dataset_name}': {e}"
+            )
+            raise
+
+    def append_prediction_version_info(
+        self, dataset_name: str, entry: Dict[str, Any]
+    ) -> None:
+        """Append a prediction version entry to dataset.info.
+
+        This creates dataset.info['prediction_versions'] if it does not exist,
+        appends the provided entry, and saves the dataset.
+
+        Args:
+            dataset_name: Name of the dataset
+            entry: Metadata entry to append
+        """
+        dataset = self.get_dataset(dataset_name)
+        try:
+            if not isinstance(entry, dict):
+                raise ValueError("entry must be a dictionary")
+
+            versions = dataset.info.get("prediction_versions", [])
+            if not isinstance(versions, list):
+                versions = []
+
+            versions.append(entry)
+            dataset.info["prediction_versions"] = versions
+            dataset.save()
+        except Exception as e:
+            logger.error(
+                f"Failed to append prediction version info for dataset '{dataset_name}': {e}"
+            )
+            raise
+
+    def get_prediction_versions_info(
+        self, dataset_name: str
+    ) -> List[Dict[str, Any]]:
+        """Get the list of prediction version entries from dataset.info.
+
+        Args:
+            dataset_name: Name of the dataset
+
+        Returns:
+            A list of prediction version metadata entries (possibly empty)
+        """
+        try:
+            dataset = self.get_dataset(dataset_name)
+            versions = dataset.info.get("prediction_versions", [])
+            if not isinstance(versions, list):
+                return []
+            # Ensure we only return dict entries
+            return [v for v in versions if isinstance(v, dict)]
+        except Exception as e:
+            logger.error(
+                f"Failed to get prediction versions info for dataset '{dataset_name}': {e}"
+            )
+            return []
+
+    def describe_prediction_versions(
+        self, dataset_name: str
+    ) -> List[Dict[str, Any]]:
+        """Describe prediction versions with latest marker and sorted order.
+
+        Sorting strategy:
+          - If 'created_at' timestamps (ISO 8601) are present, sort by created_at ascending
+            and then reverse to return newest first.
+          - Otherwise, sort by 'field' to provide a deterministic order.
+
+        Args:
+            dataset_name: Name of the dataset
+
+        Returns:
+            A list of version entries with 'is_latest' boolean added. The dataset is
+            not modified by this method.
+        """
+        try:
+            dataset = self.get_dataset(dataset_name)
+            latest = dataset.info.get("latest_predictions_field")
+            raw_versions = dataset.info.get("prediction_versions", [])
+
+            versions: List[Dict[str, Any]] = []
+            if isinstance(raw_versions, list):
+                for v in raw_versions:
+                    if isinstance(v, dict):
+                        entry = dict(v)
+                        entry["is_latest"] = (
+                            isinstance(latest, str)
+                            and entry.get("field") == latest
+                        )
+                        versions.append(entry)
+
+            # Try to sort by created_at (ISO strings sort lexicographically)
+            def sort_key(e: Dict[str, Any]) -> Tuple[int, str]:
+                created = e.get("created_at")
+                if isinstance(created, str) and created:
+                    # '0' ensures entries with created_at come first in ascending order
+                    return (0, created)
+                # '1' places entries without created_at after those with it
+                return (1, str(e.get("field", "")))
+
+            versions.sort(key=sort_key)
+            # Newest first if created_at is ISO ascending
+            versions = versions[::-1]
+            return versions
+        except Exception as e:
+            logger.error(
+                f"Failed to describe prediction versions for dataset '{dataset_name}': {e}"
+            )
+            return []
+
     def get_url(self, port: Optional[int] = None) -> str:
         """Get the URL of the FiftyOne annotation interface.
 
@@ -213,20 +488,22 @@ class FiftyOneAnnotator:
             dataset = fo.load_dataset(dataset_name)
             total_samples = len(dataset)
 
-            # Check if predictions field exists
-            has_predictions = (
-                "predictions" in dataset.get_field_schema().keys()
-            )
-
-            if has_predictions:
-                # Count samples with predictions
+            # Resolve latest predictions field, if any
+            latest_field = self.get_latest_prediction_field(dataset_name)
+            if latest_field:
+                logger.info(
+                    f"Computing dataset stats using predictions field '{latest_field}'"
+                )
                 labeled_view = dataset.match(
-                    F("predictions.detections").length() > 0
+                    F(f"{latest_field}.detections").length() > 0
                 )
                 labeled_count = len(labeled_view)
                 unlabeled_count = total_samples - labeled_count
             else:
-                # No predictions field means all are unlabeled
+                # No prediction field means all are unlabeled
+                logger.info(
+                    "No predictions field found; treating all samples as unlabeled for stats"
+                )
                 labeled_count = 0
                 unlabeled_count = total_samples
 
@@ -348,11 +625,17 @@ class FiftyOneAnnotator:
             logger.error(f"Failed to delete dataset '{dataset_name}': {e}")
             raise
 
-    def get_labeled_data(self, dataset_name: str, **kwargs) -> fo.DatasetView:
+    def get_labeled_data(
+        self,
+        dataset_name: str,
+        predictions_field: Optional[str] = None,
+        **kwargs,
+    ) -> fo.DatasetView:
         """Get labeled samples from a dataset.
 
         Args:
             dataset_name: Name of the dataset
+            predictions_field: Optional predictions field to use; if None, auto-resolve latest
             **kwargs: Additional arguments
 
         Returns:
@@ -360,13 +643,20 @@ class FiftyOneAnnotator:
         """
         dataset = self.get_dataset(dataset_name)
 
-        # Check if predictions exist
-        if "predictions" in dataset.get_field_schema().keys():
-            labeled_view = dataset.match(
-                F("predictions.detections").length() > 0
+        # Resolve which predictions field to use
+        field = predictions_field or self.get_latest_prediction_field(
+            dataset_name
+        )
+        if field:
+            logger.info(
+                f"Selecting labeled data using predictions field '{field}'"
             )
+            labeled_view = dataset.match(F(f"{field}.detections").length() > 0)
         else:
             # If no predictions, return empty view
+            logger.info(
+                "No predictions field found; returning empty labeled view"
+            )
             labeled_view = dataset.limit(0)
 
         logger.info(
@@ -375,12 +665,16 @@ class FiftyOneAnnotator:
         return labeled_view
 
     def get_unlabeled_data(
-        self, dataset_name: str, **kwargs
+        self,
+        dataset_name: str,
+        predictions_field: Optional[str] = None,
+        **kwargs,
     ) -> fo.DatasetView:
         """Get unlabeled samples from a dataset.
 
         Args:
             dataset_name: Name of the dataset
+            predictions_field: Optional predictions field to use; if None, auto-resolve latest
             **kwargs: Additional arguments
 
         Returns:
@@ -388,13 +682,22 @@ class FiftyOneAnnotator:
         """
         dataset = self.get_dataset(dataset_name)
 
-        # Check if predictions exist
-        if "predictions" in dataset.get_field_schema().keys():
+        # Resolve which predictions field to use
+        field = predictions_field or self.get_latest_prediction_field(
+            dataset_name
+        )
+        if field:
+            logger.info(
+                f"Selecting unlabeled data using predictions field '{field}'"
+            )
             unlabeled_view = dataset.match(
-                F("predictions.detections").length() == 0
+                F(f"{field}.detections").length() == 0
             )
         else:
             # If no predictions field, all samples are unlabeled
+            logger.info(
+                "No predictions field found; treating all samples as unlabeled"
+            )
             unlabeled_view = dataset
 
         logger.info(
@@ -450,14 +753,26 @@ class FiftyOneAnnotator:
         model: YOLO,
         confidence_threshold: float = 0.25,
         predictions_field: str = "predictions",
+        version_suffix: Optional[str] = None,
+        record_metadata: bool = True,
+        zenml_metadata: Optional[Dict[str, Any]] = None,
+        also_update_latest_alias: bool = True,
     ) -> str:
         """Run model inference on dataset and add predictions.
+
+        This method supports versioned prediction fields and metadata lineage tracking.
+        Past predictions are retained by creating a unique versioned field for each run,
+        with an optional mirror to a stable alias for compatibility.
 
         Args:
             dataset_name: Name of the FiftyOne dataset
             model: Trained YOLO model
             confidence_threshold: Minimum confidence threshold
-            predictions_field: Name of the field to store predictions
+            predictions_field: Base field name to store predictions (alias, if mirroring)
+            version_suffix: Optional custom suffix for versioned field name
+            record_metadata: Whether to store lineage metadata in dataset.info
+            zenml_metadata: Optional ZenML lineage info to persist
+            also_update_latest_alias: Whether to mirror to the stable predictions_field alias
 
         Returns:
             Name of the updated dataset
@@ -467,12 +782,40 @@ class FiftyOneAnnotator:
             f"Running inference on {len(dataset)} samples with confidence >= {confidence_threshold}"
         )
 
-        # Clear existing predictions
-        if predictions_field in dataset.get_field_schema().keys():
-            logger.info(f"Clearing existing '{predictions_field}' field...")
-            dataset.delete_sample_field(predictions_field)
+        # Determine unique versioned field name without deleting existing predictions
+        schema = dataset.get_field_schema()
+        # Sanitize provided suffix or generate a default timestamp+uuid suffix
+        suffix = (
+            self._sanitize(version_suffix)
+            if version_suffix
+            else self._default_version_suffix()
+        )
+        versioned_field = f"{predictions_field}_{suffix}"
 
-        # Run inference on each sample
+        # Ensure uniqueness by checking schema and regenerating if needed
+        attempts = 0
+        while versioned_field in schema.keys():
+            attempts += 1
+            # Regenerate only the suffix to avoid bloating the base name
+            suffix = self._default_version_suffix()
+            versioned_field = f"{predictions_field}_{suffix}"
+            if attempts >= 10:
+                # Extremely unlikely; proceed anyway with the last generated value
+                logger.warning(
+                    f"Collision detected repeatedly when generating versioned field name for '{predictions_field}'. "
+                    f"Proceeding with '{versioned_field}'."
+                )
+                break
+
+        logger.info(
+            f"Writing predictions to versioned field '{versioned_field}'"
+        )
+        if also_update_latest_alias:
+            logger.info(
+                f"Also mirroring predictions to alias '{predictions_field}'"
+            )
+
+        # Run inference on each sample (YOLO logic unchanged)
         for sample in dataset:
             try:
                 # Run YOLO inference
@@ -509,9 +852,11 @@ class FiftyOneAnnotator:
                         detections.append(detection)
 
                 # Add detections to sample
-                sample[predictions_field] = fo.Detections(
-                    detections=detections
-                )
+                det_obj = fo.Detections(detections=detections)
+                sample[versioned_field] = det_obj
+                if also_update_latest_alias:
+                    # Mirror to stable alias for backward compatibility
+                    sample[predictions_field] = det_obj
                 sample.save()
 
             except Exception as e:
@@ -519,34 +864,99 @@ class FiftyOneAnnotator:
                 continue
 
         logger.info(
-            f"✅ Added predictions to {len(dataset)} samples in field '{predictions_field}'"
+            f"✅ Added predictions to {len(dataset)} samples in field '{versioned_field}'"
+            + (
+                f" (mirrored to '{predictions_field}')"
+                if also_update_latest_alias
+                else ""
+            )
         )
+
+        # Record metadata and update latest pointer
+        try:
+            # Extract classes from model if available; otherwise fall back to COCO
+            classes: List[str]
+            try:
+                names = getattr(model, "names", None)
+                classes = (
+                    list(names.values())
+                    if isinstance(names, dict)
+                    else COCO_CLASSES
+                )
+            except Exception:
+                classes = COCO_CLASSES
+
+            # Extract model name/version gracefully
+            model_name = getattr(model, "model", None)
+            if model_name is None:
+                model_name = (
+                    getattr(model, "name", None) or model.__class__.__name__
+                )
+            model_version = getattr(model, "version", None) or "unknown"
+
+            if record_metadata:
+                entry: Dict[str, Any] = {
+                    "field": versioned_field,
+                    "created_at": datetime.now(timezone.utc)
+                    .isoformat()
+                    .replace("+00:00", "Z"),
+                    "base_field": predictions_field,
+                    "params": {
+                        "confidence_threshold": confidence_threshold,
+                    },
+                    "model": {
+                        "name": str(model_name),
+                        "version": str(model_version),
+                        "classes": classes,
+                    },
+                    "zenml": zenml_metadata or {},
+                }
+                self.append_prediction_version_info(dataset_name, entry)
+
+            # Update the 'latest' pointer to the versioned field
+            self.set_latest_prediction_field(dataset_name, versioned_field)
+        except Exception as e:
+            logger.warning(
+                f"Failed to record prediction metadata or update latest field for dataset '{dataset_name}': {e}"
+            )
+
         return dataset_name
 
     def evaluate_predictions(
         self,
         dataset_name: str,
-        predictions_field: str = "predictions",
+        predictions_field: Optional[str] = None,
         gt_field: str = "ground_truth",
     ) -> Dict[str, Any]:
         """Evaluate predictions against ground truth.
 
         Args:
             dataset_name: Name of the dataset
-            predictions_field: Field containing predictions
+            predictions_field: Optional field containing predictions; if None, auto-resolve latest
             gt_field: Field containing ground truth
 
         Returns:
             Dictionary containing evaluation metrics
         """
         dataset = self.get_dataset(dataset_name)
-        logger.info(
-            f"Evaluating predictions in '{predictions_field}' against '{gt_field}'"
+        # Resolve which predictions field to use: prefer provided, else latest known, else fallback alias
+        resolved_field = (
+            predictions_field
+            or self.get_latest_prediction_field(dataset_name)
+            or "predictions"
         )
+        if predictions_field is None:
+            logger.info(
+                f"Evaluating using predictions field '{resolved_field}' (auto-resolved)"
+            )
+        else:
+            logger.info(
+                f"Evaluating using predictions field '{resolved_field}' (provided)"
+            )
 
         # Run separate evaluations at different IoU thresholds
         results_50 = dataset.evaluate_detections(
-            predictions_field,
+            resolved_field,
             gt_field=gt_field,
             eval_key="eval_50",
             iou=0.5,
@@ -554,7 +964,7 @@ class FiftyOneAnnotator:
         )
 
         results_75 = dataset.evaluate_detections(
-            predictions_field,
+            resolved_field,
             gt_field=gt_field,
             eval_key="eval_75",
             iou=0.75,
@@ -584,6 +994,7 @@ class FiftyOneAnnotator:
             "class_metrics": class_metrics,
             "total_samples": len(dataset),
             "eval_keys": ["eval_50", "eval_75"],
+            "predictions_field_used": resolved_field,
         }
 
         # Log results
