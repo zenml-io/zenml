@@ -499,13 +499,8 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
             runtime = api.get_space_runtime(repo_id=space_id)
 
-            # Debug logging
             domains = runtime.raw.get("domains", [])
             domain_stage = domains[0].get("stage") if domains else None
-            logger.debug(
-                f"Space {space_id} state: stage={runtime.stage}, "
-                f"domain_stage={domain_stage}, has_domains={bool(domains)}"
-            )
 
             # Map HuggingFace Space stages to ZenML standard deployment states
             # Note: runtime.stage is a string, compare using enum.value
@@ -514,17 +509,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 # Check if domain is also ready (not just Space running)
                 if domains and domains[0].get("stage") == "READY":
                     status = DeploymentStatus.RUNNING
-                    logger.debug(
-                        f"Space {space_id} is fully ready: "
-                        f"stage=RUNNING, domain_stage=READY"
-                    )
                 else:
                     # Space is running but domain not ready yet (DNS propagating, etc.)
                     status = DeploymentStatus.PENDING
-                    logger.debug(
-                        f"Space {space_id} is running but domain not ready: "
-                        f"domain_stage={domain_stage}"
-                    )
             # Building/updating states - health endpoint not yet available
             elif runtime.stage in [
                 SpaceStage.BUILDING.value,
@@ -548,27 +535,20 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             ]:
                 status = DeploymentStatus.ABSENT
             else:
-                # Unknown/future stages
+                # Unknown/future stages - log once for visibility
                 logger.warning(
-                    f"Space {space_id} has unrecognized stage: '{runtime.stage}'. "
-                    f"This might be a new HuggingFace stage. Treating as UNKNOWN. "
-                    f"Known stages: {[s.value for s in SpaceStage]}"
+                    f"Space {space_id} has unrecognized stage: '{runtime.stage}'"
                 )
                 status = DeploymentStatus.UNKNOWN
 
             # Get deployment URL from Space domains (only when fully ready)
             url = None
-            # Only set URL if domain is ready for traffic
             if (
                 domain_stage == "READY"
                 and domains
                 and domains[0].get("domain")
             ):
                 url = f"https://{domains[0]['domain']}"
-                logger.info(
-                    f"Space {space_id} deployment URL: {url} "
-                    f"(status={status}, stage={runtime.stage}, domain_stage={domain_stage})"
-                )
 
             return DeploymentOperationalState(
                 status=status,
@@ -604,10 +584,6 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         """
         # HuggingFace Spaces: Skip HTTP health check, rely on Space runtime state
         # We already verified Space is RUNNING and domain is READY in get_deployment_state
-        logger.debug(
-            f"Skipping HTTP health check for HuggingFace Space deployment "
-            f"{deployment.name} (relying on Space runtime state)"
-        )
         return True
 
     def do_get_deployment_state_logs(
