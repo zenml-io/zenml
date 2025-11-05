@@ -116,16 +116,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             raise DeployerError("Deployment context not initialized.")
         return self._ctx
 
-    def _clear_deployment_context(self) -> None:
-        """Clear deployment context after operation completes.
-
-        This prevents state leakage between deployments when a deployer
-        instance is reused. The k8s_client and k8s_applier are preserved
-        as they can safely be reused across deployments.
-        """
-        self._ctx = None
-        self._engine = None
-
     # ========================================================================
     # Kubernetes Client Management
     # ========================================================================
@@ -383,8 +373,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         # Check collision
         if sanitized in secret_key_map and secret_key_map[sanitized] != key:
-            raise DeploymentProvisionError(...)
-
+            raise DeploymentProvisionError(
+                f"Secret key '{key}' sanitized to '{sanitized}' but already exists in map"
+                f"with value '{secret_key_map[sanitized]}'. This is not allowed."
+            )
         secret_key_map[sanitized] = key
         return sanitized
 

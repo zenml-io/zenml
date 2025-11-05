@@ -341,7 +341,7 @@ class KubernetesApplier:
         try:
             # Get all API resources using the discovery API
             # This is equivalent to: kubectl api-resources --namespaced=true
-            api_groups = self.api_client.resources.get()
+            api_groups = self.dynamic.resources.get()
 
             for resource in api_groups.resources:
                 # Skip if not namespaced
