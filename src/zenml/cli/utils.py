@@ -2640,34 +2640,30 @@ def pretty_print_deployment(
             declare("  [dim]No metadata available[/dim]")
 
     # Management section
-    declare("\n⚙️  [bold]Management Commands[/bold]")
+    declare("\n⚙️  [bold]Management Commands[/bold]\n")
 
-    mgmt_table = table.Table(
-        box=box.ROUNDED,
-        show_header=False,
-        border_style="dim",
-        padding=(0, 1),
+    # Display commands in a simple, copy-friendly format
+    console.print(
+        f"[bold green]zenml deployment logs {deployment.name} -f[/bold green]"
     )
-    mgmt_table.add_column("Command", style="bold")
-    mgmt_table.add_column("Description")
+    console.print("  [dim]Follow deployment logs in real-time[/dim]\n")
 
-    mgmt_table.add_row(
-        f"zenml deployment logs {deployment.name} -f",
-        "Follow deployment logs in real-time",
+    console.print(
+        f"[bold green]zenml deployment describe {deployment.name}[/bold green]"
     )
-    mgmt_table.add_row(
-        f"zenml deployment describe {deployment.name}",
-        "Show detailed deployment information",
+    console.print("  [dim]Show detailed deployment information[/dim]\n")
+
+    console.print(
+        f"[bold green]zenml deployment deprovision {deployment.name}[/bold green]"
     )
-    mgmt_table.add_row(
-        f"zenml deployment deprovision {deployment.name}",
-        "Deprovision this deployment and keep a record of it",
+    console.print(
+        "  [dim]Deprovision this deployment and keep a record of it[/dim]\n"
     )
-    mgmt_table.add_row(
-        f"zenml deployment delete {deployment.name}",
-        "Deprovision and delete this deployment",
+
+    console.print(
+        f"[bold green]zenml deployment delete {deployment.name}[/bold green]"
     )
-    console.print(mgmt_table)
+    console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
 def check_zenml_pro_project_availability() -> None:
