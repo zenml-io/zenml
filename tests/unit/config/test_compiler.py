@@ -686,3 +686,25 @@ def test_stack_component_shortcut_keys(
             stack=local_stack,
             run_configuration=PipelineRunConfiguration(),
         )
+
+
+def test_pipeline_parameters_are_stored_in_config(empty_step, local_stack):
+    """Tests that both configured and in-code parameters are stored in the
+    compiled pipeline configuration.
+    """
+
+    @pipeline
+    def _pipeline_with_params(a: int, b: int) -> None:
+        empty_step()
+
+    # Config params
+    _pipeline_with_params.configure(parameters={"a": 1})
+    # In-code params
+    _pipeline_with_params.prepare(b=2)
+
+    snapshot = Compiler().compile(
+        pipeline=_pipeline_with_params,
+        stack=local_stack,
+        run_configuration=PipelineRunConfiguration(),
+    )
+    assert snapshot.pipeline_configuration.parameters == {"a": 1, "b": 2}
