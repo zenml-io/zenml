@@ -246,37 +246,20 @@ def add_pod_settings(
     if settings.scheduler_name:
         pod_spec.scheduler_name = settings.scheduler_name
 
-    # Apply additional pod spec arguments
     for key, value in settings.additional_pod_spec_args.items():
-        if value is None:
-            continue
-
-        # Handle known pod spec attributes explicitly
-        if key == "volumes" and pod_spec.volumes:
-            pod_spec.volumes.extend(value)
-        elif key == "init_containers" and pod_spec.init_containers:
-            pod_spec.init_containers.extend(value)
-        elif key == "security_context":
-            pod_spec.security_context = value
-        elif key == "dns_policy":
-            pod_spec.dns_policy = value
-        elif key == "dns_config":
-            pod_spec.dns_config = value
-        elif key == "host_network":
-            pod_spec.host_network = value
-        elif key == "priority_class_name":
-            pod_spec.priority_class_name = value
-        elif key == "runtime_class_name":
-            pod_spec.runtime_class_name = value
-        elif key == "automount_service_account_token":
-            pod_spec.automount_service_account_token = value
+        if not hasattr(pod_spec, key):
+            logger.warning(f"Ignoring invalid Pod Spec argument `{key}`.")
         else:
-            logger.warning(
-                f"Ignoring unsupported Pod Spec argument `{key}`. "
-                f"Supported: volumes, init_containers, security_context, dns_policy, "
-                f"dns_config, host_network, priority_class_name, runtime_class_name, "
-                f"automount_service_account_token"
-            )
+            if value is None:
+                continue
+
+            existing_value = getattr(pod_spec, key)
+            if isinstance(existing_value, list):
+                existing_value.extend(value)
+            elif isinstance(existing_value, dict):
+                existing_value.update(value)
+            else:
+                setattr(pod_spec, key, value)
 
 
 def build_role_binding_manifest_for_service_account(
