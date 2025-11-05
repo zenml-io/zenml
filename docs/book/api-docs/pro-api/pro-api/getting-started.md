@@ -180,12 +180,12 @@ Use this decision tree to determine the right approach:
 
 **"My API calls are getting 401 Unauthorized"**
 - ✅ Check that you're using the correct API URL (workspace URL vs cloudapi.zenml.io)
-- ✅ Verify your token hasn't expired (user tokens expire after 1 hour)
+- ✅ Verify your credentials haven't expired (see next issue)
 - ✅ Ensure you're using `Bearer <token>` format in the Authorization header
 
 **"My automation keeps failing after an hour"**
-- ✅ Switch from temporary API tokens to service account API keys
-- ✅ Service account tokens don't expire automatically like user tokens
+- ✅ Check what type of authentication you are using (Personal Access Tokens or service account API keys)
+- ✅ Check the expiration date of the credentials you are using and rotate them if they have expired. Optionally adjust the expiration time during rotation.
 
 **"I can't find the endpoint to run a snapshot"**
 - ✅ Running snapshots is only possible using the **Workspace API**, not the ZenML Pro API
