@@ -124,6 +124,7 @@ class Compiler:
                 environment=pipeline_environment,
                 secrets=pipeline_secrets,
                 settings=pipeline_settings,
+                parameters=pipeline._parameters,
                 merge=False,
             )
 
