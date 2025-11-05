@@ -1,32 +1,3 @@
-{#
-  Kubernetes Deployment Template
-  
-  This template creates a Deployment resource for running containerized workloads.
-  Users can override this template by providing their own deployment.yaml.j2 in
-  the custom templates directory.
-  
-  Required context variables:
-    - name: Deployment name
-    - namespace: Kubernetes namespace
-    - image: Container image
-    - replicas: Number of replicas
-    
-  Optional context variables:
-    - labels: Additional labels
-    - service_account_name: Service account
-    - image_pull_policy: Image pull policy
-    - image_pull_secrets: List of image pull secret names
-    - command: Container command override
-    - args: Container args override
-    - env: Environment variables dict
-    - resources: Resource requests/limits dict
-    - pod_settings: KubernetesPodSettings dict
-    - security_context: Security context
-    
-  Built-in defaults (hardcoded in template):
-    - Health probes: /api/health with standard timings
-    - Override via custom_templates_dir to customize
-#}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -198,68 +169,7 @@ spec:
       {% endif %}
       
       {% if pod_settings and pod_settings.additional_pod_spec_args %}
-      {# Allow arbitrary pod spec overrides #}
       {% for key, value in pod_settings.additional_pod_spec_args.items() %}
       {{ key }}: {{ value | to_yaml | indent(6) }}
       {% endfor %}
       {% endif %}
-{#
-Advanced Customization Examples:
--------------------------------
-Override this template by placing a custom deployment.yaml.j2 in your
-custom_templates_dir. Below are examples of additional configurations:
-
-1. Pod Annotations (e.g., for Prometheus scraping):
-    metadata:
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
-        prometheus.io/path: "/metrics"
-
-2. Init Containers (for setup tasks):
-    spec:
-      initContainers:
-      - name: setup
-        image: busybox
-        command: ['sh', '-c', 'echo "Initializing..."']
-
-3. Resource Limits (CPU/Memory):
-    resources:
-      requests:
-        cpu: "500m"
-        memory: "256Mi"
-      limits:
-        cpu: "2000m"
-        memory: "1Gi"
-
-4. Security Context (run as non-root):
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 1000
-      fsGroup: 1000
-      seccompProfile:
-        type: RuntimeDefault
-
-5. Lifecycle Hooks (pre-stop graceful shutdown):
-    lifecycle:
-      preStop:
-        exec:
-          command: ["/bin/sh", "-c", "sleep 15"]
-
-6. Startup Probe (for slow-starting containers):
-    startupProbe:
-      httpGet:
-        path: /health
-        port: 8000
-      failureThreshold: 30
-      periodSeconds: 10
-
-All context variables available:
-- name, namespace, labels, annotations
-- image, image_pull_policy, image_pull_secrets
-- replicas, service_account_name
-- command, args, env
-- resources, readiness_probe, liveness_probe
-- pod_settings, security_context
-#}
-
