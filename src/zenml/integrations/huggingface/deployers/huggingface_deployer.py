@@ -303,12 +303,21 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         )
 
         try:
+            from huggingface_hub import SpaceStage
             from huggingface_hub.errors import HfHubHTTPError
 
             # Create Space if it doesn't exist, or update visibility if needed
             try:
                 space_info = api.space_info(space_id)
                 logger.info(f"Updating existing Space: {space_id}")
+
+                # Check if Space is sleeping/paused and restart it
+                runtime = api.get_space_runtime(repo_id=space_id)
+                if runtime.stage in [SpaceStage.STOPPED, SpaceStage.PAUSED]:
+                    logger.info(
+                        f"Space {space_id} is {runtime.stage}. Restarting..."
+                    )
+                    api.restart_space(repo_id=space_id)
 
                 # Update visibility if changed
                 if space_info.private != settings.private:
