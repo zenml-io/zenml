@@ -683,19 +683,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             logger.info(
                 f"Successfully created {len(created_objects)} Kubernetes resource(s)"
             )
-        except Exception as e:
-            try:
-                self._cleanup_failed_deployment(deployment)
-            except Exception as cleanup_error:
-                logger.error(
-                    f"Additional error during cleanup: {cleanup_error}. "
-                    f"Original error will be raised."
-                )
-            raise DeploymentProvisionError(
-                f"Failed to provision deployment '{deployment.name}': {e}"
-            ) from e
 
-        try:
             self._wait_for_deployment_readiness(
                 deployment,
                 ctx.settings,
