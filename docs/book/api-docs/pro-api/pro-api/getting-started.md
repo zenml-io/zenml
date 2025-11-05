@@ -46,50 +46,10 @@ To use the ZenML Pro API, you need to authenticate your requests. If you are log
 
 For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). 
 
-### Programmatic access with short-lived API tokens
 
-Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-api/#using-a-short-lived-api-token), API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
+### Programmatic access with Personal Access Tokens
 
-To generate a new API token for the ZenML Pro API:
-
-1. Navigate to the organization settings page in your ZenML Pro dashboard
-2. Select "API Tokens" from the left sidebar
-
-    ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-01.png)
-3. Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token.
-
-    ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-02.png)
-4. Simply use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
-   *   using curl:
-
-       ```bash
-       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-       ```
-   *   using wget:
-
-       ```bash
-       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-       ```
-   *   using python:
-
-       ```python
-       import requests
-
-       response = requests.get(
-         "https://cloudapi.zenml.io/users/me",
-         headers={"Authorization": f"Bearer YOUR_API_TOKEN"}
-       )
-       print(response.json())
-       ```
-
-{% hint style="info" %}
-**Important Notes**
-
-* API tokens expire after 1 hour and need to be renewed periodically.
-* individual API tokens cannot be revoked after they are generated. If a token is compromised, you may need to lock the user account or service account to prevent further access.
-* Tokens are scoped to the user account or service account that was used to generate them and inherit their permissions.
-* As an alternative to API tokens, you can use [service accounts and API keys](./#programmatic-access-with-service-accounts-and-api-keys) for long-term access.
-{% endhint %}
+Personal Access Tokens are long-lived credentials scoped to your own user account that can be used to authenticate to the ZenML Pro API and the Workspace API across all the organizations and workspaces that your account has access to. See [Personal Access Tokens](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) for setup and examples.
 
 ### Programmatic access with service accounts and API keys
 
@@ -107,10 +67,10 @@ Organization‑level service accounts and API keys can be used to authenticate t
 
 | Task | Use This API | Authentication Method |
 |------|-------------|----------------------|
-| Managing organizations, workspaces, users | **ZenML Pro API** (cloudapi.zenml.io) | Short-lived API tokens from organization settings |
-| Accessing the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service accounts + API keys (recommended for automation) |
-| Running snapshots, pipeline operations | **Workspace API** (your workspace URL) | Service accounts + API keys (recommended for automation) |
-| Pipeline development, artifact management | **Workspace API** (your workspace URL) | Temporary API tokens or service accounts |
+| Managing organizations, workspaces, users | **ZenML Pro API** (cloudapi.zenml.io) | Personal Access Tokens |
+| Accessing the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service Accounts + API keys (recommended for automation) |
+| Running snapshots, pipeline operations | **Workspace API** (your workspace URL) | Service Accounts + API keys (recommended for automation) |
+| Pipeline development, artifact management | **Workspace API** (your workspace URL) | Personal Access Tokens or Service Accounts + API Keys |
 
 See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
 
@@ -124,7 +84,7 @@ Programmatic access to the ZenML Pro workspace API is achieved mostly the same w
 
 You can use one of these two methods to authenticate with your workspace API:
 
-* [Generate and use temporary API tokens](../../oss-api/oss-api/#using-a-short-lived-api-token) (good for development and short-term tasks)
+* [Create and use a Personal Access Token](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) (good for development and short-term tasks)
 * [Create a ZenML Pro service account and use its API key](https://docs.zenml.io/pro/core-concepts/service-accounts) (recommended for production automation and run template triggering)
 
 When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
@@ -183,7 +143,7 @@ Snapshots allow you to start pipeline runs from external systems using HTTP requ
 {% hint style="success" %}
 **For Snapshot Automation**
 
-When running snapshots from external systems or CI/CD pipelines, we strongly recommend using **service accounts with API keys** rather than temporary tokens. Service accounts provide:
+When running snapshots from external systems or CI/CD pipelines, we strongly recommend using **service accounts with API keys**. Service accounts provide:
 
 * Long-term credentials that don't expire hourly
 * Dedicated authentication for automation (not tied to individual users)
@@ -211,10 +171,10 @@ Use this decision tree to determine the right approach:
 | **What do you want to do?** | **Which API?** | **Authentication Method** | **Why?** |
 |------------------------------|----------------|---------------------------|----------|
 | Run snapshots from CI/CD or external systems | **Workspace API** (your workspace URL) | Service account + API key | Long-lived, automation-friendly, not tied to users |
-| Manage organizations, create workspaces, invite users | **ZenML Pro API** (cloudapi.zenml.io) | Short-lived API tokens from org settings | Administrative operations need user-level permissions |
+| Manage organizations, create workspaces, invite users | **ZenML Pro API** (cloudapi.zenml.io) | Personal Access Tokens | Administrative operations need user-level permissions |
 | Access the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service accounts + API keys (recommended for automation) | Long-lived, automation-friendly, not tied to users |
-| Develop pipelines, explore artifacts | **Workspace API** (your workspace URL) | Temporary API tokens or service accounts | Flexible for development needs |
-| One-off pipeline operations | **Workspace API** (your workspace URL) | Temporary API tokens | Quick and easy for manual tasks |
+| Develop pipelines, explore artifacts | **Workspace API** (your workspace URL) | Personal Access Tokens or Service Accounts + API keys | Flexible for development needs |
+| One-off pipeline operations | **Workspace API** (your workspace URL) | Personal Access Tokens | Quick and easy for manual tasks |
 
 ### Common Issues
 

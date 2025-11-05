@@ -32,46 +32,7 @@ If you are using the ZenML OSS server API using the methods displayed above, it 
 Choosing a method:
 
 - Humans at the CLI: use [interactive login](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive).
-- Short‑lived scripts: use [temporary API tokens](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token).
 - CI/CD and automation: use [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
-{% endhint %}
-
-### Using a short-lived API token
-
-You can generate a short-lived API token using the CLI or the ZenML UI. This is useful when you need a fast way to make authenticated HTTP requests to the ZenML API endpoints and you don't need a long-term solution.
-
-1. Generate a short-lived API token through the API Tokens page under your ZenML UI server settings, or the `zenml token` CLI command, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
-
-2. Use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
-   *   using `curl`:
-
-       ```bash
-       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-       ```
-   *   using `wget`:
-
-       ```bash
-       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-       ```
-   *   using Python:
-
-       ```python
-       import requests
-
-       response = requests.get(
-         "https://your-zenml-server/api/v1/current-user",
-         headers={"Authorization": f"Bearer YOUR_API_TOKEN"}
-       )
-       print(response.json())
-       ```
-
-{% hint style="info" %}
-**Important Notes**
-
-* API tokens expire after the configured expiration time (default 1 hour) and need to be renewed periodically.
-* individual API tokens cannot be revoked after they are generated. If a token is compromised, you may need to lock the user account or service account to prevent further access.
-* Tokens are scoped to the user account or service account that was used to generate them and inherit their permissions.
-* For long-term programmatic access, it is instead recommended to [set up a service account API key](./#using-a-service-account-and-an-api-key).
 {% endhint %}
 
 ### Using a service account and an API key

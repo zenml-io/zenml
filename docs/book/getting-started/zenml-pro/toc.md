@@ -14,5 +14,6 @@
 * [Projects](projects.md)
 * [Teams](teams.md)
 * [Roles & Permissions](roles.md)
+* [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)

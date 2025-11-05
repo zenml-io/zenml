@@ -257,7 +257,12 @@ def authenticate_credentials(
         ZENML_PRO_API_KEY_PREFIX
     ):
         # This is a ZenML Pro API key used in place of an access token.
-        return authenticate_external_user(external_access_token=access_token)
+        try:
+            return authenticate_external_user(external_access_token=access_token)
+        except AuthorizationException as e:
+            error = f"Authentication error: {e}."
+            logger.exception(error)
+            raise CredentialsNotValid(error)
     elif access_token is not None:
         try:
             decoded_token = JWTToken.decode_token(
