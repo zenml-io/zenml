@@ -491,7 +491,7 @@ def deploy_pipeline(
         dashboard_url = get_deployment_url(deployment)
         if dashboard_url:
             cli_utils.declare(
-                f"\n✅ [bold green]View in ZenML Cloud:[/bold green] "
+                f"\n✅ [bold green]View in the ZenML UI:[/bold green] "
                 f"[link]{dashboard_url}[/link]"
             )
 
