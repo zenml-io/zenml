@@ -529,6 +529,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             elif runtime.stage in [
                 SpaceStage.BUILDING.value,
                 SpaceStage.RUNNING_BUILDING.value,
+                "RUNNING_APP_STARTING",  # New HF stage: app is starting
             ]:
                 status = DeploymentStatus.PENDING
             # Error states - deployment failed or misconfigured
@@ -600,7 +601,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         """
         import requests
 
-        from zenml.enums import DeploymentDefaultEndpoints
+        from zenml.config.deployment_settings import (
+            DeploymentDefaultEndpoints,
+        )
 
         assert deployment.snapshot, "Deployment snapshot not found"
 
