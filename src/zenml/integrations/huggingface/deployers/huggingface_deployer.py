@@ -589,72 +589,26 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
     ) -> bool:
-        """Check if the deployment is healthy by calling its health check endpoint.
+        """Check if the deployment is healthy.
 
-        Overrides base method to add better logging for debugging.
+        For HuggingFace Spaces, we skip the HTTP health check because:
+        1. Private Spaces block unauthenticated health check requests (404)
+        2. We already have reliable state from HuggingFace API
+        3. If Space stage is RUNNING and domain is READY, deployment is healthy
 
         Args:
             deployment: The deployment to check.
 
         Returns:
-            True if the deployment is healthy, False otherwise.
+            True if the deployment is healthy (always True for HF Spaces).
         """
-        import requests
-
-        from zenml.config.deployment_settings import (
-            DeploymentDefaultEndpoints,
+        # HuggingFace Spaces: Skip HTTP health check, rely on Space runtime state
+        # We already verified Space is RUNNING and domain is READY in get_deployment_state
+        logger.debug(
+            f"Skipping HTTP health check for HuggingFace Space deployment "
+            f"{deployment.name} (relying on Space runtime state)"
         )
-
-        assert deployment.snapshot, "Deployment snapshot not found"
-
-        settings = (
-            deployment.snapshot.pipeline_configuration.deployment_settings
-        )
-
-        # If the health check endpoint is disabled, we consider the deployment healthy.
-        if (
-            DeploymentDefaultEndpoints.HEALTH
-            not in settings.include_default_endpoints
-        ):
-            logger.debug(
-                f"Health check disabled for deployment {deployment.name}"
-            )
-            return True
-
-        if not deployment.url:
-            logger.debug(
-                f"No URL available for deployment {deployment.name}, health check fails"
-            )
-            return False
-
-        health_check_path = f"{settings.root_url_path}{settings.api_url_path}{settings.health_url_path}"
-        health_check_url = f"{deployment.url}{health_check_path}"
-
-        logger.info(
-            f"Checking health endpoint for deployment {deployment.name}: {health_check_url}"
-        )
-
-        # Attempt to connect to the deployment and check if it is healthy
-        try:
-            response = requests.get(health_check_url, timeout=3)
-            if response.status_code == 200:
-                logger.info(
-                    f"Health check passed for deployment {deployment.name}"
-                )
-                return True
-            else:
-                logger.warning(
-                    f"Health check endpoint for deployment '{deployment.name}' "
-                    f"at '{health_check_url}' returned status code "
-                    f"{response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.warning(
-                f"Health check endpoint for deployment '{deployment.name}' "
-                f"at '{health_check_url}' is not reachable: {e}"
-            )
-            return False
+        return True
 
     def do_get_deployment_state_logs(
         self,
