@@ -554,6 +554,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 and domains[0].get("domain")
             ):
                 url = f"https://{domains[0]['domain']}"
+                logger.info(
+                    f"Space {space_id} deployment URL: {url} (status={status})"
+                )
 
             return DeploymentOperationalState(
                 status=status,
