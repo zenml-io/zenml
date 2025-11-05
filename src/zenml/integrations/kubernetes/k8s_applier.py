@@ -102,7 +102,6 @@ class KubernetesApplier:
         resource: Dict[str, Any],
         field_manager: str,
         force: bool,
-        dry_run: bool,
         namespace: Optional[str],
         timeout: Optional[int],
     ) -> Any:
@@ -115,7 +114,6 @@ class KubernetesApplier:
             resource: Resource dictionary
             field_manager: Field manager name for SSA
             force: Whether to force conflicts
-            dry_run: Whether to do a dry-run
             namespace: Default namespace if not in resource
             timeout: Request timeout
 
@@ -145,15 +143,13 @@ class KubernetesApplier:
             kwargs["field_manager"] = field_manager
         if force:
             kwargs["force_conflicts"] = True
-        if dry_run:
-            kwargs["dry_run"] = "All"
         if timeout is not None:
             kwargs["_request_timeout"] = timeout
 
         return self.dynamic.server_side_apply(resource=api_resource, **kwargs)
 
     # --------------------------------------------------------------------- #
-    # PROVISION (SSA + optional server-side dry-run)
+    # PROVISION (SSA)
     # --------------------------------------------------------------------- #
 
     def provision(
@@ -161,20 +157,18 @@ class KubernetesApplier:
         objs: Iterable[ResourceLike],
         default_namespace: Optional[str],
         *,
-        dry_run: bool,
         field_manager: str = "zenml-deployer",
         force: bool = False,
         timeout: Optional[int] = None,
     ) -> List[Any]:
-        """Provision (create/update) resources using **Server-Side Apply**.
+        """Provision (create/update) resources using Server-Side Apply.
 
-        This is declarative and CRD-friendly. When `dry_run=True`, the API server
-        validates, defaults, and admits the changes but **does not persist** them.
+        This is declarative and CRD-friendly. Resources are applied in order,
+        with namespaces created first to ensure dependencies are satisfied.
 
         Args:
             objs: Iterable of resource dicts or client models. Supports 'kind: List'.
             default_namespace: Namespace to use if a namespaced resource lacks metadata.namespace.
-            dry_run: If True, send `?dryRun=All` for a server-side validation only.
             field_manager: Field manager identity for SSA ownership tracking.
             force: If True, force ownership on SSA conflicts (override other managers).
             timeout: Optional request timeout (seconds) passed to the Python client.
@@ -184,7 +178,6 @@ class KubernetesApplier:
 
         Raises:
             RuntimeError: If provisioning of a resource fails.
-            Exception: For unexpected errors during provisioning.
             ApiException: For API failures.
         """
         results: List[Any] = []
@@ -199,111 +192,40 @@ class KubernetesApplier:
         ]
         sorted_resources = namespaces + other_resources
 
-        created_namespaces: List[str] = []
-
-        try:
-            for raw in sorted_resources:
-                kwargs: Dict[str, Any] = {}
-                if default_namespace:
-                    kwargs["namespace"] = default_namespace
-
-                is_namespace = raw.get("kind") == "Namespace"
-                if dry_run and not is_namespace:
-                    kwargs["dry_run"] = "All"
-
-                if timeout is not None:
-                    kwargs["_request_timeout"] = timeout
-
-                try:
-                    # NOTE: Namespace handling during dry-run
-                    # Namespaces must be created for real (not dry-run) to validate
-                    # resources that reference them. They are deleted in the finally
-                    # block below. This is necessary because Kubernetes API validation
-                    # requires namespaces to exist when validating resources that
-                    # reference them.
-                    created = self._apply_resource(
-                        raw,
-                        field_manager=field_manager,
-                        force=force,
-                        dry_run=dry_run and not is_namespace,
-                        namespace=kwargs.get("namespace"),
-                        timeout=timeout,
-                    )
-
-                    if dry_run and is_namespace:
-                        ns_name = (raw.get("metadata") or {}).get("name")
-                        if ns_name:
-                            created_namespaces.append(ns_name)
-                            logger.debug(
-                                f"Created namespace '{ns_name}' for dry-run validation "
-                                f"(will be deleted after validation)"
-                            )
-
-                    results.append(created)
-
-                except ApiException as e:
-                    error_str = str(e.body) if hasattr(e, "body") else str(e)
-                    kind = raw.get("kind", "unknown")
-                    name = (raw.get("metadata") or {}).get("name", "unknown")
-
-                    if (
-                        dry_run
-                        and "namespaces" in error_str
-                        and "not found" in error_str.lower()
-                    ):
-                        logger.warning(
-                            f"⚠️  Namespace validation failed for {kind}/{name}. "
-                            f"The namespace may need to be created before deployment."
-                        )
-                        results.append(None)
-                        continue
-
-                    raise
-                except Exception as exc:
-                    if isinstance(exc, (KeyboardInterrupt, SystemExit)):
-                        raise
-                    kind = raw.get("kind", "unknown")
-                    name = (raw.get("metadata") or {}).get("name", "unknown")
-                    raise RuntimeError(
-                        f"Failed to provision {kind}/{name}: {exc}"
-                    ) from exc
-
-        finally:
-            if dry_run and created_namespaces:
-                logger.debug(
-                    f"Cleaning up {len(created_namespaces)} namespace(s) created for dry-run"
+        for raw in sorted_resources:
+            try:
+                created = self._apply_resource(
+                    raw,
+                    field_manager=field_manager,
+                    force=force,
+                    namespace=default_namespace,
+                    timeout=timeout,
                 )
-                for ns_name in created_namespaces:
-                    try:
-                        core_v1 = k8s_client.CoreV1Api(self.api_client)
-                        core_v1.delete_namespace(
-                            name=ns_name,
-                            grace_period_seconds=0,
-                            propagation_policy="Foreground",
-                        )
-                        logger.debug(f"Deleted namespace '{ns_name}'")
-                    except ApiException as e:
-                        logger.warning(
-                            f"Failed to clean up namespace '{ns_name}': {e}"
-                        )
+                results.append(created)
 
-        return [r for r in results if r is not None]
+            except Exception as exc:
+                if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                    raise
+                kind = raw.get("kind", "unknown")
+                name = (raw.get("metadata") or {}).get("name", "unknown")
+                raise RuntimeError(
+                    f"Failed to provision {kind}/{name}: {exc}"
+                ) from exc
+
+        return results
 
     # --------------------------------------------------------------------- #
-    # DELETE (optionally server-side dry-run)
+    # DELETE
     # --------------------------------------------------------------------- #
 
     def _discover_deletable_resource_types(
-        self, namespace: str
+        self,
     ) -> List[Tuple[str, str]]:
         """Dynamically discover all namespaced resource types in the cluster.
 
         This queries the Kubernetes API to find all available resource types,
         filters for namespaced resources, and returns them in deletion order
         (workloads first, then supporting resources).
-
-        Args:
-            namespace: Namespace to check for resources (used for ordering).
 
         Returns:
             List of (kind, apiVersion) tuples in deletion order.
@@ -414,7 +336,6 @@ class KubernetesApplier:
         label_selector: str,
         namespace: str,
         *,
-        dry_run: bool = False,
         propagation_policy: Optional[str] = "Foreground",
         grace_period_seconds: Optional[int] = None,
         kinds: Optional[List[Tuple[str, str]]] = None,
@@ -428,7 +349,6 @@ class KubernetesApplier:
         Args:
             label_selector: Kubernetes label selector (e.g., "app=myapp,env=prod").
             namespace: Namespace to delete from.
-            dry_run: If True, send `?dryRun=All` for validation-only delete.
             propagation_policy: 'Foreground', 'Background', or None.
             grace_period_seconds: Optional grace period override.
             kinds: Optional list of (kind, apiVersion) tuples to delete.
@@ -443,7 +363,7 @@ class KubernetesApplier:
         """
         if kinds is None:
             if dynamic_discovery:
-                kinds = self._discover_deletable_resource_types(namespace)
+                kinds = self._discover_deletable_resource_types()
             else:
                 # Common resource types to delete, ordered by dependency
                 # (delete workloads first, then supporting resources)
@@ -498,12 +418,8 @@ class KubernetesApplier:
 
                 for item in resources_list:
                     name = item.metadata.name
-                    kwargs: Dict[str, Any] = {"namespace": namespace}
-                    if dry_run:
-                        kwargs["dry_run"] = "All"
-
                     try:
-                        res.delete(name=name, body=body, **kwargs)
+                        res.delete(name=name, body=body, namespace=namespace)
                         total_deleted += 1
                         logger.debug(f"Deleted {kind}/{name} in {namespace}")
                     except ApiException as e:

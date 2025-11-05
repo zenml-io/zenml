@@ -78,9 +78,8 @@ class KubernetesTemplateEngine:
             resolved_path = self._resolve_template_path(
                 str(custom_templates_dir)
             )
-            if resolved_path:
-                template_dirs.append(resolved_path)
-                self.custom_templates_dir = resolved_path
+            template_dirs.append(resolved_path)
+            self.custom_templates_dir = resolved_path
 
         template_dirs.append(str(self.builtin_templates_dir))
 
@@ -101,14 +100,17 @@ class KubernetesTemplateEngine:
         self.env.filters["k8s_label_value"] = self._k8s_label_value_filter
 
     @staticmethod
-    def _resolve_template_path(path: str) -> Optional[str]:
+    def _resolve_template_path(path: str) -> str:
         """Resolve and validate template directory path.
 
         Args:
             path: Path to resolve (can be remote or local).
 
         Returns:
-            Resolved path if it exists, None otherwise.
+            Resolved path if it exists.
+
+        Raises:
+            ValueError: If the path does not exist.
         """
         if io_utils.is_remote(path):
             resolved = io_utils.sanitize_remote_path(path)
@@ -119,10 +121,10 @@ class KubernetesTemplateEngine:
             logger.info(f"Using custom Kubernetes templates from: {resolved}")
             return resolved
         else:
-            logger.warning(
-                f"Custom template directory not found: {resolved}, falling back to built-in templates"
+            raise ValueError(
+                f"Custom template directory not found: {resolved}. "
+                f"Please verify the path is correct and accessible."
             )
-            return None
 
     @staticmethod
     def _validate_k8s_resource(

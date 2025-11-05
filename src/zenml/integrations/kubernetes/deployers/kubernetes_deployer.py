@@ -349,13 +349,18 @@ class KubernetesDeployer(ContainerizedDeployer):
     # ========================================================================
 
     def _sanitize_secret_key(
-        self, key: str, secret_key_map: Dict[str, str]
+        self,
+        key: str,
+        secret_key_map: Dict[str, str],
+        existing_env_vars: Optional[Dict[str, str]] = None,
     ) -> str:
         """Sanitize secret key to valid K8s env var name and detect collisions.
 
         Args:
             key: Original secret key name.
             secret_key_map: Dictionary tracking sanitized key mappings to detect collisions.
+            existing_env_vars: Optional dictionary of existing environment variables
+                to check for collisions.
 
         Returns:
             Sanitized secret key name.
@@ -371,12 +376,20 @@ class KubernetesDeployer(ContainerizedDeployer):
         elif not sanitized:  # Empty after sanitization
             sanitized = "_VAR"
 
-        # Check collision
         if sanitized in secret_key_map and secret_key_map[sanitized] != key:
             raise DeploymentProvisionError(
-                f"Secret key '{key}' sanitized to '{sanitized}' but already exists in map"
-                f"with value '{secret_key_map[sanitized]}'. This is not allowed."
+                f"Secret key '{key}' sanitized to '{sanitized}' but already exists "
+                f"as another secret key '{secret_key_map[sanitized]}'. "
+                f"Please rename one of these secrets to avoid collision."
             )
+
+        if existing_env_vars and sanitized in existing_env_vars:
+            raise DeploymentProvisionError(
+                f"Secret key '{key}' sanitized to '{sanitized}' but this name "
+                f"is already used by an environment variable. "
+                f"Please rename the secret to avoid collision."
+            )
+
         secret_key_map[sanitized] = key
         return sanitized
 
@@ -407,10 +420,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         try:
             logger.info(
-                f"\n⏳ Waiting for deployment to become ready...\n"
-                f"   📋 Deployment: {deployment.name}\n"
-                f"   📦 Namespace: {ctx.namespace}\n"
-                f"   ⏱️  Timeout: {timeout}s"
+                f"Waiting for deployment to become ready...\n"
+                f"  Deployment: {deployment.name}\n"
+                f"  Namespace: {ctx.namespace}\n"
+                f"  Timeout: {timeout}s"
             )
             self.k8s_applier.wait_for_deployment_ready(
                 name=ctx.resource_name,
@@ -418,7 +431,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 timeout=timeout,
                 check_interval=ctx.settings.deployment_ready_check_interval,
             )
-            logger.info("✅ Deployment is ready!")
+            logger.info("Deployment is ready")
         except RuntimeError as e:
             raise DeploymentProvisionError(
                 f"Deployment '{deployment.name}' did not become ready: {e}"
@@ -435,7 +448,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     MAX_LOAD_BALANCER_TIMEOUT,
                 )
                 logger.info(
-                    f"⏳ Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
+                    f"Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
                 )
                 self.k8s_applier.wait_for_service_loadbalancer_ip(
                     name=ctx.resource_name,
@@ -443,11 +456,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                     timeout=lb_timeout,
                     check_interval=settings.deployment_ready_check_interval,
                 )
-                logger.info("✅ LoadBalancer IP assigned")
+                logger.info("LoadBalancer IP assigned")
             except RuntimeError:
                 logger.warning(
-                    f"⚠️  LoadBalancer IP not assigned within {lb_timeout}s\n"
-                    f"   Service may still be accessible via cluster IP."
+                    f"LoadBalancer IP not assigned within {lb_timeout}s. "
+                    f"Service may still be accessible via cluster IP."
                 )
 
     def _cleanup_failed_deployment(
@@ -477,6 +490,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"-n {ctx.namespace} -l {label_selector}"
             )
 
+    def _clear_deployment_context(self) -> None:
+        """Clear deployment context to prevent state pollution between operations."""
+        self._ctx = None
+        self._engine = None
+
     def _initialize_deployment_context(
         self, deployment: DeploymentResponse
     ) -> None:
@@ -491,6 +509,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeployerError: If deployment has no snapshot.
         """
+        # Clear any previous context to ensure clean state
+        self._clear_deployment_context()
+
         snapshot = deployment.snapshot
         if not snapshot:
             raise DeployerError(
@@ -571,7 +592,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_key_map: Dict[str, str] = {}
         sanitized = {}
         for key, value in secrets.items():
-            sanitized_key = self._sanitize_secret_key(key, secret_key_map)
+            sanitized_key = self._sanitize_secret_key(
+                key, secret_key_map, environment
+            )
             sanitized[sanitized_key] = value
 
         context = self._build_template_context(
@@ -602,8 +625,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ),
             )
 
+        # Create namespace with labels to track ownership for cleanup
         rendered_resources: List[Dict[str, Any]] = [
-            build_namespace_manifest(namespace=ctx.namespace)
+            build_namespace_manifest(
+                namespace=ctx.namespace, labels=ctx.labels
+            )
         ]
 
         if sanitized:
@@ -677,7 +703,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             created_objects = self.k8s_applier.provision(
                 rendered_resources,
                 default_namespace=ctx.namespace,
-                dry_run=False,
                 timeout=timeout,
             )
             logger.info(
@@ -909,7 +934,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             if deleted_count > 0:
                 logger.info(
-                    f"✅ Deprovisioned deployment '{deployment.name}' "
+                    f"Deprovisioned deployment '{deployment.name}' "
                     f"({deleted_count} resource(s) deleted)"
                 )
             else:
