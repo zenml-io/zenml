@@ -312,8 +312,12 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                 logger.info(f"Updating existing Space: {space_id}")
 
                 # Check if Space is sleeping/paused and restart it
+                # Note: runtime.stage is a string, compare using enum.value
                 runtime = api.get_space_runtime(repo_id=space_id)
-                if runtime.stage in [SpaceStage.STOPPED, SpaceStage.PAUSED]:
+                if runtime.stage in [
+                    SpaceStage.STOPPED.value,
+                    SpaceStage.PAUSED.value,
+                ]:
                     logger.info(
                         f"Space {space_id} is {runtime.stage}. Restarting..."
                     )
@@ -504,8 +508,9 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             )
 
             # Map HuggingFace Space stages to ZenML standard deployment states
+            # Note: runtime.stage is a string, compare using enum.value
             # Only RUNNING + domain READY means fully provisioned with health endpoint available
-            if runtime.stage == SpaceStage.RUNNING:
+            if runtime.stage == SpaceStage.RUNNING.value:
                 # Check if domain is also ready (not just Space running)
                 if domains and domains[0].get("stage") == "READY":
                     status = DeploymentStatus.RUNNING
@@ -522,23 +527,23 @@ class HuggingFaceDeployer(ContainerizedDeployer):
                     )
             # Building/updating states - health endpoint not yet available
             elif runtime.stage in [
-                SpaceStage.BUILDING,
-                SpaceStage.RUNNING_BUILDING,  # Rebuilding, not fully ready
+                SpaceStage.BUILDING.value,
+                SpaceStage.RUNNING_BUILDING.value,
             ]:
                 status = DeploymentStatus.PENDING
             # Error states - deployment failed or misconfigured
             elif runtime.stage in [
-                SpaceStage.BUILD_ERROR,
-                SpaceStage.RUNTIME_ERROR,
-                SpaceStage.CONFIG_ERROR,
-                SpaceStage.NO_APP_FILE,
+                SpaceStage.BUILD_ERROR.value,
+                SpaceStage.RUNTIME_ERROR.value,
+                SpaceStage.CONFIG_ERROR.value,
+                SpaceStage.NO_APP_FILE.value,
             ]:
                 status = DeploymentStatus.ERROR
             # Stopped/paused states - deployment exists but not running
             elif runtime.stage in [
-                SpaceStage.STOPPED,
-                SpaceStage.PAUSED,
-                SpaceStage.DELETING,
+                SpaceStage.STOPPED.value,
+                SpaceStage.PAUSED.value,
+                SpaceStage.DELETING.value,
             ]:
                 status = DeploymentStatus.ABSENT
             else:
