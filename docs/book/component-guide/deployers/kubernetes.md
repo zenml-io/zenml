@@ -137,30 +137,6 @@ You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deploymen
 zenml pipeline deploy --name my_deployment my_module.my_pipeline
 ```
 
-#### Validating with dry-run
-
-Before deploying to your cluster, you can validate your configuration and inspect the generated Kubernetes manifests using the `--dry-run` flag:
-
-```shell
-zenml pipeline deploy --name my_deployment my_module.my_pipeline --dry-run
-```
-
-This will:
-* Validate your pipeline configuration and settings
-* Generate all Kubernetes manifests (Deployment, Service, Secrets, and any additional resources)
-* Display the manifests in your console
-* Check for configuration errors without making any changes to your cluster
-
-The dry-run is especially useful when:
-* Testing new deployment configurations
-* Validating additional resources (Ingress, HPA, etc.) before applying them
-* Debugging template variables in your custom YAML files
-* Reviewing what will be deployed in CI/CD pipelines
-
-{% hint style="info" %}
-You can also save manifests for inspection without dry-run by setting `save_manifests=True` in your deployer settings. This is useful for GitOps workflows where you want to commit the generated manifests to version control.
-{% endhint %}
-
 ## Advanced configuration
 
 The Kubernetes deployer follows a progressive complexity model, allowing you to start simple and add configuration as needed:
@@ -521,11 +497,6 @@ For a complete list of all available settings, see the `KubernetesDeployerSettin
 * `strict_additional_resources`: If `True`, fail deployment if any additional resource fails (default: `True`)
 * `custom_templates_dir`: Path to directory with custom Jinja2 templates
 
-**Development/Debug Settings**:
-* `save_manifests`: Save generated manifests to disk (default: `False`)
-* `print_manifests`: Print manifests to console (default: `False`)
-* `manifest_output_dir`: Custom directory for saved manifests
-
 **Internal Settings**:
 * `wait_for_load_balancer_timeout`: Timeout for LoadBalancer IP assignment (default: `150` seconds, `0` to skip)
 * `deployment_ready_check_interval`: Interval between readiness checks (default: `2` seconds)
@@ -596,11 +567,9 @@ If pods can't pull the container image:
 1. **Use service connectors** in production for portable, manageable credentials
 2. **Always configure health probes** for production deployments
 3. **Use Ingress with ClusterIP** instead of LoadBalancer for cost and flexibility
-4. **Enable manifest saving** (`save_manifests=True`) for GitOps workflows
-5. **Test with dry-run** before deploying: `zenml pipeline deploy --dry-run`
-6. **Use labels and annotations** for organization, monitoring, and cost tracking
-7. **Configure resource limits** to prevent resource exhaustion
-8. **Use HPA** for autoscaling based on actual load
-9. **Configure PodDisruptionBudget** for high availability during cluster updates
-10. **Keep additional resources in version control** alongside your pipeline code
+4. **Use labels and annotations** for organization, monitoring, and cost tracking
+5. **Configure resource limits** to prevent resource exhaustion
+6. **Use HPA** for autoscaling based on actual load
+7. **Configure PodDisruptionBudget** for high availability during cluster updates
+8. **Keep additional resources in version control** alongside your pipeline code
 

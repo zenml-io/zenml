@@ -50,7 +50,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 )
 from zenml.integrations.kubernetes.k8s_applier import KubernetesApplier
 from zenml.integrations.kubernetes.manifest_utils import (
-    namespace_resource,
+    build_namespace_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import (
     KubernetesPodSettings,
@@ -535,44 +535,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             image=image,
         )
 
-    def _save_and_print_manifests(
-        self,
-        resources: List[Any],
-        deployment: DeploymentResponse,
-    ) -> None:
-        """Conditionally save and/or print manifests based on settings.
-
-        Args:
-            resources: Kubernetes resources to save/print.
-            deployment: The deployment these manifests belong to.
-        """
-        ctx = self.require_ctx()
-
-        if ctx.settings.save_manifests:
-            saved_files = cast(
-                KubernetesTemplateEngine, self._engine
-            ).save_k8s_objects(
-                resources,
-                deployment.name,
-                output_dir=ctx.settings.manifest_output_dir,
-            )
-            logger.info(f"✅ Saved {len(saved_files)} manifest file(s):")
-            for filepath in saved_files:
-                logger.info(f"   └─ {filepath}")
-
-        if ctx.settings.print_manifests:
-            yaml_content = KubernetesTemplateEngine.dump_yaml_documents(
-                [
-                    self.k8s_applier.api_client.sanitize_for_serialization(r)
-                    for r in resources
-                ]
-            )
-            logger.info(f"\n{'=' * 70}")
-            logger.info("Generated Kubernetes Manifests:")
-            logger.info(f"{'=' * 70}\n")
-            logger.info(yaml_content)
-            logger.info(f"\n{'=' * 70}")
-
     def _prepare_deployment_resources(
         self,
         deployment: DeploymentResponse,
@@ -649,7 +611,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         rendered_resources: List[Dict[str, Any]] = [
-            namespace_resource(namespace=ctx.namespace)
+            build_namespace_manifest(namespace=ctx.namespace)
         ]
 
         if sanitized:
@@ -691,70 +653,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return rendered_resources
 
-    def do_dry_run_deployment(
-        self,
-        deployment: DeploymentResponse,
-        stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
-    ) -> None:
-        """Perform dry-run: build image, generate manifests, validate - but don't deploy.
-
-        This method does EVERYTHING a real deployment would do EXCEPT actually
-        deploying to Kubernetes:
-        - Builds and pushes Docker images
-        - Generates Kubernetes manifests
-        - Saves manifests to .zenml-deployments/
-        - Validates manifests with Kubernetes API
-        - Prints manifests if requested
-
-        Args:
-            deployment: The deployment to validate (temporary, not in DB).
-            stack: The stack to use.
-            environment: Environment variables.
-            secrets: Secret environment variables.
-        """
-        logger.info(
-            f"\n{'=' * 70}\n"
-            f"🧪 DRY-RUN MODE: Building & validating '{deployment.name}'\n"
-            f"{'=' * 70}"
-        )
-
-        rendered_resources = self._prepare_deployment_resources(
-            deployment, environment, secrets
-        )
-        ctx = self.require_ctx()
-
-        logger.info(f"✅ Image built and pushed:\n   └─ {ctx.image}")
-        logger.info("✅ Manifests generated")
-
-        logger.info("\n🔍 Validating manifests with Kubernetes API...")
-        validated_objects = self.k8s_applier.provision(
-            rendered_resources,
-            default_namespace=ctx.namespace,
-            dry_run=True,
-        )
-
-        self._save_and_print_manifests(validated_objects, deployment)
-
-        manifest_info = ""
-        if ctx.settings.save_manifests:
-            manifest_info = (
-                f"💾 Manifests: .zenml-deployments/{deployment.name}/\n"
-            )
-
-        logger.info(
-            f"\n{'=' * 70}\n"
-            f"✅ DRY-RUN SUCCESSFUL!\n"
-            f"{'=' * 70}\n"
-            f"📋 Namespace: {ctx.namespace}\n"
-            f"📦 Deployment: {ctx.resource_name}\n"
-            f"🔍 Validated {len(validated_objects)} resource(s)\n"
-            f"{manifest_info}"
-            f"\n💡 To deploy for real: Remove --dry-run flag\n"
-            f"{'=' * 70}"
-        )
-
     def do_provision_deployment(
         self,
         deployment: DeploymentResponse,
@@ -782,8 +680,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment, environment, secrets
         )
         ctx = self.require_ctx()
-
-        self._save_and_print_manifests(rendered_resources, deployment)
 
         try:
             created_objects = self.k8s_applier.provision(

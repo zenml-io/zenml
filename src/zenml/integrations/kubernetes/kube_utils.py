@@ -57,6 +57,7 @@ from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
+    build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
     build_secret_manifest,
     build_service_account_manifest,
@@ -393,6 +394,17 @@ def create_edit_service_account(
         namespace=namespace,
         body=sa_manifest,
     )
+
+
+def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
+    """Create a Kubernetes namespace.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: Kubernetes namespace. Defaults to "default".
+    """
+    manifest = build_namespace_manifest(namespace)
+    _if_not_exists(core_api.create_namespace)(body=manifest)
 
 
 def create_secret(
@@ -1279,75 +1291,42 @@ def convert_resource_settings_to_k8s_format(
 # ============================================================================
 
 
-def build_url_from_ingress(ingress: k8s_client.V1Ingress) -> Optional[str]:
-    """Extract URL from Kubernetes Ingress resource.
+def build_service_url(
+    core_api: k8s_client.CoreV1Api,
+    service: k8s_client.V1Service,
+    namespace: str,
+    ingress: Optional[k8s_client.V1Ingress] = None,
+) -> Optional[str]:
+    """Build URL for accessing a Kubernetes service.
 
     Args:
-        ingress: Kubernetes Ingress resource.
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource.
+        namespace: Kubernetes namespace.
+        ingress: Optional Kubernetes Ingress resource.
 
     Returns:
-        URL from ingress rules or load balancer, or None if not available.
+        Service URL or None if not yet available.
     """
-    if not ingress.spec:
-        logger.warning(
-            f"Ingress '{ingress.metadata.name if ingress.metadata else 'unknown'}' "
-            f"has no spec. Cannot build URL."
-        )
+    # Handle ingress
+    if ingress and ingress.spec:
+        protocol = "https" if ingress.spec.tls else "http"
+        if ingress.spec.rules:
+            rule = ingress.spec.rules[0]
+            if rule.host and rule.http and rule.http.paths:
+                path = rule.http.paths[0].path or "/"
+                return f"{protocol}://{rule.host}{path}"
+
+    # Handle service
+    if not service.spec or not service.spec.type or not service.spec.ports:
         return None
 
-    protocol = "https" if ingress.spec.tls else "http"
+    service_name = service.metadata.name if service.metadata else "unknown"
+    service_type = service.spec.type
+    service_port = service.spec.ports[0].port
 
-    # Try to get URL from ingress rules
-    if ingress.spec.rules:
-        rule = ingress.spec.rules[0]
-        if rule.host and rule.http and rule.http.paths:
-            path = rule.http.paths[0].path or "/"
-            return f"{protocol}://{rule.host}{path}"
-
-    # Try to get URL from load balancer status
-    if (
-        ingress.status
-        and ingress.status.load_balancer
-        and ingress.status.load_balancer.ingress
-    ):
-        lb_ingress = ingress.status.load_balancer.ingress[0]
-        host = lb_ingress.ip or lb_ingress.hostname
-        if host:
-            path = "/"
-            if (
-                ingress.spec.rules
-                and ingress.spec.rules[0].http
-                and ingress.spec.rules[0].http.paths
-            ):
-                path = ingress.spec.rules[0].http.paths[0].path or "/"
-            return f"{protocol}://{host}{path}"
-
-    return None
-
-
-def build_url_from_loadbalancer_service(
-    service: k8s_client.V1Service,
-) -> Optional[str]:
-    """Get URL from LoadBalancer service.
-
-    Args:
-        service: Kubernetes Service resource (typed or from dynamic client).
-
-    Returns:
-        LoadBalancer URL or None if IP not yet assigned.
-    """
-    # Handle both typed client objects and dynamic client ResourceInstance
-    if hasattr(service, "to_dict"):
-        service_dict = service.to_dict()
-    elif isinstance(service, dict):
-        service_dict = service
-    else:
-        # Try attribute access (typed client object)
-        if not service.spec or not service.spec.ports:
-            return None
-
-        service_port = service.spec.ports[0].port
-
+    # LoadBalancer
+    if service_type == "LoadBalancer":
         if (
             service.status
             and service.status.load_balancer
@@ -1359,227 +1338,43 @@ def build_url_from_loadbalancer_service(
                 return f"http://{host}:{service_port}"
         return None
 
-    # Handle dictionary-like access (dynamic client)
-    spec = service_dict.get("spec")
-    if not spec or not spec.get("ports"):
-        return None
-
-    service_port = spec["ports"][0].get("port")
-    if not service_port:
-        return None
-
-    status = service_dict.get("status")
-    if status:
-        load_balancer = status.get("loadBalancer") or status.get(
-            "load_balancer"
-        )
-        if load_balancer:
-            ingress = load_balancer.get("ingress")
-            if ingress and len(ingress) > 0:
-                lb_ingress = ingress[0]
-                host = lb_ingress.get("ip") or lb_ingress.get("hostname")
-                if host:
-                    return f"http://{host}:{service_port}"
-
-    return None
-
-
-def build_url_from_nodeport_service(
-    core_api: k8s_client.CoreV1Api,
-    service: k8s_client.V1Service,
-    namespace: str,
-) -> Optional[str]:
-    """Get URL from NodePort service.
-
-    Args:
-        core_api: Kubernetes Core V1 API client.
-        service: Kubernetes Service resource (typed or from dynamic client).
-        namespace: Kubernetes namespace.
-
-    Returns:
-        NodePort URL or None if not accessible.
-    """
-    # Handle both typed client objects and dynamic client ResourceInstance
-    if hasattr(service, "to_dict"):
-        service_dict = service.to_dict()
-    elif isinstance(service, dict):
-        service_dict = service
-    else:
-        service_dict = None
-
-    if service_dict:
-        # Dictionary-like access (dynamic client)
-        spec = service_dict.get("spec")
-        if not spec or not spec.get("ports"):
-            return None
-
-        port_info = spec["ports"][0]
-        node_port = port_info.get("nodePort")
-        service_port = port_info.get("port")
-        metadata = service_dict.get("metadata", {})
-        service_name = metadata.get("name", "unknown")
-    else:
-        # Attribute access (typed client)
-        if not service.spec or not service.spec.ports:
-            return None
-
+    # NodePort
+    if service_type == "NodePort":
         node_port = service.spec.ports[0].node_port
-        service_port = service.spec.ports[0].port
-        service_name = service.metadata.name if service.metadata else "unknown"
-
-    if not node_port:
-        return None
-
-    try:
-        nodes = core_api.list_node()
-
-        # Try to find external IP first
-        for node in nodes.items:
-            if node.status and node.status.addresses:
-                for address in node.status.addresses:
-                    if address.type == "ExternalIP":
-                        logger.info(
-                            f"NodePort service accessible at: http://{address.address}:{node_port}"
-                        )
-                        return f"http://{address.address}:{node_port}"
-
-        # Fall back to internal IP with warning
-        for node in nodes.items:
-            if node.status and node.status.addresses:
-                for address in node.status.addresses:
-                    if address.type == "InternalIP":
-                        logger.warning(
-                            f"NodePort service '{service_name}' has no nodes with ExternalIP. "
-                            f"The returned InternalIP URL is likely NOT accessible from outside the cluster. "
-                            f"For local access, use: kubectl port-forward -n {namespace} "
-                            f"service/{service_name} 8080:{service_port}"
-                        )
-                        return f"http://{address.address}:{node_port}"
-
-        logger.error(
-            f"NodePort service '{service_name}' deployed, but no node IPs available. "
-            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
-        )
-        return None
-
-    except Exception as e:
-        logger.error(
-            f"Failed to get node IPs for NodePort service: {e}. "
-            f"Use: kubectl port-forward -n {namespace} service/{service_name} 8080:{service_port}"
-        )
-        return None
-
-
-def build_url_from_clusterip_service(
-    service: k8s_client.V1Service,
-    namespace: str,
-) -> str:
-    """Get internal DNS URL from ClusterIP service.
-
-    Args:
-        service: Kubernetes Service resource (typed or from dynamic client).
-        namespace: Kubernetes namespace.
-
-    Returns:
-        Internal cluster DNS URL.
-    """
-    # Handle both typed client objects and dynamic client ResourceInstance
-    if hasattr(service, "to_dict"):
-        service_dict = service.to_dict()
-    elif isinstance(service, dict):
-        service_dict = service
-    else:
-        service_dict = None
-
-    if service_dict:
-        # Dictionary-like access (dynamic client)
-        metadata = service_dict.get("metadata", {})
-        service_name = metadata.get("name", "unknown")
-        spec = service_dict.get("spec")
-        if not spec or not spec.get("ports"):
-            return f"http://{service_name}.{namespace}.svc.cluster.local"
-        service_port = spec["ports"][0].get("port")
-    else:
-        # Attribute access (typed client)
-        service_name = service.metadata.name if service.metadata else "unknown"
-
-        if not service.spec or not service.spec.ports:
-            return f"http://{service_name}.{namespace}.svc.cluster.local"
-
-        service_port = service.spec.ports[0].port
-
-    logger.warning(
-        f"Service '{service_name}' uses ClusterIP, which is only "
-        f"accessible from within the Kubernetes cluster. "
-        f"For local access, use: kubectl port-forward -n {namespace} "
-        f"service/{service_name} 8080:{service_port}"
-    )
-    return (
-        f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
-    )
-
-
-def build_service_url(
-    core_api: k8s_client.CoreV1Api,
-    service: k8s_client.V1Service,
-    namespace: str,
-    ingress: Optional[k8s_client.V1Ingress] = None,
-) -> Optional[str]:
-    """Build URL for accessing a Kubernetes service.
-
-    Args:
-        core_api: Kubernetes Core V1 API client.
-        service: Kubernetes Service resource (typed or from dynamic client).
-        namespace: Kubernetes namespace.
-        ingress: Optional Kubernetes Ingress resource.
-
-    Returns:
-        Service URL or None if not yet available.
-    """
-    # If ingress is configured, use it
-    if ingress:
-        return build_url_from_ingress(ingress)
-
-    # Handle both typed client objects and dynamic client ResourceInstance
-    if hasattr(service, "to_dict"):
-        service_dict = service.to_dict()
-    elif isinstance(service, dict):
-        service_dict = service
-    else:
-        service_dict = None
-
-    if service_dict:
-        # Dictionary-like access (dynamic client)
-        spec = service_dict.get("spec")
-        metadata = service_dict.get("metadata", {})
-        service_name = metadata.get("name", "unknown")
-        if not spec or not spec.get("type"):
-            logger.warning(
-                f"Service '{service_name}' has no type specified in spec. "
-                f"Cannot build service URL."
-            )
-            return None
-        service_type = spec["type"]
-    else:
-        # Attribute access (typed client)
-        if not service.spec or not service.spec.type:
-            service_name = (
-                service.metadata.name if service.metadata else "unknown"
-            )
-            logger.warning(
-                f"Service '{service_name}' has no type specified in spec. "
-                f"Cannot build service URL."
-            )
+        if not node_port:
             return None
 
-        # Otherwise, build URL based on service type
-        service_type = service.spec.type
+        try:
+            nodes = core_api.list_node()
+            # Try external IP first
+            for node in nodes.items:
+                if node.status and node.status.addresses:
+                    for address in node.status.addresses:
+                        if address.type == "ExternalIP":
+                            return f"http://{address.address}:{node_port}"
 
-    if service_type == "LoadBalancer":
-        return build_url_from_loadbalancer_service(service)
-    elif service_type == "NodePort":
-        return build_url_from_nodeport_service(core_api, service, namespace)
-    elif service_type == "ClusterIP":
-        return build_url_from_clusterip_service(service, namespace)
+            # Fall back to internal IP with warning
+            for node in nodes.items:
+                if node.status and node.status.addresses:
+                    for address in node.status.addresses:
+                        if address.type == "InternalIP":
+                            logger.warning(
+                                f"NodePort service '{service_name}' has no ExternalIP. "
+                                f"Use: kubectl port-forward -n {namespace} "
+                                f"service/{service_name} 8080:{service_port}"
+                            )
+                            return f"http://{address.address}:{node_port}"
+        except Exception as e:
+            logger.error(f"Failed to get node IPs: {e}")
+        return None
+
+    # ClusterIP
+    if service_type == "ClusterIP":
+        logger.warning(
+            f"Service '{service_name}' uses ClusterIP (cluster-internal only). "
+            f"Use: kubectl port-forward -n {namespace} "
+            f"service/{service_name} 8080:{service_port}"
+        )
+        return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
 
     return None

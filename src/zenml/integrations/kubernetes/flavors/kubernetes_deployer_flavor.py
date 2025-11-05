@@ -56,10 +56,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         additional_resources: Paths to YAML files with additional K8s resources.
         custom_templates_dir: Path to custom Jinja2 templates for Deployment/Service.
           Use this to customize health probes, service annotations, etc.
-
-    Development/Testing:
-        save_manifests: Save generated manifests to disk.
-        manifest_output_dir: Custom directory for saved manifests.
     """
 
     namespace: Optional[str] = Field(
@@ -248,26 +244,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         description="Path to directory containing custom Jinja2 templates for full control. "
         "Override built-in templates (deployment.yaml.j2, service.yaml.j2, etc.). "
         "Example: '~/.zenml/k8s-templates'",
-    )
-
-    save_manifests: bool = Field(
-        default=False,
-        description="If True, save generated YAML manifests to disk for inspection.",
-    )
-
-    print_manifests: bool = Field(
-        default=False,
-        description="If True, print generated YAML manifests to the console. "
-        "Useful for debugging and CI/CD pipelines.",
-    )
-
-    manifest_output_dir: Optional[str] = Field(
-        default=None,
-        description="Custom local directory for saving manifests. "
-        "Must be a local filesystem path (remote paths like s3:// are not supported). "
-        "If not provided, uses project root '.zenml-deployments/' directory. "
-        "Supports path expansion: '~/my-manifests'. "
-        "For remote persistence, commit manifests to Git or use CI artifact storage.",
     )
 
     # ========================================================================
