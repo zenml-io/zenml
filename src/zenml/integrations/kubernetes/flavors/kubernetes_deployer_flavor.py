@@ -24,12 +24,18 @@ from zenml.deployers.base_deployer import (
     BaseDeployerSettings,
 )
 from zenml.enums import KubernetesServiceType
-from zenml.integrations.kubernetes import KUBERNETES_DEPLOYER_FLAVOR
+from zenml.integrations.kubernetes import (
+    KUBERNETES_DEPLOYER_FLAVOR,
+    kube_utils,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.deployers import KubernetesDeployer
+
+logger = get_logger(__name__)
 
 
 class KubernetesDeployerSettings(BaseDeployerSettings):
@@ -82,23 +88,7 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         if v is None:
             return v
 
-        import re
-
-        # Kubernetes namespace naming rules:
-        # - Must be lowercase alphanumeric or hyphens
-        # - Must start and end with alphanumeric
-        # - Max 63 characters
-        if not re.match(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", v):
-            raise ValueError(
-                f"Invalid namespace: '{v}'. Kubernetes namespaces must be lowercase "
-                "alphanumeric characters or hyphens, and must start and end with "
-                "an alphanumeric character."
-            )
-        if len(v) > 63:
-            raise ValueError(
-                f"Namespace too long: {len(v)} > 63 characters. "
-                f"Kubernetes resource names must be at most 63 characters."
-            )
+        kube_utils.validate_namespace_name(v)
         return v
 
     service_type: KubernetesServiceType = Field(
@@ -292,9 +282,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
             self.service_type != "LoadBalancer"
             and self.wait_for_load_balancer_timeout > 0
         ):
-            from zenml.logger import get_logger
-
-            logger = get_logger(__name__)
             logger.warning(
                 f"wait_for_load_balancer_timeout={self.wait_for_load_balancer_timeout} "
                 f"is ignored for service_type={self.service_type}. "

@@ -51,6 +51,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 from zenml.integrations.kubernetes.k8s_applier import KubernetesApplier
 from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
+    build_secret_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import (
     KubernetesPodSettings,
@@ -554,7 +555,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         environment: Dict[str, str],
         secrets: Dict[str, str],
     ) -> List[Dict[str, Any]]:
-        """Prepare all resources needed for deployment (used by both dry-run and normal provisioning).
+        """Prepare all resources needed for deployment.
 
         Args:
             deployment: The deployment to prepare.
@@ -633,10 +634,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         ]
 
         if sanitized:
-            from zenml.integrations.kubernetes.manifest_utils import (
-                build_secret_manifest,
-            )
-
             secret_manifest = build_secret_manifest(
                 name=ctx.secret_name,
                 data=sanitized,

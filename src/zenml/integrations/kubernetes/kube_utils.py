@@ -53,6 +53,7 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
+from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
@@ -175,6 +176,33 @@ def sanitize_label(label: str) -> str:
     label = re.sub(r"[-]+$", "", label)
 
     return label
+
+
+def validate_namespace_name(namespace: str) -> None:
+    """Validate a Kubernetes namespace name.
+
+    Kubernetes namespace names must follow RFC 1123 DNS subdomain format:
+    - Must be lowercase alphanumeric characters or hyphens
+    - Must start and end with an alphanumeric character
+    - Must be at most 63 characters long
+
+    Args:
+        namespace: The namespace name to validate.
+
+    Raises:
+        ValueError: If the namespace name is invalid.
+    """
+    if not re.match(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", namespace):
+        raise ValueError(
+            f"Invalid namespace: '{namespace}'. Kubernetes namespaces must be lowercase "
+            "alphanumeric characters or hyphens, and must start and end with "
+            "an alphanumeric character."
+        )
+    if len(namespace) > 63:
+        raise ValueError(
+            f"Namespace too long: {len(namespace)} > 63 characters. "
+            "Kubernetes resource names must be at most 63 characters."
+        )
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
@@ -1212,8 +1240,6 @@ def convert_resource_settings_to_k8s_format(
     Raises:
         ValueError: If replica configuration is invalid.
     """
-    from zenml.config.resource_settings import ByteUnit
-
     requests: Dict[str, str] = {}
     limits: Dict[str, str] = {}
 

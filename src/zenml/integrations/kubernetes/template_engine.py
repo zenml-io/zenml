@@ -29,6 +29,7 @@ from jinja2 import (
     Undefined,
 )
 
+from zenml.client import Client
 from zenml.integrations.kubernetes import kube_utils
 from zenml.io import fileio
 from zenml.io.filesystem import PathType
@@ -257,8 +258,6 @@ class KubernetesTemplateEngine:
         Returns:
             Local filesystem path to the default manifest directory.
         """
-        from zenml.client import Client
-
         try:
             repo_root = Client.find_repository()
             if repo_root is not None:
