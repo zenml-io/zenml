@@ -131,12 +131,34 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             incluster = self.config.incluster
 
         if incluster:
-            kube_utils.load_kube_config(
-                incluster=incluster,
-                context=self.config.kubernetes_context,
-            )
-            self._k8s_client = k8s_client.ApiClient()
-            return self._k8s_client
+            try:
+                kube_utils.load_kube_config(
+                    incluster=incluster,
+                )
+                self._k8s_client = k8s_client.ApiClient()
+                return self._k8s_client
+            except Exception as e:
+                if self.connector:
+                    message = (
+                        "Falling back to using the linked service connector "
+                        "configuration."
+                    )
+                elif self.config.kubernetes_context:
+                    message = (
+                        f"Falling back to using the configured "
+                        f"'{self.config.kubernetes_context}' kubernetes context."
+                    )
+                else:
+                    raise RuntimeError(
+                        f"The orchestrator failed to load the in-cluster "
+                        f"Kubernetes configuration and there is no service "
+                        f"connector or kubernetes_context to fall back to: {e}"
+                    ) from e
+
+                logger.debug(
+                    f"Could not load the in-cluster Kubernetes configuration: "
+                    f"{e}. {message}"
+                )
 
         # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():
@@ -153,7 +175,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             self._k8s_client = client
         else:
             kube_utils.load_kube_config(
-                incluster=incluster,
                 context=self.config.kubernetes_context,
             )
             self._k8s_client = k8s_client.ApiClient()
@@ -254,7 +275,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
             if not self.connector:
-                if kubernetes_context:
+                if self.config.incluster:
+                    # No service connector or kubernetes_context is needed when
+                    # the orchestrator is being used from within a Kubernetes
+                    # cluster.
+                    pass
+                elif kubernetes_context:
                     contexts, active_context = self.get_kubernetes_contexts()
 
                     if kubernetes_context not in contexts:
@@ -286,11 +312,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                             f"  `kubectl config use-context "
                             f"{kubernetes_context}`\n"
                         )
-                elif self.config.incluster:
-                    # No service connector or kubernetes_context is needed when
-                    # the orchestrator is being used from within a Kubernetes
-                    # cluster.
-                    pass
                 else:
                     return False, (
                         f"{msg}you must either link this orchestrator to a "
