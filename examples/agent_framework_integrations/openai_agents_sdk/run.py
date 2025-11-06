@@ -8,10 +8,30 @@ import os
 from typing import Annotated, Any, Dict
 
 from zenml import pipeline, step
-from zenml.config import DockerSettings, PythonPackageInstaller
+from zenml.config import (
+    DeploymentSettings,
+    DockerSettings,
+    SecureHeadersConfig,
+)
+
+deploy_settings = DeploymentSettings(
+    app_title="Travel Assistant",
+    app_description=(
+        "A travel assistant that can provide weather information and general facts about cities around the world."
+    ),
+    app_version="0.1",
+    dashboard_files_path="ui",
+    secure_headers=SecureHeadersConfig(
+        csp=(
+            "default-src 'none'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "connect-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline'"
+        ),
+    ),
+)
 
 docker_settings = DockerSettings(
-    python_package_installer=PythonPackageInstaller.UV,
     requirements="requirements.txt",  # relative to the pipeline directory
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
@@ -162,7 +182,13 @@ Response:
     return formatted.strip()
 
 
-@pipeline(settings={"docker": docker_settings}, enable_cache=False)
+@pipeline(
+    settings={
+        "docker": docker_settings,
+        "deployment": deploy_settings,
+    },
+    enable_cache=False,
+)
 def agent_pipeline(query: str = "Tell me a fun fact about Tokyo") -> str:
     """ZenML pipeline that orchestrates the OpenAI Agents SDK.
 
