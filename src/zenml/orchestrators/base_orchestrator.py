@@ -240,8 +240,6 @@ class BaseOrchestrator(StackComponent, ABC):
                 This will be deleted in case the pipeline run failed.
 
         Raises:
-            KeyboardInterrupt: If the orchestrator is synchronous and the
-                pipeline run is keyboard interrupted.
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
