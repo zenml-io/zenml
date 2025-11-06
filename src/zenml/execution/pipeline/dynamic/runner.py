@@ -176,6 +176,10 @@ class DynamicPipelineRunner:
                         #  (artifacts, json serializable, anything?)
                         #  how do we show it in the UI?
                         self.pipeline._call_entrypoint(**pipeline_parameters)
+                        # The pipeline function finished successfully, but some
+                        # steps might still be running. We now wait for all of
+                        # them and raise any exceptions that occurred.
+                        self.await_all_step_run_futures()
                     except:
                         publish_failed_pipeline_run(run.id)
                         logger.error(
@@ -188,7 +192,7 @@ class DynamicPipelineRunner:
                             snapshot=self._snapshot
                         )
                         self._executor.shutdown(wait=True, cancel_futures=True)
-                    # self.await_all_step_run_futures()
+
                     publish_successful_pipeline_run(run.id)
 
     @overload
@@ -275,7 +279,7 @@ class DynamicPipelineRunner:
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
         for future in self._futures:
-            future.artifacts()
+            future._wait()
         self._futures = []
 
 
