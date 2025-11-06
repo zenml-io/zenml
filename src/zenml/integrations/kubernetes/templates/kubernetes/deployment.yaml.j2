@@ -158,11 +158,6 @@ spec:
 {{ pod_settings.volume_mounts | to_yaml | indent(10, first=True) }}
         {% endif %}
         
-        {% if security_context %}
-        securityContext:
-          privileged: {{ security_context.privileged | default(false) }}
-        {% endif %}
-      
       {% if pod_settings and pod_settings.volumes %}
       volumes:
 {{ pod_settings.volumes | to_yaml | indent(8, first=True) }}
