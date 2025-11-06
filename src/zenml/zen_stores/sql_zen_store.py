@@ -12260,7 +12260,6 @@ class SqlZenStore(BaseZenStore):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
 
         operation: Literal["create", "update"] = "create"
-        project_id: Optional[UUID] = None
         if isinstance(resource, BaseRequest):
             # Create operation
             if isinstance(resource, ProjectScopedRequest):
@@ -12288,6 +12287,12 @@ class SqlZenStore(BaseZenStore):
             operation = "update"
 
         query = select(schema_class).where(schema_class.name == name)
+
+        # Exclude from existing name checks the update target itself.
+        if isinstance(resource, BaseUpdate) and isinstance(
+            schema, NamedSchema
+        ):
+            query = query.where(schema_class.id != schema.id)
 
         # We "detect" if the entity is project-scoped by looking at the
         # project_id attribute.
