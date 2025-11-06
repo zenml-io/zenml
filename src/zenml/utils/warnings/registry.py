@@ -49,7 +49,7 @@ WARNING_CONFIG_REGISTRY = {
         ## Unused docker settings warning
         
         The user provides a valid docker settings object but the stack
-        does not have a containerized orchestrator and will not make use of it.
+        does not containerized components and will not make use of it.
         """,
         verbosity=WarningVerbosity.LOW,
         severity=WarningSeverity.MEDIUM,
