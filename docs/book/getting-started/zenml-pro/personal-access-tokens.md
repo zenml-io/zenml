@@ -332,7 +332,7 @@ Individual Personal Access Tokens can be activated or deactivated as needed.
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-Temporary API tokens associated with the deactivated PAT issued for workspaces in 
+Short-lived API token associated with the deactivated PAT issued for workspaces in 
 your organization may still be valid for up to one hour after the PAT is 
 deactivated.
 {% endhint %}
@@ -356,7 +356,7 @@ token rotation for production systems.
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-Temporary API tokens associated with the deleted PAT issued for workspaces in your 
+Short-lived API token associated with the deleted PAT issued for workspaces in your 
 organization may still be valid for up to one hour after the PAT is deleted.
 {% endhint %}
 

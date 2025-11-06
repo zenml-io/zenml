@@ -294,7 +294,7 @@ Deactivating a service account has immediate effect on all ZenML Pro API calls u
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
+Short-lived API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
 {% endhint %}
 
 ### Deleting a Service Account
@@ -304,7 +304,7 @@ Deleting a service account permanently removes it and all associated API keys fr
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
+Short-lived API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
 {% endhint %}
 
 ## API Key Management
@@ -326,7 +326,7 @@ Individual API keys can be activated or deactivated independently of the service
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
+Short-lived API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
 {% endhint %}
 
 ### Rotating API Keys
@@ -344,7 +344,7 @@ By setting a retention period, you can update your applications to use the new A
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
+Short-lived API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
 {% endhint %}
 
 ## Security Best Practices

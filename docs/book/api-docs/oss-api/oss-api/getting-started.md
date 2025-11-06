@@ -83,7 +83,7 @@ Use the API key directly to authenticate your API requests by including it in th
 
 {% tab title="Token exchange authentication" %}
 
-Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API access token.
+Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API token.
 
 1. To obtain an API access token using your API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
    *   using curl:
@@ -113,7 +113,7 @@ Reduce the risk of API key exposure by periodically exchanging the API key for a
        print(response.json())
        ```
 
-This will return a response like this (the API token is the `access_token` field):
+This will return a response like this (the short-lived API token is the `access_token` field):
 
 ```json
 {
@@ -125,7 +125,7 @@ This will return a response like this (the API token is the `access_token` field
 }
 ```
 
-2. Once you have obtained an API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the token expires, simply repeat the steps above to obtain a new token. For example, you can use the following command to check your current user:
+2. Once you have obtained a short-lived API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the short-lived API token expires, simply repeat the steps above to obtain a new one. For example, you can use the following command to check your current user:
    *   using curl:
 
        ```bash
@@ -155,9 +155,9 @@ This will return a response like this (the API token is the `access_token` field
 {% hint style="info" %}
 **Important notes**
 
-* API tokens are scoped to the service account that created them and inherit their permissions
+* Short-lived API tokens are scoped to the service account that created them and inherit their permissions
 * Tokens are temporary and will expire after a configured duration (typically 1 hour, but it depends on how the server is configured)
-* You can request a new token at any time using the same API key
-* For security reasons, you should handle API tokens carefully and never share them
+* You can request a new short-lived API token at any time using the same API key
+* For security reasons, you should handle short-lived API tokens carefully and never share them
 * If your API key is compromised, you can rotate it using the ZenML dashboard or by running the `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate` command
 {% endhint %}
