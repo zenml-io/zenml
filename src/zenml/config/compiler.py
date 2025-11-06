@@ -43,6 +43,7 @@ from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
+from zenml.utils.warnings import WARNING_CONTROLLER, WarningCodes
 
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -123,6 +124,7 @@ class Compiler:
                 environment=pipeline_environment,
                 secrets=pipeline_secrets,
                 settings=pipeline_settings,
+                parameters=pipeline._parameters,
                 merge=False,
             )
 
@@ -376,6 +378,37 @@ class Compiler:
                 f"steps in this pipeline: {available_steps}."
             )
 
+    @staticmethod
+    def _validate_docker_settings_usage(
+        docker_settings: "BaseSettings | None",
+        stack: "Stack",
+    ) -> None:
+        """Validates that docker settings are used with a proper stack.
+
+        Generates warning for improper docker settings usage or returns.
+
+        Args:
+            docker_settings: The docker settings specified for the step/pipeline.
+            stack: The stack the settings are validated against.
+
+        """
+        from zenml.orchestrators import LocalOrchestrator
+
+        if not docker_settings:
+            return
+
+        warning_message = (
+            "You are specifying docker settings but the orchestrator"
+            " you are using (LocalOrchestrator) will not make use of them. "
+            "Consider switching stacks, removing the settings, or using a "
+            "different orchestrator."
+        )
+
+        if isinstance(stack.orchestrator, LocalOrchestrator):
+            WARNING_CONTROLLER.info(
+                warning_code=WarningCodes.ZML002, message=warning_message
+            )
+
     def _filter_and_validate_settings(
         self,
         settings: Dict[str, "BaseSettings"],
@@ -397,6 +430,8 @@ class Compiler:
         Returns:
             The filtered settings.
         """
+        from zenml.config.constants import DOCKER_SETTINGS_KEY
+
         validated_settings = {}
 
         for key, settings_instance in settings.items():
@@ -404,9 +439,10 @@ class Compiler:
             try:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
-                logger.info(
-                    "Not including stack component settings with key `%s`.",
-                    key,
+                WARNING_CONTROLLER.info(
+                    warning_code=WarningCodes.ZML001,
+                    message="Not including stack component settings with key {key}",
+                    key=key,
                 )
                 continue
 
@@ -435,6 +471,11 @@ class Compiler:
                 continue
 
             validated_settings[key] = settings_instance
+
+        self._validate_docker_settings_usage(
+            stack=stack,
+            docker_settings=settings.get(DOCKER_SETTINGS_KEY),
+        )
 
         return validated_settings
 

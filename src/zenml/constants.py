@@ -315,7 +315,10 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
-_csp_script_src_urls = ["https://widgets-v3.featureos.app"]
+_csp_script_src_urls = [
+    "https://widgets-v3.featureos.app",
+    "https://static.reo.dev",
+]
 _csp_connect_src_urls = [
     # We need a wildcard here to allow the dashboard deployment playground
     # to send requests to deployments on any URL.
