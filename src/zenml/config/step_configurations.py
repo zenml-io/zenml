@@ -44,6 +44,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
+from zenml.enums import StepRuntime
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -214,12 +215,11 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="The cache policy for the step.",
     )
-    in_process: Optional[bool] = Field(
+    runtime: Optional[StepRuntime] = Field(
         default=None,
-        description="Whether to run the step in process. This is only "
-        "applicable for dynamic pipelines. If not set, the step will by "
-        "default run in-process unless it requires a different Docker image "
-        "or has special resource requirements.",
+        description="The step runtime. If not configured, the step will "
+        "run inline unless a step operator or docker/resource settings "
+        "are configured. This is only applicable for dynamic pipelines.",
     )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}

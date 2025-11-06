@@ -47,6 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
+from zenml.enums import StepRuntime
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -131,7 +132,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
-        in_process: Optional[bool] = None,
+        runtime: Optional[StepRuntime] = None,
     ) -> None:
         """Initializes a step.
 
@@ -165,8 +166,10 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
-            in_process: Whether to run the step in process. This is only
-                applicable for dynamic pipelines.
+            runtime: The step runtime. If not configured, the step will
+                run inline unless a step operator or docker/resource settings
+                are configured. This is only applicable for dynamic
+                pipelines.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -233,7 +236,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
-            in_process=in_process,
+            runtime=runtime,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -717,7 +720,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
-        in_process: Optional[bool] = None,
+        runtime: Optional[StepRuntime] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -761,8 +764,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
-            in_process: Whether to run the step in process. This is only
-                applicable for dynamic pipelines.
+            runtime: The step runtime. This is only applicable for dynamic
+                pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -841,7 +844,7 @@ class BaseStep:
                 "retry": retry,
                 "substitutions": substitutions,
                 "cache_policy": cache_policy,
-                "in_process": in_process,
+                "runtime": runtime,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -870,7 +873,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
-        in_process: Optional[bool] = None,
+        runtime: Optional[StepRuntime] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -904,8 +907,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
             cache_policy: Cache policy for this step.
-            in_process: Whether to run the step in process. This is only
-                applicable for dynamic pipelines.
+            runtime: The step runtime. This is only applicable for dynamic
+                pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -935,7 +938,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
-            in_process=in_process,
+            runtime=runtime,
             merge=merge,
         )
         return step_copy

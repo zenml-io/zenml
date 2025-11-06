@@ -26,7 +26,7 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
@@ -472,19 +472,22 @@ class StepLauncher:
                 )
             else:
                 from zenml.execution.pipeline.dynamic.runner import (
-                    should_run_in_process,
+                    get_step_runtime,
                 )
 
-                if should_run_in_process(
-                    self._step,
-                    self._snapshot.pipeline_configuration.docker_settings,
-                ):
-                    if self._step.config.in_process is False:
-                        # The step was configured to run out of process, but
-                        # the orchestrator doesn't support it.
+                step_runtime = get_step_runtime(
+                    step=self._step,
+                    pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                )
+
+                if step_runtime == StepRuntime.INLINE:
+                    if self._step.config.runtime == StepRuntime.ISOLATED:
+                        # The step was configured to run in an isolated runtime,
+                        # but the orchestrator doesn't support it.
                         logger.warning(
-                            "The %s does not support running dynamic out of "
-                            "process steps. Running step `%s` locally instead.",
+                            "The %s does not support running steps "
+                            "in isolated runtimes. Running step `%s` in inline "
+                            "runtime instead.",
                             self._stack.orchestrator.__class__.__name__,
                             self._invocation_id,
                         )

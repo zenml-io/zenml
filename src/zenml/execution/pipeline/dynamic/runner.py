@@ -35,7 +35,7 @@ from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.step_configurations import Step
-from zenml.enums import ExecutionMode
+from zenml.enums import ExecutionMode, StepRuntime
 from zenml.execution.pipeline.dynamic.outputs import (
     ArtifactFuture,
     OutputArtifact,
@@ -100,10 +100,11 @@ class DynamicPipelineRunner:
             != ExecutionMode.STOP_ON_FAILURE
         ):
             logger.warning(
-                "Only the STOP_ON_FAILURE execution mode is supported for "
+                "Only the `%s` execution mode is supported for "
                 "dynamic pipelines right now. "
                 "The execution mode `%s` will be ignored.",
-                snapshot.pipeline_configuration.execution_mode.value,
+                ExecutionMode.STOP_ON_FAILURE,
+                snapshot.pipeline_configuration.execution_mode,
             )
 
         self._snapshot = snapshot
@@ -438,18 +439,19 @@ def _should_retry_locally(
     if step.config.step_operator:
         return True
 
-    if should_run_in_process(step, pipeline_docker_settings):
+    runtime = get_step_runtime(step, pipeline_docker_settings)
+    if runtime == StepRuntime.INLINE or step.config.step_operator:
         return True
     else:
-        # Running out of process with the orchestrator
+        # Running in isolated mode with the orchestrator
         return (
             not Client().active_stack.orchestrator.config.handles_step_retries
         )
 
 
-def should_run_in_process(
+def get_step_runtime(
     step: "Step", pipeline_docker_settings: "DockerSettings"
-) -> bool:
+) -> StepRuntime:
     """Determine if a step should be run in process.
 
     Args:
@@ -457,24 +459,25 @@ def should_run_in_process(
         pipeline_docker_settings: The Docker settings of the parent pipeline.
 
     Returns:
-        Whether the step should be run in process.
+        The runtime for the step.
     """
     if step.config.step_operator:
-        return False
+        return StepRuntime.ISOLATED
 
     if not Client().active_stack.orchestrator.can_launch_dynamic_steps:
-        return True
+        return StepRuntime.INLINE
 
-    if step.config.in_process is False:
-        return False
-    elif step.config.in_process is None:
+    runtime = step.config.runtime
+
+    if runtime is None:
         if not step.config.resource_settings.empty:
-            return False
+            runtime = StepRuntime.ISOLATED
+        elif step.config.docker_settings != pipeline_docker_settings:
+            runtime = StepRuntime.ISOLATED
+        else:
+            runtime = StepRuntime.INLINE
 
-        if step.config.docker_settings != pipeline_docker_settings:
-            return False
-
-    return True
+    return runtime
 
 
 def get_config_template(
