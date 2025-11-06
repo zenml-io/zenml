@@ -61,11 +61,15 @@ from zenml.models import (
     LogsRequest,
     LogsResponse,
 )
+from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.log_stores.default.artifact_store_exporter import (
+        ArtifactStoreExporter,
+    )
     from zenml.logging.step_logging import (
         ArtifactStoreHandler,
         LogEntry,
@@ -78,6 +82,44 @@ logger = get_logger(__name__)
 
 
 LOGS_EXTENSION = ".log"
+
+
+def prepare_logs_uri(
+    artifact_store: "BaseArtifactStore",
+    log_id: UUID,
+) -> str:
+    """Generates and prepares a URI for the log file or folder for a step.
+
+    Args:
+        artifact_store: The artifact store on which the artifact will be stored.
+        log_id: The ID of the logs entity
+
+    Returns:
+        The URI of the log storage (file or folder).
+    """
+    logs_base_uri = os.path.join(artifact_store.path, "logs")
+
+    if not artifact_store.exists(logs_base_uri):
+        artifact_store.makedirs(logs_base_uri)
+
+    if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+        logs_uri = os.path.join(logs_base_uri, log_id)
+        if artifact_store.exists(logs_uri):
+            logger.warning(
+                f"Logs directory {logs_uri} already exists! Removing old log directory..."
+            )
+            artifact_store.rmtree(logs_uri)
+
+        artifact_store.makedirs(logs_uri)
+    else:
+        logs_uri = os.path.join(logs_base_uri, f"{log_id}{LOGS_EXTENSION}")
+        if artifact_store.exists(logs_uri):
+            logger.warning(
+                f"Logs file {logs_uri} already exists! Removing old log file..."
+            )
+            artifact_store.remove(logs_uri)
+
+    return sanitize_remote_path(logs_uri)
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -644,10 +686,9 @@ class ArtifactStoreHandler(logging.Handler):
 class DefaultLogStore(BaseLogStore):
     """Log store that saves logs to the artifact store.
 
-    This implementation uses the artifact store as the backend for log storage,
-    maintaining backward compatibility with existing ZenML behavior. Logs are
-    written to the artifact store using a background thread and queue for
-    efficient batching.
+    This implementation uses OpenTelemetry infrastructure to write logs
+    to the artifact store. Uses shared BatchLogRecordProcessor with
+    thread pool for efficient parallel exports.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -657,10 +698,10 @@ class DefaultLogStore(BaseLogStore):
             *args: Positional arguments for the base class.
             **kwargs: Keyword arguments for the base class.
         """
-        self.storage: Optional["LogsStorage"] = None
-        self.handler: Optional["ArtifactStoreHandler"] = None
-
-        self._original_root_level: Optional[int] = None
+        super().__init__(*args, **kwargs)
+        self._exporter: Optional["ArtifactStoreExporter"] = None
+        self._handler: Optional[logging.Handler] = None
+        self._log_id: Optional[str] = None
 
     @property
     def config(self) -> DefaultLogStoreConfig:
@@ -677,50 +718,94 @@ class DefaultLogStore(BaseLogStore):
         Args:
             log_request: The log request model.
         """
-        # Create storage and handler
-        self.storage = LogsStorage(
+        from opentelemetry.sdk._logs import LoggingHandler
+        from opentelemetry.sdk.resources import Resource
+
+        from zenml.log_stores.default.artifact_store_exporter import (
+            ArtifactStoreExporter,
+        )
+        from zenml.logging.otel_logging_infrastructure import (
+            get_shared_otel_infrastructure,
+        )
+        from zenml.logging.routing_handler import set_active_log_store
+
+        # Get shared OTel infrastructure
+        logger_provider, routing_exporter = get_shared_otel_infrastructure()
+
+        # Create artifact store exporter for this log store
+        self._exporter = ArtifactStoreExporter(
             logs_uri=log_request.uri,
             artifact_store=Client().active_stack.artifact_store,
         )
-        self.handler = ArtifactStoreHandler(self.storage)
 
-        # Add handler to root logger
-        root_logger = logging.getLogger()
-        root_logger.addHandler(self.handler)
+        # Register exporter with routing exporter
+        self._log_id = str(log_request.id)
+        routing_exporter.register_exporter(self._log_id, self._exporter)
 
-        # Set root logger level to minimum of all handlers
-        self._original_root_level = root_logger.level
-        handler_levels = [handler.level for handler in root_logger.handlers]
-        min_level = min(handler_levels)
-        if min_level < root_logger.level:
-            root_logger.setLevel(min_level)
+        # Create resource with log_id and LoggerProvider
+        from opentelemetry.sdk._logs import LoggerProvider
+
+        resource = Resource.create({"zenml.log_id": self._log_id})
+        self._logger_provider_with_resource = LoggerProvider(resource=resource)
+
+        # Share the same processor (routing exporter) from the global provider
+        for processor in (
+            logger_provider._multi_log_record_processor._log_record_processors
+        ):
+            self._logger_provider_with_resource.add_log_record_processor(
+                processor
+            )
+
+        self._handler = LoggingHandler(
+            level=get_storage_log_level().value,
+            logger_provider=self._logger_provider_with_resource,
+        )
+
+        # Register this log store for routing
+        set_active_log_store(self)
 
         # Add to context variables for print capture
-        logging_handlers.add(self.handler)
+        logging_handlers.add(self._handler)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Process a log record by sending to artifact store.
+
+        Args:
+            record: The log record to process.
+        """
+        if self._handler:
+            try:
+                self._handler.emit(record)
+            except Exception:
+                # Don't let logging errors break execution
+                pass
 
     def deactivate(self) -> None:
         """Deactivate log collection and flush remaining logs."""
-        if not self.handler:
+        if not self._handler:
             return
 
-        # Remove handler from root logger
-        root_logger = logging.getLogger()
-        if self.handler in root_logger.handlers:
-            root_logger.removeHandler(self.handler)
+        # Unregister from the current thread's context
+        from zenml.logging.otel_logging_infrastructure import (
+            get_shared_otel_infrastructure,
+        )
+        from zenml.logging.routing_handler import set_active_log_store
 
-        # Restore original root logger level
-        if self._original_root_level is not None:
-            root_logger.setLevel(self._original_root_level)
+        set_active_log_store(None)
 
         # Remove from context variables
-        logging_handlers.remove(self.handler)
+        logging_handlers.remove(self._handler)
 
-        # Shutdown storage thread (flushes and merges logs)
-        if self.storage:
+        # Unregister exporter from routing
+        if self._log_id and self._exporter:
+            _, routing_exporter = get_shared_otel_infrastructure()
+            routing_exporter.unregister_exporter(self._log_id)
+
+            # Flush exporter
             try:
-                self.storage._shutdown_log_storage_thread()
+                self._exporter.force_flush()
             except Exception as e:
-                logger.warning(f"Error shutting down log storage: {e}")
+                logger.warning(f"Error flushing exporter: {e}")
 
         logger.debug("DefaultLogStore deactivated")
 

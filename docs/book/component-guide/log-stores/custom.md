@@ -11,7 +11,9 @@ If you want to send logs to a backend that isn't covered by the built-in log sto
 The `BaseLogStore` provides three main methods that you need to implement:
 
 ```python
+import logging
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
+from zenml.models import LogsRequest
 
 class MyLogStoreConfig(BaseLogStoreConfig):
     """Configuration for my custom log store."""
@@ -26,35 +28,60 @@ class MyLogStore(BaseLogStore):
     def config(self) -> MyLogStoreConfig:
         return cast(MyLogStoreConfig, self._config)
 
-    def activate(
-        self,
-        pipeline_run_id: UUID,
-        step_id: Optional[UUID] = None,
-        source: str = "step",
-    ) -> None:
+    def activate(self, log_request: LogsRequest) -> None:
         """Activate log collection.
         
         This is called at the start of a pipeline run or step.
-        Set up your logging handlers, connections, and any
-        background processing here.
+        Set up your logging handlers, connections, and register
+        with the routing handler.
+        
+        Args:
+            log_request: Contains log ID, URI, and metadata.
         """
-        pass
+        from zenml.logging.routing_handler import (
+            ensure_routing_handler_installed,
+            set_active_log_store,
+        )
+        
+        # Ensure global routing handler is installed
+        ensure_routing_handler_installed()
+        
+        # Initialize your backend connection
+        self._setup_backend(log_request)
+        
+        # Register this log store for current thread
+        set_active_log_store(self)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Process a log record.
+        
+        This is called by the routing handler for each log message.
+        Send the log to your backend. You can safely use print()
+        or logger.info() here - reentrancy protection prevents loops.
+        
+        Args:
+            record: The log record to process.
+        """
+        # Send log to your backend
+        self._send_to_backend(record)
 
     def deactivate(self) -> None:
         """Deactivate log collection and clean up.
         
         This is called at the end of a pipeline run or step.
-        Flush any pending logs, close connections, and clean
-        up resources here.
+        Flush any pending logs, close connections, and unregister.
         """
-        pass
+        from zenml.logging.routing_handler import set_active_log_store
+        
+        # Unregister from routing handler
+        set_active_log_store(None)
+        
+        # Clean up your backend connection
+        self._cleanup_backend()
 
     def fetch(
         self,
-        pipeline_run_id: UUID,
-        step_id: Optional[UUID] = None,
-        source: Optional[str] = None,
-        logs_uri: Optional[str] = None,
+        logs_model: LogsResponse,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = 20000,
@@ -63,69 +90,132 @@ class MyLogStore(BaseLogStore):
         
         This is called by the server to retrieve logs for display.
         Query your backend and return logs as LogEntry objects.
+        
+        Args:
+            logs_model: Contains pipeline_run_id, step_id, and metadata.
+            start_time: Filter logs after this time.
+            end_time: Filter logs before this time.
+            limit: Maximum number of logs to return.
+            
+        Returns:
+            List of log entries.
         """
         return []
 ```
 
 ### Implementation Patterns
 
-#### 1. Using Python Logging Handlers
+#### 1. Direct Implementation (Simple)
 
-The most common pattern is to create a `logging.Handler` that sends logs to your backend:
+The simplest pattern is to directly implement the `emit()` method:
 
 ```python
 import logging
 from zenml.log_stores import BaseLogStore
-from zenml.logger import logging_handlers, get_storage_log_level
 
 class MyLogStore(BaseLogStore):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.handler = None
-        self._original_root_level = None
+        self.backend_client = None
 
-    def activate(self, pipeline_run_id, step_id=None, source="step"):
-        self.handler = MyCustomHandler(
-            backend_url=self.config.backend_url,
-            pipeline_run_id=pipeline_run_id,
-            step_id=step_id,
+    def activate(self, log_request):
+        from zenml.logging.routing_handler import (
+            ensure_routing_handler_installed,
+            set_active_log_store,
         )
         
-        self.handler.setLevel(get_storage_log_level().value)
+        # Install routing handler
+        ensure_routing_handler_installed()
         
-        root_logger = logging.getLogger()
-        root_logger.addHandler(self.handler)
+        # Set up backend connection
+        self.backend_client = MyBackendClient(
+            url=self.config.backend_url,
+            log_id=log_request.id,
+        )
         
-        self._original_root_level = root_logger.level
-        handler_levels = [h.level for h in root_logger.handlers]
-        root_logger.setLevel(min(handler_levels))
+        # Register for current thread
+        set_active_log_store(self)
+
+    def emit(self, record):
+        """Process each log record."""
+        # You can safely use print() or logger.info() here!
+        # Reentrancy protection prevents infinite loops.
         
-        logging_handlers.add(self.handler)
+        log_data = {
+            "message": record.getMessage(),
+            "level": record.levelname,
+            "timestamp": record.created,
+        }
+        
+        self.backend_client.send_log(log_data)
 
     def deactivate(self):
-        if not self.handler:
-            return
-            
-        root_logger = logging.getLogger()
-        if self.handler in root_logger.handlers:
-            root_logger.removeHandler(self.handler)
-            
-        if self._original_root_level is not None:
-            root_logger.setLevel(self._original_root_level)
-            
-        logging_handlers.remove(self.handler)
+        from zenml.logging.routing_handler import set_active_log_store
+        
+        if self.backend_client:
+            self.backend_client.close()
+        
+        set_active_log_store(None)
 ```
 
-#### 2. Background Processing
+#### 2. Using Internal Handlers (Advanced)
 
-For efficient log handling, use background threads or async processing:
+If you want to use Python's logging.Handler internally:
+
+```python
+class MyLogStore(BaseLogStore):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._handler = None
+
+    def activate(self, log_request):
+        from zenml.logging.routing_handler import (
+            ensure_routing_handler_installed,
+            set_active_log_store,
+        )
+        
+        ensure_routing_handler_installed()
+        
+        # Create internal handler (not added to root logger)
+        self._handler = MyCustomHandler(
+            backend_url=self.config.backend_url,
+            log_id=log_request.id,
+        )
+        
+        set_active_log_store(self)
+
+    def emit(self, record):
+        """Delegate to internal handler."""
+        if self._handler:
+            self._handler.emit(record)
+
+    def deactivate(self):
+        from zenml.logging.routing_handler import set_active_log_store
+        
+        if self._handler:
+            self._handler.flush()
+            self._handler.close()
+        
+        set_active_log_store(None)
+```
+
+#### 3. Background Processing
+
+For efficient log handling, use background threads for batching:
 
 ```python
 import queue
 import threading
 
 class MyLogStore(BaseLogStore):
-    def activate(self, pipeline_run_id, step_id=None, source="step"):
+    def activate(self, log_request):
+        from zenml.logging.routing_handler import (
+            ensure_routing_handler_installed,
+            set_active_log_store,
+        )
+        
+        ensure_routing_handler_installed()
+        
         self.log_queue = queue.Queue(maxsize=2048)
         self.shutdown_event = threading.Event()
         self.worker_thread = threading.Thread(
@@ -133,44 +223,58 @@ class MyLogStore(BaseLogStore):
             daemon=True
         )
         self.worker_thread.start()
+        
+        set_active_log_store(self)
+
+    def emit(self, record):
+        """Queue logs for background processing."""
+        try:
+            self.log_queue.put_nowait(record)
+        except queue.Full:
+            pass  # Drop logs if queue is full
 
     def _process_logs(self):
+        """Background thread processes queued logs."""
         while not self.shutdown_event.is_set():
             try:
-                log_entry = self.log_queue.get(timeout=1)
-                self._send_to_backend(log_entry)
+                record = self.log_queue.get(timeout=1)
+                self._send_to_backend(record)
             except queue.Empty:
                 continue
 
     def deactivate(self):
+        from zenml.logging.routing_handler import set_active_log_store
+        
         self.shutdown_event.set()
         if self.worker_thread:
             self.worker_thread.join(timeout=5)
+        
+        set_active_log_store(None)
 ```
 
-#### 3. Fetching Logs
+#### 4. Fetching Logs
 
 Implement fetch using HTTP APIs or SDKs:
 
 ```python
+import requests
 from zenml.logging.step_logging import LogEntry
 
 class MyLogStore(BaseLogStore):
     def fetch(
         self,
-        pipeline_run_id,
-        step_id=None,
-        source=None,
-        logs_uri=None,
+        logs_model,
         start_time=None,
         end_time=None,
         limit=20000,
     ):
+        """Fetch logs from your backend."""
         query = {
-            "pipeline_run_id": str(pipeline_run_id),
+            "pipeline_run_id": str(logs_model.pipeline_run_id),
         }
-        if step_id:
-            query["step_id"] = str(step_id)
+        
+        if logs_model.step_run_id:
+            query["step_id"] = str(logs_model.step_run_id)
         if start_time:
             query["start_time"] = start_time.isoformat()
         if end_time:

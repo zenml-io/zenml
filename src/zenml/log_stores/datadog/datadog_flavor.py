@@ -21,7 +21,7 @@ from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
-from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 
 class DatadogLogStoreConfig(OtelLogStoreConfig):

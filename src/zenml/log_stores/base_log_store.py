@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Base class for log stores."""
 
+import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
@@ -67,6 +68,25 @@ class BaseLogStore(StackComponent):
         It should clean up handlers, flush any pending logs, and shut down
         any background threads or connections.
         """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Process a log record from the routing handler.
+
+        This method is called by the ZenML routing handler for each log
+        record that should be stored by this log store. Implementations
+        should process the record according to their backend's requirements.
+
+        The default implementation does nothing. This allows log stores that
+        only need to collect logs during pipeline execution (via activate/
+        deactivate) without real-time processing to skip implementing this.
+
+        Args:
+            record: The Python logging record to process.
+        """
+        # Default: do nothing
+        # This is NOT abstract, so implementations can opt-in
+        pass
+
 
     @abstractmethod
     def fetch(

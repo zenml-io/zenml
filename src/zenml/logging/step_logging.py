@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML logging handler."""
 
-import os
 import re
 from contextlib import nullcontext
 from contextvars import ContextVar
@@ -42,11 +41,34 @@ from zenml.models import (
     LogsRequest,
     PipelineSnapshotResponse,
 )
-from zenml.utils.io_utils import sanitize_remote_path
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores import BaseArtifactStore
+    from zenml.log_stores.base_log_store import BaseLogStore
+
+# Active log store per thread
+_active_log_store: ContextVar[Optional["BaseLogStore"]] = ContextVar(
+    "active_log_store", default=None
+)
+
+
+def set_active_log_store(log_store: Optional["BaseLogStore"]) -> None:
+    """Set active log store for current thread.
+
+    Args:
+        log_store: Log store to activate, or None to deactivate.
+    """
+    _active_log_store.set(log_store)
+
+
+def get_active_log_store() -> Optional["BaseLogStore"]:
+    """Get the active log store for the current thread.
+
+    Returns:
+        The active log store, or None if no log store is active.
+    """
+    return _active_log_store.get()
+
 
 logger = get_logger(__name__)
 
@@ -55,51 +77,12 @@ redirected: ContextVar[bool] = ContextVar("redirected", default=False)
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-LOGS_EXTENSION = ".log"
 PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
 
 # Maximum number of log entries to return in a single request
 MAX_ENTRIES_PER_REQUEST = 20000
 # Maximum size of a single log message in bytes (5KB)
 DEFAULT_MESSAGE_SIZE = 5 * 1024
-
-
-def prepare_logs_uri(
-    artifact_store: "BaseArtifactStore",
-    log_id: UUID,
-) -> str:
-    """Generates and prepares a URI for the log file or folder for a step.
-
-    Args:
-        artifact_store: The artifact store on which the artifact will be stored.
-        log_id: The ID of the logs entity
-
-    Returns:
-        The URI of the log storage (file or folder).
-    """
-    logs_base_uri = os.path.join(artifact_store.path, "logs")
-
-    if not artifact_store.exists(logs_base_uri):
-        artifact_store.makedirs(logs_base_uri)
-
-    if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-        logs_uri = os.path.join(logs_base_uri, log_id)
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs directory {logs_uri} already exists! Removing old log directory..."
-            )
-            artifact_store.rmtree(logs_uri)
-
-        artifact_store.makedirs(logs_uri)
-    else:
-        logs_uri = os.path.join(logs_base_uri, f"{log_id}{LOGS_EXTENSION}")
-        if artifact_store.exists(logs_uri):
-            logger.warning(
-                f"Logs file {logs_uri} already exists! Removing old log file..."
-            )
-            artifact_store.remove(logs_uri)
-
-    return sanitize_remote_path(logs_uri)
 
 
 class LogEntry(BaseModel):
@@ -186,7 +169,10 @@ class LoggingContext:
         Returns:
             The log request model.
         """
-        from zenml.log_stores.default.default_log_store import DefaultLogStore
+        from zenml.log_stores.default.default_log_store import (
+            DefaultLogStore,
+            prepare_logs_uri,
+        )
 
         if isinstance(self.log_store, DefaultLogStore):
             log_id = uuid4()
