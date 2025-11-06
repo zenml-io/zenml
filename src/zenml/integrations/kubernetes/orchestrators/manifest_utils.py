@@ -236,25 +236,13 @@ def add_pod_settings(
                 container.env_from = settings.env_from
 
         if settings.container_security_context:
-            if container.security_context:
-                existing_dict = (
-                    container.security_context.to_dict()
-                    if hasattr(container.security_context, "to_dict")
-                    else {}
+            existing_dict = container.security_context.to_dict()
+            existing_dict.update(settings.container_security_context)
+            container.security_context = (
+                serialization_utils.deserialize_kubernetes_model(
+                    existing_dict, "V1SecurityContext"
                 )
-                existing_dict.update(settings.container_security_context)
-                container.security_context = (
-                    serialization_utils.deserialize_kubernetes_model(
-                        existing_dict, "V1SecurityContext"
-                    )
-                )
-            else:
-                container.security_context = (
-                    serialization_utils.deserialize_kubernetes_model(
-                        settings.container_security_context,
-                        "V1SecurityContext",
-                    )
-                )
+            )
 
     if settings.volumes:
         if pod_spec.volumes:
