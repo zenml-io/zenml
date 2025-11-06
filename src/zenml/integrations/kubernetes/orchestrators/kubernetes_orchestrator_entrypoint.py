@@ -306,7 +306,7 @@ def main() -> None:
         shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
         owner_references = None
-        if not pipeline_settings.skip_owner_references:
+        if not orchestrator.config.skip_owner_references:
             try:
                 owner_references = kube_utils.get_pod_owner_references(
                     core_api=core_api,

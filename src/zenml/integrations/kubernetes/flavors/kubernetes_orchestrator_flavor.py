@@ -44,27 +44,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
     Field descriptions are defined inline using Field() descriptors.
     """
 
-    incluster: bool = Field(
-        False,
-        description="If `True`, the orchestrator will attempt to load the "
-        "in-cluster Kubernetes configuration and run the pipeline inside the "
-        "same cluster in which it itself is running. This requires the client "
-        "to run in a Kubernetes pod itself. If this fails, the orchestrator "
-        "will fall back to using the linked service connector or the "
-        "configured `kubernetes_context` configuration if provided, in that "
-        "order.",
-    )
-    kubernetes_context: Optional[str] = Field(
-        None,
-        description="Name of a Kubernetes context to run pipelines in. "
-        "If the stack component is linked to a Kubernetes service connector, "
-        "this field is ignored. Otherwise, it is mandatory.",
-    )
-    kubernetes_namespace: str = Field(
-        "zenml",
-        description="Name of the Kubernetes namespace to be used. "
-        "If not provided, `zenml` namespace will be used.",
-    )
     synchronous: bool = Field(
         default=True,
         description="Whether to wait for all pipeline steps to complete. "
@@ -222,23 +201,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
         deprecated=True,
         description="DEPRECATED/UNUSED.",
     )
-    parallel_step_startup_waiting_period: Optional[float] = Field(
-        None,
-        description="How long to wait in between starting parallel steps. "
-        "This can be used to distribute server load when running pipelines "
-        "with a huge amount of parallel steps.",
-    )
-    pass_zenml_token_as_secret: bool = Field(
-        False,
-        description="If `True`, the ZenML token will be passed as a Kubernetes secret "
-        "to the pods. For this to work, the Kubernetes client must have permissions "
-        "to create secrets in the namespace.",
-    )
-    skip_owner_references: bool = Field(
-        False,
-        description="If `True`, the orchestrator will not alter the owner "
-        "references on the step jobs.",
-    )
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "timeout",
@@ -276,6 +238,27 @@ class KubernetesOrchestratorConfig(
 ):
     """Configuration for the Kubernetes orchestrator."""
 
+    incluster: bool = Field(
+        False,
+        description="If `True`, the orchestrator will attempt to load the "
+        "in-cluster Kubernetes configuration and run the pipeline inside the "
+        "same cluster in which it itself is running. This requires the client "
+        "to run in a Kubernetes pod itself. If this fails, the orchestrator "
+        "will fall back to using the linked service connector or the "
+        "configured `kubernetes_context` configuration if provided, in that "
+        "order.",
+    )
+    kubernetes_context: Optional[str] = Field(
+        None,
+        description="Name of a Kubernetes context to run pipelines in. "
+        "If the stack component is linked to a Kubernetes service connector, "
+        "this field is ignored. Otherwise, it is mandatory.",
+    )
+    kubernetes_namespace: str = Field(
+        "zenml",
+        description="Name of the Kubernetes namespace to be used. "
+        "If not provided, `zenml` namespace will be used.",
+    )
     local: bool = Field(
         False,
         description="If `True`, the orchestrator will assume it is connected to a "
@@ -286,6 +269,23 @@ class KubernetesOrchestratorConfig(
     )
     skip_local_validations: bool = Field(
         False, description="If `True`, the local validations will be skipped."
+    )
+    parallel_step_startup_waiting_period: Optional[float] = Field(
+        None,
+        description="How long to wait in between starting parallel steps. "
+        "This can be used to distribute server load when running pipelines "
+        "with a huge amount of parallel steps.",
+    )
+    pass_zenml_token_as_secret: bool = Field(
+        False,
+        description="If `True`, the ZenML token will be passed as a Kubernetes secret "
+        "to the pods. For this to work, the Kubernetes client must have permissions "
+        "to create secrets in the namespace.",
+    )
+    skip_owner_references: bool = Field(
+        False,
+        description="If `True`, the orchestrator will not alter the owner "
+        "references on the step jobs.",
     )
 
     @property
