@@ -26,6 +26,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes import serialization_utils
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 
@@ -235,8 +236,6 @@ def add_pod_settings(
                 container.env_from = settings.env_from
 
         if settings.container_security_context:
-            from zenml.integrations.kubernetes import serialization_utils
-
             if container.security_context:
                 existing_dict = (
                     container.security_context.to_dict()
