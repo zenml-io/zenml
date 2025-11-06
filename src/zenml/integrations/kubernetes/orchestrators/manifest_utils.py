@@ -234,6 +234,34 @@ def add_pod_settings(
             else:
                 container.env_from = settings.env_from
 
+        if settings.container_security_context:
+            from zenml.integrations.kubernetes import serialization_utils
+
+            # Deserialize the security context settings
+            security_context_dict = (
+                serialization_utils.deserialize_kubernetes_model(
+                    settings.container_security_context, "V1SecurityContext"
+                )
+            )
+
+            # Merge with existing security context if it exists
+            if container.security_context:
+                # Get existing security context as dict
+                existing_dict = (
+                    container.security_context.to_dict()
+                    if hasattr(container.security_context, "to_dict")
+                    else {}
+                )
+                # Merge the dictionaries, with new settings taking precedence
+                existing_dict.update(security_context_dict.to_dict())
+                container.security_context = (
+                    serialization_utils.deserialize_kubernetes_model(
+                        existing_dict, "V1SecurityContext"
+                    )
+                )
+            else:
+                container.security_context = security_context_dict
+
     if settings.volumes:
         if pod_spec.volumes:
             pod_spec.volumes.extend(settings.volumes)

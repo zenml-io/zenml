@@ -68,6 +68,10 @@ class KubernetesPodSettings(BaseSettings):
         labels: Labels to apply to the pod.
         env: Environment variables to apply to the container.
         env_from: Environment variables to apply to the container.
+        container_security_context: Security context settings to apply to all
+            containers in the pod. This allows specifying container-level security
+            attributes such as runAsUser, runAsNonRoot, allowPrivilegeEscalation,
+            etc.
         additional_pod_spec_args: Additional arguments to pass to the pod. These
             will be applied to the pod spec.
     """
@@ -85,6 +89,7 @@ class KubernetesPodSettings(BaseSettings):
     labels: Dict[str, str] = {}
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []
+    container_security_context: Dict[str, Any] = {}
     additional_pod_spec_args: Dict[str, Any] = {}
 
     @field_validator("volumes", mode="before")
@@ -249,3 +254,22 @@ class KubernetesPodSettings(BaseSettings):
                 result.append(element)
 
         return result
+
+    @field_validator("container_security_context", mode="before")
+    @classmethod
+    def _convert_container_security_context(cls, value: Any) -> Any:
+        """Converts Kubernetes SecurityContext to a dict.
+
+        Args:
+            value: The container security context value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1SecurityContext
+
+        if isinstance(value, V1SecurityContext):
+            return serialization_utils.serialize_kubernetes_model(value)
+        else:
+            warn_if_invalid_model_data(value, "V1SecurityContext")
+            return value
