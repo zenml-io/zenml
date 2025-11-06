@@ -38,9 +38,8 @@ To use the Kubernetes deployer, you need:
 
 *   The ZenML `kubernetes` integration installed. If you haven't done so, run
 
-    ```shell
-    zenml integration install kubernetes
-    ```
+```shell
+zenml integration install kubernetes
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
