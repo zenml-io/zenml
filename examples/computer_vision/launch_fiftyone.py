@@ -136,6 +136,7 @@ def main():
     print("=" * 40)
 
     dataset_name = None
+    port = None
 
     # Parse command line arguments
     args = sys.argv[1:]

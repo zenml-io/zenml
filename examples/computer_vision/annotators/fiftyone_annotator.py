@@ -954,11 +954,15 @@ class FiftyOneAnnotator:
                 f"Evaluating using predictions field '{resolved_field}' (provided)"
             )
 
+        # Generate unique evaluation keys based on predictions field to avoid conflicts
+        eval_key_50 = f"eval_{resolved_field}_50"
+        eval_key_75 = f"eval_{resolved_field}_75"
+
         # Run separate evaluations at different IoU thresholds
         results_50 = dataset.evaluate_detections(
             resolved_field,
             gt_field=gt_field,
-            eval_key="eval_50",
+            eval_key=eval_key_50,
             iou=0.5,
             compute_mAP=True,
         )
@@ -966,7 +970,7 @@ class FiftyOneAnnotator:
         results_75 = dataset.evaluate_detections(
             resolved_field,
             gt_field=gt_field,
-            eval_key="eval_75",
+            eval_key=eval_key_75,
             iou=0.75,
             compute_mAP=True,
         )
@@ -993,7 +997,7 @@ class FiftyOneAnnotator:
             "mAP_75": mAP_75,
             "class_metrics": class_metrics,
             "total_samples": len(dataset),
-            "eval_keys": ["eval_50", "eval_75"],
+            "eval_keys": [eval_key_50, eval_key_75],
             "predictions_field_used": resolved_field,
         }
 
