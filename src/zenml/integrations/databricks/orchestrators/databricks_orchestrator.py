@@ -27,6 +27,7 @@ from databricks.sdk.service.compute import (
 )
 from databricks.sdk.service.jobs import CronSchedule, JobCluster
 from databricks.sdk.service.jobs import Task as DatabricksTask
+from databricks.sdk.service.workspace import ImportFormat
 
 from zenml.client import Client
 from zenml.constants import (
@@ -67,9 +68,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ZENML_STEP_DEFAULT_ENTRYPOINT_COMMAND = "entrypoint.main"
-DATABRICKS_WHEELS_DIRECTORY_PREFIX = "dbfs:/FileStore/zenml"
+DATABRICKS_WHEELS_DIRECTORY_PREFIX = "/Workspace/Shared/.zenml"
 DATABRICKS_LOCAL_FILESYSTEM_PREFIX = "file:/"
-DATABRICKS_SPARK_DEFAULT_VERSION = "15.3.x-scala2.12"
+DATABRICKS_SPARK_DEFAULT_VERSION = "16.4.x-scala2.12"
 DATABRICKS_JOB_ID_PARAMETER_REFERENCE = "{{job.id}}"
 DATABRICKS_ZENML_DEFAULT_CUSTOM_REPOSITORY_PATH = "."
 
@@ -313,18 +314,23 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         databricks_client = self._get_databricks_client()
 
-        # Create an empty folder in a volume.
+        # Upload wheel to Workspace files (DBR 15+ compatible)
         snapshot_name = snapshot.pipeline.name
         databricks_directory = f"{DATABRICKS_WHEELS_DIRECTORY_PREFIX}/{snapshot_name}/{orchestrator_run_name}"
-        databricks_wheel_path = (
-            f"{databricks_directory}/{wheel_path.rsplit('/', 1)[-1]}"
-        )
+        wheel_filename = wheel_path.rsplit("/", 1)[-1]
+        databricks_wheel_path = f"{databricks_directory}/{wheel_filename}"
 
-        databricks_client.dbutils.fs.mkdirs(databricks_directory)
-        databricks_client.dbutils.fs.cp(
-            f"{DATABRICKS_LOCAL_FILESYSTEM_PREFIX}/{wheel_path}",
-            databricks_wheel_path,
-        )
+        # Create parent directory structure in Workspace
+        databricks_client.workspace.mkdirs(path=databricks_directory)
+
+        # Upload the wheel file using Workspace API (works with DBR 15+)
+        with open(wheel_path, "rb") as f:
+            databricks_client.workspace.upload(
+                path=databricks_wheel_path,
+                content=f.read(),
+                format=ImportFormat.AUTO,
+                overwrite=True,
+            )
 
         # Construct the env variables for the pipeline
         env_vars = base_environment.copy()
@@ -378,9 +384,6 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         """
         databricks_client = self._get_databricks_client()
         spark_conf = settings.spark_conf or {}
-        spark_conf[
-            "spark.databricks.driver.dbfsLibraryInstallationAllowed"
-        ] = "true"
 
         policy_id = settings.policy_id or None
         for policy in databricks_client.cluster_policies.list():
