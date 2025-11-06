@@ -25,6 +25,7 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, create_model
 
 from zenml.client import Client
+from zenml.config.source import Source
 from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
 )
@@ -34,6 +35,7 @@ from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps.utils import (
     parse_return_type_annotations,
 )
+from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
@@ -101,6 +103,30 @@ class DynamicPipeline(Pipeline):
             If the pipeline is dynamic.
         """
         return True
+
+    def resolve(self) -> "Source":
+        """Resolves the pipeline.
+
+        Raises:
+            RuntimeError: If the resolved source is not loadable for dynamic
+                pipelines.
+
+        Returns:
+            The pipeline source.
+        """
+        source = super().resolve()
+        # We need to validate that the source is loadable for dynamic
+        # pipelines as the orchestration environment will need to load the
+        # source.
+        try:
+            source_utils.load(source)
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to resolve dynamic pipeline source. Make sure "
+                "your pipeline is defined at the top level of your module."
+            ) from e
+
+        return source
 
     def _prepare_invocations(self, **kwargs: Any) -> None:
         """Prepares the invocations of the pipeline.

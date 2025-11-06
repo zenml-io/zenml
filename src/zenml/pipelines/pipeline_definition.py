@@ -286,27 +286,10 @@ class Pipeline:
     def resolve(self) -> "Source":
         """Resolves the pipeline.
 
-        Raises:
-            RuntimeError: If the resolved source is not loadable for dynamic
-                pipelines.
-
         Returns:
             The pipeline source.
         """
-        source = source_utils.resolve(self.entrypoint, skip_validation=True)
-        if self.is_dynamic:
-            # We need to validate that the source is loadable for dynamic
-            # pipelines as the orchestration environment will need to load the
-            # source.
-            try:
-                source_utils.load(source)
-            except Exception as e:
-                raise RuntimeError(
-                    f"Unable to resolve dynamic pipeline source. Make sure "
-                    "your pipeline is defined at the top level of your module."
-                ) from e
-
-        return source
+        return source_utils.resolve(self.entrypoint, skip_validation=True)
 
     @property
     def source_object(self) -> Any:
