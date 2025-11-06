@@ -74,7 +74,7 @@ provider "zenml" {
 }
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/core-concepts/service-accounts).
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/core-concepts/service-accounts) or [Personal Access Token](https://docs.zenml.io/pro/core-concepts/personal-access-tokens).
 {% endhint %}
 ```
 
@@ -94,7 +94,7 @@ You can learn more about how to generate a `ZENML_API_KEY` via service accounts
 [here](https://docs.zenml.io//how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 
-If you're using a ZenML Pro server, you will need to create an organization-level service account and an API key for it. You can find more about organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
+If you're using a ZenML Pro server, you will need to create a Personal Access Token or an organization-level service account and an API key for it. You can find more about Personal Access Tokens [here](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) and organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
 
 ### Create the service connectors
 

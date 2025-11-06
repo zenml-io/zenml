@@ -258,7 +258,9 @@ def authenticate_credentials(
     ):
         # This is a ZenML Pro API key used in place of an access token.
         try:
-            return authenticate_external_user(external_access_token=access_token)
+            return authenticate_external_user(
+                external_access_token=access_token
+            )
         except AuthorizationException as e:
             error = f"Authentication error: {e}."
             logger.exception(error)
@@ -923,6 +925,17 @@ def authenticate_api_key(
     Raises:
         CredentialsNotValid: If the service account could not be authorized.
     """
+    if api_key.startswith(ZENML_PRO_API_KEY_PREFIX):
+        # This is a ZenML Pro API key. We need to authenticate the user using
+        # the external user authentication flow and pass the API key as the
+        # external access token.
+        try:
+            return authenticate_external_user(external_access_token=api_key)
+        except AuthorizationException as e:
+            error = f"Authentication error: {e}."
+            logger.exception(error)
+            raise CredentialsNotValid(error)
+
     try:
         decoded_api_key = APIKey.decode_api_key(api_key)
     except ValueError:

@@ -18,7 +18,6 @@ import os
 import re
 import sys
 import time
-from datetime import timedelta
 from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
@@ -33,7 +32,7 @@ from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ZENML_PRO_API_KEY_PREFIX
-from zenml.enums import APITokenType, ServerProviderType, StoreType
+from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
@@ -48,7 +47,6 @@ from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
 )
-from zenml.utils.time_utils import utc_now_tz_aware
 
 logger = get_logger(__name__)
 

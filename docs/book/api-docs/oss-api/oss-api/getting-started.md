@@ -85,7 +85,7 @@ Use the API key directly to authenticate your API requests by including it in th
 
 Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API token.
 
-1. To obtain an API access token using your API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
+1. To obtain a short-lived API token using your API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
    *   using curl:
 
        ```bash

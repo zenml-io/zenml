@@ -44,7 +44,7 @@ and enter the following API key when prompted:
 ZENKEY_...
 ```
 
-If you're using a ZenML Pro server, you will need to create an organization-level service account and an API key for it. You can find more about organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
+If you're using a ZenML Pro server, you will need to create a Personal Access Token or an organization-level service account and an API key for it. You can find more about Personal Access Tokens [here](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) and organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
 
 
 Finally, you will need the following on the machine where you will be running Terraform:
