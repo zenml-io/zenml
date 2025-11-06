@@ -857,6 +857,17 @@ class FiftyOneAnnotator:
                 if also_update_latest_alias:
                     # Mirror to stable alias for backward compatibility
                     sample[predictions_field] = det_obj
+
+                # Add ZenML dashboard URL to sample for easy access in UI
+                if zenml_metadata and "zenml_dashboard_url" in zenml_metadata:
+                    sample[f"{versioned_field}_zenml_url"] = zenml_metadata[
+                        "zenml_dashboard_url"
+                    ]
+                    if also_update_latest_alias:
+                        sample[f"{predictions_field}_zenml_url"] = (
+                            zenml_metadata["zenml_dashboard_url"]
+                        )
+
                 sample.save()
 
             except Exception as e:

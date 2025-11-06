@@ -92,6 +92,26 @@ def run_inference_on_fiftyone_dataset(
             "step_run_id": str(step_run_id) if step_run_id else None,
             "step_name": step_name,
         }
+
+        # Construct ZenML dashboard URL for traceability
+        try:
+            client = Client()
+            server_info = client.zen_store.get_store_info()
+
+            workspace_name = server_info.pro_workspace_name or "default"
+            project_name = client.active_project.name
+
+            # Prefer pro_dashboard_url for UI links, fallback to server_url
+            base_url = server_info.pro_dashboard_url or server_info.server_url
+
+            if base_url and pipeline_run_id:
+                zenml_url = f"{base_url}/workspaces/{workspace_name}/projects/{project_name}/runs/{pipeline_run_id}?tab=overview"
+                zenml_metadata["zenml_dashboard_url"] = zenml_url
+                logger.info(f"ZenML dashboard URL: {zenml_url}")
+        except Exception as e:
+            logger.info(
+                f"Could not construct ZenML dashboard URL (this is normal for local runs): {e}"
+            )
     except Exception as e:
         logger.info(
             f"ZenML context not available; proceeding without context-specific suffix. Details: {e}"
