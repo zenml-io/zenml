@@ -71,7 +71,9 @@ class KubernetesPodSettings(BaseSettings):
         container_security_context: Security context settings to apply to all
             containers in the pod. This allows specifying container-level security
             attributes such as runAsUser, runAsNonRoot, allowPrivilegeEscalation,
-            etc.
+            etc. Note: This is different from pod-level security context (which can
+            be set via additional_pod_spec_args) as some admission policies require
+            container-level security settings.
         additional_pod_spec_args: Additional arguments to pass to the pod. These
             will be applied to the pod spec.
     """
