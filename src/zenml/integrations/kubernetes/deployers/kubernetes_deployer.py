@@ -48,7 +48,10 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
     KubernetesDeployerConfig,
     KubernetesDeployerSettings,
 )
-from zenml.integrations.kubernetes.k8s_applier import KubernetesApplier
+from zenml.integrations.kubernetes.k8s_applier import (
+    KubernetesApplier,
+    ResourceInventoryItem,
+)
 from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
     build_secret_manifest,
@@ -85,7 +88,7 @@ class _DeploymentCtx(BaseModel):
     secret_name: str
     image: str
 
-    model_config = ConfigDict(frozen=True)  # immutable once built
+    model_config = ConfigDict(frozen=True)
 
 
 class KubernetesDeployer(ContainerizedDeployer):
@@ -336,7 +339,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             "liveness_probe_timeout": settings.liveness_probe_timeout,
             "liveness_probe_failure_threshold": settings.liveness_probe_failure_threshold,
             "probe_port": settings.service_port,
-            "security_context": None,
             "service_type": settings.service_type,
             "service_port": settings.service_port,
             "target_port": settings.service_port,
@@ -371,10 +373,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         sanitized = re.sub(r"[^A-Za-z0-9_]", "_", key)
 
-        # Ensure starts with letter or underscore
         if sanitized and not re.match(r"^[A-Za-z_]", sanitized):
             sanitized = f"_{sanitized}"
-        elif not sanitized:  # Empty after sanitization
+        elif not sanitized:
             sanitized = "_VAR"
 
         if sanitized in secret_key_map and secret_key_map[sanitized] != key:
@@ -510,7 +511,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeployerError: If deployment has no snapshot.
         """
-        # Clear any previous context to ensure clean state
         self._clear_deployment_context()
 
         snapshot = deployment.snapshot
@@ -626,7 +626,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 ),
             )
 
-        # Create namespace with labels to track ownership for cleanup
         rendered_resources: List[Dict[str, Any]] = [
             build_namespace_manifest(
                 namespace=ctx.namespace, labels=ctx.labels
@@ -652,7 +651,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             self._engine.render_template("service.yaml.j2", context)
         )
 
-        for additional_resource in ctx.settings.additional_resources:
+        for additional_resource in ctx.settings.additional_resources or []:
             try:
                 rendered_resources.extend(
                     self._engine.render_template(additional_resource, context)
@@ -697,7 +696,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         ctx = self.require_ctx()
 
         try:
-            created_objects = self.k8s_applier.provision(
+            created_objects, inventory = self.k8s_applier.provision(
                 rendered_resources,
                 default_namespace=ctx.namespace,
                 timeout=timeout,
@@ -712,7 +711,15 @@ class KubernetesDeployer(ContainerizedDeployer):
                 timeout,
             )
 
-            return self.do_get_deployment_state(deployment)
+            state = self.do_get_deployment_state(deployment)
+
+            if state.metadata is None:
+                state.metadata = {}
+            state.metadata["resource_inventory"] = [
+                item.model_dump() for item in inventory
+            ]
+
+            return state
 
         except Exception as e:
             try:
@@ -735,6 +742,11 @@ class KubernetesDeployer(ContainerizedDeployer):
     ) -> DeploymentOperationalState:
         """Get deployment state.
 
+        This method requires both the Deployment and Service resources to be present.
+        If either is missing, it raises DeploymentNotFoundError. This behavior treats
+        a partially present deployment as "not found" rather than distinguishing
+        between "missing", "partially created", or "misconfigured" states.
+
         Args:
             deployment: The deployment.
 
@@ -743,7 +755,8 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeployerError: If deployment has no snapshot.
-            DeploymentNotFoundError: If deployment not found.
+            DeploymentNotFoundError: If deployment not found or either the Deployment
+                or Service resource is missing.
         """
         self._initialize_deployment_context(deployment)
         ctx = self.require_ctx()
@@ -801,6 +814,12 @@ class KubernetesDeployer(ContainerizedDeployer):
                 "labels": ctx.labels,
             }
 
+            stored_metadata = deployment.deployment_metadata
+            if stored_metadata and "resource_inventory" in stored_metadata:
+                metadata["resource_inventory"] = stored_metadata[
+                    "resource_inventory"
+                ]
+
             return DeploymentOperationalState(
                 status=status,
                 url=url,
@@ -826,7 +845,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get deployment logs.
+        """Get deployment logs from the first pod only.
 
         Args:
             deployment: The deployment.
@@ -834,10 +853,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             tail: Number of lines to tail.
 
         Yields:
-            Log lines.
+            Log lines from the first pod matching the deployment label.
 
         Raises:
-            DeploymentLogsNotFoundError: If logs not found.
+            DeploymentLogsNotFoundError: If no pods are found for the deployment.
         """
         self._initialize_deployment_context(deployment)
         ctx = self.require_ctx()
@@ -895,13 +914,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         deployment: DeploymentResponse,
         timeout: int,
     ) -> Optional[DeploymentOperationalState]:
-        """Deprovision a deployment.
-
-        Uses label selector to delete all resources, which is more robust than
-        trying to re-render resources since:
-        - Works even if templates or settings have changed
-        - Catches any resources we might have missed tracking
-        - Handles dependencies correctly with propagation policy
+        """Deprovision a deployment using inventory-based deletion.
 
         Args:
             deployment: The deployment to deprovision.
@@ -914,18 +927,51 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentDeprovisionError: If deprovisioning fails.
         """
         self._initialize_deployment_context(deployment)
-        ctx = self.require_ctx()
-
-        label_selector = f"zenml-deployment-id={deployment.id}"
 
         try:
-            logger.info(
-                f"Deprovisioning deployment '{deployment.name}' using label selector: {label_selector}"
+            stored_metadata = deployment.deployment_metadata
+            inventory_data = (
+                stored_metadata.get("resource_inventory")
+                if stored_metadata
+                else None
             )
 
-            deleted_count = self.k8s_applier.delete_by_label_selector(
-                label_selector=label_selector,
-                namespace=ctx.namespace,
+            if not inventory_data:
+                ctx = self.require_ctx()
+                label_selector = f"zenml-deployment-id={deployment.id}"
+                logger.info(
+                    f"Deprovisioning deployment '{deployment.name}' using "
+                    f"label selector (no inventory found)"
+                )
+
+                deleted_count = self.k8s_applier.delete_by_label_selector(
+                    label_selector=label_selector,
+                    namespace=ctx.namespace,
+                    propagation_policy="Foreground",
+                )
+
+                if deleted_count > 0:
+                    logger.info(
+                        f"Deprovisioned deployment '{deployment.name}' "
+                        f"({deleted_count} resource(s) deleted)"
+                    )
+                else:
+                    logger.info(
+                        f"Deployment '{deployment.name}' not found (already deleted)"
+                    )
+
+                return None
+
+            inventory = [
+                ResourceInventoryItem(**item) for item in inventory_data
+            ]
+            logger.info(
+                f"Deprovisioning deployment '{deployment.name}' "
+                f"({len(inventory)} resources)"
+            )
+
+            deleted_count = self.k8s_applier.delete_from_inventory(
+                inventory=inventory,
                 propagation_policy="Foreground",
             )
 
@@ -943,7 +989,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         except ApiException as e:
             if e.status == 404:
-                # Resource already gone - that's fine for deprovisioning
                 logger.info(
                     f"Deployment '{deployment.name}' not found (already deleted)"
                 )
@@ -952,11 +997,12 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Kubernetes API error while deprovisioning '{deployment.name}': "
                 f"{e.status} - {e.reason}"
             ) from e
+        except DeploymentDeprovisionError:
+            raise
         except Exception as e:
             logger.error(
                 f"Failed to deprovision '{deployment.name}': {e}. "
-                f"You may need to manually delete resources:\n"
-                f"  kubectl delete all,configmap,secret -n {ctx.namespace} -l {label_selector}"
+                f"Manual cleanup may be required."
             )
             raise DeploymentDeprovisionError(
                 f"Unexpected error deprovisioning '{deployment.name}': {e}"

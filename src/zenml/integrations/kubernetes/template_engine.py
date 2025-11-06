@@ -42,13 +42,6 @@ logger = get_logger(__name__)
 class KubernetesTemplateEngine:
     """Engine for generating Kubernetes resources from Jinja2 templates.
 
-    This class implements the industry-standard approach (like Helm/Kustomize):
-    1. Load Jinja2 templates (built-in or user-provided)
-    2. Render templates with context from Pydantic settings
-    3. Parse rendered YAML to dictionaries
-    4. Return both dicts (for API) and YAML (for inspection)
-    5. NO kubectl required - uses pure Python!
-
     Attributes:
         template_dirs: List of directories to search for templates.
         builtin_templates_dir: Path to ZenML's built-in templates.
@@ -193,12 +186,8 @@ class KubernetesTemplateEngine:
     def _k8s_name_filter(value: str, max_length: int = 63) -> str:
         """Sanitize a string to be a valid Kubernetes resource name.
 
-        Delegates to kube_utils.sanitize_label for consistent behavior.
-
-        Kubernetes names must:
-        - Start and end with alphanumeric characters
-        - Contain only lowercase letters, numbers, and hyphens
-        - Be at most 63 characters long
+        Delegates to kube_utils.sanitize_label for consistent behavior, then
+        applies additional length truncation if max_length is not the default 63.
 
         Args:
             value: The string to sanitize.
@@ -231,10 +220,8 @@ class KubernetesTemplateEngine:
         if not value:
             return ""
 
-        # Replace invalid characters with dash
         label = re.sub(r"[^a-zA-Z0-9._-]", "-", value)
 
-        # Remove invalid leading/trailing characters
         label = re.sub(r"^[^a-zA-Z0-9]+", "", label)
         label = re.sub(r"[^a-zA-Z0-9]+$", "", label)
 
@@ -294,10 +281,6 @@ class KubernetesTemplateEngine:
         output_dir: Optional[PathType] = None,
     ) -> List[str]:
         """Save validated Kubernetes API objects as clean YAML files.
-
-        This method takes Kubernetes API objects returned from server validation
-        (e.g., after dry-run or actual deployment) and saves them as clean,
-        readable YAML files without internal Kubernetes metadata.
 
         Args:
             k8s_objects: List of Kubernetes API objects (with .to_dict() method).
@@ -359,10 +342,6 @@ class KubernetesTemplateEngine:
     def _clean_k8s_resource_dict(obj_dict: Dict[str, Any]) -> Dict[str, Any]:
         """Remove Kubernetes internal metadata for clean YAML output.
 
-        Kubernetes API responses include server-managed fields that are not
-        useful in saved manifests. This method removes those fields to keep
-        only the user-relevant configuration.
-
         Args:
             obj_dict: Raw Kubernetes resource dictionary.
 
@@ -401,10 +380,6 @@ class KubernetesTemplateEngine:
         context: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Render a template or load YAML resources with optional templating.
-
-        This method handles both:
-        1. Jinja2 template files (*.j2) from configured template directories
-        2. Plain YAML files from filesystem with optional variable substitution
 
         Args:
             template_or_file: Template name (e.g., "deployment.yaml.j2") or
@@ -542,8 +517,6 @@ class KubernetesTemplateEngine:
     @staticmethod
     def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
         """Load one or more YAML documents from a string.
-
-        Handles both single-document and multi-document YAML (with --- separators).
 
         Args:
             yaml_content: YAML string potentially containing multiple documents.
