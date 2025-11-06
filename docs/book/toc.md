@@ -20,6 +20,7 @@
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
 * [Connect](how-to/manage-zenml-server/connecting-to-zenml/README.md)
   * [with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+  * [with your User (programmatic)](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-pat.md)
   * [with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
 * [Manage](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)

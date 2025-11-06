@@ -16,7 +16,9 @@ your full permissions within all organizations you are a member of.
 
 Personal Access Tokens inherit your complete user permissions and should be 
 used with care. For automation tasks like CI/CD pipelines, we strongly 
-recommend using [service accounts](./service-accounts.md) instead, following the principle of least privilege. Service accounts allow you to grant only the specific permissions needed for automated workflows.
+recommend using [service accounts](./service-accounts.md) instead, following the
+principle of least privilege. Service accounts allow you to grant only the specific
+permissions needed for automated workflows.
 {% endhint %}
 
 {% hint style="info" %}
@@ -27,173 +29,10 @@ Personal Access Tokens in ZenML Pro are tied to your user account and are not sc
 
 ## Accessing Personal Access Token Management
 
-To manage Personal Access Tokens for your user account in ZenML Pro:
-
-1. Navigate to your ZenML Pro dashboard
-2. Click on your profile picture in the top right corner, then select **"Settings"**
-3. Select **"Access Tokens"** from the settings sidebar
-4. All Personal Access Tokens associated with your account will be 
-   displayed, showing:
-   - Token name
-   - Active/inactive status
-   - Expiration date (if set)
-   - Last login date
-   - Last rotated date
-
-This is the main interface where you can perform all Personal Access Token 
-operations.
+To manage Personal Access Tokens for your user account in ZenML Pro, navigate to your ZenML Pro dashboard, click on your profile picture in the top right corner, then select **"Settings"** and select **"Access Tokens"** from the settings sidebar. This is the main interface where you can perform all Personal Access Token operations.
 
 ![Personal Access Tokens](../../.gitbook/assets/pro-personal-access-tokens-01.png)
 
-## Personal Access Token Management
-
-Personal Access Tokens are the credentials used to authenticate your user 
-account programmatically. You can have multiple PATs, allowing for token 
-rotation and different access patterns for various tools and applications.
-
-### Viewing Personal Access Tokens
-
-**To view all your Personal Access Tokens:**
-
-1. Navigate to the Personal Access Tokens section in your user account settings
-2. All PATs associated with your account will be displayed, showing:
-   - Token name and description
-   - Expiration date (if set)
-   - Last login date
-   - Last rotated date
-   - Active/inactive status
-
-![Viewing Personal Access Tokens](../../.gitbook/assets/pro-personal-access-tokens-02.png)
-
-### Creating a Personal Access Token
-
-**To create a new Personal Access Token:**
-
-1. In the Personal Access Tokens section, click **"Add Token"** or 
-   **"Create PAT"**
-2. Provide:
-   - **Name**: A descriptive name for the PAT (e.g., "laptop-cli", 
-     "jupyter-notebook")
-   - **Description** (optional): Additional context about the token's 
-     intended use
-3. Click **"Create"**
-4. **Important**: Copy the displayed PAT value immediately and store it 
-   securely
-
-{% hint style="danger" %}
-**One-Time Display**
-
-The Personal Access Token value is only shown once during creation and 
-cannot be retrieved later. If you lose a PAT, you must create a new one or 
-rotate the existing token.
-{% endhint %}
-
-![Create a new Personal Access Token](../../.gitbook/assets/pro-personal-access-tokens-03.png)
-![Personal Access Token value](../../.gitbook/assets/pro-personal-access-tokens-04.png)
-
-### Activating and Deactivating Personal Access Tokens
-
-Individual Personal Access Tokens can be activated or deactivated as needed.
-
-**To deactivate a Personal Access Token:**
-
-1. In the Personal Access Tokens list, locate the token you want to 
-   deactivate
-2. Click the **"Active"** toggle switch to turn it off
-3. The PAT will immediately stop working for authentication
-
-![Deactivate a Personal Access Token](../../.gitbook/assets/pro-personal-access-tokens-05.png)
-
-**To reactivate a Personal Access Token:**
-
-1. Locate the deactivated PAT
-2. Click the **"Inactive"** toggle switch to turn it on
-3. The PAT will immediately resume working
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-Temporary API tokens associated with the deactivated PAT issued for workspaces in 
-your organization may still be valid for up to one hour after the PAT is 
-deactivated.
-{% endhint %}
-
-### Rotating Personal Access Tokens
-
-PAT rotation creates a new token value while optionally preserving the old 
-token for a transition period. This is essential for maintaining security 
-without service interruption.
-
-**To rotate a Personal Access Token:**
-
-1. Click the **"⋮"** (more options) menu next to the PAT
-2. Select **"Rotate"**
-3. Configure rotation options:
-   - Toggle **"Include Retention Period"** to keep the old token active 
-     for a period of time
-   - Set the retention period to how long to keep the old token active 
-     (minutes)
-4. Click **"Rotate Token"**
-5. Copy the new PAT value and store it securely
-6. Update your applications to use the new token before the retention 
-   period expires
-
-![Rotate a Personal Access Token](../../.gitbook/assets/pro-personal-access-tokens-06.png)
-![Rotated Personal Access Token](../../.gitbook/assets/pro-personal-access-tokens-07.png)
-
-{% hint style="info" %}
-**Zero-Downtime Rotation**
-
-By setting a retention period, you can update your applications to use the 
-new PAT while the old token remains functional. This enables zero-downtime 
-token rotation for production systems.
-{% endhint %}
-
-### Deleting Personal Access Tokens
-
-**To permanently delete a Personal Access Token:**
-
-1. Click the **"⋮"** (more options) menu next to the PAT
-2. Select **"Delete"**
-3. Confirm the deletion when prompted
-4. The PAT will be immediately revoked and cannot be recovered
-
-![Delete a Personal Access Token](../../.gitbook/assets/pro-personal-access-tokens-08.png)
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-Temporary API tokens associated with the deleted PAT issued for workspaces in your 
-organization may still be valid for up to one hour after the PAT is deleted.
-{% endhint %}
-
-## Security Best Practices
-
-### Token Management
-- **Regular Rotation**: Rotate PATs regularly (recommended: every 90 days)
-- **Set the Expiration Date**: Set an expiration date for PATs to automatically revoke them after a certain period of time, especially if you are only planning on using them for a short period of time.
-- **Use Service Accounts for CI/CD**: For automated workflows and CI/CD 
-  pipelines, use [service accounts](./service-accounts.md) instead of PATs. This follows the principle of least privilege by granting only necessary permissions 
-  rather than your full user permissions.
-- **Secure Storage**: Store PATs in secure credential management systems, 
-  never in code repositories
-- **Monitor Usage**: Regularly review the "last used" timestamps to 
-  identify unused tokens
-
-### Access Control
-- **Descriptive Naming**: Use clear, descriptive names for PATs to track 
-  their purposes (e.g., "work-laptop", "home-jupyter")
-- **Documentation**: Maintain documentation of which systems and tools use 
-  which tokens
-- **Regular Audits**: Periodically review and clean up unused PATs
-
-### Operational Security
-- **Immediate Deactivation**: Deactivate PATs immediately when they're no 
-  longer needed or if a device is lost or compromised
-- **Incident Response**: Have procedures in place to quickly rotate or 
-  deactivate compromised tokens
-- **Minimize Token Scope**: Only create PATs when necessary for 
-  programmatic access; use regular login for interactive sessions
 
 ## Using Personal Access Tokens
 
@@ -323,17 +162,6 @@ This will return a response like this (the short-lived API token is the `access_
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
 
-It is also possible to authenticate using your PAT in the OpenAPI UI 
-available at https://cloudapi.zenml.io:
-
-![OpenAPI UI authentication](../../.gitbook/assets/pro-service-account-auth-01.png)
-
-The session token is stored as a cookie, which essentially authenticates 
-your entire OpenAPI UI session. You can now open https://cloud.zenml.io and 
-navigate your organization and its resources as your user account.
-
-![ZenML Pro UI authentication](../../.gitbook/assets/pro-service-account-auth-02.png)
-
 ### Workspace access
 
 You can also use your Personal Access Token to access all the workspaces in 
@@ -359,8 +187,7 @@ zenml login <your-workspace-name> --api-key
 
 Similar to the ZenML Pro API programmatic access, the PAT can be used to 
 authenticate to the ZenML Pro workspace REST API programmatically. This is 
-no different from [using the OSS API key to authenticate to the OSS 
-workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). 
+no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). 
 There are two methods to do this - one is simpler but less secure, the other 
 is secure and recommended but more complex:
 
@@ -453,7 +280,7 @@ This will return a response like this (the short-lived workspace API token is th
 2. Once you have obtained a short-lived workspace API token, you can use it to 
    authenticate your API requests by including it in the `Authorization` 
    header. When the short-lived workspace API token expires, simply repeat the 
-   steps above to obtain a new short-lived workspace API token. For example, you can use the following command to check your current workspace user:
+   steps above to obtain a new one. For example, you can use the following command to check your current workspace user:
    *   using curl:
 
        ```bash
@@ -479,6 +306,87 @@ This will return a response like this (the short-lived workspace API token is th
 
 {% endtab %}
 {% endtabs %}
+
+
+## Personal Access Token Operations
+
+Personal Access Tokens are the credentials used to authenticate your user 
+account programmatically. You can have multiple PATs, allowing for different access patterns for various tools and applications.
+
+
+### Creating a Personal Access Token
+
+
+{% hint style="danger" %}
+**One-Time Display**
+
+The Personal Access Token value is only shown once during creation and 
+cannot be retrieved later. If you lose a PAT, you must create a new one or 
+rotate the existing PAT.
+{% endhint %}
+
+### Activating and Deactivating Personal Access Tokens
+
+Individual Personal Access Tokens can be activated or deactivated as needed.
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Temporary API tokens associated with the deactivated PAT issued for workspaces in 
+your organization may still be valid for up to one hour after the PAT is 
+deactivated.
+{% endhint %}
+
+### Rotating Personal Access Tokens
+
+PAT rotation creates a new token value while optionally preserving the old 
+token for a transition period. This is essential for maintaining security 
+without service interruption.
+
+{% hint style="info" %}
+**Zero-Downtime Rotation**
+
+By setting a retention period, you can update your applications to use the 
+new PAT while the old token remains functional. This enables zero-downtime 
+token rotation for production systems.
+{% endhint %}
+
+### Deleting Personal Access Tokens
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Temporary API tokens associated with the deleted PAT issued for workspaces in your 
+organization may still be valid for up to one hour after the PAT is deleted.
+{% endhint %}
+
+## Security Best Practices
+
+### Token Management
+- **Regular Rotation**: Rotate PATs regularly (recommended: every 90 days)
+- **Set the Expiration Date**: Set an expiration date for PATs to automatically revoke them after a certain period of time, especially if you are only planning on using them for a short period of time.
+- **Use Service Accounts for CI/CD**: For automated workflows and CI/CD 
+  pipelines, use [service accounts](./service-accounts.md) instead of PATs. This follows the principle of least privilege by granting only necessary permissions 
+  rather than your full user permissions.
+- **Secure Storage**: Store PATs in secure credential management systems, 
+  never in code repositories
+- **Monitor Usage**: Regularly review the "last used" timestamps to 
+  identify unused tokens
+
+### Access Control
+- **Descriptive Naming**: Use clear, descriptive names for PATs to track 
+  their purposes (e.g., "work-laptop", "home-jupyter")
+- **Documentation**: Maintain documentation of which systems and tools use 
+  which tokens
+- **Regular Audits**: Periodically review and clean up unused PATs
+
+### Operational Security
+- **Immediate Deactivation**: Deactivate PATs immediately when they're no 
+  longer needed or if a device is lost or compromised
+- **Incident Response**: Have procedures in place to quickly rotate or 
+  deactivate compromised tokens
+- **Minimize Token Scope**: Only create PATs when necessary for 
+  programmatic access; use regular login for interactive sessions
 
 ## Troubleshooting
 
