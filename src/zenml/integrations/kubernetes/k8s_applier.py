@@ -178,7 +178,7 @@ class KubernetesApplier:
 
         Raises:
             RuntimeError: If provisioning of a resource fails.
-            ApiException: For API failures.
+            Exception: If the resource cannot be applied.
         """
         results: List[Any] = []
 

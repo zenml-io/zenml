@@ -81,9 +81,6 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
 
         Returns:
             The validated namespace value.
-
-        Raises:
-            ValueError: If the namespace is invalid.
         """
         if v is None:
             return v
