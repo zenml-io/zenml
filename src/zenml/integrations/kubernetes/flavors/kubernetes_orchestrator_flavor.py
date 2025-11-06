@@ -234,6 +234,11 @@ class KubernetesOrchestratorSettings(BaseSettings):
         "to the pods. For this to work, the Kubernetes client must have permissions "
         "to create secrets in the namespace.",
     )
+    skip_owner_references: bool = Field(
+        False,
+        description="If `True`, the orchestrator will not alter the owner "
+        "references on the step jobs.",
+    )
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "timeout",
