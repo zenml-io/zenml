@@ -320,17 +320,27 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         wheel_filename = wheel_path.rsplit("/", 1)[-1]
         databricks_wheel_path = f"{databricks_directory}/{wheel_filename}"
 
-        # Create parent directory structure in Workspace
-        databricks_client.workspace.mkdirs(path=databricks_directory)
-
-        # Upload the wheel file using Workspace API (works with DBR 15+)
-        with open(wheel_path, "rb") as f:
-            databricks_client.workspace.upload(
-                path=databricks_wheel_path,
-                content=f.read(),
-                format=ImportFormat.AUTO,
-                overwrite=True,
+        # Create directory and upload wheel file using Workspace API (works with DBR 15+)
+        try:
+            databricks_client.workspace.mkdirs(path=databricks_directory)
+            with open(wheel_path, "rb") as f:
+                databricks_client.workspace.upload(
+                    path=databricks_wheel_path,
+                    content=f.read(),
+                    format=ImportFormat.AUTO,
+                    overwrite=True,
+                )
+            logger.info(
+                f"Successfully uploaded wheel to Databricks workspace: "
+                f"{databricks_wheel_path}"
             )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to upload wheel file to Databricks workspace at "
+                f"{databricks_wheel_path}. Ensure your Databricks workspace has "
+                f"the necessary permissions and the path is accessible. "
+                f"Original error: {e}"
+            ) from e
 
         # Construct the env variables for the pipeline
         env_vars = base_environment.copy()
