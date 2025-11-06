@@ -198,7 +198,9 @@ class DockerSettings(BaseSettings):
             in the image, not downloaded at runtime.
         apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
-            Docker image.
+            Docker image before the requirements are installed.
+        post_environment: Dictionary of environment variables to set inside the
+            Docker image after the requirements are installed.
         build_config: Configuration for the main image build.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
@@ -239,6 +241,7 @@ class DockerSettings(BaseSettings):
     local_project_install_command: Optional[str] = None
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
+    post_environment: Dict[str, Any] = {}
     user: Optional[str] = None
     build_config: Optional[DockerBuildConfig] = None
 

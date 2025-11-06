@@ -791,6 +791,9 @@ class PipelineDockerImageBuilder:
             # Switch back to specified user for subsequent instructions
             lines.append(f"USER {docker_settings.user}")
 
+        for key, value in docker_settings.post_environment.items():
+            lines.append(f"ENV {key.upper()}='{value}'")
+
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")
 
