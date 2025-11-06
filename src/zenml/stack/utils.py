@@ -32,6 +32,7 @@ def validate_stack_component_config(
     component_type: StackComponentType,
     zen_store: Optional[BaseZenStore] = None,
     validate_custom_flavors: bool = True,
+    existing_config: Optional[Dict[str, Any]] = None,
 ) -> Optional[StackComponentConfig]:
     """Validate the configuration of a stack component.
 
@@ -45,6 +46,7 @@ def validate_stack_component_config(
         validate_custom_flavors: When loading custom flavors from the local
             environment, this flag decides whether the import failures are
             raised or an empty value is returned.
+        existing_config: The existing stack component configuration.
 
     Returns:
         The validated stack component configuration or None, if the
@@ -82,6 +84,12 @@ def validate_stack_component_config(
     config_class = flavor_class.config_class
 
     extra_keys = set(configuration_dict) - set(config_class.model_fields)
+    if existing_config:
+        # If there is an existing configuration, don't fail because of keys
+        # that were already set. This can be the case if the config stored in
+        # the DB contains attributes that have been removed.
+        extra_keys = extra_keys - set(existing_config)
+
     if extra_keys:
         raise ValueError(
             f"Invalid configuration keys {list(extra_keys)} for "
