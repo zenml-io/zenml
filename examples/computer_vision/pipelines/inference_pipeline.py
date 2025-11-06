@@ -18,10 +18,10 @@
 
 from typing import Any, Dict
 
-from steps import run_detection
+from steps import run_detection, process_detection_results
 
 from pipelines.hooks import cleanup_model, init_model
-from zenml import pipeline
+from zenml import Model, pipeline
 from zenml.config import (
     CORSConfig,
     DeploymentSettings,
@@ -29,10 +29,12 @@ from zenml.config import (
     SecureHeadersConfig,
 )
 from zenml.config.resource_settings import ResourceSettings
+from zenml.enums import ModelStages
 
 docker_settings = DockerSettings(
     requirements="requirements.txt",
 )
+model = Model(name="yolov8n-model", version=ModelStages.PRODUCTION)
 
 # Custom CSP to allow data URIs for base64-encoded images
 CUSTOM_CSP = (
@@ -117,9 +119,12 @@ def object_detection_inference_pipeline(
             - image_size: Original image dimensions
             - model_version: Version of the YOLO model used
     """
-    detection_results: Dict[str, Any] = run_detection(
+    detection_results, _ = run_detection(
         image_path=image_path,
         confidence_threshold=confidence_threshold,
     )
+    # detection_results = process_detection_results(detection_results)
 
+    # Return only the dictionary for API compatibility
+    # The annotated_image will be automatically visualized by ZenML
     return detection_results
