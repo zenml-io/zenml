@@ -2123,11 +2123,12 @@ class Client(metaclass=ClientMetaClass):
 
         if configuration is not None:
             existing_configuration = component.configuration
-            existing_configuration.update(configuration)
-            existing_configuration = {
-                k: v
-                for k, v in existing_configuration.items()
-                if v is not None
+            merged_configuration = {
+                **existing_configuration,
+                **configuration,
+            }
+            merged_configuration = {
+                k: v for k, v in merged_configuration.items() if v is not None
             }
 
             from zenml.stack.utils import (
@@ -2136,11 +2137,12 @@ class Client(metaclass=ClientMetaClass):
             )
 
             validated_config = validate_stack_component_config(
-                configuration_dict=existing_configuration,
+                configuration_dict=merged_configuration,
                 flavor=component.flavor,
                 component_type=component.type,
                 # Always enforce validation of custom flavors
                 validate_custom_flavors=True,
+                existing_config=existing_configuration,
             )
             # Guaranteed to not be None by setting
             # `validate_custom_flavors=True` above

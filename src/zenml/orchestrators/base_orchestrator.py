@@ -240,8 +240,6 @@ class BaseOrchestrator(StackComponent, ABC):
                 This will be deleted in case the pipeline run failed.
 
         Raises:
-            KeyboardInterrupt: If the orchestrator is synchronous and the
-                pipeline run is keyboard interrupted.
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
@@ -379,14 +377,20 @@ class BaseOrchestrator(StackComponent, ABC):
                     if submission_result.wait_for_completion:
                         try:
                             submission_result.wait_for_completion()
-                        except KeyboardInterrupt:
-                            error_message = "Received KeyboardInterrupt. Note that the run is still executing. "
+                        except KeyboardInterrupt as e:
+                            message = (
+                                "Run monitoring interrupted, but "
+                                "the pipeline is still executing."
+                            )
                             if placeholder_run:
-                                error_message += (
-                                    "If you want to stop the pipeline run, please use: "
-                                    f"`zenml pipeline runs stop {placeholder_run.id}`"
+                                message += (
+                                    " If you want to stop the run, use: `zenml "
+                                    f"pipeline runs stop {placeholder_run.id}`"
                                 )
-                            raise KeyboardInterrupt(error_message)
+                            # TODO: once we don't support Python 3.10 anymore,
+                            # use `exception.add_note` instead.
+                            e.args = (message,)
+                            raise RunMonitoringError(original_exception=e)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
 
