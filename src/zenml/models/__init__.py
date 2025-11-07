@@ -346,7 +346,8 @@ from zenml.models.v2.core.step_run import (
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
-    StepRunResponseResources
+    StepRunResponseResources,
+    StepHeartbeatResponse,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -908,4 +909,5 @@ __all__ = [
     "StepRunIdentifier",
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
+    "StepHeartbeatResponse",
 ]

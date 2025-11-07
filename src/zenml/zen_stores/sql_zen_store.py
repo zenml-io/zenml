@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+from zenml.models.v2.core.step_run import StepHeartbeatResponse
+
 try:
     import sqlalchemy  # noqa
 except ImportError:
@@ -35,7 +37,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -10337,6 +10339,37 @@ class SqlZenStore(BaseZenStore):
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
+            )
+
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+        """
+        with Session(self.engine) as session:
+            existing_step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            existing_step_run.latest_heartbeat = datetime.now(timezone.utc)
+
+            session.commit()
+            session.refresh(existing_step_run)
+
+            return StepHeartbeatResponse(
+                id=existing_step_run.id,
+                status=existing_step_run.status,
+                latest_heartbeat=existing_step_run.latest_heartbeat,
             )
 
     def update_run_step(

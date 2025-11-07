@@ -43,6 +43,7 @@ from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.steps import StepHeartBeatTerminationException, StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.time_utils import utc_now
 
@@ -107,6 +108,7 @@ class StepLauncher:
         snapshot: PipelineSnapshotResponse,
         step: Step,
         orchestrator_run_id: str,
+        heartbeat_enabled: bool = False,
     ):
         """Initializes the launcher.
 
@@ -114,6 +116,7 @@ class StepLauncher:
             snapshot: The pipeline snapshot.
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
+            heartbeat_enabled: Flag - if set will start heartbeat thread worker
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -121,6 +124,7 @@ class StepLauncher:
         self._snapshot = snapshot
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
+        self._heartbeat_enabled = heartbeat_enabled
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -167,7 +171,6 @@ class StepLauncher:
 
             try:
                 client = Client()
-                pipeline_run = None
 
                 if self._step_run:
                     pipeline_run = client.get_pipeline_run(
@@ -429,6 +432,10 @@ class StepLauncher:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
+
+        Raises:
+            StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
+            KeyboardInterrupt: Will capture, evaluate and reraise keyboard interrupts.
         """
         from zenml.deployers.server import runtime
 
@@ -452,6 +459,19 @@ class StepLauncher:
         )
 
         start_time = time.time()
+
+        # To have a cross-platform compatible handling of main thread termination
+        # we use Python's interrupt_main instead of termination signals (not Windows supported).
+        # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
+        # and handle it as a custom exception.
+
+        logger.info(f"Initiating heartbeat for step: {self._invocation_id}")
+
+        heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
+
+        if self._heartbeat_enabled:
+            heartbeat_worker.start()
+
         try:
             if self._step.config.step_operator:
                 step_operator_name = None
@@ -503,11 +523,22 @@ class StepLauncher:
                     self._run_step_with_dynamic_orchestrator(
                         step_run_info=step_run_info
                     )
+        except KeyboardInterrupt:
+            if heartbeat_worker.is_terminated:
+                msg = f"Step {self._invocation_id} has been remotely stopped - terminating"
+                logger.info(msg)
+                output_utils.remove_artifact_dirs(
+                    artifact_uris=list(output_artifact_uris.values())
+                )
+                raise StepHeartBeatTerminationException(msg)
+            raise
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
                 artifact_uris=list(output_artifact_uris.values())
             )
             raise
+        finally:
+            heartbeat_worker.stop()
 
         duration = time.time() - start_time
         logger.info(
