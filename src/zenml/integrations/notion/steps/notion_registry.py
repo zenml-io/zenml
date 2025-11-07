@@ -100,21 +100,25 @@ def notion_register_model_step(
 
     # Try to pull additional metadata from the model's run_metadata
     try:
-        model_version = step_context.model._get_or_create_model_version()
-        if model_version and model_version.run_metadata:
+        zenml_model_version = step_context.model._get_or_create_model_version()
+        if zenml_model_version and zenml_model_version.run_metadata:
             # Extract metadata logged via log_metadata(infer_model=True)
             if not metadata.model_extra:
-                metadata.model_extra = {}
+                # Use setattr to avoid read-only property issue
+                setattr(metadata, "model_extra", {})
 
             # Add any evaluation metrics or model info found
-            for key, metadata_entry in model_version.run_metadata.items():
+            for (
+                key,
+                metadata_entry,
+            ) in zenml_model_version.run_metadata.items():
                 if key in [
                     "evaluation_metrics",
                     "model_info",
                     "hyperparameters",
                 ]:
                     if hasattr(metadata_entry, "value"):
-                        metadata.model_extra[key] = metadata_entry.value
+                        metadata.model_extra[key] = metadata_entry.value  # type: ignore[index]
     except Exception as e:
         logger.debug(f"Could not extract model metadata: {e}")
 
@@ -124,7 +128,7 @@ def notion_register_model_step(
         f"model registry..."
     )
 
-    model_version = model_registry.register_model_version(
+    registered_model_version = model_registry.register_model_version(
         name=name,
         version=version,
         model_source_uri=model_source_uri,
@@ -133,6 +137,6 @@ def notion_register_model_step(
     )
 
     logger.info(
-        f"Successfully registered model {name} version {model_version.version} "
+        f"Successfully registered model {name} version {registered_model_version.version} "
         f"to Notion model registry!"
     )

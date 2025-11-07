@@ -77,7 +77,7 @@ class NotionModelRegistry(BaseModelRegistry):
             response = self.notion_client.databases.retrieve(
                 database_id=self.config.database_id
             )
-            data_sources = response.get("data_sources", [])
+            data_sources = response.get("data_sources", [])  # type: ignore[union-attr]
 
             if not data_sources:
                 raise RuntimeError(
@@ -88,7 +88,7 @@ class NotionModelRegistry(BaseModelRegistry):
 
             # For now, we use the first data source
             # In the future, this could be configurable
-            data_source_id = data_sources[0]["id"]
+            data_source_id: str = data_sources[0]["id"]
             logger.debug(
                 f"Using data source {data_source_id} for database "
                 f"{self.config.database_id}"
@@ -382,7 +382,7 @@ class NotionModelRegistry(BaseModelRegistry):
             )
 
             created_at = datetime.now()
-            page_id = response["id"]
+            page_id: str = response["id"]  # type: ignore[index]
 
             # Generate Notion page URL
             page_id_no_hyphens = page_id.replace("-", "")
@@ -420,7 +420,7 @@ class NotionModelRegistry(BaseModelRegistry):
 
             # Log the metadata (this will be associated with the current step if called from within a step)
             try:
-                log_metadata(metadata=zenml_metadata)
+                log_metadata(metadata=zenml_metadata)  # type: ignore[arg-type]
                 logger.debug("Metadata logged to ZenML tracking system")
             except Exception as e:
                 # Don't fail the registration if metadata logging fails
@@ -620,7 +620,7 @@ class NotionModelRegistry(BaseModelRegistry):
                 )
 
             try:
-                log_metadata(metadata=update_metadata)
+                log_metadata(metadata=update_metadata)  # type: ignore[arg-type]
                 logger.debug(
                     f"Model version update logged to ZenML for {name}:{version}"
                 )
