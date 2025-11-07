@@ -147,13 +147,13 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](
 {% hint style="info" %}
 **Important: Workspace API vs ZenML Pro API**
 
-Snapshots use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need to use ZenML Pro credentials with the Workspace API, not the ZenML Pro management API. See [ZenML Pro Personal Access Tokens](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) and [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
+Snapshots use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need to use ZenML Pro credentials with the Workspace API, not the ZenML Pro management API. See [ZenML Pro Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) and [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts).
 {% endhint %}
 
 {% hint style="success" %}
 Production authentication (ZenML Pro)
 
-For production automation in Pro (running snapshots from CI/CD or external systems), you can use [Personal Access Tokens](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) or [Organization Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts). Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your Personal Access Token or Organization Service Account API key.
+For production automation in Pro (running snapshots from CI/CD or external systems), you can use [Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) or [Organization Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts). Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your Personal Access Token or Organization Service Account API key.
 {% endhint %}
 
 [Snapshots](https://docs.zenml.io/concepts/snapshots) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.

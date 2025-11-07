@@ -190,7 +190,7 @@ curl -X 'POST' \
 Learn how to get a bearer token for the curl commands:
 
 - For a ZenML OSS API: use [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
-- For a ZenML Pro workspace API: use [ZenML Pro Personal Access Tokens](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) or [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
+- For a ZenML Pro workspace API: use [ZenML Pro Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) or [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts).
 {% endhint %}
 
 ## Deleting Pipeline Snapshots

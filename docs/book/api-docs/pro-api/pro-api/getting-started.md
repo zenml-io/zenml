@@ -49,7 +49,7 @@ For example, for the SaaS variant, you can access the docs here: [https://clouda
 
 ### Programmatic access with Personal Access Tokens
 
-Personal Access Tokens are long-lived credentials scoped to your own user account that can be used to authenticate to the ZenML Pro API and the Workspace API across all the organizations and workspaces that your account has access to. See [Personal Access Tokens](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) for setup and examples.
+Personal Access Tokens are long-lived credentials scoped to your own user account that can be used to authenticate to the ZenML Pro API and the Workspace API across all the organizations and workspaces that your account has access to. See [Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) for setup and examples.
 
 ### Programmatic access with service accounts and API keys
 
@@ -57,11 +57,11 @@ Personal Access Tokens are long-lived credentials scoped to your own user accoun
 **Deprecation of workspace level service accounts and API keys**
 
 * ZenML Pro workspace level service accounts and API keys are deprecated and will be removed in a future version.
-* Please use ZenML Pro organization level service accounts and API keys instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts))
-* Follow the migration guide in [Migration of workspace level service accounts](https://docs.zenml.io/pro/core-concepts/service-accounts#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
+* Please use ZenML Pro organization level service accounts and API keys instead (see [Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts))
+* Follow the migration guide in [Migration of workspace level service accounts](https://docs.zenml.io/pro/access-management/service-accounts#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
 {% endhint %}
 
-Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and the Workspace API across all workspaces in your organization. See [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts) for setup and examples.
+Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and the Workspace API across all workspaces in your organization. See [Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts) for setup and examples.
 
 ## When to Use Which API
 
@@ -80,12 +80,12 @@ The **Workspace API** is different from the ZenML Pro API and supports different
 
 ### Workspace API Authentication Methods
 
-Programmatic access to the ZenML Pro workspace API is achieved mostly the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints. The only exception is that workspace level service accounts and API keys are disabled and organization level service accounts and API keys are used instead (see [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts)).
+Programmatic access to the ZenML Pro workspace API is achieved mostly the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints. The only exception is that workspace level service accounts and API keys are disabled and organization level service accounts and API keys are used instead (see [Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts)).
 
 You can use one of these two methods to authenticate with your workspace API:
 
-* [Create and use a Personal Access Token](https://docs.zenml.io/pro/core-concepts/personal-access-tokens) (good for development and short-term tasks)
-* [Create a ZenML Pro service account and use its API key](https://docs.zenml.io/pro/core-concepts/service-accounts) (recommended for production automation and run template triggering)
+* [Create and use a Personal Access Token](https://docs.zenml.io/pro/access-management/personal-access-tokens) (good for development and short-term tasks)
+* [Create a ZenML Pro service account and use its API key](https://docs.zenml.io/pro/access-management/service-accounts) (recommended for production automation and run template triggering)
 
 When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
 
