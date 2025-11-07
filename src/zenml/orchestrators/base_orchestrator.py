@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
-import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -40,7 +39,6 @@ from zenml.exceptions import (
     HookExecutionException,
     IllegalOperationError,
     RunMonitoringError,
-    RunStoppedException,
 )
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
@@ -50,7 +48,6 @@ from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_status_update,
     publish_schedule_metadata,
 )
-from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
 from zenml.steps.step_context import RunContext, get_or_create_run_context
@@ -59,6 +56,7 @@ from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
@@ -208,6 +206,27 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return None
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Returns:
+            Optional submission result.
+        """
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineSnapshotResponse",
@@ -269,6 +288,7 @@ class BaseOrchestrator(StackComponent, ABC):
             placeholder_run
             and self.config.supports_client_side_caching
             and not snapshot.schedule
+            and not snapshot.is_dynamic
             and not prevent_client_side_caching
         ):
             from zenml.orchestrators import cache_utils
@@ -287,22 +307,10 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             logger.debug("Skipping client-side caching.")
 
-        step_environments = {}
-        for invocation_id, step in snapshot.step_configurations.items():
-            from zenml.utils.env_utils import get_step_environment
-
-            step_environment = get_step_environment(
-                step_config=step.config,
-                stack=stack,
-            )
-
-            combined_environment = base_environment.copy()
-            combined_environment.update(step_environment)
-            step_environments[invocation_id] = combined_environment
-
         try:
             if (
-                getattr(self.submit_pipeline, "__func__", None)
+                not snapshot.is_dynamic
+                and getattr(self.submit_pipeline, "__func__", None)
                 is BaseOrchestrator.submit_pipeline
             ):
                 logger.warning(
@@ -334,13 +342,37 @@ class BaseOrchestrator(StackComponent, ABC):
                                 f"run metadata: {e}"
                             )
             else:
-                submission_result = self.submit_pipeline(
-                    snapshot=snapshot,
-                    stack=stack,
-                    base_environment=base_environment,
-                    step_environments=step_environments,
-                    placeholder_run=placeholder_run,
-                )
+                if snapshot.is_dynamic:
+                    submission_result = self.submit_dynamic_pipeline(
+                        snapshot=snapshot,
+                        stack=stack,
+                        environment=base_environment,
+                        placeholder_run=placeholder_run,
+                    )
+                else:
+                    step_environments = {}
+                    for (
+                        invocation_id,
+                        step,
+                    ) in snapshot.step_configurations.items():
+                        from zenml.utils.env_utils import get_step_environment
+
+                        step_environment = get_step_environment(
+                            step_config=step.config,
+                            stack=stack,
+                        )
+
+                        combined_environment = base_environment.copy()
+                        combined_environment.update(step_environment)
+                        step_environments[invocation_id] = combined_environment
+
+                    submission_result = self.submit_pipeline(
+                        snapshot=snapshot,
+                        stack=stack,
+                        base_environment=base_environment,
+                        step_environments=step_environments,
+                        placeholder_run=placeholder_run,
+                    )
                 if placeholder_run:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
@@ -405,59 +437,60 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Args:
             step: The step to run.
+        """
+        from zenml.execution.step.utils import launch_step
+
+        assert self._active_snapshot
+
+        launch_step(
+            snapshot=self._active_snapshot,
+            step=step,
+            orchestrator_run_id=self.get_orchestrator_run_id(),
+            retry=not self.config.handles_step_retries,
+        )
+
+    @property
+    def supports_dynamic_pipelines(self) -> bool:
+        """Whether the orchestrator supports dynamic pipelines.
+
+        Returns:
+            Whether the orchestrator supports dynamic pipelines.
+        """
+        return (
+            getattr(self.submit_dynamic_pipeline, "__func__", None)
+            is not BaseOrchestrator.submit_dynamic_pipeline
+        )
+
+    @property
+    def can_launch_dynamic_steps(self) -> bool:
+        """Whether the orchestrator can launch dynamic steps.
+
+        Returns:
+            Whether the orchestrator can launch dynamic steps.
+        """
+        return (
+            getattr(self.launch_dynamic_step, "__func__", None)
+            is not BaseOrchestrator.launch_dynamic_step
+        )
+
+    def launch_dynamic_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Launch a dynamic step.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
 
         Raises:
-            RunStoppedException: If the run was stopped.
-            BaseException: If the step failed all retries.
+            NotImplementedError: If the orchestrator does not implement this
+                method.
         """
-
-        def _launch_step() -> None:
-            assert self._active_snapshot
-
-            launcher = StepLauncher(
-                snapshot=self._active_snapshot,
-                step=step,
-                orchestrator_run_id=self.get_orchestrator_run_id(),
-            )
-            launcher.launch()
-
-        if self.config.handles_step_retries:
-            _launch_step()
-        else:
-            # The orchestrator subclass doesn't handle step retries, so we
-            # handle it in-process instead
-            retries = 0
-            retry_config = step.config.retry
-            max_retries = retry_config.max_retries if retry_config else 0
-            delay = retry_config.delay if retry_config else 0
-            backoff = retry_config.backoff if retry_config else 1
-
-            while retries <= max_retries:
-                try:
-                    _launch_step()
-                except RunStoppedException:
-                    # Don't retry if the run was stopped
-                    raise
-                except BaseException:
-                    retries += 1
-                    if retries <= max_retries:
-                        logger.info(
-                            "Sleeping for %d seconds before retrying step `%s`.",
-                            delay,
-                            step.config.name,
-                        )
-                        time.sleep(delay)
-                        delay *= backoff
-                    else:
-                        if max_retries > 0:
-                            logger.error(
-                                "Failed to run step `%s` after %d retries.",
-                                step.config.name,
-                                max_retries,
-                            )
-                        raise
-                else:
-                    break
+        raise NotImplementedError(
+            "Launching dynamic steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
