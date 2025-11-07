@@ -407,6 +407,7 @@ class InputSpec(FrozenBaseModel):
 
     step_name: str
     output_name: str
+    chunk: Optional[int] = None
 
 
 class StepSpec(FrozenBaseModel):
@@ -414,7 +415,7 @@ class StepSpec(FrozenBaseModel):
 
     source: SourceWithValidator
     upstream_steps: List[str]
-    inputs: Dict[str, InputSpec] = {}
+    inputs: Dict[str, Union[InputSpec, List[InputSpec]]] = {}
     invocation_id: str
 
     @model_validator(mode="before")

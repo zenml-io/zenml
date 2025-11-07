@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Step invocation class definition."""
 
-from typing import TYPE_CHECKING, Any, Dict, Set, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Set, Union
 
 from zenml.models import ArtifactVersionResponse
 
@@ -34,7 +34,9 @@ class StepInvocation:
         self,
         id: str,
         step: "BaseStep",
-        input_artifacts: Dict[str, "StepArtifact"],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],

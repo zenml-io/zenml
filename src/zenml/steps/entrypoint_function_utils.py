@@ -21,6 +21,7 @@ from typing import (
     Dict,
     NamedTuple,
     NoReturn,
+    Optional,
     Sequence,
     Type,
     Union,
@@ -58,6 +59,7 @@ class StepArtifact:
         output_name: str,
         annotation: OutputSignature,
         pipeline: "Pipeline",
+        chunk: Optional[int] = None,
     ) -> None:
         """Initialize a step artifact.
 
@@ -71,6 +73,7 @@ class StepArtifact:
         self.output_name = output_name
         self.annotation = annotation
         self.pipeline = pipeline
+        self.chunk = chunk
 
     def __iter__(self) -> NoReturn:
         """Raise a custom error if someone is trying to iterate this object.

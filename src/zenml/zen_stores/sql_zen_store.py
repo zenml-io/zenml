@@ -6176,6 +6176,9 @@ class SqlZenStore(BaseZenStore):
                             # guaranteed that an upstream step already ran and
                             # produced the artifact.
                             input_config = step.spec.inputs[input.name]
+                            if isinstance(input_config, list):
+                                input_config = input_config[input.index or 0]
+
                             artifact_node = _get_regular_output_artifact_node(
                                 input_config.step_name,
                                 input_config.output_name,
@@ -6227,6 +6230,8 @@ class SqlZenStore(BaseZenStore):
                             target=step_node.node_id,
                             input_name=input.name,
                             type=input_type.value,
+                            chunk=input.chunk,
+                            index=input.index,
                         )
 
                     for output in step_run.output_artifacts:
@@ -6345,27 +6350,31 @@ class SqlZenStore(BaseZenStore):
                         )
                 else:
                     for input_name, input_config in step.spec.inputs.items():
-                        # This node should always exist, as the step
-                        # configurations are sorted and therefore all
-                        # upstream steps should have been processed already.
-                        artifact_node = _get_regular_output_artifact_node(
-                            input_config.step_name,
-                            input_config.output_name,
-                        )
+                        if not isinstance(input_config, list):
+                            input_config = [input_config]
 
-                        helper.add_edge(
-                            source=artifact_node.node_id,
-                            target=step_node.node_id,
-                            input_name=input_name,
-                            type=StepRunInputArtifactType.STEP_OUTPUT.value,
-                        )
-                        # If the upstream step and the current step are
-                        # already connected via a regular artifact, we
-                        # don't add a direct edge between the two.
-                        try:
-                            upstream_steps.remove(input_config.step_name)
-                        except KeyError:
-                            pass
+                        for input_spec in input_config:
+                            # This node should always exist, as the step
+                            # configurations are sorted and therefore all
+                            # upstream steps should have been processed already.
+                            artifact_node = _get_regular_output_artifact_node(
+                                input_spec.step_name,
+                                input_spec.output_name,
+                            )
+
+                            helper.add_edge(
+                                source=artifact_node.node_id,
+                                target=step_node.node_id,
+                                input_name=input_name,
+                                type=StepRunInputArtifactType.STEP_OUTPUT.value,
+                            )
+                            # If the upstream step and the current step are
+                            # already connected via a regular artifact, we
+                            # don't add a direct edge between the two.
+                            try:
+                                upstream_steps.remove(input_spec.step_name)
+                            except KeyError:
+                                pass
 
                     for input_name in step.config.client_lazy_loaders.keys():
                         artifact_node = helper.add_artifact_node(
@@ -10186,7 +10195,10 @@ class SqlZenStore(BaseZenStore):
 
             # Save input artifact IDs into the database.
             for input_name, artifact_version_ids in step_run.inputs.items():
+                input_index = 0
                 for artifact_version_id in artifact_version_ids:
+                    index = None
+                    chunk = None
                     if step_run.original_step_run_id:
                         # This is a cached step run, for which the input
                         # artifacts might include manually loaded artifacts
@@ -10199,6 +10211,7 @@ class SqlZenStore(BaseZenStore):
                             cached_step_run_id=step_run.original_step_run_id,
                             session=session,
                         )
+                        # TODO: index, chunk
                     else:
                         # This is a non-cached step run, which means all input
                         # artifacts we receive at creation time are inputs that
@@ -10208,12 +10221,22 @@ class SqlZenStore(BaseZenStore):
                             step_config=step_config.config,
                             step_spec=step_config.spec,
                         )
+                        if input_type == StepRunInputArtifactType.STEP_OUTPUT:
+                            index = input_index
+                            input_spec = step_config.spec.inputs[input_name]
+                            if isinstance(input_spec, list):
+                                input_spec = input_spec[index]
+                            chunk = input_spec.chunk
+                            input_index += 1
+
                     self._set_run_step_input_artifact(
                         step_run=step_schema,
                         artifact_version_id=artifact_version_id,
                         name=input_name,
                         input_type=input_type,
                         session=session,
+                        index=index,
+                        chunk=chunk,
                     )
 
             # Save output artifact IDs into the database.
@@ -10551,6 +10574,8 @@ class SqlZenStore(BaseZenStore):
         name: str,
         input_type: StepRunInputArtifactType,
         session: Session,
+        index: Optional[int] = None,
+        chunk: Optional[int] = None,
     ) -> None:
         """Sets an artifact as an input of a step run.
 
@@ -10588,6 +10613,8 @@ class SqlZenStore(BaseZenStore):
             artifact_id=artifact_version_id,
             name=name,
             type=input_type.value,
+            index=index,
+            chunk=chunk,
         )
         session.add(assignment)
 

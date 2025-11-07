@@ -204,6 +204,7 @@ class DynamicPipelineRunner:
         args: Tuple[Any],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        index: Optional[int] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
 
@@ -215,6 +216,7 @@ class DynamicPipelineRunner:
         args: Tuple[Any],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        index: Optional[int] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
 
@@ -225,6 +227,7 @@ class DynamicPipelineRunner:
         args: Tuple[Any],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        index: Optional[int] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
         """Launch a step.
@@ -249,6 +252,7 @@ class DynamicPipelineRunner:
             args=args,
             kwargs=kwargs,
             after=after,
+            index=index,
         )
 
         def _launch() -> StepRunOutputs:
@@ -277,6 +281,31 @@ class DynamicPipelineRunner:
         else:
             return _launch()
 
+    def map(
+        self,
+        step: "BaseStep",
+        args: Tuple[Any],
+        kwargs: Dict[str, Any],
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+    ) -> List["StepRunOutputsFuture"]:
+        first_arg = args[0]
+        length = len(first_arg.load())
+
+        futures = []
+        for index in range(length):
+            future = self.launch_step(
+                step=step,
+                id=None,
+                args=args,
+                kwargs=kwargs,
+                after=after,
+                index=index,
+                concurrent=True,
+            )
+            futures.append(future)
+
+        return futures
+
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
         for future in self._futures:
@@ -292,6 +321,7 @@ def compile_dynamic_step_invocation(
     args: Tuple[Any],
     kwargs: Dict[str, Any],
     after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+    index: Optional[int] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -326,11 +356,26 @@ def compile_dynamic_step_invocation(
                 )
             input = input.artifacts()
 
+        if isinstance(input, list) and all(
+            isinstance(item, StepRunOutputsFuture) for item in input
+        ):
+            input = [item[0] for item in input]
+
+        if isinstance(input, list) and all(
+            isinstance(item, ArtifactFuture) for item in input
+        ):
+            input = [item.result() for item in input]
+
         if isinstance(input, ArtifactFuture):
             input = input.result()
 
         if isinstance(input, OutputArtifact):
             upstream_steps.add(input.step_name)
+
+        if isinstance(input, list) and all(
+            isinstance(item, OutputArtifact) for item in input
+        ):
+            upstream_steps.update(item.step_name for item in input)
 
         return input
 
@@ -350,7 +395,7 @@ def compile_dynamic_step_invocation(
         if key not in validated_args
     }
 
-    input_artifacts = {}
+    input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
     external_artifacts = {}
     for name, value in validated_args.items():
         if isinstance(value, OutputArtifact):
@@ -359,9 +404,22 @@ def compile_dynamic_step_invocation(
                 output_name=value.output_name,
                 annotation=OutputSignature(resolved_annotation=Any),
                 pipeline=pipeline,
+                chunk=index,
             )
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
+        elif isinstance(value, list) and all(
+            isinstance(item, OutputArtifact) for item in value
+        ):
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=item.step_name,
+                    output_name=item.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                )
+                for item in value
+            ]
         else:
             # TODO: should some of these be parameters?
             external_artifacts[name] = ExternalArtifact(value=value)

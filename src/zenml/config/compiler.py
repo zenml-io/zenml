@@ -496,13 +496,24 @@ class Compiler:
         Returns:
             The step spec.
         """
-        inputs = {
-            key: InputSpec(
-                step_name=artifact.invocation_id,
-                output_name=artifact.output_name,
-            )
-            for key, artifact in invocation.input_artifacts.items()
-        }
+        inputs = {}
+
+        for key, artifact in invocation.input_artifacts.items():
+            if isinstance(artifact, list):
+                inputs[key] = [
+                    InputSpec(
+                        step_name=item.invocation_id,
+                        output_name=item.output_name,
+                    )
+                    for item in artifact
+                ]
+            else:
+                inputs[key] = InputSpec(
+                    step_name=artifact.invocation_id,
+                    output_name=artifact.output_name,
+                    chunk=artifact.chunk,
+                )
+
         return StepSpec(
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),

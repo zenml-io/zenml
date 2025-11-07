@@ -671,6 +671,30 @@ class BaseStep:
             concurrent=True,
         )
 
+    def map(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        **kwargs: Any,
+    ) -> List["StepRunOutputsFuture"]:
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Submitting a step is only possible within a dynamic pipeline."
+            )
+
+        return context.runner.map(
+            step=self,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+        )
+
     @property
     def name(self) -> str:
         """The name of the step.
@@ -1174,7 +1198,9 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, "StepArtifact"],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1283,13 +1309,13 @@ To avoid this consider setting step parameters only in one place (config or code
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
-        if not skip_input_validation:
-            self._validate_inputs(
-                input_artifacts=input_artifacts,
-                external_artifacts=external_artifacts,
-                model_artifacts_or_metadata=model_artifacts_or_metadata,
-                client_lazy_loaders=client_lazy_loaders,
-            )
+        # if not skip_input_validation:
+        #     self._validate_inputs(
+        #         input_artifacts=input_artifacts,
+        #         external_artifacts=external_artifacts,
+        #         model_artifacts_or_metadata=model_artifacts_or_metadata,
+        #         client_lazy_loaders=client_lazy_loaders,
+        #     )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)

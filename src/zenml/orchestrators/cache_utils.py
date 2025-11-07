@@ -15,7 +15,7 @@
 
 import hashlib
 import os
-from typing import TYPE_CHECKING, Mapping, Optional
+from typing import TYPE_CHECKING, List, Mapping, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 def generate_cache_key(
     step: "Step",
-    input_artifacts: Mapping[str, "ArtifactVersionResponse"],
+    input_artifacts: Mapping[str, List["ArtifactVersionResponse"]],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -104,19 +104,20 @@ def generate_cache_key(
             hash_.update(str(value).encode())
 
     # Input artifacts
-    for name, artifact_version in input_artifacts.items():
+    for name, artifact_versions in input_artifacts.items():
         if name in (cache_policy.ignored_inputs or []):
             continue
 
         hash_.update(name.encode())
 
-        if (
-            artifact_version.content_hash
-            and cache_policy.include_artifact_values
-        ):
-            hash_.update(artifact_version.content_hash.encode())
-        elif cache_policy.include_artifact_ids:
-            hash_.update(artifact_version.id.bytes)
+        for artifact_version in artifact_versions:
+            if (
+                artifact_version.content_hash
+                and cache_policy.include_artifact_values
+            ):
+                hash_.update(artifact_version.content_hash.encode())
+            elif cache_policy.include_artifact_ids:
+                hash_.update(artifact_version.id.bytes)
 
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():

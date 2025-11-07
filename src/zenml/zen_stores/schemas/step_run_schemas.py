@@ -450,6 +450,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 step_run_input = StepRunInputResponse(
                     input_type=StepRunInputArtifactType(input_artifact.type),
                     **input_artifact.artifact_version.to_model().model_dump(),
+                    index=input_artifact.index,
                 )
                 input_artifacts[input_artifact.name].append(step_run_input)
 
@@ -536,6 +537,8 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     # Fields
     name: str = Field(nullable=False, primary_key=True)
     type: str
+    index: Optional[int] = Field(nullable=True)
+    chunk: Optional[int] = Field(nullable=True)
 
     # Foreign keys
     step_id: UUID = build_foreign_key_field(

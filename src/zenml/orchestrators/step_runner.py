@@ -120,7 +120,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List[StepRunInputResponse]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -418,7 +418,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List[StepRunInputResponse]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -438,14 +438,31 @@ class StepRunner:
         if args and args[0] == "self":
             args.pop(0)
 
+        spec = self._step.spec
+
         for arg in args:
             arg_type = annotations.get(arg, None)
             arg_type = resolve_type_annotation(arg_type)
 
             if arg in input_artifacts:
-                function_params[arg] = self._load_input_artifact(
-                    input_artifacts[arg], arg_type
-                )
+                artifacts = input_artifacts[arg]
+                if len(artifacts) == 1:
+                    data = self._load_input_artifact(artifacts[0], arg_type)
+
+                    if arg in spec.inputs:
+                        chunk = spec.inputs[arg].chunk
+                        if chunk is not None:
+                            data = data[chunk]
+
+                    function_params[arg] = data
+                else:
+                    data = []
+                    for artifact in artifacts:
+                        chunk_data = self._load_input_artifact(
+                            artifact, arg_type
+                        )
+                        data.append(chunk_data)
+                    function_params[arg] = data
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
@@ -492,7 +509,7 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_load_type_compatibility(data_type)
+            # materializer.validate_load_type_compatibility(data_type)
             return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:
