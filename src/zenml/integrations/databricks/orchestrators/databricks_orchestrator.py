@@ -198,6 +198,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Raises:
             ValueError: If the schedule is not set or if the cron expression
                 is not set.
+            RuntimeError: If the wheel file cannot be uploaded to the Databricks workspace.
 
         Returns:
             Optional submission result.
