@@ -234,6 +234,16 @@ def add_pod_settings(
             else:
                 container.env_from = settings.env_from
 
+        if settings.container_security_context:
+            if container.security_context:
+                existing_dict = container.security_context.to_dict()
+                existing_dict.update(settings.container_security_context)
+                container.security_context = existing_dict
+            else:
+                container.security_context = (
+                    settings.container_security_context
+                )
+
     if settings.volumes:
         if pod_spec.volumes:
             pod_spec.volumes.extend(settings.volumes)
