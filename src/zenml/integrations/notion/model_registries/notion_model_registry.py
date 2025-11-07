@@ -57,7 +57,7 @@ class NotionModelRegistry(BaseModelRegistry):
             The Notion client.
         """
         if not self._client:
-            token = self.config.notion_api_token.get_secret_value()
+            token = self.config.notion_api_token
             self._client = Client(auth=token, notion_version="2025-09-03")
         return self._client
 
@@ -78,14 +78,14 @@ class NotionModelRegistry(BaseModelRegistry):
                 database_id=self.config.database_id
             )
             data_sources = response.get("data_sources", [])
-            
+
             if not data_sources:
                 raise RuntimeError(
                     f"Database {self.config.database_id} has no data sources. "
                     "This may indicate the database was deleted or the integration "
                     "doesn't have access to it."
                 )
-            
+
             # For now, we use the first data source
             # In the future, this could be configurable
             data_source_id = data_sources[0]["id"]
@@ -94,7 +94,7 @@ class NotionModelRegistry(BaseModelRegistry):
                 f"{self.config.database_id}"
             )
             return data_source_id
-            
+
         except APIResponseError as e:
             raise RuntimeError(
                 f"Failed to retrieve data sources for database "
@@ -125,11 +125,11 @@ class NotionModelRegistry(BaseModelRegistry):
             The registered model.
 
         Raises:
-            KeyError: If a model with the same name already exists.
+            RuntimeError: If the model already exists.
         """
         try:
             self.get_model(name)
-            raise KeyError(
+            raise RuntimeError(
                 f"Model with name {name} already exists in the Notion model "
                 f"registry. Please use a different name."
             )
@@ -154,9 +154,12 @@ class NotionModelRegistry(BaseModelRegistry):
             name: The name of the model.
 
         Raises:
-            KeyError: If the model does not exist.
+            RuntimeError: If the model does not exist or deletion fails.
         """
-        self.get_model(name=name)
+        try:
+            self.get_model(name=name)
+        except KeyError as e:
+            raise RuntimeError(f"Model does not exist: {str(e)}")
 
         try:
             data_source_id = self._get_data_source_id()
@@ -301,7 +304,9 @@ class NotionModelRegistry(BaseModelRegistry):
                     model_names.add(model_name)
 
             return [
-                RegisteredModel(name=model_name, description=None, metadata=None)
+                RegisteredModel(
+                    name=model_name, description=None, metadata=None
+                )
                 for model_name in sorted(model_names)
             ]
 
@@ -391,14 +396,14 @@ class NotionModelRegistry(BaseModelRegistry):
                     "stage": "None",
                 }
             }
-            
+
             if description:
                 zenml_metadata["notion_registry"]["description"] = description
-            
+
             # Add all metadata fields
             if metadata_dict:
                 zenml_metadata["model_metadata"] = metadata_dict
-            
+
             # Log the metadata (this will be associated with the current step if called from within a step)
             try:
                 log_metadata(metadata=zenml_metadata)
@@ -553,7 +558,15 @@ class NotionModelRegistry(BaseModelRegistry):
             if metadata:
                 metadata_dict = metadata.model_dump()
                 for key, value in metadata_dict.items():
-                    if value and key not in ["zenml_version", "zenml_run_name", "zenml_pipeline_name", "zenml_pipeline_uuid", "zenml_pipeline_run_uuid", "zenml_step_name", "zenml_project"]:
+                    if value and key not in [
+                        "zenml_version",
+                        "zenml_run_name",
+                        "zenml_pipeline_name",
+                        "zenml_pipeline_uuid",
+                        "zenml_pipeline_run_uuid",
+                        "zenml_step_name",
+                        "zenml_project",
+                    ]:
                         prop_key = key.replace("_", " ").title()
                         update_properties[prop_key] = {
                             "rich_text": [{"text": {"content": str(value)}}]
@@ -574,13 +587,17 @@ class NotionModelRegistry(BaseModelRegistry):
                     "updated_fields": list(update_properties.keys()),
                 }
             }
-            
+
             if stage:
-                update_metadata["notion_registry_update"]["new_stage"] = stage.value
-            
+                update_metadata["notion_registry_update"]["new_stage"] = (
+                    stage.value
+                )
+
             try:
                 log_metadata(metadata=update_metadata)
-                logger.debug(f"Model version update logged to ZenML for {name}:{version}")
+                logger.debug(
+                    f"Model version update logged to ZenML for {name}:{version}"
+                )
             except Exception as e:
                 logger.warning(f"Failed to log update metadata to ZenML: {e}")
 
@@ -682,28 +699,34 @@ class NotionModelRegistry(BaseModelRegistry):
             filter_conditions: List[Dict[str, Any]] = []
 
             if name:
-                filter_conditions.append({
-                    "property": "Model Name",
-                    "title": {
-                        "equals": name,
-                    },
-                })
+                filter_conditions.append(
+                    {
+                        "property": "Model Name",
+                        "title": {
+                            "equals": name,
+                        },
+                    }
+                )
 
             if model_source_uri:
-                filter_conditions.append({
-                    "property": "Model Source URI",
-                    "url": {
-                        "equals": model_source_uri,
-                    },
-                })
+                filter_conditions.append(
+                    {
+                        "property": "Model Source URI",
+                        "url": {
+                            "equals": model_source_uri,
+                        },
+                    }
+                )
 
             if stage:
-                filter_conditions.append({
-                    "property": "Stage",
-                    "select": {
-                        "equals": stage.value,
-                    },
-                })
+                filter_conditions.append(
+                    {
+                        "property": "Stage",
+                        "select": {
+                            "equals": stage.value,
+                        },
+                    }
+                )
 
             body: Dict[str, Any] = {}
 
@@ -714,7 +737,9 @@ class NotionModelRegistry(BaseModelRegistry):
                     body["filter"] = {"and": filter_conditions}
 
             if order_by_date:
-                sort_direction = "ascending" if order_by_date == "asc" else "descending"
+                sort_direction = (
+                    "ascending" if order_by_date == "asc" else "descending"
+                )
                 body["sorts"] = [
                     {
                         "property": "Created At",
@@ -735,24 +760,22 @@ class NotionModelRegistry(BaseModelRegistry):
             for page in response.get("results", []):
                 try:
                     version = self._parse_notion_page_to_version(page)
-                    
+
                     if created_after and version.created_at:
                         if version.created_at < created_after:
                             continue
-                    
+
                     if created_before and version.created_at:
                         if version.created_at > created_before:
                             continue
-                    
+
                     model_versions.append(version)
-                    
+
                     if count and len(model_versions) >= count:
                         break
-                        
+
                 except Exception as e:
-                    logger.warning(
-                        f"Error parsing Notion page: {e}"
-                    )
+                    logger.warning(f"Error parsing Notion page: {e}")
                     continue
 
             return model_versions
@@ -828,21 +851,11 @@ class NotionModelRegistry(BaseModelRegistry):
             Notion properties dictionary.
         """
         properties: Dict[str, Any] = {
-            "Model Name": {
-                "title": [{"text": {"content": name}}]
-            },
-            "Version": {
-                "rich_text": [{"text": {"content": version}}]
-            },
-            "Model Source URI": {
-                "url": model_source_uri
-            },
-            "Created At": {
-                "date": {"start": datetime.now().isoformat()}
-            },
-            "Stage": {
-                "select": {"name": "None"}
-            },
+            "Model Name": {"title": [{"text": {"content": name}}]},
+            "Version": {"rich_text": [{"text": {"content": version}}]},
+            "Model Source URI": {"url": model_source_uri},
+            "Created At": {"date": {"start": datetime.now().isoformat()}},
+            "Stage": {"select": {"name": "None"}},
         }
 
         if description:
@@ -853,23 +866,37 @@ class NotionModelRegistry(BaseModelRegistry):
         if metadata:
             if metadata.get("zenml_pipeline_name"):
                 properties["ZenML Pipeline Name"] = {
-                    "rich_text": [{"text": {"content": metadata["zenml_pipeline_name"]}}]
+                    "rich_text": [
+                        {"text": {"content": metadata["zenml_pipeline_name"]}}
+                    ]
                 }
             if metadata.get("zenml_run_name"):
                 properties["ZenML Run Name"] = {
-                    "rich_text": [{"text": {"content": metadata["zenml_run_name"]}}]
+                    "rich_text": [
+                        {"text": {"content": metadata["zenml_run_name"]}}
+                    ]
                 }
             if metadata.get("zenml_pipeline_run_uuid"):
                 properties["ZenML Run UUID"] = {
-                    "rich_text": [{"text": {"content": metadata["zenml_pipeline_run_uuid"]}}]
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": metadata["zenml_pipeline_run_uuid"]
+                            }
+                        }
+                    ]
                 }
             if metadata.get("zenml_step_name"):
                 properties["ZenML Step Name"] = {
-                    "rich_text": [{"text": {"content": metadata["zenml_step_name"]}}]
+                    "rich_text": [
+                        {"text": {"content": metadata["zenml_step_name"]}}
+                    ]
                 }
             if metadata.get("zenml_version"):
                 properties["ZenML Version"] = {
-                    "rich_text": [{"text": {"content": metadata["zenml_version"]}}]
+                    "rich_text": [
+                        {"text": {"content": metadata["zenml_version"]}}
+                    ]
                 }
 
         return properties
@@ -916,7 +943,9 @@ class NotionModelRegistry(BaseModelRegistry):
 
         created_at_prop = properties.get("Created At", {})
         created_at = datetime.now()
-        if created_at_prop.get("date") and created_at_prop["date"].get("start"):
+        if created_at_prop.get("date") and created_at_prop["date"].get(
+            "start"
+        ):
             try:
                 created_at = datetime.fromisoformat(
                     created_at_prop["date"]["start"].replace("Z", "+00:00")
@@ -928,25 +957,39 @@ class NotionModelRegistry(BaseModelRegistry):
 
         pipeline_name_prop = properties.get("ZenML Pipeline Name", {})
         if pipeline_name_prop.get("rich_text"):
-            metadata_dict["zenml_pipeline_name"] = pipeline_name_prop["rich_text"][0]["text"]["content"]
+            metadata_dict["zenml_pipeline_name"] = pipeline_name_prop[
+                "rich_text"
+            ][0]["text"]["content"]
 
         run_name_prop = properties.get("ZenML Run Name", {})
         if run_name_prop.get("rich_text"):
-            metadata_dict["zenml_run_name"] = run_name_prop["rich_text"][0]["text"]["content"]
+            metadata_dict["zenml_run_name"] = run_name_prop["rich_text"][0][
+                "text"
+            ]["content"]
 
         run_uuid_prop = properties.get("ZenML Run UUID", {})
         if run_uuid_prop.get("rich_text"):
-            metadata_dict["zenml_pipeline_run_uuid"] = run_uuid_prop["rich_text"][0]["text"]["content"]
+            metadata_dict["zenml_pipeline_run_uuid"] = run_uuid_prop[
+                "rich_text"
+            ][0]["text"]["content"]
 
         step_name_prop = properties.get("ZenML Step Name", {})
         if step_name_prop.get("rich_text"):
-            metadata_dict["zenml_step_name"] = step_name_prop["rich_text"][0]["text"]["content"]
+            metadata_dict["zenml_step_name"] = step_name_prop["rich_text"][0][
+                "text"
+            ]["content"]
 
         version_prop_meta = properties.get("ZenML Version", {})
         if version_prop_meta.get("rich_text"):
-            metadata_dict["zenml_version"] = version_prop_meta["rich_text"][0]["text"]["content"]
+            metadata_dict["zenml_version"] = version_prop_meta["rich_text"][0][
+                "text"
+            ]["content"]
 
-        metadata = ModelRegistryModelMetadata(**metadata_dict) if metadata_dict else None
+        metadata = (
+            ModelRegistryModelMetadata(**metadata_dict)
+            if metadata_dict
+            else None
+        )
 
         return RegistryModelVersion(
             registered_model=RegisteredModel(name=model_name),
@@ -960,4 +1003,3 @@ class NotionModelRegistry(BaseModelRegistry):
             metadata=metadata,
             model_source_uri=model_source_uri,
         )
-

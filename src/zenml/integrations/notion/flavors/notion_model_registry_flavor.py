@@ -15,13 +15,12 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import SecretStr
-
 from zenml.integrations.notion import NOTION_MODEL_REGISTRY_FLAVOR
 from zenml.model_registries.base_model_registry import (
     BaseModelRegistryConfig,
     BaseModelRegistryFlavor,
 )
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.notion.model_registries import (
@@ -38,7 +37,7 @@ class NotionModelRegistryConfig(BaseModelRegistryConfig):
             metadata.
     """
 
-    notion_api_token: SecretStr
+    notion_api_token: str = SecretField()
     database_id: str
 
 
@@ -102,4 +101,3 @@ class NotionModelRegistryFlavor(BaseModelRegistryFlavor):
         )
 
         return NotionModelRegistry
-
