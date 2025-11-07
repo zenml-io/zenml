@@ -392,19 +392,24 @@ class Compiler:
             stack: The stack the settings are validated against.
 
         """
-        from zenml.orchestrators import LocalOrchestrator
-
         if not docker_settings:
             return
 
         warning_message = (
-            "You are specifying docker settings but the orchestrator"
-            " you are using (LocalOrchestrator) will not make use of them. "
-            "Consider switching stacks, removing the settings, or using a "
-            "different orchestrator."
+            "You are specifying docker settings but no component in your stack "
+            "makes use of them. Consider switching stacks or removing the "
+            "settings."
         )
 
-        if isinstance(stack.orchestrator, LocalOrchestrator):
+        used_by_orchestrator = stack.orchestrator.flavor != "local"
+        used_by_step_operator = stack.step_operator is not None
+        used_by_deployer = (
+            stack.deployer is not None and stack.deployer.flavor != "local"
+        )
+
+        if not (
+            used_by_orchestrator or used_by_step_operator or used_by_deployer
+        ):
             WARNING_CONTROLLER.info(
                 warning_code=WarningCodes.ZML002, message=warning_message
             )

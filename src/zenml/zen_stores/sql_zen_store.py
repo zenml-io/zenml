@@ -1248,6 +1248,14 @@ class SqlZenStore(BaseZenStore):
     # Initialization and configuration
     # --------------------------------
 
+    def _run_migrations(self) -> None:
+        if self.skip_migrations or handle_bool_env_var(
+            ENV_ZENML_DISABLE_DATABASE_MIGRATION
+        ):
+            logger.debug("Skipping database migration.")
+        else:
+            self.migrate_database()
+
     def _initialize(self) -> None:
         """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
@@ -1284,11 +1292,7 @@ class SqlZenStore(BaseZenStore):
 
         self._alembic = Alembic(self.engine)
 
-        if (
-            not self.skip_migrations
-            and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
-        ):
-            self.migrate_database()
+        self._run_migrations()
 
         if self.config.driver == SQLDatabaseDriver.SQLITE:
             # Enable foreign key checks at the SQLite database level, but only
