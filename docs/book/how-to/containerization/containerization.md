@@ -492,7 +492,7 @@ docker_settings = DockerSettings(
 
 ```python
 docker_settings = DockerSettings(
-    post_environment={
+    runtime_environment={
         "HTTP_PROXY": "http://proxy.example.com:8080",
         "HTTPS_PROXY": "http://proxy.example.com:8080",
         "NO_PROXY": "localhost,127.0.0.1"

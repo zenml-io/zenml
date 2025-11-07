@@ -418,7 +418,7 @@ settings:
     dockerfile: Optional[str]
     dockerignore: Optional[str]
     environment: Mapping[str, Any]
-    post_environment: Mapping[str, Any]
+    runtime_environment: Mapping[str, Any]
     install_stack_requirements: bool
     parent_image: Optional[str]
     python_package_installer: PythonPackageInstaller
@@ -532,7 +532,7 @@ steps:
         dockerfile: Optional[str]
         dockerignore: Optional[str]
         environment: Mapping[str, Any]
-        post_environment: Mapping[str, Any]
+        runtime_environment: Mapping[str, Any]
         install_stack_requirements: bool
         parent_image: Optional[str]
         python_package_installer: PythonPackageInstaller
@@ -593,7 +593,7 @@ steps:
         dockerfile: Optional[str]
         dockerignore: Optional[str]
         environment: Mapping[str, Any]
-        post_environment: Mapping[str, Any]
+        runtime_environment: Mapping[str, Any]
         install_stack_requirements: bool
         parent_image: Optional[str]
         python_package_installer: PythonPackageInstaller
