@@ -223,6 +223,7 @@ def update_stack_component(
             zen_store=zen_store(),
             # We allow custom flavors to fail import on the server side.
             validate_custom_flavors=False,
+            existing_config=existing_component.configuration,
         )
         if validated_config:
             component_update.configuration = validated_config.model_dump(

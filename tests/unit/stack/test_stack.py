@@ -149,8 +149,7 @@ def test_stack_submission(
     components."""
     # Mock the pipeline run registering which tries (and fails) to serialize
     # our mock objects
-    with empty_pipeline:
-        empty_pipeline.entrypoint()
+    empty_pipeline.prepare()
     snapshot = Compiler().compile(
         pipeline=empty_pipeline,
         stack=stack_with_mock_components,
