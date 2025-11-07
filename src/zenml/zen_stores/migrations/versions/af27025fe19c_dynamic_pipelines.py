@@ -42,12 +42,12 @@ def upgrade() -> None:
         batch_op.alter_column(
             "snapshot_id", existing_type=sa.CHAR(length=32), nullable=True
         )
+        batch_op.create_unique_constraint(
+            "unique_step_configuration_for_snapshot_or_step_run",
+            ["snapshot_id", "step_run_id", "name"],
+        )
         batch_op.drop_constraint(
             "unique_step_name_for_snapshot", type_="unique"
-        )
-        batch_op.create_unique_constraint(
-            "unique_step_name_for_snapshot",
-            ["snapshot_id", "step_run_id", "name"],
         )
         batch_op.create_foreign_key(
             "fk_step_configuration_step_run_id_step_run",
