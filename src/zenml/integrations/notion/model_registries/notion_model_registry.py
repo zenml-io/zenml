@@ -359,12 +359,16 @@ class NotionModelRegistry(BaseModelRegistry):
 
         metadata_dict = metadata.model_dump() if metadata else {}
 
+        # Get ZenML model version URL from kwargs if provided
+        zenml_model_url = kwargs.get("zenml_model_url", None)
+
         properties = self._convert_to_notion_properties(
             name=name,
             version=version,
             model_source_uri=model_source_uri,
             description=description,
             metadata=metadata_dict,
+            zenml_model_url=zenml_model_url,
         )
 
         try:
@@ -380,10 +384,19 @@ class NotionModelRegistry(BaseModelRegistry):
             created_at = datetime.now()
             page_id = response["id"]
 
+            # Generate Notion page URL
+            page_id_no_hyphens = page_id.replace("-", "")
+            db_id_no_hyphens = self.config.database_id.replace("-", "")
+            notion_url = (
+                f"https://www.notion.so/{db_id_no_hyphens}"
+                f"?p={page_id_no_hyphens}&pm=s"
+            )
+
             logger.info(
                 f"Successfully registered model version {name}:{version} "
                 f"in Notion (page ID: {page_id})"
             )
+            logger.info(f"Notion URL: {notion_url}")
 
             # Log metadata to ZenML's metadata system for tracking
             zenml_metadata = {
@@ -392,6 +405,7 @@ class NotionModelRegistry(BaseModelRegistry):
                     "version": version,
                     "model_source_uri": model_source_uri,
                     "notion_page_id": page_id,
+                    "notion_page_url": notion_url,
                     "notion_database_id": self.config.database_id,
                     "stage": "None",
                 }
@@ -411,6 +425,18 @@ class NotionModelRegistry(BaseModelRegistry):
             except Exception as e:
                 # Don't fail the registration if metadata logging fails
                 logger.warning(f"Failed to log metadata to ZenML: {e}")
+
+            # Also log the Notion URL to the model version for easy access
+            try:
+                log_metadata(
+                    metadata={"notion_page_url": notion_url},
+                    infer_model=True,
+                )
+                logger.debug(
+                    f"Logged Notion URL to model version: {notion_url}"
+                )
+            except Exception as e:
+                logger.debug(f"Could not log to model version: {e}")
 
             return RegistryModelVersion(
                 registered_model=RegisteredModel(name=name),
@@ -837,6 +863,7 @@ class NotionModelRegistry(BaseModelRegistry):
         model_source_uri: str,
         description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        zenml_model_url: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Convert ZenML metadata to Notion property format.
 
@@ -846,6 +873,7 @@ class NotionModelRegistry(BaseModelRegistry):
             model_source_uri: Model source URI.
             description: Model description.
             metadata: Additional metadata.
+            zenml_model_url: URL to the ZenML model version in the dashboard.
 
         Returns:
             Notion properties dictionary.
@@ -858,40 +886,18 @@ class NotionModelRegistry(BaseModelRegistry):
             "Stage": {"select": {"name": "None"}},
         }
 
+        # Add ZenML model version URL if provided
+        if zenml_model_url:
+            properties["ZenML Model URL"] = {"url": zenml_model_url}
+
         if description:
             properties["Description"] = {
                 "rich_text": [{"text": {"content": description}}]
             }
 
         if metadata:
-            if metadata.get("zenml_pipeline_name"):
-                properties["ZenML Pipeline Name"] = {
-                    "rich_text": [
-                        {"text": {"content": metadata["zenml_pipeline_name"]}}
-                    ]
-                }
-            if metadata.get("zenml_run_name"):
-                properties["ZenML Run Name"] = {
-                    "rich_text": [
-                        {"text": {"content": metadata["zenml_run_name"]}}
-                    ]
-                }
-            if metadata.get("zenml_pipeline_run_uuid"):
-                properties["ZenML Run UUID"] = {
-                    "rich_text": [
-                        {
-                            "text": {
-                                "content": metadata["zenml_pipeline_run_uuid"]
-                            }
-                        }
-                    ]
-                }
-            if metadata.get("zenml_step_name"):
-                properties["ZenML Step Name"] = {
-                    "rich_text": [
-                        {"text": {"content": metadata["zenml_step_name"]}}
-                    ]
-                }
+            # Only add ZenML Version - we removed the pipeline/run/step fields
+            # as a model version can be associated with multiple pipelines
             if metadata.get("zenml_version"):
                 properties["ZenML Version"] = {
                     "rich_text": [

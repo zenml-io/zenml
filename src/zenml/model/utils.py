@@ -22,6 +22,9 @@ from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.model.model import Model
+from zenml.model_registries.base_model_registry import (
+    ModelRegistryModelMetadata,
+)
 from zenml.models import (
     ArtifactVersionResponse,
     ModelVersionArtifactRequest,
@@ -81,6 +84,109 @@ def log_model_metadata(
         )
 
 
+def _maybe_register_model_artifact_to_registry(
+    artifact_version: ArtifactVersionResponse,
+    model_version: ModelVersionResponse,
+) -> None:
+    """Register model artifact to external model registry if configured.
+
+    This function checks if:
+    1. The artifact is a MODEL type artifact
+    2. The model has save_models_to_registry=True
+    3. There's a model registry in the active stack
+
+    If all conditions are met, it automatically registers the model to the
+    external model registry.
+
+    Args:
+        artifact_version: The artifact version to potentially register.
+        model_version: The model version this artifact belongs to.
+    """
+    try:
+        # Check if this is a model artifact
+        if artifact_version.type != "ModelArtifact":
+            return
+
+        # Get the parent model
+        client = Client()
+        model_response = client.get_model(model_version.model.id)
+
+        # Check if save_models_to_registry is enabled
+        if not model_response.save_models_to_registry:
+            logger.debug(
+                f"save_models_to_registry=False for model '{model_response.name}', "
+                "skipping external registry registration"
+            )
+            return
+
+        # Check if there's a model registry in the stack
+        model_registry = client.active_stack.model_registry
+        if not model_registry:
+            logger.debug(
+                "No model registry in stack, skipping external registration"
+            )
+            return
+
+        # Prepare metadata - only include ZenML version now
+        # (pipeline/run/step fields removed as one model version can have multiple runs)
+        metadata = ModelRegistryModelMetadata()
+
+        # Get ZenML version
+        from zenml import __version__
+
+        metadata.zenml_version = __version__
+
+        # Generate ZenML model version URL for bidirectional linking
+        zenml_model_url = None
+        try:
+            # Get server URL from the client's server info
+            server_info = client.zen_store.get_store_info()
+            dashboard_url = server_info.dashboard_url
+
+            if dashboard_url:
+                # dashboard_url already includes /workspaces/{workspace}
+                # Just append projects and model version
+                model_version_id = model_version.id
+                project = model_version.project
+                project_name = project.name
+
+                zenml_model_url = (
+                    f"{dashboard_url.rstrip('/')}/"
+                    f"projects/{project_name}/model-versions/{model_version_id}?tab=overview"
+                )
+                logger.info(f"Generated ZenML model URL: {zenml_model_url}")
+            else:
+                logger.warning("No dashboard URL available")
+        except Exception as e:
+            logger.warning(f"Could not generate ZenML model URL: {e}")
+
+        # Register to external model registry
+        logger.info(
+            f"Auto-registering model '{model_response.name}' "
+            f"version '{model_version.number}' to {model_registry.flavor} "
+            f"model registry..."
+        )
+
+        model_registry.register_model_version(
+            name=model_response.name,
+            version=str(model_version.number),
+            model_source_uri=artifact_version.uri,
+            description=model_version.description,
+            metadata=metadata,
+            zenml_model_url=zenml_model_url,
+        )
+
+        logger.info(
+            f"✓ Successfully auto-registered to {model_registry.flavor} registry"
+        )
+
+    except Exception as e:
+        logger.warning(
+            f"Failed to auto-register model to external registry: {e}. "
+            "You can manually register using the model registry CLI or step."
+        )
+
+
 def link_artifact_version_to_model_version(
     artifact_version: ArtifactVersionResponse,
     model_version: ModelVersionResponse,
@@ -97,6 +203,12 @@ def link_artifact_version_to_model_version(
             artifact_version=artifact_version.id,
             model_version=model_version.id,
         )
+    )
+
+    # Auto-register model artifacts to external model registry if configured
+    _maybe_register_model_artifact_to_registry(
+        artifact_version=artifact_version,
+        model_version=model_version,
     )
 
 
