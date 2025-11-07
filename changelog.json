@@ -18,7 +18,7 @@
 		"title": "New Timeline View for Runs",
 		"description": "We've added a new timeline view for runs to help you visualize the execution of your pipelines.",
 		"feature_image_url": "",
-		"learn_more_url": "https://docs.zenml.io/concepts/dashboard-features#timeline-view",
+		"docs_url": "https://docs.zenml.io/concepts/dashboard-features#timeline-view",
 		"published": true,
 		"published_at": "2025-09-12T00:00:00Z",
 		"should_highlight": false,
