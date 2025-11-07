@@ -435,7 +435,7 @@ class StepLauncher:
 
         Raises:
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
-
+            KeyboardInterrupt: Will capture, evaluate and reraise keyboard interrupts.
         """
         from zenml.deployers.server import runtime
 

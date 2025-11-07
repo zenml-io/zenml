@@ -1,7 +1,7 @@
 """Add heartbeat column for step runs [a5a17015b681].
 
 Revision ID: a5a17015b681
-Revises: 0.90.0
+Revises: af27025fe19c
 Create Date: 2025-10-13 12:24:12.470803
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a5a17015b681"
-down_revision = "0.91.0"
+down_revision = "af27025fe19c"
 branch_labels = None
 depends_on = None
 
