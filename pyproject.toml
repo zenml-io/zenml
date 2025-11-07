@@ -330,6 +330,8 @@ module = [
     "google.*",
     "google_cloud_pipeline_components.*",
     "neuralprophet.*",
+    "notion_client",
+    "notion_client.*",
     "lightgbm.*",
     "scipy.*",
     "seaborn.*",
