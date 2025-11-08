@@ -17,6 +17,7 @@ from typing import Any, Callable, Dict, Optional
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from zenml.config import (
@@ -115,6 +116,10 @@ class FastAPIEndpointAdapter(EndpointAdapter):
                 app.include_router(
                     handler, prefix=spec.path, **spec.extra_kwargs
                 )
+                return
+            # Handle StaticFiles mounting
+            if isinstance(handler, StaticFiles):
+                app.mount(spec.path, handler, name=spec.path.strip("/"))
                 return
 
         # Register with appropriate HTTP method

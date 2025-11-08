@@ -37,7 +37,7 @@ from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
-DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE = 20
+DEFAULT_DEPLOYMENT_APP_THREAD_POOL_SIZE = 40
 
 DEFAULT_DEPLOYMENT_APP_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
@@ -633,6 +633,8 @@ class DeploymentSettings(BaseSettings):
         uvicorn_host: Host of the uvicorn server.
         uvicorn_port: Port of the uvicorn server.
         uvicorn_workers: Number of workers for the uvicorn server.
+        uvicorn_reload: Whether to automatically reload the deployment when the
+            code changes.
         log_level: Log level for the deployment application.
         uvicorn_kwargs: Keyword arguments for the uvicorn server.
 
@@ -694,6 +696,7 @@ class DeploymentSettings(BaseSettings):
     uvicorn_host: str = "0.0.0.0"  # nosec
     uvicorn_port: int = 8000
     uvicorn_workers: int = 1
+    uvicorn_reload: bool = False
     log_level: LoggingLevels = LoggingLevels.INFO
 
     uvicorn_kwargs: Dict[str, Any] = {}

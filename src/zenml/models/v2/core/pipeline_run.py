@@ -178,6 +178,10 @@ class PipelineRunUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     end_time: Optional[datetime] = None
+    is_finished: Optional[bool] = Field(
+        default=None,
+        title="Whether the pipeline run is finished.",
+    )
     orchestrator_run_id: Optional[str] = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
@@ -270,6 +274,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     is_templatable: bool = Field(
         default=False,
         description="Whether a template can be created from this run.",
+    )
+    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+        default=None,
+        title="Trigger information for the pipeline run.",
     )
 
 

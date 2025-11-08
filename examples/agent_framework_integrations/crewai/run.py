@@ -20,9 +20,9 @@ docker_settings = DockerSettings(
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
         # Set home directory to a writable location for CrewAI storage
-        "HOME": "/tmp",
+        "HOME": "/tmp",  # nosec B108 - Docker env var, not insecure file operation
         # Alternative: override the specific appdirs behavior
-        "XDG_DATA_HOME": "/tmp/.local/share",
+        "XDG_DATA_HOME": "/tmp/.local/share",  # nosec B108 - Docker env var, not insecure file operation
     },
 )
 

@@ -85,10 +85,10 @@ def test_update_stack_component_for_nonexistent_component_fails(
     assert result.exit_code == 1
 
 
-def test_update_stack_component_with_non_configured_property_succeeds(
+def test_update_stack_component_with_non_configured_property_fails(
     clean_client: "Client",
 ) -> None:
-    """Updating stack component with a non-configured property succeeds."""
+    """Updating stack component with a non-configured property fails."""
     register_container_registry_command = cli.commands[
         "container-registry"
     ].commands["register"]
@@ -115,12 +115,7 @@ def test_update_stack_component_with_non_configured_property_succeeds(
             "--favorite_cat=aria",
         ],
     )
-    assert update_result.exit_code == 0
-    with pytest.raises(AttributeError):
-        clean_client.get_stack_component(
-            name_id_or_prefix="new_container_registry",
-            component_type=StackComponentType.CONTAINER_REGISTRY,
-        ).__getattribute__("favorite_cat")
+    assert update_result.exit_code == 1
 
 
 class FlavorContext:

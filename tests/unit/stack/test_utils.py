@@ -12,24 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from contextlib import ExitStack as does_not_raise
+import pytest
 
 from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.enums import StackComponentType
-from zenml.orchestrators.local_docker.local_docker_orchestrator import (
-    LocalDockerOrchestratorConfig,
-)
 from zenml.stack.utils import validate_stack_component_config
 
 
-def test_stack_component_validation_allows_extras():
-    """Tests that stack component validation allows extra attributes."""
+def test_stack_component_validation_prevents_extras():
+    """Tests that stack component validation doesn't extra attributes."""
     config_dict = {"not_a_valid_component_attribute": False}
 
-    with does_not_raise():
-        LocalDockerOrchestratorConfig(**config_dict)
-
-    with does_not_raise():
+    with pytest.raises(ValueError):
         validate_stack_component_config(
             config_dict,
             flavor="local_docker",

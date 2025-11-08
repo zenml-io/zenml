@@ -53,10 +53,10 @@ Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-
 To generate a new API token for the ZenML Pro API:
 
 1. Navigate to the organization settings page in your ZenML Pro dashboard
-2.  Select "API Tokens" from the left sidebar
+2. Select "API Tokens" from the left sidebar
 
     ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-01.png)
-3.  Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token.
+3. Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token.
 
     ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-02.png)
 4. Simply use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
@@ -85,8 +85,9 @@ To generate a new API token for the ZenML Pro API:
 {% hint style="info" %}
 **Important Notes**
 
-* API tokens expire after 1 hour and cannot be retrieved after initial generation
-* Tokens are scoped to your user account and inherit your permissions
+* API tokens expire after 1 hour and need to be renewed periodically.
+* individual API tokens cannot be revoked after they are generated. If a token is compromised, you may need to lock the user account or service account to prevent further access.
+* Tokens are scoped to the user account or service account that was used to generate them and inherit their permissions.
 * As an alternative to API tokens, you can use [service accounts and API keys](./#programmatic-access-with-service-accounts-and-api-keys) for long-term access.
 {% endhint %}
 
@@ -100,22 +101,9 @@ To generate a new API token for the ZenML Pro API:
 * Follow the migration guide in [Migration of workspace level service accounts](https://docs.zenml.io/pro/core-concepts/service-accounts#migration-of-workspace-level-service-accounts) to learn how to migrate from your existing service accounts.
 {% endhint %}
 
-Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and to obtain short‑lived tokens for the Workspace API across all workspaces. See [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts) for setup and examples.
+Organization‑level service accounts and API keys can be used to authenticate to the ZenML Pro API and the Workspace API across all workspaces in your organization. See [Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts) for setup and examples.
 
-{% hint style="warning" %}
-Which credentials should you use?
-
-- For organization/workspace/user management on the Pro management API (`cloudapi.zenml.io`), use short‑lived Pro API tokens (no service accounts).
-- For pipeline/run‑template operations on your Workspace API (your workspace URL), use temporary user tokens or—recommended for automation—service accounts + API keys.
-
-See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
-{% endhint %}
-
-## Workspace API Authentication
-
-The **Workspace API** is different from the ZenML Pro API and supports different authentication methods. This is the API you'll use for running snapshots and other pipeline operations.
-
-### When to Use Which API
+## When to Use Which API
 
 | Task | Use This API | Authentication Method |
 |------|-------------|----------------------|
@@ -123,6 +111,12 @@ The **Workspace API** is different from the ZenML Pro API and supports different
 | Accessing the ZenML Pro API programmatically from external systems | **ZenML Pro API** (cloudapi.zenml.io) | Service accounts + API keys (recommended for automation) |
 | Running snapshots, pipeline operations | **Workspace API** (your workspace URL) | Service accounts + API keys (recommended for automation) |
 | Pipeline development, artifact management | **Workspace API** (your workspace URL) | Temporary API tokens or service accounts |
+
+See the high‑level overview: [Connect to a server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml#choose-how-to-connect).
+
+## Workspace API Authentication
+
+The **Workspace API** is different from the ZenML Pro API and supports different authentication methods. This is the API you'll use for running snapshots and other pipeline operations.
 
 ### Workspace API Authentication Methods
 

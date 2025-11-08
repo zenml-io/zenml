@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
-from typing import Any, List, Set
+from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
@@ -39,14 +39,14 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for the deployment entrypoint.
 
         Returns:
             Set of required option names
         """
         return {
-            DEPLOYMENT_ID_OPTION,
+            DEPLOYMENT_ID_OPTION: True,
         }
 
     @classmethod
@@ -113,7 +113,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
             raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
 
         # Download code if necessary (for remote execution environments)
-        self.download_code_if_necessary(snapshot=deployment.snapshot)
+        self.download_code_if_necessary()
 
         app_runner = BaseDeploymentAppRunner.load_app_runner(deployment)
         app_runner.run()

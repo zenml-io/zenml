@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """HashiCorp Vault Secrets Store implementation."""
 
+from datetime import datetime, timedelta
 from typing import (
+    Any,
     ClassVar,
     Dict,
     Optional,
@@ -21,8 +23,12 @@ from typing import (
 )
 from uuid import UUID
 
-import hvac  # type: ignore[import-untyped]
-from hvac.exceptions import (  # type: ignore[import-untyped]
+import hvac
+from hvac.constants.approle import (
+    DEFAULT_MOUNT_POINT as APP_ROLE_DEFAULT_MOUNT_POINT,
+)
+from hvac.constants.aws import DEFAULT_MOUNT_POINT as AWS_DEFAULT_MOUNT_POINT
+from hvac.exceptions import (
     InvalidPath,
     VaultError,
 )
@@ -33,6 +39,7 @@ from zenml.enums import (
     SecretsStoreType,
 )
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.zen_stores.secrets_stores.base_secrets_store import (
     BaseSecretsStore,
@@ -47,6 +54,14 @@ ZENML_VAULT_SECRET_METADATA_KEY = "zenml_secret_metadata"
 DEFAULT_MOUNT_POINT = "secret"
 
 
+class HashiCorpVaultAuthMethod(StrEnum):
+    """HashiCorp Vault authentication methods."""
+
+    TOKEN = "token"
+    APP_ROLE = "app_role"
+    AWS = "aws"
+
+
 class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
     """HashiCorp Vault secrets store configuration.
 
@@ -54,21 +69,39 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
         type: The type of the store.
         vault_addr: The url of the Vault server. If not set, the value will be
             loaded from the VAULT_ADDR environment variable, if configured.
+        vault_namespace: The Vault Enterprise namespace.
+        mount_point: The mount point to use for all secrets.
+        auth_method: The authentication method to use to authenticate with
+            the Vault server.
+        auth_mount_point: Custom mount point to use for the authentication
+            method.
         vault_token: The token used to authenticate with the Vault server. If
             not set, the token will be loaded from the VAULT_TOKEN environment
             variable or from the ~/.vault-token file, if configured.
-        vault_namespace: The Vault Enterprise namespace.
-        mount_point: The mount point to use for all secrets.
+        app_role_id: The Vault role ID to use. Only used if the authentication
+            method is APP_ROLE.
+        app_secret_id: The Vault secret ID to use. Only used if the
+            authentication method is APP_ROLE.
+        aws_role: The AWS role to use. Only used if the authentication method is
+            AWS.
+        aws_header_value: The AWS header value to use. Only used if the
+            authentication method is AWS and the mount point enforces it.
         max_versions: The maximum number of secret versions to keep.
     """
 
     type: SecretsStoreType = SecretsStoreType.HASHICORP
-
     vault_addr: str
-    vault_token: Optional[PlainSerializedSecretStr] = None
     vault_namespace: Optional[str] = None
     mount_point: Optional[str] = None
+    auth_method: HashiCorpVaultAuthMethod = HashiCorpVaultAuthMethod.TOKEN
+    auth_mount_point: Optional[str] = None
+    vault_token: Optional[PlainSerializedSecretStr] = None
+    app_role_id: Optional[str] = None
+    app_secret_id: Optional[str] = None
+    aws_role: Optional[str] = None
+    aws_header_value: Optional[str] = None
     max_versions: int = 1
+
     model_config = ConfigDict(extra="ignore")
 
 
@@ -103,6 +136,8 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
     )
 
     _client: Optional[hvac.Client] = None
+    _expires_at: Optional[datetime] = None
+    _renew_at: Optional[datetime] = None
 
     @property
     def client(self) -> hvac.Client:
@@ -110,22 +145,103 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         Returns:
             The HashiCorp Vault client.
+
+        Raises:
+            ValueError: If the configuration is invalid.
         """
+
+        def update_ttls(response: Dict[str, Any]) -> None:
+            """Update the TTLs for the client.
+
+            Args:
+                response: The response from the HashiCorp Vault API.
+            """
+            expires_in = response.get("auth", {}).get("lease_duration")
+            renewable = response.get("auth", {}).get("renewable", False)
+
+            self._expires_at = None
+            if expires_in:
+                self._expires_at = datetime.now() + timedelta(
+                    seconds=expires_in * 0.8  # 80% of the lease duration
+                )
+
+            self._renew_at = None
+            if renewable and expires_in:
+                self._renew_at = datetime.now() + timedelta(
+                    seconds=expires_in * 0.5  # 50% of the lease duration
+                )
+
+        if (
+            self._client
+            and self._expires_at
+            and self._expires_at < datetime.now()
+        ):
+            if self._renew_at and self._renew_at < datetime.now():
+                logger.debug("Renewing token")
+                try:
+                    response = self._client.auth.token.renew_self()
+                    update_ttls(response)
+                except VaultError as e:
+                    logger.warning(f"Error renewing token: {e}")
+                    self._renew_at = None
+                    self._expires_at = None
+                    self._client = None
+            else:
+                self._client = None
+                self._expires_at = None
+                logger.debug("Token expired, re-authenticating")
+
         if self._client is None:
-            # Initialize the HashiCorp Vault client with the
-            # credentials from the configuration.
             self._client = hvac.Client(
                 url=self.config.vault_addr,
-                token=self.config.vault_token.get_secret_value()
-                if self.config.vault_token
-                else None,
                 namespace=self.config.vault_namespace,
             )
-            # Configure the intended mount (idempotent)
+            if self.config.auth_method == HashiCorpVaultAuthMethod.TOKEN:
+                if not self.config.vault_token:
+                    raise ValueError(
+                        "A HashiCorp Vault token is required for token "
+                        "authentication."
+                    )
+                self._client.token = self.config.vault_token.get_secret_value()
+            elif self.config.auth_method == HashiCorpVaultAuthMethod.APP_ROLE:
+                if (
+                    not self.config.app_role_id
+                    or not self.config.app_secret_id
+                ):
+                    raise ValueError(
+                        "A HashiCorp Vault app role ID and secret ID are "
+                        "required for app role authentication."
+                    )
+                response = self._client.auth.approle.login(
+                    role_id=self.config.app_role_id,
+                    secret_id=self.config.app_secret_id,
+                    mount_point=self.config.auth_mount_point
+                    or APP_ROLE_DEFAULT_MOUNT_POINT,
+                )
+                update_ttls(response)
+            elif self.config.auth_method == HashiCorpVaultAuthMethod.AWS:
+                import boto3
+
+                sess = boto3.Session()
+                creds = sess.get_credentials().get_frozen_credentials()
+
+                response = self._client.auth.aws.iam_login(
+                    access_key=creds.access_key,
+                    secret_key=creds.secret_key,
+                    session_token=creds.token,
+                    role=self.config.aws_role,
+                    header_value=self.config.aws_header_value,
+                    mount_point=self.config.auth_mount_point
+                    or AWS_DEFAULT_MOUNT_POINT,
+                    use_token=True,
+                )
+                update_ttls(response)
+
             self._client.secrets.kv.v2.configure(
                 mount_point=self.config.mount_point or DEFAULT_MOUNT_POINT,
                 max_versions=self.config.max_versions,
             )
+
         return self._client
 
     # ====================================
