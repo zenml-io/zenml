@@ -64,18 +64,83 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
     def mlflow_client(self) -> MlflowClient:
         """Get the MLflow client.
 
+        If an MLflow experiment tracker is present in the stack, uses its
+        configuration. Otherwise, uses the registry's own tracking_uri config.
+
         Returns:
             The MLflow client.
         """
         if not self._mlflow_client:
-            if self.config.tracking_uri:
-                mlflow.set_tracking_uri(self.config.tracking_uri)
+            # Try to use MLflow experiment tracker config if present
+            from zenml.client import Client
 
-            if self.config.registry_uri:
-                mlflow.set_registry_uri(self.config.registry_uri)
+            try:
+                experiment_tracker = Client().active_stack.experiment_tracker
+                if (
+                    experiment_tracker
+                    and experiment_tracker.flavor == "mlflow"
+                ):
+                    # Import here to avoid circular dependency
+                    from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+                        MLFlowExperimentTracker,
+                    )
+
+                    if isinstance(experiment_tracker, MLFlowExperimentTracker):
+                        # Use experiment tracker's MLflow configuration
+                        experiment_tracker.configure_mlflow()
+                        logger.info(
+                            "Using MLflow configuration from experiment tracker"
+                        )
+                    else:
+                        # Fall back to registry's own config
+                        self._configure_mlflow_from_registry()
+                else:
+                    # No MLflow experiment tracker, use registry config
+                    self._configure_mlflow_from_registry()
+            except Exception:
+                # If anything fails, fall back to registry config
+                self._configure_mlflow_from_registry()
 
             self._mlflow_client = MlflowClient()
         return self._mlflow_client
+
+    def _configure_mlflow_from_registry(self) -> None:
+        """Configure MLflow using the registry's own config."""
+        if self.config.tracking_uri:
+            mlflow.set_tracking_uri(self.config.tracking_uri)
+            logger.debug(
+                f"Set MLflow tracking URI to {self.config.tracking_uri}"
+            )
+
+        if self.config.registry_uri:
+            mlflow.set_registry_uri(self.config.registry_uri)
+            logger.debug(
+                f"Set MLflow registry URI to {self.config.registry_uri}"
+            )
+
+    def configure_mlflow(self) -> None:
+        """Configure MLflow tracking for the current context.
+
+        This method configures MLflow to use the same tracking server as the
+        registry, enabling MLflow autologging and experiment tracking to work
+        seamlessly with the model registry.
+
+        Call this at the start of your training steps before using MLflow:
+            ```python
+            from zenml.client import Client
+
+            registry = Client().active_stack.model_registry
+            registry.configure_mlflow()
+
+            mlflow.sklearn.autolog()  # Now logs to correct server
+            model.fit(X, y)
+            ```
+
+        If an MLflow experiment tracker is in the stack, this uses its
+        configuration. Otherwise, it uses the registry's tracking_uri.
+        """
+        # Trigger mlflow_client property which configures MLflow
+        _ = self.mlflow_client
 
     @property
     def notion_client(self) -> NotionClient:
@@ -173,6 +238,12 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
         # Add ZenML Model URL if provided
         if zenml_model_url:
             properties["ZenML Model URL"] = {"url": zenml_model_url}
+
+        # Add MLflow Model URL (same format as ZenML Model URL)
+        tracking_uri = self.config.tracking_uri or mlflow.get_tracking_uri()
+        if tracking_uri:
+            mlflow_url = f"{tracking_uri.rstrip('/')}/#/models/{mlflow_version.name}/versions/{mlflow_version.version}"
+            properties["MLflow Model URL"] = {"url": mlflow_url}
 
         if mlflow_version.tags:
             zenml_fields = {
@@ -472,37 +543,58 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             except Exception as e:
                 logger.debug(f"Failed to add metadata to ZenML Model: {e}")
 
-    def _add_notion_link_to_mlflow(
+    def _add_cross_system_links_to_mlflow(
         self,
         model_name: str,
         version: str,
-        notion_page_id: str,
+        notion_page_id: Optional[str] = None,
+        zenml_model_url: Optional[str] = None,
     ) -> None:
-        """Add Notion page URL to MLflow model version tags.
+        """Add Notion and ZenML URLs to MLflow model version tags.
 
-        This creates a clickable link in MLflow UI for easy navigation to Notion.
+        This creates clickable links in MLflow UI for easy navigation
+        to Notion database and ZenML dashboard.
 
         Args:
             model_name: Name of the model
             version: Version number
-            notion_page_id: Notion page ID
+            notion_page_id: Notion page ID (optional)
+            zenml_model_url: ZenML Model URL (optional)
         """
         try:
-            # Build Notion URL
-            notion_url = f"https://notion.so/{notion_page_id.replace('-', '')}"
+            # Add Notion URL if provided
+            if notion_page_id:
+                notion_url = (
+                    f"https://notion.so/{notion_page_id.replace('-', '')}"
+                )
+                self.mlflow_client.set_model_version_tag(
+                    name=model_name,
+                    version=version,
+                    key="notion_page_url",
+                    value=notion_url,
+                )
+                logger.debug(
+                    f"Added Notion URL to MLflow model {model_name}:{version}"
+                )
 
-            # Set tag on MLflow model version
-            self.mlflow_client.set_model_version_tag(
-                name=model_name,
-                version=version,
-                key="notion_page_url",
-                value=notion_url,
-            )
-            logger.info(
-                f"Added Notion URL to MLflow model {model_name}:{version}"
-            )
+            # Add ZenML URL if provided
+            if zenml_model_url:
+                self.mlflow_client.set_model_version_tag(
+                    name=model_name,
+                    version=version,
+                    key="zenml_model_url",
+                    value=zenml_model_url,
+                )
+                logger.debug(
+                    f"Added ZenML URL to MLflow model {model_name}:{version}"
+                )
+
+            if notion_page_id or zenml_model_url:
+                logger.info(
+                    f"Added cross-system links to MLflow model {model_name}:{version}"
+                )
         except Exception as e:
-            logger.debug(f"Failed to add Notion URL to MLflow: {e}")
+            logger.debug(f"Failed to add cross-system links to MLflow: {e}")
 
     def _sync_version_to_notion(
         self,
@@ -824,13 +916,13 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                         f"Synced {name}:{mlflow_version.version} to Notion"
                     )
 
-                    # Add Notion URL to MLflow model version tags
-                    if notion_page_id:
-                        self._add_notion_link_to_mlflow(
-                            model_name=name,
-                            version=str(mlflow_version.version),
-                            notion_page_id=notion_page_id,
-                        )
+                    # Add cross-system links to MLflow model version tags
+                    self._add_cross_system_links_to_mlflow(
+                        model_name=name,
+                        version=str(mlflow_version.version),
+                        notion_page_id=notion_page_id,
+                        zenml_model_url=zenml_model_url,
+                    )
 
                     # Add cross-system URLs to ZenML Model metadata
                     self._add_registry_links_metadata(
@@ -1290,9 +1382,9 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                 )
                                 stats["created"] += 1
 
-                                # Add Notion URL to MLflow model version tags
+                                # Add cross-system links to MLflow model version tags
                                 if notion_page_id:
-                                    self._add_notion_link_to_mlflow(
+                                    self._add_cross_system_links_to_mlflow(
                                         model_name=model.name,
                                         version=str(mlflow_ver.version),
                                         notion_page_id=notion_page_id,
@@ -1346,20 +1438,20 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                 # Get page ID for recovery logic below
                                 notion_page_id = cast(str, notion_ver["id"])
 
-                            # Recovery: Ensure MLflow has Notion link (for all cases)
-                            # This handles incomplete syncs where Notion exists but link is missing
+                            # Recovery: Ensure MLflow has cross-system links (for all cases)
+                            # This handles incomplete syncs where links are missing
                             if notion_page_id:
                                 existing_tags = mlflow_ver.tags or {}
                                 if "notion_page_url" not in existing_tags:
                                     try:
-                                        self._add_notion_link_to_mlflow(
+                                        self._add_cross_system_links_to_mlflow(
                                             model_name=model.name,
                                             version=str(mlflow_ver.version),
                                             notion_page_id=notion_page_id,
                                         )
                                     except Exception as e:
                                         logger.debug(
-                                            f"Failed to add Notion link to MLflow: {e}"
+                                            f"Failed to add cross-system links to MLflow: {e}"
                                         )
 
                             # Always update ZenML Model to match MLflow (best-effort)
