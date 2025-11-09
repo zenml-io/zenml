@@ -90,6 +90,7 @@
   * [Develop a Custom Model Deployer](model-deployers/custom.md)
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
+  * [MLflow-Notion Model Registry](model-registries/mlflow-notion.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
 
 ## Service Connectors

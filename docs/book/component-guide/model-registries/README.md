@@ -33,10 +33,11 @@ Here is an architecture diagram that shows how a model registry fits into the ov
 
 Model Registries are optional stack components provided by integrations:
 
-| Model Registry                     | Flavor   | Integration | Notes                                      |
-| ---------------------------------- | -------- | ----------- | ------------------------------------------ |
-| [MLflow](mlflow.md)                | `mlflow` | `mlflow`    | Add MLflow as Model Registry to your stack |
-| [Custom Implementation](custom.md) | _custom_ |             | _custom_                                   |
+| Model Registry                                 | Flavor          | Integration      | Notes                                                              |
+| ---------------------------------------------- | --------------- | ---------------- | ------------------------------------------------------------------ |
+| [MLflow](mlflow.md)                            | `mlflow`        | `mlflow`         | Add MLflow as Model Registry to your stack                        |
+| [MLflow-Notion](mlflow-notion.md)              | `mlflow_notion` | `mlflow_notion`  | Hybrid MLflow-Notion registry with collaborative database features |
+| [Custom Implementation](custom.md)             | _custom_        |                  | _custom_                                                           |
 
 If you would like to see the available flavors of Model Registry, you can use the command:
 
