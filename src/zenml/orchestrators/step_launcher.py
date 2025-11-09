@@ -275,7 +275,7 @@ class StepLauncher:
 
         if step_logging_enabled:
             logs_context = step_logging.LoggingContext(source="step")
-            logs_model = logs_context.log_request
+            logs_model = logs_context.log_model
 
         with logs_context:
             if run_was_created:

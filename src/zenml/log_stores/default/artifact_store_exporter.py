@@ -11,11 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""OpenTelemetry exporter that writes logs to ZenML artifact store.
-
-This implementation reuses the proven logic from the original step_logging.py
-implementation, including message chunking and JSON line formatting.
-"""
+"""OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
 import time
 from typing import TYPE_CHECKING, List, Sequence
@@ -29,8 +25,6 @@ if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
 
 from zenml.enums import LoggingLevels
-
-# Import from default_log_store to avoid duplication
 from zenml.log_stores.default.default_log_store import remove_ansi_escape_codes
 from zenml.logger import get_logger
 from zenml.logging.logging import DEFAULT_MESSAGE_SIZE, LogEntry
@@ -113,7 +107,6 @@ class ArtifactStoreExporter(LogExporter):
         message = remove_ansi_escape_codes(message).rstrip()
 
         level = self._map_severity_to_level(log_record.severity_text)
-
 
         name = "unknown"
         module = None

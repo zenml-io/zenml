@@ -1048,7 +1048,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             if logging_enabled:
                 logs_context = LoggingContext("client")
-                logs_request = logs_context.log_request
+                logs_request = logs_context.log_model
 
             with logs_context:
                 snapshot = self._create_snapshot(**self._run_args)

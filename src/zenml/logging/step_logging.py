@@ -20,13 +20,12 @@ import queue
 import re
 import threading
 import time
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    Generator,
     Iterator,
     List,
     Optional,
@@ -931,6 +930,3 @@ def setup_orchestrator_logging(
             f"Failed to setup orchestrator logging for run {run_id}: {e}"
         )
         return nullcontext()
-
-
-

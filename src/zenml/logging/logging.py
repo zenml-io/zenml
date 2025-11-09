@@ -13,18 +13,18 @@
 #  permissions and limitations under the License.
 """ZenML logging."""
 
-from contextlib import nullcontext, contextmanager
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Generator,
     Optional,
     Tuple,
     Type,
     Union,
-    Generator,
 )
 from uuid import UUID, uuid4
 
@@ -37,8 +37,12 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 from zenml.logger import get_logger
-from zenml.models import LogsRequest, PipelineSnapshotResponse, PipelineRunUpdate
-from zenml.logging import LoggingContext
+from zenml.models import (
+    LogsRequest,
+    LogsResponse,
+    PipelineRunUpdate,
+    PipelineSnapshotResponse,
+)
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -152,12 +156,17 @@ class LogEntry(BaseModel):
 class LoggingContext:
     """Context manager which collects logs using a LogStore."""
 
-    def __init__(self, source: str, log_model: Optional[Union["LogsRequest", "LogsResponse"]] = None) -> None:
+    def __init__(
+        self,
+        source: str,
+        log_model: Optional[Union["LogsRequest", "LogsResponse"]] = None,
+    ) -> None:
         """Initialize the logging context.
 
         Args:
             source: An identifier for the source of the logs
             (e.g., "step", "orchestrator")
+            log_model: The log model to use for the logging context
         """
         if Client().active_stack.log_store:
             self.log_store = Client().active_stack.log_store
@@ -314,6 +323,7 @@ def setup_orchestrator_logging(
         )
         return nullcontext()
 
+
 # TODO: Double check this function
 @contextmanager
 def setup_pipeline_logging(
@@ -351,17 +361,17 @@ def setup_pipeline_logging(
             logs_model = logs_response
 
         logs_context = LoggingContext(source="client", log_model=logs_model)
-            
+
         if run_id and logs_response is None:
             try:
-                run_update = PipelineRunUpdate(add_logs=[logs_context.log_model])
+                run_update = PipelineRunUpdate(
+                    add_logs=[logs_context.log_model]
+                )
                 client.zen_store.update_run(
                     run_id=run_id, run_update=run_update
                 )
             except Exception as e:
-                logger.error(
-                    f"Failed to add logs to the run {run_id}: {e}"
-                )
+                logger.error(f"Failed to add logs to the run {run_id}: {e}")
                 raise e
 
         with logs_context:

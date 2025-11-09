@@ -27,8 +27,6 @@ from zenml.utils.secret_utils import PlainSerializedSecretStr
 class DatadogLogStoreConfig(OtelLogStoreConfig):
     """Configuration for Datadog log store.
 
-    This extends OtelLogStoreConfig with Datadog-specific settings.
-
     Attributes:
         api_key: Datadog API key for log ingestion.
         site: Datadog site (e.g., "datadoghq.com", "datadoghq.eu").
@@ -73,6 +71,7 @@ class DatadogLogStoreFlavor(Flavor):
         """
         return self.docs_url
 
+    # TODO: Add logo for the Datadog log store
     @property
     def logo_url(self) -> str:
         """URL to the flavor logo.
