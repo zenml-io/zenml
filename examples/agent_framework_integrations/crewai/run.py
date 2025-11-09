@@ -11,7 +11,7 @@ from typing import Annotated, Any, Dict
 from crewai import Agent, Crew, Task
 from crewai.tools import tool
 
-from zenml import ExternalArtifact, pipeline, step
+from zenml import pipeline, step
 from zenml.config import DockerSettings, PythonPackageInstaller
 
 docker_settings = DockerSettings(
@@ -19,6 +19,10 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",  # relative to the pipeline directory
     environment={
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        # Set home directory to a writable location for CrewAI storage
+        "HOME": "/tmp",  # nosec B108 - Docker env var, not insecure file operation
+        # Alternative: override the specific appdirs behavior
+        "XDG_DATA_HOME": "/tmp/.local/share",  # nosec B108 - Docker env var, not insecure file operation
     },
 )
 
@@ -76,11 +80,8 @@ crew = Crew(
 
 
 @step
-def run_crewai_agents(query: str) -> Annotated[Dict[str, Any], "crew_results"]:
+def run_crewai_agents(city: str) -> Annotated[Dict[str, Any], "crew_results"]:
     """Execute the CrewAI crew and return results."""
-    # Extract city from query string
-    city = query.split(" for ")[-1] if " for " in query else "Unknown"
-
     try:
         # Execute the crew with the city parameter
         result = crew.kickoff(inputs={"city": city})
@@ -123,17 +124,14 @@ def format_travel_results(
 
 
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def crewai_travel_pipeline() -> str:
+def agent_pipeline(city: str = "Berlin") -> str:
     """ZenML pipeline that orchestrates the CrewAI travel planning system.
 
     Returns:
         Formatted travel planning results
     """
-    # External artifact for travel query
-    travel_query = ExternalArtifact(value="Travel planning for Berlin")
-
     # Run the CrewAI agents
-    crew_results = run_crewai_agents(travel_query)
+    crew_results = run_crewai_agents(city=city)
 
     # Format the results
     summary = format_travel_results(crew_results)
@@ -143,6 +141,6 @@ def crewai_travel_pipeline() -> str:
 
 if __name__ == "__main__":
     print("🚀 Running CrewAI travel pipeline...")
-    run_result = crewai_travel_pipeline()
+    run_result = agent_pipeline()
     print("Pipeline completed successfully!")
     print("Check the ZenML dashboard for detailed results and artifacts.")

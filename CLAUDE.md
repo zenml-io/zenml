@@ -24,6 +24,12 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ## Code Style & Quality Standards
 
+### Commenting policy — explain why, not what
+- Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
+- Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
+- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid simple explanatory comments, where it is already clear from the code itself.
+
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
   - Run this before every commit to ensure proper formatting

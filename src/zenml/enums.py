@@ -546,3 +546,10 @@ class PipelineRunTriggeredByType(StrEnum):
 
     STEP_RUN = "step_run"
     DEPLOYMENT = "deployment"
+
+
+class StepRuntime(StrEnum):
+    """All possible runtime modes for a step."""
+
+    INLINE = "inline"
+    ISOLATED = "isolated"

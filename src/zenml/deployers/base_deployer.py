@@ -30,9 +30,12 @@ from typing import (
 )
 from uuid import UUID
 
+import requests
+
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
+from zenml.config import DeploymentDefaultEndpoints
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
@@ -300,6 +303,56 @@ class BaseDeployer(StackComponent, ABC):
         alphabet = string.ascii_letters + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(key_length))
 
+    def _check_deployment_health(
+        self,
+        deployment: DeploymentResponse,
+    ) -> bool:
+        """Check if the deployment is healthy by calling its health check endpoint.
+
+        Args:
+            deployment: The deployment to check.
+
+        Returns:
+            True if the deployment is healthy, False otherwise.
+        """
+        assert deployment.snapshot, "Deployment snapshot not found"
+
+        settings = (
+            deployment.snapshot.pipeline_configuration.deployment_settings
+        )
+
+        # If the health check endpoint is disabled, we consider the deployment healthy.
+        if (
+            DeploymentDefaultEndpoints.HEALTH
+            not in settings.include_default_endpoints
+        ):
+            return True
+
+        if not deployment.url:
+            return False
+
+        health_check_path = f"{settings.root_url_path}{settings.api_url_path}{settings.health_url_path}"
+        health_check_url = f"{deployment.url}{health_check_path}"
+
+        # Attempt to connect to the deployment and check if it is healthy
+        try:
+            response = requests.get(health_check_url, timeout=3)
+            if response.status_code == 200:
+                return True
+            else:
+                logger.debug(
+                    f"Health check endpoint for deployment '{deployment.name}' "
+                    f"at '{health_check_url}' returned status code "
+                    f"{response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.debug(
+                f"Health check endpoint for deployment '{deployment.name}' "
+                f"at '{health_check_url}' is not reachable: {e}"
+            )
+            return False
+
     def _poll_deployment(
         self,
         deployment: DeploymentResponse,
@@ -335,6 +388,11 @@ class BaseDeployer(StackComponent, ABC):
             )
             try:
                 deployment_state = self.do_get_deployment_state(deployment)
+
+                if deployment_state.status == DeploymentStatus.RUNNING:
+                    if not self._check_deployment_health(deployment):
+                        deployment_state.status = DeploymentStatus.PENDING
+
             except DeploymentNotFoundError:
                 deployment_state = DeploymentOperationalState(
                     status=DeploymentStatus.ABSENT
@@ -675,6 +733,9 @@ class BaseDeployer(StackComponent, ABC):
         )
         try:
             deployment_state = self.do_get_deployment_state(deployment)
+            if deployment_state.status == DeploymentStatus.RUNNING:
+                if not self._check_deployment_health(deployment):
+                    deployment_state.status = DeploymentStatus.PENDING
         except DeploymentNotFoundError:
             deployment_state.status = DeploymentStatus.ABSENT
         except DeployerError as e:

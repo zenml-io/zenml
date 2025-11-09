@@ -22,7 +22,7 @@ If you have the required infrastructure pieces already deployed on your cloud, y
 
 To use this feature, you need a deployed ZenML server instance that is reachable from the cloud provider where you wish to have the stack provisioned (this can't be a local server started via `zenml login --local`). If you do not already have one set up, you can fast-track to trying out a ZenML Pro server by simply running `zenml login --pro` or [registering for a free ZenML Pro account](https://zenml.io/pro). If you prefer to host your own, you can learn about self-hosting a ZenML server [here](https://docs.zenml.io/getting-started/deploying-zenml).
 
-Once you are connected to your deployed ZenML server, you need to create a service account and an API key for it. You will use the API key to give the Terraform module programmatic access to your ZenML server. You can find more about service accounts and API keys [here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account). But the process is as simple as running the following CLI command while connected to your ZenML server:
+Once you are connected to your deployed ZenML server, you need to create a service account and an API key for it. You will use the API key to give the Terraform module programmatic access to your ZenML server. You can find more about service accounts and API keys [here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account). If you're using an OSS server, the process is as simple as running the following CLI command while connected to your ZenML server:
 
 ```shell
 zenml service-account create <account-name>
@@ -44,8 +44,10 @@ and enter the following API key when prompted:
 ZENKEY_...
 ```
 
-Finally, you will need the following on the machine where you will be running\
-Terraform:
+If you're using a ZenML Pro server, you will need to create an organization-level service account and an API key for it. You can find more about organization-level service accounts and API keys [here](https://docs.zenml.io/pro/core-concepts/service-accounts).
+
+
+Finally, you will need the following on the machine where you will be running Terraform:
 
 * [Terraform](https://developer.hashicorp.com/terraform/install) installed on your machine (version at least 1.9).
 * the ZenML Terraform stack modules assume you are already locally authenticated with your cloud provider through the provider's CLI or SDK tool and have permissions to create the resources that the modules will provision. This is different depending on the cloud provider you are using and is covered in the following sections.
@@ -54,7 +56,7 @@ Terraform:
 
 If you are already knowledgeable about using Terraform and the cloud provider where you want to deploy the stack, this process will be straightforward. The ZenML Terraform provider lets you manage your ZenML resources (stacks, stack components, etc.) as infrastructure-as-code. In a nutshell, you will need to:
 
-1. Set up the ZenML Terraform provider with your ZenML server URL and API key. It is recommended to use environment variables for this rather than hardcoding the values in your Terraform configuration file:
+1. Set up the ZenML Terraform provider with your ZenML server URL and the API key or ZenML Pro API key. It is recommended to use environment variables for this rather than hardcoding the values in your Terraform configuration file:
 
 ```shell
 export ZENML_SERVER_URL="https://your-zenml-server.com"
@@ -64,7 +66,7 @@ export ZENML_API_KEY="<your-api-key>"
 ![Finding your workspace URL](../../../.gitbook/assets/workspace_url.png)
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/core-concepts/service-accounts).
 {% endhint %}
 
 2. Create a new Terraform configuration file (e.g., `main.tf`), preferably in a new directory, with the content that looks like this (`<cloud provider>` can be`aws`, `gcp`, or `azure`):

@@ -696,17 +696,43 @@ zenml:
     # secrets store type is configured
     hashicorp:
 
-      # The url of the HashiCorp Vault server
-      vault_addr: https://vault.example.com
-      # The token used to authenticate with the Vault server
-      vault_token:
-      # The Vault Enterprise namespace. Not required for Vault OSS.
-      vault_namespace:
-      # The mount point to use (defaults to "secret" if not set)
-      mount_point:
-      # The maximum number of secret versions to keep. If not set, the default
-      # value of 1 will be used (only the latest version will be kept).
-      max_versions:
+      # The HashiCorp Vault authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - token - Use a static token
+      # - app_role - Use a Vault App Role (app role ID and secret ID)
+      # - aws - Use AWS authentication
+      authMethod: token
+
+      authConfig:
+
+        # The url of the HashiCorp Vault server
+        vault_addr: https://vault.example.com
+        # The Vault Enterprise namespace. Not required for Vault OSS.
+        vault_namespace:
+        # The mount point to use (defaults to "secret" if not set)
+        mount_point:
+
+        # Custom mount point to use for the authentication method.
+        auth_mount_point:
+        # The role ID to use for the app role authentication method. Required if
+        # the authentication method is app_role.
+        app_role_id:
+        # The secret ID to use for the app role authentication method. Required
+        # if the authentication method is app_role.
+        app_secret_id:
+        # The AWS role to use for the AWS authentication method. Relevant if the
+        # authentication method is aws.
+        aws_role:
+        # The AWS header value to use for the AWS authentication method. Relevant
+        # if the authentication method is aws and the mount point enforces it.
+        aws_header_value:
+        # The token to use with the token authentication method. Required if the
+        # authentication method is token.
+        vault_token:
+        # The maximum number of secret versions to keep. If not set, the default
+        # value of 1 will be used (only the latest version will be kept).
+        max_versions:
 
     # Custom secrets store configuration. Only relevant if the `custom` secrets
     # store type is configured.
@@ -958,17 +984,43 @@ zenml:
     # `hashicorp` backup secrets store type is configured
     hashicorp:
 
-      # The url of the HashiCorp Vault server
-      vault_addr: https://vault.example.com
-      # The token used to authenticate with the Vault server
-      vault_token:
-      # The Vault Enterprise namespace. Not required for Vault OSS.
-      vault_namespace:
-      # The mount point to use (defaults to "secret" if not set)
-      mount_point:
-      # The maximum number of secret versions to keep. If not set, the default
-      # value of 1 will be used (only the latest version will be kept).
-      max_versions:
+      # The HashiCorp Vault authentication method to use. The currently
+      # supported authentication methods are:
+      #
+      # - token - Use a static token
+      # - app_role - Use a Vault App Role (app role ID and secret ID)
+      # - aws - Use AWS authentication
+      authMethod: token
+
+      authConfig:
+
+        # The url of the HashiCorp Vault server
+        vault_addr: https://vault.example.com
+        # The Vault Enterprise namespace. Not required for Vault OSS.
+        vault_namespace:
+        # The mount point to use (defaults to "secret" if not set)
+        mount_point:
+
+        # Custom mount point to use for the authentication method.
+        auth_mount_point:
+        # The role ID to use for the app role authentication method. Required if
+        # the authentication method is app_role.
+        app_role_id:
+        # The secret ID to use for the app role authentication method. Required
+        # if the authentication method is app_role.
+        app_secret_id:
+        # The AWS role to use for the AWS authentication method. Relevant if the
+        # authentication method is aws.
+        aws_role:
+        # The AWS header value to use for the AWS authentication method. Relevant
+        # if the authentication method is aws and the mount point enforces it.
+        aws_header_value:
+        # The token to use with the token authentication method. Required if the
+        # authentication method is token.
+        vault_token:
+        # The maximum number of secret versions to keep. If not set, the default
+        # value of 1 will be used (only the latest version will be kept).
+        max_versions:
 
     # Custom backup secrets store configuration. Only relevant if the `custom`
     # backup secrets store type is configured.

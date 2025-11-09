@@ -7,7 +7,7 @@
     </a>
   <br />
   <div align="center">
-    <h3 align="center">Your unified toolkit for shipping everything from decision trees to complex AI agents.</h3>
+    <h3 align="center">One AI Platform From Pipelines to Agents </h3>
   </div>
 
   [![PyPi][pypi-shield]][pypi-url]
@@ -36,6 +36,7 @@
     <a href="https://github.com/zenml-io/zenml/issues">Report Bug</a> •
     <a href="https://zenml.io/pro">Sign up for ZenML Pro</a> •
     <a href="https://www.zenml.io/blog">Blog</a> •
+    <a href="https://docs.zenml.io/">Docs</a>
     <br />
     <br />
     🎉 For the latest release, see the <a href="https://github.com/zenml-io/zenml/releases">release notes</a>.
@@ -78,19 +79,9 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 
 ## 🚀 Get Started (5 minutes)
 
-### 🏗️ Architecture Overview
-
-ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
-
-- **Local Development**: `pip install "zenml[server]"` - runs both client and server locally
-- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
-
 ```bash
 # Install ZenML with server capabilities
-pip install "zenml[server]"
-
-# Install required dependencies
-pip install scikit-learn openai numpy
+pip install "zenml[server]"  # pip install zenml will install a slimmer client
 
 # Initialize your ZenML repository
 zenml init
@@ -99,9 +90,40 @@ zenml init
 zenml login
 ```
 
-Here is a brief demo:
+You can then explore any of the [examples](examples/) in this repo. We recommend starting with the [quickstart](examples/quickstart/), which demonstrates core ZenML concepts: pipelines, steps, artifacts, snapshots, and deployments.
 
-https://github.com/user-attachments/assets/edeb314c-fe07-41ba-b083-cd9ab11db4a7
+### 🏗️ Architecture Overview
+
+ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-started/system-architectures) with an integrated web dashboard ([zenml-io/zenml-dashboard](https://github.com/zenml-io/zenml-dashboard)):
+
+- **Local Development**: `pip install "zenml[local]"` - runs both client and server locally
+- **Production**: Deploy server separately, connect with `pip install zenml` + `zenml login <server-url>`
+
+## 🎮 Demo
+
+Here is a short demo:
+
+ [![Watch the video](docs/book/.gitbook/assets/readme-youtube-thumbnail.png)](https://zenml.io/demo-video)
+
+## 🖼️ Resources
+
+The best way to learn about ZenML is through our comprehensive documentation and tutorials:
+
+- **[Documentation](https://docs.zenml.io/)** - Complete product documentation
+- **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
+- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
+- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
+- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
+
+ ## 📚 More examples
+
+1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
+2. **[Deploying ML Models](examples/deploying_ml_model/)** - Deploy classical ML models as production endpoints with monitoring and versioning
+3. **[Deploying Agents](examples/deploying_agent/)** - Document analysis service with pipelines, evaluation, and embedded web UI
+4. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
+5. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
+6. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
+7. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
 
 ## 🗣️ Chat With Your Pipelines: ZenML MCP Server
 
@@ -121,26 +143,6 @@ Stop clicking through dashboards to understand your ML workflows. The **[ZenML M
 
 The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
 
-## 📚 Learn More
-
-### 🖼️ Getting Started Resources
-
-The best way to learn about ZenML is through our comprehensive documentation and tutorials:
-
-- **[Your First AI Pipeline](https://docs.zenml.io/getting-started/your-first-ai-pipeline)** - Build and evaluate an AI service in minutes
-- **[Starter Guide](https://docs.zenml.io/user-guides/starter-guide)** - From zero to production in 30 minutes
-- **[LLMOps Guide](https://docs.zenml.io/user-guides/llmops-guide)** - Specific patterns for LLM applications
-- **[SDK Reference](https://sdkdocs.zenml.io/)** - Complete SDK reference
-
-### 📖 Production Examples
-
-1. **[Agent Architecture Comparison](examples/agent_comparison/)** - Compare AI agents with LangGraph workflows, LiteLLM integration, and automatic visualizations via custom materializers
-2. **[Minimal Agent Production](examples/minimal_agent_production/)** - Document analysis service with pipelines, evaluation, and web UI
-3. **[E2E Batch Inference](examples/e2e/)** - Complete MLOps pipeline with feature engineering
-4. **[LLM RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)** - Production RAG with evaluation loops
-5. **[Agentic Workflow (Deep Research)](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)** - Orchestrate your agents with ZenML
-6. **[Fine-tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)** - Fine-tune and deploy LLMs
-
 ### 🎓 Books & Resources
 
 <div align="center">
@@ -152,7 +154,7 @@ The best way to learn about ZenML is through our comprehensive documentation and
   </a>
 </div>
 
-ZenML is featured in these comprehensive guides to production AI systems.
+[ZenML](https://zenml.io) is featured in these comprehensive guides to production AI systems.
 
 ## 🤝 Join ML Engineers Building the Future of AI
 

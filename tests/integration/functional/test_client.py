@@ -735,6 +735,7 @@ def test_listing_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 
@@ -765,6 +766,7 @@ def test_getting_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 
@@ -793,6 +795,7 @@ def test_deleting_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 

@@ -146,6 +146,7 @@ dev = [
     "types-certifi>=2021.10.8.0",
     "types-croniter>=1.0.2",
     "types-futures>=3.3.1",
+    "types-hvac>=2.3.0",
     "types-Markdown>=3.3.6",
     "types-paramiko>=3.4.0,<4.0.0",
     "types-Pillow>=9.2.1",

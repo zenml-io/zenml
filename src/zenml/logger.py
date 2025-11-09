@@ -321,6 +321,9 @@ def init_logging() -> None:
     # Mute tensorflow cuda warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+    # logging capture warnings
+    logging.captureWarnings(True)
+
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
     suppress_zenml_logs: bool = handle_bool_env_var(
         ENV_ZENML_SUPPRESS_LOGS, True

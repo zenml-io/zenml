@@ -305,20 +305,21 @@ def main() -> None:
         shared_env, secrets = get_config_environment_vars()
         shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
-        try:
-            owner_references = kube_utils.get_pod_owner_references(
-                core_api=core_api,
-                pod_name=orchestrator_pod_name,
-                namespace=namespace,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to get pod owner references: {str(e)}")
-            owner_references = []
-        else:
-            # Make sure None of the owner references are marked as controllers of
-            # the created pod, which messes with the garbage collection logic.
-            for owner_reference in owner_references:
-                owner_reference.controller = False
+        owner_references = None
+        if not orchestrator.config.skip_owner_references:
+            try:
+                owner_references = kube_utils.get_pod_owner_references(
+                    core_api=core_api,
+                    pod_name=orchestrator_pod_name,
+                    namespace=namespace,
+                )
+                # Make sure None of the owner references are marked as
+                # controllers of the created pod, which messes with the
+                # garbage collection logic.
+                for owner_reference in owner_references:
+                    owner_reference.controller = False
+            except Exception as e:
+                logger.warning(f"Failed to get pod owner references: {str(e)}")
 
         step_run_request_factory = StepRunRequestFactory(
             snapshot=snapshot,

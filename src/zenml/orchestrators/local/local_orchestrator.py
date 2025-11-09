@@ -97,13 +97,6 @@ class LocalOrchestrator(BaseOrchestrator):
                 step.
             RuntimeError: If the pipeline run fails.
         """
-        if snapshot.schedule:
-            logger.warning(
-                "Local Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
-
         self._orchestrator_run_id = str(uuid4())
 
         # Setup orchestrator logging context (if enabled)
@@ -205,6 +198,44 @@ class LocalOrchestrator(BaseOrchestrator):
             )
             self._orchestrator_run_id = None
             return None
+
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Returns:
+            Optional submission result.
+        """
+        from zenml.execution.pipeline.dynamic.runner import (
+            DynamicPipelineRunner,
+        )
+
+        self._orchestrator_run_id = str(uuid4())
+        start_time = time.time()
+
+        runner = DynamicPipelineRunner(snapshot=snapshot, run=placeholder_run)
+        with temporary_environment(environment):
+            runner.run_pipeline()
+
+        run_duration = time.time() - start_time
+        logger.info(
+            "Pipeline run has finished in `%s`.",
+            string_utils.get_human_readable_time(run_duration),
+        )
+        self._orchestrator_run_id = None
+        return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.
