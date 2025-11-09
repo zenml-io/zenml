@@ -164,7 +164,7 @@ from zenml.exceptions import (
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
-from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.logger import get_logger, get_logging_level, get_zenml_handler
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     ActionFilter,
@@ -1581,7 +1581,7 @@ class SqlZenStore(BaseZenStore):
         else:
             alembic_logger.setLevel(logging.WARNING)
 
-        alembic_logger.addHandler(get_console_handler())
+        alembic_logger.addHandler(get_zenml_handler())
 
         # We need to account for 3 distinct cases here:
         # 1. the database is completely empty (not initialized)

@@ -58,7 +58,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import LoggingContext
+from zenml.logging.logging import LoggingContext
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,

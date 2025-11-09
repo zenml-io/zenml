@@ -18,20 +18,21 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry._logs.severity import SeverityNumber
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
+from zenml import __version__
 from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
-from zenml.logger import get_logger, get_storage_log_level, logging_handlers
-from zenml.models import LogsRequest
+from zenml.logger import get_logger
+from zenml.models import LogsResponse
 
 if TYPE_CHECKING:
-    from opentelemetry.sdk._logs import LoggerProvider
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.logging.step_logging import LogEntry
-    from zenml.models import LogsResponse
+    from zenml.logging.logging import LogEntry
 
 logger = get_logger(__name__)
 
@@ -39,12 +40,12 @@ logger = get_logger(__name__)
 class OtelLogStore(BaseLogStore):
     """Log store that exports logs using OpenTelemetry.
 
-    This implementation uses the OpenTelemetry SDK to collect and export logs
-    to various backends. It uses a BatchLogRecordProcessor for efficient
-    background processing.
+    Each instance creates its own BatchLogRecordProcessor and background thread.
+    This is simpler than shared infrastructure but means more threads when
+    multiple log stores are active simultaneously.
 
     Subclasses should implement `get_exporter()` to provide the specific
-    log exporter for their backend (e.g., console, OTLP, Datadog).
+    log exporter for their backend (e.g., ArtifactStoreExporter, DatadogLogExporter).
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -55,10 +56,11 @@ class OtelLogStore(BaseLogStore):
             **kwargs: Keyword arguments for the base class.
         """
         super().__init__(*args, **kwargs)
-        self._logger_provider_with_resource: Optional["LoggerProvider"] = None
-        self._handler: Optional[logging.Handler] = None
+
+        self._resource: Optional["Resource"] = None
         self._exporter: Optional["LogExporter"] = None
-        self._log_id: Optional[str] = None
+        self._provider: Optional["LoggerProvider"] = None
+        self._processor: Optional["BatchLogRecordProcessor"] = None
 
     @property
     def config(self) -> OtelLogStoreConfig:
@@ -74,66 +76,36 @@ class OtelLogStore(BaseLogStore):
         """Get the log exporter for this log store.
 
         Subclasses must implement this method to provide the appropriate
-        exporter for their backend (e.g., ConsoleLogExporter, OTLPLogExporter).
+        exporter for their backend.
 
         Returns:
             The log exporter instance.
         """
 
-    def activate(self, log_request: "LogsRequest") -> None:
-        """Activate log collection with OpenTelemetry.
+    def activate(self) -> None:
+        """Activate log collection with OpenTelemetry."""
+        from zenml.logging.logging import get_active_log_model
 
-        Args:
-            log_request: The log request model.
-        """
-        from zenml.logging.otel_logging_infrastructure import (
-            get_shared_otel_infrastructure,
-        )
-        from zenml.logging.routing_handler import set_active_log_store
+        log_model = get_active_log_model()
+        if not log_model:
+            raise RuntimeError(
+                "activate() called outside of an active logging context. "
+                "This should not happen."
+            )
 
-        # Get shared OTel infrastructure
-        logger_provider, routing_exporter = get_shared_otel_infrastructure()
-
-        # Get exporter for this log store
         self._exporter = self.get_exporter()
+        self._processor = BatchLogRecordProcessor(self._exporter)
 
-        # Register exporter with routing exporter
-        self._log_id = str(log_request.id)
-        routing_exporter.register_exporter(self._log_id, self._exporter)
-
-        # Create resource with log_id and service info
-        otel_resource = Resource.create(
+        self._resource = Resource.create(
             {
                 "service.name": self.config.service_name,
-                "service.version": "0.91.0",  # TODO: Fetch this
-                "zenml.log_id": self._log_id,
+                "service.version": __version__,
+                "zenml.log_id": str(log_model.id),
             }
         )
 
-        # Create logger provider with this resource
-        self._logger_provider_with_resource = LoggerProvider(
-            resource=otel_resource
-        )
-
-        # Share the same processor (routing exporter) from the global provider
-        for processor in (
-            logger_provider._multi_log_record_processor._log_record_processors
-        ):
-            self._logger_provider_with_resource.add_log_record_processor(
-                processor
-            )
-
-        # Create handler
-        self._handler = LoggingHandler(
-            level=get_storage_log_level().value,
-            logger_provider=self._logger_provider_with_resource,
-        )
-
-        # Register this log store for routing
-        set_active_log_store(self)
-
-        # Add to context variables for print capture
-        logging_handlers.add(self._handler)
+        self._provider = LoggerProvider(resource=self._resource)
+        self._provider.add_log_record_processor(self._processor)
 
     def emit(self, record: logging.LogRecord) -> None:
         """Process a log record by sending to OpenTelemetry.
@@ -141,39 +113,70 @@ class OtelLogStore(BaseLogStore):
         Args:
             record: The log record to process.
         """
-        if self._handler:
-            try:
-                self._handler.emit(record)
-            except Exception:
-                # Don't let logging errors break execution
-                pass
-
-    def deactivate(self) -> None:
-        """Deactivate log collection and flush remaining logs."""
-        if not self._handler:
+        if not self._provider:
             return
 
-        # Unregister from the current thread's context
-        from zenml.logging.otel_logging_infrastructure import (
-            get_shared_otel_infrastructure,
-        )
-        from zenml.logging.routing_handler import set_active_log_store
+        try:
+            otel_logger = self._provider.get_logger(
+                record.name or "unknown",
+                schema_url=None,
+            )
+            otel_logger.emit(
+                timestamp=int(record.created * 1e9),
+                observed_timestamp=int(record.created * 1e9),
+                severity_number=self._get_severity_number(record.levelno),
+                severity_text=record.levelname,
+                body=record.getMessage(),
+                attributes={
+                    "code.filepath": record.pathname,
+                    "code.lineno": record.lineno,
+                    "code.function": record.funcName,
+                },
+            )
 
-        set_active_log_store(None)
+        except Exception:
+            pass
 
-        # Remove from context variables
-        logging_handlers.remove(self._handler)
+    def _get_severity_number(self, levelno: int) -> int:
+        """Map Python log level to OTEL severity number.
 
-        # Unregister exporter from routing
-        if self._log_id and self._exporter:
-            _, routing_exporter = get_shared_otel_infrastructure()
-            routing_exporter.unregister_exporter(self._log_id)
+        Args:
+            levelno: Python logging level number.
 
-            # Flush exporter
+        Returns:
+            OTEL severity number.
+        """
+        if levelno >= logging.CRITICAL:
+            return SeverityNumber.FATAL.value
+        elif levelno >= logging.ERROR:
+            return SeverityNumber.ERROR.value
+        elif levelno >= logging.WARNING:
+            return SeverityNumber.WARN.value
+        elif levelno >= logging.INFO:
+            return SeverityNumber.INFO.value
+        elif levelno >= logging.DEBUG:
+            return SeverityNumber.DEBUG.value
+        else:
+            return SeverityNumber.UNSPECIFIED.value
+
+    def deactivate(self) -> None:
+        """Deactivate log collection and shut down the processor.
+
+        Flushes any pending logs and shuts down the processor's background thread.
+        """
+        if self._processor:
             try:
-                self._exporter.force_flush()
+                # Force flush any pending logs
+                self._processor.force_flush(timeout_millis=5000)
+                logger.debug("Flushed pending logs")
             except Exception as e:
-                logger.warning(f"Error flushing exporter: {e}")
+                logger.warning(f"Error flushing logs: {e}")
+
+            try:
+                self._processor.shutdown()
+                logger.debug("Shut down log processor and background thread")
+            except Exception as e:
+                logger.warning(f"Error shutting down processor: {e}")
 
         logger.debug("OtelLogStore deactivated")
 
@@ -184,6 +187,7 @@ class OtelLogStore(BaseLogStore):
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = 20000,
+        message_size: int = 5120,
     ) -> List["LogEntry"]:
         """Fetch logs from the OpenTelemetry backend.
 
@@ -196,6 +200,7 @@ class OtelLogStore(BaseLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries from the backend.

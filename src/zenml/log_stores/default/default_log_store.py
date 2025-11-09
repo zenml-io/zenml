@@ -13,68 +13,41 @@
 #  permissions and limitations under the License.
 """Default log store implementation."""
 
-import asyncio
-import logging
 import os
-import queue
 import re
-import threading
-import time
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     Iterator,
     List,
     Optional,
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
-from zenml.constants import (
-    LOGS_MERGE_INTERVAL_SECONDS,
-    LOGS_STORAGE_MAX_QUEUE_SIZE,
-    LOGS_STORAGE_QUEUE_TIMEOUT,
-    LOGS_WRITE_INTERVAL_SECONDS,
-)
 from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.log_stores.default.default_log_store_flavor import (
     DefaultLogStoreConfig,
 )
-from zenml.logger import (
-    get_logger,
-    get_storage_log_level,
-    logging_handlers,
-)
-from zenml.logging.step_logging import (
-    DEFAULT_MESSAGE_SIZE,
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.logger import get_logger
+from zenml.logging.logging import (
     MAX_ENTRIES_PER_REQUEST,
     LogEntry,
 )
-from zenml.models import (
-    LogsRequest,
-    LogsResponse,
-)
+from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
+    from opentelemetry.sdk._logs.export import LogExporter
+
     from zenml.artifact_stores import BaseArtifactStore
-    from zenml.log_stores.default.artifact_store_exporter import (
-        ArtifactStoreExporter,
-    )
-    from zenml.logging.step_logging import (
-        ArtifactStoreHandler,
-        LogEntry,
-        PipelineLogsStorage,
-    )
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -256,452 +229,13 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
     )
 
 
-class LogsStorage:
-    """Helper class which buffers and stores logs to a given URI using a background thread."""
-
-    def __init__(
-        self,
-        logs_uri: str,
-        artifact_store: "BaseArtifactStore",
-        max_queue_size: int = LOGS_STORAGE_MAX_QUEUE_SIZE,
-        queue_timeout: int = LOGS_STORAGE_QUEUE_TIMEOUT,
-        write_interval: int = LOGS_WRITE_INTERVAL_SECONDS,
-        merge_files_interval: int = LOGS_MERGE_INTERVAL_SECONDS,
-    ) -> None:
-        """Initialization.
-
-        Args:
-            logs_uri: the URI of the log file or folder.
-            artifact_store: Artifact Store from the current step context
-            max_queue_size: maximum number of individual messages to queue.
-            queue_timeout: timeout in seconds for putting items in queue when full.
-                - Positive value: Wait N seconds, then drop logs if queue still full
-                - Negative value: Block indefinitely until queue has space (never drop logs)
-            write_interval: the amount of seconds before the created files
-                get written to the artifact store.
-            merge_files_interval: the amount of seconds before the created files
-                get merged into a single file.
-        """
-        # Parameters
-        self.logs_uri = logs_uri
-        self.max_queue_size = max_queue_size
-        self.queue_timeout = queue_timeout
-        self.write_interval = write_interval
-        self.merge_files_interval = merge_files_interval
-
-        # State
-        self.artifact_store = artifact_store
-
-        # Immutable filesystems state
-        self.last_merge_time = time.time()
-
-        # Queue and log storage thread for async processing
-        self.log_queue: queue.Queue[str] = queue.Queue(maxsize=max_queue_size)
-        self.log_storage_thread: Optional[threading.Thread] = None
-        self.shutdown_event = threading.Event()
-        self.merge_event = threading.Event()
-
-        # Start the log storage thread
-        self._start_log_storage_thread()
-
-    def _start_log_storage_thread(self) -> None:
-        """Start the log storage thread for processing log queue."""
-        if (
-            self.log_storage_thread is None
-            or not self.log_storage_thread.is_alive()
-        ):
-            self.log_storage_thread = threading.Thread(
-                target=self._log_storage_worker,
-                name="LogsStorage-Worker",
-            )
-            self.log_storage_thread.start()
-
-    def _process_log_queue(self, force_merge: bool = False) -> None:
-        """Write and merge logs to the artifact store using time-based batching.
-
-        Args:
-            force_merge: Whether to force merge the logs.
-        """
-        try:
-            messages = []
-
-            # Get first message (blocking with timeout)
-            try:
-                first_message = self.log_queue.get(timeout=1)
-                messages.append(first_message)
-            except queue.Empty:
-                return
-
-            # Get any remaining messages without waiting (drain quickly)
-            while True:
-                try:
-                    additional_message = self.log_queue.get_nowait()
-                    messages.append(additional_message)
-                except queue.Empty:
-                    break
-
-            # Write the messages to the artifact store
-            if messages:
-                self.write_buffer(messages)
-
-            # Merge the log files if needed
-            if (
-                self._is_merge_needed
-                or self.merge_event.is_set()
-                or force_merge
-            ):
-                self.merge_event.clear()
-
-                self.merge_log_files(merge_all_files=force_merge)
-
-        except Exception as e:
-            logger.error("Error in log storage thread: %s", e)
-        finally:
-            for _ in messages:
-                self.log_queue.task_done()
-
-            # Wait for the next write interval or until shutdown is requested
-            self.shutdown_event.wait(timeout=self.write_interval)
-
-    def _log_storage_worker(self) -> None:
-        """Log storage thread worker that processes the log queue."""
-        # Process the log queue until shutdown is requested
-        while not self.shutdown_event.is_set():
-            self._process_log_queue()
-
-        # Shutdown requested - drain remaining queue items and merge log files
-        self._process_log_queue(force_merge=True)
-
-    def _shutdown_log_storage_thread(self, timeout: int = 5) -> None:
-        """Shutdown the log storage thread gracefully.
-
-        Args:
-            timeout: Maximum time to wait for thread shutdown.
-        """
-        if self.log_storage_thread and self.log_storage_thread.is_alive():
-            # Then signal the worker to begin graceful shutdown
-            self.shutdown_event.set()
-
-            # Wait for thread to finish (it will drain the queue automatically)
-            self.log_storage_thread.join(timeout=timeout)
-
-    def write(self, text: str) -> None:
-        """Main write method that sends individual messages directly to queue.
-
-        Args:
-            text: the incoming string.
-        """
-        # Skip empty lines
-        if text == "\n":
-            return
-
-        # If the current thread is the log storage thread, do nothing
-        # to prevent recursion when the storage thread itself generates logs
-        if (
-            self.log_storage_thread
-            and threading.current_thread() == self.log_storage_thread
-        ):
-            return
-
-        # If the current thread is the fsspec IO thread, do nothing
-        if self._is_fsspec_io_thread:
-            return
-
-        try:
-            # Send individual message directly to queue
-            if not self.shutdown_event.is_set():
-                try:
-                    if self.queue_timeout < 0:
-                        # Negative timeout = block indefinitely until queue has space
-                        # Guarantees no log loss but may hang application
-                        self.log_queue.put(text)
-                    else:
-                        # Positive timeout = wait specified time then drop logs
-                        # Prevents application hanging but may lose logs
-                        self.log_queue.put(text, timeout=self.queue_timeout)
-                except queue.Full:
-                    # This only happens with positive timeout
-                    # Queue is full - just skip this message to avoid blocking
-                    # Better to drop logs than hang the application
-                    pass
-
-        except Exception:
-            # Silently ignore errors to prevent recursion
-            pass
-
-    @property
-    def _is_merge_needed(self) -> bool:
-        """Checks whether the log files need to be merged.
-
-        Returns:
-            whether the log files need to be merged.
-        """
-        return (
-            self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM
-            and time.time() - self.last_merge_time > self.merge_files_interval
-        )
-
-    @property
-    def _is_fsspec_io_thread(self) -> bool:
-        """Checks if the current thread is the fsspec IO thread.
-
-        Returns:
-            whether the current thread is the fsspec IO thread.
-        """
-        # Most artifact stores are based on fsspec, which converts between
-        # sync and async operations by using a separate AIO thread.
-        # It may happen that the fsspec call itself will log something,
-        # which will trigger this method, which may then use fsspec again,
-        # causing a "Calling sync() from within a running loop" error, because
-        # the fsspec library does not expect sync calls being made as a result
-        # of a logging call made by itself.
-        # To avoid this, we simply check if we're running in the fsspec AIO
-        # thread and skip the save if that's the case.
-        try:
-            return (
-                asyncio.events.get_running_loop() is not None
-                and threading.current_thread().name == "fsspecIO"
-            )
-        except RuntimeError:
-            # No running loop
-            return False
-
-    def _get_timestamped_filename(self, suffix: str = "") -> str:
-        """Returns a timestamped filename.
-
-        Args:
-            suffix: optional suffix for the file name
-
-        Returns:
-            The timestamped filename.
-        """
-        return f"{time.time()}{suffix}{LOGS_EXTENSION}"
-
-    def write_buffer(self, buffer_to_write: List[str]) -> None:
-        """Write the given buffer to file. This runs in the log storage thread.
-
-        Args:
-            buffer_to_write: The buffer contents to write to file.
-        """
-        if not buffer_to_write:
-            return
-
-        try:
-            # If the artifact store is immutable, write the buffer to a new file
-            if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-                _logs_uri = self._get_timestamped_filename()
-                with self.artifact_store.open(
-                    os.path.join(
-                        self.logs_uri,
-                        _logs_uri,
-                    ),
-                    "w",
-                ) as file:
-                    for message in buffer_to_write:
-                        file.write(f"{message}\n")
-
-            # If the artifact store is mutable, append the buffer to the existing file
-            else:
-                with self.artifact_store.open(self.logs_uri, "a") as file:
-                    for message in buffer_to_write:
-                        file.write(f"{message}\n")
-                self.artifact_store._remove_previous_file_versions(
-                    self.logs_uri
-                )
-
-        except Exception as e:
-            logger.error("Error in log storage thread: %s", e)
-
-    def merge_log_files(self, merge_all_files: bool = False) -> None:
-        """Merges all log files into one in the given URI.
-
-        Called on the logging context exit.
-
-        Args:
-            merge_all_files: whether to merge all files or only raw files
-        """
-        from zenml.artifacts.utils import (
-            _load_file_from_artifact_store,
-        )
-
-        # If the artifact store is immutable, merge the log files
-        if self.artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
-            merged_file_suffix = "_merged"
-            files_ = self.artifact_store.listdir(self.logs_uri)
-            if not merge_all_files:
-                # already merged files will not be merged again
-                files_ = [
-                    f for f in files_ if merged_file_suffix not in str(f)
-                ]
-            file_name_ = self._get_timestamped_filename(
-                suffix=merged_file_suffix
-            )
-            if len(files_) > 1:
-                files_.sort()
-                logger.debug("Log files count: %s", len(files_))
-
-                missing_files = set()
-                # dump all logs to a local file first
-                with self.artifact_store.open(
-                    os.path.join(self.logs_uri, file_name_), "w"
-                ) as merged_file:
-                    for file in files_:
-                        try:
-                            merged_file.write(
-                                str(
-                                    _load_file_from_artifact_store(
-                                        os.path.join(self.logs_uri, str(file)),
-                                        artifact_store=self.artifact_store,
-                                        mode="r",
-                                    )
-                                )
-                            )
-                        except DoesNotExistException:
-                            missing_files.add(file)
-
-                # clean up left over files
-                for file in files_:
-                    if file not in missing_files:
-                        self.artifact_store.remove(
-                            os.path.join(self.logs_uri, str(file))
-                        )
-
-            # Update the last merge time
-            self.last_merge_time = time.time()
-
-    def send_merge_event(self) -> None:
-        """Send a merge event to the log storage thread."""
-        self.merge_event.set()
-
-
-class ArtifactStoreHandler(logging.Handler):
-    """Handler that writes log messages to artifact store storage."""
-
-    def __init__(self, storage: "PipelineLogsStorage"):
-        """Initialize the handler with a storage instance.
-
-        Args:
-            storage: The PipelineLogsStorage instance to write to.
-        """
-        super().__init__()
-        self.storage = storage
-
-        # Get storage log level from environment
-        self.setLevel(get_storage_log_level().value)
-
-    def emit(self, record: logging.LogRecord) -> None:
-        """Emit a log record to the storage.
-
-        Args:
-            record: The log record to emit.
-        """
-        try:
-            # Get level enum
-            level = LoggingLevels.__members__.get(record.levelname.upper())
-
-            # Get the message
-            message = self.format(record)
-            message = remove_ansi_escape_codes(message).rstrip()
-
-            # Check if message needs to be chunked
-            message_bytes = message.encode("utf-8")
-            if len(message_bytes) <= DEFAULT_MESSAGE_SIZE:
-                # Message is small enough, emit as-is
-                log_record = LogEntry.model_construct(
-                    message=message,
-                    name=record.name,
-                    level=level,
-                    timestamp=utc_now(tz_aware=True),
-                    module=record.module,
-                    filename=record.filename,
-                    lineno=record.lineno,
-                )
-                json_line = log_record.model_dump_json(exclude_none=True)
-                self.storage.write(json_line)
-            else:
-                # Message is too large, split into chunks and emit each one
-                chunks = self._split_to_chunks(message)
-                entry_id = uuid4()
-                for i, chunk in enumerate(chunks):
-                    log_record = LogEntry.model_construct(
-                        message=chunk,
-                        name=record.name,
-                        level=level,
-                        module=record.module,
-                        filename=record.filename,
-                        lineno=record.lineno,
-                        timestamp=utc_now(tz_aware=True),
-                        chunk_index=i,
-                        total_chunks=len(chunks),
-                        id=entry_id,
-                    )
-
-                    json_line = log_record.model_dump_json(exclude_none=True)
-                    self.storage.write(json_line)
-        except Exception:
-            pass
-
-    def _split_to_chunks(self, message: str) -> List[str]:
-        """Split a large message into chunks.
-
-        Args:
-            message: The message to split.
-
-        Returns:
-            A list of message chunks.
-        """
-        # Calculate how many chunks we need
-        message_bytes = message.encode("utf-8")
-
-        # Split the message into chunks, handling UTF-8 boundaries
-        chunks = []
-        start = 0
-
-        while start < len(message_bytes):
-            # Calculate the end position for this chunk
-            end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
-
-            # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
-            while end > start:
-                chunk_bytes = message_bytes[start:end]
-                try:
-                    chunk_text = chunk_bytes.decode("utf-8")
-                    chunks.append(chunk_text)
-                    break
-                except UnicodeDecodeError:
-                    # If we can't decode, try a smaller chunk
-                    end -= 1
-            else:
-                # If we can't decode anything, use replacement characters
-                end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
-                chunks.append(
-                    message_bytes[start:end].decode("utf-8", errors="replace")
-                )
-
-            start = end
-
-        return chunks
-
-
-class DefaultLogStore(BaseLogStore):
+class DefaultLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
-    This implementation uses OpenTelemetry infrastructure to write logs
-    to the artifact store. Uses shared BatchLogRecordProcessor with
-    thread pool for efficient parallel exports.
+    This implementation extends OtelLogStore and uses the ArtifactStoreExporter
+    to write logs to the artifact store. Inherits all OTEL infrastructure
+    including shared BatchLogRecordProcessor and routing.
     """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the default log store.
-
-        Args:
-            *args: Positional arguments for the base class.
-            **kwargs: Keyword arguments for the base class.
-        """
-        super().__init__(*args, **kwargs)
-        self._exporter: Optional["ArtifactStoreExporter"] = None
-        self._handler: Optional[logging.Handler] = None
-        self._log_id: Optional[str] = None
 
     @property
     def config(self) -> DefaultLogStoreConfig:
@@ -712,102 +246,28 @@ class DefaultLogStore(BaseLogStore):
         """
         return cast(DefaultLogStoreConfig, self._config)
 
-    def activate(self, log_request: "LogsRequest") -> None:
-        """Activate log collection to the artifact store.
+    def get_exporter(self) -> "LogExporter":
+        """Get the artifact store exporter for this log store.
 
-        Args:
-            log_request: The log request model.
+        Returns:
+            The ArtifactStoreExporter instance.
         """
-        from opentelemetry.sdk._logs import LoggingHandler
-        from opentelemetry.sdk.resources import Resource
-
         from zenml.log_stores.default.artifact_store_exporter import (
             ArtifactStoreExporter,
         )
-        from zenml.logging.otel_logging_infrastructure import (
-            get_shared_otel_infrastructure,
-        )
-        from zenml.logging.routing_handler import set_active_log_store
+        from zenml.logging.logging import get_active_log_model
 
-        # Get shared OTel infrastructure
-        logger_provider, routing_exporter = get_shared_otel_infrastructure()
-
-        # Create artifact store exporter for this log store
-        self._exporter = ArtifactStoreExporter(
-            logs_uri=log_request.uri,
-            artifact_store=Client().active_stack.artifact_store,
-        )
-
-        # Register exporter with routing exporter
-        self._log_id = str(log_request.id)
-        routing_exporter.register_exporter(self._log_id, self._exporter)
-
-        # Create resource with log_id and LoggerProvider
-        from opentelemetry.sdk._logs import LoggerProvider
-
-        resource = Resource.create({"zenml.log_id": self._log_id})
-        self._logger_provider_with_resource = LoggerProvider(resource=resource)
-
-        # Share the same processor (routing exporter) from the global provider
-        for processor in (
-            logger_provider._multi_log_record_processor._log_record_processors
-        ):
-            self._logger_provider_with_resource.add_log_record_processor(
-                processor
+        log_model = get_active_log_model()
+        if not log_model:
+            raise RuntimeError(
+                "get_exporter() called outside of an active logging context. "
+                "This should not happen."
             )
 
-        self._handler = LoggingHandler(
-            level=get_storage_log_level().value,
-            logger_provider=self._logger_provider_with_resource,
+        return ArtifactStoreExporter(
+            logs_uri=log_model.uri,
+            artifact_store=Client().active_stack.artifact_store,
         )
-
-        # Register this log store for routing
-        set_active_log_store(self)
-
-        # Add to context variables for print capture
-        logging_handlers.add(self._handler)
-
-    def emit(self, record: logging.LogRecord) -> None:
-        """Process a log record by sending to artifact store.
-
-        Args:
-            record: The log record to process.
-        """
-        if self._handler:
-            try:
-                self._handler.emit(record)
-            except Exception:
-                # Don't let logging errors break execution
-                pass
-
-    def deactivate(self) -> None:
-        """Deactivate log collection and flush remaining logs."""
-        if not self._handler:
-            return
-
-        # Unregister from the current thread's context
-        from zenml.logging.otel_logging_infrastructure import (
-            get_shared_otel_infrastructure,
-        )
-        from zenml.logging.routing_handler import set_active_log_store
-
-        set_active_log_store(None)
-
-        # Remove from context variables
-        logging_handlers.remove(self._handler)
-
-        # Unregister exporter from routing
-        if self._log_id and self._exporter:
-            _, routing_exporter = get_shared_otel_infrastructure()
-            routing_exporter.unregister_exporter(self._log_id)
-
-            # Flush exporter
-            try:
-                self._exporter.force_flush()
-            except Exception as e:
-                logger.warning(f"Error flushing exporter: {e}")
-
-        logger.debug("DefaultLogStore deactivated")
 
     def fetch(
         self,
@@ -815,6 +275,7 @@ class DefaultLogStore(BaseLogStore):
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = 20000,
+        message_size: int = 5120,
     ) -> List["LogEntry"]:
         """Fetch logs from the artifact store.
 
@@ -823,6 +284,7 @@ class DefaultLogStore(BaseLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries from the artifact store.
@@ -830,8 +292,6 @@ class DefaultLogStore(BaseLogStore):
         Raises:
             ValueError: If logs_model.uri is not provided.
         """
-        from zenml.logging.step_logging import fetch_log_records
-
         if not logs_model.uri:
             raise ValueError(
                 "logs_model.uri is required for DefaultLogStore.fetch()"

@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML logging handler."""
+"""ZenML logging."""
 
-import re
 from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
@@ -22,7 +21,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
+    Tuple,
     Type,
+    Union,
 )
 from uuid import UUID, uuid4
 
@@ -34,55 +35,76 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
-from zenml.logger import (
-    get_logger,
-)
-from zenml.models import (
-    LogsRequest,
-    PipelineSnapshotResponse,
-)
+from zenml.logger import get_logger
+from zenml.models import LogsRequest, PipelineSnapshotResponse
 from zenml.utils.time_utils import utc_now
-
-if TYPE_CHECKING:
-    from zenml.log_stores.base_log_store import BaseLogStore
-
-# Active log store per thread
-_active_log_store: ContextVar[Optional["BaseLogStore"]] = ContextVar(
-    "active_log_store", default=None
-)
-
-
-def set_active_log_store(log_store: Optional["BaseLogStore"]) -> None:
-    """Set active log store for current thread.
-
-    Args:
-        log_store: Log store to activate, or None to deactivate.
-    """
-    _active_log_store.set(log_store)
-
-
-def get_active_log_store() -> Optional["BaseLogStore"]:
-    """Get the active log store for the current thread.
-
-    Returns:
-        The active log store, or None if no log store is active.
-    """
-    return _active_log_store.get()
-
 
 logger = get_logger(__name__)
 
-# Context variables
-redirected: ContextVar[bool] = ContextVar("redirected", default=False)
-
-ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-
-PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
+if TYPE_CHECKING:
+    from zenml.log_stores.base_log_store import BaseLogStore
+    from zenml.models import LogsRequest, LogsResponse
 
 # Maximum number of log entries to return in a single request
 MAX_ENTRIES_PER_REQUEST = 20000
 # Maximum size of a single log message in bytes (5KB)
 DEFAULT_MESSAGE_SIZE = 5 * 1024
+
+# Active log store and its associated log model
+_active_log_context: ContextVar[
+    Optional[Tuple["BaseLogStore", Union["LogsRequest", "LogsResponse"]]]
+] = ContextVar("active_log_context", default=None)
+
+
+def set_active_log_context(
+    log_store: Optional["BaseLogStore"],
+    log_model: Optional[Union["LogsRequest", "LogsResponse"]] = None,
+) -> None:
+    """Set active log store and model for current context.
+
+    Args:
+        log_store: Log store to activate, or None to deactivate.
+        log_model: The log model associated with this context.
+    """
+    if log_store is None:
+        _active_log_context.set(None)
+    else:
+        if log_model is None:
+            raise ValueError(
+                "log_model must be provided when log_store is set"
+            )
+        _active_log_context.set((log_store, log_model))
+
+
+def get_active_log_context() -> Optional[
+    Tuple["BaseLogStore", Union["LogsRequest", "LogsResponse"]]
+]:
+    """Get the active log store and model for the current context.
+
+    Returns:
+        Tuple of (log_store, log_model), or None if no context is active.
+    """
+    return _active_log_context.get()
+
+
+def get_active_log_store() -> Optional["BaseLogStore"]:
+    """Get the active log store for the current context.
+
+    Returns:
+        The active log store, or None if no log store is active.
+    """
+    context = _active_log_context.get()
+    return context[0] if context else None
+
+
+def get_active_log_model() -> Optional[Union["LogsRequest", "LogsResponse"]]:
+    """Get the active log model for the current context.
+
+    Returns:
+        The active log model, or None if no context is active.
+    """
+    context = _active_log_context.get()
+    return context[1] if context else None
 
 
 class LogEntry(BaseModel):
@@ -132,9 +154,9 @@ class LoggingContext:
         """Initialize the logging context.
 
         Args:
-            source: An identifier for the source of the logs (e.g., "step", "orchestrator")
+            source: An identifier for the source of the logs
+            (e.g., "step", "orchestrator")
         """
-        # Create the log store first
         if Client().active_stack.log_store:
             self.log_store = Client().active_stack.log_store
         else:
@@ -159,9 +181,13 @@ class LoggingContext:
                 secrets=[],
             )
 
-        # Based on the source, generate the log request
         self.source = source
         self.log_request = self.generate_log_request()
+
+        self._previous_log_context: Optional[
+            Tuple["BaseLogStore", Union["LogsRequest", "LogsResponse"]]
+        ] = None
+        self._is_outermost_context: bool = False
 
     def generate_log_request(self) -> "LogsRequest":
         """Create a log request model.
@@ -197,10 +223,19 @@ class LoggingContext:
     def __enter__(self) -> "LoggingContext":
         """Enter the context and activate log collection.
 
+        Saves the current active context to restore it on exit,
+        enabling nested logging contexts.
+
         Returns:
             self
         """
-        self.log_store.activate(log_request=self.log_request)
+        self._previous_log_context = get_active_log_context()
+
+        # Set the active context before activating the log store
+        # so that activate() can access the log model from context
+        set_active_log_context(self.log_store, self.log_request)
+        self.log_store.activate()
+
         return self
 
     def __exit__(
@@ -210,6 +245,8 @@ class LoggingContext:
         exc_tb: Optional[TracebackType],
     ) -> None:
         """Exit the context and deactivate log collection.
+
+        Restores the previous active context to support nested contexts.
 
         Args:
             exc_type: The class of the exception.
@@ -223,6 +260,14 @@ class LoggingContext:
             )
 
         self.log_store.deactivate()
+
+        if self._previous_log_context:
+            set_active_log_context(
+                self._previous_log_context[0],
+                self._previous_log_context[1],
+            )
+        else:
+            set_active_log_context(None)
 
 
 def setup_orchestrator_logging(

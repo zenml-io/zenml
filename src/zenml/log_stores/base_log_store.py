@@ -16,14 +16,18 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
+from zenml.logging.logging import (
+    DEFAULT_MESSAGE_SIZE,
+    MAX_ENTRIES_PER_REQUEST,
+    LogEntry,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
-    from zenml.logging.step_logging import LogEntry
-    from zenml.models import LogsRequest, LogsResponse
+    from zenml.models import LogsResponse
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -47,17 +51,13 @@ class BaseLogStore(StackComponent):
         """
         return cast(BaseLogStoreConfig, self._config)
 
-    # TODO: This should probably accept not just requests but also responses
     @abstractmethod
-    def activate(self, log_request: "LogsRequest") -> None:
+    def activate(self) -> None:
         """Activate the log store for log collection.
 
         This method is called when ZenML needs to start collecting and storing
         logs during pipeline or step execution. It should set up any necessary
         handlers, threads, or connections.
-
-        Args:
-            log_request: The log request model.
         """
 
     @abstractmethod
@@ -69,10 +69,11 @@ class BaseLogStore(StackComponent):
         any background threads or connections.
         """
 
+    @abstractmethod
     def emit(self, record: logging.LogRecord) -> None:
         """Process a log record from the routing handler.
 
-        This method is called by the ZenML routing handler for each log
+        This method is called by the ZenML logging system for each log
         record that should be stored by this log store. Implementations
         should process the record according to their backend's requirements.
 
@@ -81,12 +82,8 @@ class BaseLogStore(StackComponent):
         deactivate) without real-time processing to skip implementing this.
 
         Args:
-            record: The Python logging record to process.
+            record: The Python logging.LogRecord to process.
         """
-        # Default: do nothing
-        # This is NOT abstract, so implementations can opt-in
-        pass
-
 
     @abstractmethod
     def fetch(
@@ -94,7 +91,8 @@ class BaseLogStore(StackComponent):
         logs_model: "LogsResponse",
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = 20000,
+        limit: int = MAX_ENTRIES_PER_REQUEST,
+        message_size: int = DEFAULT_MESSAGE_SIZE,
     ) -> List["LogEntry"]:
         """Fetch logs from the log store.
 
@@ -113,6 +111,7 @@ class BaseLogStore(StackComponent):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries matching the query.

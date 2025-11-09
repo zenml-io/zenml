@@ -56,7 +56,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_orchestrator_logging
+from zenml.logging.logging import setup_orchestrator_logging
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,

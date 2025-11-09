@@ -28,7 +28,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.log_stores import fetch_logs
-from zenml.logging.step_logging import (
+from zenml.logging.logging import (
     MAX_ENTRIES_PER_REQUEST,
     LogEntry,
 )

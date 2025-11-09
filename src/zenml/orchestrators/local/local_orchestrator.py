@@ -19,6 +19,7 @@ from uuid import uuid4
 
 from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
+from zenml.logging.logging import setup_orchestrator_logging
 from zenml.orchestrators import (
     BaseOrchestrator,
     BaseOrchestratorConfig,
@@ -104,94 +105,106 @@ class LocalOrchestrator(BaseOrchestrator):
             )
 
         self._orchestrator_run_id = str(uuid4())
-        start_time = time.time()
 
-        execution_mode = snapshot.pipeline_configuration.execution_mode
-
-        failed_steps: List[str] = []
-        step_exception: Optional[Exception] = None
-        skipped_steps: List[str] = []
-
-        self.run_init_hook(snapshot=snapshot)
-
-        # Run each step
-        for step_name, step in snapshot.step_configurations.items():
-            if (
-                execution_mode == ExecutionMode.STOP_ON_FAILURE
-                and failed_steps
-            ):
-                logger.warning(
-                    "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if failed_upstream_steps := [
-                fs for fs in failed_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if skipped_upstream_steps := [
-                fs for fs in skipped_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(skipped_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if self.requires_resources_in_orchestration_environment(step):
-                logger.warning(
-                    "Specifying step resources is not supported for the local "
-                    "orchestrator, ignoring resource configuration for "
-                    "step %s.",
-                    step_name,
-                )
-
-            step_environment = step_environments[step_name]
-            try:
-                with temporary_environment(step_environment):
-                    self.run_step(step=step)
-            except Exception as e:
-                failed_steps.append(step_name)
-                logger.exception("Step %s failed.", step_name)
-
-                if execution_mode == ExecutionMode.FAIL_FAST:
-                    step_exception = e
-                    break
-
-        self.run_cleanup_hook(snapshot=snapshot)
-
-        if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
-            assert step_exception is not None
-            raise step_exception
-
-        if failed_steps:
-            raise RuntimeError(
-                "Pipeline run has failed due to failure in step(s): "
-                f"{', '.join(failed_steps)}"
-            )
-
-        run_duration = time.time() - start_time
-        logger.info(
-            "Pipeline run has finished in `%s`.",
-            string_utils.get_human_readable_time(run_duration),
+        # Setup orchestrator logging context (if enabled)
+        logs_context = setup_orchestrator_logging(
+            run_id=placeholder_run.id
+            if placeholder_run
+            else self._orchestrator_run_id,  # type: ignore[arg-type]
+            snapshot=snapshot,
         )
-        self._orchestrator_run_id = None
-        return None
+
+        with logs_context:
+            start_time = time.time()
+
+            execution_mode = snapshot.pipeline_configuration.execution_mode
+
+            failed_steps: List[str] = []
+            step_exception: Optional[Exception] = None
+            skipped_steps: List[str] = []
+
+            self.run_init_hook(snapshot=snapshot)
+
+            # Run each step
+            for step_name, step in snapshot.step_configurations.items():
+                if (
+                    execution_mode == ExecutionMode.STOP_ON_FAILURE
+                    and failed_steps
+                ):
+                    logger.warning(
+                        "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if failed_upstream_steps := [
+                    fs for fs in failed_steps if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if skipped_upstream_steps := [
+                    fs
+                    for fs in skipped_steps
+                    if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(skipped_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not supported for the local "
+                        "orchestrator, ignoring resource configuration for "
+                        "step %s.",
+                        step_name,
+                    )
+
+                step_environment = step_environments[step_name]
+                try:
+                    with temporary_environment(step_environment):
+                        self.run_step(step=step)
+                except Exception as e:
+                    failed_steps.append(step_name)
+                    logger.exception("Step %s failed.", step_name)
+
+                    if execution_mode == ExecutionMode.FAIL_FAST:
+                        step_exception = e
+                        break
+
+            self.run_cleanup_hook(snapshot=snapshot)
+
+            if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
+                assert step_exception is not None
+                raise step_exception
+
+            if failed_steps:
+                raise RuntimeError(
+                    "Pipeline run has failed due to failure in step(s): "
+                    f"{', '.join(failed_steps)}"
+                )
+
+            run_duration = time.time() - start_time
+            logger.info(
+                "Pipeline run has finished in `%s`.",
+                string_utils.get_human_readable_time(run_duration),
+            )
+            self._orchestrator_run_id = None
+            return None
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the active orchestrator run id.

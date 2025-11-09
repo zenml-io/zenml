@@ -11,19 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Shared OpenTelemetry logging infrastructure for all log stores.
+"""OpenTelemetry logging infrastructure for ZenML."""
 
-Provides a unified backend using a single BatchLogRecordProcessor.
-All log stores share this infrastructure, routing logs by log_id to
-specific exporters.
-"""
-
+import atexit
 import concurrent.futures
 import threading
 import time
 from typing import TYPE_CHECKING, Dict, Optional, Sequence
 
-from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import (
     BatchLogRecordProcessor,
     LogExporter,
@@ -38,7 +33,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 # Global shared infrastructure (singleton per process)
-_shared_logger_provider: Optional[LoggerProvider] = None
+_shared_processor: Optional[BatchLogRecordProcessor] = None
 _routing_exporter: Optional["RoutingLogExporter"] = None
 _infrastructure_lock = threading.Lock()
 
@@ -74,10 +69,12 @@ class RoutingLogExporter(LogExporter):
         """
         with self._lock:
             self._exporters[log_id] = exporter
-            logger.debug(f"Registered exporter for log_id: {log_id}")
 
     def unregister_exporter(self, log_id: str) -> None:
         """Unregister an exporter for a specific log_id.
+
+        Also calls shutdown() on the exporter to cleanup resources
+        and prevent memory leaks.
 
         Args:
             log_id: The log_id to unregister.
@@ -85,7 +82,12 @@ class RoutingLogExporter(LogExporter):
         with self._lock:
             exporter = self._exporters.pop(log_id, None)
             if exporter:
-                logger.debug(f"Unregistered exporter for log_id: {log_id}")
+                try:
+                    exporter.shutdown()
+                except Exception as e:
+                    logger.warning(
+                        f"Error shutting down exporter for {log_id}: {e}"
+                    )
 
     def export(self, batch: Sequence["LogData"]) -> LogExportResult:
         """Route logs to appropriate exporters based on log_id.
@@ -126,7 +128,6 @@ class RoutingLogExporter(LogExporter):
             for log_id, logs in logs_by_id.items():
                 exporter = self._exporters.get(log_id)
                 if exporter:
-                    # Submit to thread pool (non-blocking)
                     future = self._executor.submit(
                         self._safe_export, exporter, logs, log_id
                     )
@@ -189,11 +190,7 @@ class RoutingLogExporter(LogExporter):
 
     def shutdown(self) -> None:
         """Shutdown the routing exporter and thread pool."""
-        logger.debug("Shutting down routing exporter thread pool")
-        try:
-            self._executor.shutdown(wait=True, timeout=30)
-        except Exception as e:
-            logger.warning(f"Error shutting down thread pool: {e}")
+        self._executor.shutdown(wait=True)
 
     def force_flush(self, timeout_millis: int = 30000) -> bool:
         """Force flush any buffered logs.
@@ -204,7 +201,6 @@ class RoutingLogExporter(LogExporter):
         Returns:
             True if successful.
         """
-        # Flush all registered exporters in parallel
         futures = []
         with self._lock:
             for exporter in self._exporters.values():
@@ -213,7 +209,6 @@ class RoutingLogExporter(LogExporter):
                 )
                 futures.append(future)
 
-        # Wait for all flushes
         all_success = True
         timeout_sec = timeout_millis / 1000.0
         try:
@@ -250,58 +245,47 @@ class RoutingLogExporter(LogExporter):
 
 
 def get_shared_otel_infrastructure() -> tuple[
-    LoggerProvider, RoutingLogExporter
+    BatchLogRecordProcessor, RoutingLogExporter
 ]:
     """Get or create shared OpenTelemetry logging infrastructure.
 
-    Creates a single LoggerProvider with BatchLogRecordProcessor and
-    RoutingLogExporter that all log stores share.
+    Creates a single BatchLogRecordProcessor with RoutingLogExporter that
+    all log stores share. Each log store creates its own LoggerProvider
+    with a unique resource.
 
     Returns:
-        Tuple of (LoggerProvider, RoutingLogExporter).
+        Tuple of (shared BatchLogRecordProcessor, RoutingLogExporter).
     """
-    global _shared_logger_provider, _routing_exporter
+    global _shared_processor, _routing_exporter
 
-    if _shared_logger_provider is None:
+    if _shared_processor is None:
         with _infrastructure_lock:
-            if _shared_logger_provider is None:
-                logger.info(
-                    "Initializing shared OTel logging infrastructure "
-                    "with 1 background thread"
-                )
+            _routing_exporter = RoutingLogExporter()
+            _shared_processor = BatchLogRecordProcessor(
+                _routing_exporter,
+                max_queue_size=4096,
+                schedule_delay_millis=1000,
+                max_export_batch_size=512,
+            )
+            atexit.register(shutdown_shared_infrastructure)
 
-                # Create routing exporter
-                _routing_exporter = RoutingLogExporter()
-
-                # Create shared logger provider
-                _shared_logger_provider = LoggerProvider()
-
-                # One background thread for all log stores
-                processor = BatchLogRecordProcessor(
-                    _routing_exporter,
-                    max_queue_size=4096,  # Larger for shared use
-                    schedule_delay_millis=1000,  # Batch every 1 second
-                    max_export_batch_size=512,  # Export in batches of 512
-                )
-                _shared_logger_provider.add_log_record_processor(processor)
-
-    return _shared_logger_provider, _routing_exporter
+    return _shared_processor, _routing_exporter
 
 
 def shutdown_shared_infrastructure() -> None:
     """Shutdown the shared OpenTelemetry infrastructure.
 
-    This should be called on process shutdown to cleanly close all resources.
+    This is called on process exit via atexit. It shuts down the shared
+    processor (which stops the background thread) and the routing exporter.
     """
-    global _shared_logger_provider, _routing_exporter
+    global _shared_processor, _routing_exporter
 
-    if _shared_logger_provider:
-        logger.info("Shutting down shared OTel logging infrastructure")
+    if _shared_processor:
         try:
-            _shared_logger_provider.force_flush()
-            _shared_logger_provider.shutdown()
+            _shared_processor.force_flush()
+            _shared_processor.shutdown()
         except Exception as e:
-            logger.warning(f"Error during shutdown: {e}")
+            logger.warning(f"Error during processor shutdown: {e}")
 
     if _routing_exporter:
         try:
@@ -309,5 +293,5 @@ def shutdown_shared_infrastructure() -> None:
         except Exception as e:
             logger.warning(f"Error shutting down routing exporter: {e}")
 
-    _shared_logger_provider = None
+    _shared_processor = None
     _routing_exporter = None

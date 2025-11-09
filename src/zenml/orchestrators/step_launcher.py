@@ -30,7 +30,7 @@ from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
-from zenml.logging import step_logging
+from zenml.logging import logging as step_logging
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,

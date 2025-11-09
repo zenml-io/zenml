@@ -24,7 +24,7 @@ from zenml.enums import LoggingLevels
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
-from zenml.logging.step_logging import LogEntry
+from zenml.logging.logging import LogEntry
 from zenml.models import LogsResponse
 
 logger = get_logger(__name__)
@@ -67,35 +67,27 @@ class DatadogLogExporter(LogExporter):
         for log_data in batch:
             log_record = log_data.log_record
 
-            # Extract resource attributes
             resource_attrs = {}
             if log_record.resource:
                 resource_attrs = dict(log_record.resource.attributes)
 
-            # Extract log attributes
             log_attrs = {}
             if log_record.attributes:
                 log_attrs = dict(log_record.attributes)
 
-            # Combine attributes with additional tags
             all_attrs = {**resource_attrs, **log_attrs}
 
-            # Build Datadog log entry
             log_entry = {
                 "message": str(log_record.body),
             }
 
-            # Add severity if available
             if log_record.severity_text:
                 log_entry["status"] = log_record.severity_text.lower()
 
-            # Add timestamp if available (convert from nanoseconds to milliseconds)
             if log_record.timestamp:
                 log_entry["timestamp"] = int(log_record.timestamp / 1_000_000)
 
-            # Add all attributes as tags
             if all_attrs:
-                # Convert dict to Datadog tags format: key:value
                 tags = [f"{k}:{v}" for k, v in all_attrs.items()]
                 log_entry["ddtags"] = ",".join(tags)
 
@@ -170,6 +162,7 @@ class DatadogLogStore(OtelLogStore):
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = 20000,
+        message_size: int = 5120,
     ) -> List["LogEntry"]:
         """Fetch logs from Datadog's API.
 
@@ -182,6 +175,7 @@ class DatadogLogStore(OtelLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            message_size: Maximum size of a single log message in bytes.
 
         Returns:
             List of log entries from Datadog.

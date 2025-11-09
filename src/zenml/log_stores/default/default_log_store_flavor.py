@@ -16,18 +16,20 @@
 from typing import TYPE_CHECKING, Type
 
 from zenml.enums import StackComponentType
-from zenml.log_stores.base_log_store import BaseLogStoreConfig
+from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.stack.flavor import Flavor
 
 if TYPE_CHECKING:
     from zenml.log_stores.base_log_store import BaseLogStore
 
 
-class DefaultLogStoreConfig(BaseLogStoreConfig):
+class DefaultLogStoreConfig(OtelLogStoreConfig):
     """Configuration for the default log store.
 
-    This log store saves logs to the artifact store, which is the default
-    and backward-compatible approach.
+    This log store saves logs to the artifact store using OTEL infrastructure,
+    which is the default and backward-compatible approach.
+
+    Inherits OTEL configuration like service_name, batch sizes, etc.
     """
 
 
@@ -81,7 +83,7 @@ class DefaultLogStoreFlavor(Flavor):
         return StackComponentType.LOG_STORE
 
     @property
-    def config_class(self) -> Type[BaseLogStoreConfig]:
+    def config_class(self) -> Type[DefaultLogStoreConfig]:
         """Returns `DefaultLogStoreConfig` config class.
 
         Returns:

@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from rich.traceback import install as rich_tb_install
 
@@ -31,40 +31,26 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 
-ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
-    ENV_ZENML_LOGGING_COLORS_DISABLED, False
-)
-
-
-# Logic for formatting console messages
 step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
-
-grey: str = "\x1b[90m"
-white: str = "\x1b[37m"
-pink: str = "\x1b[35m"
-green: str = "\x1b[32m"
-yellow: str = "\x1b[33m"
-red: str = "\x1b[31m"
-cyan: str = "\x1b[1;36m"
-bold_red: str = "\x1b[31;1m"
-purple: str = "\x1b[38;5;105m"
-blue: str = "\x1b[34m"
-reset: str = "\x1b[0m"
-
-COLORS: Dict[LoggingLevels, str] = {
-    LoggingLevels.DEBUG: grey,
-    LoggingLevels.INFO: white,
-    LoggingLevels.WARN: yellow,
-    LoggingLevels.ERROR: red,
-    LoggingLevels.CRITICAL: bold_red,
-}
 
 _original_stdout_write: Optional[Any] = None
 _original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
 _stderr_wrapped: bool = False
+
+
+def get_logger(logger_name: str) -> logging.Logger:
+    """Main function to get logger name,.
+
+    Args:
+        logger_name: Name of logger to initialize.
+
+    Returns:
+        A logger object.
+    """
+    return logging.getLogger(logger_name)
 
 
 def _add_step_name_to_message(message: str) -> str:
@@ -97,29 +83,71 @@ def _add_step_name_to_message(message: str) -> str:
     return message
 
 
-def format_console_message(message: str) -> str:
-    """Format a message for console output.
+def format_console_message(
+    message: str, level: LoggingLevels = LoggingLevels.INFO
+) -> str:
+    """Format a message for console output with colors and step names.
+
+    This function applies:
+    1. Step name prefixing (if step_names_in_console is True)
+    2. Color formatting (unless ZENML_LOGGING_COLORS_DISABLED)
+    3. Special formatting for quoted text (purple) and URLs (blue)
 
     Args:
         message: The message to format.
+        level: The logging level for color selection.
 
     Returns:
         The formatted message.
     """
-    return message
+    import re
 
+    try:
+        if step_names_in_console.get():
+            message = _add_step_name_to_message(message)
+    except Exception:
+        pass
 
-# Logger utilities
-def get_logger(logger_name: str) -> logging.Logger:
-    """Main function to get logger name,.
+    if handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False):
+        return message
 
-    Args:
-        logger_name: Name of logger to initialize.
+    grey = "\x1b[90m"
+    white = "\x1b[37m"
+    yellow = "\x1b[33m"
+    red = "\x1b[31m"
+    bold_red = "\x1b[31;1m"
+    purple = "\x1b[38;5;105m"
+    blue = "\x1b[34m"
+    reset = "\x1b[0m"
 
-    Returns:
-        A logger object.
-    """
-    return logging.getLogger(logger_name)
+    COLORS = {
+        LoggingLevels.DEBUG: grey,
+        LoggingLevels.INFO: white,
+        LoggingLevels.WARN: yellow,
+        LoggingLevels.ERROR: red,
+        LoggingLevels.CRITICAL: bold_red,
+    }
+
+    level_color = COLORS.get(level, white)
+
+    formatted_message = f"{level_color}{message}{reset}"
+
+    quoted_groups = re.findall("`([^`]*)`", formatted_message)
+    for quoted in quoted_groups:
+        formatted_message = formatted_message.replace(
+            "`" + quoted + "`",
+            f"{reset}{purple}{quoted}{level_color}",
+        )
+
+    url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+    urls = re.findall(url_pattern, formatted_message)
+    for url in urls:
+        formatted_message = formatted_message.replace(
+            url,
+            f"{reset}{blue}{url}{level_color}",
+        )
+
+    return formatted_message
 
 
 def get_logging_level() -> LoggingLevels:
@@ -173,7 +201,10 @@ class ZenMLFormatter(logging.Formatter):
             "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S"),
             "level": record.levelname,
             "name": record.name,
-            "message": record.getMessage(),
+            "msg": record.getMessage(),
+            "module": record.module,
+            "filename": record.filename,
+            "lineno": record.lineno,
         }
 
         if record.exc_info:
@@ -184,51 +215,61 @@ class ZenMLFormatter(logging.Formatter):
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
     """Wrap stdout/stderr write method to parse and route logs."""
-    from zenml.logging.step_logging import get_active_log_store, LogEntry
-    from zenml.utils import utc_now
 
     def wrapped_write(text: str) -> int:
         """Wrap the write method to parse and route logs."""
+        from zenml.logging.logging import get_active_log_store
+
         message = text
-        name = None
+        name = "unknown"
         level = (
             LoggingLevels.INFO
             if stream_name == "info"
             else LoggingLevels.ERROR
         )
-        timestamp = utc_now()
+        level_int = getattr(logging, level.name)
+        pathname = ""
+        lineno = 0
+        funcName = ""
 
-        # Try to extract the message from a potential JSONified log entry
-        if text.startswith("{") and text.endswith("}"):
+        has_newline = text.endswith("\n")
+
+        stripped_text = text.strip()
+        if stripped_text.startswith("{") and stripped_text.endswith("}"):
             try:
-                data = json.loads(text)
-
-                if "zenml" in data and "message" in data:
-                    message = data["message"]
-                    name = data.get("name", None)
-                    level = data.get("level", level)
-                    timestamp = data.get("timestamp", timestamp)
-                else:
-                    message = data
-
+                data = json.loads(stripped_text)
+                if "zenml" in data and data["zenml"] is True:
+                    message = data.get("msg", text)
+                    name = data.get("name", name)
+                    level_str = data.get("level", level.name)
+                    if hasattr(LoggingLevels, level_str):
+                        level = getattr(LoggingLevels, level_str)
+                        level_int = getattr(logging, level.name)
+                    pathname = data.get("filename", pathname)
+                    lineno = data.get("lineno", lineno)
+                    funcName = data.get("module", funcName)
             except Exception:
-                message = text
+                pass
 
-        # If there is an active log store
-        if log_store := get_active_log_store():
-            log_store.emit(
-                LogEntry(
-                    message=message,
-                    name=name,
-                    level=level,
-                    timestamp=timestamp,
-                )
+        log_store = get_active_log_store()
+        if log_store:
+            record = logging.LogRecord(
+                name=name,
+                level=level_int,
+                pathname=pathname,
+                lineno=lineno,
+                msg=message,
+                args=(),
+                exc_info=None,
+                func=funcName,
             )
+            log_store.emit(record)
 
-        # Format the message for console output
-        message = format_console_message(message)
+        formatted_message = format_console_message(message, level)
+        if has_newline:
+            formatted_message += "\n"
 
-        return original_write(message)
+        return original_write(formatted_message)
 
     return wrapped_write
 

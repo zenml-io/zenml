@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from zenml.logging.step_logging import LogEntry
+    from zenml.logging.logging import LogEntry
     from zenml.models import LogsResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
