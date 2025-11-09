@@ -14,7 +14,7 @@
 """Implementation of the MLflow-Notion hybrid model registry for ZenML."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import mlflow
 from mlflow import MlflowClient
@@ -159,7 +159,9 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                     ).isoformat()
                 }
             },
-            "Stage": {"select": {"name": mlflow_version.current_stage}},
+            "Stage": {
+                "select": {"name": mlflow_version.current_stage or "None"}
+            },
         }
 
         if description or mlflow_version.description:
@@ -196,7 +198,7 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
 
     def _fetch_all_notion_versions(
         self, model_name: Optional[str] = None
-    ) -> Dict[tuple, Dict[str, Any]]:
+    ) -> Dict[Tuple[str, str], Dict[str, Any]]:
         """Batch fetch all model versions from Notion database.
 
         This is much more efficient than querying for each version individually
@@ -314,7 +316,7 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             )
 
             if response.get("results"):
-                return response["results"][0]
+                return cast(Dict[str, Any], response["results"][0])
             return None
 
         except APIResponseError as e:
@@ -328,13 +330,16 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
         mlflow_version: MLflowModelVersion,
         description: Optional[str] = None,
         zenml_model_url: Optional[str] = None,
-    ) -> None:
+    ) -> str:
         """Create a model version entry in Notion database.
 
         Args:
             mlflow_version: MLflow model version to create in Notion
             description: Optional description
             zenml_model_url: Optional ZenML Model URL for dashboard link
+
+        Returns:
+            Notion page ID of the created entry
         """
         properties = self._notion_properties_from_mlflow(
             mlflow_version, description, zenml_model_url
@@ -354,6 +359,7 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             f"Created Notion page for {mlflow_version.name}:{mlflow_version.version} "
             f"(page ID: {page_id})"
         )
+        return page_id
 
     def _update_notion_stage(self, page_id: str, stage: str) -> None:
         """Update the stage of a model version in Notion.
@@ -405,12 +411,105 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             f"Updated Notion page {page_id} with all properties from MLflow"
         )
 
+    def _add_registry_links_metadata(
+        self,
+        model_name: str,
+        version: str,
+        mlflow_version: Optional[MLflowModelVersion] = None,
+        notion_page_id: Optional[str] = None,
+        use_infer: bool = True,
+    ) -> None:
+        """Add MLflow and Notion URLs to ZenML Model metadata.
+
+        This creates clickable links in the ZenML dashboard for easy
+        navigation between MLflow, Notion, and ZenML.
+
+        Args:
+            model_name: Name of the model
+            version: Version number
+            mlflow_version: MLflow model version object (for URL construction)
+            notion_page_id: Notion page ID (for URL construction)
+            use_infer: If True, use infer_model=True (for pipeline context).
+                If False, use explicit model_name/version (for sync context).
+        """
+        registry_links = {}
+
+        # Build MLflow URL if we have the version object
+        if mlflow_version:
+            tracking_uri = (
+                self.config.tracking_uri or mlflow.get_tracking_uri()
+            )
+            if tracking_uri:
+                mlflow_url = f"{tracking_uri.rstrip('/')}/#/models/{model_name}/versions/{version}"
+                registry_links["mlflow_model_url"] = mlflow_url
+
+        # Build Notion URL if we have the page ID
+        if notion_page_id:
+            notion_url = f"https://notion.so/{notion_page_id.replace('-', '')}"
+            registry_links["notion_page_url"] = notion_url
+
+        # Log metadata if we have any links to add
+        if registry_links:
+            try:
+                if use_infer:
+                    # Use infer_model=True for pipeline context
+                    # This adds metadata to the current model version being created
+                    log_metadata(
+                        metadata={"registry_links": registry_links},
+                        infer_model=True,
+                    )
+                else:
+                    # Use explicit model_name/version for sync context (outside pipeline)
+                    # This targets a specific existing model version
+                    log_metadata(
+                        metadata={"registry_links": registry_links},
+                        model_name=model_name,
+                        model_version=version,
+                    )
+                logger.info(
+                    f"Added cross-system URLs to ZenML Model {model_name}:{version}"
+                )
+            except Exception as e:
+                logger.debug(f"Failed to add metadata to ZenML Model: {e}")
+
+    def _add_notion_link_to_mlflow(
+        self,
+        model_name: str,
+        version: str,
+        notion_page_id: str,
+    ) -> None:
+        """Add Notion page URL to MLflow model version tags.
+
+        This creates a clickable link in MLflow UI for easy navigation to Notion.
+
+        Args:
+            model_name: Name of the model
+            version: Version number
+            notion_page_id: Notion page ID
+        """
+        try:
+            # Build Notion URL
+            notion_url = f"https://notion.so/{notion_page_id.replace('-', '')}"
+
+            # Set tag on MLflow model version
+            self.mlflow_client.set_model_version_tag(
+                name=model_name,
+                version=version,
+                key="notion_page_url",
+                value=notion_url,
+            )
+            logger.info(
+                f"Added Notion URL to MLflow model {model_name}:{version}"
+            )
+        except Exception as e:
+            logger.debug(f"Failed to add Notion URL to MLflow: {e}")
+
     def _sync_version_to_notion(
         self,
         mlflow_version: MLflowModelVersion,
         description: Optional[str] = None,
         zenml_model_url: Optional[str] = None,
-    ) -> None:
+    ) -> Optional[str]:
         """Sync a single model version from MLflow to Notion.
 
         This is used for auto-sync on write operations. It creates the version
@@ -420,15 +519,19 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             mlflow_version: MLflow model version to sync.
             description: Optional description override.
             zenml_model_url: Optional ZenML Model URL for dashboard link.
+
+        Returns:
+            Notion page ID if created/found, None otherwise
         """
         notion_version = self._find_notion_version(
             mlflow_version.name, str(mlflow_version.version)
         )
 
         if not notion_version:
-            self._create_in_notion(
+            page_id = self._create_in_notion(
                 mlflow_version, description, zenml_model_url
             )
+            return page_id
         else:
             properties = notion_version.get("properties", {})
             stage_prop = properties.get("Stage", {})
@@ -438,10 +541,11 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                 else "None"
             )
 
-            if current_stage != mlflow_version.current_stage:
-                self._update_notion_stage(
-                    notion_version["id"], mlflow_version.current_stage
-                )
+            mlflow_stage = mlflow_version.current_stage or "None"
+            if current_stage != mlflow_stage:
+                self._update_notion_stage(notion_version["id"], mlflow_stage)
+
+            return notion_version.get("id")
 
     # ---------
     # Model Registration Methods
@@ -713,18 +817,38 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                 zenml_model_url = kwargs.get("zenml_model_url", None)
 
                 try:
-                    self._sync_version_to_notion(
+                    notion_page_id = self._sync_version_to_notion(
                         mlflow_version, description, zenml_model_url
                     )
                     logger.info(
                         f"Synced {name}:{mlflow_version.version} to Notion"
                     )
+
+                    # Add Notion URL to MLflow model version tags
+                    if notion_page_id:
+                        self._add_notion_link_to_mlflow(
+                            model_name=name,
+                            version=str(mlflow_version.version),
+                            notion_page_id=notion_page_id,
+                        )
+
+                    # Add cross-system URLs to ZenML Model metadata
+                    self._add_registry_links_metadata(
+                        model_name=name,
+                        version=str(mlflow_version.version),
+                        mlflow_version=mlflow_version,
+                        notion_page_id=notion_page_id,
+                    )
+
                 except Exception as e:
                     logger.warning(
                         f"Failed to sync {name}:{mlflow_version.version} to Notion: {e}"
                     )
                     try:
-                        log_metadata({"notion_sync_error": str(e)})
+                        log_metadata(
+                            metadata={"notion_sync_error": str(e)},
+                            infer_model=True,
+                        )
                     except Exception:
                         pass
 
@@ -1008,16 +1132,17 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             "Production": ModelVersionStage.PRODUCTION,
             "Archived": ModelVersionStage.ARCHIVED,
         }
-        stage = stage_mapping.get(
-            mlflow_version.current_stage, ModelVersionStage.NONE
-        )
+        mlflow_stage = mlflow_version.current_stage or "None"
+        stage = stage_mapping.get(mlflow_stage, ModelVersionStage.NONE)
 
         created_at = datetime.fromtimestamp(
             mlflow_version.creation_timestamp / 1000
         )
-        last_updated = datetime.fromtimestamp(
-            mlflow_version.last_updated_timestamp / 1000
+        last_updated_timestamp = (
+            mlflow_version.last_updated_timestamp
+            or mlflow_version.creation_timestamp
         )
+        last_updated = datetime.fromtimestamp(last_updated_timestamp / 1000)
 
         metadata = None
         if mlflow_version.tags:
@@ -1054,9 +1179,26 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
         model_name: Optional[str] = None,
         cleanup_orphans: bool = False,
     ) -> Dict[str, int]:
-        """One-way sync from MLflow to Notion.
+        """Comprehensive sync from MLflow to Notion and ZenML.
+
+        This method ensures all three systems are consistent:
+        - MLflow → Notion: Creates/updates Notion database entries
+        - Notion → MLflow: Adds notion_page_url tag to MLflow versions
+        - MLflow → ZenML: Updates stages and adds cross-system URLs
 
         Only syncs models tagged with zenml.mlflow_notion_managed.
+
+        Recovery capabilities:
+        - Creates missing Notion entries for MLflow versions
+        - Adds missing cross-system links (MLflow tags, ZenML metadata)
+        - Updates stages in Notion and ZenML to match MLflow
+        - Handles incomplete syncs from transient failures
+
+        Limitations:
+        - Only syncs MLflow versions that exist in ZenML Model context
+        - Cannot create ZenML Model versions (they must be created by pipelines)
+        - Skips ZenML updates if Model or version doesn't exist
+        - Version numbers may differ between MLflow and ZenML (independent counters)
 
         Args:
             model_name: Sync specific model only, or all models if None.
@@ -1114,7 +1256,17 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                         f"version(s) of '{model.name}'"
                     )
 
-                    for ver_idx, mlflow_ver in enumerate(mlflow_versions, 1):
+                    # Sort versions by version number (descending) to handle ZenML's
+                    # single-version-per-stage constraint. This ensures the highest
+                    # version number gets Production/Staging in ZenML when MLflow has
+                    # multiple versions in the same stage.
+                    sorted_versions = sorted(
+                        mlflow_versions,
+                        key=lambda v: int(v.version),
+                        reverse=True,
+                    )
+
+                    for ver_idx, mlflow_ver in enumerate(sorted_versions, 1):
                         version_key = (model.name, str(mlflow_ver.version))
                         mlflow_version_keys.add(version_key)
 
@@ -1130,9 +1282,21 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                 (model.name, str(mlflow_ver.version))
                             )
 
+                            notion_page_id: Optional[str] = None
+
                             if not notion_ver:
-                                self._create_in_notion(mlflow_ver)
+                                notion_page_id = self._create_in_notion(
+                                    mlflow_ver
+                                )
                                 stats["created"] += 1
+
+                                # Add Notion URL to MLflow model version tags
+                                if notion_page_id:
+                                    self._add_notion_link_to_mlflow(
+                                        model_name=model.name,
+                                        version=str(mlflow_ver.version),
+                                        notion_page_id=notion_page_id,
+                                    )
                             else:
                                 # MLflow is source of truth - always update Notion with all fields
                                 # Check if any field needs updating
@@ -1149,7 +1313,10 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                     if stage_prop.get("select")
                                     else "None"
                                 )
-                                if current_stage != mlflow_ver.current_stage:
+                                mlflow_stage = (
+                                    mlflow_ver.current_stage or "None"
+                                )
+                                if current_stage != mlflow_stage:
                                     needs_update = True
 
                                 # Check description
@@ -1176,12 +1343,35 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                 else:
                                     stats["unchanged"] += 1
 
+                                # Get page ID for recovery logic below
+                                notion_page_id = cast(str, notion_ver["id"])
+
+                            # Recovery: Ensure MLflow has Notion link (for all cases)
+                            # This handles incomplete syncs where Notion exists but link is missing
+                            if notion_page_id:
+                                existing_tags = mlflow_ver.tags or {}
+                                if "notion_page_url" not in existing_tags:
+                                    try:
+                                        self._add_notion_link_to_mlflow(
+                                            model_name=model.name,
+                                            version=str(mlflow_ver.version),
+                                            notion_page_id=notion_page_id,
+                                        )
+                                    except Exception as e:
+                                        logger.debug(
+                                            f"Failed to add Notion link to MLflow: {e}"
+                                        )
+
                             # Always update ZenML Model to match MLflow (best-effort)
                             # This ensures ZenML stays in sync even if Notion is unchanged
+                            # Also pass MLflow version and Notion page ID for metadata
+                            mlflow_stage = mlflow_ver.current_stage or "None"
                             self._update_zenml_model_stage(
                                 model.name,
                                 str(mlflow_ver.version),
-                                mlflow_ver.current_stage,
+                                mlflow_stage,
+                                mlflow_version=mlflow_ver,
+                                notion_page_id=notion_page_id,
                             )
 
                         except Exception as e:
@@ -1221,16 +1411,21 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
         model_name: str,
         version: str,
         stage: str,
+        mlflow_version: Optional[MLflowModelVersion] = None,
+        notion_page_id: Optional[str] = None,
     ) -> None:
-        """Update ZenML Model stage if the model exists.
+        """Update ZenML Model stage and metadata if the model exists.
 
         This ensures that when a model stage is changed in MLflow UI,
-        the ZenML Model object also gets updated.
+        the ZenML Model object also gets updated. It also stores links
+        to MLflow and Notion for easy navigation between systems.
 
         Args:
             model_name: Name of the model
             version: Version number
             stage: New stage value
+            mlflow_version: MLflow model version object (for URL construction)
+            notion_page_id: Notion page ID (for URL construction)
         """
         try:
             # Get ZenML client
@@ -1269,6 +1464,51 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                 new_stage_str = zenml_stage.value
 
                 if current_stage_str.lower() != new_stage_str.lower():
+                    # Handle ZenML's constraint: only one version can be in Production/Staging
+                    # If we're moving to Production/Staging, check if another version occupies it
+                    if zenml_stage in (
+                        ModelStages.PRODUCTION,
+                        ModelStages.STAGING,
+                    ):
+                        try:
+                            # Find the current version in this stage
+                            existing_version = client.list_model_versions(
+                                model_name_or_id=zenml_model.id,
+                                stage=zenml_stage,
+                            )
+                            if existing_version:
+                                old_version = existing_version[0]
+                                old_version_num = int(old_version.number)
+                                new_version_num = int(version)
+
+                                # Only demote if we're promoting a HIGHER version number
+                                # This handles MLflow's multi-version-per-stage scenario:
+                                # We process versions descending (v3, v2, v1), so highest wins
+                                if new_version_num > old_version_num:
+                                    logger.info(
+                                        f"Demoting {model_name}:{old_version.number} from "
+                                        f"{zenml_stage.value} to make room for version {version}"
+                                    )
+                                    client.update_model_version(
+                                        model_name_or_id=zenml_model.id,
+                                        version_name_or_id=str(
+                                            old_version.number
+                                        ),
+                                        stage=ModelStages.NONE,
+                                        force=True,
+                                    )
+                                else:
+                                    # Lower version trying to take the stage - skip it
+                                    logger.info(
+                                        f"Skipping {model_name}:{version} - version {old_version.number} "
+                                        f"already occupies {zenml_stage.value} stage"
+                                    )
+                                    return  # Skip this update
+                        except Exception as e:
+                            logger.debug(
+                                f"Could not check for existing {zenml_stage.value} version: {e}"
+                            )
+
                     # Use force=True because this is a sync operation where MLflow is source of truth
                     # We want to override ZenML's stage transition validation
                     client.update_model_version(
@@ -1281,10 +1521,22 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                         f"Updated ZenML Model {model_name}:{version} stage to {zenml_stage.value}"
                     )
 
+                # Add cross-system URLs to ZenML Model metadata
+                # Use use_infer=False because we're in sync context (outside pipeline)
+                self._add_registry_links_metadata(
+                    model_name=model_name,
+                    version=version,
+                    mlflow_version=mlflow_version,
+                    notion_page_id=notion_page_id,
+                    use_infer=False,
+                )
+
             except KeyError:
-                # Model doesn't exist in ZenML, skip
-                logger.debug(
-                    f"ZenML Model '{model_name}' not found, skipping ZenML update"
+                # Model or version doesn't exist in ZenML
+                logger.info(
+                    f"ZenML Model '{model_name}:{version}' not found. "
+                    "This MLflow version was likely created outside a ZenML pipeline. "
+                    "To track it in ZenML, create a pipeline that registers this model."
                 )
 
         except Exception as e:
@@ -1295,7 +1547,7 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
 
     def _cleanup_orphaned_entries(
         self,
-        mlflow_version_keys: set,
+        mlflow_version_keys: set[Tuple[str, str]],
         model_name: Optional[str] = None,
     ) -> int:
         """Archive Notion entries that don't exist in MLflow.
