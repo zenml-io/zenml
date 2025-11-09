@@ -194,10 +194,92 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
 
         return properties
 
+    def _fetch_all_notion_versions(
+        self, model_name: Optional[str] = None
+    ) -> Dict[tuple, Dict[str, Any]]:
+        """Batch fetch all model versions from Notion database.
+
+        This is much more efficient than querying for each version individually
+        when syncing large numbers of models.
+
+        Args:
+            model_name: Optional model name to filter by
+
+        Returns:
+            Dictionary mapping (model_name, version) tuples to Notion page data
+        """
+        notion_index = {}
+
+        try:
+            data_source_id = self._get_data_source_id()
+
+            # Build filter if specific model requested
+            body: Dict[str, Any] = {}
+            if model_name:
+                body["filter"] = {
+                    "property": "Model Name",
+                    "title": {"equals": model_name},
+                }
+
+            # Fetch all pages (handle pagination)
+            has_more = True
+            start_cursor = None
+
+            while has_more:
+                if start_cursor:
+                    body["start_cursor"] = start_cursor
+
+                response = self.notion_client.request(
+                    method="post",
+                    path=f"data_sources/{data_source_id}/query",
+                    body=body,
+                )
+
+                # Index each result by (model_name, version)
+                for page in response.get("results", []):
+                    properties = page.get("properties", {})
+
+                    # Extract model name
+                    title_prop = properties.get("Model Name", {})
+                    title_list = title_prop.get("title", [])
+                    page_model_name = (
+                        title_list[0].get("text", {}).get("content", "")
+                        if title_list
+                        else ""
+                    )
+
+                    # Extract version
+                    version_prop = properties.get("Version", {})
+                    version_list = version_prop.get("rich_text", [])
+                    page_version = (
+                        version_list[0].get("text", {}).get("content", "")
+                        if version_list
+                        else ""
+                    )
+
+                    if page_model_name and page_version:
+                        key = (page_model_name, page_version)
+                        notion_index[key] = page
+
+                has_more = response.get("has_more", False)
+                start_cursor = response.get("next_cursor")
+
+            logger.debug(
+                f"Fetched {len(notion_index)} version(s) from Notion database"
+            )
+            return notion_index
+
+        except APIResponseError as e:
+            logger.warning(f"Error fetching Notion versions: {e}")
+            return {}
+
     def _find_notion_version(
         self, model_name: str, version: str
     ) -> Optional[Dict[str, Any]]:
         """Find a model version in the Notion database.
+
+        Note: For bulk operations, prefer _fetch_all_notion_versions() for better
+        performance. This method makes individual API calls.
 
         Args:
             model_name: Name of the model
@@ -285,6 +367,43 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
             properties={"Stage": {"select": {"name": stage}}},
         )
         logger.debug(f"Updated Notion page {page_id} stage to {stage}")
+
+    def _update_notion_page(
+        self,
+        page_id: str,
+        mlflow_version: MLflowModelVersion,
+        description: Optional[str] = None,
+        zenml_model_url: Optional[str] = None,
+    ) -> None:
+        """Update all properties of a model version in Notion from MLflow.
+
+        This method treats MLflow as the source of truth and updates all
+        properties in Notion to match the MLflow state.
+
+        Args:
+            page_id: Notion page ID
+            mlflow_version: MLflow model version with current state
+            description: Optional description override
+            zenml_model_url: Optional ZenML Model URL
+        """
+        # Build comprehensive properties from MLflow
+        properties = self._notion_properties_from_mlflow(
+            mlflow_version=mlflow_version,
+            description=description,
+            zenml_model_url=zenml_model_url,
+        )
+
+        # Remove title property (Model Name) as it cannot be updated
+        properties.pop("Model Name", None)
+
+        # Update the page with all properties
+        self.notion_client.pages.update(
+            page_id=page_id,
+            properties=properties,
+        )
+        logger.debug(
+            f"Updated Notion page {page_id} with all properties from MLflow"
+        )
 
     def _sync_version_to_notion(
         self,
@@ -974,32 +1093,54 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
 
             logger.info(f"Found {len(mlflow_models)} model(s) to sync")
 
+            # Batch fetch all Notion versions for efficiency
+            # This is much faster than individual queries per version
+            logger.info("Fetching existing Notion entries...")
+            notion_index = self._fetch_all_notion_versions(
+                model_name=model_name
+            )
+            logger.info(f"Found {len(notion_index)} existing Notion entries")
+
             mlflow_version_keys = set()
 
-            for model in mlflow_models:
+            for model_idx, model in enumerate(mlflow_models, 1):
                 try:
                     mlflow_versions = self.mlflow_client.search_model_versions(
                         f"name='{model.name}' AND tags.`{MLFLOW_NOTION_TAG}`='{MLFLOW_NOTION_TAG_VALUE}'"
                     )
 
                     logger.info(
-                        f"Syncing {len(mlflow_versions)} version(s) of '{model.name}'"
+                        f"[{model_idx}/{len(mlflow_models)}] Syncing {len(mlflow_versions)} "
+                        f"version(s) of '{model.name}'"
                     )
 
-                    for mlflow_ver in mlflow_versions:
+                    for ver_idx, mlflow_ver in enumerate(mlflow_versions, 1):
                         version_key = (model.name, str(mlflow_ver.version))
                         mlflow_version_keys.add(version_key)
 
+                        # Log progress for models with many versions
+                        if len(mlflow_versions) > 10 and ver_idx % 10 == 0:
+                            logger.info(
+                                f"  Progress: {ver_idx}/{len(mlflow_versions)} versions processed"
+                            )
+
                         try:
-                            notion_ver = self._find_notion_version(
-                                model.name, str(mlflow_ver.version)
+                            # Use the pre-fetched index instead of individual query
+                            notion_ver = notion_index.get(
+                                (model.name, str(mlflow_ver.version))
                             )
 
                             if not notion_ver:
                                 self._create_in_notion(mlflow_ver)
                                 stats["created"] += 1
                             else:
+                                # MLflow is source of truth - always update Notion with all fields
+                                # Check if any field needs updating
+                                needs_update = False
+
                                 properties = notion_ver.get("properties", {})
+
+                                # Check stage
                                 stage_prop = properties.get("Stage", {})
                                 current_stage = (
                                     stage_prop.get("select", {}).get(
@@ -1008,23 +1149,40 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                                     if stage_prop.get("select")
                                     else "None"
                                 )
-
                                 if current_stage != mlflow_ver.current_stage:
-                                    self._update_notion_stage(
+                                    needs_update = True
+
+                                # Check description
+                                desc_prop = properties.get("Description", {})
+                                current_desc = (
+                                    desc_prop.get("rich_text", [{}])[0]
+                                    .get("text", {})
+                                    .get("content", "")
+                                    if desc_prop.get("rich_text")
+                                    else ""
+                                )
+                                mlflow_desc = mlflow_ver.description or ""
+                                if current_desc != mlflow_desc:
+                                    needs_update = True
+
+                                # If any field differs, update everything in Notion
+                                if needs_update:
+                                    # Update all properties in Notion from MLflow
+                                    self._update_notion_page(
                                         notion_ver["id"],
-                                        mlflow_ver.current_stage,
+                                        mlflow_ver,
                                     )
-
-                                    # Also update ZenML Model if it exists
-                                    self._update_zenml_model_stage(
-                                        model.name,
-                                        str(mlflow_ver.version),
-                                        mlflow_ver.current_stage,
-                                    )
-
                                     stats["updated"] += 1
                                 else:
                                     stats["unchanged"] += 1
+
+                            # Always update ZenML Model to match MLflow (best-effort)
+                            # This ensures ZenML stays in sync even if Notion is unchanged
+                            self._update_zenml_model_stage(
+                                model.name,
+                                str(mlflow_ver.version),
+                                mlflow_ver.current_stage,
+                            )
 
                         except Exception as e:
                             logger.error(
@@ -1097,19 +1255,27 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                     model_version_name_or_number_or_id=version,
                 )
 
-                # Update the stage if different (convert ModelStages to ModelVersionStage for comparison)
-                current_stage_str = (
-                    model_version.stage.value
-                    if model_version.stage
-                    else "None"
-                )
+                # Update the stage if different
+                # Handle both enum and string values for current_stage
+                if model_version.stage:
+                    current_stage_str = (
+                        model_version.stage.value
+                        if hasattr(model_version.stage, "value")
+                        else str(model_version.stage)
+                    )
+                else:
+                    current_stage_str = "None"
+
                 new_stage_str = zenml_stage.value
 
                 if current_stage_str.lower() != new_stage_str.lower():
+                    # Use force=True because this is a sync operation where MLflow is source of truth
+                    # We want to override ZenML's stage transition validation
                     client.update_model_version(
                         model_name_or_id=zenml_model.id,
                         version_name_or_id=version,
                         stage=zenml_stage,
+                        force=True,
                     )
                     logger.info(
                         f"Updated ZenML Model {model_name}:{version} stage to {zenml_stage.value}"
