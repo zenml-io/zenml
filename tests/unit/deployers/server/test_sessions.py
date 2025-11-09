@@ -21,10 +21,34 @@ from pathlib import Path
 import pytest
 
 from zenml.deployers.server.sessions import (
+    InMemoryBackendConfig,
     InMemorySessionBackend,
+    LocalBackendConfig,
     LocalSessionBackend,
     SessionManager,
 )
+
+
+# Module-level helper functions for multiprocessing tests
+# These need to be at module level to be picklable
+def _process_writer(db_path, session_id, value):
+    """Process that writes a session."""
+    config = LocalBackendConfig()
+    backend = LocalSessionBackend(config=config, db_path=db_path)
+    backend.create(
+        session_id=session_id,
+        deployment_id="deployment-1",
+        initial_state={"value": value},
+    )
+
+
+def _process_reader(db_path, session_id, expected_value):
+    """Process that reads a session."""
+    config = LocalBackendConfig()
+    backend = LocalSessionBackend(config=config, db_path=db_path)
+    session = backend.load(session_id, "deployment-1")
+    assert session is not None
+    assert session.state["value"] == expected_value
 
 
 class TestInMemorySessionBackend:
@@ -32,7 +56,8 @@ class TestInMemorySessionBackend:
 
     def test_inmemory_backend_performs_lru_eviction(self):
         """Test that LRU eviction removes least-recently-used sessions."""
-        backend = InMemorySessionBackend(max_sessions=1)
+        config = InMemoryBackendConfig(max_sessions=1)
+        backend = InMemorySessionBackend(config=config)
         deployment_id = "deployment-1"
 
         # Create first session
@@ -67,7 +92,8 @@ class TestInMemorySessionBackend:
 
     def test_inmemory_backend_lazy_expiration_removes_stale_sessions(self):
         """Test that expired sessions are removed on load."""
-        backend = InMemorySessionBackend()
+        config = InMemoryBackendConfig()
+        backend = InMemorySessionBackend(config=config)
         deployment_id = "deployment-1"
         session_id = "session-expired"
 
@@ -100,7 +126,8 @@ class TestSessionManager:
 
     def test_session_manager_resolves_existing_session(self):
         """Test that SessionManager can resolve existing sessions by ID."""
-        backend = InMemorySessionBackend()
+        config = InMemoryBackendConfig()
+        backend = InMemorySessionBackend(config=config)
         manager = SessionManager(backend=backend, ttl_seconds=3600)
         deployment_id = "deployment-1"
 
@@ -135,7 +162,8 @@ class TestSessionManager:
 
     def test_session_manager_enforces_state_size_limit(self):
         """Test that SessionManager rejects oversized state payloads."""
-        backend = InMemorySessionBackend()
+        config = InMemoryBackendConfig()
+        backend = InMemorySessionBackend(config=config)
         manager = SessionManager(
             backend=backend,
             ttl_seconds=3600,
@@ -172,7 +200,8 @@ class TestLocalSessionBackend:
 
     def test_local_backend_crud_roundtrip(self, temp_db_path):
         """Test basic CRUD operations on local backend."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         deployment_id = "deployment-1"
         session_id = "session-1"
 
@@ -217,7 +246,8 @@ class TestLocalSessionBackend:
 
     def test_local_backend_duplicate_create_raises(self, temp_db_path):
         """Test that creating a duplicate session raises ValueError."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         deployment_id = "deployment-1"
         session_id = "session-1"
 
@@ -236,7 +266,8 @@ class TestLocalSessionBackend:
 
     def test_local_backend_update_missing_raises(self, temp_db_path):
         """Test that updating a non-existent session raises KeyError."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
 
         with pytest.raises(KeyError, match="not found"):
             backend.update(
@@ -247,13 +278,15 @@ class TestLocalSessionBackend:
 
     def test_local_backend_delete_is_idempotent(self, temp_db_path):
         """Test that deleting a non-existent session is silent."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         # Should not raise
         backend.delete("nonexistent", "deployment-1")
 
     def test_local_backend_lazy_expiration(self, temp_db_path):
         """Test that expired sessions are removed on load."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         deployment_id = "deployment-1"
         session_id = "session-expired"
 
@@ -291,7 +324,8 @@ class TestLocalSessionBackend:
 
     def test_local_backend_cleanup_removes_expired(self, temp_db_path):
         """Test that cleanup removes all expired sessions."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         deployment_id = "deployment-1"
 
         # Create valid session
@@ -336,7 +370,8 @@ class TestLocalSessionBackend:
 
     def test_local_backend_deployment_isolation(self, temp_db_path):
         """Test that sessions are isolated by deployment_id."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
 
         # Create sessions in different deployments
         backend.create(
@@ -365,7 +400,8 @@ class TestLocalSessionBackend:
         session_id = "session-persistent"
 
         # Create session with first backend instance
-        backend1 = LocalSessionBackend(db_path=temp_db_path)
+        config1 = LocalBackendConfig()
+        backend1 = LocalSessionBackend(config=config1, db_path=temp_db_path)
         backend1.create(
             session_id=session_id,
             deployment_id=deployment_id,
@@ -374,14 +410,16 @@ class TestLocalSessionBackend:
         del backend1
 
         # Load session with second backend instance
-        backend2 = LocalSessionBackend(db_path=temp_db_path)
+        config2 = LocalBackendConfig()
+        backend2 = LocalSessionBackend(config=config2, db_path=temp_db_path)
         loaded = backend2.load(session_id, deployment_id)
         assert loaded is not None
         assert loaded.state == {"value": 123}
 
     def test_local_backend_concurrent_writes(self, temp_db_path):
         """Test that concurrent writes are handled correctly."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         deployment_id = "deployment-1"
 
         # Create multiple sessions rapidly
@@ -423,26 +461,9 @@ class TestLocalSessionBackendMultiprocess:
 
     def test_multiprocess_shared_state(self, temp_db_path):
         """Test that multiple processes can share session state."""
-
-        def process_writer(db_path, session_id, value):
-            """Process that writes a session."""
-            backend = LocalSessionBackend(db_path=db_path)
-            backend.create(
-                session_id=session_id,
-                deployment_id="deployment-1",
-                initial_state={"value": value},
-            )
-
-        def process_reader(db_path, session_id, expected_value):
-            """Process that reads a session."""
-            backend = LocalSessionBackend(db_path=db_path)
-            session = backend.load(session_id, "deployment-1")
-            assert session is not None
-            assert session.state["value"] == expected_value
-
         # Process A writes
         p1 = multiprocessing.Process(
-            target=process_writer, args=(temp_db_path, "session-1", 42)
+            target=_process_writer, args=(temp_db_path, "session-1", 42)
         )
         p1.start()
         p1.join()
@@ -450,7 +471,7 @@ class TestLocalSessionBackendMultiprocess:
 
         # Process B reads
         p2 = multiprocessing.Process(
-            target=process_reader, args=(temp_db_path, "session-1", 42)
+            target=_process_reader, args=(temp_db_path, "session-1", 42)
         )
         p2.start()
         p2.join()
@@ -468,7 +489,8 @@ class TestSessionManagerWithLocalBackend:
 
     def test_session_manager_with_local_backend(self, temp_db_path):
         """Test SessionManager works correctly with local backend."""
-        backend = LocalSessionBackend(db_path=temp_db_path)
+        config = LocalBackendConfig()
+        backend = LocalSessionBackend(config=config, db_path=temp_db_path)
         manager = SessionManager(
             backend=backend, ttl_seconds=3600, max_state_bytes=1024
         )
