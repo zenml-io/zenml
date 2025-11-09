@@ -526,6 +526,40 @@ class DeploymentDefaultMiddleware(IntFlag):
     ALL = CORS | SECURE_HEADERS
 
 
+class SessionBackendType(str, Enum):
+    """Session storage backend types."""
+
+    INMEMORY = "inmemory"
+    LOCAL = "local"
+    REDIS = "redis"
+
+
+class SessionSettings(BaseModel):
+    """Configuration for deployment session management.
+
+    Sessions enable stateful interactions across multiple deployment
+    invocations. Phase 1 supports only in-memory storage; the schema
+    is forward-compatible with persistent backends (local, redis).
+
+    Attributes:
+        enabled: Whether session management is enabled for this deployment.
+        backend: Storage backend type (only 'inmemory' supported in Phase 1).
+        ttl_seconds: Default session TTL in seconds (None = no expiry).
+        max_state_bytes: Maximum size for session state in bytes.
+        max_sessions: Maximum number of sessions to store (LRU eviction).
+        backend_config: Backend-specific configuration (reserved for future use).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = True
+    backend: SessionBackendType = SessionBackendType.INMEMORY
+    ttl_seconds: Optional[int] = 24 * 60 * 60  # 24 hours default
+    max_state_bytes: Optional[int] = 64 * 1024  # 64 KB default
+    max_sessions: Optional[int] = 10_000
+    backend_config: Dict[str, Any] = Field(default_factory=dict)
+
+
 class DeploymentSettings(BaseSettings):
     """Settings for the pipeline deployment.
 
@@ -692,6 +726,11 @@ class DeploymentSettings(BaseSettings):
 
     # Pluggable app extensions for advanced features
     app_extensions: Optional[List[AppExtensionSpec]] = None
+
+    sessions: SessionSettings = Field(
+        default_factory=SessionSettings,
+        title="Session management configuration.",
+    )
 
     uvicorn_host: str = "0.0.0.0"  # nosec
     uvicorn_port: int = 8000

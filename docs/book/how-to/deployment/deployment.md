@@ -148,6 +148,38 @@ curl -X POST http://localhost:8000/invoke \
   -d '{"parameters": {"city": "London", "temperature": 20}}'
 ```
 
+### Session-aware invocations
+
+Deployments remember information across `/invoke` calls because **sessions are enabled by default** (using the in-memory backend). Define the block below only if you want to opt-out or customize TTL/size limits:
+
+```yaml
+deployment_settings:
+  sessions:
+    enabled: false            # disable sessions for stateless deployments
+    ttl_seconds: 3600         # override session expiration
+    max_state_bytes: 32768    # tighten state payload guardrail
+```
+
+Key things to know when sessions are enabled:
+
+* Clients may supply an optional `session_id` flag (CLI) or JSON field. If omitted, the deployment generates a new ID and echoes it back in `metadata.session_id`. Reuse that ID to resume the same conversation.
+* The session identifier is included in deployment logs/metrics so multi-turn traces remain easy to follow.
+* Steps can read/write a mutable `session_state` dict via `get_step_context().session_state`. Mutations are persisted automatically after the run. See [Managing conversational session state](../steps-pipelines/advanced_features.md#managing-conversational-session-state) for concrete step examples.
+
+Example invocation flow:
+
+```bash
+# First turn – server generates the session_id
+zenml deployment invoke my_deployment --city="London" --temperature=20
+
+# Follow-up turn reusing the echoed session id
+zenml deployment invoke my_deployment \
+  --city="Berlin" --temperature=18 \
+  --session-id="session-12345"
+```
+
+The [weather agent example](https://github.com/zenml-io/zenml/tree/develop/examples/weather_agent) shows how a real pipeline uses `session_state` to keep a running history of weather analyses across turns.
+
 ## Deployment Lifecycle
 
 Once a Deployment is created, it is tied to the specific **Deployer** stack component that was used to provision it and can be managed independently of the active stack as a standalone entity with its own lifecycle.

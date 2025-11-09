@@ -40,6 +40,17 @@ def analyze_weather_with_llm(
     wind = weather_data["wind_speed"]
 
     step_context = get_step_context()
+    session_state = step_context.session_state
+    history = session_state.setdefault("history", [])
+    history.append(
+        {
+            "city": city,
+            "temperature": round(temp, 2),
+            "humidity": humidity,
+            "wind_speed": round(wind, 2),
+        }
+    )
+    session_state["turn_count"] = len(history)
     pipeline_state = step_context.pipeline_state
 
     client = None
@@ -83,7 +94,7 @@ Keep your response concise but informative."""
 
         llm_analysis = response.choices[0].message.content
 
-        return f"""🤖 LLM Weather Analysis for {city}:
+        return f"""🤖 LLM Weather Analysis for {city} (turn {len(history)}):
 
 {llm_analysis}
 
@@ -138,7 +149,7 @@ Powered by: OpenAI GPT-3.5-turbo"""
         if wind > 20:
             warning += " Strong winds - secure loose items."
 
-        return f"""🤖 Weather Analysis for {city}:
+        return f"""🤖 Weather Analysis for {city} (turn {len(history)}):
 
 Assessment: {temp_desc.title()} weather with {humidity}% humidity
 Comfort Level: {comfort}/10

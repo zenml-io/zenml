@@ -32,6 +32,7 @@ from pydantic import BaseModel, WithJsonSchema
 
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
+from zenml.config.deployment_settings import SessionBackendType
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
     AppInfo,
@@ -43,6 +44,11 @@ from zenml.deployers.server.models import (
     PipelineInfo,
     ServiceInfo,
     SnapshotInfo,
+)
+from zenml.deployers.server.sessions import (
+    InMemorySessionBackend,
+    Session,
+    SessionManager,
 )
 from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
@@ -313,6 +319,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             )
             self._client.zen_store.reinitialize_session()
 
+        self.session_manager: Optional[SessionManager] = None
+        self._configure_sessions()
+
         # Execution tracking
         self.service_start_time = time.time()
         self.last_execution_time: Optional[datetime] = None
@@ -335,6 +344,43 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         """Execute cleanup hook if present."""
         BaseOrchestrator.run_cleanup_hook(self.snapshot)
 
+    def _configure_sessions(self) -> None:
+        """Configure session management based on deployment settings.
+
+        Raises:
+            ValueError: If an unsupported backend is configured.
+        """
+        session_settings = self.app_runner.settings.sessions
+
+        if not session_settings.enabled:
+            logger.debug("Session management is disabled")
+            return
+
+        # Only in-memory backend is supported
+        if session_settings.backend != SessionBackendType.INMEMORY:
+            raise ValueError(
+                f"Unsupported session backend: {session_settings.backend}. "
+                f"Only '{SessionBackendType.INMEMORY}' backend is supported currently."
+            )
+
+        # Initialize in-memory backend with configured limits
+        backend = InMemorySessionBackend(
+            max_sessions=session_settings.max_sessions
+        )
+
+        self.session_manager = SessionManager(
+            backend=backend,
+            ttl_seconds=session_settings.ttl_seconds,
+            max_state_bytes=session_settings.max_state_bytes,
+        )
+
+        logger.info(
+            f"Session management enabled [backend={session_settings.backend}] "
+            f"[ttl_seconds={session_settings.ttl_seconds}] "
+            f"[max_state_bytes={session_settings.max_state_bytes}] "
+            f"[max_sessions={session_settings.max_sessions}]"
+        )
+
     def execute_pipeline(
         self,
         request: BaseDeploymentInvocationRequest,
@@ -354,7 +400,18 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         logger.info("Starting pipeline execution")
 
         placeholder_run: Optional[PipelineRunResponse] = None
+        session: Optional[Session] = None
+        session_state_snapshot: Dict[str, Any] = {}
+
         try:
+            session = self._resolve_session(request.session_id)
+            if session:
+                session_state_snapshot = dict(session.state)
+                logger.debug(
+                    f"Using session [session_id={session.id}] "
+                    f"[deployment_id={session.deployment_id}]"
+                )
+
             # Create a placeholder run separately from the actual execution,
             # so that we have a run ID to include in the response even if the
             # pipeline execution fails.
@@ -364,11 +421,14 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 )
             )
 
-            captured_outputs = self._execute_with_orchestrator(
-                placeholder_run=placeholder_run,
-                deployment_snapshot=deployment_snapshot,
-                resolved_params=parameters,
-                skip_artifact_materialization=request.skip_artifact_materialization,
+            captured_outputs, session_state_snapshot = (
+                self._execute_with_orchestrator(
+                    placeholder_run=placeholder_run,
+                    deployment_snapshot=deployment_snapshot,
+                    resolved_params=parameters,
+                    skip_artifact_materialization=request.skip_artifact_materialization,
+                    session=session,
+                )
             )
 
             # Map outputs using fast (in-memory) or slow (artifact) path
@@ -379,6 +439,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 mapped_outputs=mapped_outputs,
                 start_time=start_time,
                 resolved_params=parameters,
+                session_id=session.id if session else request.session_id,
             )
 
         except Exception as e:
@@ -389,7 +450,10 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 start_time=start_time,
                 resolved_params=parameters,
                 error=e,
+                session_id=session.id if session else request.session_id,
             )
+        finally:
+            self._persist_session_state(session, session_state_snapshot)
 
     def get_service_info(self) -> ServiceInfo:
         """Get service information.
@@ -534,8 +598,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         deployment_snapshot: PipelineSnapshotResponse,
         resolved_params: Dict[str, Any],
         skip_artifact_materialization: bool,
-    ) -> Optional[Dict[str, Dict[str, Any]]]:
-        """Run the snapshot via the orchestrator and return the concrete run.
+        session: Optional[Session] = None,
+    ) -> Tuple[Optional[Dict[str, Dict[str, Any]]], Dict[str, Any]]:
+        """Run the snapshot via the orchestrator and return outputs and session state.
 
         Args:
             placeholder_run: The placeholder run to execute the pipeline on.
@@ -544,9 +609,10 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             resolved_params: Normalized pipeline parameters.
             skip_artifact_materialization: Whether runtime should skip artifact
                 materialization.
+            session: Optional session for stateful execution.
 
         Returns:
-            The in-memory outputs of the execution.
+            Tuple of (in-memory outputs, final session state snapshot).
 
         Raises:
             RuntimeError: If the orchestrator has not been initialized.
@@ -566,16 +632,18 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             updated=datetime.now(),
         )
 
-        # Start deployment runtime context with parameters (still needed for
-        # in-memory materializer)
         runtime.start(
             request_id=str(uuid4()),
             snapshot=deployment_snapshot,
             parameters=resolved_params,
             skip_artifact_materialization=skip_artifact_materialization,
+            session_id=session.id if session else None,
+            session_state=session.state if session else None,
         )
 
         captured_outputs: Optional[Dict[str, Dict[str, Any]]] = None
+        session_state_snapshot: Dict[str, Any] = {}
+
         try:
             # Use the new deployment snapshot with pre-configured settings
             orchestrator.run(
@@ -584,9 +652,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 placeholder_run=placeholder_run,
             )
 
-            # Capture in-memory outputs before stopping the runtime context
             if runtime.is_active():
                 captured_outputs = runtime.get_outputs()
+                session_state_snapshot = dict(runtime.get_session_state())
         except Exception as e:
             logger.exception(f"Failed to execute pipeline: {e}")
             raise RuntimeError(f"Failed to execute pipeline: {e}")
@@ -594,7 +662,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             # Always stop deployment runtime context
             runtime.stop()
 
-        return captured_outputs
+        return captured_outputs, session_state_snapshot
 
     def _execute_init_hook(self) -> None:
         """Execute init hook if present.
@@ -645,6 +713,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         mapped_outputs: Optional[Dict[str, Any]] = None,
         placeholder_run: Optional[PipelineRunResponse] = None,
         error: Optional[Exception] = None,
+        session_id: Optional[str] = None,
     ) -> BaseDeploymentInvocationResponse:
         """Build success response with execution tracking.
 
@@ -654,6 +723,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             mapped_outputs: The mapped outputs.
             placeholder_run: The placeholder run that was executed.
             error: The error that occurred.
+            session_id: The session ID used for this invocation.
 
         Returns:
             A BaseDeploymentInvocationResponse describing the execution.
@@ -691,5 +761,72 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 parameters_used=resolved_params,
                 snapshot_id=self.snapshot.id,
                 snapshot_name=self.snapshot.name,
+                session_id=session_id,
             ),
         )
+
+    def _resolve_session(
+        self, requested_session_id: Optional[str]
+    ) -> Optional[Session]:
+        """Resolve or create a session for the current invocation.
+
+        Args:
+            requested_session_id: Optional session ID from the request.
+
+        Returns:
+            Resolved session if sessions are enabled, None otherwise.
+        """
+        if not self.session_manager:
+            return None
+
+        try:
+            session = self.session_manager.resolve(
+                requested_id=requested_session_id,
+                deployment_id=str(self.deployment.id),
+                pipeline_id=str(self.snapshot.pipeline.id),
+            )
+            return session
+        except Exception as e:
+            logger.warning(
+                f"Failed to resolve session [session_id={requested_session_id}] "
+                f"[deployment_id={self.deployment.id}]: {e}"
+            )
+            return None
+
+    def _persist_session_state(
+        self, session: Optional[Session], state_snapshot: Dict[str, Any]
+    ) -> None:
+        """Persist updated session state to the backend.
+
+        Args:
+            session: The session to update.
+            state_snapshot: The state snapshot to persist.
+        """
+        if not session or not self.session_manager:
+            return
+
+        # Skip persistence if state hasn't changed
+        if state_snapshot == session.state:
+            logger.debug(
+                f"Session state unchanged, skipping persistence "
+                f"[session_id={session.id}] [deployment_id={session.deployment_id}]"
+            )
+            return
+
+        try:
+            self.session_manager.persist_state(session, state_snapshot)
+            logger.debug(
+                f"Persisted session state [session_id={session.id}] "
+                f"[deployment_id={session.deployment_id}]"
+            )
+        except ValueError as e:
+            # Size limit exceeded or serialization error
+            logger.warning(
+                f"Failed to persist session state [session_id={session.id}] "
+                f"[deployment_id={session.deployment_id}]: {e}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error persisting session state "
+                f"[session_id={session.id}] [deployment_id={session.deployment_id}]: {e}"
+            )

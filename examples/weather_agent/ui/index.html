@@ -154,9 +154,14 @@
       /* ===== Form ===== */
       .form-row {
         display: flex;
-        gap: var(--spacing-sm);
+        gap: var(--spacing-md);
         align-items: center;
         flex-wrap: wrap;
+        margin-bottom: var(--spacing-md);
+      }
+
+      .form-row:last-of-type {
+        margin-bottom: 0;
       }
 
       .input {
@@ -230,13 +235,16 @@
 
       /* ===== Status Pill ===== */
       .status-pill {
-        display: inline-block;
-        padding: 6px 12px;
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
         border-radius: var(--radius-full);
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
         line-height: 18px;
-        margin-top: var(--spacing-sm);
+        margin-top: var(--spacing-md);
+        font-family: var(--font-mono);
+        border: 1px solid transparent;
       }
 
       .status-pill.auth-set {
@@ -247,6 +255,12 @@
       .status-pill.auth-required {
         background: var(--warning-light);
         color: var(--warning);
+      }
+
+      .status-pill.info {
+        background: var(--zenml-purple-lighter);
+        color: var(--zenml-purple-dark);
+        border-color: var(--zenml-purple-light);
       }
 
       /* ===== Messages ===== */
@@ -273,15 +287,38 @@
       /* ===== Result Display ===== */
       .result {
         margin-top: var(--spacing-lg);
-        padding: var(--spacing-lg);
+        padding: var(--spacing-xl);
         border: 1px solid var(--border-moderate);
         border-radius: var(--radius-md);
-        background: var(--surface-secondary);
-        white-space: pre-wrap;
+        background: var(--surface-primary);
+        box-shadow: var(--shadow-subtle);
       }
 
       .result:empty {
         display: none;
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        background: var(--zenml-purple-lighter);
+        border-left: 4px solid var(--zenml-purple);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--zenml-purple-dark);
+      }
+
+      .result-header::before {
+        content: '🤖';
+        font-size: 20px;
+      }
+
+      .result-header strong {
+        font-weight: 600;
+        color: var(--zenml-purple-dark);
       }
 
       /* Markdown content styling */
@@ -315,13 +352,31 @@
       }
 
       .result ul {
-        padding-left: 20px;
-        margin: var(--spacing-sm) 0;
+        padding-left: 24px;
+        margin: var(--spacing-md) 0;
+        list-style-type: disc;
       }
 
       .result li {
-        margin: var(--spacing-xs) 0;
+        margin: var(--spacing-sm) 0;
         color: var(--text-primary);
+        line-height: 1.6;
+      }
+
+      .result ol {
+        padding-left: 24px;
+        margin: var(--spacing-md) 0;
+      }
+
+      .result ol li {
+        margin: var(--spacing-md) 0;
+        color: var(--text-primary);
+        line-height: 1.6;
+      }
+
+      .result strong {
+        color: var(--zenml-purple-dark);
+        font-weight: 600;
       }
 
       .result code {
@@ -546,6 +601,17 @@
               Set API Key
             </button>
           </div>
+          <div class="form-row">
+            <input
+              id="session-input"
+              class="input"
+              type="text"
+              placeholder="Session ID (leave blank for new session)"
+            />
+            <button id="reset-session-btn" class="btn secondary">
+              New Session
+            </button>
+          </div>
           <div
             id="auth-status"
             class="status-pill auth-required"
@@ -554,12 +620,24 @@
             Auth required
           </div>
           <div id="message" class="message"></div>
+          <div id="session-info" class="status-pill" style="display: none"></div>
 
           <!-- Metrics Display -->
           <div id="metrics" class="metrics"></div>
 
           <!-- Result Display -->
-          <div id="result" class="result"></div>
+          <div id="result-container" style="display: none;">
+            <div class="result-header" style="margin-top: var(--spacing-xl);">
+              <strong>LLM Weather Analysis for <span id="city-name"></span> (turn <span id="turn-number">1</span>):</strong>
+            </div>
+            <div id="result" class="result" style="margin-top: var(--spacing-sm); border-top-left-radius: 0; border-top-right-radius: 0;"></div>
+          </div>
+          <div id="comparison-container" style="display: none;">
+            <div class="result-header" style="margin-top: var(--spacing-xl);">
+              <strong>📊 City Comparison</strong>
+            </div>
+            <div id="comparison" class="result" style="margin-top: var(--spacing-sm); border-top-left-radius: 0; border-top-right-radius: 0;"></div>
+          </div>
         </div>
 
         <!-- Footer -->
@@ -586,6 +664,14 @@
     const authStatus = document.getElementById('auth-status');
     const API_KEY_STORAGE = 'weather_agent_api_key';
     const resultEl = document.getElementById('result');
+    const resultContainer = document.getElementById('result-container');
+    const cityNameEl = document.getElementById('city-name');
+    const turnNumberEl = document.getElementById('turn-number');
+    const comparisonEl = document.getElementById('comparison');
+    const comparisonContainer = document.getElementById('comparison-container');
+    const sessionInput = document.getElementById('session-input');
+    const sessionInfo = document.getElementById('session-info');
+    const resetSessionBtn = document.getElementById('reset-session-btn');
 
     function setLoading(isLoading) {
         fetchBtn.disabled = isLoading;
@@ -623,15 +709,24 @@
         }
         setLoading(true);
         resultEl.innerHTML = '';
+        resultContainer.style.display = 'none';
         metricsEl.innerHTML = '';
+        comparisonEl.innerHTML = '';
+        comparisonContainer.style.display = 'none';
+        sessionInfo.style.display = 'none';
         try {
             const headers = { 'Content-Type': 'application/json' };
             const key = getApiKey();
             if (AUTH_ENABLED && key) headers['Authorization'] = `Bearer ${key}`;
+            const sessionId = sessionInput.value.trim();
+            const body = { parameters: { city: city } };
+            if (sessionId) {
+                body.session_id = sessionId;
+            }
             const res = await fetch(INVOKE_URL, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ parameters: { city: city } })
+                body: JSON.stringify(body)
             });
             if (!res.ok) {
                 const text = await res.text();
@@ -645,6 +740,8 @@
             const outputs = data.outputs || {};
             const weather = outputs.weather_data || null;
             const md = outputs.weather_analysis;
+            const comparison = outputs.city_comparison;
+            const metadata = data.metadata || {};
             if (!md) {
                 messageEl.textContent = 'No analysis returned.';
                 messageEl.className = 'message info';
@@ -655,6 +752,21 @@
             }
             const html = marked.parse(md);
             resultEl.innerHTML = DOMPurify.sanitize(html);
+            cityNameEl.textContent = city;
+            const turnNum = metadata.turn_number || 1;
+            turnNumberEl.textContent = turnNum;
+            resultContainer.style.display = 'block';
+            if (comparison) {
+                const comparisonHtml = marked.parse(comparison);
+                comparisonEl.innerHTML = DOMPurify.sanitize(comparisonHtml);
+                comparisonContainer.style.display = 'block';
+            }
+            if (metadata.session_id) {
+                sessionInput.value = metadata.session_id;
+                sessionInfo.textContent = `Session ID: ${metadata.session_id}`;
+                sessionInfo.className = 'status-pill info';
+                sessionInfo.style.display = 'inline-flex';
+            }
             clearMessage();
         } catch (e) {
             showError(e.message || String(e));
@@ -662,6 +774,17 @@
             setLoading(false);
         }
     }
+
+    resetSessionBtn.addEventListener('click', () => {
+        sessionInput.value = '';
+        sessionInfo.style.display = 'none';
+        resultContainer.style.display = 'none';
+        resultEl.innerHTML = '';
+        comparisonEl.innerHTML = '';
+        comparisonContainer.style.display = 'none';
+        metricsEl.innerHTML = '';
+        clearMessage();
+    });
 
     fetchBtn.addEventListener('click', fetchSuggestions);
     cityInput.addEventListener('keydown', function (e) {

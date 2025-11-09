@@ -674,6 +674,28 @@ def my_step(some_parameter: int = 1):
     raise ValueError("My exception")
 ```
 
+### Managing conversational session state
+
+When a deployment is invoked with sessions enabled (the default behavior for deployer-based services), each step can access a per-session dictionary through the step context. This is useful for LLM workflows or any pipeline that needs to remember information across `/invoke` calls.
+
+```python
+from zenml import step, get_step_context
+
+@step
+def chat_step(message: str) -> str:
+    ctx = get_step_context()
+    session_state = ctx.session_state  # Live dict persisted after the run
+    history = session_state.setdefault("history", [])
+    history.append({"role": "user", "content": message})
+
+    reply = f"Echoing turn {len(history)}: {message}"
+    history.append({"role": "assistant", "content": reply})
+    session_state["last_reply"] = reply
+    return reply
+```
+
+If sessions are disabled for a deployment, `ctx.session_state` simply returns an empty dict, so the same code works without extra guards.
+
 ### Using Alerter in Hooks
 
 You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed:

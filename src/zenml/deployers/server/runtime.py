@@ -43,6 +43,10 @@ class _DeploymentState(BaseModel):
     # In-memory data storage for artifacts
     in_memory_data: Dict[str, Any] = Field(default_factory=dict)
 
+    # Session management
+    session_id: Optional[str] = None
+    session_state: Dict[str, Any] = Field(default_factory=dict)
+
     def reset(self) -> None:
         """Reset the deployment state."""
         self.active = False
@@ -52,6 +56,8 @@ class _DeploymentState(BaseModel):
         self.outputs = {}
         self.skip_artifact_materialization = False
         self.in_memory_data = {}
+        self.session_id = None
+        self.session_state = {}
 
 
 _deployment_context: contextvars.ContextVar[_DeploymentState] = (
@@ -73,6 +79,8 @@ def start(
     snapshot: PipelineSnapshotResponse,
     parameters: Dict[str, Any],
     skip_artifact_materialization: bool = False,
+    session_id: Optional[str] = None,
+    session_state: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Initialize deployment state for the current request context.
 
@@ -81,6 +89,8 @@ def start(
         snapshot: The snapshot to deploy.
         parameters: The parameters to deploy.
         skip_artifact_materialization: Whether to skip artifact materialization.
+        session_id: Optional session ID for stateful deployments.
+        session_state: Optional session state dictionary for stateful deployments.
     """
     state = _DeploymentState()
     state.active = True
@@ -89,6 +99,8 @@ def start(
     state.pipeline_parameters = parameters
     state.outputs = {}
     state.skip_artifact_materialization = skip_artifact_materialization
+    state.session_id = session_id
+    state.session_state = dict(session_state or {})
     _deployment_context.set(state)
 
 
@@ -168,3 +180,37 @@ def get_in_memory_data(uri: str) -> Any:
         state = _get_context()
         return state.in_memory_data[uri]
     return None
+
+
+def get_session_id() -> Optional[str]:
+    """Get the current session ID.
+
+    Returns:
+        Session ID if active, None otherwise.
+    """
+    if is_active():
+        return _get_context().session_id
+    return None
+
+
+def get_session_state() -> Dict[str, Any]:
+    """Get the current session state.
+
+    Returns:
+        Live session state dictionary. Mutations to this dict will be
+        reflected in the runtime context. Empty dict if no session is active.
+    """
+    if is_active():
+        return _get_context().session_state
+    return {}
+
+
+def set_session_state(state: Dict[str, Any]) -> None:
+    """Replace the current session state.
+
+    Args:
+        state: New session state dictionary to store (will be copied).
+    """
+    if is_active():
+        context = _get_context()
+        context.session_state = dict(state)
