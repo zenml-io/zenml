@@ -531,23 +531,33 @@ class SessionBackendType(str, Enum):
 
     INMEMORY = "inmemory"
     LOCAL = "local"
-    REDIS = "redis"
 
 
 class SessionSettings(BaseModel):
     """Configuration for deployment session management.
 
     Sessions enable stateful interactions across multiple deployment
-    invocations. Phase 1 supports only in-memory storage; the schema
-    is forward-compatible with persistent backends (local, redis).
+    invocations. Two backend types are supported:
+
+    - **inmemory**: Process-local storage. Fast and simple, but each uvicorn
+      worker maintains its own isolated session store. When `uvicorn_workers > 1`
+      or the deployment is scaled horizontally, sessions won't be shared across
+      workers. Best for single-worker deployments or dev/testing environments.
+
+    - **local**: SQLite-backed storage. Sessions are persisted to disk and
+      shared across all uvicorn workers on the same host/VM. Survives worker
+      restarts. Use this for multi-worker deployments on a single machine.
+      Not suitable for multi-node deployments (use Redis/DB backends for that).
+
+    **Important:** Session state must contain only JSON-serializable values.
+    Non-serializable values will cause persistence failures.
 
     Attributes:
         enabled: Whether session management is enabled for this deployment.
-        backend: Storage backend type (only 'inmemory' supported in Phase 1).
+        backend: Storage backend type ('inmemory' or 'local').
         ttl_seconds: Default session TTL in seconds (None = no expiry).
         max_state_bytes: Maximum size for session state in bytes.
-        max_sessions: Maximum number of sessions to store (LRU eviction).
-        backend_config: Backend-specific configuration (reserved for future use).
+        backend_config: Configuration for the selected backend.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -556,7 +566,6 @@ class SessionSettings(BaseModel):
     backend: SessionBackendType = SessionBackendType.INMEMORY
     ttl_seconds: Optional[int] = 24 * 60 * 60  # 24 hours default
     max_state_bytes: Optional[int] = 64 * 1024  # 64 KB default
-    max_sessions: Optional[int] = 10_000
     backend_config: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -727,6 +736,7 @@ class DeploymentSettings(BaseSettings):
     # Pluggable app extensions for advanced features
     app_extensions: Optional[List[AppExtensionSpec]] = None
 
+    # Session management configuration
     sessions: SessionSettings = Field(
         default_factory=SessionSettings,
         title="Session management configuration.",

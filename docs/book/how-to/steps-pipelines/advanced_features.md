@@ -676,23 +676,47 @@ def my_step(some_parameter: int = 1):
 
 ### Managing conversational session state
 
-When a deployment is invoked with sessions enabled (the default behavior for deployer-based services), each step can access a per-session dictionary through the step context. This is useful for LLM workflows or any pipeline that needs to remember information across `/invoke` calls.
+When a deployment is invoked with sessions enabled, each step can access a per-session dictionary through the step context. This is useful for LLM workflows, agents, or any pipeline that needs to remember information across `/invoke` calls.
+
+#### Understanding Deployment State
+
+ZenML deployments support two types of state:
+
+- **`pipeline_state`**: Deployment-global state shared across all invocations (e.g., loaded models, DB clients, caches). Set via `on_init` hook, accessed via `get_step_context().pipeline_state`.
+- **`session_state`**: Per-session state that persists across multiple invocations with the same `session_id` (e.g., conversation history, user context). Accessed via `get_step_context().session_state`.
+
+This mirrors common LLM/agent designs: small short-term memory (session state) + external long-term memory (vector stores, databases).
+
+#### Using Session State
 
 ```python
 from zenml import step, get_step_context
 
 @step
-def chat_step(message: str) -> str:
+def agent_turn(message: str) -> str:
     ctx = get_step_context()
     session_state = ctx.session_state  # Live dict persisted after the run
+
     history = session_state.setdefault("history", [])
     history.append({"role": "user", "content": message})
 
-    reply = f"Echoing turn {len(history)}: {message}"
+    # Use external tools/vector DB for heavy context; keep session state light
+    reply = plan_and_call_llm(history=history[-10:], message=message)
+
     history.append({"role": "assistant", "content": reply})
     session_state["last_reply"] = reply
     return reply
 ```
+
+#### Best Practices for Session State
+
+- **Keep it compact**: Store summaries, pointers, IDs, and essential context only
+- **Push large artifacts elsewhere**: Documents, embeddings, and full histories belong in databases, vector stores, or object storage
+- **Use size guardrails**: The `deployment_settings.sessions.max_state_bytes` setting (default 64 KB) prevents unbounded growth
+- **Configure TTL appropriately**: Set `ttl_seconds` based on your use case (e.g., 15-30 min for chats, hours for workflows)
+- **Store references, not content**: Keep file paths, document IDs, and embedding keys in session state rather than the actual data
+
+This approach matches best practices from frameworks like LangChain and LangGraph, where short-term working memory is kept small and structured.
 
 If sessions are disabled for a deployment, `ctx.session_state` simply returns an empty dict, so the same code works without extra guards.
 

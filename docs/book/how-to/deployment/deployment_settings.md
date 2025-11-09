@@ -127,6 +127,7 @@ Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/configu
 `DeploymentSettings` expose the following basic customization options. The sections below provide
 short examples and guidance.
 
+- sessions (session-aware invocations)
 - application metadata and paths
 - built-in endpoints and middleware toggles
 - static files (SPAs) and dashboards
@@ -134,6 +135,48 @@ short examples and guidance.
 - secure headers
 - startup and shutdown hooks
 - uvicorn server options, logging level, and thread pool size
+
+### Sessions
+
+Configure session support for deployments that need to maintain state across multiple invocations (e.g., LLM agents, chatbots, multi-turn workflows):
+
+```python
+from zenml.config import DeploymentSettings
+
+settings = DeploymentSettings(
+    sessions={
+        "enabled": True,           # Enable session support
+        "ttl_seconds": 1800,       # 30 minute session timeout
+        "max_state_bytes": 32768,  # 32KB state size limit
+    }
+)
+```
+
+Or in YAML:
+
+```yaml
+settings:
+  deployment:
+    sessions:
+      enabled: true
+      ttl_seconds: 1800
+      max_state_bytes: 32768
+```
+
+**Session Configuration Fields:**
+
+- `enabled` (default: `True`): Enable or disable session support. When enabled, each invocation can include a `session_id` to maintain state across calls.
+- `ttl_seconds` (default: `86400` / 24 hours): Inactivity timeout before a session expires. Choose based on your use case (e.g., 15-30 min for chats, hours for workflows).
+- `max_state_bytes` (default: `65536` / 64 KB): Maximum size for serialized session state. This prevents unbounded growth and potential abuse.
+
+**When to Use Sessions:**
+
+- ✅ LLM chat and conversational agents
+- ✅ Multi-step workflows requiring context
+- ✅ User-specific short-term state
+- ❌ Fully stateless REST APIs
+
+For more details on using session state in your pipeline steps, see [Managing conversational session state](../steps-pipelines/advanced_features.md#managing-conversational-session-state).
 
 ### Application metadata
 

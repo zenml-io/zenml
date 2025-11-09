@@ -17,6 +17,7 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -33,6 +34,7 @@ from pydantic import BaseModel, WithJsonSchema
 import zenml.pipelines.run_utils as run_utils
 from zenml.client import Client
 from zenml.config.deployment_settings import SessionBackendType
+from zenml.config.global_config import GlobalConfiguration
 from zenml.deployers.server import runtime
 from zenml.deployers.server.models import (
     AppInfo,
@@ -45,11 +47,8 @@ from zenml.deployers.server.models import (
     ServiceInfo,
     SnapshotInfo,
 )
-from zenml.deployers.server.sessions import (
-    InMemorySessionBackend,
-    Session,
-    SessionManager,
-)
+from zenml.deployers.server.session import Session
+from zenml.deployers.server.sessions import SessionManager
 from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
 )
@@ -350,23 +349,57 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         Raises:
             ValueError: If an unsupported backend is configured.
         """
+        from zenml.deployers.server.session import SessionBackend
+        from zenml.deployers.server.sessions import (
+            InMemoryBackendConfig,
+            InMemorySessionBackend,
+            LocalBackendConfig,
+            LocalSessionBackend,
+            SessionManager,
+        )
+
         session_settings = self.app_runner.settings.sessions
 
         if not session_settings.enabled:
             logger.debug("Session management is disabled")
             return
 
-        # Only in-memory backend is supported
-        if session_settings.backend != SessionBackendType.INMEMORY:
-            raise ValueError(
-                f"Unsupported session backend: {session_settings.backend}. "
-                f"Only '{SessionBackendType.INMEMORY}' backend is supported currently."
+        backend_type = session_settings.backend
+        backend: SessionBackend
+
+        if backend_type == SessionBackendType.INMEMORY:
+            if self.app_runner.settings.uvicorn_workers > 1:
+                logger.warning(
+                    "In-memory sessions are worker-local and not shared across "
+                    "uvicorn workers. Set `uvicorn_workers=1` or switch to a "
+                    "shared backend like 'local'."
+                )
+
+            inmemory_cfg = InMemoryBackendConfig(
+                **session_settings.backend_config
+            )
+            backend = InMemorySessionBackend(config=inmemory_cfg)
+
+        elif backend_type == SessionBackendType.LOCAL:
+            local_cfg = LocalBackendConfig(**session_settings.backend_config)
+            db_path = local_cfg.database_path
+            if not db_path:
+                local_root = GlobalConfiguration().local_stores_path
+                db_dir = (
+                    Path(local_root) / "deployments" / str(self.deployment.id)
+                )
+                db_path = str(db_dir / "zenml_deployment_sessions.db")
+
+            backend = LocalSessionBackend(
+                config=local_cfg,
+                db_path=db_path,
             )
 
-        # Initialize in-memory backend with configured limits
-        backend = InMemorySessionBackend(
-            max_sessions=session_settings.max_sessions
-        )
+        else:
+            raise ValueError(
+                f"Unsupported session backend: {backend_type}. "
+                "Supported: 'inmemory', 'local'."
+            )
 
         self.session_manager = SessionManager(
             backend=backend,
@@ -377,8 +410,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         logger.info(
             f"Session management enabled [backend={session_settings.backend}] "
             f"[ttl_seconds={session_settings.ttl_seconds}] "
-            f"[max_state_bytes={session_settings.max_state_bytes}] "
-            f"[max_sessions={session_settings.max_sessions}]"
+            f"[max_state_bytes={session_settings.max_state_bytes}]"
         )
 
     def execute_pipeline(
