@@ -23,9 +23,6 @@ You should use the Kubernetes deployer if:
 
 ## How to deploy it
 
-{% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Kubernetes deployer? Check out the ZenML stack deployment guides for [AWS](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform), [GCP](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform), and [Azure](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform).
-{% endhint %}
 
 To use the Kubernetes deployer, you need:
 
@@ -112,6 +109,7 @@ If your ZenML server runs inside the same Kubernetes cluster where you want to d
 ```shell
 zenml deployer register <DEPLOYER_NAME> \
     --flavor=kubernetes \
+    --incluster=True \
     --kubernetes_namespace=zenml-deployments
 ```
 
