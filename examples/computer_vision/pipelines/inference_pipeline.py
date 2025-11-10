@@ -18,7 +18,7 @@
 
 from typing import Any, Dict
 
-from steps import run_detection, process_detection_results
+from steps import run_detection
 
 from pipelines.hooks import cleanup_model, init_model
 from zenml import Model, pipeline

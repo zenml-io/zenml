@@ -37,6 +37,7 @@ docker_settings = DockerSettings(
 
 model = Model(name="yolov8n-model")
 
+
 @pipeline(
     enable_cache=False,
     settings={

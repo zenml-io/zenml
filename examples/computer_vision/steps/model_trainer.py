@@ -36,7 +36,12 @@ def train_yolo_model(
     epochs: int = 1,
     image_size: int = 640,
 ) -> Annotated[
-    YOLO, ArtifactConfig(name="yolo-model", tags=["computer-vision"], artifact_type=ArtifactType.MODEL)
+    YOLO,
+    ArtifactConfig(
+        name="yolo-model",
+        tags=["computer-vision"],
+        artifact_type=ArtifactType.MODEL,
+    ),
 ]:
     """Train a YOLO model on the provided dataset.
 

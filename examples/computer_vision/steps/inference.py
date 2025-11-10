@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Annotated, Any, Dict, List, Tuple
 
 import cv2
-import numpy as np
 from PIL import Image
 
 from zenml import get_step_context, step
@@ -38,6 +37,7 @@ def process_detection_results(
 ) -> Dict[str, Any]:
     """Process detection results."""
     return detection_results
+
 
 @step
 def run_detection(
@@ -240,7 +240,7 @@ def run_detection(
 
     # Convert annotated image from BGR (OpenCV) to RGB (PIL)
     annotated_img_rgb = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
-    
+
     # Convert numpy array to PIL Image for ZenML visualization
     annotated_image_pil = Image.fromarray(annotated_img_rgb)
 
