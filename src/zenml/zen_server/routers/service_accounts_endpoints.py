@@ -77,7 +77,7 @@ def _raise_deprecated_pro_service_accounts() -> None:
             "ZenML Pro workspace level service accounts and API keys are "
             "deprecated and will be removed in a future version. Please use "
             "ZenML Pro organization level service accounts and API keys "
-            "instead (see https://docs.zenml.io/pro/core-concepts/service-accounts)."
+            "instead (see https://docs.zenml.io/pro/access-management/service-accounts)."
         )
 
 

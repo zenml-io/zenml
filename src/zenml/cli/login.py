@@ -18,7 +18,6 @@ import os
 import re
 import sys
 import time
-from datetime import timedelta
 from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
@@ -33,7 +32,7 @@ from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ZENML_PRO_API_KEY_PREFIX
-from zenml.enums import APITokenType, ServerProviderType, StoreType
+from zenml.enums import ServerProviderType, StoreType
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
@@ -48,7 +47,6 @@ from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
 )
-from zenml.utils.time_utils import utc_now_tz_aware
 
 logger = get_logger(__name__)
 
@@ -1227,102 +1225,4 @@ def logout(
         cli_utils.declare(
             f"The client is not currently connected to the ZenML server at "
             f"'{server}'."
-        )
-
-
-@cli.command(
-    "token",
-    help="""Generate a new API token for the current user and server.
-
-    Generate a new API token that can be used to authenticate with the ZenML
-    server that the client is currently connected to. The token is tied to the
-    identity of the user account or service account that is currently logged in.
-
-    The token can be used as is to make authenticated calls to the ZenML
-    server's REST API:
-
-    ```bash
-    curl -H "Authorization: Bearer YOUR_API_TOKEN" https://zenml.example.com/api/v1/users/me
-    ```
-
-    or with the ZenML Terraform provider:
-
-    ```hcl
-    provider "zenml" {
-      server_url = "https://zenml.example.com"
-      api_token  = "YOUR_API_TOKEN"
-    }
-    ```
-    
-    You can control the expiration time of the token by setting the --expires-in
-    option. The expiration time is specified in seconds. The default expiration
-    time is 1 hour. The ZenML server also imposes a configurable maximum
-    expiration time with a default value of 7 days.
-
-    To generate the API token directly inside scripts and console commands, set
-    the --raw flag to print the token without any formatting and additional
-    information, e.g.:
-
-    ```bash
-    curl -H "Authorization: Bearer $(zenml token --raw)" https://zenml.example.com/api/v1/users/me
-    ```
-""",
-)
-@click.option(
-    "--expires-in",
-    "-e",
-    type=int,
-    default=3600,
-    help="The expiration time of the API token in seconds.",
-)
-@click.option(
-    "--raw",
-    is_flag=True,
-    help="Print the API token without any formatting and additional information.",
-    default=False,
-    type=click.BOOL,
-)
-def token(
-    expires_in: int = 3600,
-    raw: bool = False,
-) -> None:
-    """Generate a new API token for the current account and server.
-
-    Args:
-        expires_in: The expiration time of the API token in seconds.
-        raw: Print the API token without any formatting and additional
-            information.
-    """
-    from zenml.client import Client
-    from zenml.zen_stores.rest_zen_store import RestZenStore
-
-    client = Client()
-    zen_store = client.zen_store
-
-    if zen_store.type != StoreType.REST:
-        cli_utils.error(
-            "The current client is not connected to a ZenML server."
-        )
-
-    assert isinstance(zen_store, RestZenStore)
-
-    api_token = zen_store.get_api_token(
-        token_type=APITokenType.GENERIC,
-        expires_in=expires_in,
-    )
-    expires_at = utc_now_tz_aware() + timedelta(seconds=expires_in)
-    if raw:
-        print(api_token, end="")
-    else:
-        console.print(
-            f"[bold green]API token:[/bold green]\n\n[bold white]{api_token}[/bold white]\n\n"
-            f"[bold green]Token expires in:[/bold green] {expires_in} seconds\n"
-            f"[bold green]Token expires at:[/bold green] {expires_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"[bold green]Example usage:[/bold green]\n\n"
-            f"```bash\n"
-            f'curl -H "Authorization: Bearer {api_token}" "{zen_store.url}/api/v1/current-user"\n'
-            f"```\n",
-            no_wrap=True,
-            overflow="ignore",
-            crop=False,
         )
