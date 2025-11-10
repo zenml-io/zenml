@@ -3,8 +3,7 @@ name: Validate changelog.json
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths:
-      - changelog.json
+    paths: [changelog.json]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
