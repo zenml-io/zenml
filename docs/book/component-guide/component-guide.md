@@ -57,7 +57,7 @@ Here's an approach you can take that is a good balance between convenience and s
 If you follow this approach, you can keep your data scientists free from the hassle of figuring out the best authentication mechanisms for the different cloud services, having to manage credentials locally, and keep your cloud accounts safe, while still giving them the freedom to run their experiments in the cloud.
 
 {% hint style="info" %}
-Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/pro/core-concepts/roles). Sign up for a free trial here: https://zenml.io/pro.
+Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/pro/access-management/roles). Sign up for a free trial here: https://zenml.io/pro.
 {% endhint %}
 
 ## How to deploy and manage stacks

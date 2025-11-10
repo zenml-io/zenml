@@ -429,8 +429,7 @@ def test_compiling_a_pipeline_merges_schedule(
     config_path.write_text(run_config.yaml())
 
     pipeline_instance = empty_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
 
     _, schedule, _ = pipeline_instance._compile(
         config_path=str(config_path),
@@ -462,8 +461,7 @@ def test_compiling_a_pipeline_merges_build(
     in_code_build_id = uuid4()
 
     pipeline_instance = empty_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
 
     # Config with ID
     _, _, build = pipeline_instance._compile(

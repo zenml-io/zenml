@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Union
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType
@@ -32,6 +32,7 @@ def validate_stack_component_config(
     component_type: StackComponentType,
     zen_store: Optional[BaseZenStore] = None,
     validate_custom_flavors: bool = True,
+    existing_config: Optional[Dict[str, Any]] = None,
 ) -> Optional[StackComponentConfig]:
     """Validate the configuration of a stack component.
 
@@ -45,6 +46,7 @@ def validate_stack_component_config(
         validate_custom_flavors: When loading custom flavors from the local
             environment, this flag decides whether the import failures are
             raised or an empty value is returned.
+        existing_config: The existing stack component configuration.
 
     Returns:
         The validated stack component configuration or None, if the
@@ -80,14 +82,21 @@ def validate_stack_component_config(
         raise
 
     config_class = flavor_class.config_class
-    # Make sure extras are forbidden for the config class. Due to inheritance
-    # order, some config classes allow extras by accident which we patch here.
-    validation_config_class: Type[StackComponentConfig] = type(
-        config_class.__name__,
-        (config_class,),
-        {"model_config": {"extra": "ignore"}},
-    )
-    configuration = validation_config_class(**configuration_dict)
+
+    extra_keys = set(configuration_dict) - set(config_class.model_fields)
+    if existing_config:
+        # If there is an existing configuration, don't fail because of keys
+        # that were already set. This can be the case if the config stored in
+        # the DB contains attributes that have been removed.
+        extra_keys = extra_keys - set(existing_config)
+
+    if extra_keys:
+        raise ValueError(
+            f"Invalid configuration keys {list(extra_keys)} for "
+            f"{flavor_model.name} {component_type}."
+        )
+
+    configuration = config_class(**configuration_dict)
 
     if not configuration.is_valid:
         raise ValueError(
