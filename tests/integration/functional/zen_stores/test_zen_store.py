@@ -2657,30 +2657,65 @@ def test_crud_on_stack_succeeds():
                 store.get_stack(created_stack.id)
 
 
-def test_register_stack_fails_when_stack_exists():
-    """Tests registering stack fails when stack exists."""
+def test_name_uniqueness_checks_on_stack_crud():
     client = Client()
-    store = client.zen_store
+    store: RestZenStore = client.zen_store
 
-    with ComponentContext(
-        c_type=StackComponentType.ORCHESTRATOR, flavor="local", config={}
-    ) as orchestrator:
-        with ComponentContext(
-            c_type=StackComponentType.ARTIFACT_STORE, flavor="local", config={}
-        ) as artifact_store:
-            components = {
-                StackComponentType.ORCHESTRATOR: [orchestrator.id],
-                StackComponentType.ARTIFACT_STORE: [artifact_store.id],
-            }
-            with StackContext(components=components) as stack:
-                new_stack = StackRequest(
-                    name=stack.name,
-                    components=components,
-                )
-                with pytest.raises(EntityExistsError):
-                    store.create_stack(
-                        stack=new_stack,
-                    )
+    if not isinstance(store, RestZenStore):
+        pytest.skip("Uniqueness name checks should run e2e via REST")
+
+    default_stack = store._get_default_stack()
+
+    components = {
+        key: [value[0].id]
+        for key, value in default_stack.components.items()
+        if value
+    }
+
+    stack_name = sample_name("zen")
+
+    store.create_stack(
+        stack=StackRequest(
+            name=stack_name,
+            components=components,
+        )
+    )
+
+    # creation with another stack's name (case sensitive) fails.
+
+    with pytest.raises(EntityExistsError):
+        store.create_stack(
+            StackRequest(
+                name=stack_name.upper(),
+                components=components,
+            )
+        )
+
+    second_stack_name = sample_name("zen")
+    second_stack = store.create_stack(
+        stack=StackRequest(
+            name=second_stack_name,
+            components=components,
+        )
+    )
+
+    # update to another stack's name (case sensitive) fails
+
+    with pytest.raises(EntityExistsError):
+        store.update_stack(
+            stack_id=second_stack.id,
+            stack_update=StackUpdate(name=stack_name.upper()),
+        )
+
+    # update to self stack's name (case sensitive) succeeds
+
+    assert (
+        store.update_stack(
+            stack_id=second_stack.id,
+            stack_update=StackUpdate(name=second_stack_name.upper()),
+        ).name
+        == second_stack_name.upper()
+    )
 
 
 def test_register_stack_fails_with_invalid_name():
@@ -5597,6 +5632,7 @@ class TestRunMetadata:
                             config=StepConfiguration(name=step_name),
                         )
                     },
+                    is_dynamic=False,
                 )
             )
             pr, _ = client.zen_store.get_or_create_run(
@@ -5657,6 +5693,7 @@ class TestRunMetadata:
                         )
                     },
                     schedule=resource.id,
+                    is_dynamic=False,
                 )
             )
         else:
@@ -5890,6 +5927,7 @@ class TestCuratedVisualizations:
                         config=StepConfiguration(name=step_name),
                     )
                 },
+                is_dynamic=False,
             )
         )
 

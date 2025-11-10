@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 """Abstract base class for entrypoint configurations that run a single step."""
 
-from typing import TYPE_CHECKING, Any, List, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.entrypoints.step_entrypoint_configuration import (
     STEP_NAME_OPTION,
@@ -26,8 +27,7 @@ from zenml.orchestrators import input_utils, output_utils
 from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
-    from zenml.config.step_configurations import Step
-    from zenml.models import PipelineSnapshotResponse
+    from zenml.models import PipelineSnapshotResponse, StepRunResponse
 
 STEP_RUN_ID_OPTION = "step_run_id"
 
@@ -35,15 +35,25 @@ STEP_RUN_ID_OPTION = "step_run_id"
 class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
     """Base class for step operator entrypoint configurations."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the step operator entrypoint configuration.
+
+        Args:
+            *args: The arguments to pass to the superclass.
+            **kwargs: The keyword arguments to pass to the superclass.
+        """
+        super().__init__(*args, **kwargs)
+        self._step_run: Optional["StepRunResponse"] = None
+
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the step run id.
         """
         return super().get_entrypoint_options() | {
-            STEP_RUN_ID_OPTION,
+            STEP_RUN_ID_OPTION: True,
         }
 
     @classmethod
@@ -64,6 +74,31 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             kwargs[STEP_RUN_ID_OPTION],
         ]
 
+    @property
+    def step_run(self) -> "StepRunResponse":
+        """The step run configured for this entrypoint configuration.
+
+        Returns:
+            The step run.
+        """
+        if self._step_run is None:
+            step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
+            self._step_run = Client().zen_store.get_run_step(step_run_id)
+        return self._step_run
+
+    @property
+    def step(self) -> "Step":
+        """The step configured for this entrypoint configuration.
+
+        Returns:
+            The step.
+        """
+        return Step(
+            spec=self.step_run.spec,
+            config=self.step_run.config,
+            step_config_overrides=self.step_run.config,
+        )
+
     def _run_step(
         self,
         step: "Step",
@@ -75,17 +110,18 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
             step: The step to run.
             snapshot: The snapshot configuration.
         """
-        step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
-        step_run = Client().zen_store.get_run_step(step_run_id)
+        step_run = self.step_run
         pipeline_run = Client().get_pipeline_run(step_run.pipeline_run_id)
 
         step_run_info = StepRunInfo(
             config=step.config,
+            spec=step.spec,
+            snapshot=snapshot,
             pipeline=snapshot.pipeline_configuration,
             run_name=pipeline_run.name,
             pipeline_step_name=self.entrypoint_args[STEP_NAME_OPTION],
             run_id=pipeline_run.id,
-            step_run_id=step_run_id,
+            step_run_id=step_run.id,
             force_write_logs=lambda: None,
         )
 

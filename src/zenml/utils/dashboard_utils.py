@@ -25,6 +25,7 @@ from zenml.environment import get_environment
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentResponse,
+    DeploymentResponse,
     ModelVersionResponse,
     PipelineRunResponse,
     ServerDeploymentType,
@@ -152,6 +153,26 @@ def get_model_version_url(
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
         return f"{cloud_url}{constants.PROJECTS}/{model_version.project_id}/model-versions/{str(model_version.id)}"
+
+    return None
+
+
+def get_deployment_url(deployment: DeploymentResponse) -> Optional[str]:
+    """Function to get the dashboard URL of a given deployment.
+
+    Args:
+        deployment: the response model of the given deployment.
+
+    Returns:
+        the URL to the deployment if the dashboard is available, else None.
+    """
+    cloud_url = get_cloud_dashboard_url()
+    if cloud_url:
+        return f"{cloud_url}{constants.PROJECTS}/{deployment.project_id}{constants.DEPLOYMENTS}/{deployment.id}"
+
+    dashboard_url = get_server_dashboard_url()
+    if dashboard_url:
+        return f"{dashboard_url}{constants.PROJECTS}/{deployment.project.name}{constants.DEPLOYMENTS}/{deployment.id}"
 
     return None
 

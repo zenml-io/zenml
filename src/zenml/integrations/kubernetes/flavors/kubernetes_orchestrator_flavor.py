@@ -240,11 +240,13 @@ class KubernetesOrchestratorConfig(
 
     incluster: bool = Field(
         False,
-        description="If `True`, the orchestrator will run the pipeline inside the "
+        description="If `True`, the orchestrator will attempt to load the "
+        "in-cluster Kubernetes configuration and run the pipeline inside the "
         "same cluster in which it itself is running. This requires the client "
-        "to run in a Kubernetes pod itself. If set, the `kubernetes_context` "
-        "config option is ignored. If the stack component is linked to a "
-        "Kubernetes service connector, this field is ignored.",
+        "to run in a Kubernetes pod itself. If this fails, the orchestrator "
+        "will fall back to using the linked service connector or the "
+        "configured `kubernetes_context` configuration if provided, in that "
+        "order.",
     )
     kubernetes_context: Optional[str] = Field(
         None,
@@ -279,6 +281,11 @@ class KubernetesOrchestratorConfig(
         description="If `True`, the ZenML token will be passed as a Kubernetes secret "
         "to the pods. For this to work, the Kubernetes client must have permissions "
         "to create secrets in the namespace.",
+    )
+    skip_owner_references: bool = Field(
+        False,
+        description="If `True`, the orchestrator will not alter the owner "
+        "references on the step jobs.",
     )
 
     @property
