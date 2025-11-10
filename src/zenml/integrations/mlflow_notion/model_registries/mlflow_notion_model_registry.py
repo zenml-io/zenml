@@ -1574,10 +1574,25 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                 }
                 zenml_stage = stage_mapping.get(stage, ModelStages.NONE)
 
-                model_version = client.get_model_version(
-                    model_name_or_id=zenml_model.id,
-                    model_version_name_or_number_or_id=version,
-                )
+                # Extract ZenML version UUID from MLflow tags (source of truth)
+                zenml_version_id = None
+                if mlflow_version and mlflow_version.tags:
+                    zenml_model_url = mlflow_version.tags.get("zenml_model_url", "")
+                    if zenml_model_url and "/model-versions/" in zenml_model_url:
+                        # Extract UUID from URL like: https://staging.cloud.zenml.io/workspaces/synthesia/projects/default/model-versions/e805932c-c5cf-4b41-a4d1-ca3a4293a032?tab=overview
+                        zenml_version_id = zenml_model_url.split("/model-versions/")[-1].split("?")[0]
+
+                # Try to get ZenML version by UUID first (if available), then fall back to version number
+                if zenml_version_id:
+                    model_version = client.get_model_version(
+                        model_name_or_id=zenml_model.id,
+                        model_version_name_or_number_or_id=zenml_version_id,
+                    )
+                else:
+                    model_version = client.get_model_version(
+                        model_name_or_id=zenml_model.id,
+                        model_version_name_or_number_or_id=version,
+                    )
 
                 # Handle both enum and string representations of stage
                 if model_version.stage:
@@ -1636,9 +1651,11 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                             )
 
                     # Override ZenML's stage transition validation since MLflow is source of truth
+                    # Use the UUID if we found it from MLflow tags, otherwise use version number
+                    zenml_version_identifier = zenml_version_id or version
                     client.update_model_version(
                         model_name_or_id=zenml_model.id,
-                        version_name_or_id=version,
+                        version_name_or_id=zenml_version_identifier,
                         stage=zenml_stage,
                         force=True,
                     )
