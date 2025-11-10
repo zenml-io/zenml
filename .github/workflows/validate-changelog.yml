@@ -6,11 +6,11 @@ on:
       - "changelog.json"
 
 jobs:
-  verify-json-validation:
+  verify-changelog-json:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Validate package.json against a local schema
+      - name: Validate changelog.json against announcement-schema.json
         uses: cardinalby/schema-validator-action@v3
         with:
           file: "./changelog.json"
