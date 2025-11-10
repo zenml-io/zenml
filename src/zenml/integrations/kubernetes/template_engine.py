@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """Kubernetes template engine."""
 
-import json
-import os
-import re
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -29,12 +25,9 @@ from jinja2 import (
     Undefined,
 )
 
-from zenml.client import Client
-from zenml.integrations.kubernetes import kube_utils
 from zenml.io import fileio
-from zenml.io.filesystem import PathType
 from zenml.logger import get_logger
-from zenml.utils import io_utils, source_utils
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 
@@ -88,11 +81,6 @@ class KubernetesTemplateEngine:
             keep_trailing_newline=True,
         )
 
-        self.env.filters["to_yaml"] = self._yaml_filter
-        self.env.filters["to_json"] = self._json_filter
-        self.env.filters["k8s_name"] = self._k8s_name_filter
-        self.env.filters["k8s_label_value"] = self._k8s_label_value_filter
-
     @staticmethod
     def _resolve_template_path(path: str) -> str:
         """Resolve and validate template directory path.
@@ -120,329 +108,19 @@ class KubernetesTemplateEngine:
                 f"Please verify the path is correct and accessible."
             )
 
-    @staticmethod
-    def _validate_k8s_resource(
-        resource: Dict[str, Any],
-        source: str = "resource",
-        index: Optional[int] = None,
-    ) -> None:
-        """Validate that a resource has required Kubernetes fields.
-
-        Note: Basic validation only. The Kubernetes API server performs
-        comprehensive validation including schema, required fields, and CRDs.
-
-        Args:
-            resource: The resource dictionary to validate.
-            source: Description of the resource source for error messages.
-            index: Optional document index for error messages.
-
-        Raises:
-            ValueError: If the resource is invalid.
-        """
-        if "kind" not in resource:
-            raise ValueError(
-                f"Invalid Kubernetes manifest: missing 'kind' field "
-                f"in {source}"
-                f"{' document ' + str(index + 1) if index is not None else ''}"
-            )
-        if "apiVersion" not in resource:
-            raise ValueError(
-                f"Invalid Kubernetes manifest: missing 'apiVersion' field "
-                f"in {source}"
-                f"{' document ' + str(index + 1) if index is not None else ''}"
-            )
-
-    @staticmethod
-    def _yaml_filter(value: Any, indent: int = 2) -> str:
-        """Convert Python object to YAML string.
-
-        Args:
-            value: The value to convert.
-            indent: Indentation level.
-
-        Returns:
-            YAML string representation.
-        """
-        return yaml.safe_dump(
-            value,
-            default_flow_style=False,
-            sort_keys=False,
-            indent=indent,
-        ).rstrip()
-
-    @staticmethod
-    def _json_filter(value: Any) -> str:
-        """Convert Python object to JSON string.
-
-        Args:
-            value: The value to convert.
-
-        Returns:
-            JSON string representation.
-        """
-        return json.dumps(value, sort_keys=False, indent=2)
-
-    @staticmethod
-    def _k8s_name_filter(value: str, max_length: int = 63) -> str:
-        """Sanitize a string to be a valid Kubernetes resource name.
-
-        Delegates to kube_utils.sanitize_label for consistent behavior, then
-        applies additional length truncation if max_length is not the default 63.
-
-        Args:
-            value: The string to sanitize.
-            max_length: Maximum allowed length (default 63, K8s limit).
-
-        Returns:
-            Sanitized Kubernetes name.
-        """
-        sanitized = kube_utils.sanitize_label(value)
-
-        if max_length != 63 and len(sanitized) > max_length:
-            sanitized = sanitized[:max_length].rstrip("-")
-
-        return sanitized or "unnamed"
-
-    @staticmethod
-    def _k8s_label_value_filter(value: str, max_length: int = 63) -> str:
-        """Sanitize a string to be a valid Kubernetes label value.
-
-        Unlike resource names, label values are case-sensitive and allow dots.
-        See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
-
-        Args:
-            value: The string to sanitize.
-            max_length: Maximum allowed length (default 63).
-
-        Returns:
-            Sanitized label value, or empty string if input is empty.
-        """
-        if not value:
-            return ""
-
-        label = re.sub(r"[^a-zA-Z0-9._-]", "-", value)
-
-        label = re.sub(r"^[^a-zA-Z0-9]+", "", label)
-        label = re.sub(r"[^a-zA-Z0-9]+$", "", label)
-
-        if len(label) > max_length:
-            label = label[:max_length].rstrip("._-")
-
-        return label
-
-    @staticmethod
-    def _determine_default_manifest_dir(deployment_name: str) -> str:
-        """Determine the default local manifest directory for a deployment.
-
-        Tries in order:
-        1. ZenML repository root/.zenml-deployments/
-        2. Source root/.zenml-deployments/
-        3. Temp directory (with warning)
-
-        Args:
-            deployment_name: Name of the deployment.
-
-        Returns:
-            Local filesystem path to the default manifest directory.
-        """
-        try:
-            repo_root = Client.find_repository()
-            if repo_root is not None:
-                manifest_path = (
-                    repo_root / ".zenml-deployments" / deployment_name
-                )
-                return str(manifest_path)
-        except Exception as e:
-            logger.debug(f"Could not use repository root for manifests: {e}")
-
-        try:
-            source_root = source_utils.get_source_root()
-            if source_root:
-                manifest_path = (
-                    Path(source_root) / ".zenml-deployments" / deployment_name
-                )
-                return str(manifest_path)
-        except Exception as e:
-            logger.debug(f"Could not use source root for manifests: {e}")
-
-        temp_base = os.path.join(tempfile.gettempdir(), "zenml-k8s")
-        fallback_dir = os.path.join(temp_base, deployment_name)
-        logger.warning(
-            f"Could not determine project root. Saving manifests to temporary directory: {fallback_dir}. "
-            f"These manifests may be lost on system restart. "
-            f"Consider running from a ZenML repository or specifying manifest_output_dir."
-        )
-        return fallback_dir
-
-    def save_k8s_objects(
-        self,
-        k8s_objects: List[Any],
-        deployment_name: str,
-        output_dir: Optional[PathType] = None,
-    ) -> List[str]:
-        """Save validated Kubernetes API objects as clean YAML files.
-
-        Args:
-            k8s_objects: List of Kubernetes API objects (with .to_dict() method).
-            deployment_name: Name of the deployment (used for directory name).
-            output_dir: Optional custom local directory. If not provided,
-                uses project root '.zenml-deployments/' directory.
-
-        Returns:
-            List of file paths where YAML files were saved.
-
-        Raises:
-            ValueError: If a remote path is provided or objects cannot be serialized.
-        """
-        if output_dir is not None:
-            output_dir_str = str(output_dir)
-            if io_utils.is_remote(output_dir_str):
-                raise ValueError(
-                    f"Remote paths are not supported: {output_dir_str}"
-                )
-            base_dir = io_utils.resolve_relative_path(output_dir_str)
-            manifest_dir = os.path.join(base_dir, deployment_name)
-        else:
-            manifest_dir = (
-                KubernetesTemplateEngine._determine_default_manifest_dir(
-                    deployment_name
-                )
-            )
-
-        os.makedirs(manifest_dir, exist_ok=True)
-
-        saved_files = []
-        for idx, k8s_obj in enumerate(k8s_objects):
-            if not hasattr(k8s_obj, "to_dict"):
-                raise ValueError(
-                    f"Object at index {idx} does not have a to_dict() method"
-                )
-            obj_dict = k8s_obj.to_dict()
-
-            obj_dict = self._clean_k8s_resource_dict(obj_dict)
-
-            kind = obj_dict.get("kind", "unknown").lower()
-            name = obj_dict.get("metadata", {}).get("name", f"resource-{idx}")
-            filename = f"{kind}-{name}.yaml"
-            filepath = os.path.join(manifest_dir, filename)
-
-            with open(filepath, "w") as f:
-                yaml.dump(
-                    obj_dict, f, default_flow_style=False, sort_keys=False
-                )
-
-            saved_files.append(filepath)
-
-        logger.info(
-            f"Saved {len(saved_files)} validated Kubernetes manifest(s) to {manifest_dir}"
-        )
-        return saved_files
-
-    @staticmethod
-    def _clean_k8s_resource_dict(obj_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """Remove Kubernetes internal metadata for clean YAML output.
-
-        Args:
-            obj_dict: Raw Kubernetes resource dictionary.
-
-        Returns:
-            Cleaned dictionary with only user-relevant fields.
-        """
-        obj_dict.pop("status", None)
-
-        metadata = obj_dict.get("metadata", {})
-        if metadata:
-            for field in [
-                "managedFields",
-                "uid",
-                "resourceVersion",
-                "generation",
-                "creationTimestamp",
-                "selfLink",
-            ]:
-                metadata.pop(field, None)
-
-            obj_dict["metadata"] = {
-                k: v
-                for k, v in metadata.items()
-                if v not in (None, "", {}, [])
-            }
-
-        return obj_dict
-
     # ========================================================================
     # Template and Resource Rendering
     # ========================================================================
 
     def render_template(
         self,
-        template_or_file: str,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Render a template or load YAML resources with optional templating.
-
-        Args:
-            template_or_file: Template name (e.g., "deployment.yaml.j2") or
-                file path to a YAML file.
-            context: Dictionary of variables to pass to the template.
-
-        Returns:
-            List of resource dictionaries ready to apply.
-        """
-        context = context or {}
-
-        if template_or_file.endswith(".j2"):
-            return self._render_jinja_template(template_or_file, context)
-        else:
-            return self._render_yaml_file(template_or_file, context)
-
-    def _render_jinja_template(
-        self,
-        template_name: str,
+        file: str,
         context: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
-        """Render a Jinja2 template from configured template directories.
+        """Render a YAML file with optional Jinja2 template context.
 
         Args:
-            template_name: Name of the template file (e.g., "deployment.yaml.j2").
-            context: Dictionary of variables to pass to the template.
-
-        Returns:
-            List of resource dictionaries.
-
-        Raises:
-            TemplateNotFound: If the template cannot be found.
-            ValueError: If the rendered output is invalid YAML.
-        """
-        try:
-            template = self.env.get_template(template_name)
-        except TemplateNotFound as e:
-            available_templates = self.list_available_templates()
-            raise TemplateNotFound(
-                f"Template '{template_name}' not found. "
-                f"Available templates: {available_templates}"
-            ) from e
-
-        rendered = template.render(**context)
-
-        try:
-            resources = KubernetesTemplateEngine.load_yaml_documents(rendered)
-        except ValueError as e:
-            raise ValueError(
-                f"Failed to parse template {template_name}: {e}"
-            ) from e
-
-        return resources if isinstance(resources, list) else [resources]
-
-    def _render_yaml_file(
-        self,
-        file_path: str,
-        context: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
-        """Load and optionally template a YAML file from the filesystem.
-
-        Args:
-            file_path: Path to the YAML file (local or remote).
+            file: Path to the YAML file (local or remote).
             context: Optional Jinja2 template context for variable substitution.
 
         Returns:
@@ -452,15 +130,19 @@ class KubernetesTemplateEngine:
             ValueError: If the file cannot be loaded, parsed, or validated.
         """
         try:
-            if io_utils.is_remote(file_path):
-                file_path_str = io_utils.sanitize_remote_path(file_path)
+            template = self.env.get_template(file)
+        except TemplateNotFound as e:
+            logger.info(f"Template not found: {file}: {e}")
+
+            if io_utils.is_remote(file):
+                file_str = io_utils.sanitize_remote_path(file)
             else:
-                file_path_str = io_utils.resolve_relative_path(file_path)
+                file_str = io_utils.resolve_relative_path(file)
 
-            if not fileio.exists(file_path_str):
-                raise ValueError(f"Resource file not found: {file_path}")
+            if not fileio.exists(file_str):
+                raise ValueError(f"Resource file not found: {file}")
 
-            yaml_content = io_utils.read_file_contents_as_string(file_path_str)
+            yaml_content = io_utils.read_file_contents_as_string(file_str)
 
             if context:
                 template = self.env.from_string(yaml_content)
@@ -472,22 +154,21 @@ class KubernetesTemplateEngine:
                 )
             except ValueError as e:
                 raise ValueError(
-                    f"Failed to parse YAML from {file_path}: {e}"
+                    f"Failed to parse YAML from {file}: {e}"
                 ) from e
 
             resources: List[Dict[str, Any]] = []
             for index, doc in enumerate(yaml_docs):
                 try:
-                    self._validate_k8s_resource(doc, file_path, index)
                     resources.append(doc)
                 except ValueError as e:
                     logger.warning(
-                        f"Skipping invalid Kubernetes resource in {file_path} (doc {index}): {e}"
+                        f"Skipping invalid Kubernetes resource in {file} (doc {index}): {e}"
                     )
 
             if resources:
                 logger.info(
-                    f"Loaded {len(resources)} resource(s) from {Path(file_path).name}"
+                    f"Loaded {len(resources)} resource(s) from {Path(file).name}"
                 )
 
             return resources
@@ -496,23 +177,8 @@ class KubernetesTemplateEngine:
             raise
         except Exception as e:
             raise ValueError(
-                f"Failed to load resource file '{file_path}': {e}"
+                f"Failed to load resource file '{file}': {e}"
             ) from e
-
-    def list_available_templates(self) -> List[str]:
-        """List all available template files.
-
-        Returns:
-            List of template filenames.
-        """
-        templates = set()
-        for template_dir in self.template_dirs:
-            template_path = Path(template_dir)
-            if template_path.exists():
-                for template_file in template_path.rglob("*.j2"):
-                    rel_path = template_file.relative_to(template_path)
-                    templates.add(str(rel_path))
-        return sorted(templates)
 
     @staticmethod
     def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
@@ -546,27 +212,3 @@ class KubernetesTemplateEngine:
             raise ValueError("YAML contains no valid documents")
 
         return resources
-
-    @staticmethod
-    def dump_yaml_documents(
-        documents: List[Dict[str, Any]],
-        sort_keys: bool = False,
-    ) -> str:
-        """Serialize multiple YAML documents into a single YAML string.
-
-        Args:
-            documents: YAML document payloads (dicts or lists) to serialize.
-            sort_keys: Whether to sort dictionary keys when dumping each document.
-
-        Returns:
-            A YAML string containing all documents separated by YAML document markers.
-        """
-        serialized_documents = []
-        for document in documents:
-            serialized = yaml.safe_dump(
-                document,
-                sort_keys=sort_keys,
-                default_flow_style=False,
-            ).rstrip()
-            serialized_documents.append(serialized)
-        return "\n---\n".join(serialized_documents)
