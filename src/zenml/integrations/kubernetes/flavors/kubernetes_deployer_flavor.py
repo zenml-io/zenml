@@ -26,7 +26,6 @@ from zenml.deployers.base_deployer import (
 from zenml.enums import KubernetesServiceType
 from zenml.integrations.kubernetes import (
     KUBERNETES_DEPLOYER_FLAVOR,
-    kube_utils,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
@@ -64,29 +63,12 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
           Use this to customize health probes, service annotations, etc.
     """
 
-    namespace: Optional[str] = Field(
-        default=None,
-        description="Kubernetes namespace for deployments. "
-        "If not provided, uses the `kubernetes_namespace` from the deployer "
-        "component configuration (defaults to 'zenml-deployments').",
+    namespace: str = Field(
+        "zenml-deployments",
+        description="Default Kubernetes namespace for deployments. "
+        "Can be overridden per-deployment using the `namespace` setting. "
+        "Defaults to 'zenml-deployments'.",
     )
-
-    @field_validator("namespace")
-    @classmethod
-    def validate_namespace(cls, v: Optional[str]) -> Optional[str]:
-        """Validate Kubernetes namespace name.
-
-        Args:
-            v: The namespace value to validate.
-
-        Returns:
-            The validated namespace value.
-        """
-        if v is None:
-            return v
-
-        kube_utils.validate_namespace_name(v)
-        return v
 
     service_type: KubernetesServiceType = Field(
         default=KubernetesServiceType.LOAD_BALANCER,
@@ -326,17 +308,15 @@ class KubernetesDeployerConfig(BaseDeployerConfig, KubernetesDeployerSettings):
         "this field is ignored. Otherwise, it is mandatory.",
     )
 
-    kubernetes_namespace: str = Field(
-        "zenml-deployments",
-        description="Default Kubernetes namespace for deployments. "
-        "Can be overridden per-deployment using the `namespace` setting. "
-        "Defaults to 'zenml-deployments'.",
-    )
-
     local: bool = Field(
         False,
         description="If `True`, the deployer will assume it is connected to a "
         "local kubernetes cluster and will perform additional validations.",
+    )
+
+    skip_local_validations: bool = Field(
+        False,
+        description="If `True`, the local validations will be skipped.",
     )
 
     @property

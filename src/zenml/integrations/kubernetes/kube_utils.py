@@ -74,8 +74,6 @@ logger = get_logger(__name__)
 
 R = TypeVar("R")
 
-MIB_TO_GIB = 1024  # MiB to GiB conversion factor
-
 
 # This is to fix a bug in the kubernetes client which has some wrong
 # client-side validations that means the `on_exit_codes` field is
@@ -176,33 +174,6 @@ def sanitize_label(label: str) -> str:
     label = re.sub(r"[-]+$", "", label)
 
     return label
-
-
-def validate_namespace_name(namespace: str) -> None:
-    """Validate a Kubernetes namespace name.
-
-    Kubernetes namespace names must follow RFC 1123 DNS subdomain format:
-    - Must be lowercase alphanumeric characters or hyphens
-    - Must start and end with an alphanumeric character
-    - Must be at most 63 characters long
-
-    Args:
-        namespace: The namespace name to validate.
-
-    Raises:
-        ValueError: If the namespace name is invalid.
-    """
-    if not re.match(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", namespace):
-        raise ValueError(
-            f"Invalid namespace: '{namespace}'. Kubernetes namespaces must be lowercase "
-            "alphanumeric characters or hyphens, and must start and end with "
-            "an alphanumeric character."
-        )
-    if len(namespace) > 63:
-        raise ValueError(
-            f"Namespace too long: {len(namespace)} > 63 characters. "
-            "Kubernetes resource names must be at most 63 characters."
-        )
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
@@ -1232,16 +1203,14 @@ def convert_resource_settings_to_k8s_format(
         resource_settings: The resource settings from pipeline configuration.
 
     Returns:
-        Tuple of (requests, limits, replicas) in Kubernetes format.
+        Tuple of (requests, replicas) in Kubernetes format.
         - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
-        - limits: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
         - replicas: Number of replicas
 
     Raises:
         ValueError: If replica configuration is invalid.
     """
     requests: Dict[str, str] = {}
-    limits: Dict[str, str] = {}
 
     if resource_settings.cpu_count is not None:
         cpu_value = resource_settings.cpu_count
@@ -1256,19 +1225,11 @@ def convert_resource_settings_to_k8s_format(
                 cpu_str = f"{int(cpu_value * 1000)}m"  # 1.5 → "1500m"
 
         requests["cpu"] = cpu_str
-        limits["cpu"] = cpu_str
 
     if resource_settings.memory is not None:
-        memory_value = resource_settings.get_memory(unit=ByteUnit.MIB)
-        if memory_value is not None:
-            # Use Gi only for clean conversions to avoid precision loss
-            if memory_value >= MIB_TO_GIB and memory_value % MIB_TO_GIB == 0:
-                memory_str = f"{int(memory_value / MIB_TO_GIB)}Gi"
-            else:
-                memory_str = f"{int(memory_value)}Mi"
-
-            requests["memory"] = memory_str
-            limits["memory"] = memory_str
+        memory_mib = resource_settings.get_memory(unit=ByteUnit.MIB)
+        if memory_mib is not None:
+            requests["memory"] = f"{int(memory_mib)}Mi"
 
     # Determine replica count from min/max settings
     # For standard K8s Deployments, we use min_replicas as the baseline
@@ -1301,7 +1262,6 @@ def convert_resource_settings_to_k8s_format(
         # GPU requests must be integers; Kubernetes auto-sets requests=limits for GPUs
         gpu_str = str(resource_settings.gpu_count)
         requests["nvidia.com/gpu"] = gpu_str
-        limits["nvidia.com/gpu"] = gpu_str
         logger.info(
             f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
             f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
@@ -1309,7 +1269,7 @@ def convert_resource_settings_to_k8s_format(
             f"https://github.com/NVIDIA/k8s-device-plugin"
         )
 
-    return requests, limits, replicas
+    return requests, replicas
 
 
 # ============================================================================

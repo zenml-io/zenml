@@ -27,6 +27,7 @@ from typing import (
 )
 
 from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 from pydantic import BaseModel, ConfigDict
 
@@ -75,7 +76,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-MAX_K8S_NAME_LENGTH = 63
 MAX_LOAD_BALANCER_TIMEOUT = 600  # 10 minutes
 
 
@@ -115,16 +115,17 @@ class KubernetesDeployer(ContainerizedDeployer):
     def get_kube_client(
         self, incluster: Optional[bool] = None
     ) -> k8s_client.ApiClient:
-        """Get authenticated Kubernetes client.
+        """Getter for the Kubernetes API client.
 
         Args:
-            incluster: Whether to use in-cluster config.
+            incluster: Whether to use the in-cluster config or not. Overrides
+                the `incluster` setting in the config.
 
         Returns:
-            Authenticated Kubernetes API client.
+            The Kubernetes API client.
 
         Raises:
-            RuntimeError: If connector returns invalid client type.
+            RuntimeError: if the Kubernetes connector behaves unexpectedly.
         """
         if incluster is None:
             incluster = self.config.incluster
@@ -149,7 +150,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     )
                 else:
                     raise RuntimeError(
-                        f"The deployer failed to load the in-cluster "
+                        f"The orchestrator failed to load the in-cluster "
                         f"Kubernetes configuration and there is no service "
                         f"connector or kubernetes_context to fall back to: {e}"
                     ) from e
@@ -159,6 +160,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"{e}. {message}"
                 )
 
+        # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():
             return self._k8s_client
 
@@ -167,7 +169,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             client = connector.connect()
             if not isinstance(client, k8s_client.ApiClient):
                 raise RuntimeError(
-                    f"Expected k8s_client.ApiClient but got {type(client)}"
+                    f"Expected a k8s_client.ApiClient while trying to use the "
+                    f"linked connector, but got {type(client)}."
                 )
             self._k8s_client = client
         else:
@@ -225,6 +228,27 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         return KubernetesDeployerSettings
 
+    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+        """Get list of configured Kubernetes contexts and the active context.
+
+        Raises:
+            RuntimeError: if the Kubernetes configuration cannot be loaded.
+
+        Returns:
+            context_name: List of configured Kubernetes contexts
+            active_context_name: Name of the active Kubernetes context.
+        """
+        try:
+            contexts, active_context = k8s_config.list_kube_config_contexts()
+        except k8s_config.config_exception.ConfigException as e:
+            raise RuntimeError(
+                "Could not load the Kubernetes configuration"
+            ) from e
+
+        context_names = [c["name"] for c in contexts]
+        active_context_name = active_context["name"]
+        return context_names, active_context_name
+
     @property
     def validator(self) -> Optional[StackValidator]:
         """Stack validator for the deployer.
@@ -238,10 +262,114 @@ class KubernetesDeployer(ContainerizedDeployer):
             if not container_registry:
                 return False, "Container registry is required"
 
-            if not self.config.is_local and container_registry.config.is_local:
-                return False, (
-                    "Cannot use local container registry with remote Kubernetes cluster"
-                )
+            kubernetes_context = self.config.kubernetes_context
+            msg = f"'{self.name}' Kubernetes deployer error: "
+
+            if not self.connector:
+                if self.config.incluster:
+                    # No service connector or kubernetes_context is needed when
+                    # the deployer is being used from within a Kubernetes
+                    # cluster.
+                    pass
+                elif kubernetes_context:
+                    contexts, active_context = self.get_kubernetes_contexts()
+
+                    if kubernetes_context not in contexts:
+                        return False, (
+                            f"{msg}could not find a Kubernetes context named "
+                            f"'{kubernetes_context}' in the local "
+                            "Kubernetes configuration. Please make sure that "
+                            "the Kubernetes cluster is running and that the "
+                            "kubeconfig file is configured correctly. To list "
+                            "all configured contexts, run:\n\n"
+                            "  `kubectl config get-contexts`\n"
+                        )
+                    if kubernetes_context != active_context:
+                        logger.warning(
+                            f"{msg}the Kubernetes context "
+                            f"'{kubernetes_context}' configured for the "
+                            f"Kubernetes deployer is not the same as the "
+                            f"active context in the local Kubernetes "
+                            f"configuration. If this is not deliberate, you "
+                            f"should update the deployer's "
+                            f"`kubernetes_context` field by running:\n\n"
+                            f"  `zenml deployer update {self.name} "
+                            f"--kubernetes_context={active_context}`\n"
+                            f"To list all configured contexts, run:\n\n"
+                            f"  `kubectl config get-contexts`\n"
+                            f"To set the active context to be the same as the "
+                            f"one configured in the Kubernetes deployer "
+                            f"and silence this warning, run:\n\n"
+                            f"  `kubectl config use-context "
+                            f"{kubernetes_context}`\n"
+                        )
+                else:
+                    return False, (
+                        f"{msg}you must either link this deployer to a "
+                        "Kubernetes service connector (see the 'zenml "
+                        "deployer connect' CLI command), explicitly set "
+                        "the `kubernetes_context` attribute to the name of the "
+                        "Kubernetes config context pointing to the cluster "
+                        "where you would like to deploy, or set the "
+                        "`incluster` attribute to `True`."
+                    )
+
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"deployer configuration by running:\n\n"
+                f"  'zenml deployer update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if (
+                not self.config.skip_local_validations
+                and not self.config.is_local
+            ):
+                # If the deployer is not running in a local k3d cluster,
+                # we cannot have any other local components in our stack,
+                # because we cannot mount the local path into the container.
+                # This may result in problems when running deployments, because
+                # the local components will not be available inside the
+                # kubernetes containers.
+
+                # Go through all stack components and identify those that
+                # advertise a local path where they persist information that
+                # they need to be available when running deployments.
+                for stack_comp in stack.components.values():
+                    if stack_comp.local_path is None:
+                        continue
+                    return False, (
+                        f"{msg}the Kubernetes deployer is configured to "
+                        f"run deployments in a remote Kubernetes cluster but the "
+                        f"'{stack_comp.name}' {stack_comp.type.value} "
+                        f"is a local stack component "
+                        f"and will not be available in the Kubernetes deployment "
+                        f"containers.\nPlease ensure that you always use non-local "
+                        f"stack components with a remote Kubernetes deployer, "
+                        f"otherwise you may run into deployment execution "
+                        f"problems. You should use a flavor of "
+                        f"{stack_comp.type.value} other than "
+                        f"'{stack_comp.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
+
+                # If the deployer is remote, the container registry must
+                # also be remote.
+                if container_registry.config.is_local:
+                    return False, (
+                        f"{msg}the Kubernetes deployer is configured to "
+                        "run deployments in a remote Kubernetes cluster but the "
+                        f"'{container_registry.name}' container registry URI "
+                        f"'{container_registry.config.uri}' "
+                        f"points to a local container registry. Please ensure "
+                        f"that you always use non-local stack components with "
+                        f"a remote Kubernetes deployer, otherwise you will "
+                        f"run into problems. You should use a flavor of "
+                        f"container registry other than "
+                        f"'{container_registry.flavor}'.\n"
+                        + silence_local_validations_msg
+                    )
 
             return True, ""
 
@@ -268,7 +396,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_env_vars: Dict[str, str],
         secret_name: str,
         resource_requests: Dict[str, str],
-        resource_limits: Dict[str, str],
         replicas: int,
         deployment_id: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -284,7 +411,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_env_vars: Secret environment variables dict.
             secret_name: Kubernetes secret name.
             resource_requests: Resource requests dict.
-            resource_limits: Resource limits dict.
             replicas: Number of replicas.
             deployment_id: Optional deployment UUID for unique resource naming.
 
@@ -294,8 +420,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         resources = {}
         if resource_requests:
             resources["requests"] = resource_requests
-        if resource_limits:
-            resources["limits"] = resource_limits
 
         secret_env_list = []
         for key in secret_env_vars.keys():
@@ -432,14 +556,12 @@ class KubernetesDeployer(ContainerizedDeployer):
     def _wait_for_deployment_readiness(
         self,
         ctx: _DeploymentCtx,
-        settings: KubernetesDeployerSettings,
         timeout: int,
     ) -> None:
         """Wait for deployment and service to become ready.
 
         Args:
             ctx: The deployment context.
-            settings: Kubernetes deployer settings.
             timeout: Timeout in seconds.
 
         Raises:
@@ -468,13 +590,13 @@ class KubernetesDeployer(ContainerizedDeployer):
             ) from e
 
         if (
-            settings.service_type == "LoadBalancer"
-            and settings.wait_for_load_balancer_timeout > 0
+            ctx.settings.service_type == "LoadBalancer"
+            and ctx.settings.wait_for_load_balancer_timeout > 0
         ):
             try:
                 lb_timeout = min(
                     timeout,
-                    settings.wait_for_load_balancer_timeout,
+                    ctx.settings.wait_for_load_balancer_timeout,
                     MAX_LOAD_BALANCER_TIMEOUT,
                 )
                 logger.info(
@@ -484,7 +606,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     name=ctx.resource_name,
                     namespace=ctx.namespace,
                     timeout=lb_timeout,
-                    check_interval=settings.deployment_ready_check_interval,
+                    check_interval=ctx.settings.deployment_ready_check_interval,
                 )
                 logger.info("LoadBalancer IP assigned")
             except RuntimeError:
@@ -530,6 +652,9 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeployerError: If deployment has no snapshot.
+
+        Returns:
+            The deployment context.
         """
         snapshot = deployment.snapshot
         if not snapshot:
@@ -540,7 +665,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         settings = cast(
             KubernetesDeployerSettings, self.get_settings(snapshot)
         )
-        namespace = settings.namespace or self.config.kubernetes_namespace
         deployment_id = str(deployment.id)
         resource_name = kube_utils.sanitize_label(f"zenml-{deployment_id}")
         secret_name = resource_name
@@ -557,10 +681,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         image = self.get_image(snapshot)
 
-        _DeploymentCtx(
+        return _DeploymentCtx(
             settings=settings,
             snapshot=snapshot,
-            namespace=namespace,
+            namespace=settings.namespace,
             deployment_id=deployment_id,
             resource_name=resource_name,
             secret_name=secret_name,
@@ -591,7 +715,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         engine = KubernetesTemplateEngine()
 
         try:
-            resource_requests, resource_limits, replicas = (
+            resource_requests, replicas = (
                 kube_utils.convert_resource_settings_to_k8s_format(
                     ctx.snapshot.pipeline_configuration.resource_settings
                 )
@@ -619,7 +743,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_env_vars=sanitized,
             secret_name=ctx.secret_name,
             resource_requests=resource_requests,
-            resource_limits=resource_limits,
             replicas=replicas,
             deployment_id=str(deployment.id),
         )
@@ -656,18 +779,14 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         deployment_template = self._get_template_path(
-            "deployment.yaml.j2",
-            ctx.settings.custom_deployment_template_file
-            or self.config.custom_deployment_template_file,
+            "deployment.yaml.j2", ctx.settings.custom_deployment_template_file
         )
         rendered_resources.extend(
             engine.render_template(deployment_template, context)
         )
 
         service_template = self._get_template_path(
-            "service.yaml.j2",
-            ctx.settings.custom_service_template_file
-            or self.config.custom_service_template_file,
+            "service.yaml.j2", ctx.settings.custom_service_template_file
         )
         rendered_resources.extend(
             engine.render_template(service_template, context)
@@ -727,9 +846,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
             self._wait_for_deployment_readiness(
-                deployment,
-                ctx,
-                timeout,
+                ctx=ctx,
+                timeout=timeout,
             )
 
             state = self.do_get_deployment_state(deployment)
