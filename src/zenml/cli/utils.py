@@ -2599,7 +2599,7 @@ def pretty_print_deployment(
         metadata = deployment.deployment_metadata
 
         if metadata:
-            # Recursively format nested dictionaries and lists with minimal styling for readability
+            # Recursively format nested dictionaries and lists
             def format_value(value: Any, indent_level: int = 0) -> str:
                 if isinstance(value, dict):
                     if not value:
