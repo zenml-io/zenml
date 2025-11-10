@@ -671,6 +671,49 @@ class BaseStep:
             concurrent=True,
         )
 
+    def map(
+        self,
+        *args: Any,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        **kwargs: Any,
+    ) -> List["StepRunOutputsFuture"]:
+        """Map over step inputs.
+
+        This method will launch a separate step for each chunk of the input
+        artifacts. This currently is only supported for inputs that are outputs
+        from upstream steps in the same pipeline.
+
+        Args:
+            *args: The arguments to pass to the step function.
+            after: The step run output futures to wait for before executing the
+                steps.
+            **kwargs: The keyword arguments to pass to the step function.
+
+        Raises:
+            RuntimeError: If this method is called outside of a dynamic
+                pipeline.
+
+        Returns:
+            The step run output futures.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Mapping over step inputs is only possible within a dynamic "
+                "pipeline."
+            )
+
+        return context.runner.map(
+            step=self,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+        )
+
     @property
     def name(self) -> str:
         """The name of the step.

@@ -10551,6 +10551,9 @@ class SqlZenStore(BaseZenStore):
         name: str,
         input_type: StepRunInputArtifactType,
         session: Session,
+        index: Optional[int] = None,
+        chunk_index: Optional[int] = None,
+        chunk_length: Optional[int] = None,
     ) -> None:
         """Sets an artifact as an input of a step run.
 
@@ -10560,6 +10563,11 @@ class SqlZenStore(BaseZenStore):
             name: The name of the input in the step run.
             input_type: In which way the artifact was loaded in the step.
             session: The database session to use.
+            index: The index of the input in the step run.
+            chunk_index: The chunk index if this input only refers to a chunk
+                of a larger artifact.
+            chunk_length: The length of the chunk if this input only refers to
+                a chunk of a larger artifact.
         """
         # Check if the artifact exists.
         self._get_reference_schema_by_id(
@@ -10588,6 +10596,9 @@ class SqlZenStore(BaseZenStore):
             artifact_id=artifact_version_id,
             name=name,
             type=input_type.value,
+            index=index,
+            chunk_index=chunk_index,
+            chunk_length=chunk_length,
         )
         session.add(assignment)
 

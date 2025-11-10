@@ -414,15 +414,25 @@ class StepSpec(FrozenBaseModel):
 
     source: SourceWithValidator
     upstream_steps: List[str]
-    inputs: Dict[str, InputSpec] = {}
+    inputs: Dict[str, List[InputSpec]] = {}
     invocation_id: str
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _migrate_invocation_id(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _migrate_legacy_fields(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
+
+        converted_inputs = {}
+        for key, value in data.get("inputs", {}).items():
+            if isinstance(value, (InputSpec, dict)):
+                converted_inputs[key] = [value]
+            else:
+                converted_inputs[key] = value
+
+        data["inputs"] = converted_inputs
+
         return data
 
     def __eq__(self, other: Any) -> bool:

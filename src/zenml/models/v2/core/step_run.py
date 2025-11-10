@@ -67,6 +67,18 @@ class StepRunInputResponse(ArtifactVersionResponse):
     """Response model for step run inputs."""
 
     input_type: StepRunInputArtifactType
+    index: Optional[int] = Field(
+        title="The index of the input artifact in the step run.",
+        default=None,
+    )
+    chunk_index: Optional[int] = Field(
+        title="The index of the chunk in the input artifact.",
+        default=None,
+    )
+    chunk_length: Optional[int] = Field(
+        title="The length of the chunk in the input artifact.",
+        default=None,
+    )
 
     def get_hydrated_version(self) -> "StepRunInputResponse":
         """Get the hydrated version of this step run input.
@@ -384,7 +396,7 @@ class StepRunResponse(
         return next(iter(self.outputs.values()))[0]
 
     @property
-    def regular_inputs(self) -> Dict[str, StepRunInputResponse]:
+    def regular_inputs(self) -> Dict[str, List[StepRunInputResponse]]:
         """Returns the regular step inputs of the step run.
 
         Regular step inputs are the inputs that are defined in the step function
@@ -405,13 +417,8 @@ class StepRunResponse(
                 for input_artifact in input_artifacts
                 if input_artifact.input_type != StepRunInputArtifactType.MANUAL
             ]
-            if len(filtered) > 1:
-                raise ValueError(
-                    f"Expected 1 regular input artifact for {input_name}, got "
-                    f"{len(filtered)}."
-                )
             if filtered:
-                result[input_name] = filtered[0]
+                result[input_name] = filtered
 
         return result
 

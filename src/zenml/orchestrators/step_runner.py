@@ -120,7 +120,7 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
@@ -418,7 +418,7 @@ class StepRunner:
         self,
         args: List[str],
         annotations: Dict[str, Any],
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
@@ -443,9 +443,17 @@ class StepRunner:
             arg_type = resolve_type_annotation(arg_type)
 
             if arg in input_artifacts:
-                function_params[arg] = self._load_input_artifact(
-                    input_artifacts[arg], arg_type
-                )
+                artifact_list = input_artifacts[arg]
+
+                if len(artifact_list) == 1:
+                    function_params[arg] = self._load_input_artifact(
+                        artifact_list[0], arg_type
+                    )
+                else:
+                    function_params[arg] = [
+                        self._load_input_artifact(artifact, arg_type)
+                        for artifact in artifact_list
+                    ]
             elif arg in self.configuration.parameters:
                 function_params[arg] = self.configuration.parameters[arg]
             else:
@@ -456,7 +464,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactVersionResponse", data_type: Type[Any]
+        self, artifact: "StepRunInputResponse", data_type: Type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -492,8 +500,18 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
-            materializer.validate_load_type_compatibility(data_type)
-            return materializer.load(data_type=data_type)
+
+            if artifact.chunk_index is not None:
+                # We need to skip the type compatibility check here because
+                # the annotation on the step input might not be something that
+                # the materializer can load.
+                # TODO: Check if chunked loading is possible
+                data = materializer.load(data_type=data_type)
+                end = artifact.chunk_index + (artifact.chunk_length or 1)
+                return data[artifact.chunk_index : end]
+            else:
+                materializer.validate_load_type_compatibility(data_type)
+                return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:
             # Register the artifact store of the active stack here to avoid

@@ -16,7 +16,7 @@
 import signal
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -589,7 +589,7 @@ class StepLauncher:
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, StepRunInputResponse],
+        input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.
