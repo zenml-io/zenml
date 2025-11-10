@@ -113,7 +113,7 @@ class MLFlowNotionModelRegistryFlavor(BaseModelRegistryFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public.zenml.io/logos/mlflow.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_registry/mlflow_notion.png"
 
     @property
     def config_class(self) -> Type[MLFlowNotionModelRegistryConfig]:
