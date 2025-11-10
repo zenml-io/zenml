@@ -182,6 +182,9 @@ class DeploymentSchema(NamedSchema, table=True):
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
                     ),
+                    selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.stack)
+                    ),
                     selectinload(jl_arg(DeploymentSchema.visualizations)),
                 ]
             )
@@ -240,6 +243,9 @@ class DeploymentSchema(NamedSchema, table=True):
                 deployer=self.deployer.to_model() if self.deployer else None,
                 pipeline=self.snapshot.pipeline.to_model()
                 if self.snapshot and self.snapshot.pipeline
+                else None,
+                stack=self.snapshot.stack.to_model()
+                if self.snapshot and self.snapshot.stack
                 else None,
                 visualizations=[
                     visualization.to_model(

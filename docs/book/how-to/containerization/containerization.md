@@ -474,7 +474,9 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Environment Variables
 
-You can configure environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
+You can configure two types of environment variables:
+
+1. Environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
 
 ```python
 docker_settings = DockerSettings(
@@ -482,6 +484,18 @@ docker_settings = DockerSettings(
         "PYTHONUNBUFFERED": "1",
         "MODEL_DIR": "/models",
         "API_KEY": "${GLOBAL_API_KEY}"  # Reference a local environment variable
+    }
+)
+```
+
+2. Environment variables that will be set at the end of the Docker image building process after the python and apt packages are installed, right before the container entrypoint (useful for setting proxy environment variables for example):
+
+```python
+docker_settings = DockerSettings(
+    runtime_environment={
+        "HTTP_PROXY": "http://proxy.example.com:8080",
+        "HTTPS_PROXY": "http://proxy.example.com:8080",
+        "NO_PROXY": "localhost,127.0.0.1"
     }
 )
 ```

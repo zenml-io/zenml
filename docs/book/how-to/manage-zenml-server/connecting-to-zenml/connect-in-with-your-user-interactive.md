@@ -47,7 +47,7 @@ To keep things simple, we can summarize the steps:
 Using the ZenML CLI is a secure and comfortable way to interact with your ZenML servers. It's important to always ensure that only trusted devices are used to maintain security and privacy.
 
 {% hint style="info" %}
-Calling the ZenML Pro management API (`cloudapi.zenml.io`)? Interactive CLI login does not apply there. Use a Pro API token instead. See [Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
+Calling the ZenML Pro management API (`cloudapi.zenml.io`)? Interactive CLI login does not apply there. Use a ZenML Pro Personal Access Token or a ZenML Pro Service Account and API key instead. See [ZenML Pro API Getting Started](https://docs.zenml.io/api-reference/pro-api/getting-started).
 {% endhint %}
 
 Don't forget to manage your device trust levels regularly for optimal security. Should you feel a device trust needs to be revoked, lock the device immediately. Every token issued is a potential gateway to access your data, secrets and infrastructure.

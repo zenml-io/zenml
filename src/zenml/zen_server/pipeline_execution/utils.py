@@ -175,6 +175,12 @@ def run_snapshot(
                 "not have an associated build. This is probably because the "
                 "build has been deleted."
             )
+        if snapshot.is_dynamic:
+            raise ValueError(
+                "Snapshots of dynamic pipelines can not be run via the server "
+                "yet."
+            )
+
         raise ValueError("This snapshot can not be run via the server.")
 
     # Guaranteed by the `runnable` check above

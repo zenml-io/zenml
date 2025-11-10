@@ -755,6 +755,7 @@ class ModelContext:
                     pipeline_configuration={"name": "pipeline_name"},
                     client_version="0.12.3",
                     server_version="0.12.3",
+                    is_dynamic=False,
                 ),
             )
             self.snapshots.append(snapshot)
@@ -1292,6 +1293,7 @@ snapshot_crud_test_config = CrudTestConfig(
         server_version="0.12.3",
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
+        is_dynamic=False,
     ),
     filter_model=PipelineSnapshotFilter,
     entity_name="snapshot",
@@ -1371,6 +1373,7 @@ remote_snapshot_crud_test_config = CrudTestConfig(
         server_version="0.12.3",
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
+        is_dynamic=False,
     ),
     filter_model=PipelineSnapshotFilter,
     entity_name="snapshot",

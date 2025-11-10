@@ -100,10 +100,6 @@ jobs:
             fi
           done
           git add examples/quickstart
-      - name: Regenerate quickstart cloud requirements
-        run: |
-          scripts/generate_cloud_requirements.sh --zenml-version "${{ needs.fetch-versions.outputs.new_version }}"
-          git add examples/quickstart/requirements_*.txt
       # Generate and append release notes
       - name: Generate release notes
         # Only run this part once when the release branch is created
@@ -231,11 +227,8 @@ jobs:
       matrix:
         include:
           - cloud: aws
-            parent_image: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           - cloud: azure
-            parent_image: zenmldocker/prepare-release:quickstart-azure
           - cloud: gcp
-            parent_image: zenmldocker/prepare-release:quickstart-gcp
     steps:
       # Check out the code
       - name: Checkout code
@@ -253,6 +246,4 @@ jobs:
         run: |
           scripts/qs_run_release_flow.sh \
             --cloud "${{ matrix.cloud }}" \
-            --parent-image "${{ matrix.parent_image }}" \
-            --new-version "${{ needs.fetch-versions.outputs.new_version }}" \
-            --branch-ref "${{ github.ref }}"
+            --new-version "${{ needs.fetch-versions.outputs.new_version }}"
