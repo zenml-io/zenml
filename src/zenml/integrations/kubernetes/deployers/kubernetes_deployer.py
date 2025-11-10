@@ -347,6 +347,26 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         return context
 
+    def _get_template_path(
+        self, builtin_name: str, custom_path: Optional[str]
+    ) -> str:
+        """Get template path (custom or built-in).
+
+        Args:
+            builtin_name: Name of built-in template file.
+            custom_path: Optional custom template path.
+
+        Returns:
+            Path to the template file.
+        """
+        if custom_path:
+            return custom_path
+
+        from pathlib import Path
+
+        builtin_dir = Path(__file__).parent.parent / "templates" / "kubernetes"
+        return str(builtin_dir / builtin_name)
+
     # ========================================================================
     # Secret Key Sanitization
     # ========================================================================
@@ -574,10 +594,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         self._initialize_deployment_context(deployment)
         ctx = self.require_ctx()
 
-        self._engine = KubernetesTemplateEngine(
-            custom_templates_dir=ctx.settings.custom_templates_dir
-            or self.config.custom_templates_dir
-        )
+        self._engine = KubernetesTemplateEngine()
 
         try:
             resource_requests, resource_limits, replicas = (
@@ -644,11 +661,22 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
             )
 
-        rendered_resources.extend(
-            self._engine.render_template("deployment.yaml.j2", context)
+        deployment_template = self._get_template_path(
+            "deployment.yaml.j2",
+            ctx.settings.custom_deployment_template_file
+            or self.config.custom_deployment_template_file,
         )
         rendered_resources.extend(
-            self._engine.render_template("service.yaml.j2", context)
+            self._engine.render_template(deployment_template, context)
+        )
+
+        service_template = self._get_template_path(
+            "service.yaml.j2",
+            ctx.settings.custom_service_template_file
+            or self.config.custom_service_template_file,
+        )
+        rendered_resources.extend(
+            self._engine.render_template(service_template, context)
         )
 
         for additional_resource in ctx.settings.additional_resources or []:

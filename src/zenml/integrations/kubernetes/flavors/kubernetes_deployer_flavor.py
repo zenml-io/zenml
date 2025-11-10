@@ -226,11 +226,20 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
     # Template and Development Settings
     # ========================================================================
 
-    custom_templates_dir: Optional[str] = Field(
+    custom_deployment_template_file: Optional[str] = Field(
         default=None,
-        description="Path to directory containing custom Jinja2 templates for full control. "
-        "Override built-in templates (deployment.yaml.j2, service.yaml.j2, etc.). "
-        "Example: '~/.zenml/k8s-templates'",
+        description="Path to custom Jinja2 template file for Kubernetes Deployment. "
+        "Overrides the built-in deployment.yaml.j2 template. "
+        "Can be a local path or remote URL. "
+        "Example: '~/.zenml/k8s-templates/my-deployment.yaml.j2'",
+    )
+
+    custom_service_template_file: Optional[str] = Field(
+        default=None,
+        description="Path to custom Jinja2 template file for Kubernetes Service. "
+        "Overrides the built-in service.yaml.j2 template. "
+        "Can be a local path or remote URL. "
+        "Example: '~/.zenml/k8s-templates/my-service.yaml.j2'",
     )
 
     # ========================================================================

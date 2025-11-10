@@ -13,17 +13,10 @@
 #  permissions and limitations under the License.
 """Kubernetes template engine."""
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import yaml
-from jinja2 import (
-    Environment,
-    FileSystemLoader,
-    StrictUndefined,
-    TemplateNotFound,
-    Undefined,
-)
+from jinja2 import Environment, StrictUndefined, Undefined
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -36,77 +29,26 @@ class KubernetesTemplateEngine:
     """Engine for generating Kubernetes resources from Jinja2 templates.
 
     Attributes:
-        template_dirs: List of directories to search for templates.
-        builtin_templates_dir: Path to ZenML's built-in templates.
-        custom_templates_dir: Optional user-provided template directory.
         env: Jinja2 environment for rendering templates.
     """
 
     def __init__(
         self,
-        custom_templates_dir: Optional[str] = None,
         strict_undefined: bool = True,
     ):
         """Initialize the template engine.
 
         Args:
-            custom_templates_dir: Optional directory containing user's custom
-                templates. If provided, these templates override built-in ones.
             strict_undefined: If True, raise an error for undefined template
                 variables. If False, undefined variables are silently ignored.
         """
-        self.builtin_templates_dir = (
-            Path(__file__).parent / "templates" / "kubernetes"
-        )
-        template_dirs: List[str] = []
-        self.custom_templates_dir = None
-
-        if custom_templates_dir:
-            resolved_path = self._resolve_template_path(
-                str(custom_templates_dir)
-            )
-            template_dirs.append(resolved_path)
-            self.custom_templates_dir = resolved_path
-
-        template_dirs.append(str(self.builtin_templates_dir))
-
-        self.template_dirs = template_dirs
-
         self.env = Environment(
-            loader=FileSystemLoader(template_dirs),
             undefined=StrictUndefined if strict_undefined else Undefined,
             autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
         )
-
-    @staticmethod
-    def _resolve_template_path(path: str) -> str:
-        """Resolve and validate template directory path.
-
-        Args:
-            path: Path to resolve (can be remote or local).
-
-        Returns:
-            Resolved path if it exists.
-
-        Raises:
-            ValueError: If the path does not exist.
-        """
-        if io_utils.is_remote(path):
-            resolved = io_utils.sanitize_remote_path(path)
-        else:
-            resolved = io_utils.resolve_relative_path(path)
-
-        if fileio.exists(resolved):
-            logger.info(f"Using custom Kubernetes templates from: {resolved}")
-            return resolved
-        else:
-            raise ValueError(
-                f"Custom template directory not found: {resolved}. "
-                f"Please verify the path is correct and accessible."
-            )
 
     # ========================================================================
     # Template and Resource Rendering
@@ -130,19 +72,15 @@ class KubernetesTemplateEngine:
             ValueError: If the file cannot be loaded, parsed, or validated.
         """
         try:
-            template = self.env.get_template(file)
-        except TemplateNotFound as e:
-            logger.info(f"Template not found: {file}: {e}")
-
             if io_utils.is_remote(file):
-                file_str = io_utils.sanitize_remote_path(file)
+                file_path = io_utils.sanitize_remote_path(file)
             else:
-                file_str = io_utils.resolve_relative_path(file)
+                file_path = io_utils.resolve_relative_path(file)
 
-            if not fileio.exists(file_str):
+            if not fileio.exists(file_path):
                 raise ValueError(f"Resource file not found: {file}")
 
-            yaml_content = io_utils.read_file_contents_as_string(file_str)
+            yaml_content = io_utils.read_file_contents_as_string(file_path)
 
             if context:
                 template = self.env.from_string(yaml_content)
@@ -168,7 +106,7 @@ class KubernetesTemplateEngine:
 
             if resources:
                 logger.info(
-                    f"Loaded {len(resources)} resource(s) from {Path(file).name}"
+                    f"Loaded {len(resources)} resource(s) from: {file_path}"
                 )
 
             return resources
