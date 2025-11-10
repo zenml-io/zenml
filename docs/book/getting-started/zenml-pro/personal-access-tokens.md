@@ -1,21 +1,21 @@
 ---
-icon: key
+icon: user-lock
 description: >-
   Learn how to manage and use Personal Access Tokens.
 ---
 
 # ZenML Pro Personal Access Tokens
 
-Personal Access Tokens (PATs) in ZenML Pro provide a secure way to 
-authenticate your user account programmatically with the ZenML Pro API and 
-workspaces. PATs are associated with your personal user account and inherit 
+Personal Access Tokens (PATs) in ZenML Pro provide a secure way to
+authenticate your user account programmatically with the ZenML Pro API and
+workspaces. PATs are associated with your personal user account and inherit
 your full permissions within all organizations you are a member of.
 
 {% hint style="warning" %}
 **Security Consideration**
 
-Personal Access Tokens inherit your complete user permissions and should be 
-used with care. For automation tasks like CI/CD pipelines, we strongly 
+Personal Access Tokens inherit your complete user permissions and should be
+used with care. For automation tasks like CI/CD pipelines, we strongly
 recommend using [service accounts](./service-accounts.md) instead, following the
 principle of least privilege. Service accounts allow you to grant only the specific
 permissions needed for automated workflows.
@@ -36,27 +36,27 @@ To manage Personal Access Tokens for your user account in ZenML Pro, navigate to
 
 ## Using Personal Access Tokens
 
-Once you have created a Personal Access Token, you can use it to 
-authenticate to the ZenML Pro API and programmatically manage your 
-organization. You can also use the PAT to access all the workspaces in your 
+Once you have created a Personal Access Token, you can use it to
+authenticate to the ZenML Pro API and programmatically manage your
+organization. You can also use the PAT to access all the workspaces in your
 organization to e.g. run pipelines from the ZenML Python client.
 
 ### ZenML Pro API programmatic access
 
-The PAT can be used to authenticate to the ZenML Pro management REST API 
-programmatically. There are two methods to do this - one is simpler but less 
+The PAT can be used to authenticate to the ZenML Pro management REST API
+programmatically. There are two methods to do this - one is simpler but less
 secure, the other is secure and recommended but more complex:
 
 {% tabs %}
 {% tab title="Direct PAT authentication" %}
 
 {% hint style="warning" %}
-This approach, albeit simple, is not recommended because the long-lived PAT 
-is exposed with every API request, which makes it easier to be compromised. 
+This approach, albeit simple, is not recommended because the long-lived PAT
+is exposed with every API request, which makes it easier to be compromised.
 Use it only in low-risk circumstances.
 {% endhint %}
 
-To authenticate to the REST API, simply pass the PAT directly in the 
+To authenticate to the REST API, simply pass the PAT directly in the
 `Authorization` header used with your API calls:
 
    *   using curl:
@@ -86,10 +86,10 @@ To authenticate to the REST API, simply pass the PAT directly in the
 
 {% tab title="Token exchange authentication" %}
 
-Reduce the risk of PAT exposure by periodically exchanging the PAT for a 
+Reduce the risk of PAT exposure by periodically exchanging the PAT for a
 short-lived API token:
 
-1. To obtain a short-lived API token using your PAT, send a POST request to the 
+1. To obtain a short-lived API token using your PAT, send a POST request to the
    `/auth/login` endpoint. Here are examples using common HTTP clients:
    *   using curl:
 
@@ -131,8 +131,8 @@ This will return a response like this (the short-lived API token is the `access_
 }
 ```
 
-2. Once you have obtained a short-lived API token, you can use it to authenticate 
-   your API requests by including it in the `Authorization` header. When the 
+2. Once you have obtained a short-lived API token, you can use it to authenticate
+   your API requests by including it in the `Authorization` header. When the
    short-lived API token expires, simply repeat the steps above to obtain a
    new short-lived API token. For example, you can use the following command to check your current user:
    *   using curl:
@@ -164,7 +164,7 @@ See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-
 
 ### Workspace access
 
-You can also use your Personal Access Token to access all the workspaces in 
+You can also use your Personal Access Token to access all the workspaces in
 your organization:
 
 * with environment variables:
@@ -185,23 +185,23 @@ zenml login <your-workspace-name> --api-key
 
 #### ZenML Pro Workspace API programmatic access
 
-Similar to the ZenML Pro API programmatic access, the PAT can be used to 
-authenticate to the ZenML Pro workspace REST API programmatically. This is 
-no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). 
-There are two methods to do this - one is simpler but less secure, the other 
+Similar to the ZenML Pro API programmatic access, the PAT can be used to
+authenticate to the ZenML Pro workspace REST API programmatically. This is
+no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
+There are two methods to do this - one is simpler but less secure, the other
 is secure and recommended but more complex:
 
 {% tabs %}
 {% tab title="Direct PAT authentication" %}
 
 {% hint style="warning" %}
-This approach, albeit simple, is not recommended because the long-lived PAT 
-is exposed with every API request, which makes it easier to be compromised. 
+This approach, albeit simple, is not recommended because the long-lived PAT
+is exposed with every API request, which makes it easier to be compromised.
 Use it only in low-risk circumstances.
 {% endhint %}
 
-Use the PAT directly to authenticate your API requests by including it in 
-the `Authorization` header. For example, you can use the following command 
+Use the PAT directly to authenticate your API requests by including it in
+the `Authorization` header. For example, you can use the following command
 to check your current workspace user:
 
    *   using curl:
@@ -231,11 +231,11 @@ to check your current workspace user:
 
 {% tab title="Token exchange authentication" %}
 
-Reduce the risk of PAT exposure by periodically exchanging the PAT for a 
+Reduce the risk of PAT exposure by periodically exchanging the PAT for a
 short-lived workspace API token.
 
-1. To obtain a short-lived workspace API token using your PAT, send a POST 
-   request to the `/api/v1/login` endpoint. Here are examples using common 
+1. To obtain a short-lived workspace API token using your PAT, send a POST
+   request to the `/api/v1/login` endpoint. Here are examples using common
    HTTP clients:
    *   using curl:
 
@@ -264,7 +264,7 @@ short-lived workspace API token.
        print(response.json())
        ```
 
-This will return a response like this (the short-lived workspace API token is the 
+This will return a response like this (the short-lived workspace API token is the
 `access_token` field):
 
 ```json
@@ -277,9 +277,9 @@ This will return a response like this (the short-lived workspace API token is th
 }
 ```
 
-2. Once you have obtained a short-lived workspace API token, you can use it to 
-   authenticate your API requests by including it in the `Authorization` 
-   header. When the short-lived workspace API token expires, simply repeat the 
+2. Once you have obtained a short-lived workspace API token, you can use it to
+   authenticate your API requests by including it in the `Authorization`
+   header. When the short-lived workspace API token expires, simply repeat the
    steps above to obtain a new one. For example, you can use the following command to check your current workspace user:
    *   using curl:
 
@@ -310,7 +310,7 @@ This will return a response like this (the short-lived workspace API token is th
 
 ## Personal Access Token Operations
 
-Personal Access Tokens are the credentials used to authenticate your user 
+Personal Access Tokens are the credentials used to authenticate your user
 account programmatically. You can have multiple PATs, allowing for different access patterns for various tools and applications.
 
 
@@ -320,8 +320,8 @@ account programmatically. You can have multiple PATs, allowing for different acc
 {% hint style="danger" %}
 **One-Time Display**
 
-The Personal Access Token value is only shown once during creation and 
-cannot be retrieved later. If you lose a PAT, you must create a new one or 
+The Personal Access Token value is only shown once during creation and
+cannot be retrieved later. If you lose a PAT, you must create a new one or
 rotate the existing PAT.
 {% endhint %}
 
@@ -332,22 +332,22 @@ Individual Personal Access Tokens can be activated or deactivated as needed.
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-Short-lived API token associated with the deactivated PAT issued for workspaces in 
-your organization may still be valid for up to one hour after the PAT is 
+Short-lived API token associated with the deactivated PAT issued for workspaces in
+your organization may still be valid for up to one hour after the PAT is
 deactivated.
 {% endhint %}
 
 ### Rotating Personal Access Tokens
 
-PAT rotation creates a new token value while optionally preserving the old 
-token for a transition period. This is essential for maintaining security 
+PAT rotation creates a new token value while optionally preserving the old
+token for a transition period. This is essential for maintaining security
 without service interruption.
 
 {% hint style="info" %}
 **Zero-Downtime Rotation**
 
-By setting a retention period, you can update your applications to use the 
-new PAT while the old token remains functional. This enables zero-downtime 
+By setting a retention period, you can update your applications to use the
+new PAT while the old token remains functional. This enables zero-downtime
 token rotation for production systems.
 {% endhint %}
 
@@ -356,7 +356,7 @@ token rotation for production systems.
 {% hint style="warning" %}
 **Delayed workspace-level effect**
 
-Short-lived API token associated with the deleted PAT issued for workspaces in your 
+Short-lived API token associated with the deleted PAT issued for workspaces in your
 organization may still be valid for up to one hour after the PAT is deleted.
 {% endhint %}
 
@@ -365,27 +365,27 @@ organization may still be valid for up to one hour after the PAT is deleted.
 ### Token Management
 - **Regular Rotation**: Rotate PATs regularly (recommended: every 90 days)
 - **Set the Expiration Date**: Set an expiration date for PATs to automatically revoke them after a certain period of time, especially if you are only planning on using them for a short period of time.
-- **Use Service Accounts for CI/CD**: For automated workflows and CI/CD 
-  pipelines, use [service accounts](./service-accounts.md) instead of PATs. This follows the principle of least privilege by granting only necessary permissions 
+- **Use Service Accounts for CI/CD**: For automated workflows and CI/CD
+  pipelines, use [service accounts](./service-accounts.md) instead of PATs. This follows the principle of least privilege by granting only necessary permissions
   rather than your full user permissions.
-- **Secure Storage**: Store PATs in secure credential management systems, 
+- **Secure Storage**: Store PATs in secure credential management systems,
   never in code repositories
-- **Monitor Usage**: Regularly review the "last used" timestamps to 
+- **Monitor Usage**: Regularly review the "last used" timestamps to
   identify unused tokens
 
 ### Access Control
-- **Descriptive Naming**: Use clear, descriptive names for PATs to track 
+- **Descriptive Naming**: Use clear, descriptive names for PATs to track
   their purposes (e.g., "work-laptop", "home-jupyter")
-- **Documentation**: Maintain documentation of which systems and tools use 
+- **Documentation**: Maintain documentation of which systems and tools use
   which tokens
 - **Regular Audits**: Periodically review and clean up unused PATs
 
 ### Operational Security
-- **Immediate Deactivation**: Deactivate PATs immediately when they're no 
+- **Immediate Deactivation**: Deactivate PATs immediately when they're no
   longer needed or if a device is lost or compromised
-- **Incident Response**: Have procedures in place to quickly rotate or 
+- **Incident Response**: Have procedures in place to quickly rotate or
   deactivate compromised tokens
-- **Minimize Token Scope**: Only create PATs when necessary for 
+- **Minimize Token Scope**: Only create PATs when necessary for
   programmatic access; use regular login for interactive sessions
 
 ## Troubleshooting
@@ -406,7 +406,7 @@ organization may still be valid for up to one hour after the PAT is deleted.
 {% hint style="info" %}
 **Need Help?**
 
-If you encounter issues with Personal Access Tokens, check the ZenML Pro 
-documentation or contact your organization administrator for assistance with 
+If you encounter issues with Personal Access Tokens, check the ZenML Pro
+documentation or contact your organization administrator for assistance with
 permissions and access control.
 {% endhint %}
