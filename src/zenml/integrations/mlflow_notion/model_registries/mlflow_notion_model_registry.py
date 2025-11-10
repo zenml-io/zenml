@@ -1577,10 +1577,17 @@ class MLFlowNotionModelRegistry(BaseModelRegistry):
                 # Extract ZenML version UUID from MLflow tags (source of truth)
                 zenml_version_id = None
                 if mlflow_version and mlflow_version.tags:
-                    zenml_model_url = mlflow_version.tags.get("zenml_model_url", "")
-                    if zenml_model_url and "/model-versions/" in zenml_model_url:
+                    zenml_model_url = mlflow_version.tags.get(
+                        "zenml_model_url", ""
+                    )
+                    if (
+                        zenml_model_url
+                        and "/model-versions/" in zenml_model_url
+                    ):
                         # Extract UUID from URL like: https://staging.cloud.zenml.io/workspaces/synthesia/projects/default/model-versions/e805932c-c5cf-4b41-a4d1-ca3a4293a032?tab=overview
-                        zenml_version_id = zenml_model_url.split("/model-versions/")[-1].split("?")[0]
+                        zenml_version_id = zenml_model_url.split(
+                            "/model-versions/"
+                        )[-1].split("?")[0]
 
                 # Try to get ZenML version by UUID first (if available), then fall back to version number
                 if zenml_version_id:
