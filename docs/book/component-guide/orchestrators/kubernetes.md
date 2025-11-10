@@ -123,7 +123,7 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 Some configuration options for the Kubernetes orchestrator can only be set through the orchestrator config when you register it (and cannot be changed per-run or per-step through the settings):
 
-- **`incluster`** (default: False): If `True`, the orchestrator will run the pipeline inside the same Kubernetes cluster it is running in, ignoring the `kubernetes_context`.
+- **`incluster`** (default: False): If `True`, the orchestrator will attempt to load the in-cluster Kubernetes configuration and run the pipeline inside the same cluster it is running in, ignoring the `kubernetes_context`. If this fails, the orchestrator will fall back to using the linked service connector or the configured `kubernetes_context` configuration if provided, in that order.
 - **`kubernetes_context`**: The name of the Kubernetes context to use for running pipelines (ignored if using a service connector or `incluster`).
 - **`kubernetes_namespace`** (default: "zenml"): The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace.
 - **`local`** (default: False): If `True`, the orchestrator assumes it is connected to a local Kubernetes cluster and enables additional validations and operations for local development.

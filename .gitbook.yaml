@@ -236,7 +236,7 @@ redirects:
   how-to/manage-zenml-server/connecting-to-zenml: how-to/manage-zenml-server/connecting-to-zenml/README.md
   how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
   how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
-  how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token: how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md
+  how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
   how-to/manage-zenml-server/mcp-chat-with-server: reference/llms-txt.md
   how-to/manage-zenml-server/migration-guide: how-to/manage-zenml-server/migration-guide/migration-guide.md
   how-to/manage-zenml-server/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md

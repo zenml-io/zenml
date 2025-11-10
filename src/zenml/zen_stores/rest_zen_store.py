@@ -75,6 +75,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
+    HEARTBEAT,
     INFO,
     LOGIN,
     LOGS,
@@ -259,6 +260,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -3381,6 +3383,24 @@ class RestZenStore(BaseZenStore):
             response_model=StepRunResponse,
             route=STEPS,
         )
+
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat.
+
+        Args:
+            step_run_id: The ID of the step to update.
+
+        Returns:
+            The step heartbeat response.
+        """
+        response_body = self.put(
+            path=f"{STEPS}/{str(step_run_id)}{HEARTBEAT}",
+            timeout=5,
+        )
+
+        return StepHeartbeatResponse.model_validate(response_body)
 
     # -------------------- Triggers  --------------------
 

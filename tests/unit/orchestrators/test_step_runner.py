@@ -22,7 +22,11 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ArtifactSaveType
-from zenml.models import PipelineRunResponse, StepRunResponse
+from zenml.models import (
+    PipelineRunResponse,
+    PipelineSnapshotResponse,
+    StepRunResponse,
+)
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
@@ -43,6 +47,7 @@ def test_running_a_successful_step(
     local_stack,
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
 ):
     """Tests that running a successful step runs the step entrypoint
     and correctly prepares/cleans up."""
@@ -74,7 +79,9 @@ def test_running_a_successful_step(
         run_name="run_name",
         pipeline_step_name="step_name",
         config=step.config,
+        spec=step.spec,
         pipeline=pipeline_config,
+        snapshot=sample_snapshot_response_model,
         force_write_logs=lambda: None,
     )
 
@@ -98,6 +105,7 @@ def test_running_a_failing_step(
     local_stack,
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
 ):
     """Tests that running a failing step runs the step entrypoint
     and correctly prepares/cleans up."""
@@ -130,7 +138,9 @@ def test_running_a_failing_step(
         run_name="run_name",
         pipeline_step_name="step_name",
         config=step.config,
+        spec=step.spec,
         pipeline=pipeline_config,
+        snapshot=sample_snapshot_response_model,
         force_write_logs=lambda: None,
     )
 

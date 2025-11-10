@@ -184,8 +184,6 @@ class StepRunner:
 
             self._stack.prepare_step_run(info=step_run_info)
 
-            # Initialize the step context singleton
-            StepContext._clear()
             step_context = StepContext(
                 pipeline_run=pipeline_run,
                 step_run=step_run,
@@ -196,74 +194,78 @@ class StepRunner:
                 },
             )
 
-            # Parse the inputs for the entrypoint function.
-            function_params = self._parse_inputs(
-                args=spec.args,
-                annotations=spec.annotations,
-                input_artifacts=input_artifacts,
-            )
-
-            # Get all step environment variables. For most orchestrators, the
-            # non-secret environment variables have been set before by the
-            # orchestrator. But for some orchestrators, this is not possible and
-            # we therefore make sure to set them here so they're at least
-            # available for the user code.
-            step_environment = env_utils.get_step_environment(
-                step_config=step_run.config, stack=self._stack
-            )
-            secret_environment = env_utils.get_step_secret_environment(
-                step_config=step_run.config, stack=self._stack
-            )
-            step_environment.update(secret_environment)
-
-            step_failed = False
-            try:
-                if (
-                    pipeline_run.snapshot
-                    and self._stack.orchestrator.run_init_cleanup_at_step_level
-                ):
-                    self._stack.orchestrator.run_init_hook(
-                        snapshot=pipeline_run.snapshot
-                    )
-
-                with env_utils.temporary_environment(step_environment):
-                    return_values = step_instance.call_entrypoint(
-                        **function_params
-                    )
-            except BaseException as step_exception:  # noqa: E722
-                step_failed = True
-
-                exception_info = exception_utils.collect_exception_information(
-                    step_exception, step_instance
+            with step_context:
+                function_params = self._parse_inputs(
+                    args=spec.args,
+                    annotations=spec.annotations,
+                    input_artifacts=input_artifacts,
                 )
 
-                if ENV_ZENML_STEP_OPERATOR in os.environ:
-                    # We're running in a step operator environment, so we can't
-                    # depend on the step launcher to publish the exception info
-                    Client().zen_store.update_run_step(
-                        step_run_id=step_run_info.step_run_id,
-                        step_run_update=StepRunUpdate(
-                            exception_info=exception_info,
-                        ),
-                    )
-                else:
-                    # This will be published by the step launcher
-                    step_exception_info.set(exception_info)
+                # Get all step environment variables. For most orchestrators, the
+                # non-secret environment variables have been set before by the
+                # orchestrator. But for some orchestrators, this is not possible and
+                # we therefore make sure to set them here so they're at least
+                # available for the user code.
+                step_environment = env_utils.get_step_environment(
+                    step_config=step_run.config, stack=self._stack
+                )
+                secret_environment = env_utils.get_step_secret_environment(
+                    step_config=step_run.config, stack=self._stack
+                )
+                step_environment.update(secret_environment)
 
-                if not step_run.is_retriable:
-                    if (
-                        failure_hook_source
-                        := self.configuration.failure_hook_source
-                    ):
-                        logger.info("Detected failure hook. Running...")
-                        with env_utils.temporary_environment(step_environment):
-                            load_and_run_hook(
-                                failure_hook_source,
-                                step_exception=step_exception,
-                            )
-                raise
-            finally:
+                step_failed = False
                 try:
+                    if (
+                        # TODO: do we need to disable this for dynamic pipelines?
+                        pipeline_run.snapshot
+                        and self._stack.orchestrator.run_init_cleanup_at_step_level
+                    ):
+                        self._stack.orchestrator.run_init_hook(
+                            snapshot=pipeline_run.snapshot
+                        )
+
+                    with env_utils.temporary_environment(step_environment):
+                        return_values = step_instance.call_entrypoint(
+                            **function_params
+                        )
+                except BaseException as step_exception:  # noqa: E722
+                    step_failed = True
+
+                    exception_info = (
+                        exception_utils.collect_exception_information(
+                            step_exception, step_instance
+                        )
+                    )
+
+                    if ENV_ZENML_STEP_OPERATOR in os.environ:
+                        # We're running in a step operator environment, so we can't
+                        # depend on the step launcher to publish the exception info
+                        Client().zen_store.update_run_step(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_update=StepRunUpdate(
+                                exception_info=exception_info,
+                            ),
+                        )
+                    else:
+                        # This will be published by the step launcher
+                        step_exception_info.set(exception_info)
+
+                    if not step_run.is_retriable:
+                        if (
+                            failure_hook_source
+                            := self.configuration.failure_hook_source
+                        ):
+                            logger.info("Detected failure hook. Running...")
+                            with env_utils.temporary_environment(
+                                step_environment
+                            ):
+                                load_and_run_hook(
+                                    failure_hook_source,
+                                    step_exception=step_exception,
+                                )
+                    raise
+                finally:
                     step_run_metadata = self._stack.get_step_run_metadata(
                         info=step_run_info,
                     )
@@ -336,12 +338,6 @@ class StepRunner:
                         self._stack.orchestrator.run_cleanup_hook(
                             snapshot=pipeline_run.snapshot
                         )
-
-                finally:
-                    step_context._cleanup_registry.execute_callbacks(
-                        raise_on_exception=False
-                    )
-                    StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             output_artifact_ids = {
