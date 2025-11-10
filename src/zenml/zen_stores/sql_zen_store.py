@@ -1273,7 +1273,7 @@ class SqlZenStore(BaseZenStore):
             self._engine = None
             self._alembic = None
             self._migration_utils = None
-            
+
     def _run_migrations(self) -> None:
         if self.skip_migrations or handle_bool_env_var(
             ENV_ZENML_DISABLE_DATABASE_MIGRATION
