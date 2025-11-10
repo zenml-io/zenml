@@ -78,7 +78,7 @@ class NotionModelRegistryFlavor(BaseModelRegistryFlavor):
         Returns:
             The flavor logo.
         """
-        return "ttps://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_registry/notion.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_registry/notion.png"
 
     @property
     def config_class(self) -> Type[NotionModelRegistryConfig]:
