@@ -2493,7 +2493,7 @@ def pretty_print_deployment(
         show_schema: Whether to show the schema.
         no_truncate: Whether to truncate the metadata.
     """
-    # Header section: show deployment name in bold cyan and plain uppercase status with status emoji.
+    # Header section
     status_label = (deployment.status or "UNKNOWN").upper()
     status_emoji = get_deployment_status_emoji(deployment.status)
     declare(
