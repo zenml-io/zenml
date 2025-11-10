@@ -109,6 +109,7 @@ If your ZenML server runs inside the same Kubernetes cluster where you want to d
 ```shell
 zenml deployer register <DEPLOYER_NAME> \
     --flavor=kubernetes \
+    --incluster=True \
     --kubernetes_namespace=zenml-deployments
 ```
 
