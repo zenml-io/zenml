@@ -16,7 +16,7 @@
 from typing import Any, Dict, List
 
 import yaml
-from jinja2 import Environment, StrictUndefined, Undefined
+from jinja2 import Environment, StrictUndefined, TemplateError, Undefined
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -69,54 +69,28 @@ class KubernetesTemplateEngine:
             List of resource dictionaries.
 
         Raises:
-            ValueError: If the file cannot be loaded, parsed, or validated.
+            FileNotFoundError: If the template file doesn't exist.
+            ValueError: If template rendering or YAML parsing fails.
         """
+        if io_utils.is_remote(file):
+            file_path = io_utils.sanitize_remote_path(file)
+        else:
+            file_path = io_utils.resolve_relative_path(file)
+
+        if not fileio.exists(file_path):
+            raise FileNotFoundError(f"Template file not found: {file}")
+
+        file_contents = io_utils.read_file_contents_as_string(file_path)
+
         try:
-            if io_utils.is_remote(file):
-                file_path = io_utils.sanitize_remote_path(file)
-            else:
-                file_path = io_utils.resolve_relative_path(file)
-
-            if not fileio.exists(file_path):
-                raise ValueError(f"Resource file not found: {file}")
-
-            yaml_content = io_utils.read_file_contents_as_string(file_path)
-
-            if context:
-                template = self.env.from_string(yaml_content)
-                yaml_content = template.render(**context)
-
-            try:
-                yaml_docs = KubernetesTemplateEngine.load_yaml_documents(
-                    yaml_content
-                )
-            except ValueError as e:
-                raise ValueError(
-                    f"Failed to parse YAML from {file}: {e}"
-                ) from e
-
-            resources: List[Dict[str, Any]] = []
-            for index, doc in enumerate(yaml_docs):
-                try:
-                    resources.append(doc)
-                except ValueError as e:
-                    logger.warning(
-                        f"Skipping invalid Kubernetes resource in {file} (doc {index}): {e}"
-                    )
-
-            if resources:
-                logger.info(
-                    f"Loaded {len(resources)} resource(s) from: {file_path}"
-                )
-
-            return resources
-
-        except ValueError:
-            raise
-        except Exception as e:
+            template = self.env.from_string(file_contents)
+            yaml_content = template.render(**context)
+        except TemplateError as e:
             raise ValueError(
-                f"Failed to load resource file '{file}': {e}"
+                f"Failed to render Jinja2 template '{file}': {e}"
             ) from e
+
+        return self.load_yaml_documents(yaml_content)
 
     @staticmethod
     def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
