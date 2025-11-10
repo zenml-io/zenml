@@ -1196,7 +1196,7 @@ def apply_default_resource_requests(
 
 def convert_resource_settings_to_k8s_format(
     resource_settings: "ResourceSettings",
-) -> Tuple[Dict[str, str], Dict[str, str], int]:
+) -> Tuple[Dict[str, str], int]:
     """Convert ZenML ResourceSettings to Kubernetes resource format.
 
     Args:
