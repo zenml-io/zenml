@@ -13,6 +13,11 @@
 #  permissions and limitations under the License.
 """Hugging Face integration flavors."""
 
+from zenml.integrations.huggingface.flavors.huggingface_deployer_flavor import (  # noqa
+    HuggingFaceDeployerConfig,
+    HuggingFaceDeployerFlavor,
+    HuggingFaceDeployerSettings,
+)
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (  # noqa
     HuggingFaceModelDeployerConfig,
     HuggingFaceModelDeployerFlavor,
@@ -20,7 +25,10 @@ from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor im
 )
 
 __all__ = [
+    "HuggingFaceDeployerConfig",
+    "HuggingFaceDeployerFlavor",
     "HuggingFaceModelDeployerConfig",
     "HuggingFaceModelDeployerFlavor",
     "HuggingFaceBaseConfig",
+    "HuggingFaceDeployerSettings",
 ]

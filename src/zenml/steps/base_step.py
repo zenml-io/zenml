@@ -18,10 +18,12 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Generator,
     List,
     Mapping,
     Optional,
@@ -30,6 +32,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -44,6 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
+from zenml.enums import StepRuntime
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -91,6 +95,12 @@ if TYPE_CHECKING:
         Mapping[str, Sequence["MaterializerClassOrSource"]],
     ]
 
+    from zenml.execution.pipeline.dynamic.outputs import (
+        StepRunFuture,
+        StepRunOutputsFuture,
+    )
+
+
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="BaseStep")
@@ -122,6 +132,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        runtime: Optional[StepRuntime] = None,
     ) -> None:
         """Initializes a step.
 
@@ -155,6 +166,10 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
+            runtime: The step runtime. If not configured, the step will
+                run inline unless a step operator or docker/resource settings
+                are configured. This is only applicable for dynamic
+                pipelines.
         """
         from zenml.config.step_configurations import PartialStepConfiguration
 
@@ -163,6 +178,7 @@ class BaseStep:
             reserved_arguments=["after", "id"],
         )
 
+        self._static_id = id(self)
         name = name or self.__class__.__name__
 
         logger.debug(
@@ -197,14 +213,15 @@ class BaseStep:
                 },
             )
 
-        self._configuration = PartialStepConfiguration(
-            name=name,
+        self._configuration = PartialStepConfiguration(name=name)
+        self._dynamic_configuration: Optional["StepConfigurationUpdate"] = None
+        self._capture_dynamic_configuration = True
+
+        self.configure(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
-        )
-        self.configure(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
@@ -219,6 +236,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
+            runtime=runtime,
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
@@ -454,7 +472,11 @@ class BaseStep:
         *args: Any,
         id: Optional[str] = None,
         after: Union[
-            str, StepArtifact, Sequence[Union[str, StepArtifact]], None
+            str,
+            StepArtifact,
+            "StepRunFuture",
+            Sequence[Union[str, StepArtifact, "StepRunFuture"]],
+            None,
         ] = None,
         **kwargs: Any,
     ) -> Any:
@@ -474,10 +496,48 @@ class BaseStep:
         Returns:
             The outputs of the entrypoint function call.
         """
-        from zenml.pipelines.pipeline_definition import Pipeline
+        from zenml import get_step_context
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+        from zenml.pipelines.compilation_context import (
+            PipelineCompilationContext,
+        )
 
-        if not Pipeline.ACTIVE_PIPELINE:
-            from zenml import constants, get_step_context
+        try:
+            step_context = get_step_context()
+        except RuntimeError:
+            step_context = None
+
+        if step_context:
+            # We're currently inside the execution of a different step
+            # -> We don't want to launch another single step pipeline here,
+            # but instead just call the step function
+            return self.call_entrypoint(*args, **kwargs)
+
+        if run_context := DynamicPipelineRunContext.get():
+            after = cast(
+                Union[
+                    "StepRunFuture",
+                    Sequence["StepRunFuture"],
+                    None,
+                ],
+                after,
+            )
+            return run_context.runner.launch_step(
+                step=self,
+                id=id,
+                args=args,
+                kwargs=kwargs,
+                after=after,
+                concurrent=False,
+            )
+
+        compilation_context = PipelineCompilationContext.get()
+        if not compilation_context:
+            from zenml.execution.pipeline.utils import (
+                should_prevent_pipeline_execution,
+            )
 
             # If the environment variable was set to explicitly not run on the
             # stack, we do that.
@@ -487,21 +547,8 @@ class BaseStep:
             if run_without_stack:
                 return self.call_entrypoint(*args, **kwargs)
 
-            try:
-                get_step_context()
-            except RuntimeError:
-                pass
-            else:
-                # We're currently inside the execution of a different step
-                # -> We don't want to launch another single step pipeline here,
-                # but instead just call the step function
-                return self.call_entrypoint(*args, **kwargs)
-
-            if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
-                logger.info(
-                    "Preventing execution of step '%s'.",
-                    self.name,
-                )
+            if should_prevent_pipeline_execution():
+                logger.info("Preventing execution of step '%s'.", self.name)
                 return
 
             return run_as_single_step_pipeline(self, *args, **kwargs)
@@ -529,7 +576,7 @@ class BaseStep:
                 elif isinstance(item, StepArtifact):
                     upstream_steps.add(item.invocation_id)
 
-        invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
+        invocation_id = compilation_context.pipeline.add_step_invocation(
             step=self,
             input_artifacts=input_artifacts,
             external_artifacts=external_artifacts,
@@ -548,7 +595,7 @@ class BaseStep:
                 invocation_id=invocation_id,
                 output_name=key,
                 annotation=annotation,
-                pipeline=Pipeline.ACTIVE_PIPELINE,
+                pipeline=compilation_context.pipeline,
             )
             outputs.append(output)
         return outputs[0] if len(outputs) == 1 else outputs
@@ -581,6 +628,48 @@ class BaseStep:
             ) from e
 
         return self.entrypoint(**validated_args)
+
+    def submit(
+        self,
+        *args: Any,
+        id: Optional[str] = None,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        **kwargs: Any,
+    ) -> "StepRunOutputsFuture":
+        """Submit the step to run concurrently in a separate thread.
+
+        Args:
+            *args: The arguments to pass to the step function.
+            id: The invocation ID of the step.
+            after: The step run output futures to wait for before executing the
+                step.
+            **kwargs: The keyword arguments to pass to the step function.
+
+        Raises:
+            RuntimeError: If this method is called outside of a dynamic
+                pipeline.
+
+        Returns:
+            The step run output future.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Submitting a step is only possible within a dynamic pipeline."
+            )
+
+        return context.runner.launch_step(
+            step=self,
+            id=id,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+            concurrent=True,
+        )
 
     @property
     def name(self) -> str:
@@ -631,6 +720,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        runtime: Optional[StepRuntime] = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -674,6 +764,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders to use in the name template.
             cache_policy: Cache policy for this step.
+            runtime: The step runtime. This is only applicable for dynamic
+                pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -752,6 +844,7 @@ class BaseStep:
                 "retry": retry,
                 "substitutions": substitutions,
                 "cache_policy": cache_policy,
+                "runtime": runtime,
             }
         )
         config = StepConfigurationUpdate(**values)
@@ -780,6 +873,7 @@ class BaseStep:
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
         cache_policy: Optional[CachePolicyOrString] = None,
+        runtime: Optional[StepRuntime] = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -813,6 +907,8 @@ class BaseStep:
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra placeholders for the step name.
             cache_policy: Cache policy for this step.
+            runtime: The step runtime. This is only applicable for dynamic
+                pipelines.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
@@ -842,6 +938,7 @@ class BaseStep:
             retry=retry,
             substitutions=substitutions,
             cache_policy=cache_policy,
+            runtime=runtime,
             merge=merge,
         )
         return step_copy
@@ -852,7 +949,32 @@ class BaseStep:
         Returns:
             The step copy.
         """
-        return copy.deepcopy(self)
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        step_copy = copy.deepcopy(self)
+
+        if not DynamicPipelineRunContext.is_active():
+            # If we're not in a dynamic pipeline, we generate a new static ID
+            # for the step copy
+            step_copy._static_id = id(step_copy)
+
+        return step_copy
+
+    @contextmanager
+    def _suspend_dynamic_configuration(self) -> Generator[None, None, None]:
+        """Context manager to suspend applying to the dynamic configuration.
+
+        Yields:
+            None.
+        """
+        previous_value = self._capture_dynamic_configuration
+        self._capture_dynamic_configuration = False
+        try:
+            yield
+        finally:
+            self._capture_dynamic_configuration = previous_value
 
     def _apply_configuration(
         self,
@@ -869,7 +991,23 @@ class BaseStep:
                 or not. See the `BaseStep.configure(...)` method for a detailed
                 explanation.
         """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
         self._validate_configuration(config, runtime_parameters)
+
+        if (
+            self._capture_dynamic_configuration
+            and DynamicPipelineRunContext.is_active()
+        ):
+            if self._dynamic_configuration is None:
+                self._dynamic_configuration = config
+            else:
+                self._dynamic_configuration = pydantic_utils.update_model(
+                    self._dynamic_configuration, update=config, recursive=merge
+                )
+            return
 
         self._configuration = pydantic_utils.update_model(
             self._configuration, update=config, recursive=merge
@@ -877,6 +1015,15 @@ class BaseStep:
 
         logger.debug("Updated step configuration:")
         logger.debug(self._configuration)
+
+    def _merge_dynamic_configuration(self) -> None:
+        """Merges the dynamic configuration into the static configuration."""
+        if self._dynamic_configuration:
+            with self._suspend_dynamic_configuration():
+                self._apply_configuration(
+                    config=self._dynamic_configuration, merge=True
+                )
+            logger.debug("Merged dynamic configuration.")
 
     def _validate_configuration(
         self,
@@ -1031,6 +1178,7 @@ To avoid this consider setting step parameters only in one place (config or code
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
+        skip_input_validation: bool = False,
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
 
@@ -1045,6 +1193,7 @@ To avoid this consider setting step parameters only in one place (config or code
             model_artifacts_or_metadata: The model artifacts or metadata of
                 this step.
             client_lazy_loaders: The client lazy loaders of this step.
+            skip_input_validation: If True, will skip the input validation.
 
         Raises:
             StepInterfaceError: If explicit materializers were specified for an
@@ -1134,12 +1283,13 @@ To avoid this consider setting step parameters only in one place (config or code
 
         parameters = self._finalize_parameters()
         self.configure(parameters=parameters, merge=False)
-        self._validate_inputs(
-            input_artifacts=input_artifacts,
-            external_artifacts=external_artifacts,
-            model_artifacts_or_metadata=model_artifacts_or_metadata,
-            client_lazy_loaders=client_lazy_loaders,
-        )
+        if not skip_input_validation:
+            self._validate_inputs(
+                input_artifacts=input_artifacts,
+                external_artifacts=external_artifacts,
+                model_artifacts_or_metadata=model_artifacts_or_metadata,
+                client_lazy_loaders=client_lazy_loaders,
+            )
 
         values = dict_utils.remove_none_values({"outputs": outputs or None})
         config = StepConfigurationUpdate(**values)

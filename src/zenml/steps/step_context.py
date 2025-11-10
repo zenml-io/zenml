@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step context class."""
 
+import contextvars
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,10 +25,13 @@ from typing import (
     Type,
 )
 
+from typing_extensions import Self
+
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.utils import context_utils
 from zenml.utils.callback_registry import CallbackRegistry
-from zenml.utils.singleton import SingletonMetaClass, ThreadLocalSingleton
+from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
     from zenml.artifacts.artifact_config import ArtifactConfig
@@ -54,8 +58,9 @@ def get_step_context() -> "StepContext":
     Raises:
         RuntimeError: If no step is currently running.
     """
-    if StepContext._exists():
-        return StepContext()  # type: ignore
+    if ctx := StepContext.get():
+        return ctx
+
     raise RuntimeError(
         "The step context is only available inside a step function."
     )
@@ -110,11 +115,8 @@ class RunContext(metaclass=SingletonMetaClass):
         self.initialized = True
 
 
-class StepContext(metaclass=ThreadLocalSingleton):
+class StepContext(context_utils.BaseContext):
     """Provides additional context inside a step function.
-
-    This singleton class is used to access information about the current run,
-    step run, or its outputs inside a step function.
 
     Usage example:
 
@@ -137,6 +139,8 @@ class StepContext(metaclass=ThreadLocalSingleton):
         ...
     ```
     """
+
+    __context_var__ = contextvars.ContextVar("step_context")
 
     def __init__(
         self,
@@ -163,6 +167,8 @@ class StepContext(metaclass=ThreadLocalSingleton):
                 output artifacts do not match.
         """
         from zenml.client import Client
+
+        super().__init__()
 
         try:
             pipeline_run = Client().get_pipeline_run(pipeline_run.id)
@@ -460,6 +466,30 @@ class StepContext(metaclass=ThreadLocalSingleton):
         if not output.tags:
             return
         output.tags = [tag for tag in output.tags if tag not in tags]
+
+    def __enter__(self) -> Self:
+        """Enter the step context.
+
+        Raises:
+            RuntimeError: If the step context has already been entered.
+
+        Returns:
+            The step context object.
+        """
+        if self._token is not None:
+            raise RuntimeError(
+                "Running a step from within another step is not allowed."
+            )
+        return super().__enter__()
+
+    def __exit__(self, *_: Any) -> None:
+        """Exit the step context.
+
+        Args:
+            *_: Unused keyword arguments.
+        """
+        self._cleanup_registry.execute_callbacks(raise_on_exception=False)
+        super().__exit__(*_)
 
 
 class StepContextOutput:

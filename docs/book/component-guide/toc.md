@@ -25,6 +25,7 @@
   * [Docker Deployer](deployers/docker.md)
   * [AWS App Runner Deployer](deployers/aws-app-runner.md)
   * [GCP Cloud Run Deployer](deployers/gcp-cloud-run.md)
+  * [Hugging Face Deployer](deployers/huggingface.md)
 * [Artifact Stores](artifact-stores/README.md)
   * [Local Artifact Store](artifact-stores/local.md)
   * [Amazon Simple Cloud Storage (S3)](artifact-stores/s3.md)

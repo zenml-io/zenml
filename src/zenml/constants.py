@@ -140,7 +140,6 @@ ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
-ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -246,11 +245,6 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 # ZenML Analytics Server - URL
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
-# Container utils
-SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
-    ENV_ZENML_PREVENT_PIPELINE_EXECUTION
-)
-
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
@@ -321,7 +315,10 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
-_csp_script_src_urls = ["https://widgets-v3.featureos.app"]
+_csp_script_src_urls = [
+    "https://widgets-v3.featureos.app",
+    "https://static.reo.dev",
+]
 _csp_connect_src_urls = [
     # We need a wildcard here to allow the dashboard deployment playground
     # to send requests to deployments on any URL.
@@ -440,6 +437,7 @@ STATISTICS = "/statistics"
 STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
+HEARTBEAT = "/heartbeat"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"

@@ -560,7 +560,7 @@ class TestModel:
 
                     @pipeline
                     def _inner_pipeline(
-                        model: Model = None,
+                        model: Optional[Model] = None,
                         artifact_type: Optional[ArtifactType] = None,
                     ):
                         artifact_linker(

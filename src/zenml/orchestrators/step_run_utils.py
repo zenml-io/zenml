@@ -76,7 +76,9 @@ class StepRunRequestFactory:
             is_enabled_on_pipeline=self.snapshot.pipeline_configuration.enable_cache,
         )
 
-    def create_request(self, invocation_id: str) -> StepRunRequest:
+    def create_request(
+        self, invocation_id: str, dynamic_config: Optional[Step] = None
+    ) -> StepRunRequest:
         """Create a step run request.
 
         This will only create a request with basic information and will not yet
@@ -86,6 +88,7 @@ class StepRunRequestFactory:
 
         Args:
             invocation_id: The invocation ID for which to create the request.
+            dynamic_config: The dynamic configuration for the step.
 
         Returns:
             The step run request.
@@ -96,6 +99,7 @@ class StepRunRequestFactory:
             status=ExecutionStatus.RUNNING,
             start_time=utc_now(),
             project=Client().active_project.id,
+            dynamic_config=dynamic_config,
         )
 
     def populate_request(
@@ -111,7 +115,10 @@ class StepRunRequestFactory:
                 input resolution. This will be updated in-place with newly
                 fetched step runs.
         """
-        step = self.snapshot.step_configurations[request.name]
+        step = (
+            request.dynamic_config
+            or self.snapshot.step_configurations[request.name]
+        )
 
         input_artifacts = input_utils.resolve_step_inputs(
             step=step,
@@ -139,7 +146,7 @@ class StepRunRequestFactory:
         (
             docstring,
             source_code,
-        ) = self._get_docstring_and_source_code(invocation_id=request.name)
+        ) = self._get_docstring_and_source_code(step=step)
 
         request.docstring = docstring
         request.source_code = source_code
@@ -185,19 +192,16 @@ class StepRunRequestFactory:
                     request.docstring = cached_step_run.docstring
 
     def _get_docstring_and_source_code(
-        self, invocation_id: str
+        self, step: "Step"
     ) -> Tuple[Optional[str], Optional[str]]:
         """Get the docstring and source code for the step.
 
         Args:
-            invocation_id: The step invocation ID for which to get the
-                docstring and source code.
+            step: The step for which to get the docstring and source code.
 
         Returns:
             The docstring and source code of the step.
         """
-        step = self.snapshot.step_configurations[invocation_id]
-
         try:
             return self._get_docstring_and_source_code_from_step_instance(
                 step=step
@@ -210,7 +214,7 @@ class StepRunRequestFactory:
         # We now try to fetch the docstring/source code from a step run of the
         # snapshot that was used to create the template
         return self._try_to_get_docstring_and_source_code_from_template(
-            invocation_id=invocation_id
+            invocation_id=step.spec.invocation_id
         )
 
     @staticmethod

@@ -103,7 +103,7 @@ ZenML uses a [**client-server architecture**](https://docs.zenml.io/getting-star
 
 Here is a short demo:
 
- [![Watch the video](https://img.youtube.com/vi/rzWmaHMaI88/0.jpg)](https://youtu.be/rzWmaHMaI88)
+ [![Watch the video](docs/book/.gitbook/assets/readme-youtube-thumbnail.png)](https://zenml.io/demo-video)
 
 ## 🖼️ Resources
 

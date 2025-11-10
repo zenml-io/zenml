@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
+from zenml.models.v2.core.step_run import StepHeartbeatResponse
+
 try:
     import sqlalchemy  # noqa
 except ImportError:
@@ -35,7 +37,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -1248,6 +1250,14 @@ class SqlZenStore(BaseZenStore):
     # Initialization and configuration
     # --------------------------------
 
+    def _run_migrations(self) -> None:
+        if self.skip_migrations or handle_bool_env_var(
+            ENV_ZENML_DISABLE_DATABASE_MIGRATION
+        ):
+            logger.debug("Skipping database migration.")
+        else:
+            self.migrate_database()
+
     def _initialize(self) -> None:
         """Initialize the SQL store."""
         logger.debug("Initializing SqlZenStore at %s", self.config.url)
@@ -1284,11 +1294,7 @@ class SqlZenStore(BaseZenStore):
 
         self._alembic = Alembic(self.engine)
 
-        if (
-            not self.skip_migrations
-            and ENV_ZENML_DISABLE_DATABASE_MIGRATION not in os.environ
-        ):
-            self.migrate_database()
+        self._run_migrations()
 
         if self.config.driver == SQLDatabaseDriver.SQLITE:
             # Enable foreign key checks at the SQLite database level, but only
@@ -6053,6 +6059,7 @@ class SqlZenStore(BaseZenStore):
         """
         helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
+            # TODO: better loads for dynamic/static pipelines
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
@@ -6060,6 +6067,7 @@ class SqlZenStore(BaseZenStore):
                 query_options=[
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                        jl_arg(PipelineSnapshotSchema.is_dynamic),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.snapshot)
@@ -6072,6 +6080,9 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
                     selectinload(jl_arg(PipelineRunSchema.step_runs))
                     .selectinload(jl_arg(StepRunSchema.triggered_runs))
                     .load_only(
@@ -6098,13 +6109,23 @@ class SqlZenStore(BaseZenStore):
                 start_time=run.start_time, inplace=True
             )
 
-            steps = {
-                config_table.name: Step.from_dict(
-                    json.loads(config_table.config),
-                    pipeline_configuration=pipeline_configuration,
-                )
-                for config_table in snapshot.step_configurations
-            }
+            if snapshot.is_dynamic:
+                # Ignore static config templates for dynamic pipeline DAGs
+                steps = {
+                    name: Step.from_dict(
+                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
+                        pipeline_configuration=pipeline_configuration,
+                    )
+                    for name, step_run in step_runs.items()
+                }
+            else:
+                steps = {
+                    config_table.name: Step.from_dict(
+                        json.loads(config_table.config),
+                        pipeline_configuration=pipeline_configuration,
+                    )
+                    for config_table in snapshot.step_configurations
+                }
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
@@ -9959,7 +9980,10 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            step_config = run.get_step_configuration(step_name=step_run.name)
+            step_config = (
+                step_run.dynamic_config
+                or run.get_step_configuration(step_name=step_run.name)
+            )
 
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
@@ -10211,6 +10235,26 @@ class SqlZenStore(BaseZenStore):
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
 
+            if step_run.dynamic_config:
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
+
             session.commit()
             session.refresh(
                 step_schema, ["input_artifacts", "output_artifacts"]
@@ -10295,6 +10339,37 @@ class SqlZenStore(BaseZenStore):
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
+            )
+
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat value.
+
+        Lightweight function for fast updates as heartbeats may be received at bulk.
+
+        Args:
+            step_run_id: ID of the step run.
+
+        Returns:
+            Step heartbeat response (minimal info, id, status & latest_heartbeat).
+        """
+        with Session(self.engine) as session:
+            existing_step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
+
+            existing_step_run.latest_heartbeat = datetime.now(timezone.utc)
+
+            session.commit()
+            session.refresh(existing_step_run)
+
+            return StepHeartbeatResponse(
+                id=existing_step_run.id,
+                status=existing_step_run.status,
+                latest_heartbeat=existing_step_run.latest_heartbeat,
             )
 
     def update_run_step(
@@ -10622,12 +10697,14 @@ class SqlZenStore(BaseZenStore):
         # Snapshots always exists for pipeline runs of newer versions
         assert pipeline_run.snapshot
         num_steps = pipeline_run.snapshot.step_count
+        is_dynamic_pipeline = pipeline_run.snapshot.is_dynamic
         new_status = get_pipeline_run_status(
             run_status=ExecutionStatus(pipeline_run.status),
             step_statuses=[
                 ExecutionStatus(status) for status in step_run_statuses
             ],
             num_steps=num_steps,
+            is_dynamic_pipeline=is_dynamic_pipeline,
         )
 
         if new_status == pipeline_run.status or (
@@ -12216,7 +12293,6 @@ class SqlZenStore(BaseZenStore):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
 
         operation: Literal["create", "update"] = "create"
-        project_id: Optional[UUID] = None
         if isinstance(resource, BaseRequest):
             # Create operation
             if isinstance(resource, ProjectScopedRequest):
@@ -12244,6 +12320,12 @@ class SqlZenStore(BaseZenStore):
             operation = "update"
 
         query = select(schema_class).where(schema_class.name == name)
+
+        # Exclude from existing name checks the update target itself.
+        if isinstance(resource, BaseUpdate) and isinstance(
+            schema, NamedSchema
+        ):
+            query = query.where(schema_class.id != schema.id)
 
         # We "detect" if the entity is project-scoped by looking at the
         # project_id attribute.
