@@ -18,7 +18,7 @@
 
 from typing import Any, Dict
 
-from steps import run_detection
+from steps import process_detection_results, run_detection
 
 from pipelines.hooks import cleanup_model, init_model
 from zenml import Model, pipeline
@@ -123,7 +123,7 @@ def object_detection_inference_pipeline(
         image_path=image_path,
         confidence_threshold=confidence_threshold,
     )
-    # detection_results = process_detection_results(detection_results)
+    detection_results = process_detection_results(detection_results)
 
     # Return only the dictionary for API compatibility
     # The annotated_image will be automatically visualized by ZenML
