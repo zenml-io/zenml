@@ -17,7 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String, UniqueConstraint
+from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
@@ -87,6 +87,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    is_dynamic: bool = Field(nullable=False, default=False)
 
     pipeline_configuration: str = Field(
         sa_column=Column(
@@ -409,6 +410,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
             pipeline_id=request.pipeline,
@@ -480,11 +482,21 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             The response.
         """
         runnable = False
-        if self.build and not self.build.is_local and self.build.stack_id:
+        if (
+            not self.is_dynamic
+            and self.build
+            and not self.build.is_local
+            and self.build.stack_id
+        ):
             runnable = True
 
         deployable = False
-        if self.build and self.stack and self.stack.has_deployer:
+        if (
+            not self.is_dynamic
+            and self.build
+            and self.stack
+            and self.stack.has_deployer
+        ):
             deployable = True
 
         body = PipelineSnapshotResponseBody(
@@ -494,6 +506,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             updated=self.updated,
             runnable=runnable,
             deployable=deployable,
+            is_dynamic=self.is_dynamic,
         )
         metadata = None
         if include_metadata:
@@ -612,8 +625,14 @@ class StepConfigurationSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "snapshot_id",
+            "step_run_id",
             "name",
-            name="unique_step_name_for_snapshot",
+            name="unique_step_configuration_for_snapshot_or_step_run",
+        ),
+        CheckConstraint(
+            "(snapshot_id IS NULL AND step_run_id IS NOT NULL) OR "
+            "(snapshot_id IS NOT NULL AND step_run_id IS NULL)",
+            name="ck_step_configuration_snapshot_step_run_exclusivity",
         ),
     )
 
@@ -634,5 +653,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
         source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
+    )
+    step_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="step_run",
+        source_column="step_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )

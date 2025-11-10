@@ -294,7 +294,6 @@ def step_context_with_no_output(
     sample_pipeline_run: PipelineRunResponse,
     sample_step_run: StepRunResponse,
 ) -> StepContext:
-    StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
@@ -312,7 +311,6 @@ def step_context_with_single_output(
     materializers = {"output_1": (BaseMaterializer,)}
     artifact_uris = {"output_1": ""}
     artifact_configs = {"output_1": None}
-    StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
@@ -337,7 +335,6 @@ def step_context_with_two_outputs(
     }
     artifact_configs = {"output_1": None, "output_2": None}
 
-    StepContext._clear()
     return StepContext(
         pipeline_run=sample_pipeline_run,
         step_run=sample_step_run,
@@ -456,6 +453,7 @@ def sample_pipeline_snapshot_request_model() -> PipelineSnapshotRequest:
         server_version="0.12.3",
         stack=uuid4(),
         pipeline=uuid4(),
+        is_dynamic=False,
     )
 
 
@@ -634,6 +632,7 @@ def sample_snapshot_response_model(
             updated=datetime.now(),
             runnable=True,
             deployable=True,
+            is_dynamic=False,
         ),
         metadata=PipelineSnapshotResponseMetadata(
             run_name_template="",

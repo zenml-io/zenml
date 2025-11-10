@@ -100,6 +100,7 @@ def test_pipeline_run_status_computation(
             run_status=ExecutionStatus.RUNNING,
             step_statuses=step_statuses,
             num_steps=num_steps,
+            is_dynamic_pipeline=False,
         )
         == expected_run_status
     )
