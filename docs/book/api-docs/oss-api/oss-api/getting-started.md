@@ -32,44 +32,7 @@ If you are using the ZenML OSS server API using the methods displayed above, it 
 Choosing a method:
 
 - Humans at the CLI: use [interactive login](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive).
-- Short‑lived scripts: use [temporary API tokens](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token).
 - CI/CD and automation: use [service accounts + API keys](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
-{% endhint %}
-
-### Using a short-lived API token
-
-You can generate a short-lived (1 hour) API token from your ZenML dashboard. This is useful when you need a fast way to make authenticated HTTP requests to the ZenML API endpoints and you don't need a long-term solution.
-
-1. Generate a short-lived API token through the API Tokens page under your ZenML dashboard server settings, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
-2. Use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
-   *   using `curl`:
-
-       ```bash
-       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-       ```
-   *   using `wget`:
-
-       ```bash
-       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-       ```
-   *   using Python:
-
-       ```python
-       import requests
-
-       response = requests.get(
-         "https://your-zenml-server/api/v1/current-user",
-         headers={"Authorization": f"Bearer YOUR_API_TOKEN"}
-       )
-       print(response.json())
-       ```
-
-{% hint style="info" %}
-**Important Notes**
-
-* API tokens expire after 1 hour and cannot be retrieved after the initial generation
-* Tokens are scoped to your user account and inherit your permissions
-* For long-term programmatic access, it is instead recommended to [set up a service account and an API key](./#using-a-service-account-and-an-api-key)
 {% endhint %}
 
 ### Using a service account and an API key
@@ -84,7 +47,45 @@ You can use a service account's API key to obtain short-lived API tokens for pro
 
 This will print out the `<ZENML_API_KEY>`, you can use in the next steps.
 
-2. To obtain an API token using your API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
+{% tabs %}
+{% tab title="Direct API key authentication" %}
+
+{% hint style="warning" %}
+This approach, albeit simple, is not recommended because the long-lived API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
+{% endhint %}
+
+Use the API key directly to authenticate your API requests by including it in the `Authorization` header. For example, you can use the following command to check your current user:
+
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_KEY" https://your-zenml-server/api/v1/current-user
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_KEY" https://your-zenml-server/api/v1/current-user
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://your-zenml-server/api/v1/current-user",
+           headers={"Authorization": f"Bearer {YOUR_API_KEY}"}
+       )
+
+       print(response.json())
+       ```
+
+{% endtab %}
+
+{% tab title="Token exchange authentication" %}
+
+Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API token.
+
+1. To obtain a short-lived API token using your API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
    *   using curl:
 
        ```bash
@@ -112,7 +113,7 @@ This will print out the `<ZENML_API_KEY>`, you can use in the next steps.
        print(response.json())
        ```
 
-This will return a response like this:
+This will return a response like this (the short-lived API token is the `access_token` field):
 
 ```json
 {
@@ -124,7 +125,7 @@ This will return a response like this:
 }
 ```
 
-3. Once you have obtained an API token, you can use it to authenticate your API requests by including it in the `Authorization` header. For example, you can use the following command to check your current user:
+2. Once you have obtained a short-lived API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the short-lived API token expires, simply repeat the steps above to obtain a new one. For example, you can use the following command to check your current user:
    *   using curl:
 
        ```bash
@@ -151,9 +152,9 @@ This will return a response like this:
 {% hint style="info" %}
 **Important notes**
 
-* API tokens are scoped to the service account that created them and inherit their permissions
+* Short-lived API tokens are scoped to the service account that created them and inherit their permissions
 * Tokens are temporary and will expire after a configured duration (typically 1 hour, but it depends on how the server is configured)
-* You can request a new token at any time using the same API key
-* For security reasons, you should handle API tokens carefully and never share them
+* You can request a new short-lived API token at any time using the same API key
+* For security reasons, you should handle short-lived API tokens carefully and never share them
 * If your API key is compromised, you can rotate it using the ZenML dashboard or by running the `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate` command
 {% endhint %}

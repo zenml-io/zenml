@@ -53,7 +53,7 @@ Proper access management ensures that team members have the right permissions an
 - Establish processes for pipeline maintenance and server upgrades
 - Leverage [Teams in ZenML Pro](https://docs.zenml.io/pro/core-concepts/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
-Explore access management strategies in the [Access Management and Roles guide](https://docs.zenml.io/pro/core-concepts/roles).
+Explore access management strategies in the [Access Management and Roles guide](https://docs.zenml.io/pro/access-management/roles).
 
 ### Shared Components and Libraries
 

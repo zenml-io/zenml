@@ -44,8 +44,10 @@ and enter the following API key when prompted:
 ZENKEY_...
 ```
 
-Finally, you will need the following on the machine where you will be running\
-Terraform:
+If you're using a ZenML Pro server, you will need to create a Personal Access Token or an organization-level service account and an API key for it. You can find more about Personal Access Tokens [here](https://docs.zenml.io/pro/access-management/personal-access-tokens) and organization-level service accounts and API keys [here](https://docs.zenml.io/pro/access-management/service-accounts).
+
+
+Finally, you will need the following on the machine where you will be running Terraform:
 
 * [Terraform](https://developer.hashicorp.com/terraform/install) installed on your machine (version at least 1.9).
 * the ZenML Terraform stack modules assume you are already locally authenticated with your cloud provider through the provider's CLI or SDK tool and have permissions to create the resources that the modules will provision. This is different depending on the cloud provider you are using and is covered in the following sections.
@@ -64,7 +66,7 @@ export ZENML_API_KEY="<your-api-key>"
 ![Finding your workspace URL](../../../.gitbook/assets/workspace_url.png)
 
 {% hint style="info" %}
-**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain. The `ZENML_API_KEY` should be [the ZenML Pro API key](https://docs.zenml.io/pro/access-management/service-accounts).
 {% endhint %}
 
 2. Create a new Terraform configuration file (e.g., `main.tf`), preferably in a new directory, with the content that looks like this (`<cloud provider>` can be`aws`, `gcp`, or `azure`):

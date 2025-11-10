@@ -16,225 +16,9 @@ Service accounts in ZenML Pro are managed at the organization level, not at the 
 
 ## Accessing Service Account Management
 
-To manage service accounts in your ZenML Pro organization:
-
-1. Navigate to your ZenML Pro dashboard
-2. Click on **"Settings"** in the organization navigation menu
-3. Select **"Service Accounts"** from the settings sidebar
-4. All service accounts associated with the organization will be displayed, showing:
-   - Service account name
-   - Active/inactive status
-   - Last login date
-   - Number of API keys associated with the service account
-
-This is the main interface where you can perform all service account and API key operations.
+To manage service accounts in your ZenML Pro organization, navigate to your ZenML Pro dashboard, click on **"Settings"** in the organization navigation menu and select **"Service Accounts"** from the settings sidebar. This is the main interface where you can perform all service account and API key operations.
 
 ![Service Accounts](../../.gitbook/assets/pro-service-accounts-01.png)
-
-## Service Account Operations
-
-### Creating a New Service Account
-
-Creating a service account allows you to establish a new identity for programmatic access to your ZenML Pro organization.
-
-**To create a service account:**
-
-1. In the Service Accounts interface, click **"Create Service Account"**
-2. Provide the following information:
-   - **Name**: A descriptive name for the service account (e.g., "CI/CD Automation", "Data Ingestion Service")
-   - **Username**: A unique username for the service account (e.g., "ci-cd-automation", "data-ingestion-service")
-   - **Description** (optional): Additional context about the service account's purpose
-   - **Role**: The initial organization role of the service account (e.g., "Organization Admin", "Organization Member")
-3. **Optional**: Create a default API key immediately by checking **"Create a default API key"**
-4. Click **"Create"** to establish the service account
-
-![Create a new service account](../../.gitbook/assets/pro-service-accounts-02.png)
-
-{% hint style="warning" %}
-**API Key Security**
-
-If you choose to create a default API key during service account creation, the API key value will only be displayed once. Make sure to copy and securely store it immediately, as it cannot be retrieved later.
-{% endhint %}
-
-![Default API key](../../.gitbook/assets/pro-service-accounts-03.png)
-
-
-### Managing Service Account Roles and Permissions
-
-Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](./roles.md) to control their access to different parts of the organization and they can be organized into [teams](./teams.md). They are marked as "BOT" in the UI, to clearly identify them as non-human users.
-
-![Service account Organization roles](../../.gitbook/assets/pro-service-accounts-13.png)
-![Service account Workspace roles](../../.gitbook/assets/pro-service-accounts-14.png)
-
-### Activating and Deactivating Service Accounts
-
-Service account activation controls whether the account can be used for authentication. Deactivating a service account immediately prevents all associated API keys from working.
-
-**To deactivate a service account:**
-
-1. Locate the service account in the list
-2. Click the **"Active"** toggle switch to turn it off
-3. Confirm the action when prompted
-
-![Deactivate a service account](../../.gitbook/assets/pro-service-accounts-04.png)
-
-**To reactivate a service account:**
-
-1. Locate the deactivated service account (shown with an inactive indicator)
-2. Click the **"Active"** toggle switch to turn it on
-3. The service account and its active API keys will immediately resume working
-
-{% hint style="danger" %}
-**Immediate Effect**
-
-Deactivating a service account has immediate effect on all ZenML Pro API calls using any of its API keys. Ensure you coordinate with your team before deactivating production service accounts.
-{% endhint %}
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
-{% endhint %}
-
-### Deleting a Service Account
-
-Deleting a service account permanently removes it and all associated API keys from your organization.
-
-**To delete a service account:**
-
-1. Click the **"⋮"** (more options) menu next to the service account
-2. Select **"Delete"**
-3. Confirm the deletion when prompted
-4. Click **"Delete"** to permanently remove the service account
-
-![Delete a service account](../../.gitbook/assets/pro-service-accounts-12.png)
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
-{% endhint %}
-
-## API Key Management
-
-API keys are the credentials used by applications to authenticate as a service account. Each service account can have multiple API keys, allowing for key rotation and different access patterns. When you create a new service account, you have the option to automatically create a default API key for it.
-
-### Viewing API Keys
-
-**To view all API keys for a service account:**
-
-1. Click on the service account name to open its details
-2. All API keys associated with the service account will be displayed, showing:
-   - Key name and description
-   - Last login date
-   - Last rotated date
-   - Active/inactive status
-
-![Viewing API keys](../../.gitbook/assets/pro-service-accounts-05.png)
-
-### Creating an API Key
-
-**To create a new API key for a service account:**
-
-1. Open the service account details
-2. Click **"Add API Key"**
-3. Provide:
-   - **Name**: A descriptive name for the API key (e.g., "production", "staging-deployment")
-   - **Description** (optional): Additional context about the key's intended use
-4. Click **"Create"**
-5. **Important**: Copy the displayed API key value immediately and store it securely
-
-{% hint style="danger" %}
-**One-Time Display**
-
-The API key value is only shown once during creation and cannot be retrieved later. If you lose an API key, you must create a new one or rotate the existing key.
-{% endhint %}
-
-![Create a new API key](../../.gitbook/assets/pro-service-accounts-06.png)
-![API key value](../../.gitbook/assets/pro-service-accounts-07.png)
-
-### Activating and Deactivating API Keys
-
-Individual API keys can be activated or deactivated independently of the service account status.
-
-**To deactivate an API key:**
-
-1. In the API Keys list, locate the key you want to deactivate
-2. Click the **"Active"** toggle switch to turn it off
-3. The API key will immediately stop working for authentication
-
-![Deactivate an API key](../../.gitbook/assets/pro-service-accounts-08.png)
-
-**To reactivate an API key:**
-
-1. Locate the deactivated API key
-2. Click the **"Inactive"** toggle switch to turn it on
-3. The API key will immediately resume working (provided the service account is also active)
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
-{% endhint %}
-
-### Rotating API Keys
-
-API key rotation creates a new key value while optionally preserving the old key for a transition period. This is essential for maintaining security without service interruption.
-
-**To rotate an API key:**
-
-1. Click the **"⋮"** (more options) menu next to the API key
-2. Select **"Rotate"**
-3. Configure rotation options:
-   - Toggle **"Include Retention Period"** to keep the old key active for a period of time
-   - Set the retention period to how long to keep the old key active (minutes)
-4. Click **"Rotate Key"**
-5. Copy the new API key value and store it securely
-6. Update your applications to use the new key before the retention period expires
-
-![Rotate an API key](../../.gitbook/assets/pro-service-accounts-09.png)
-![Rotated API key](../../.gitbook/assets/pro-service-accounts-10.png)
-
-{% hint style="info" %}
-**Zero-Downtime Rotation**
-
-By setting a retention period, you can update your applications to use the new API key while the old key remains functional. This enables zero-downtime key rotation for production systems.
-{% endhint %}
-
-### Deleting API Keys
-
-**To permanently delete an API key:**
-
-1. Click the **"⋮"** (more options) menu next to the API key
-2. Select **"Delete"**
-3. Confirm the deletion when prompted
-4. The API key will be immediately revoked and cannot be recovered
-
-![Delete an API key](../../.gitbook/assets/pro-service-accounts-11.png)
-
-{% hint style="warning" %}
-**Delayed workspace-level effect**
-
-API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
-{% endhint %}
-
-## Security Best Practices
-
-### Key Management
-- **Regular Rotation**: Rotate API keys regularly (recommended: every 90 days for production keys)
-- **Principle of Least Privilege**: Create separate service accounts for different purposes rather than sharing keys
-- **Secure Storage**: Store API keys in secure credential management systems, never in code repositories
-- **Monitor Usage**: Regularly review the "last used" timestamps to identify unused keys
-
-### Access Control
-- **Descriptive Naming**: Use clear, descriptive names for service accounts and API keys to track their purposes
-- **Documentation**: Maintain documentation of which systems use which service accounts
-- **Regular Audits**: Periodically review and clean up unused service accounts and API keys
-
-### Operational Security
-- **Immediate Deactivation**: Deactivate service accounts and API keys immediately when they're no longer needed
-- **Incident Response**: Have procedures in place to quickly rotate or deactivate compromised keys
-- **Team Coordination**: Coordinate with your team before making changes to production service accounts
 
 ## Using Service Account API Keys
 
@@ -250,10 +34,84 @@ curl -X 'POST' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'password=ZENPROKEY_eyJpZCI6I...'
 
-{"access_token":"...(access-token-value)...","expires_in":3600,"token_type":"bearer","device_id":null,"device_metadata":null}
+{% hint style="warning" %}
+This approach, albeit simple, is not recommended because the long-lived API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
+{% endhint %}
+
+To authenticate to the REST API, simply pass the API key directly in the `Authorization` header used with your API calls:
+
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_KEY" https://cloudapi.zenml.io/users/me
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_KEY" https://cloudapi.zenml.io/users/me
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+         "https://cloudapi.zenml.io/users/me",
+         headers={"Authorization": f"Bearer YOUR_API_KEY"}
+       )
+       print(response.json())
+       ```
+
+
+{% endtab %}
+
+{% tab title="Token exchange authentication" %}
+
+Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API token:
+
+1. To obtain a short-lived API token using your API key, send a POST request to the `/auth/login` endpoint. Here are examples using common HTTP clients:
+   *   using curl:
+
+       ```bash
+       curl -X POST -d "password=<YOUR_API_KEY>" https://cloudapi.zenml.io/auth/login
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --post-data="password=<YOUR_API_KEY>" \
+           --header="Content-Type: application/x-www-form-urlencoded" \
+           https://cloudapi.zenml.io/auth/login
+       ```
+   *   using python:
+
+       ```python
+       import requests
+       import json
+
+       response = requests.post(
+           "https://cloudapi.zenml.io/auth/login",
+           data={"password": "<YOUR_API_KEY>"},
+           headers={"Content-Type": "application/x-www-form-urlencoded"}
+       )
+
+       print(response.json())
+       ```
+
+
+This will return a response like this (the short-lived API token is the `access_token` field):
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "device_id": null,
+  "device_metadata": null
+}
 ```
 
-Then finally, the generated API access token is used as a bearer token when calling ZenML Pro API endpoints:
+2. Once you have obtained a short-lived API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the token expires, simply repeat the steps above to obtain a new short-lived API token. For example, you can use the following command to check your current user:
+   *   using curl:
 
 ```python
 curl -H "Authorization: Bearer ...(access-token-value)..." https://cloudapi.zenml.io/users/me
@@ -315,8 +173,196 @@ zenml login <your-workspace-name> --api-key
   ```bash
   curl -H "Authorization: Bearer iIsInR5cCI6Ik..." https://1ca28d37-zenml.cloudinfra.zenml.io/api/v1/current-user
 
-  {"body":{"created":"2025-10-16T15:08:11","updated":"2025-10-16T18:06:29","active":true,"activation_token":null,"full_name":"John","email_opted_in":false,"is_service_account":true,"is_admin":false,"default_project_id":null,"avatar_url":null},"metadata":{"email":null,"external_user_id":"d6ace281-5d7e-46db-9a11-d4452ece48ee","user_metadata":{}},"resources":null,"id":"667990c8-199b-45e7-98cd-4b30356ba5e7","permission_denied":false,"name":"john"}
-  ```
+Use the Pro API key directly to authenticate your API requests by including it in the `Authorization` header. For example, you can use the following command to check your current workspace user:
+
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_KEY" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_KEY" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://your-workspace-url/api/v1/current-user",
+           headers={"Authorization": f"Bearer {YOUR_API_KEY}"}
+       )
+
+       print(response.json())
+       ```
+
+{% endtab %}
+
+{% tab title="Token exchange authentication" %}
+
+Reduce the risk of Pro API key exposure by periodically exchanging the Pro API key for a short-lived workspace API token.
+
+1. To obtain a short-lived workspace API token using your Pro API key, send a POST request to the `/api/v1/login` endpoint. Here are examples using common HTTP clients:
+   *   using curl:
+
+       ```bash
+       curl -X POST -d "password=<YOUR_API_KEY>" https://your-workspace-url/api/v1/login
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --post-data="password=<YOUR_API_KEY>" \
+           --header="Content-Type: application/x-www-form-urlencoded" \
+           https://your-workspace-url/api/v1/login
+       ```
+   *   using python:
+
+       ```python
+       import requests
+       import json
+
+       response = requests.post(
+           "https://your-workspace-url/api/v1/login",
+           data={"password": "<YOUR_API_KEY>"},
+           headers={"Content-Type": "application/x-www-form-urlencoded"}
+       )
+
+       print(response.json())
+       ```
+
+This will return a response like this (the workspace API token is the `access_token` field):
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MGJjZTg5NC1hN2VjLTRkOTYtYjE1Ny1kOTZkYWY5ZWM2M2IiLCJpc3MiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJhdWQiOiJmMGQ5NjI1Ni04YmQyLTQxZDctOWVjZi0xMmYwM2JmYTVlMTYiLCJleHAiOjE3MTk0MDk0NjAsImFwaV9rZXlfaWQiOiIzNDkyM2U0NS0zMGFlLTRkMjctODZiZS0wZGRhNTdkMjA5MDcifQ.ByB1ngCPtBenGE6UugsWC6Blga3qPqkAiPJUSFDR-u4",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": null,
+  "scope": null
+}
+```
+
+2. Once you have obtained a short-lived workspace API token, you can use it to authenticate your API requests by including it in the `Authorization` header. When the short-lived workspace API token expires, simply repeat the steps above to obtain a new one. For example, you can use the following command to check your current workspace user:
+   *   using curl:
+
+       ```bash
+       curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using wget:
+
+       ```bash
+       wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-workspace-url/api/v1/current-user
+       ```
+   *   using python:
+
+       ```python
+       import requests
+
+       response = requests.get(
+           "https://your-workspace-url/api/v1/current-user",
+           headers={"Authorization": f"Bearer {YOUR_API_TOKEN}"}
+       )
+
+       print(response.json())
+       ```
+
+{% endtab %}
+{% endtabs %}
+
+## Service Account Operations
+
+### Managing Service Account Roles and Permissions
+
+Service accounts are no different from regular users in that they can be assigned different [Organization, Workspace and Project roles](./roles.md) to control their access to different parts of the organization and they can be organized into [teams](./teams.md). They are marked as "BOT" in the UI, to clearly identify them as non-human users.
+
+![Service account Organization roles](../../.gitbook/assets/pro-service-accounts-13.png)
+![Service account Workspace roles](../../.gitbook/assets/pro-service-accounts-14.png)
+
+### Activating and Deactivating Service Accounts
+
+Service account activation controls whether the account can be used for authentication. Deactivating a service account immediately prevents all associated API keys from working.
+
+{% hint style="danger" %}
+**Immediate Effect**
+
+Deactivating a service account has immediate effect on all ZenML Pro API calls using any of its API keys. Ensure you coordinate with your team before deactivating production service accounts.
+{% endhint %}
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Short-lived API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
+{% endhint %}
+
+### Deleting a Service Account
+
+Deleting a service account permanently removes it and all associated API keys from your organization.
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Short-lived API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
+{% endhint %}
+
+## API Key Management
+
+API keys are the credentials used by applications to authenticate as a service account. Each service account can have multiple API keys, allowing for different access patterns. When you create a new service account, you have the option to automatically create a default API key for it.
+
+### Creating an API Key
+
+{% hint style="danger" %}
+**One-Time Display**
+
+The API key value is only shown once during creation and cannot be retrieved later. If you lose an API key, you must create a new one or rotate the existing key.
+{% endhint %}
+
+### Activating and Deactivating API Keys
+
+Individual API keys can be activated or deactivated independently of the service account status.
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Short-lived API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
+{% endhint %}
+
+### Rotating API Keys
+
+API key rotation creates a new key value while optionally preserving the old key for a transition period. This is essential for maintaining security without service interruption.
+
+{% hint style="info" %}
+**Zero-Downtime Rotation**
+
+By setting a retention period, you can update your applications to use the new API key while the old key remains functional. This enables zero-downtime key rotation for production systems.
+{% endhint %}
+
+### Deleting API Keys
+
+{% hint style="warning" %}
+**Delayed workspace-level effect**
+
+Short-lived API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
+{% endhint %}
+
+## Security Best Practices
+
+### Key Management
+- **Regular Rotation**: Rotate API keys regularly (recommended: every 90 days for production keys)
+- **Principle of Least Privilege**: Create separate service accounts for different purposes rather than sharing keys
+- **Secure Storage**: Store API keys in secure credential management systems, never in code repositories
+- **Monitor Usage**: Regularly review the "last used" timestamps to identify unused keys
+
+### Access Control
+- **Descriptive Naming**: Use clear, descriptive names for service accounts and API keys to track their purposes
+- **Documentation**: Maintain documentation of which systems use which service accounts
+- **Regular Audits**: Periodically review and clean up unused service accounts and API keys
+
+### Operational Security
+- **Immediate Deactivation**: Deactivate service accounts and API keys immediately when they're no longer needed
+- **Incident Response**: Have procedures in place to quickly rotate or deactivate compromised keys
+- **Team Coordination**: Coordinate with your team before making changes to production service accounts
 
 ## Migration of workspace level service accounts
 

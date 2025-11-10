@@ -13,5 +13,9 @@
 * [Workspaces](workspaces.md)
 * [Projects](projects.md)
 * [Teams](teams.md)
+
+## Access Management
+
 * [Roles & Permissions](roles.md)
+* [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
