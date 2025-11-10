@@ -7,11 +7,42 @@ on:
 
 jobs:
   verify-changelog-json:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+
       - name: Validate changelog.json against announcement-schema.json
+        id: validate-changelog
         uses: cardinalby/schema-validator-action@v3
+        continue-on-error: true
         with:
           file: "./changelog.json"
-          schema: "./scripts/announcement-schema.json"
+          schema: "./docs/changelog-items/announcement-schema.json"
+
+      - name: Find existing comment
+        if: github.event_name == 'pull_request' && steps.validate-changelog.outcome == 'failure'
+        uses: peter-evans/find-comment@v2
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Changelog Validation Failed"
+
+      - name: Create or update comment
+        if: github.event_name == 'pull_request' && steps.validate-changelog.outcome == 'failure'
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## ❌ Changelog Validation Failed
+
+            The `changelog.json` file does not conform to the required schema structure.
+
+            Please review the [changelog documentation](https://github.com/${{ github.repository }}/blob/${{ github.base_ref }}/docs/changelog-items/info.md) for guidance on the proper structure and required fields.
+          edit-mode: replace
+
+      - name: Fail workflow if validation failed
+        if: steps.validate-changelog.outcome == 'failure'
+        run: exit 1
