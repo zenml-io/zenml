@@ -444,9 +444,11 @@ def bulk_log_metadata(
 
     for step in step_runs or []:
         if not step.id and (step.name and step.run):
-            run = client.get_pipeline_run(name_id_or_prefix=step.run.value)
+            run_model = client.get_pipeline_run(
+                name_id_or_prefix=step.run.value
+            )
             step.id = client.list_run_steps(
-                pipeline_run_id=run.id, name=step.name
+                pipeline_run_id=run_model.id, name=step.name
             )[0].id
 
         resources.add(
