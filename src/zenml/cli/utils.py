@@ -2640,7 +2640,7 @@ def pretty_print_deployment(
         else:
             declare("  [dim]No metadata available[/dim]")
 
-    # Management section: bold white header and commands, no decorative emojis or green color
+    # Management section
     declare("\n[bold]Management commands[/bold]\n")
 
     console.print(f"[bold]zenml deployment logs {deployment.name} -f[/bold]")
