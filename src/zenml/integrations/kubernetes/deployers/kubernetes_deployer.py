@@ -502,52 +502,51 @@ class KubernetesDeployer(ContainerizedDeployer):
         return str(builtin_dir / builtin_name)
 
     # ========================================================================
-    # Secret Key Sanitization
+    # Secret Key Validation
     # ========================================================================
 
-    def _sanitize_secret_key(
+    def _validate_secret_key(
         self,
         key: str,
         secret_key_map: Dict[str, str],
         existing_env_vars: Optional[Dict[str, str]] = None,
     ) -> str:
-        """Sanitize secret key to valid K8s env var name and detect collisions.
+        """Validate secret key is a valid K8s env var name and check for collisions.
 
         Args:
             key: Original secret key name.
-            secret_key_map: Dictionary tracking sanitized key mappings to detect collisions.
+            secret_key_map: Dictionary tracking validated key mappings to detect collisions.
             existing_env_vars: Optional dictionary of existing environment variables
                 to check for collisions.
 
         Returns:
-            Sanitized secret key name.
+            The validated secret key name.
 
         Raises:
-            DeploymentProvisionError: If sanitization causes a collision with an existing key.
+            DeploymentProvisionError: If key is invalid or causes a collision.
         """
-        sanitized = re.sub(r"[^A-Za-z0-9_]", "_", key)
-
-        if sanitized and not re.match(r"^[A-Za-z_]", sanitized):
-            sanitized = f"_{sanitized}"
-        elif not sanitized:
-            sanitized = "_VAR"
-
-        if sanitized in secret_key_map and secret_key_map[sanitized] != key:
+        # Kubernetes env var names must match: [A-Za-z_][A-Za-z0-9_]*
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
             raise DeploymentProvisionError(
-                f"Secret key '{key}' sanitized to '{sanitized}' but already exists "
-                f"as another secret key '{secret_key_map[sanitized]}'. "
-                f"Please rename one of these secrets to avoid collision."
+                f"Secret key '{key}' is not a valid Kubernetes environment variable name. "
+                f"It must start with a letter or underscore and contain only letters, "
+                f"numbers, and underscores. Please rename the secret."
             )
 
-        if existing_env_vars and sanitized in existing_env_vars:
+        if key in secret_key_map and secret_key_map[key] != key:
             raise DeploymentProvisionError(
-                f"Secret key '{key}' sanitized to '{sanitized}' but this name "
-                f"is already used by an environment variable. "
+                f"Secret key '{key}' already exists as another secret. "
+                f"Please use unique secret names."
+            )
+
+        if existing_env_vars and key in existing_env_vars:
+            raise DeploymentProvisionError(
+                f"Secret key '{key}' conflicts with an existing environment variable. "
                 f"Please rename the secret to avoid collision."
             )
 
-        secret_key_map[sanitized] = key
-        return sanitized
+        secret_key_map[key] = key
+        return key
 
     # ========================================================================
     # Provisioning
@@ -726,12 +725,12 @@ class KubernetesDeployer(ContainerizedDeployer):
             ) from e
 
         secret_key_map: Dict[str, str] = {}
-        sanitized = {}
+        validated_secrets = {}
         for key, value in secrets.items():
-            sanitized_key = self._sanitize_secret_key(
+            validated_key = self._validate_secret_key(
                 key, secret_key_map, environment
             )
-            sanitized[sanitized_key] = value
+            validated_secrets[validated_key] = value
 
         context = self._build_template_context(
             settings=ctx.settings,
@@ -740,7 +739,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             labels=ctx.labels,
             image=ctx.image,
             env_vars=environment,
-            secret_env_vars=sanitized,
+            secret_env_vars=validated_secrets,
             secret_name=ctx.secret_name,
             resource_requests=resource_requests,
             replicas=replicas,
@@ -766,10 +765,10 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
         ]
 
-        if sanitized:
+        if validated_secrets:
             secret_manifest = build_secret_manifest(
                 name=ctx.secret_name,
-                data=sanitized,
+                data=validated_secrets,
                 namespace=ctx.namespace,
             )
             rendered_resources.append(
