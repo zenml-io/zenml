@@ -1,0 +1,17 @@
+name: Validate changelog.json
+
+on:
+  pull_request:
+    paths:
+      - "changelog.json"
+
+jobs:
+  verify-json-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Validate package.json against a local schema
+        uses: cardinalby/schema-validator-action@v3
+        with:
+          file: "./changelog.json"
+          schema: "./scripts/announcement-schema.json"
