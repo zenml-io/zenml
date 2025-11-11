@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ name | k8s_name }}
+  name: {{ name }}
   namespace: {{ namespace }}
   labels:
-    app: {{ name | k8s_name }}
+    app: {{ name }}
     managed-by: zenml
     {% if labels %}
     {% for key, value in labels.items() %}
-    {{ key }}: {{ value | k8s_label_value | tojson }}
+    {{ key }}: {{ value | tojson }}
     {% endfor %}
     {% endif %}
 spec:
@@ -21,22 +21,22 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ name | k8s_name }}
+        app: {{ name }}
         managed-by: zenml
         {% if labels %}
         {% for key, value in labels.items() %}
-        {{ key }}: {{ value | k8s_label_value | tojson }}
+        {{ key }}: {{ value | tojson }}
         {% endfor %}
         {% endif %}
         {% if pod_settings and pod_settings.labels %}
         {% for key, value in pod_settings.labels.items() %}
-        {{ key }}: {{ value | k8s_label_value | tojson }}
+        {{ key }}: {{ value | tojson }}
         {% endfor %}
         {% endif %}
-      {% if annotations or (pod_settings and pod_settings.annotations) %}
+      {% if settings.annotations or (pod_settings and pod_settings.annotations) %}
       annotations:
-        {% if annotations %}
-        {% for key, value in annotations.items() %}
+        {% if settings.annotations %}
+        {% for key, value in settings.annotations.items() %}
         {{ key }}: {{ value | tojson }}
         {% endfor %}
         {% endif %}
@@ -47,13 +47,13 @@ spec:
         {% endif %}
       {% endif %}
     spec:
-      {% if service_account_name %}
-      serviceAccountName: {{ service_account_name }}
+      {% if settings.service_account_name %}
+      serviceAccountName: {{ settings.service_account_name }}
       {% endif %}
       
-      {% if image_pull_secrets %}
+      {% if settings.image_pull_secrets %}
       imagePullSecrets:
-      {% for secret in image_pull_secrets %}
+      {% for secret in settings.image_pull_secrets %}
         - name: {{ secret }}
       {% endfor %}
       {% endif %}
@@ -86,7 +86,7 @@ spec:
       containers:
       - name: main
         image: {{ image }}
-        imagePullPolicy: {{ image_pull_policy | default("IfNotPresent") }}
+        imagePullPolicy: {{ settings.image_pull_policy | default("IfNotPresent") }}
         
         {% if command %}
         command:
@@ -121,13 +121,13 @@ spec:
         
         {% if resources %}
         resources:
-          {% if resources.requests %}
+          {% if "requests" in resources %}
           requests:
           {% for key, value in resources.requests.items() %}
             {{ key }}: {{ value | tojson }}
           {% endfor %}
           {% endif %}
-          {% if resources.limits %}
+          {% if "limits" in resources %}
           limits:
           {% for key, value in resources.limits.items() %}
             {{ key }}: {{ value | tojson }}
@@ -137,21 +137,21 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: {{ readiness_probe_path }}
-            port: {{ probe_port }}
-          initialDelaySeconds: {{ readiness_probe_initial_delay }}
-          periodSeconds: {{ readiness_probe_period }}
-          timeoutSeconds: {{ readiness_probe_timeout }}
-          failureThreshold: {{ readiness_probe_failure_threshold }}
+            path: {{ settings.readiness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.readiness_probe_initial_delay }}
+          periodSeconds: {{ settings.readiness_probe_period }}
+          timeoutSeconds: {{ settings.readiness_probe_timeout }}
+          failureThreshold: {{ settings.readiness_probe_failure_threshold }}
         
         livenessProbe:
           httpGet:
-            path: {{ liveness_probe_path }}
-            port: {{ probe_port }}
-          initialDelaySeconds: {{ liveness_probe_initial_delay }}
-          periodSeconds: {{ liveness_probe_period }}
-          timeoutSeconds: {{ liveness_probe_timeout }}
-          failureThreshold: {{ liveness_probe_failure_threshold }}
+            path: {{ settings.liveness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.liveness_probe_initial_delay }}
+          periodSeconds: {{ settings.liveness_probe_period }}
+          timeoutSeconds: {{ settings.liveness_probe_timeout }}
+          failureThreshold: {{ settings.liveness_probe_failure_threshold }}
         
         {% if pod_settings and pod_settings.volume_mounts %}
         volumeMounts:

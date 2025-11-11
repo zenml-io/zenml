@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes template engine."""
 
+import json
 from typing import Any, Dict, List
 
 import yaml
@@ -23,6 +24,32 @@ from zenml.logger import get_logger
 from zenml.utils import io_utils
 
 logger = get_logger(__name__)
+
+
+def _to_yaml_filter(obj: Any) -> str:
+    """Convert Python object to YAML string.
+
+    Args:
+        obj: Python object to convert.
+
+    Returns:
+        YAML string representation.
+    """
+    return yaml.safe_dump(
+        obj, default_flow_style=False, allow_unicode=True
+    ).rstrip()
+
+
+def _to_json_filter(obj: Any) -> str:
+    """Convert Python object to JSON string.
+
+    Args:
+        obj: Python object to convert.
+
+    Returns:
+        JSON string representation.
+    """
+    return json.dumps(obj)
 
 
 class KubernetesTemplateEngine:
@@ -49,6 +76,10 @@ class KubernetesTemplateEngine:
             lstrip_blocks=True,
             keep_trailing_newline=True,
         )
+
+        # Register custom filters for YAML/JSON conversion
+        self.env.filters["to_yaml"] = _to_yaml_filter
+        self.env.filters["tojson"] = _to_json_filter
 
     # ========================================================================
     # Template and Resource Rendering

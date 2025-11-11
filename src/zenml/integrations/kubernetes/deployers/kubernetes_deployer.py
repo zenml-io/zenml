@@ -43,6 +43,9 @@ from zenml.deployers.server.entrypoint_configuration import (
     DEPLOYMENT_ID_OPTION,
     DeploymentEntrypointConfiguration,
 )
+from zenml.entrypoints.base_entrypoint_configuration import (
+    SNAPSHOT_ID_OPTION,
+)
 from zenml.enums import DeploymentStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
@@ -387,6 +390,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
     def _build_template_context(
         self,
+        deployment: DeploymentResponse,
         settings: KubernetesDeployerSettings,
         resource_name: str,
         namespace: str,
@@ -397,11 +401,11 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_name: str,
         resource_requests: Dict[str, str],
         replicas: int,
-        deployment_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Build template rendering context from deployment configuration.
 
         Args:
+            deployment: The deployment response object.
             settings: Kubernetes deployer settings.
             resource_name: Sanitized resource name.
             namespace: Kubernetes namespace.
@@ -412,7 +416,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_name: Kubernetes secret name.
             resource_requests: Resource requests dict.
             replicas: Number of replicas.
-            deployment_id: Optional deployment UUID for unique resource naming.
 
         Returns:
             Template context dictionary.
@@ -445,38 +448,41 @@ class KubernetesDeployer(ContainerizedDeployer):
                 env=secret_env_list
             )
 
+        command = settings.command
+        if not command:
+            command = cast(
+                Any,
+                DeploymentEntrypointConfiguration.get_entrypoint_command(),
+            )
+
+        args = settings.args
+        if not args:
+            entrypoint_kwargs = {DEPLOYMENT_ID_OPTION: deployment.id}
+            # Add snapshot_id if available for code download
+            if deployment.snapshot:
+                entrypoint_kwargs[SNAPSHOT_ID_OPTION] = deployment.snapshot.id
+            args = cast(
+                Any,
+                DeploymentEntrypointConfiguration.get_entrypoint_arguments(
+                    **entrypoint_kwargs
+                ),
+            )
+
         context = {
+            # Core objects - users can access deployment.X and settings.X
+            "deployment": deployment,
+            "settings": settings,
+            # Computed/helper values
             "name": resource_name,
-            "deployment_name": resource_name,
-            "service_name": resource_name,
             "namespace": namespace,
-            "deployment_id": deployment_id,
             "labels": labels,
-            "annotations": settings.annotations,
-            "replicas": replicas,
             "image": image,
-            "image_pull_policy": settings.image_pull_policy,
-            "image_pull_secrets": settings.image_pull_secrets,
-            "service_account_name": settings.service_account_name,
-            "command": settings.command,
-            "args": settings.args,
+            "command": command,
+            "args": args,
             "env": env_vars,
             "resources": resources if resources else None,
-            "readiness_probe_path": settings.readiness_probe_path,
-            "readiness_probe_initial_delay": settings.readiness_probe_initial_delay,
-            "readiness_probe_period": settings.readiness_probe_period,
-            "readiness_probe_timeout": settings.readiness_probe_timeout,
-            "readiness_probe_failure_threshold": settings.readiness_probe_failure_threshold,
-            "liveness_probe_path": settings.liveness_probe_path,
-            "liveness_probe_initial_delay": settings.liveness_probe_initial_delay,
-            "liveness_probe_period": settings.liveness_probe_period,
-            "liveness_probe_timeout": settings.liveness_probe_timeout,
-            "liveness_probe_failure_threshold": settings.liveness_probe_failure_threshold,
-            "probe_port": settings.service_port,
-            "service_type": settings.service_type,
-            "service_port": settings.service_port,
-            "target_port": settings.service_port,
             "pod_settings": pod_settings_for_template,
+            "replicas": replicas,
         }
 
         return context
@@ -552,90 +558,189 @@ class KubernetesDeployer(ContainerizedDeployer):
     # Provisioning
     # ========================================================================
 
-    def _wait_for_deployment_readiness(
+    def _find_resources_to_delete(
         self,
-        ctx: _DeploymentCtx,
-        timeout: int,
-    ) -> None:
-        """Wait for deployment and service to become ready.
+        old_inventory: List[ResourceInventoryItem],
+        new_inventory: List[ResourceInventoryItem],
+    ) -> List[ResourceInventoryItem]:
+        """Find resources in old inventory that are not in new inventory.
 
         Args:
-            ctx: The deployment context.
+            old_inventory: Resources from previous deployment.
+            new_inventory: Resources from current deployment.
+
+        Returns:
+            List of resources that should be deleted.
+        """
+        new_resource_ids = {
+            (item.kind, item.api_version, item.name, item.namespace)
+            for item in new_inventory
+        }
+
+        resources_to_delete = []
+        for item in old_inventory:
+            resource_id = (
+                item.kind,
+                item.api_version,
+                item.name,
+                item.namespace,
+            )
+            if resource_id not in new_resource_ids:
+                resources_to_delete.append(item)
+
+        return resources_to_delete
+
+    def _wait_for_deployment_readiness(
+        self,
+        inventory: List[ResourceInventoryItem],
+        settings: KubernetesDeployerSettings,
+        timeout: int,
+    ) -> None:
+        """Wait for all deployments and load balancer services to become ready.
+
+        Uses the resource inventory to find all Deployment and LoadBalancer Service
+        resources, then waits for each one to become ready.
+
+        Args:
+            inventory: List of provisioned resources to wait for.
+            settings: Kubernetes deployer settings.
             timeout: Timeout in seconds.
 
         Raises:
-            DeploymentProvisionError: If deployment doesn't become ready in time.
+            DeploymentProvisionError: If any deployment doesn't become ready in time.
         """
         if timeout <= 0:
             return
 
-        try:
-            logger.info(
-                f"Waiting for deployment to become ready...\n"
-                f"  Deployment: {ctx.resource_name}\n"
-                f"  Namespace: {ctx.namespace}\n"
-                f"  Timeout: {timeout}s"
-            )
-            self.k8s_applier.wait_for_deployment_ready(
-                name=ctx.resource_name,
-                namespace=ctx.namespace,
-                timeout=timeout,
-                check_interval=ctx.settings.deployment_ready_check_interval,
-            )
-            logger.info("Deployment is ready")
-        except RuntimeError as e:
-            raise DeploymentProvisionError(
-                f"Deployment '{ctx.resource_name}' did not become ready: {e}"
-            ) from e
+        deployments = [
+            item
+            for item in inventory
+            if item.kind == "Deployment" and item.api_version == "apps/v1"
+        ]
 
-        if (
-            ctx.settings.service_type == "LoadBalancer"
-            and ctx.settings.wait_for_load_balancer_timeout > 0
-        ):
+        for deployment_item in deployments:
             try:
-                lb_timeout = min(
-                    timeout,
-                    ctx.settings.wait_for_load_balancer_timeout,
-                    MAX_LOAD_BALANCER_TIMEOUT,
-                )
                 logger.info(
-                    f"Waiting for LoadBalancer IP (timeout: {lb_timeout}s)..."
+                    f"Waiting for Deployment '{deployment_item.name}' "
+                    f"in namespace '{deployment_item.namespace}' to become ready "
+                    f"(timeout: {timeout}s)"
                 )
-                self.k8s_applier.wait_for_service_loadbalancer_ip(
-                    name=ctx.resource_name,
-                    namespace=ctx.namespace,
-                    timeout=lb_timeout,
-                    check_interval=ctx.settings.deployment_ready_check_interval,
+                if not deployment_item.namespace:
+                    raise RuntimeError(
+                        f"Deployment '{deployment_item.name}' has no namespace"
+                    )
+                self.k8s_applier.wait_for_deployment_ready(
+                    name=deployment_item.name,
+                    namespace=deployment_item.namespace,
+                    timeout=timeout,
+                    check_interval=settings.deployment_ready_check_interval,
                 )
-                logger.info("LoadBalancer IP assigned")
-            except RuntimeError:
-                logger.warning(
-                    f"LoadBalancer IP not assigned within {lb_timeout}s. "
-                    f"Service may still be accessible via cluster IP."
-                )
+                logger.info(f"Deployment '{deployment_item.name}' is ready")
+            except RuntimeError as e:
+                raise DeploymentProvisionError(
+                    f"Deployment '{deployment_item.name}' in namespace "
+                    f"'{deployment_item.namespace}' did not become ready: {e}"
+                ) from e
 
-    def _cleanup_failed_deployment(self, ctx: _DeploymentCtx) -> None:
-        """Cleanup resources after deployment failure.
+        if settings.wait_for_load_balancer_timeout > 0:
+            services = [
+                item
+                for item in inventory
+                if item.kind == "Service" and item.api_version == "v1"
+            ]
+
+            lb_timeout = min(
+                timeout,
+                settings.wait_for_load_balancer_timeout,
+                MAX_LOAD_BALANCER_TIMEOUT,
+            )
+
+            # Wait for each LoadBalancer Service to get an external IP
+            for service_item in services:
+                try:
+                    # Check if this is a LoadBalancer service by fetching it
+                    service = self.k8s_applier.get_resource(
+                        name=service_item.name,
+                        namespace=service_item.namespace,
+                        kind="Service",
+                        api_version="v1",
+                    )
+                    if not service:
+                        continue
+
+                    # Check service type
+                    service_type = None
+                    if hasattr(service, "spec") and hasattr(
+                        service.spec, "type"
+                    ):
+                        service_type = service.spec.type
+                    elif hasattr(service, "to_dict"):
+                        service_dict = service.to_dict()
+                        service_type = service_dict.get("spec", {}).get("type")
+
+                    if service_type != "LoadBalancer":
+                        continue
+
+                    logger.info(
+                        f"Waiting for LoadBalancer Service '{service_item.name}' "
+                        f"in namespace '{service_item.namespace}' to get external IP "
+                        f"(timeout: {lb_timeout}s)"
+                    )
+                    if not service_item.namespace:
+                        raise RuntimeError(
+                            f"Service '{service_item.name}' has no namespace"
+                        )
+                    self.k8s_applier.wait_for_service_loadbalancer_ip(
+                        name=service_item.name,
+                        namespace=service_item.namespace,
+                        timeout=lb_timeout,
+                        check_interval=settings.deployment_ready_check_interval,
+                    )
+                    logger.info(
+                        f"LoadBalancer Service '{service_item.name}' has external IP"
+                    )
+                except RuntimeError:
+                    logger.warning(
+                        f"LoadBalancer Service '{service_item.name}' did not get "
+                        f"external IP within {lb_timeout}s. Service may still be "
+                        f"accessible via cluster IP."
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Error checking service '{service_item.name}': {e}"
+                    )
+
+    def _cleanup_failed_deployment(
+        self,
+        inventory: List[ResourceInventoryItem],
+        deployment_name: str,
+    ) -> None:
+        """Cleanup resources after deployment failure using inventory.
 
         Args:
-            ctx: The deployment context.
+            inventory: The inventory of resources that were created.
+            deployment_name: Name of the deployment for logging.
         """
-        label_selector = f"zenml-deployment-id={ctx.deployment_id}"
+        if not inventory:
+            logger.warning("No inventory available for cleanup")
+            return
+
         logger.warning(
-            f"Provisioning failed, cleaning up resources with label: {label_selector}"
+            f"Provisioning failed for '{deployment_name}', "
+            f"cleaning up {len(inventory)} resource(s)"
         )
         try:
-            deleted_count = self.k8s_applier.delete_by_label_selector(
-                label_selector=label_selector,
-                namespace=ctx.namespace,
+            deleted_count = self.k8s_applier.delete_from_inventory(
+                inventory=inventory,
                 propagation_policy="Foreground",
             )
-            logger.info(f"Cleanup deleted {deleted_count} resource(s)")
+            logger.info(
+                f"Cleanup deleted {deleted_count}/{len(inventory)} resource(s)"
+            )
         except Exception as cleanup_error:
             logger.error(
                 f"Cleanup failed: {cleanup_error}. "
-                f"Manual cleanup: kubectl delete all,configmap,secret "
-                f"-n {ctx.namespace} -l {label_selector}"
+                f"Some resources may still exist and require manual cleanup."
             )
 
     def _initialize_deployment_context(
@@ -733,6 +838,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             validated_secrets[validated_key] = value
 
         context = self._build_template_context(
+            deployment=deployment,
             settings=ctx.settings,
             resource_name=ctx.resource_name,
             namespace=ctx.namespace,
@@ -743,21 +849,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_name=ctx.secret_name,
             resource_requests=resource_requests,
             replicas=replicas,
-            deployment_id=str(deployment.id),
         )
-
-        if not context.get("command"):
-            context["command"] = cast(
-                Any,
-                DeploymentEntrypointConfiguration.get_entrypoint_command(),
-            )
-        if not context.get("args"):
-            context["args"] = cast(
-                Any,
-                DeploymentEntrypointConfiguration.get_entrypoint_arguments(
-                    **{DEPLOYMENT_ID_OPTION: deployment.id}
-                ),
-            )
 
         rendered_resources: List[Dict[str, Any]] = [
             build_namespace_manifest(
@@ -834,8 +926,15 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment, environment, secrets
         )
 
+        stored_metadata = deployment.deployment_metadata
+        old_inventory_data = (
+            stored_metadata.get("resource_inventory")
+            if stored_metadata
+            else None
+        )
+
         try:
-            created_objects, inventory = self.k8s_applier.provision(
+            created_objects, new_inventory = self.k8s_applier.provision(
                 rendered_resources,
                 default_namespace=ctx.namespace,
                 timeout=timeout,
@@ -844,8 +943,30 @@ class KubernetesDeployer(ContainerizedDeployer):
                 f"Successfully created {len(created_objects)} Kubernetes resource(s)"
             )
 
+            if old_inventory_data:
+                old_inventory = [
+                    ResourceInventoryItem(**item)
+                    for item in old_inventory_data
+                ]
+                resources_to_delete = self._find_resources_to_delete(
+                    old_inventory, new_inventory
+                )
+                if resources_to_delete:
+                    logger.info(
+                        f"Cleaning up {len(resources_to_delete)} obsolete resource(s) "
+                        f"from previous deployment"
+                    )
+                    deleted_count = self.k8s_applier.delete_from_inventory(
+                        inventory=resources_to_delete,
+                        propagation_policy="Foreground",
+                    )
+                    logger.info(
+                        f"Deleted {deleted_count} obsolete resource(s)"
+                    )
+
             self._wait_for_deployment_readiness(
-                ctx=ctx,
+                inventory=new_inventory,
+                settings=ctx.settings,
                 timeout=timeout,
             )
 
@@ -854,19 +975,24 @@ class KubernetesDeployer(ContainerizedDeployer):
             if state.metadata is None:
                 state.metadata = {}
             state.metadata["resource_inventory"] = [
-                item.model_dump() for item in inventory
+                item.model_dump() for item in new_inventory
             ]
 
             return state
 
         except Exception as e:
-            try:
-                self._cleanup_failed_deployment(ctx=ctx)
-            except Exception as cleanup_error:
-                logger.error(
-                    f"Additional error during cleanup: {cleanup_error}. "
-                    f"Original error will be raised."
-                )
+            # Only attempt cleanup if we have an inventory (i.e., resources were created)
+            if "new_inventory" in locals() and new_inventory:
+                try:
+                    self._cleanup_failed_deployment(
+                        inventory=new_inventory,
+                        deployment_name=deployment.name,
+                    )
+                except Exception as cleanup_error:
+                    logger.error(
+                        f"Additional error during cleanup: {cleanup_error}. "
+                        f"Original error will be raised."
+                    )
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -1062,83 +1188,58 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentDeprovisionError: If deprovisioning fails.
         """
-        ctx = self._initialize_deployment_context(deployment)
+        stored_metadata = deployment.deployment_metadata
+        inventory_data = (
+            stored_metadata.get("resource_inventory")
+            if stored_metadata
+            else None
+        )
+
+        if not inventory_data:
+            logger.info(
+                f"No inventory found for deployment '{deployment.name}'. "
+                f"Nothing to deprovision."
+            )
+            return None
+
+        inventory = [ResourceInventoryItem(**item) for item in inventory_data]
+        logger.info(
+            f"Deprovisioning deployment '{deployment.name}' "
+            f"({len(inventory)} resource(s) in inventory)"
+        )
 
         try:
-            stored_metadata = deployment.deployment_metadata
-            inventory_data = (
-                stored_metadata.get("resource_inventory")
-                if stored_metadata
-                else None
-            )
-
-            if not inventory_data:
-                label_selector = f"zenml-deployment-id={deployment.id}"
-                logger.info(
-                    f"Deprovisioning deployment '{deployment.name}' using "
-                    f"label selector (no inventory found)"
-                )
-
-                deleted_count = self.k8s_applier.delete_by_label_selector(
-                    label_selector=label_selector,
-                    namespace=ctx.namespace,
-                    propagation_policy="Foreground",
-                )
-
-                if deleted_count > 0:
-                    logger.info(
-                        f"Deprovisioned deployment '{deployment.name}' "
-                        f"({deleted_count} resource(s) deleted)"
-                    )
-                else:
-                    logger.info(
-                        f"Deployment '{deployment.name}' not found (already deleted)"
-                    )
-
-                return None
-
-            inventory = [
-                ResourceInventoryItem(**item) for item in inventory_data
-            ]
-            logger.info(
-                f"Deprovisioning deployment '{deployment.name}' "
-                f"({len(inventory)} resources)"
-            )
-
             deleted_count = self.k8s_applier.delete_from_inventory(
                 inventory=inventory,
                 propagation_policy="Foreground",
             )
-
-            if deleted_count > 0:
+            if deleted_count == 0:
                 logger.info(
-                    f"Deprovisioned deployment '{deployment.name}' "
-                    f"({deleted_count} resource(s) deleted)"
+                    f"All resources for deployment '{deployment.name}' "
+                    f"were already deleted"
+                )
+            elif deleted_count == len(inventory):
+                logger.info(
+                    f"Successfully deprovisioned deployment '{deployment.name}' "
+                    f"({deleted_count}/{len(inventory)} resource(s) deleted)"
                 )
             else:
-                logger.info(
-                    f"Deployment '{deployment.name}' not found (already deleted)"
+                logger.warning(
+                    f"Partial deprovisioning for deployment '{deployment.name}': "
+                    f"deleted {deleted_count}/{len(inventory)} resource(s). "
+                    f"Some resources may still exist or failed to delete. "
+                    f"Check logs for details."
                 )
 
             return None
 
-        except ApiException as e:
-            if e.status == 404:
-                logger.info(
-                    f"Deployment '{deployment.name}' not found (already deleted)"
-                )
-                return None
-            raise DeploymentDeprovisionError(
-                f"Kubernetes API error while deprovisioning '{deployment.name}': "
-                f"{e.status} - {e.reason}"
-            ) from e
         except DeploymentDeprovisionError:
             raise
         except Exception as e:
             logger.error(
-                f"Failed to deprovision '{deployment.name}': {e}. "
-                f"Manual cleanup may be required."
+                f"Unexpected error while deprovisioning '{deployment.name}': {e}. "
+                f"Some resources may still exist. Manual cleanup may be required."
             )
             raise DeploymentDeprovisionError(
-                f"Unexpected error deprovisioning '{deployment.name}': {e}"
+                f"Failed to deprovision deployment '{deployment.name}': {e}"
             ) from e

@@ -112,6 +112,9 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         if not deployment.snapshot:
             raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
 
+        # Set the snapshot from the deployment to avoid redundant loading
+        self._snapshot = deployment.snapshot
+
         # Download code if necessary (for remote execution environments)
         self.download_code_if_necessary()
 
