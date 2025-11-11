@@ -212,15 +212,23 @@ jobs:
           - cloud: azure
           - cloud: gcp
     steps:
-      # Check out the code
+      - name: Maximize space for Docker
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker/
+      - name: Reload Docker
+        run: sudo systemctl restart docker
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-      # Setting up Python
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      # ZenML Integrations
       - name: Install ZenML
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
