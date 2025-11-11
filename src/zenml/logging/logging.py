@@ -193,12 +193,11 @@ class LoggingContext:
             )
 
         self.source = source
-        self.log_model = log_model or self.generate_log_request()
+        self.log_model = log_model
 
         self._previous_log_context: Optional[
             Tuple["BaseLogStore", Union["LogsRequest", "LogsResponse"]]
         ] = None
-        self._is_outermost_context: bool = False
 
     def generate_log_request(self) -> "LogsRequest":
         """Create a log request model.
@@ -206,6 +205,8 @@ class LoggingContext:
         Returns:
             The log request model.
         """
+        if self.log_model is not None:
+            
         from zenml.log_stores.default.default_log_store import (
             DefaultLogStore,
             prepare_logs_uri,
@@ -356,11 +357,7 @@ def setup_pipeline_logging(
     if logging_enabled:
         client = Client()
 
-        logs_model = None
-        if logs_response:
-            logs_model = logs_response
-
-        logs_context = LoggingContext(source="client", log_model=logs_model)
+        logs_context = LoggingContext(source="client", log_model=logs_response)
 
         if run_id and logs_response is None:
             try:

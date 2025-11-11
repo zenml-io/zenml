@@ -30,7 +30,7 @@ from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
-from zenml.logging import logging as step_logging
+from zenml.logging import logging as zenml_logging
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -41,6 +41,7 @@ from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
+from zenml.pipelines.build_utils import log_code_repository_usage
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException, StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
@@ -271,11 +272,10 @@ class StepLauncher:
             )
 
         logs_context = nullcontext()
-        logs_model = None
-
+        logs_request = None
         if step_logging_enabled:
-            logs_context = step_logging.LoggingContext(source="step")
-            logs_model = logs_context.log_model
+            logs_context = zenml_logging.LoggingContext(source="step")
+            logs_request = logs_context.log_model
 
         with logs_context:
             if run_was_created:
@@ -301,7 +301,7 @@ class StepLauncher:
                 invocation_id=self._invocation_id,
                 dynamic_config=dynamic_config,
             )
-            step_run_request.logs = logs_model
+            step_run_request.logs = logs_request
 
             try:
                 request_factory.populate_request(request=step_run_request)
@@ -327,37 +327,6 @@ class StepLauncher:
                 logger.info(f"Step `{self._invocation_id}` has started.")
 
                 try:
-                    # here pass a forced save_to_file callable to be
-                    # used as a dump function to use before starting
-                    # the external jobs in step operators
-                    if isinstance(
-                        logs_context,
-                        step_logging.LoggingContext,
-                    ):
-                        # For LoggingContext using DefaultLogStore, trigger merge
-                        # TODO: investigate
-                        from zenml.log_stores.default.default_log_store import (
-                            DefaultLogStore,
-                        )
-
-                        if isinstance(
-                            logs_context.log_store, DefaultLogStore
-                        ) and hasattr(logs_context.log_store, "storage"):
-                            force_write_logs = (
-                                logs_context.log_store.storage.send_merge_event
-                            )
-                        else:
-
-                            def _bypass() -> None:
-                                return None
-
-                            force_write_logs = _bypass
-                    else:
-
-                        def _bypass() -> None:
-                            return None
-
-                        force_write_logs = _bypass
                     self._run_step(
                         pipeline_run=pipeline_run,
                         step_run=step_run,
