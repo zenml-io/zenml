@@ -24,6 +24,7 @@ from mlflow.entities.model_registry import (
     ModelVersion as MLflowModelVersion,
 )
 from mlflow.exceptions import MlflowException
+from mlflow.models import get_model_info
 from mlflow.pyfunc import load_model
 from packaging import version
 
@@ -599,14 +600,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
                         )
                         logger.info(
                             f"Set alias '{alias}' on model version '{name}:{version}'. "
-                            f"Note: MLflow 3.x uses aliases instead of stages."
+                            "Note: MLflow 3.x uses aliases instead of stages."
                         )
                     else:
                         # For NONE stage, we would need to remove all aliases
                         # but we don't know which aliases to remove, so we skip
                         logger.warning(
-                            f"Cannot set stage to NONE in MLflow 3.x. "
-                            f"Use delete_registered_model_alias to remove specific aliases."
+                            "Cannot set stage to NONE in MLflow 3.x. "
+                            "Use delete_registered_model_alias to remove specific aliases."
                         )
                 else:
                     # In MLflow 2.x, use the traditional stage transition
@@ -790,8 +791,22 @@ class MLFlowModelRegistry(BaseModelRegistry):
             name=name,
             version=version,
         )
+
+        # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
+        if self._is_mlflow_3x() and mlflow_model_version.run_id:
+            source_path = mlflow_model_version.source
+            if source_path and "/artifacts/" in source_path:
+                artifact_name = source_path.split("/artifacts/")[-1]
+                model_uri = (
+                    f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
+                )
+            else:
+                model_uri = source_path or ""
+        else:
+            model_uri = mlflow_model_version.source or ""
+
         return load_model(
-            model_uri=mlflow_model_version.source,
+            model_uri=model_uri,
             **kwargs,
         )
 
@@ -832,16 +847,35 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata["mlflow_run_link"] = mlflow_model_version.run_link
 
         try:
-            from mlflow.models import get_model_info
+            # In MLflow 3.x, models are stored separately and source URI is incorrect
+            # Use runs:/ URI which MLflow resolves to the actual model location
+            if self._is_mlflow_3x() and mlflow_model_version.run_id:
+                # Construct runs:/ URI from run_id
+                # We need to extract the artifact path from the source URI
+                source_path = mlflow_model_version.source
+                if source_path and "/artifacts/" in source_path:
+                    artifact_name = source_path.split("/artifacts/")[-1]
+                    model_uri = (
+                        f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
+                    )
+                else:
+                    # Fallback to source if we can't parse it
+                    model_uri = source_path or ""
+            else:
+                # In MLflow 2.x, use the source path directly
+                source = mlflow_model_version.source
+                model_uri = _remove_file_scheme(source) if source else ""
 
             model_library = (
-                get_model_info(
-                    model_uri=_remove_file_scheme(mlflow_model_version.source)
-                )
+                get_model_info(model_uri=model_uri)
                 .flavors.get("python_function", {})
                 .get("loader_module")
             )
-        except ImportError:
+        except (ImportError, Exception) as e:
+            logger.debug(
+                f"Could not extract model library from model URI: {e}. "
+                "Setting model_library to None."
+            )
             model_library = None
 
         # Handle stage extraction for both MLflow 2.x and 3.x
@@ -867,7 +901,11 @@ class MLFlowModelRegistry(BaseModelRegistry):
             stage=stage,
             description=mlflow_model_version.description,
             last_updated_at=datetime.fromtimestamp(
-                int(mlflow_model_version.last_updated_timestamp) / 1e3
+                int(
+                    mlflow_model_version.last_updated_timestamp
+                    or mlflow_model_version.creation_timestamp
+                )
+                / 1e3
             ),
             metadata=ModelRegistryModelMetadata(**metadata),
             model_source_uri=mlflow_model_version.source,
