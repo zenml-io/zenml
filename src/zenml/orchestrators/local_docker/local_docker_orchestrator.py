@@ -50,9 +50,18 @@ ENV_ZENML_DOCKER_ORCHESTRATOR_RUN_ID = "ZENML_DOCKER_ORCHESTRATOR_RUN_ID"
 class LocalDockerOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines locally using Docker.
 
-    This orchestrator does not allow for concurrent execution of steps and also
-    does not support running on a schedule.
+    This orchestrator does not allow for concurrent execution of steps but
+    supports running on a schedule using APScheduler.
     """
+
+    def __init__(self, **values: Any) -> None:
+        """Initialize the orchestrator.
+
+        Args:
+            **values: Values to initialize the orchestrator with.
+        """
+        super().__init__(**values)
+        self._scheduler: Optional[Any] = None
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
@@ -134,10 +143,28 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             Optional submission result.
         """
         if snapshot.schedule:
-            logger.warning(
-                "Local Docker Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
+            # Handle scheduled pipeline runs
+            logger.info(
+                f"Scheduling pipeline '{snapshot.pipeline_configuration.name}' "
+                f"with schedule '{snapshot.schedule.name}'."
+            )
+
+            # Initialize the scheduler if not already done
+            self._ensure_scheduler_started()
+
+            # Add the schedule to the scheduler
+            if self._scheduler:
+                self._scheduler.add_schedule(snapshot.schedule)
+                logger.info(
+                    f"Successfully scheduled pipeline '{snapshot.pipeline_configuration.name}'"
+                )
+
+            # Return metadata about the schedule
+            return SubmissionResult(
+                metadata={
+                    "schedule_id": str(snapshot.schedule.id),
+                    "schedule_name": snapshot.schedule.name,
+                }
             )
 
         docker_client = docker_utils._try_get_docker_client_from_env()
@@ -290,6 +317,52 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             ExecutionMode.CONTINUE_ON_FAILURE,
         ]
 
+    def _ensure_scheduler_started(self) -> None:
+        """Ensure the scheduler is started."""
+        if self._scheduler is None:
+            from zenml.orchestrators.local_docker.local_docker_scheduler import (
+                LocalDockerOrchestratorScheduler,
+            )
+
+            self._scheduler = LocalDockerOrchestratorScheduler()
+            self._scheduler.start(orchestrator_id=self.id)
+
+    def update_schedule(
+        self, schedule: "ScheduleResponse", update: "ScheduleUpdate"
+    ) -> None:
+        """Updates a schedule.
+
+        Args:
+            schedule: The schedule to update.
+            update: The update to apply to the schedule.
+        """
+        from zenml.client import Client
+
+        # Update the schedule in the database first
+        client = Client()
+        updated_schedule = client.zen_store.update_schedule(
+            schedule_id=schedule.id, schedule_update=update
+        )
+
+        # Update the schedule in the scheduler
+        self._ensure_scheduler_started()
+        if self._scheduler:
+            self._scheduler.update_schedule(updated_schedule)
+
+        logger.info(f"Updated schedule '{schedule.name}' (ID: {schedule.id})")
+
+    def delete_schedule(self, schedule: "ScheduleResponse") -> None:
+        """Deletes a schedule.
+
+        Args:
+            schedule: The schedule to delete.
+        """
+        self._ensure_scheduler_started()
+        if self._scheduler:
+            self._scheduler.delete_schedule(schedule.id)
+
+        logger.info(f"Deleted schedule '{schedule.name}' (ID: {schedule.id})")
+
 
 class LocalDockerOrchestratorSettings(BaseSettings):
     """Local Docker orchestrator settings.
@@ -323,6 +396,15 @@ class LocalDockerOrchestratorConfig(
 
         Returns:
             Whether the orchestrator runs synchronous or not.
+        """
+        return True
+
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
         """
         return True
 

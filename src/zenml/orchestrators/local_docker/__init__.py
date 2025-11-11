@@ -12,3 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization for the local Docker orchestrator."""
+
+from zenml.orchestrators.local_docker.local_docker_orchestrator import (
+    LocalDockerOrchestrator,
+    LocalDockerOrchestratorConfig,
+    LocalDockerOrchestratorFlavor,
+    LocalDockerOrchestratorSettings,
+)
+from zenml.orchestrators.local_docker.local_docker_scheduler import (
+    LocalDockerOrchestratorScheduler,
+)
+
+__all__ = [
+    "LocalDockerOrchestrator",
+    "LocalDockerOrchestratorConfig",
+    "LocalDockerOrchestratorFlavor",
+    "LocalDockerOrchestratorSettings",
+    "LocalDockerOrchestratorScheduler",
+]
