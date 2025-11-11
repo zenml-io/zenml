@@ -2,6 +2,26 @@
 
 # 0.91.1
 
+## New Features
+
+### Huggingface Deployer
+- New deployer implementation that allows you to deploy your pipelines on Huggingface
+
+### Kubernetes orchestrator
+- Additional configuration option to specify the container security context
+- Additional configuration option that can be used skip creating owner references
+
+### Other
+- New authentication options for the HashiCorp Vault secret store
+- Support for newer Databricks versions
+
+## Bug Fixes
+
+- Fix port reuse for local deployments
+- Fix parallel deployment invocations
+- Fix keyboard interrupt handling while monitoring a synchronous run
+- Fix case-sensitivity issue when updating the name of some entities like stack components
+
 ## What's Changed
 * Add version 0.90.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4094
 * Classical ML example by @htahir1 in https://github.com/zenml-io/zenml/pull/4077
