@@ -30932,6 +30932,39 @@ code changes.</p>
 <p>This entrypoint configuration handles the startup and configuration
 of the ZenML pipeline deployment FastAPI application.</p>
 
+        <p>Initializes the entrypoint configuration.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>arguments</code>
+            </td>
+            <td>
+                  <code><span title="typing.List">List</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Command line arguments to configure this object.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -30940,22 +30973,22 @@ of the ZenML pipeline deployment FastAPI application.</p>
 
 
                   <details class="mkdocstrings-source">
-                    <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+                    <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_deployment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;DeploymentResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -30967,7 +31000,120 @@ of the ZenML pipeline deployment FastAPI application.</p>
 
 
 
+<h9 id="zenml.deployers.server.entrypoint_configuration.DeploymentEntrypointConfiguration-attributes">Attributes</h9>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h10 id="zenml.deployers.server.entrypoint_configuration.DeploymentEntrypointConfiguration.deployment" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">deployment</span><span class="p">:</span> <span class="n">DeploymentResponse</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h10>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The deployment configured for this entrypoint configuration.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="DeploymentResponse (zenml.models.DeploymentResponse)" href="core-models.html#zenml.models.DeploymentResponse">DeploymentResponse</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The deployment.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h10 id="zenml.deployers.server.entrypoint_configuration.DeploymentEntrypointConfiguration.snapshot" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">snapshot</span><span class="p">:</span> <span class="n">PipelineSnapshotResponse</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+</h10>
+
+
+    <div class="doc doc-contents ">
+
+        <p>The snapshot configured for this entrypoint configuration.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="PipelineSnapshotResponse (zenml.models.PipelineSnapshotResponse)" href="core-models.html#zenml.models.PipelineSnapshotResponse">PipelineSnapshotResponse</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The snapshot.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="RuntimeError">RuntimeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the deployment has no snapshot.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
 
 
 <h9 id="zenml.deployers.server.entrypoint_configuration.DeploymentEntrypointConfiguration-functions">Functions</h9>
@@ -31069,16 +31215,7 @@ of the ZenML pipeline deployment FastAPI application.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
-<span class="normal">53</span>
-<span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">61</span>
 <span class="normal">62</span>
 <span class="normal">63</span>
 <span class="normal">64</span>
@@ -31100,7 +31237,16 @@ of the ZenML pipeline deployment FastAPI application.</p>
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span>
-<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets arguments for the deployment entrypoint command.</span>
 
@@ -31181,16 +31327,16 @@ of the ZenML pipeline deployment FastAPI application.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span>
+<span class="normal">56</span>
+<span class="normal">57</span>
+<span class="normal">58</span>
+<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for the deployment entrypoint.</span>
 
@@ -31200,72 +31346,6 @@ of the ZenML pipeline deployment FastAPI application.</p>
     <span class="k">return</span> <span class="p">{</span>
         <span class="n">DEPLOYMENT_ID_OPTION</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">}</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h10 id="zenml.deployers.server.entrypoint_configuration.DeploymentEntrypointConfiguration.load_deployment" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">load_deployment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">DeploymentResponse</span></code>
-
-</h10>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Loads the deployment.</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="DeploymentResponse (zenml.models.DeploymentResponse)" href="core-models.html#zenml.models.DeploymentResponse">DeploymentResponse</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The deployment.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span>
-<span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span>
-<span class="normal">94</span>
-<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DeploymentResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the deployment.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The deployment.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">deployment_id</span> <span class="o">=</span> <span class="n">UUID</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span><span class="p">[</span><span class="n">DEPLOYMENT_ID_OPTION</span><span class="p">])</span>
-    <span class="n">deployment</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span>
-        <span class="n">deployment_id</span><span class="o">=</span><span class="n">deployment_id</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">deployment</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -31288,75 +31368,38 @@ of the ZenML pipeline deployment FastAPI application.</p>
 and the specified pipeline deployment.</p>
 
 
-<p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="RuntimeError">RuntimeError</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If the deployment has no snapshot.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
-<span class="normal"> 98</span>
-<span class="normal"> 99</span>
-<span class="normal">100</span>
-<span class="normal">101</span>
-<span class="normal">102</span>
-<span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the ZenML pipeline deployment application.</span>
 
 <span class="sd">    This method starts the FastAPI server with the configured parameters</span>
 <span class="sd">    and the specified pipeline deployment.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        RuntimeError: If the deployment has no snapshot.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.deployers.server.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDeploymentAppRunner</span>
 
     <span class="c1"># Activate integrations to ensure all components are available</span>
     <span class="n">integration_registry</span><span class="o">.</span><span class="n">activate_integrations</span><span class="p">()</span>
 
-    <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_deployment</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">deployment</span><span class="o">.</span><span class="n">snapshot</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deployment </span><span class="si">{</span><span class="n">deployment</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> has no snapshot&quot;</span><span class="p">)</span>
-
     <span class="c1"># Download code if necessary (for remote execution environments)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">download_code_if_necessary</span><span class="p">()</span>
 
-    <span class="n">app_runner</span> <span class="o">=</span> <span class="n">BaseDeploymentAppRunner</span><span class="o">.</span><span class="n">load_app_runner</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span>
+    <span class="n">app_runner</span> <span class="o">=</span> <span class="n">BaseDeploymentAppRunner</span><span class="o">.</span><span class="n">load_app_runner</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment</span><span class="p">)</span>
     <span class="n">app_runner</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
