@@ -21,25 +21,18 @@ You should use the Kubernetes deployer if:
 * you want to leverage existing Kubernetes expertise and tooling in your organization.
 * you need to integrate with existing Kubernetes resources (Ingress, NetworkPolicies, ServiceMonitors, etc.).
 
-## How to deploy it
-
-
-To use the Kubernetes deployer, you need:
-
-* A running Kubernetes cluster (version 1.21 or higher recommended)
-* Access credentials configured via `kubectl` or a service connector)
-
-## How to use it
+## Prerequisites
 
 To use the Kubernetes deployer, you need:
 
-*   The ZenML `kubernetes` integration installed. If you haven't done so, run
-
-```shell
-zenml integration install kubernetes
+* The ZenML `kubernetes` integration installed:
+  ```shell
+  zenml integration install kubernetes
+  ```
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
+* A running Kubernetes cluster (version 1.21 or higher recommended)
 * [Kubernetes cluster access](#kubernetes-access-and-permissions) either via `kubectl` or a service connector.
 
 ### Kubernetes access and permissions
@@ -234,9 +227,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{service_name}}  # ZenML fills this
+                name: {{name}}  # ZenML fills this with the Service name
                 port:
-                  number: {{service_port}}  # ZenML fills this
+                  number: {{settings.service_port}}  # ZenML fills this
 
 # HorizontalPodAutoscaler for autoscaling
 ---
@@ -249,7 +242,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{deployment_name}}  # ZenML fills this
+    name: {{name}}  # ZenML fills this with the Deployment name
   minReplicas: {{replicas}}  # ZenML fills this
   maxReplicas: 10
   metrics:
@@ -291,19 +284,24 @@ settings = {
 
 **Available template variables** for use in your YAML files:
 
+Core objects (access their properties directly):
+* `{{deployment}}`: Full DeploymentResponse object - access via `{{deployment.id}}`, `{{deployment.name}}`, etc.
+* `{{settings}}`: Full KubernetesDeployerSettings object - access via `{{settings.service_port}}`, `{{settings.service_type}}`, etc.
+
+Common values:
+* `{{name}}`: Deployment/Service resource name (use this for Deployment name, Service name in Ingress, HPA target, etc.)
 * `{{namespace}}`: Kubernetes namespace
-* `{{deployment_name}}` or `{{name}}`: Deployment name
-* `{{service_name}}`: Service name (same as deployment name)
-* `{{service_port}}`: Service port number
-* `{{service_type}}`: Service type (LoadBalancer, NodePort, ClusterIP)
-* `{{labels}}`: Dict of ZenML-managed labels
-* `{{labels['managed-by']}}`: Always 'zenml'
-* `{{labels['zenml-deployment-id']}}`: Deployment UUID
-* `{{labels['zenml-deployment-name']}}`: Human-readable deployment name
+* `{{labels}}`: Dict of all labels (includes ZenML-managed labels + custom labels)
+  - `{{labels['managed-by']}}`: Always 'zenml'
+  - `{{labels['zenml-deployment-id']}}`: Deployment UUID
+  - `{{labels['zenml-deployment-name']}}`: Human-readable deployment name
 * `{{replicas}}`: Configured replica count
-* `{{image}}`: Container image
-* `{{deployment_id}}`: Deployment UUID
-* `{{annotations}}`: Pod annotations dict
+* `{{image}}`: Container image URI
+* `{{command}}`: Container command
+* `{{args}}`: Container args
+* `{{env}}`: Environment variables dict
+* `{{resources}}`: Resource requests/limits dict
+* `{{pod_settings}}`: KubernetesPodSettings object (if configured)
 
 {% hint style="warning" %}
 **Important prerequisites:**
@@ -334,7 +332,8 @@ For maximum control, you can completely override the built-in Deployment and Ser
 ```python
 settings = {
     "deployer": KubernetesDeployerSettings(
-        custom_templates_dir="~/.zenml/k8s-templates/",
+        custom_deployment_template_file="~/.zenml/k8s-templates/deployment.yaml.j2",
+        custom_service_template_file="~/.zenml/k8s-templates/service.yaml.j2",
         # ... other settings
     )
 }
@@ -344,23 +343,21 @@ settings = {
 
 Your custom templates have access to all the same context variables as the built-in templates:
 
-* `name`: Deployment/Service name (use `{{ name | k8s_name }}` filter)
+Core objects:
+* `deployment`: Full DeploymentResponse object
+* `settings`: Full KubernetesDeployerSettings object (access health probes, ports, etc. via `settings.X`)
+
+Common values:
+* `name`: Deployment/Service resource name
 * `namespace`: Kubernetes namespace
-* `image`: Container image
+* `image`: Container image URI
 * `replicas`: Number of replicas
-* `labels`: Dict of labels (includes ZenML-managed labels)
-* `annotations`: Dict of pod annotations
-* `service_account_name`: Service account (if set)
-* `image_pull_policy`: Image pull policy
-* `image_pull_secrets`: List of image pull secret names
-* `command`: Container command override (if set)
-* `args`: Container args override (if set)
+* `labels`: Dict of all labels
+* `command`: Container command (list)
+* `args`: Container args (list)
 * `env`: Environment variables dict
-* `resources`: Resource requests/limits dict
-* `pod_settings`: KubernetesPodSettings object (if set)
-* `service_port`: Service port number
-* `service_type`: Service type (LoadBalancer, NodePort, ClusterIP)
-* Health probe settings: `readiness_probe_path`, `readiness_probe_initial_delay`, etc.
+* `resources`: Resource requests/limits dict (with `requests` and `limits` keys)
+* `pod_settings`: KubernetesPodSettings object (access volumes, affinity, tolerations, etc.)
 
 **Example: Custom deployment template with init container**
 
@@ -370,14 +367,14 @@ Create `~/MyProject/k8s-templates/deployment.yaml.j2`:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ name | k8s_name }}
+  name: {{ name }}
   namespace: {{ namespace }}
   labels:
-    app: {{ name | k8s_name }}
+    app: {{ name }}
     managed-by: zenml
     {% if labels %}
     {% for key, value in labels.items() %}
-    {{ key }}: {{ value | k8s_label_value | tojson }}
+    {{ key }}: {{ value | tojson }}
     {% endfor %}
     {% endif %}
 spec:
@@ -389,16 +386,22 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ name | k8s_name }}
+        app: {{ name }}
         managed-by: zenml
         {% if labels %}
         {% for key, value in labels.items() %}
-        {{ key }}: {{ value | k8s_label_value | tojson }}
+        {{ key }}: {{ value | tojson }}
         {% endfor %}
         {% endif %}
+      {% if settings.annotations %}
+      annotations:
+        {% for key, value in settings.annotations.items() %}
+        {{ key }}: {{ value | tojson }}
+        {% endfor %}
+      {% endif %}
     spec:
-      {% if service_account_name %}
-      serviceAccountName: {{ service_account_name }}
+      {% if settings.service_account_name %}
+      serviceAccountName: {{ settings.service_account_name }}
       {% endif %}
       
       # Custom init container
@@ -408,49 +411,69 @@ spec:
         command: ['sh', '-c', 'echo "Initializing..." && sleep 5']
       
       containers:
-      - name: {{ name | k8s_name }}
+      - name: main
         image: {{ image }}
+        imagePullPolicy: {{ settings.image_pull_policy }}
         {% if command %}
-        command: {{ command | to_json }}
+        command: {{ command | to_yaml | indent(10, first=True) }}
         {% endif %}
         {% if args %}
-        args: {{ args | to_json }}
+        args: {{ args | to_yaml | indent(10, first=True) }}
         {% endif %}
         ports:
-        - containerPort: {{ service_port }}
+        - containerPort: {{ settings.service_port }}
           name: http
+        {% if env %}
         env:
         {% for key, value in env.items() %}
-        - name: {{ key }}
-          value: {{ value | tojson }}
+          - name: {{ key }}
+            value: {{ value | tojson }}
         {% endfor %}
+        {% endif %}
         {% if resources %}
-        resources: {{ resources | to_yaml | indent(10) }}
+        resources:
+          {% if "requests" in resources %}
+          requests:
+          {% for key, value in resources.requests.items() %}
+            {{ key }}: {{ value | tojson }}
+          {% endfor %}
+          {% endif %}
+          {% if "limits" in resources %}
+          limits:
+          {% for key, value in resources.limits.items() %}
+            {{ key }}: {{ value | tojson }}
+          {% endfor %}
+          {% endif %}
         {% endif %}
         readinessProbe:
           httpGet:
-            path: {{ readiness_probe_path }}
-            port: {{ service_port }}
-          initialDelaySeconds: {{ readiness_probe_initial_delay }}
-          periodSeconds: {{ readiness_probe_period }}
+            path: {{ settings.readiness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.readiness_probe_initial_delay }}
+          periodSeconds: {{ settings.readiness_probe_period }}
         livenessProbe:
           httpGet:
-            path: {{ liveness_probe_path }}
-            port: {{ service_port }}
-          initialDelaySeconds: {{ liveness_probe_initial_delay }}
-          periodSeconds: {{ liveness_probe_period }}
+            path: {{ settings.liveness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.liveness_probe_initial_delay }}
+          periodSeconds: {{ settings.liveness_probe_period }}
 ```
 
 {% hint style="info" %}
-**Tip**: Start with ZenML's built-in templates as a reference. You can find them in the ZenML repository at `src/zenml/integrations/kubernetes/templates/`. Copy and modify them for your needs.
+**Tip**: Start with ZenML's built-in templates as a reference. You can find them on GitHub:
+- [deployment.yaml.j2](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubernetes/templates/kubernetes/deployment.yaml.j2)
+- [service.yaml.j2](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/kubernetes/templates/kubernetes/service.yaml.j2)
+
+Copy and modify them for your needs.
 {% endhint %}
 
 {% hint style="warning" %}
 When using custom templates, you're responsible for maintaining compatibility with ZenML's deployment lifecycle. Ensure your templates:
-- Use the correct label selectors (`zenml-deployment-id`, `managed-by: zenml`)
-- Expose the correct container port (`{{ service_port }}`)
+- Use the correct label selectors (`zenml-deployment-id`, `managed-by: zenml`) for resource tracking
+- Expose the correct container port (`{{ settings.service_port }}`)
 - Include health probes for proper deployment tracking
 - Pass through environment variables (`{{ env }}`)
+- Use `{{ name }}` for consistent resource naming
 {% endhint %}
 
 ### Complete settings reference

@@ -1213,25 +1213,33 @@ class KubernetesDeployer(ContainerizedDeployer):
                 inventory=inventory,
                 propagation_policy="Foreground",
             )
+
+            # All resources already deleted (404s) - this is success
             if deleted_count == 0:
                 logger.info(
                     f"All resources for deployment '{deployment.name}' "
                     f"were already deleted"
                 )
-            elif deleted_count == len(inventory):
+                return None
+
+            # All resources successfully deleted - this is success
+            if deleted_count == len(inventory):
                 logger.info(
                     f"Successfully deprovisioned deployment '{deployment.name}' "
                     f"({deleted_count}/{len(inventory)} resource(s) deleted)"
                 )
-            else:
-                logger.warning(
-                    f"Partial deprovisioning for deployment '{deployment.name}': "
-                    f"deleted {deleted_count}/{len(inventory)} resource(s). "
-                    f"Some resources may still exist or failed to delete. "
-                    f"Check logs for details."
-                )
+                return None
 
-            return None
+            # Partial deletion - this is a FAILURE to prevent orphan resources
+            error_msg = (
+                f"Partial deprovisioning failure for deployment '{deployment.name}': "
+                f"only deleted {deleted_count}/{len(inventory)} resource(s). "
+                f"Some resources could not be deleted and will remain in the cluster. "
+                f"The deployment will NOT be removed from ZenML to allow retry or manual cleanup. "
+                f"Check the logs above for specific deletion failures."
+            )
+            logger.error(error_msg)
+            raise DeploymentDeprovisionError(error_msg)
 
         except DeploymentDeprovisionError:
             raise
