@@ -1094,7 +1094,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     "resource_inventory"
                 ]
 
-
             return DeploymentOperationalState(
                 status=status,
                 url=url,
