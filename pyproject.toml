@@ -67,7 +67,7 @@ local_scheduler = [
     "apscheduler>=3.10.0,<4.0.0",
 ]
 server = [
-    "zenml[local,local_scheduler]",  # Includes all the DB and local scheduling dependencies
+    "zenml[local]",  # Includes all the DB dependencies
     "fastapi>=0.100,<=0.115.8",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",

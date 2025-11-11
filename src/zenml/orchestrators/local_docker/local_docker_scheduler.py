@@ -21,6 +21,9 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.logger import get_logger
+from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.stack import Stack
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.models import ScheduleResponse
@@ -260,7 +263,7 @@ class LocalDockerOrchestratorScheduler:
                 return
 
             # Check if we're past the end time
-            if schedule.end_time and datetime.utcnow() > schedule.end_time:
+            if schedule.end_time and utc_now() > schedule.end_time:
                 logger.info(
                     f"Schedule '{schedule.name}' has passed its end time, skipping execution."
                 )
@@ -279,14 +282,65 @@ class LocalDockerOrchestratorScheduler:
                 f"Executing scheduled pipeline '{pipeline.name}' for schedule '{schedule.name}'"
             )
 
-            # Trigger the pipeline run using the latest runnable snapshot
-            try:
-                run = client.trigger_pipeline(
-                    pipeline_name_or_id=schedule.pipeline_id,
-                    synchronous=False,  # Run asynchronously
+            # Find the snapshot associated with this schedule, or use the latest snapshot
+            snapshot = None
+            # First, try to find a snapshot associated with this schedule
+            snapshots = client.list_snapshots(
+                pipeline=schedule.pipeline_id,
+                schedule_id=schedule.id,
+                size=1,
+                sort_by="desc:created",
+            )
+            
+            # If no snapshot is associated with the schedule, use the latest snapshot for the pipeline
+            if snapshots.total == 0:
+                snapshots = client.list_snapshots(
+                    pipeline=schedule.pipeline_id,
+                    size=1,
+                    sort_by="desc:created",
                 )
+            
+            if snapshots.total == 0:
+                logger.error(
+                    f"No snapshots found for pipeline '{pipeline.name}'. "
+                    f"Cannot execute scheduled pipeline."
+                )
+                return
+            
+            snapshot = snapshots.items[0]
+            
+            # Ensure snapshot has a stack
+            if not snapshot.stack:
+                logger.error(
+                    f"Snapshot '{snapshot.name}' has no associated stack. "
+                    f"Cannot execute scheduled pipeline."
+                )
+                return
+            
+            # Convert stack model to Stack instance
+            stack = Stack.from_model(snapshot.stack)
+            
+            # Create a placeholder run for tracking
+            placeholder_run = create_placeholder_run(
+                snapshot=snapshot,
+                trigger_info=None,  # Could add schedule trigger info here if needed
+            )
+            
+            # Execute the pipeline directly using the orchestrator
+            try:
                 logger.info(
-                    f"Successfully triggered pipeline run '{run.id}' for schedule '{schedule.name}'"
+                    f"Executing pipeline '{pipeline.name}' for schedule '{schedule.name}' "
+                    f"using snapshot '{snapshot.name}'"
+                )
+                
+                # Submit the pipeline directly using the stack's orchestrator
+                stack.submit_pipeline(
+                    snapshot=snapshot,
+                    placeholder_run=placeholder_run,
+                )
+                
+                logger.info(
+                    f"Successfully started pipeline run '{placeholder_run.id}' for schedule '{schedule.name}'"
                 )
             except Exception as e:
                 logger.error(
