@@ -256,7 +256,7 @@ class StepContext(context_utils.BaseContext):
         return self.model_version.to_model_class()
 
     @property
-    def inputs(self) -> Dict[str, "StepRunInputResponse"]:
+    def inputs(self) -> Dict[str, List["StepRunInputResponse"]]:
         """Returns the input artifacts of the current step.
 
         Returns:

@@ -19,12 +19,16 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
+    Generic,
     List,
     Literal,
     Optional,
     Sequence,
+    Set,
     Tuple,
+    TypeVar,
     Union,
     overload,
 )
@@ -202,9 +206,10 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        chunk_index: Optional[int] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
 
@@ -213,9 +218,10 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        chunk_index: Optional[int] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
 
@@ -223,9 +229,10 @@ class DynamicPipelineRunner:
         self,
         step: "BaseStep",
         id: Optional[str],
-        args: Tuple[Any],
+        args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        chunk_index: Optional[int] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
         """Launch a step.
@@ -236,6 +243,7 @@ class DynamicPipelineRunner:
             args: The arguments for the step function.
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for.
+            chunk_index: The chunk index of this step.
             concurrent: Whether to launch the step concurrently.
 
         Returns:
@@ -247,9 +255,9 @@ class DynamicPipelineRunner:
             pipeline=self.pipeline,
             step=step,
             id=id,
-            args=args,
-            kwargs=kwargs,
+            inputs=convert_to_keyword_arguments(step.entrypoint, args, kwargs),
             after=after,
+            chunk_index=chunk_index,
         )
 
         def _launch() -> StepRunOutputs:
@@ -278,6 +286,42 @@ class DynamicPipelineRunner:
         else:
             return _launch()
 
+    def map(
+        self,
+        step: "BaseStep",
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+    ) -> List["StepRunOutputsFuture"]:
+        """Map over step inputs.
+
+        Args:
+            step: The step to run.
+            args: The arguments for the step function.
+            kwargs: The keyword arguments for the step function.
+            after: The step run output futures to wait for before executing the
+                steps.
+
+        Returns:
+            The step run output futures.
+        """
+        kwargs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
+        kwargs = await_step_inputs(kwargs)
+        _, _, length = find_mapped_inputs(kwargs)
+
+        return [
+            self.launch_step(
+                step,
+                id=None,
+                args=(),
+                kwargs=kwargs,
+                after=after,
+                chunk_index=chunk_index,
+                concurrent=True,
+            )
+            for chunk_index in range(length)
+        ]
+
     def await_all_step_run_futures(self) -> None:
         """Await all step run output futures."""
         for future in self._futures:
@@ -289,10 +333,15 @@ def compile_dynamic_step_invocation(
     snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
     step: "BaseStep",
-    id: Optional[str],
-    args: Tuple[Any],
-    kwargs: Dict[str, Any],
-    after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+    inputs: Dict[str, Any],
+    after: Union[
+        "StepRunFuture",
+        "ArtifactFuture",
+        Sequence[Union["StepRunFuture", "ArtifactFuture"]],
+        None,
+    ] = None,
+    id: Optional[str] = None,
+    chunk_index: Optional[int] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -301,9 +350,9 @@ def compile_dynamic_step_invocation(
         pipeline: The dynamic pipeline.
         step: The step to compile.
         id: Custom invocation ID.
-        args: The arguments for the step function.
-        kwargs: The keyword arguments for the step function.
+        inputs: The inputs for the step function.
         after: The step run output futures to wait for.
+        chunk_index: The chunk index of this step.
 
     Returns:
         The compiled step.
@@ -318,49 +367,61 @@ def compile_dynamic_step_invocation(
             item._wait()
             upstream_steps.add(item.invocation_id)
 
-    def _await_and_validate_input(input: Any) -> Any:
-        if isinstance(input, StepRunOutputsFuture):
-            if len(input._output_keys) != 1:
-                raise ValueError(
-                    "Passing multiple step run outputs to another step is not "
-                    "allowed."
-                )
-            input = input.artifacts()
+    inputs = await_step_inputs(inputs)
 
-        if isinstance(input, ArtifactFuture):
-            input = input.result()
+    for value in inputs.values():
+        if isinstance(value, OutputArtifact):
+            upstream_steps.add(value.step_name)
 
-        if isinstance(input, OutputArtifact):
-            upstream_steps.add(input.step_name)
+        if isinstance(value, Sequence) and all(
+            isinstance(item, OutputArtifact) for item in value
+        ):
+            upstream_steps.update(item.step_name for item in value)
 
-        return input
-
-    args = tuple(_await_and_validate_input(arg) for arg in args)
-    kwargs = {
-        key: _await_and_validate_input(value) for key, value in kwargs.items()
-    }
-
-    # TODO: we can validate the type of the inputs that are passed as raw data
-    signature = inspect.signature(step.entrypoint, follow_wrapped=True)
-    bound_args = signature.bind_partial(*args, **kwargs)
-    validated_args = bound_args.arguments
-    bound_args.apply_defaults()
     default_parameters = {
         key: value
-        for key, value in bound_args.arguments.items()
-        if key not in validated_args
+        for key, value in convert_to_keyword_arguments(
+            step.entrypoint, (), inputs, apply_defaults=True
+        ).items()
+        if key not in inputs
     }
+
+    if chunk_index is not None:
+        inputs, mapped_input_names, _ = find_mapped_inputs(inputs=inputs)
+    else:
+        mapped_input_names = set()
 
     input_artifacts = {}
     external_artifacts = {}
-    for name, value in validated_args.items():
+    for name, value in inputs.items():
+        chunk_args = {}
+        if name in mapped_input_names:
+            chunk_args["chunk_index"] = chunk_index
+            chunk_args["chunk_length"] = 1
+
         if isinstance(value, OutputArtifact):
-            input_artifacts[name] = StepArtifact(
-                invocation_id=value.step_name,
-                output_name=value.output_name,
-                annotation=OutputSignature(resolved_annotation=Any),
-                pipeline=pipeline,
-            )
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=value.step_name,
+                    output_name=value.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                    **chunk_args,
+                )
+            ]
+        elif isinstance(value, list) and all(
+            isinstance(item, OutputArtifact) for item in value
+        ):
+            input_artifacts[name] = [
+                StepArtifact(
+                    invocation_id=item.step_name,
+                    output_name=item.output_name,
+                    annotation=OutputSignature(resolved_annotation=Any),
+                    pipeline=pipeline,
+                    **chunk_args,
+                )
+                for item in value
+            ]
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
         else:
@@ -419,9 +480,13 @@ def _load_step_run_outputs(step_run_id: UUID) -> StepRunOutputs:
         name, artifact = next(iter(output_artifacts.items()))
         return _convert_output_artifact(output_name=name, artifact=artifact)
     else:
+        # Make sure we return them in the same order as they're defined in the
+        # step configuration, as we don't enforce any ordering in the DB.
         return tuple(
-            _convert_output_artifact(output_name=name, artifact=artifact)
-            for name, artifact in output_artifacts.items()
+            _convert_output_artifact(
+                output_name=name, artifact=output_artifacts[name]
+            )
+            for name in step_run.config.outputs.keys()
         )
 
 
@@ -503,3 +568,163 @@ def get_config_template(
         return None
 
     return list(snapshot.step_configurations.values())[index]
+
+
+T = TypeVar("T")
+
+
+class _NoMap(Generic[T]):
+    def __init__(self, value: T):
+        self.value = value
+
+
+def no_map(value: T) -> _NoMap[T]:
+    """Helper function to pass an input without mapping over it.
+
+    Wrap any value with this function and then pass it to `step.map(...)` to
+    pass the full value to all steps.
+
+    Args:
+        value: The value to wrap.
+
+    Returns:
+        The wrapped value.
+    """
+    return _NoMap(value)
+
+
+def find_mapped_inputs(
+    inputs: Dict[str, Any],
+) -> Tuple[Dict[str, Any], Set[str], int]:
+    """Find the mapped and unmapped inputs of a step.
+
+    Args:
+        inputs: The step function inputs.
+
+    Raises:
+        RuntimeError: If no mapped inputs are found or the lengths of the mapped
+            inputs are not equal.
+
+    Returns:
+        The unwrapped inputs, the names of the mapped inputs, and the shared
+        length of all mapped inputs.
+    """
+    unwrapped_inputs: Dict[str, Any] = {}
+    mapped_input_names = set()
+    length = None
+
+    for key, value in inputs.items():
+        if isinstance(value, _NoMap):
+            unwrapped_inputs[key] = value.value
+        elif isinstance(value, OutputArtifact):
+            if value.length is None:
+                unwrapped_inputs[key] = value
+            elif value.length == 0:
+                raise RuntimeError(
+                    f"Artifact `{value.id}` has length 0 and cannot be mapped "
+                    "over. Wrap it with the `no_map(...)` function to pass "
+                    "the artifact without mapping over it."
+                )
+            else:
+                unwrapped_inputs[key] = value
+                mapped_input_names.add(key)
+                if length is None:
+                    length = value.length
+                elif value.length != length:
+                    raise RuntimeError(
+                        f"All mapped input artifacts must have the same "
+                        "length, but you passed artifacts with lengths "
+                        f"{length} and {value.length}. If you want to pass "
+                        "sequence-like artifacts without mapping over them, "
+                        "wrap them with the `no_map(...)` function."
+                    )
+        elif isinstance(value, Sequence):
+            logger.warning(
+                "Received sequence-like data for step input `%s`. Mapping over "
+                "data that is not a step output artifact is currently not "
+                "supported, and the complete data will be passed to all steps. "
+                "If you want to silence this warning, wrap your input with the "
+                "`no_map(...)` function."
+            )
+            # TODO: Add support for mapping values that are not step output
+            # artifacts
+            unwrapped_inputs[key] = value
+        else:
+            unwrapped_inputs[key] = value
+
+    if length is None:
+        raise RuntimeError("No mapped inputs found.")
+
+    return unwrapped_inputs, mapped_input_names, length
+
+
+def convert_to_keyword_arguments(
+    func: Callable[..., Any],
+    args: Tuple[Any, ...],
+    kwargs: Dict[str, Any],
+    apply_defaults: bool = False,
+) -> Dict[str, Any]:
+    """Convert function arguments to keyword arguments.
+
+    Args:
+        func: The function to convert the arguments to keyword arguments for.
+        args: The arguments to convert to keyword arguments.
+        kwargs: The keyword arguments to convert to keyword arguments.
+        apply_defaults: Whether to apply the function default values.
+
+    Returns:
+        The keyword arguments.
+    """
+    signature = inspect.signature(func, follow_wrapped=True)
+    bound_args = signature.bind_partial(*args, **kwargs)
+    if apply_defaults:
+        bound_args.apply_defaults()
+
+    return bound_args.arguments
+
+
+def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Await the inputs of a step.
+
+    Args:
+        inputs: The inputs of the step.
+
+    Raises:
+        RuntimeError: If a step run future with multiple output artifacts is
+            passed as an input.
+
+    Returns:
+        The awaited inputs.
+    """
+    result = {}
+    for key, value in inputs.items():
+        if isinstance(value, Sequence) and all(
+            isinstance(item, StepRunOutputsFuture) for item in value
+        ):
+            if any(len(item._output_keys) != 1 for item in value):
+                raise RuntimeError(
+                    f"Invalid step input {key}: Passing a future that refers "
+                    "to multiple output artifacts as an input to another step "
+                    "is not allowed."
+                )
+            value = [item.artifacts() for item in value]
+        elif isinstance(value, StepRunOutputsFuture):
+            if len(value._output_keys) != 1:
+                raise RuntimeError(
+                    f"Invalid step input {key}: Passing a future that refers "
+                    "to multiple output artifacts as an input to another step "
+                    "is not allowed."
+                )
+            value = value.artifacts()
+
+        if isinstance(value, Sequence) and all(
+            isinstance(item, ArtifactFuture) for item in value
+        ):
+            value = [item.result() for item in value]
+
+        if isinstance(value, ArtifactFuture):
+            value = value.result()
+
+        result[key] = value
+
+    return result
