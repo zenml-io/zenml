@@ -3952,6 +3952,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="BaseEntrypointConfiguration(arguments: List[str]) (zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration)" href="#zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration">BaseEntrypointConfiguration</a></code></p>
 
 
+
         <p>Base class for entrypoint configurations that run an entire pipeline.</p>
 
 
@@ -3961,7 +3962,7 @@
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -4006,7 +4007,7 @@
         <p>Prepares the environment and runs the configured pipeline.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/pipeline_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">26</span>
 <span class="normal">27</span>
@@ -4064,6 +4065,7 @@
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseEntrypointConfiguration(arguments: List[str]) (zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration)" href="#zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration">BaseEntrypointConfiguration</a></code></p>
+
 
 
         <p>Base class for entrypoint configurations that run a single step.</p>
@@ -4127,7 +4129,7 @@ class MyOrchestrator(BaseOrchestrator):
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -4245,7 +4247,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">127</span>
 <span class="normal">128</span>
@@ -4351,7 +4353,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
 <span class="normal">118</span>
@@ -4413,7 +4415,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">152</span>
 <span class="normal">153</span>
@@ -4506,7 +4508,7 @@ executed.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -4557,7 +4559,7 @@ executed.</p>
         <p>Prepares the environment and runs the configured step.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">164</span>
 <span class="normal">165</span>
@@ -4690,6 +4692,7 @@ executed.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Abstract base class for entrypoint configurations.</p>
 <p>An entrypoint configuration specifies the arguments that should be passed
 to the entrypoint and what is running inside the entrypoint.</p>
@@ -4758,7 +4761,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -4834,7 +4837,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">263</span>
 <span class="normal">264</span>
@@ -5006,7 +5009,7 @@ but the snapshot does not have a reference to any code.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">201</span>
 <span class="normal">202</span>
@@ -5235,7 +5238,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">100</span>
 <span class="normal">101</span>
@@ -5379,7 +5382,7 @@ configuration when called. Defaults to running the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">68</span>
 <span class="normal">69</span>
@@ -5459,7 +5462,7 @@ configuration when called. Defaults to running the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">85</span>
 <span class="normal">86</span>
@@ -5531,7 +5534,7 @@ configuration when called. Defaults to running the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">192</span>
 <span class="normal">193</span>
@@ -5572,7 +5575,7 @@ configuration when called. Defaults to running the
         <p>Runs the entrypoint configuration.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">350</span>
 <span class="normal">351</span>
@@ -5650,7 +5653,7 @@ configuration when called. Defaults to running the
         <p>Runs the entrypoint configuration given by the command line arguments.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/entrypoint.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
 <span class="normal">34</span>
@@ -5757,6 +5760,7 @@ configuration when called. Defaults to running the
               Bases: <code><a class="autorefs autorefs-internal" title="BaseEntrypointConfiguration(arguments: List[str]) (zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration)" href="#zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration">BaseEntrypointConfiguration</a></code></p>
 
 
+
         <p>Base class for entrypoint configurations that run an entire pipeline.</p>
 
 
@@ -5766,7 +5770,7 @@ configuration when called. Defaults to running the
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -5811,7 +5815,7 @@ configuration when called. Defaults to running the
         <p>Prepares the environment and runs the configured pipeline.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/pipeline_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">26</span>
 <span class="normal">27</span>
@@ -5913,6 +5917,7 @@ configuration when called. Defaults to running the
               Bases: <code><a class="autorefs autorefs-internal" title="BaseEntrypointConfiguration(arguments: List[str]) (zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration)" href="#zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration">BaseEntrypointConfiguration</a></code></p>
 
 
+
         <p>Base class for entrypoint configurations that run a single step.</p>
 <p>If an orchestrator needs to run steps in a separate process or environment
 (e.g. a docker container), this class can either be used directly or
@@ -5974,7 +5979,7 @@ class MyOrchestrator(BaseOrchestrator):
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -6092,7 +6097,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">127</span>
 <span class="normal">128</span>
@@ -6198,7 +6203,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">117</span>
 <span class="normal">118</span>
@@ -6260,7 +6265,7 @@ It needs to provide values for all options returned by the
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">152</span>
 <span class="normal">153</span>
@@ -6353,7 +6358,7 @@ executed.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -6404,7 +6409,7 @@ executed.</p>
         <p>Prepares the environment and runs the configured step.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">164</span>
 <span class="normal">165</span>

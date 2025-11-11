@@ -4414,6 +4414,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML image builders.</p>
 
 
@@ -4423,7 +4424,7 @@
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -4833,7 +4834,7 @@ registry.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/base_image_builder.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">77</span>
 <span class="normal">78</span>
@@ -4907,6 +4908,7 @@ registry.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponentConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.stack.stack_component.StackComponentConfig)" href="core-stack.html#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a></code></p>
 
 
+
         <p>Base config for image builders.</p>
 
 
@@ -4916,7 +4918,7 @@ registry.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -5079,6 +5081,7 @@ registry.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.Flavor)" href="core-stack.html#zenml.stack.Flavor">Flavor</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Base class for all ZenML image builder flavors.</p>
@@ -5262,6 +5265,7 @@ registry.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Archivable(*args: Any, **kwargs: Any) (zenml.utils.archivable.Archivable)" href="core-utils.html#zenml.utils.archivable.Archivable">Archivable</a></code></p>
 
 
+
         <p>Image build context.</p>
 <p>This class is responsible for creating an archive of the files needed to
 build a container image.</p>
@@ -5324,7 +5328,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">35</span>
 <span class="normal">36</span>
@@ -5465,7 +5469,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -5581,7 +5585,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
 <span class="normal">72</span>
@@ -5669,6 +5673,7 @@ directory will be used instead if it exists.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilder(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.image_builders.BaseImageBuilder)" href="#zenml.image_builders.BaseImageBuilder">BaseImageBuilder</a></code></p>
 
 
+
         <p>Local image builder implementation.</p>
 
 
@@ -5678,7 +5683,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -6033,7 +6038,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/local_image_builder.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -6149,6 +6154,7 @@ directory will be used instead if it exists.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilderConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.image_builders.BaseImageBuilderConfig)" href="#zenml.image_builders.BaseImageBuilderConfig">BaseImageBuilderConfig</a></code></p>
 
 
+
         <p>Local image builder configuration.</p>
 
 
@@ -6158,7 +6164,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -6321,6 +6327,7 @@ directory will be used instead if it exists.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilderFlavor (zenml.image_builders.BaseImageBuilderFlavor)" href="#zenml.image_builders.BaseImageBuilderFlavor">BaseImageBuilderFlavor</a></code></p>
+
 
 
         <p>Local image builder flavor.</p>
@@ -6674,6 +6681,7 @@ directory will be used instead if it exists.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML image builders.</p>
 
 
@@ -6683,7 +6691,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -7093,7 +7101,7 @@ registry.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/base_image_builder.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">77</span>
 <span class="normal">78</span>
@@ -7167,6 +7175,7 @@ registry.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponentConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.stack.stack_component.StackComponentConfig)" href="core-stack.html#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a></code></p>
 
 
+
         <p>Base config for image builders.</p>
 
 
@@ -7176,7 +7185,7 @@ registry.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -7339,6 +7348,7 @@ registry.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.Flavor)" href="core-stack.html#zenml.stack.Flavor">Flavor</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Base class for all ZenML image builder flavors.</p>
@@ -7564,6 +7574,7 @@ registry.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Archivable(*args: Any, **kwargs: Any) (zenml.utils.archivable.Archivable)" href="core-utils.html#zenml.utils.archivable.Archivable">Archivable</a></code></p>
 
 
+
         <p>Image build context.</p>
 <p>This class is responsible for creating an archive of the files needed to
 build a container image.</p>
@@ -7626,7 +7637,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">35</span>
 <span class="normal">36</span>
@@ -7767,7 +7778,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -7883,7 +7894,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/build_context.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
 <span class="normal">72</span>
@@ -8013,6 +8024,7 @@ directory will be used instead if it exists.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilder(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.image_builders.BaseImageBuilder)" href="#zenml.image_builders.BaseImageBuilder">BaseImageBuilder</a></code></p>
 
 
+
         <p>Local image builder implementation.</p>
 
 
@@ -8022,7 +8034,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -8377,7 +8389,7 @@ directory will be used instead if it exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/image_builders/local_image_builder.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -8493,6 +8505,7 @@ directory will be used instead if it exists.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilderConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.image_builders.BaseImageBuilderConfig)" href="#zenml.image_builders.BaseImageBuilderConfig">BaseImageBuilderConfig</a></code></p>
 
 
+
         <p>Local image builder configuration.</p>
 
 
@@ -8502,7 +8515,7 @@ directory will be used instead if it exists.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -8665,6 +8678,7 @@ directory will be used instead if it exists.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseImageBuilderFlavor (zenml.image_builders.BaseImageBuilderFlavor)" href="#zenml.image_builders.BaseImageBuilderFlavor">BaseImageBuilderFlavor</a></code></p>
+
 
 
         <p>Local image builder flavor.</p>

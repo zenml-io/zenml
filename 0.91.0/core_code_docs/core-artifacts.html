@@ -3942,6 +3942,7 @@
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Artifact configuration class.</p>
 <p>Can be used in step definitions to define various artifact properties.</p>
 <p>Example:</p>
@@ -4123,6 +4124,7 @@ is used.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="ExternalArtifactConfiguration (zenml.artifacts.external_artifact_config.ExternalArtifactConfiguration)" href="#zenml.artifacts.external_artifact_config.ExternalArtifactConfiguration">ExternalArtifactConfiguration</a></code></p>
+
 
 
         <p>External artifacts can be used to provide values as input to ZenML steps.</p>
@@ -4352,7 +4354,7 @@ def my_pipeline():
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/external_artifact.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">81</span>
 <span class="normal">82</span>
@@ -4428,7 +4430,7 @@ def my_pipeline():
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/external_artifact.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
 <span class="normal"> 99</span>
@@ -4561,6 +4563,7 @@ def my_pipeline():
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>External artifact configuration.</p>
 <p>Lightweight class to pass in the steps for runtime inference.</p>
 
@@ -4657,7 +4660,7 @@ provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/external_artifact_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
 <span class="normal">53</span>
@@ -4813,6 +4816,7 @@ provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseMaterializer(uri: str, artifact_store: Optional[BaseArtifactStore] = None) (zenml.materializers.base_materializer.BaseMaterializer)" href="core-materializers.html#zenml.materializers.base_materializer.BaseMaterializer">BaseMaterializer</a></code></p>
 
 
+
         <p>Materializer to load directories from the artifact store.</p>
 <p>This materializer is very special, since it do not implement save
 logic at all. The save of the data to some URI inside the artifact store
@@ -4826,7 +4830,7 @@ shall happen outside and is in user's responsibility.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/materializers/base_materializer.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
 <span class="normal">126</span>
@@ -4933,7 +4937,7 @@ shall happen outside and is in user's responsibility.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/preexisting_data_materializer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">39</span>
 <span class="normal">40</span>
@@ -5042,7 +5046,7 @@ shall happen outside and is in user's responsibility.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/preexisting_data_materializer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">57</span>
 <span class="normal">58</span>
@@ -5143,6 +5147,7 @@ shall happen outside and is in user's responsibility.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="ArtifactVersionResponse (zenml.models.ArtifactVersionResponse)" href="core-models.html#zenml.models.ArtifactVersionResponse">ArtifactVersionResponse</a></code></p>
+
 
 
         <p>Unmaterialized artifact class.</p>
@@ -5340,7 +5345,7 @@ def my_step(input_artifact: UnmaterializedArtifact):
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">582</span>
 <span class="normal">583</span>
@@ -5540,7 +5545,7 @@ should be returned or also cached artifact versions.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">660</span>
 <span class="normal">661</span>
@@ -5676,7 +5681,7 @@ should be returned or also cached artifact versions.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">638</span>
 <span class="normal">639</span>
@@ -5808,7 +5813,7 @@ name. If not provided, the latest version will be loaded.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">391</span>
 <span class="normal">392</span>
@@ -5915,7 +5920,7 @@ name. If not provided, the latest version will be loaded.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">561</span>
 <span class="normal">562</span>
@@ -6102,7 +6107,7 @@ store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">500</span>
 <span class="normal">501</span>
@@ -6298,7 +6303,7 @@ used to load the model into memory in the inference environment.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1021</span>
 <span class="normal">1022</span>
@@ -6511,7 +6516,7 @@ artifact nor an output with the given name exists.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">409</span>
 <span class="normal">410</span>
@@ -6882,7 +6887,7 @@ bounds.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">316</span>
 <span class="normal">317</span>
@@ -7289,7 +7294,7 @@ the dashboard "Artifacts" tab.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">219</span>
 <span class="normal">220</span>
@@ -7560,7 +7565,7 @@ materializer: The path to the materializer class.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/artifacts/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 993</span>
 <span class="normal"> 994</span>

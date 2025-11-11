@@ -7085,6 +7085,7 @@
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for a pluggable app extension.</p>
 <p>Extensions can be:
 1. Simple callable - this is a function that is used to apply the extension
@@ -7193,7 +7194,7 @@ class MyExtension(BaseAppExtension):
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">351</span>
 <span class="normal">352</span>
@@ -7270,7 +7271,7 @@ class MyExtension(BaseAppExtension):
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">357</span>
 <span class="normal">358</span>
@@ -7337,6 +7338,7 @@ class MyExtension(BaseAppExtension):
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
+
 
 
         <p>Enum for byte units.</p>
@@ -7431,6 +7433,7 @@ class MyExtension(BaseAppExtension):
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for CORS.</p>
 
 
@@ -7476,6 +7479,7 @@ class MyExtension(BaseAppExtension):
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Cache policy.</p>
@@ -7542,7 +7546,7 @@ class MyExtension(BaseAppExtension):
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/cache_policy.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
 <span class="normal">104</span>
@@ -7672,7 +7676,7 @@ class MyExtension(BaseAppExtension):
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/cache_policy.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">118</span>
 <span class="normal">119</span>
@@ -7737,6 +7741,7 @@ class MyExtension(BaseAppExtension):
               Bases: <code><span title="enum.IntFlag">IntFlag</span></code></p>
 
 
+
         <p>Default endpoints for the deployment application.</p>
 
 
@@ -7784,6 +7789,7 @@ class MyExtension(BaseAppExtension):
               Bases: <code><span title="enum.IntFlag">IntFlag</span></code></p>
 
 
+
         <p>Default middleware for the deployment application.</p>
 
 
@@ -7828,6 +7834,7 @@ class MyExtension(BaseAppExtension):
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Settings for the pipeline deployment.</p>
@@ -8300,7 +8307,7 @@ These will be passed to the constructor of the deployment service class.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -8505,7 +8512,7 @@ These will be passed to the constructor of the deployment service class.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">723</span>
 <span class="normal">724</span>
@@ -8546,7 +8553,7 @@ These will be passed to the constructor of the deployment service class.</p>
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">706</span>
 <span class="normal">707</span>
@@ -8653,7 +8660,7 @@ These will be passed to the constructor of the deployment service class.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">734</span>
 <span class="normal">735</span>
@@ -8705,6 +8712,7 @@ These will be passed to the constructor of the deployment service class.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Settings for building Docker images to run ZenML pipelines.</p>
@@ -9105,7 +9113,7 @@ from the artifact store.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -9266,6 +9274,7 @@ from the artifact store.</p>
               Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>HTTP methods for endpoints.</p>
 
 
@@ -9311,6 +9320,7 @@ from the artifact store.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Endpoint specification.</p>
@@ -9514,7 +9524,7 @@ registering the endpoint.</p>
         <p>Load all source strings into callables.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">181</span>
 <span class="normal">182</span>
@@ -9553,6 +9563,7 @@ registering the endpoint.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Middleware specification.</p>
@@ -9732,7 +9743,7 @@ the middleware constructor by the adapter.</p>
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">287</span>
 <span class="normal">288</span>
@@ -9771,6 +9782,7 @@ the middleware constructor by the adapter.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
+
 
 
         <p>Different methods to export the local Python environment.</p>
@@ -9867,6 +9879,7 @@ requirements file for pip once it's written to a file.</p>
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Different installers for python packages.</p>
 
 
@@ -9911,6 +9924,7 @@ requirements file for pip once it's written to a file.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Hardware resource settings.</p>
@@ -10077,7 +10091,7 @@ Only relevant to deployed pipelines.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -10360,7 +10374,7 @@ Only relevant to deployed pipelines.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/resource_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
 <span class="normal">157</span>
@@ -10447,6 +10461,7 @@ Only relevant to deployed pipelines.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Class for defining a pipeline schedule.</p>
@@ -10601,6 +10616,7 @@ in the local timezone.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Configuration for secure headers.</p>
@@ -10802,6 +10818,7 @@ included in responses.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
 
 
+
         <p>Retry configuration for a step.</p>
 <p>Delay is an integer (specified in seconds).</p>
 
@@ -10848,6 +10865,7 @@ included in responses.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Generic store configuration.</p>
@@ -11011,7 +11029,7 @@ check if a URL scheme is supported by the store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/store_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
 <span class="normal">53</span>
@@ -11118,7 +11136,7 @@ check if a URL scheme is supported by the store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/store_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">67</span>
 <span class="normal">68</span>
@@ -11231,6 +11249,7 @@ check if a URL scheme is supported by the store.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="SecretReferenceMixin(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.secret_reference_mixin.SecretReferenceMixin)" href="#zenml.config.secret_reference_mixin.SecretReferenceMixin">SecretReferenceMixin</a></code></p>
 
 
+
         <p>Base class for settings.</p>
 <p>The <code>LEVEL</code> class variable defines on which level the settings can be
 specified. By default, subclasses can be defined on both pipelines and
@@ -11243,7 +11262,7 @@ steps.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -11404,6 +11423,7 @@ steps.</p>
               Bases: <code><span title="enum.IntFlag">IntFlag</span></code></p>
 
 
+
         <p>Settings configuration level.</p>
 <p>Bit flag that can be used to specify where a <code>BaseSettings</code> subclass
 can be specified.</p>
@@ -11493,6 +11513,7 @@ can be specified.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Configuration of Docker builds.</p>
@@ -11688,7 +11709,7 @@ download files inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/build_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 55</span>
 <span class="normal"> 56</span>
@@ -11930,7 +11951,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/build_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">160</span>
 <span class="normal">161</span>
@@ -12056,7 +12077,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/build_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">186</span>
 <span class="normal">187</span>
@@ -12178,7 +12199,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/build_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">139</span>
 <span class="normal">140</span>
@@ -12291,6 +12312,7 @@ inside the image.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Cache policy.</p>
 
 
@@ -12355,7 +12377,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/cache_policy.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
 <span class="normal">104</span>
@@ -12485,7 +12507,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/cache_policy.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">118</span>
 <span class="normal">119</span>
@@ -12588,6 +12610,7 @@ inside the image.</p>
 
 
     <div class="doc doc-contents ">
+
 
 
         <p>Compiles ZenML pipelines to serializable representations.</p>
@@ -12713,7 +12736,7 @@ inside the image.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/compiler.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 76</span>
 <span class="normal"> 77</span>
@@ -12978,7 +13001,7 @@ snapshot including stack information is not required.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/compiler.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">171</span>
 <span class="normal">172</span>
@@ -13141,7 +13164,7 @@ full and the shortcut key.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/compiler.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">666</span>
 <span class="normal">667</span>
@@ -13268,7 +13291,7 @@ local client environment to the explicit user-defined variables.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/compiler.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">693</span>
 <span class="normal">694</span>
@@ -13376,7 +13399,7 @@ local client environment to the explicit user-defined variables.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/compiler.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">59</span>
 <span class="normal">60</span>
@@ -13506,6 +13529,7 @@ local client environment to the explicit user-defined variables.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for a pluggable app extension.</p>
 <p>Extensions can be:
 1. Simple callable - this is a function that is used to apply the extension
@@ -13614,7 +13638,7 @@ class MyExtension(BaseAppExtension):
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">351</span>
 <span class="normal">352</span>
@@ -13691,7 +13715,7 @@ class MyExtension(BaseAppExtension):
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">357</span>
 <span class="normal">358</span>
@@ -13760,6 +13784,7 @@ class MyExtension(BaseAppExtension):
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for CORS.</p>
 
 
@@ -13805,6 +13830,7 @@ class MyExtension(BaseAppExtension):
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="enum.IntFlag">IntFlag</span></code></p>
+
 
 
         <p>Default endpoints for the deployment application.</p>
@@ -13854,6 +13880,7 @@ class MyExtension(BaseAppExtension):
               Bases: <code><span title="enum.IntFlag">IntFlag</span></code></p>
 
 
+
         <p>Default middleware for the deployment application.</p>
 
 
@@ -13898,6 +13925,7 @@ class MyExtension(BaseAppExtension):
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Settings for the pipeline deployment.</p>
@@ -14370,7 +14398,7 @@ These will be passed to the constructor of the deployment service class.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -14575,7 +14603,7 @@ These will be passed to the constructor of the deployment service class.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">723</span>
 <span class="normal">724</span>
@@ -14616,7 +14644,7 @@ These will be passed to the constructor of the deployment service class.</p>
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">706</span>
 <span class="normal">707</span>
@@ -14723,7 +14751,7 @@ These will be passed to the constructor of the deployment service class.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">734</span>
 <span class="normal">735</span>
@@ -14778,6 +14806,7 @@ These will be passed to the constructor of the deployment service class.</p>
               Bases: <code><span title="str">str</span></code>, <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>HTTP methods for endpoints.</p>
 
 
@@ -14823,6 +14852,7 @@ These will be passed to the constructor of the deployment service class.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Endpoint specification.</p>
@@ -15026,7 +15056,7 @@ registering the endpoint.</p>
         <p>Load all source strings into callables.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">181</span>
 <span class="normal">182</span>
@@ -15065,6 +15095,7 @@ registering the endpoint.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Middleware specification.</p>
@@ -15244,7 +15275,7 @@ the middleware constructor by the adapter.</p>
         <p>Load source string into callable.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/deployment_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">287</span>
 <span class="normal">288</span>
@@ -15283,6 +15314,7 @@ the middleware constructor by the adapter.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Configuration for secure headers.</p>
@@ -15526,6 +15558,7 @@ included in responses.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for a Docker build.</p>
 
 
@@ -15611,6 +15644,7 @@ Docker image.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Settings for building Docker images to run ZenML pipelines.</p>
@@ -16011,7 +16045,7 @@ from the artifact store.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -16172,6 +16206,7 @@ from the artifact store.</p>
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Different methods to export the local Python environment.</p>
 
 
@@ -16266,6 +16301,7 @@ requirements file for pip once it's written to a file.</p>
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Different installers for python packages.</p>
 
 
@@ -16353,6 +16389,7 @@ requirements file for pip once it's written to a file.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Immutable pydantic model which ignores extra attributes.</p>
@@ -16443,6 +16480,7 @@ requirements file for pip once it's written to a file.</p>
               Bases: <code><span title="pydantic._internal._model_construction.ModelMetaclass">ModelMetaclass</span></code></p>
 
 
+
         <p>Global configuration metaclass.</p>
 <p>This metaclass is used to enforce a singleton instance of the
 GlobalConfiguration class with the following additional properties:</p>
@@ -16510,7 +16548,7 @@ config file is older than the current version of the ZenML package.</li>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">72</span>
 <span class="normal">73</span>
@@ -16566,6 +16604,7 @@ config file is older than the current version of the ZenML package.</li>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Stores global configuration options.</p>
@@ -16719,7 +16758,7 @@ instance.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">132</span>
 <span class="normal">133</span>
@@ -17124,7 +17163,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">755</span>
 <span class="normal">756</span>
@@ -17225,7 +17264,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">773</span>
 <span class="normal">774</span>
@@ -17308,7 +17347,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">793</span>
 <span class="normal">794</span>
@@ -17378,7 +17417,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">442</span>
 <span class="normal">443</span>
@@ -17518,7 +17557,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">636</span>
 <span class="normal">637</span>
@@ -17604,7 +17643,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">150</span>
 <span class="normal">151</span>
@@ -17697,7 +17736,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">729</span>
 <span class="normal">730</span>
@@ -17781,7 +17820,7 @@ property is first accessed according to the global store configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">746</span>
 <span class="normal">747</span>
@@ -17820,7 +17859,7 @@ property is first accessed according to the global store configuration.</p>
 default store.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">651</span>
 <span class="normal">652</span>
@@ -17931,7 +17970,7 @@ constructor.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/global_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">682</span>
 <span class="normal">683</span>
@@ -18044,6 +18083,7 @@ constructor.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="PipelineConfigurationUpdate (zenml.config.pipeline_configurations.PipelineConfigurationUpdate)" href="#zenml.config.pipeline_configurations.PipelineConfigurationUpdate">PipelineConfigurationUpdate</a></code></p>
+
 
 
         <p>Pipeline configuration class.</p>
@@ -18299,7 +18339,7 @@ constructor.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/pipeline_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">105</span>
 <span class="normal">106</span>
@@ -18368,6 +18408,7 @@ constructor.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>Class for pipeline configuration updates.</p>
@@ -18477,7 +18518,7 @@ constructor.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/pipeline_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">73</span>
 <span class="normal">74</span>
@@ -18598,6 +18639,7 @@ constructor.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code>, <code><a class="autorefs autorefs-internal" title="YAMLSerializationMixin (zenml.utils.pydantic_utils.YAMLSerializationMixin)" href="core-utils.html#zenml.utils.pydantic_utils.YAMLSerializationMixin">YAMLSerializationMixin</a></code></p>
 
 
+
         <p>Class for pipeline run configurations.</p>
 
 
@@ -18687,6 +18729,7 @@ constructor.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
 
 
+
         <p>Pipeline output specification.</p>
 
 
@@ -18732,6 +18775,7 @@ constructor.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>Specification of a pipeline.</p>
@@ -18868,6 +18912,7 @@ constructor.</p>
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
+
         <p>Enum for byte units.</p>
 
 
@@ -18957,6 +19002,7 @@ constructor.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Hardware resource settings.</p>
@@ -19123,7 +19169,7 @@ Only relevant to deployed pipelines.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -19406,7 +19452,7 @@ Only relevant to deployed pipelines.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/resource_settings.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
 <span class="normal">157</span>
@@ -19537,6 +19583,7 @@ Only relevant to deployed pipelines.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
 
 
+
         <p>Retry configuration for a step.</p>
 <p>Delay is an integer (specified in seconds).</p>
 
@@ -19625,6 +19672,7 @@ Only relevant to deployed pipelines.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Class for defining a pipeline schedule.</p>
@@ -19822,6 +19870,7 @@ in the local timezone.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Mixin class for secret references in pydantic model attributes.</p>
 
         <p>Ensures that secret references are only passed for valid fields.</p>
@@ -19907,7 +19956,7 @@ is passed as a secret reference.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -20155,6 +20204,7 @@ is passed as a secret reference.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Generic secrets store configuration.</p>
 <p>The store configurations of concrete secrets store implementations must
 inherit from this class and validate any extra attributes that are
@@ -20281,7 +20331,7 @@ store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/secrets_store_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
 <span class="normal">45</span>
@@ -20404,6 +20454,7 @@ store.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>ZenML Server configuration attributes.</p>
@@ -21319,7 +21370,7 @@ ZenML server ID.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">554</span>
 <span class="normal">555</span>
@@ -21394,7 +21445,7 @@ ZenML server ID.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">570</span>
 <span class="normal">571</span>
@@ -21467,7 +21518,7 @@ ZenML server ID.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">539</span>
 <span class="normal">540</span>
@@ -21540,7 +21591,7 @@ ZenML server ID.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">524</span>
 <span class="normal">525</span>
@@ -21616,7 +21667,7 @@ ZenML server ID.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">585</span>
 <span class="normal">586</span>
@@ -21805,6 +21856,7 @@ ZenML server ID.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>ZenML Server Pro configuration attributes.</p>
 <p>All these attributes can be set through the environment with the
 <code>ZENML_SERVER_PRO_</code>-Prefix. E.g. the value of the <code>ZENML_SERVER_PRO_API_URL</code>
@@ -21975,7 +22027,7 @@ authenticate the ZenML server with the ZenML Pro API.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">714</span>
 <span class="normal">715</span>
@@ -22063,7 +22115,7 @@ authenticate the ZenML server with the ZenML Pro API.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/server_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">70</span>
 <span class="normal">71</span>
@@ -22140,6 +22192,7 @@ authenticate the ZenML server with the ZenML Pro API.</p>
 
 
     <div class="doc doc-contents ">
+
 
 
         <p>Class for resolving settings.</p>
@@ -22225,7 +22278,7 @@ depending on the key for which these settings were specified.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/settings_resolver.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">37</span>
 <span class="normal">38</span>
@@ -22354,7 +22407,7 @@ depending on the key for which these settings were specified.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/settings_resolver.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -22461,6 +22514,7 @@ depending on the key for which these settings were specified.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Source (zenml.config.source.Source)" href="#zenml.config.source.Source">Source</a></code></p>
 
 
+
         <p>Source representing an object from a code repository.</p>
 
 
@@ -22556,6 +22610,7 @@ repository.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Source (zenml.config.source.Source)" href="#zenml.config.source.Source">Source</a></code></p>
 
 
+
         <p>Source representing an object from a distribution package.</p>
 
 
@@ -22637,6 +22692,7 @@ repository.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Source (zenml.config.source.Source)" href="#zenml.config.source.Source">Source</a></code></p>
+
 
 
         <p>Source representing an object defined in a notebook.</p>
@@ -22722,6 +22778,7 @@ module code is stored.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Source specification.</p>
@@ -23012,7 +23069,7 @@ attribute is the class name <code>Source</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">167</span>
 <span class="normal">168</span>
@@ -23158,7 +23215,7 @@ attribute is the class name <code>Source</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 74</span>
 <span class="normal"> 75</span>
@@ -23303,7 +23360,7 @@ attribute is the class name <code>Source</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">145</span>
 <span class="normal">146</span>
@@ -23398,7 +23455,7 @@ attribute is the class name <code>Source</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
 <span class="normal">157</span>
@@ -23447,6 +23504,7 @@ attribute is the class name <code>Source</code>.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Source (zenml.config.source.Source)" href="#zenml.config.source.Source">Source</a></code></p>
+
 
 
         <p>Hybrid type that can hold either a Source path or a loaded object (type, function, variable, etc.).</p>
@@ -23636,7 +23694,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">295</span>
 <span class="normal">296</span>
@@ -23771,7 +23829,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">228</span>
 <span class="normal">229</span>
@@ -23888,7 +23946,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">216</span>
 <span class="normal">217</span>
@@ -23977,7 +24035,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">248</span>
 <span class="normal">249</span>
@@ -24096,7 +24154,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">324</span>
 <span class="normal">325</span>
@@ -24193,7 +24251,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">336</span>
 <span class="normal">337</span>
@@ -24236,7 +24294,7 @@ or object from the object <code>my_object</code>.</p>
         <p>Resolve the stored object to a source.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">271</span>
 <span class="normal">272</span>
@@ -24343,7 +24401,7 @@ or object from the object <code>my_object</code>.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/source.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">348</span>
 <span class="normal">349</span>
@@ -24398,6 +24456,7 @@ or object from the object <code>my_object</code>.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
+
 
 
         <p>Enum representing different types of sources.</p>
@@ -24489,6 +24548,7 @@ or object from the object <code>my_object</code>.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="PartialArtifactConfiguration (zenml.config.step_configurations.PartialArtifactConfiguration)" href="#zenml.config.step_configurations.PartialArtifactConfiguration">PartialArtifactConfiguration</a></code></p>
 
 
+
         <p>Class representing a complete input/output artifact configuration.</p>
 
 
@@ -24534,6 +24594,7 @@ or object from the object <code>my_object</code>.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>Step input specification.</p>
@@ -24583,6 +24644,7 @@ or object from the object <code>my_object</code>.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
 
 
+
         <p>Class representing a partial input/output artifact configuration.</p>
 
 
@@ -24630,6 +24692,7 @@ or object from the object <code>my_object</code>.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StepConfigurationUpdate (zenml.config.step_configurations.StepConfigurationUpdate)" href="#zenml.config.step_configurations.StepConfigurationUpdate">StepConfigurationUpdate</a></code></p>
 
 
+
         <p>Class representing a partial step configuration.</p>
 
 
@@ -24675,6 +24738,7 @@ or object from the object <code>my_object</code>.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>Class representing a ZenML step.</p>
@@ -24792,7 +24856,7 @@ step configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/step_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">480</span>
 <span class="normal">481</span>
@@ -24907,6 +24971,7 @@ step configuration.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="PartialStepConfiguration (zenml.config.step_configurations.PartialStepConfiguration)" href="#zenml.config.step_configurations.PartialStepConfiguration">PartialStepConfiguration</a></code></p>
+
 
 
         <p>Step configuration class.</p>
@@ -25090,7 +25155,7 @@ step configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/step_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">341</span>
 <span class="normal">342</span>
@@ -25227,6 +25292,7 @@ step configuration.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
 
 
+
         <p>Class for step configuration updates.</p>
 
 
@@ -25318,7 +25384,7 @@ step configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/step_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">236</span>
 <span class="normal">237</span>
@@ -25423,7 +25489,7 @@ step configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/step_configurations.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">220</span>
 <span class="normal">221</span>
@@ -25482,6 +25548,7 @@ step configuration.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>Specification of a pipeline.</p>
@@ -25571,6 +25638,7 @@ step configuration.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="FrozenBaseModel (zenml.config.frozen_base_model.FrozenBaseModel)" href="#zenml.config.frozen_base_model.FrozenBaseModel">FrozenBaseModel</a></code></p>
+
 
 
         <p>All information necessary to run a step.</p>
@@ -25687,7 +25755,7 @@ step configuration.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/step_run_info.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">37</span>
 <span class="normal">38</span>
@@ -25806,6 +25874,7 @@ step configuration.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Generic store configuration.</p>
@@ -25969,7 +26038,7 @@ check if a URL scheme is supported by the store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/store_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
 <span class="normal">53</span>
@@ -26076,7 +26145,7 @@ check if a URL scheme is supported by the store.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/config/store_config.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">67</span>
 <span class="normal">68</span>

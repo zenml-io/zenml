@@ -3944,6 +3944,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exception when interacting with the Artifact Store interface in an unsupported way.</p>
 
 
@@ -3953,7 +3954,7 @@
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4029,6 +4030,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when an authorization error occurred while trying to access a ZenML resource .</p>
 
 
@@ -4038,7 +4040,7 @@
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4115,6 +4117,7 @@
               Bases: <code><span title="NotImplementedError">NotImplementedError</span></code></p>
 
 
+
         <p>Raised when a backup secrets store is not configured.</p>
 
 
@@ -4144,6 +4147,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="AuthorizationException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.AuthorizationException)" href="#zenml.exceptions.AuthorizationException">AuthorizationException</a></code></p>
 
 
+
         <p>Raised when the credentials provided are invalid.</p>
 <p>This is a subclass of AuthorizationException and should only be raised when
 the authentication credentials are invalid (e.g. expired API token, invalid
@@ -4158,7 +4162,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4235,6 +4239,7 @@ re-authentication flow.</p>
               Bases: <code><span title="ImportError">ImportError</span></code></p>
 
 
+
         <p>Raised when failing to import a custom flavor.</p>
 
 
@@ -4262,6 +4267,7 @@ re-authentication flow.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
+
 
 
         <p>Raises exception when the entity does not exist in the system but an action is being done that requires it to be present.</p>
@@ -4306,7 +4312,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">64</span>
 <span class="normal">65</span>
@@ -4360,6 +4366,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code>, <code><span title="RuntimeError">RuntimeError</span></code></p>
 
 
+
         <p>Raised when failing to create an entity.</p>
 
 
@@ -4369,7 +4376,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4445,6 +4452,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when trying to register an entity that already exists.</p>
 
 
@@ -4454,7 +4462,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4531,6 +4539,7 @@ re-authentication flow.</p>
               Bases: <code><span title="ImportError">ImportError</span></code></p>
 
 
+
         <p>Raised when ZenML CLI is used to interact with examples on a machine with no git installation.</p>
 
 
@@ -4560,6 +4569,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Exception raised when hook execution fails.</p>
 
 
@@ -4569,7 +4579,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4645,6 +4655,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Exception raised when hook validation fails.</p>
 
 
@@ -4654,7 +4665,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4730,6 +4741,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when the model hydration failed.</p>
 
 
@@ -4739,7 +4751,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4815,6 +4827,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when an illegal operation is attempted.</p>
 
 
@@ -4824,7 +4837,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4900,6 +4913,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when an error occurred during initialization of a ZenML repository.</p>
 
 
@@ -4909,7 +4923,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -4985,6 +4999,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when step input resolving failed.</p>
 
 
@@ -4994,7 +5009,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5070,6 +5085,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exceptions when a requested integration can not be activated.</p>
 
 
@@ -5079,7 +5095,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5155,6 +5171,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exception when interacting with the Materializer interface in an unsupported way.</p>
 
 
@@ -5164,7 +5181,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5240,6 +5257,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when the maximum number of concurrent tasks is reached.</p>
 
 
@@ -5249,7 +5267,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5325,6 +5343,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when the server does not allow a request method.</p>
 
 
@@ -5334,7 +5353,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5408,6 +5427,7 @@ re-authentication flow.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="ValueError">ValueError</span></code></p>
+
 
 
         <p>OAuth2 error.</p>
@@ -5500,7 +5520,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">176</span>
 <span class="normal">177</span>
@@ -5592,7 +5612,7 @@ re-authentication flow.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">196</span>
 <span class="normal">197</span>
@@ -5644,6 +5664,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when a ZenML step gets interrupted for an unknown reason.</p>
 
 
@@ -5653,7 +5674,7 @@ re-authentication flow.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5729,6 +5750,7 @@ re-authentication flow.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when an error occurs while monitoring a pipeline run.</p>
 
         <p>Initializes the error.</p>
@@ -5772,7 +5794,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">236</span>
 <span class="normal">237</span>
@@ -5834,6 +5856,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when a ZenML pipeline run gets stopped by the user.</p>
 
 
@@ -5843,7 +5866,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -5920,6 +5943,7 @@ monitoring the pipeline run.</p>
               Bases: <code><span title="NotImplementedError">NotImplementedError</span></code></p>
 
 
+
         <p>Raised when a secrets store is not configured.</p>
 
 
@@ -5949,6 +5973,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when resolving settings failed.</p>
 
 
@@ -5958,7 +5983,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6034,6 +6059,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exception when interacting with the stack components in an unsupported way.</p>
 
 
@@ -6043,7 +6069,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6119,6 +6145,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when a stack configuration is not valid.</p>
 
 
@@ -6128,7 +6155,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6204,6 +6231,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exception when interacting with a StepContext in an unsupported way.</p>
 
 
@@ -6213,7 +6241,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6289,6 +6317,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raises exception when interacting with the Step interface in an unsupported way.</p>
 
 
@@ -6298,7 +6327,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6374,6 +6403,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when user tries to perform an action outside their current subscription tier.</p>
 
 
@@ -6383,7 +6413,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6459,6 +6489,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when the Model passed to the ZenStore.</p>
 
 
@@ -6468,7 +6499,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6544,6 +6575,7 @@ monitoring the pipeline run.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ZenMLBaseException(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.ZenMLBaseException)" href="#zenml.exceptions.ZenMLBaseException">ZenMLBaseException</a></code></p>
 
 
+
         <p>Raised when source is inactive.</p>
 
 
@@ -6553,7 +6585,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -6629,6 +6661,7 @@ monitoring the pipeline run.</p>
               Bases: <code><span title="KeyError">KeyError</span></code></p>
 
 
+
         <p>Specialized key error which allows error messages with line breaks.</p>
 
         <p>Initialization.</p>
@@ -6671,7 +6704,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">156</span>
 <span class="normal">157</span>
@@ -6723,6 +6756,7 @@ monitoring the pipeline run.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="Exception">Exception</span></code></p>
+
 
 
         <p>Base exception for all ZenML Exceptions.</p>
@@ -6787,7 +6821,7 @@ monitoring the pipeline run.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>

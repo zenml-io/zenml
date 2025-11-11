@@ -3662,6 +3662,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="BaseOrchestratorConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.orchestrators.BaseOrchestratorConfig)" href="../core_code_docs/core-orchestrators.html#zenml.orchestrators.BaseOrchestratorConfig">BaseOrchestratorConfig</a></code>, <code><a class="autorefs autorefs-internal" title="SkypilotBaseOrchestratorSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config.SkypilotBaseOrchestratorSettings)" href="#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config.SkypilotBaseOrchestratorSettings">SkypilotBaseOrchestratorSettings</a></code></p>
 
 
+
         <p>Skypilot orchestrator base config.</p>
 
 
@@ -3699,7 +3700,7 @@ each step with its own settings in separate VMs if provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -3951,6 +3952,7 @@ each step with its own settings in separate VMs if provided.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="../core_code_docs/core-config.html#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
+
 
 
         <p>Skypilot orchestrator base settings.</p>
@@ -4344,7 +4346,7 @@ by SkyPilot without requiring updates to ZenML.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -4553,6 +4555,7 @@ by SkyPilot without requiring updates to ZenML.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ContainerizedOrchestrator(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.orchestrators.ContainerizedOrchestrator)" href="../core_code_docs/core-orchestrators.html#zenml.orchestrators.ContainerizedOrchestrator">ContainerizedOrchestrator</a></code></p>
 
 
+
         <p>Base class for Orchestrator responsible for running pipelines remotely in a VM.</p>
 <p>This orchestrator does not support running on a schedule.</p>
 
@@ -4563,7 +4566,7 @@ by SkyPilot without requiring updates to ZenML.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -4911,7 +4914,7 @@ is not set.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">107</span>
 <span class="normal">108</span>
@@ -5001,7 +5004,7 @@ is not set.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">149</span>
 <span class="normal">150</span>
@@ -5036,7 +5039,7 @@ is not set.</p>
         <p>Set up credentials for the orchestrator.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
 <span class="normal">144</span>
@@ -5225,7 +5228,7 @@ specific steps.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
 <span class="normal">158</span>
@@ -5832,6 +5835,7 @@ specific steps.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ContainerizedOrchestrator(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.orchestrators.ContainerizedOrchestrator)" href="../core_code_docs/core-orchestrators.html#zenml.orchestrators.ContainerizedOrchestrator">ContainerizedOrchestrator</a></code></p>
 
 
+
         <p>Base class for Orchestrator responsible for running pipelines remotely in a VM.</p>
 <p>This orchestrator does not support running on a schedule.</p>
 
@@ -5842,7 +5846,7 @@ specific steps.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -6190,7 +6194,7 @@ is not set.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">107</span>
 <span class="normal">108</span>
@@ -6280,7 +6284,7 @@ is not set.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">149</span>
 <span class="normal">150</span>
@@ -6315,7 +6319,7 @@ is not set.</p>
         <p>Set up credentials for the orchestrator.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">143</span>
 <span class="normal">144</span>
@@ -6504,7 +6508,7 @@ specific steps.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">157</span>
 <span class="normal">158</span>
@@ -7167,7 +7171,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 67</span>
 <span class="normal"> 68</span>
@@ -7701,7 +7705,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
 <span class="normal">56</span>
@@ -7781,6 +7785,7 @@ SkypilotBaseOrchestrator.</p>
 
 
     <div class="doc doc-contents ">
+
 
 
         <p>Entrypoint configuration for the Skypilot master/orchestrator VM.</p>
@@ -7894,7 +7899,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">55</span>
 <span class="normal">56</span>
@@ -7988,7 +7993,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
 <span class="normal">42</span>
@@ -8062,7 +8067,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
 <span class="normal">29</span>
@@ -8299,7 +8304,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">70</span>
 <span class="normal">71</span>
@@ -8466,7 +8471,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">37</span>
 <span class="normal">38</span>
@@ -8635,7 +8640,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">190</span>
 <span class="normal">191</span>
@@ -8852,7 +8857,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
 <span class="normal">147</span>
@@ -9075,7 +9080,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">102</span>
 <span class="normal">103</span>
@@ -9234,7 +9239,7 @@ SkypilotBaseOrchestrator.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">20</span>
 <span class="normal">21</span>
@@ -9375,7 +9380,7 @@ job to complete.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/integrations/skypilot/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">239</span>
 <span class="normal">240</span>

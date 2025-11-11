@@ -3881,6 +3881,7 @@ an external model server managed through ZenML.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML model deployers.</p>
 <p>The model deployer serves three major purposes:</p>
 <ol>
@@ -3925,7 +3926,7 @@ management on remote model servers outside the coverage of a pipeline
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -4223,7 +4224,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">496</span>
 <span class="normal">497</span>
@@ -4466,7 +4467,7 @@ the default service type of the model deployer will be used.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
@@ -4951,7 +4952,7 @@ name, the model name, the model uri, the model type etc.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">281</span>
 <span class="normal">282</span>
@@ -5191,7 +5192,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
 <span class="normal"> 97</span>
@@ -5329,7 +5330,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">267</span>
 <span class="normal">268</span>
@@ -5485,7 +5486,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">527</span>
 <span class="normal">528</span>
@@ -5606,7 +5607,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">551</span>
 <span class="normal">552</span>
@@ -5728,7 +5729,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">476</span>
 <span class="normal">477</span>
@@ -5890,7 +5891,7 @@ to start serving the model.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">235</span>
 <span class="normal">236</span>
@@ -6027,7 +6028,7 @@ active.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">426</span>
 <span class="normal">427</span>
@@ -6150,7 +6151,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">366</span>
 <span class="normal">367</span>
@@ -6284,7 +6285,7 @@ active.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">442</span>
 <span class="normal">443</span>
@@ -6462,7 +6463,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">387</span>
 <span class="normal">388</span>
@@ -6567,6 +6568,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.flavor.Flavor)" href="core-stack.html#zenml.stack.flavor.Flavor">Flavor</a></code></p>
+
 
 
         <p>Base class for model deployer flavors.</p>
@@ -6763,6 +6765,7 @@ deprovisioning the service, without waiting for it to stop.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML model deployers.</p>
 <p>The model deployer serves three major purposes:</p>
 <ol>
@@ -6807,7 +6810,7 @@ management on remote model servers outside the coverage of a pipeline
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -7105,7 +7108,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">496</span>
 <span class="normal">497</span>
@@ -7348,7 +7351,7 @@ the default service type of the model deployer will be used.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
@@ -7833,7 +7836,7 @@ name, the model name, the model uri, the model type etc.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">281</span>
 <span class="normal">282</span>
@@ -8073,7 +8076,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
 <span class="normal"> 97</span>
@@ -8211,7 +8214,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">267</span>
 <span class="normal">268</span>
@@ -8367,7 +8370,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">527</span>
 <span class="normal">528</span>
@@ -8488,7 +8491,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">551</span>
 <span class="normal">552</span>
@@ -8610,7 +8613,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">476</span>
 <span class="normal">477</span>
@@ -8772,7 +8775,7 @@ to start serving the model.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">235</span>
 <span class="normal">236</span>
@@ -8909,7 +8912,7 @@ active.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">426</span>
 <span class="normal">427</span>
@@ -9032,7 +9035,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">366</span>
 <span class="normal">367</span>
@@ -9166,7 +9169,7 @@ active.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">442</span>
 <span class="normal">443</span>
@@ -9344,7 +9347,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">387</span>
 <span class="normal">388</span>
@@ -9450,6 +9453,7 @@ deprovisioning the service, without waiting for it to stop.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponentConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.stack.stack_component.StackComponentConfig)" href="core-stack.html#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a></code></p>
 
 
+
         <p>Base config for all model deployers.</p>
 
 
@@ -9459,7 +9463,7 @@ deprovisioning the service, without waiting for it to stop.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -9622,6 +9626,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.flavor.Flavor)" href="core-stack.html#zenml.stack.flavor.Flavor">Flavor</a></code></p>
+
 
 
         <p>Base class for model deployer flavors.</p>
@@ -9853,7 +9858,7 @@ deprovisioning the service, without waiting for it to stop.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/model_deployers/base_model_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">595</span>
 <span class="normal">596</span>

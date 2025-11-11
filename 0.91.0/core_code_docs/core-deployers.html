@@ -5717,6 +5717,7 @@ deployment managed through ZenML.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML deployers.</p>
 <p>The deployer serves three major purposes:</p>
 <ol>
@@ -5745,7 +5746,7 @@ deployments and to manage their lifecycle.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -6060,7 +6061,7 @@ deployer's default timeout.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">801</span>
 <span class="normal">802</span>
@@ -6306,7 +6307,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">694</span>
 <span class="normal">695</span>
@@ -6699,7 +6700,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1003</span>
 <span class="normal">1004</span>
@@ -6910,7 +6911,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">954</span>
 <span class="normal">955</span>
@@ -7110,7 +7111,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 976</span>
 <span class="normal"> 977</span>
@@ -7380,7 +7381,7 @@ fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">898</span>
 <span class="normal">899</span>
@@ -7562,7 +7563,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">114</span>
 <span class="normal">115</span>
@@ -7772,7 +7773,7 @@ Required if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">847</span>
 <span class="normal">848</span>
@@ -8095,7 +8096,7 @@ given ID is not found.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">405</span>
 <span class="normal">406</span>
@@ -8687,7 +8688,7 @@ if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">639</span>
 <span class="normal">640</span>
@@ -8825,6 +8826,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponentConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.stack.stack_component.StackComponentConfig)" href="core-stack.html#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a></code></p>
 
 
+
         <p>Base config for all deployers.</p>
 
 
@@ -8834,7 +8836,7 @@ if a name is provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -8999,6 +9001,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.flavor.Flavor)" href="core-stack.html#zenml.stack.flavor.Flavor">Flavor</a></code></p>
 
 
+
         <p>Base class for deployer flavors.</p>
 
 
@@ -9158,6 +9161,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployer)" href="#zenml.deployers.base_deployer.BaseDeployer">BaseDeployer</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all containerized deployers.</p>
 
 
@@ -9167,7 +9171,7 @@ if a name is provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -9429,7 +9433,7 @@ if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/containerized_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 80</span>
 <span class="normal"> 81</span>
@@ -9592,7 +9596,7 @@ if the deployer image is not in the build.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/containerized_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
 <span class="normal">43</span>
@@ -9664,6 +9668,7 @@ if the deployer image is not in the build.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ContainerizedDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.containerized_deployer.ContainerizedDeployer)" href="#zenml.deployers.containerized_deployer.ContainerizedDeployer">ContainerizedDeployer</a></code></p>
 
 
+
         <p>Deployer responsible for deploying pipelines locally using Docker.</p>
 
 
@@ -9673,7 +9678,7 @@ if the deployer image is not in the build.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -10142,7 +10147,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">549</span>
 <span class="normal">550</span>
@@ -10331,7 +10336,7 @@ corresponding to the provided DeploymentResponse.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">435</span>
 <span class="normal">436</span>
@@ -10535,7 +10540,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
 <span class="normal">462</span>
@@ -10887,7 +10892,7 @@ fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">252</span>
 <span class="normal">253</span>
@@ -11281,6 +11286,7 @@ fails.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerConfig)" href="#zenml.deployers.base_deployer.BaseDeployerConfig">BaseDeployerConfig</a></code>, <code><a class="autorefs autorefs-internal" title="DockerDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.docker.docker_deployer.DockerDeployerSettings)" href="#zenml.deployers.docker.docker_deployer.DockerDeployerSettings">DockerDeployerSettings</a></code></p>
 
 
+
         <p>Docker deployer config.</p>
 
 
@@ -11290,7 +11296,7 @@ fails.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -11498,6 +11504,7 @@ fails.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerFlavor (zenml.deployers.base_deployer.BaseDeployerFlavor)" href="#zenml.deployers.base_deployer.BaseDeployerFlavor">BaseDeployerFlavor</a></code></p>
+
 
 
         <p>Flavor for the Docker deployer.</p>
@@ -11816,6 +11823,7 @@ fails.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerSettings)" href="#zenml.deployers.base_deployer.BaseDeployerSettings">BaseDeployerSettings</a></code></p>
 
 
+
         <p>Docker deployer settings.</p>
 
 
@@ -11886,7 +11894,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -12046,6 +12054,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployer)" href="#zenml.deployers.base_deployer.BaseDeployer">BaseDeployer</a></code></p>
 
 
+
         <p>Deployer that runs deployments as local daemon processes.</p>
 
 
@@ -12055,7 +12064,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -12411,7 +12420,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">494</span>
 <span class="normal">495</span>
@@ -12552,7 +12561,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">355</span>
 <span class="normal">356</span>
@@ -12828,7 +12837,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">424</span>
 <span class="normal">425</span>
@@ -13128,7 +13137,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">197</span>
 <span class="normal">198</span>
@@ -13472,6 +13481,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerConfig)" href="#zenml.deployers.base_deployer.BaseDeployerConfig">BaseDeployerConfig</a></code>, <code><a class="autorefs autorefs-internal" title="LocalDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.local.local_deployer.LocalDeployerSettings)" href="#zenml.deployers.local.local_deployer.LocalDeployerSettings">LocalDeployerSettings</a></code></p>
 
 
+
         <p>Local deployer config.</p>
 
 
@@ -13481,7 +13491,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -13689,6 +13699,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerFlavor (zenml.deployers.base_deployer.BaseDeployerFlavor)" href="#zenml.deployers.base_deployer.BaseDeployerFlavor">BaseDeployerFlavor</a></code></p>
+
 
 
         <p>Flavor for the Local daemon deployer.</p>
@@ -14007,6 +14018,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerSettings)" href="#zenml.deployers.base_deployer.BaseDeployerSettings">BaseDeployerSettings</a></code></p>
 
 
+
         <p>Local deployer settings.</p>
 
 
@@ -14086,7 +14098,7 @@ of running it as a daemon process.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -14281,6 +14293,7 @@ of running it as a daemon process.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponent(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.stack.StackComponent)" href="core-stack.html#zenml.stack.StackComponent">StackComponent</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all ZenML deployers.</p>
 <p>The deployer serves three major purposes:</p>
 <ol>
@@ -14309,7 +14322,7 @@ deployments and to manage their lifecycle.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -14624,7 +14637,7 @@ deployer's default timeout.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">801</span>
 <span class="normal">802</span>
@@ -14870,7 +14883,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">694</span>
 <span class="normal">695</span>
@@ -15263,7 +15276,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1003</span>
 <span class="normal">1004</span>
@@ -15474,7 +15487,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">954</span>
 <span class="normal">955</span>
@@ -15674,7 +15687,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 976</span>
 <span class="normal"> 977</span>
@@ -15944,7 +15957,7 @@ fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">898</span>
 <span class="normal">899</span>
@@ -16126,7 +16139,7 @@ active stack.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">114</span>
 <span class="normal">115</span>
@@ -16336,7 +16349,7 @@ Required if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">847</span>
 <span class="normal">848</span>
@@ -16659,7 +16672,7 @@ given ID is not found.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">405</span>
 <span class="normal">406</span>
@@ -17251,7 +17264,7 @@ if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/base_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">639</span>
 <span class="normal">640</span>
@@ -17389,6 +17402,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="StackComponentConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.stack.stack_component.StackComponentConfig)" href="core-stack.html#zenml.stack.stack_component.StackComponentConfig">StackComponentConfig</a></code></p>
 
 
+
         <p>Base config for all deployers.</p>
 
 
@@ -17398,7 +17412,7 @@ if a name is provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -17563,6 +17577,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="Flavor (zenml.stack.flavor.Flavor)" href="core-stack.html#zenml.stack.flavor.Flavor">Flavor</a></code></p>
 
 
+
         <p>Base class for deployer flavors.</p>
 
 
@@ -17722,6 +17737,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.config.base_settings.BaseSettings)" href="core-config.html#zenml.config.base_settings.BaseSettings">BaseSettings</a></code></p>
 
 
+
         <p>Base settings for all deployers.</p>
 
 
@@ -17731,7 +17747,7 @@ if a name is provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -17933,6 +17949,7 @@ if a name is provided.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployer)" href="#zenml.deployers.base_deployer.BaseDeployer">BaseDeployer</a></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for all containerized deployers.</p>
 
 
@@ -17942,7 +17959,7 @@ if a name is provided.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -18204,7 +18221,7 @@ if a name is provided.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/containerized_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 80</span>
 <span class="normal"> 81</span>
@@ -18367,7 +18384,7 @@ if the deployer image is not in the build.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/containerized_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">42</span>
 <span class="normal">43</span>
@@ -18516,6 +18533,7 @@ if the deployer image is not in the build.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="ContainerizedDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.containerized_deployer.ContainerizedDeployer)" href="#zenml.deployers.containerized_deployer.ContainerizedDeployer">ContainerizedDeployer</a></code></p>
 
 
+
         <p>Deployer responsible for deploying pipelines locally using Docker.</p>
 
 
@@ -18525,7 +18543,7 @@ if the deployer image is not in the build.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -18994,7 +19012,7 @@ deprovision fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">549</span>
 <span class="normal">550</span>
@@ -19183,7 +19201,7 @@ corresponding to the provided DeploymentResponse.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">435</span>
 <span class="normal">436</span>
@@ -19387,7 +19405,7 @@ occurs.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
 <span class="normal">462</span>
@@ -19739,7 +19757,7 @@ fails.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">252</span>
 <span class="normal">253</span>
@@ -20133,6 +20151,7 @@ fails.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerConfig)" href="#zenml.deployers.base_deployer.BaseDeployerConfig">BaseDeployerConfig</a></code>, <code><a class="autorefs autorefs-internal" title="DockerDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.docker.docker_deployer.DockerDeployerSettings)" href="#zenml.deployers.docker.docker_deployer.DockerDeployerSettings">DockerDeployerSettings</a></code></p>
 
 
+
         <p>Docker deployer config.</p>
 
 
@@ -20142,7 +20161,7 @@ fails.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -20350,6 +20369,7 @@ fails.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerFlavor (zenml.deployers.base_deployer.BaseDeployerFlavor)" href="#zenml.deployers.base_deployer.BaseDeployerFlavor">BaseDeployerFlavor</a></code></p>
+
 
 
         <p>Flavor for the Docker deployer.</p>
@@ -20668,6 +20688,7 @@ fails.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerSettings)" href="#zenml.deployers.base_deployer.BaseDeployerSettings">BaseDeployerSettings</a></code></p>
 
 
+
         <p>Docker deployer settings.</p>
 
 
@@ -20738,7 +20759,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -20899,6 +20920,7 @@ of what can be passed.)</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Metadata for a Docker deployment.</p>
 
 
@@ -20994,7 +21016,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 84</span>
 <span class="normal"> 85</span>
@@ -21143,7 +21165,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/docker/docker_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">120</span>
 <span class="normal">121</span>
@@ -21249,6 +21271,7 @@ of what can be passed.)</p>
               Bases: <code><span title="Exception">Exception</span></code></p>
 
 
+
         <p>Base class for deployer errors.</p>
 
 
@@ -21278,6 +21301,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="EntityExistsError(message: Optional[str] = None, url: Optional[str] = None) (zenml.exceptions.EntityExistsError)" href="core-exceptions.html#zenml.exceptions.EntityExistsError">EntityExistsError</a></code>, <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when a deployment already exists.</p>
 
 
@@ -21287,7 +21311,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/exceptions.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">22</span>
 <span class="normal">23</span>
@@ -21364,6 +21388,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when a deployment is not managed by this deployer.</p>
 
 
@@ -21392,6 +21417,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
+
 
 
         <p>Error raised when a deployment deprovisioning fails.</p>
@@ -21424,6 +21450,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when an HTTP request to a deployment fails.</p>
 
 
@@ -21452,6 +21479,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
+
 
 
         <p>Error raised when the parameters for a deployment are invalid.</p>
@@ -21484,6 +21512,7 @@ of what can be passed.)</p>
               Bases: <code><span title="KeyError">KeyError</span></code>, <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when pipeline logs are not found.</p>
 
 
@@ -21512,6 +21541,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="KeyError">KeyError</span></code>, <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
+
 
 
         <p>Error raised when a deployment is not found.</p>
@@ -21544,6 +21574,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when a deployment provisioning fails.</p>
 
 
@@ -21574,6 +21605,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
 
 
+
         <p>Error raised when a deployment snapshot does not match the current deployer.</p>
 
 
@@ -21602,6 +21634,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="DeployerError (zenml.deployers.exceptions.DeployerError)" href="#zenml.deployers.exceptions.DeployerError">DeployerError</a></code></p>
+
 
 
         <p>Error raised when a deployment provisioning or deprovisioning times out.</p>
@@ -21710,6 +21743,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployer(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployer)" href="#zenml.deployers.base_deployer.BaseDeployer">BaseDeployer</a></code></p>
 
 
+
         <p>Deployer that runs deployments as local daemon processes.</p>
 
 
@@ -21719,7 +21753,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -22075,7 +22109,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">494</span>
 <span class="normal">495</span>
@@ -22216,7 +22250,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">355</span>
 <span class="normal">356</span>
@@ -22492,7 +22526,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">424</span>
 <span class="normal">425</span>
@@ -22792,7 +22826,7 @@ of what can be passed.)</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">197</span>
 <span class="normal">198</span>
@@ -23136,6 +23170,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerConfig(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerConfig)" href="#zenml.deployers.base_deployer.BaseDeployerConfig">BaseDeployerConfig</a></code>, <code><a class="autorefs autorefs-internal" title="LocalDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.local.local_deployer.LocalDeployerSettings)" href="#zenml.deployers.local.local_deployer.LocalDeployerSettings">LocalDeployerSettings</a></code></p>
 
 
+
         <p>Local deployer config.</p>
 
 
@@ -23145,7 +23180,7 @@ of what can be passed.)</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
 <span class="normal"> 62</span>
@@ -23353,6 +23388,7 @@ of what can be passed.)</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerFlavor (zenml.deployers.base_deployer.BaseDeployerFlavor)" href="#zenml.deployers.base_deployer.BaseDeployerFlavor">BaseDeployerFlavor</a></code></p>
+
 
 
         <p>Flavor for the Local daemon deployer.</p>
@@ -23671,6 +23707,7 @@ of what can be passed.)</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeployerSettings(warn_about_plain_text_secrets: bool = False, **kwargs: Any) (zenml.deployers.base_deployer.BaseDeployerSettings)" href="#zenml.deployers.base_deployer.BaseDeployerSettings">BaseDeployerSettings</a></code></p>
 
 
+
         <p>Local deployer settings.</p>
 
 
@@ -23750,7 +23787,7 @@ of running it as a daemon process.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/config/secret_reference_mixin.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">30</span>
 <span class="normal">31</span>
@@ -23911,6 +23948,7 @@ of running it as a daemon process.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Metadata for a local daemon deployment.</p>
 
 
@@ -24064,7 +24102,7 @@ of running it as a daemon process.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/local/local_deployer.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
 <span class="normal"> 91</span>
@@ -24170,6 +24208,7 @@ of running it as a daemon process.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Abstract base for app extensions.</p>
 <p>Extensions provide advanced framework-specific capabilities like:
 - Custom authentication/authorization
@@ -24273,7 +24312,7 @@ and run the web application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/extensions.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
 <span class="normal">37</span>
@@ -24329,6 +24368,7 @@ and run the web application.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Base class for deployment app runners.</p>
@@ -24433,7 +24473,7 @@ in the deployment configuration.</li>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
@@ -24722,7 +24762,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">882</span>
 <span class="normal">883</span>
@@ -24833,7 +24873,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">347</span>
 <span class="normal">348</span>
@@ -24990,7 +25030,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">604</span>
 <span class="normal">605</span>
@@ -25172,7 +25212,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">205</span>
 <span class="normal">206</span>
@@ -25358,7 +25398,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
 <span class="normal">171</span>
@@ -25493,7 +25533,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">248</span>
 <span class="normal">249</span>
@@ -25647,7 +25687,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">645</span>
 <span class="normal">646</span>
@@ -25719,7 +25759,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">656</span>
 <span class="normal">657</span>
@@ -25760,7 +25800,7 @@ in the deployment configuration.</li>
         <p>Run the deployment app.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">875</span>
 <span class="normal">876</span>
@@ -25816,7 +25856,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">748</span>
 <span class="normal">749</span>
@@ -25898,7 +25938,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">695</span>
 <span class="normal">696</span>
@@ -25967,6 +26007,7 @@ in the deployment configuration.</li>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Converts framework-agnostic endpoint specs to framework endpoints.</p>
@@ -26080,7 +26121,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">134</span>
 <span class="normal">135</span>
@@ -26242,7 +26283,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 39</span>
 <span class="normal"> 40</span>
@@ -26461,6 +26502,7 @@ non-callable.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Converts framework-agnostic middleware specs to framework middleware.</p>
 
 
@@ -26582,7 +26624,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">225</span>
 <span class="normal">226</span>
@@ -26734,7 +26776,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">154</span>
 <span class="normal">155</span>
@@ -26940,6 +26982,7 @@ non-callable.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Converts framework-agnostic endpoint specs to framework endpoints.</p>
 
 
@@ -27051,7 +27094,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">134</span>
 <span class="normal">135</span>
@@ -27213,7 +27256,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 39</span>
 <span class="normal"> 40</span>
@@ -27432,6 +27475,7 @@ non-callable.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Converts framework-agnostic middleware specs to framework middleware.</p>
 
 
@@ -27553,7 +27597,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">225</span>
 <span class="normal">226</span>
@@ -27705,7 +27749,7 @@ non-callable.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">154</span>
 <span class="normal">155</span>
@@ -27917,6 +27961,7 @@ non-callable.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Base class for deployment app runners.</p>
 <p>This class is responsible for building and running the ASGI compatible web
 application (e.g. FastAPI, Django, Flask, Falcon, Quart, BlackSheep, etc.) and the
@@ -28019,7 +28064,7 @@ in the deployment configuration.</li>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
@@ -28308,7 +28353,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">882</span>
 <span class="normal">883</span>
@@ -28419,7 +28464,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">347</span>
 <span class="normal">348</span>
@@ -28576,7 +28621,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">604</span>
 <span class="normal">605</span>
@@ -28758,7 +28803,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">205</span>
 <span class="normal">206</span>
@@ -28944,7 +28989,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
 <span class="normal">171</span>
@@ -29079,7 +29124,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">248</span>
 <span class="normal">249</span>
@@ -29233,7 +29278,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">645</span>
 <span class="normal">646</span>
@@ -29305,7 +29350,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">656</span>
 <span class="normal">657</span>
@@ -29346,7 +29391,7 @@ in the deployment configuration.</li>
         <p>Run the deployment app.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">875</span>
 <span class="normal">876</span>
@@ -29402,7 +29447,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">748</span>
 <span class="normal">749</span>
@@ -29484,7 +29529,7 @@ in the deployment configuration.</li>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">695</span>
 <span class="normal">696</span>
@@ -29553,6 +29598,7 @@ in the deployment configuration.</li>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Base class for deployment app runner flavors.</p>
@@ -29814,7 +29860,7 @@ implementation class and all its dependencies.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">937</span>
 <span class="normal">938</span>
@@ -30063,7 +30109,7 @@ implementation class and all its dependencies.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1001</span>
 <span class="normal">1002</span>
@@ -30200,6 +30246,7 @@ implementation class and all its dependencies.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BaseEntrypointConfiguration(arguments: List[str]) (zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration)" href="core-entrypoints.html#zenml.entrypoints.base_entrypoint_configuration.BaseEntrypointConfiguration">BaseEntrypointConfiguration</a></code></p>
 
 
+
         <p>Entrypoint configuration for ZenML Pipeline Deployment.</p>
 <p>This entrypoint configuration handles the startup and configuration
 of the ZenML pipeline deployment FastAPI application.</p>
@@ -30211,7 +30258,7 @@ of the ZenML pipeline deployment FastAPI application.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">60</span>
 <span class="normal">61</span>
@@ -30337,7 +30384,7 @@ of the ZenML pipeline deployment FastAPI application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">52</span>
 <span class="normal">53</span>
@@ -30449,7 +30496,7 @@ of the ZenML pipeline deployment FastAPI application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">41</span>
 <span class="normal">42</span>
@@ -30513,7 +30560,7 @@ of the ZenML pipeline deployment FastAPI application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">85</span>
 <span class="normal">86</span>
@@ -30581,7 +30628,7 @@ and the specified pipeline deployment.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/entrypoint_configuration.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
 <span class="normal"> 98</span>
@@ -30700,6 +30747,7 @@ and the specified pipeline deployment.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
+
         <p>Abstract base for app extensions.</p>
 <p>Extensions provide advanced framework-specific capabilities like:
 - Custom authentication/authorization
@@ -30803,7 +30851,7 @@ and run the web application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/extensions.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">36</span>
 <span class="normal">37</span>
@@ -30902,6 +30950,7 @@ and run the web application.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeploymentAppRunnerFlavor (zenml.deployers.server.app.BaseDeploymentAppRunnerFlavor)" href="#zenml.deployers.server.app.BaseDeploymentAppRunnerFlavor">BaseDeploymentAppRunnerFlavor</a></code></p>
+
 
 
         <p>FastAPI deployment app runner flavor.</p>
@@ -31121,6 +31170,7 @@ and run the web application.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="EndpointAdapter (zenml.deployers.server.adapters.EndpointAdapter)" href="#zenml.deployers.server.adapters.EndpointAdapter">EndpointAdapter</a></code></p>
 
 
+
         <p>FastAPI implementation of endpoint adapter.</p>
 
 
@@ -31228,7 +31278,7 @@ and run the web application.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/fastapi/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 80</span>
 <span class="normal"> 81</span>
@@ -31367,6 +31417,7 @@ and run the web application.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="MiddlewareAdapter (zenml.deployers.server.adapters.MiddlewareAdapter)" href="#zenml.deployers.server.adapters.MiddlewareAdapter">MiddlewareAdapter</a></code></p>
 
 
+
         <p>FastAPI implementation of middleware adapter.</p>
 <p>We support two types of native middleware:</p>
 <ul>
@@ -31500,7 +31551,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/fastapi/adapters.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">170</span>
 <span class="normal">171</span>
@@ -31674,6 +31725,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><a class="autorefs autorefs-internal" title="BaseDeploymentAppRunner(deployment: Union[str, UUID, DeploymentResponse], **kwargs: Any) (zenml.deployers.server.app.BaseDeploymentAppRunner)" href="#zenml.deployers.server.app.BaseDeploymentAppRunner">BaseDeploymentAppRunner</a></code></p>
 
 
+
         <p>FastAPI deployment app runner.</p>
 
 
@@ -31683,7 +31735,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/deployers/server/app.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">126</span>
 <span class="normal">127</span>
@@ -31899,7 +31951,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/fastapi/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">248</span>
 <span class="normal">249</span>
@@ -32110,7 +32162,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/fastapi/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">235</span>
 <span class="normal">236</span>
@@ -32213,7 +32265,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/fastapi/app.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">309</span>
 <span class="normal">310</span>
@@ -32333,6 +32385,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>App info model.</p>
 
 
@@ -32378,6 +32431,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Base pipeline invoke request model.</p>
@@ -32427,6 +32481,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Base pipeline invoke response model.</p>
 
 
@@ -32472,6 +32527,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Deployment info model.</p>
@@ -32521,6 +32577,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Pipeline invoke response metadata model.</p>
 
 
@@ -32566,6 +32623,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Execution metrics model.</p>
@@ -32615,6 +32673,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Pipeline info model.</p>
 
 
@@ -32662,6 +32721,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Service info model.</p>
 
 
@@ -32707,6 +32767,7 @@ async def my_middleware(request: Request, call_next: Callable[[Request], Awaitab
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Snapshot info model.</p>
@@ -32857,7 +32918,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">158</span>
 <span class="normal">159</span>
@@ -32927,7 +32988,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
 <span class="normal">126</span>
@@ -32985,7 +33046,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -33067,7 +33128,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
 <span class="normal">147</span>
@@ -33155,7 +33216,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">110</span>
 <span class="normal">111</span>
@@ -33225,7 +33286,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">134</span>
 <span class="normal">135</span>
@@ -33345,7 +33406,7 @@ to access deployment parameters without tight coupling.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">71</span>
 <span class="normal">72</span>
@@ -33410,7 +33471,7 @@ to access deployment parameters without tight coupling.</p>
         <p>Clear the deployment state for the current request context.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/runtime.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">95</span>
 <span class="normal">96</span>
@@ -33479,6 +33540,7 @@ to access deployment parameters without tight coupling.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
 
 
         <p>Abstract base class for pipeline deployment services.</p>
@@ -33566,7 +33628,7 @@ wiring code.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">133</span>
 <span class="normal">134</span>
@@ -33853,7 +33915,7 @@ parameters model can be constructed for the pipeline.</p>
         <p>Cleanup service resources and run cleanup hooks.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">159</span>
 <span class="normal">160</span>
@@ -33938,7 +34000,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">163</span>
 <span class="normal">164</span>
@@ -34010,7 +34072,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">184</span>
 <span class="normal">185</span>
@@ -34068,7 +34130,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">286</span>
 <span class="normal">287</span>
@@ -34172,7 +34234,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">176</span>
 <span class="normal">177</span>
@@ -34234,7 +34296,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">192</span>
 <span class="normal">193</span>
@@ -34296,7 +34358,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">151</span>
 <span class="normal">152</span>
@@ -34340,6 +34402,7 @@ parameters model can be constructed for the pipeline.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="BasePipelineDeploymentService(app_runner: BaseDeploymentAppRunner, **kwargs: Any) (zenml.deployers.server.service.BasePipelineDeploymentService)" href="#zenml.deployers.server.service.BasePipelineDeploymentService">BasePipelineDeploymentService</a></code></p>
 
 
+
         <p>Default pipeline deployment service implementation.</p>
 
 
@@ -34349,7 +34412,7 @@ parameters model can be constructed for the pipeline.</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">133</span>
 <span class="normal">134</span>
@@ -34414,7 +34477,7 @@ parameters model can be constructed for the pipeline.</p>
         <p>Execute cleanup hook if present.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">356</span>
 <span class="normal">357</span>
@@ -34495,7 +34558,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">360</span>
 <span class="normal">361</span>
@@ -34649,7 +34712,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">458</span>
 <span class="normal">459</span>
@@ -34713,7 +34776,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">416</span>
 <span class="normal">417</span>
@@ -34816,7 +34879,7 @@ parameters model can be constructed for the pipeline.</p>
         <p>Check service health.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">469</span>
 <span class="normal">470</span>
@@ -34866,7 +34929,7 @@ parameters model can be constructed for the pipeline.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">319</span>
 <span class="normal">320</span>
@@ -34968,6 +35031,7 @@ parameters model can be constructed for the pipeline.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="LocalOrchestrator(name: str, id: UUID, config: StackComponentConfig, flavor: str, type: StackComponentType, user: Optional[UUID], created: datetime, updated: datetime, environment: Optional[Dict[str, str]] = None, secrets: Optional[List[UUID]] = None, labels: Optional[Dict[str, Any]] = None, connector_requirements: Optional[ServiceConnectorRequirements] = None, connector: Optional[UUID] = None, connector_resource_id: Optional[str] = None, *args: Any, **kwargs: Any) (zenml.orchestrators.local.local_orchestrator.LocalOrchestrator)" href="core-orchestrators.html#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator">LocalOrchestrator</a></code></p>
 
 
+
         <p>Local orchestrator tweaked for deployments.</p>
 <p>This is a slight modification of the LocalOrchestrator:
 - uses request-scoped orchestrator run ids by storing them in contextvars
@@ -34981,7 +35045,7 @@ the deployment service</p>
 
 
 
-                  <details class="quote">
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/zenml/stack/stack_component.py</code></summary>
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">328</span>
 <span class="normal">329</span>
@@ -35167,7 +35231,7 @@ the deployment service</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">89</span>
 <span class="normal">90</span>
@@ -35245,7 +35309,7 @@ the deployment service</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">112</span>
 <span class="normal">113</span>
@@ -35321,7 +35385,7 @@ the deployment service</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/server/service.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">101</span>
 <span class="normal">102</span>
@@ -35514,7 +35578,7 @@ snapshot request.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">297</span>
 <span class="normal">298</span>
@@ -35842,7 +35906,7 @@ snapshot request.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">46</span>
 <span class="normal">47</span>
@@ -35965,7 +36029,7 @@ snapshot request.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
 <span class="normal"> 99</span>
@@ -36133,7 +36197,7 @@ snapshot request.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">72</span>
 <span class="normal">73</span>
@@ -36358,7 +36422,7 @@ or has no URL.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">135</span>
 <span class="normal">136</span>
@@ -36777,7 +36841,7 @@ software requirements.</p>
     </table>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>src/zenml/deployers/utils.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">414</span>
 <span class="normal">415</span>
