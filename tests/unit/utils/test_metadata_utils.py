@@ -54,6 +54,7 @@ def test_bulk_log_metadata_explicit(monkeypatch):
     mock_client.get_pipeline_run.return_value = MagicMock(
         id=uuid4(), steps={"step": MagicMock(id=uuid4())}
     )
+    mock_client.list_run_steps.return_value = [MagicMock(id=uuid4())]
     mock_client.get_artifact_version.return_value = MagicMock(id=uuid4())
     mock_client.get_model_version.return_value = MagicMock(id=uuid4())
 

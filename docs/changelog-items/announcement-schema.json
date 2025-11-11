@@ -1,0 +1,66 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "array",
+	"items": {
+		"type": "object",
+		"properties": {
+			"id": {
+				"type": "number"
+			},
+			"slug": {
+				"type": "string"
+			},
+			"title": {
+				"type": "string"
+			},
+			"description": {
+				"type": "string"
+			},
+			"feature_image_url": {
+				"type": "string"
+			},
+			"learn_more_url": {
+				"type": "string",
+				"format": "uri"
+			},
+			"docs_url": {
+				"type": "string",
+				"format": "uri"
+			},
+			"published": {
+				"type": "boolean",
+				"default": true
+			},
+			"published_at": {
+				"type": "string",
+				"format": "date-time"
+			},
+			"highlight_until": {
+				"type": "string",
+				"format": "date-time"
+			},
+			"should_highlight": {
+				"type": "boolean",
+				"default": false
+			},
+			"video_url": {
+				"type": "string"
+			},
+			"audience": {
+				"type": "string",
+				"enum": ["pro", "oss", "all"],
+				"default": "all"
+			},
+			"labels": {
+				"type": "array",
+				"items": {
+					"type": "string",
+					"enum": ["bugfix", "deprecation", "improvement", "feature"]
+				},
+				"default": []
+			}
+		},
+		"required": ["id", "slug", "title", "description", "published_at"],
+		"additionalProperties": false
+	}
+}

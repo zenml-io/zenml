@@ -465,11 +465,12 @@ class StepLauncher:
         # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
         # and handle it as a custom exception.
 
-        logger.info(f"Initiating heartbeat for step: {self._invocation_id}")
-
         heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
 
         if self._heartbeat_enabled:
+            logger.info(
+                "Initiating heartbeat for step: %s", self._invocation_id
+            )
             heartbeat_worker.start()
 
         try:
