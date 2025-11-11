@@ -9,8 +9,7 @@
     "published_at": "2025-10-23T00:00:00Z",
     "should_highlight": false,
     "audience": "all",
-    "labels": ["feature"],
-    "hamster": "hamster"
+    "labels": ["feature"]
   },
   {
     "id": 2,
