@@ -19,13 +19,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import UUID
 
-from apscheduler.executors.pool import ThreadPoolExecutor
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.date import DateTrigger
-from apscheduler.triggers.interval import IntervalTrigger
-
 from zenml.client import Client
 from zenml.logger import get_logger
 
@@ -33,6 +26,19 @@ if TYPE_CHECKING:
     from zenml.models import ScheduleResponse
 
 logger = get_logger(__name__)
+
+# APScheduler is an optional dependency
+try:
+    from apscheduler.executors.pool import ThreadPoolExecutor
+    from apscheduler.jobstores.memory import MemoryJobStore
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.date import DateTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    APSCHEDULER_AVAILABLE = True
+except ImportError:
+    APSCHEDULER_AVAILABLE = False
 
 
 class LocalDockerOrchestratorScheduler:
@@ -74,7 +80,17 @@ class LocalDockerOrchestratorScheduler:
 
         Args:
             orchestrator_id: The UUID of the orchestrator.
+
+        Raises:
+            ImportError: If APScheduler is not installed.
         """
+        if not APSCHEDULER_AVAILABLE:
+            raise ImportError(
+                "APScheduler is required for scheduling support in the local "
+                "Docker orchestrator. Please install it with: "
+                "`pip install 'zenml[local_scheduler]'` or `pip install apscheduler>=3.10.0`"
+            )
+
         if self._scheduler and self._scheduler.running:
             logger.debug("Scheduler is already running.")
             return

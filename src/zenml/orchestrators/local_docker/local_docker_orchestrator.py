@@ -143,6 +143,13 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
             Optional submission result.
         """
         if snapshot.schedule:
+            if not self.config.is_schedulable:
+                raise ImportError(
+                    "Scheduling is not available for the local Docker orchestrator "
+                    "because APScheduler is not installed. Please install it with: "
+                    "`pip install 'zenml[local_scheduler]'` or `pip install apscheduler>=3.10.0`"
+                )
+
             # Handle scheduled pipeline runs
             logger.info(
                 f"Scheduling pipeline '{snapshot.pipeline_configuration.name}' "
@@ -403,10 +410,18 @@ class LocalDockerOrchestratorConfig(
     def is_schedulable(self) -> bool:
         """Whether the orchestrator is schedulable or not.
 
+        Scheduling requires APScheduler to be installed. Install with:
+        `pip install 'zenml[local_scheduler]'` or `pip install apscheduler>=3.10.0`
+
         Returns:
             Whether the orchestrator is schedulable or not.
         """
-        return True
+        try:
+            import apscheduler  # noqa
+
+            return True
+        except ImportError:
+            return False
 
 
 class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):

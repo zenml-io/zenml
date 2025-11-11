@@ -28,7 +28,6 @@ classifiers = [
 requires-python = ">=3.10,<3.14"
 
 dependencies = [
-    "apscheduler>=3.10.0,<4.0.0",
     "asgiref~=3.10.0",
     "click>=8.0.1,<=8.2.1",
     "cloudpickle>=2.0.0",
@@ -64,8 +63,11 @@ local = [
     "sqlalchemy_utils",
     "sqlmodel==0.0.18",
 ]
+local_scheduler = [
+    "apscheduler>=3.10.0,<4.0.0",
+]
 server = [
-    "zenml[local]",  # Includes all the DB dependencies
+    "zenml[local,local_scheduler]",  # Includes all the DB and local scheduling dependencies
     "fastapi>=0.100,<=0.115.8",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
