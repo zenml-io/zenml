@@ -697,11 +697,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                         check_interval=settings.deployment_ready_check_interval,
                     )
                     logger.info(
-                        f"✓ LoadBalancer Service '{service_item.name}' has external IP"
+                        f"LoadBalancer Service '{service_item.name}' has external IP"
                     )
                 except RuntimeError:
                     logger.warning(
-                        f"⚠ LoadBalancer Service '{service_item.name}' did not get "
+                        f"LoadBalancer Service '{service_item.name}' did not get "
                         f"external IP within {lb_timeout}s.\n"
                         f"  This can happen if:\n"
                         f"  • You're on a local cluster (minikube, kind, k3d, docker-desktop) that doesn't support LoadBalancers\n"
