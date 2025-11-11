@@ -202,6 +202,10 @@ zenml:
     corsAllowOrigins:
       - "*"
 
+    # Whether to allow private network access to the ZenML server. If not
+    # specified, private network access is not allowed.
+    corsAllowPrivateNetwork: false
+
     # The maximum number of failed authentication attempts allowed for an OAuth
     # 2.0 device before the device is locked.
     #

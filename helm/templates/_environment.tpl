@@ -180,6 +180,9 @@ deployment_type: {{ .ZenML.deploymentType | default "kubernetes" }}
 {{- if .ZenML.auth.corsAllowOrigins }}
 cors_allow_origins: {{ join "," .ZenML.auth.corsAllowOrigins | quote }}
 {{- end }}
+{{- if .ZenML.auth.corsAllowPrivateNetwork }}
+cors_allow_private_network: {{ .ZenML.auth.corsAllowPrivateNetwork | quote }}
+{{- end }}
 {{- if .ZenML.auth.externalLoginURL }}
 external_login_url: {{ .ZenML.auth.externalLoginURL | quote }}
 {{- end }}
