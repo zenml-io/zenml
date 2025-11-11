@@ -393,6 +393,31 @@ async def skip_health_middleware(request: Request, call_next: Any) -> Any:
     return await call_next(request)
 
 
+class PnaMiddleware(BaseHTTPMiddleware):
+    """Middleware to allow private network access."""
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        """Middleware to allow private network access.
+
+        Args:
+            request: The incoming request.
+            call_next: The next function to be called.
+
+        Returns:
+            The response to the request.
+        """
+        response = await call_next(request)
+        if (
+            request.method == "OPTIONS"
+            and request.headers.get("access-control-request-private-network")
+            == "true"
+        ):
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
+
 def add_middlewares(app: FastAPI) -> None:
     """Add middlewares to the FastAPI app.
 
@@ -409,6 +434,8 @@ def add_middlewares(app: FastAPI) -> None:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    if server_config().cors_allow_private_network:
+        app.add_middleware(PnaMiddleware)
 
     app.add_middleware(
         RequestBodyLimit,

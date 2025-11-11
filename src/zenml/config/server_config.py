@@ -116,6 +116,9 @@ class ServerConfiguration(BaseModel):
             domain where the ZenML server is running.
         cors_allow_origins: The origins allowed to make cross-origin requests
             to the ZenML server. If not specified, all origins are allowed.
+        cors_allow_private_network: Whether to allow private network access to
+            the ZenML server. If not specified, private network access is not
+            allowed.
         max_failed_device_auth_attempts: The maximum number of failed OAuth 2.0
             device authentication attempts before the device is locked.
         device_auth_timeout: The timeout in seconds after which a pending OAuth
@@ -267,6 +270,7 @@ class ServerConfiguration(BaseModel):
     auth_cookie_name: Optional[str] = None
     auth_cookie_domain: Optional[str] = None
     cors_allow_origins: Optional[List[str]] = None
+    cors_allow_private_network: bool = False
     max_failed_device_auth_attempts: int = (
         DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
     )
