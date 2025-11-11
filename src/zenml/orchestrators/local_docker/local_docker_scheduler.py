@@ -251,7 +251,7 @@ class LocalDockerOrchestratorScheduler:
             client = Client()
 
             # Get the schedule
-            schedule = client.get_schedule(schedule_id=schedule_id)
+            schedule = client.get_schedule(name_id_or_prefix=schedule_id)
 
             if not schedule.active:
                 logger.info(
@@ -279,27 +279,19 @@ class LocalDockerOrchestratorScheduler:
                 f"Executing scheduled pipeline '{pipeline.name}' for schedule '{schedule.name}'"
             )
 
-            # Run the pipeline with the schedule
-            # Note: This will trigger the pipeline to run through the normal
-            # execution flow, but with the schedule context
-            from zenml import get_pipeline
-
+            # Trigger the pipeline run using the latest runnable snapshot
             try:
-                # Get the pipeline instance and run it
-                # The pipeline should be registered with the same name
-                pipeline_instance = get_pipeline(pipeline.name)
-                if pipeline_instance:
-                    pipeline_instance.run(schedule=schedule_id)
-                    logger.info(
-                        f"Successfully triggered pipeline '{pipeline.name}' for schedule '{schedule.name}'"
-                    )
-                else:
-                    logger.error(
-                        f"Could not find pipeline instance for '{pipeline.name}'"
-                    )
+                run = client.trigger_pipeline(
+                    pipeline_name_or_id=schedule.pipeline_id,
+                    synchronous=False,  # Run asynchronously
+                )
+                logger.info(
+                    f"Successfully triggered pipeline run '{run.id}' for schedule '{schedule.name}'"
+                )
             except Exception as e:
                 logger.error(
-                    f"Failed to execute pipeline '{pipeline.name}' for schedule '{schedule.name}': {e}"
+                    f"Failed to execute pipeline '{pipeline.name}' for schedule '{schedule.name}': {e}",
+                    exc_info=True,
                 )
 
         except Exception as e:
