@@ -1313,15 +1313,26 @@ def build_service_url(
 
     # LoadBalancer
     if service_type == "LoadBalancer":
-        if (
-            service.status
+        host = None
+        if hasattr(service, "to_dict"):
+            service_dict = service.to_dict()
+            lb_status = service_dict.get("status", {}).get("loadBalancer", {})
+            ingress_list = lb_status.get("ingress", [])
+            if ingress_list:
+                lb_ingress = ingress_list[0]
+                host = lb_ingress.get("ip") or lb_ingress.get("hostname")
+        elif (
+            hasattr(service, "status")
+            and service.status
+            and hasattr(service.status, "load_balancer")
             and service.status.load_balancer
+            and hasattr(service.status.load_balancer, "ingress")
             and service.status.load_balancer.ingress
         ):
             lb_ingress = service.status.load_balancer.ingress[0]
             host = lb_ingress.ip or lb_ingress.hostname
-            if host:
-                return f"http://{host}:{service_port}"
+        if host:
+            return f"http://{host}:{service_port}"
         return None
 
     # NodePort

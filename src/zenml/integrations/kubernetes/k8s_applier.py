@@ -253,6 +253,16 @@ class KubernetesApplier:
             body.grace_period_seconds = grace_period_seconds
 
         for item in reversed(inventory):
+            # Never delete namespaces - they may be shared by multiple deployments
+            # and deleting them would cascade-delete all resources in the namespace
+            if item.kind == "Namespace":
+                logger.debug(
+                    f"Skipping namespace '{item.name}' deletion "
+                    f"(namespaces are never deleted to prevent accidental "
+                    f"cascade deletion of shared resources)"
+                )
+                continue
+
             try:
                 res = self.dynamic.resources.get(
                     api_version=item.api_version, kind=item.kind

@@ -697,13 +697,22 @@ class KubernetesDeployer(ContainerizedDeployer):
                         check_interval=settings.deployment_ready_check_interval,
                     )
                     logger.info(
-                        f"LoadBalancer Service '{service_item.name}' has external IP"
+                        f"✓ LoadBalancer Service '{service_item.name}' has external IP"
                     )
                 except RuntimeError:
                     logger.warning(
-                        f"LoadBalancer Service '{service_item.name}' did not get "
-                        f"external IP within {lb_timeout}s. Service may still be "
-                        f"accessible via cluster IP."
+                        f"⚠ LoadBalancer Service '{service_item.name}' did not get "
+                        f"external IP within {lb_timeout}s.\n"
+                        f"  This can happen if:\n"
+                        f"  • You're on a local cluster (minikube, kind, k3d, docker-desktop) that doesn't support LoadBalancers\n"
+                        f"  • Your cloud provider is slow to provision the load balancer\n"
+                        f"  • There are cloud provider issues (quotas, permissions, etc.)\n"
+                        f"\n"
+                        f"  Next steps:\n"
+                        f"  1. Check if IP appears: kubectl get svc {service_item.name} -n {service_item.namespace}\n"
+                        f"  2. Refresh deployment status later to check if IP was assigned: zenml deployment refresh <deployment-name>\n"
+                        f"  3. For local clusters, consider using service_type='NodePort' instead\n"
+                        f"  4. For immediate access: kubectl port-forward -n {service_item.namespace} service/{service_item.name} 8080:{settings.service_port}"
                     )
                 except Exception as e:
                     logger.warning(
@@ -1060,6 +1069,8 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             if available == desired and desired > 0:
                 status = DeploymentStatus.RUNNING
+            else:
+                status = DeploymentStatus.PENDING
 
             url = kube_utils.build_service_url(
                 core_api=self.k8s_core_api,
@@ -1082,6 +1093,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 metadata["resource_inventory"] = stored_metadata[
                     "resource_inventory"
                 ]
+
 
             return DeploymentOperationalState(
                 status=status,
