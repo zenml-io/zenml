@@ -1,5 +1,54 @@
 <!-- markdown-link-check-disable -->
 
+# 0.91.1
+
+## What's Changed
+* Add version 0.90.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4094
+* Classical ML example by @htahir1 in https://github.com/zenml-io/zenml/pull/4077
+* Add `Qwen-Agent` example to agent framework integrations by @strickvl in https://github.com/zenml-io/zenml/pull/4086
+* Add 0.91.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4096
+* Update agent framework integrations by @htahir1 in https://github.com/zenml-io/zenml/pull/4090
+* A big messaging change by @htahir1 in https://github.com/zenml-io/zenml/pull/4100
+* Update pipeline execution instructions in hello-world.md by @htahir1 in https://github.com/zenml-io/zenml/pull/4103
+* Various deployment fixes and improvements by @stefannica in https://github.com/zenml-io/zenml/pull/4097
+* Add trigger info to the pipeline run metadata by @stefannica in https://github.com/zenml-io/zenml/pull/4106
+* Add core dependencies for weather agent example by @htahir1 in https://github.com/zenml-io/zenml/pull/4109
+* Add more Hashicorp Vault secrets store auth methods by @stefannica in https://github.com/zenml-io/zenml/pull/4110
+* Fix release cloudbuild by @schustmi in https://github.com/zenml-io/zenml/pull/4098
+* Update agent documentations to avoid unnecessary code comments by @strickvl in https://github.com/zenml-io/zenml/pull/4115
+* Computer vision example with FiftyOne and Ultralytics by @htahir1 in https://github.com/zenml-io/zenml/pull/4112
+* Update deployment server main page by @safoinme in https://github.com/zenml-io/zenml/pull/4068
+* UX improvements for programmatic API access by @stefannica in https://github.com/zenml-io/zenml/pull/4116
+* Feature:4005 Docker settings usage warnings by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4011
+* Fix bandit B108 false positive warnings in agent examples by @strickvl in https://github.com/zenml-io/zenml/pull/4107
+* Changed reo.dev by @htahir1 in https://github.com/zenml-io/zenml/pull/4131
+* Store all pipeline parameters in pipeline config by @schustmi in https://github.com/zenml-io/zenml/pull/4129
+* Huggingface deployer by @htahir1 in https://github.com/zenml-io/zenml/pull/4119
+* Add Reo to CSP script src headers by @schustmi in https://github.com/zenml-io/zenml/pull/4134
+* Adjust release process after quickstart changes by @schustmi in https://github.com/zenml-io/zenml/pull/4104
+* bug:4120 Fix skip migration logic by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4139
+* Update the OpenAI Agents SDK example by @strickvl in https://github.com/zenml-io/zenml/pull/4105
+* Print ZenML UI Deployment Link to Terminal  by @safoinme in https://github.com/zenml-io/zenml/pull/4121
+* Misc small fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4138
+* Updated README with new demo by @htahir1 in https://github.com/zenml-io/zenml/pull/4145
+* README again by @htahir1 in https://github.com/zenml-io/zenml/pull/4148
+* Add container-level security context support for Kubernetes orchestrator by @htahir1 in https://github.com/zenml-io/zenml/pull/4142
+* Dynamic pipelines v0 by @schustmi in https://github.com/zenml-io/zenml/pull/4074
+* [Bug:2258] Allow case sensitive updates by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4140
+* Feature:3963 Step HeartBeat components by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4073
+* Add `skip_owner_references` setting and make `incluster` setting dynamic for the Kubernetes orchestrator; Add `runtime_environment` to DockerSettings by @stefannica in https://github.com/zenml-io/zenml/pull/4146
+* Add stack to deployment response resource by @safoinme in https://github.com/zenml-io/zenml/pull/4101
+* Document ZenML Pro Personal Access Tokens and deprecate API tokens by @stefannica in https://github.com/zenml-io/zenml/pull/4133
+* Improve step fetching by @schustmi in https://github.com/zenml-io/zenml/pull/4155
+* Add `changelog.json` by @Cahllagerfeld in https://github.com/zenml-io/zenml/pull/4150
+* Support Newer Version for Databricks Orchestrator by @safoinme in https://github.com/zenml-io/zenml/pull/4144
+* Improve deployment CLI output for easier command copying by @strickvl in https://github.com/zenml-io/zenml/pull/4130
+* Fix duplicate key icon by @strickvl in https://github.com/zenml-io/zenml/pull/4161
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.91.0...0.91.1
+
+
 # 0.91.0
 
 This release brings major deployment enhancements (Local Deployer, fully customizable deployment server, and deployment visualizations), powerful caching controls (file/object-based cache invalidation, cache expiration, and custom cache functions), Python 3.13 support, an MLX array materializer, and a new option to customize image tags during builds. It also deprecates legacy model deployers and drops Python 3.9 support.
