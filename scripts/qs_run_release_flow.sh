@@ -73,12 +73,13 @@ _cleanup() {
 
 trap _cleanup EXIT
 
+docker build -f docker/zenml-dev.Dockerfile -t zenmldocker/zenml:${NEW_VERSION}-py3.12 .
+
 echo "=== Switching to examples/quickstart directory ==="
 pushd examples/quickstart >/dev/null
 DIR_PUSHED=1
 
 # Build parent image
-docker build -f docker/zenml-dev.Dockerfile -t zenmldocker/zenml:${NEW_VERSION}-py3.12 .
 
 # Phase 1: Run the pipeline locally
 echo "=== Phase 1: Run pipeline locally ==="

@@ -169,11 +169,10 @@ def log_metadata(
 
     # Log metadata to a step by name and run ID
     elif step_name is not None and run_id_name_or_prefix is not None:
-        step_model_id = (
-            client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
-            .steps[step_name]
-            .id
-        )
+        run = client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
+        step_model_id = client.list_run_steps(
+            pipeline_run_id=run.id, name=step_name
+        )[0].id
         resources = [
             RunMetadataResource(
                 id=step_model_id, type=MetadataResourceTypes.STEP_RUN
@@ -445,11 +444,12 @@ def bulk_log_metadata(
 
     for step in step_runs or []:
         if not step.id and (step.name and step.run):
-            step.id = (
-                client.get_pipeline_run(name_id_or_prefix=step.run.value)
-                .steps[step.name]
-                .id
+            run_model = client.get_pipeline_run(
+                name_id_or_prefix=step.run.value
             )
+            step.id = client.list_run_steps(
+                pipeline_run_id=run_model.id, name=step.name
+            )[0].id
 
         resources.add(
             RunMetadataResource(
