@@ -51,9 +51,7 @@ class EvidentlyColumnMapping(BaseModel):
     datetime_features: list[str] | None = None
     target_names: list[str] | None = None
     task: str | None = None
-    pos_label: str | int | None = Field(
-        default=1, union_mode="left_to_right"
-    )
+    pos_label: str | int | None = Field(default=1, union_mode="left_to_right")
     text_features: list[str] | None = None
 
     model_config = ConfigDict(

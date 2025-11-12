@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model representing loaded visualizations."""
 
-
 from pydantic import BaseModel, Field
 
 from zenml.enums import VisualizationType

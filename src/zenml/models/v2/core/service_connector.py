@@ -950,9 +950,9 @@ class ServiceConnectorFilter(UserScopedFilter):
 
 def _validate_and_configure_resources(
     connector: (
-        ServiceConnectorRequest |
-        ServiceConnectorUpdate |
-        ServiceConnectorResponse
+        ServiceConnectorRequest
+        | ServiceConnectorUpdate
+        | ServiceConnectorResponse
     ),
     connector_type: "ServiceConnectorTypeModel",
     resource_types: str | list[str] | None = None,
@@ -981,14 +981,14 @@ def _validate_and_configure_resources(
     # connector model itself, while for the response model, they are in the
     # metadata field.
     update_connector_metadata: (
-        ServiceConnectorRequest |
-        ServiceConnectorUpdate |
-        ServiceConnectorResponseMetadata
+        ServiceConnectorRequest
+        | ServiceConnectorUpdate
+        | ServiceConnectorResponseMetadata
     )
     update_connector_body: (
-        ServiceConnectorRequest |
-        ServiceConnectorUpdate |
-        ServiceConnectorResponseBody
+        ServiceConnectorRequest
+        | ServiceConnectorUpdate
+        | ServiceConnectorResponseBody
     )
     if isinstance(connector, ServiceConnectorRequest):
         update_connector_metadata = connector

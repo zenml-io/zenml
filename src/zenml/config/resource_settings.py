@@ -135,8 +135,8 @@ class ResourceSettings(BaseSettings):
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: NonNegativeInt | None = None
     max_replicas: NonNegativeInt | None = None
-    autoscaling_metric: None | (
-        Literal["cpu", "memory", "concurrency", "rps"]
+    autoscaling_metric: (
+        None | (Literal["cpu", "memory", "concurrency", "rps"])
     ) = None
     autoscaling_target: PositiveFloat | None = None
     max_concurrency: PositiveInt | None = None
@@ -153,9 +153,7 @@ class ResourceSettings(BaseSettings):
         # value other than `None`.
         return len(self.model_dump(exclude_unset=True, exclude_none=True)) == 0
 
-    def get_memory(
-        self, unit: str | ByteUnit = ByteUnit.GB
-    ) -> float | None:
+    def get_memory(self, unit: str | ByteUnit = ByteUnit.GB) -> float | None:
         """Gets the memory configuration in a specific unit.
 
         Args:

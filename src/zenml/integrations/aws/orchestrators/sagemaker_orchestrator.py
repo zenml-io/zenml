@@ -806,9 +806,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> tuple[
-        ExecutionStatus | None, dict[str, ExecutionStatus] | None
-    ]:
+    ) -> tuple[ExecutionStatus | None, dict[str, ExecutionStatus] | None]:
         """Refreshes the status of a specific pipeline run.
 
         Args:

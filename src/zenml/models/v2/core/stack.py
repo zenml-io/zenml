@@ -67,13 +67,11 @@ class StackRequest(UserScopedRequest):
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    components: dict[StackComponentType, list[UUID | ComponentInfo]] = (
-        Field(
-            title="The mapping for the components of the full stack registration.",
-            description="The mapping from component types to either UUIDs of "
-            "existing components or request information for brand new "
-            "components.",
-        )
+    components: dict[StackComponentType, list[UUID | ComponentInfo]] = Field(
+        title="The mapping for the components of the full stack registration.",
+        description="The mapping from component types to either UUIDs of "
+        "existing components or request information for brand new "
+        "components.",
     )
     environment: dict[str, str] | None = Field(
         default=None,
@@ -194,9 +192,7 @@ class StackUpdate(BaseUpdate):
     @field_validator("components")
     def _validate_components(
         cls,
-        value: None | (
-            dict[StackComponentType, list[UUID | ComponentInfo]]
-        ),
+        value: None | (dict[StackComponentType, list[UUID | ComponentInfo]]),
     ) -> dict[StackComponentType, list[UUID | ComponentInfo]] | None:
         """Validate the components of the stack.
 

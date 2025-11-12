@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Validation functions for hooks."""
 
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
     Union,
 )
-from collections.abc import Callable
 
 from pydantic import ConfigDict, ValidationError
 

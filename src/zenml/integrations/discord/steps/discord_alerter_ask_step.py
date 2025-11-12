@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step that allows you to send messages to Discord and wait for a response."""
 
-
 from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.integrations.discord.alerters.discord_alerter import (

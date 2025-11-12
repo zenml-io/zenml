@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML server information retrieval."""
 
-
 from zenml.logger import get_logger
 from zenml.models import ServerModel
 from zenml.zen_stores.rest_zen_store import (

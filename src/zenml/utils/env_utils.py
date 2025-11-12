@@ -16,14 +16,14 @@
 import contextlib
 import os
 import re
+from collections.abc import Iterator
+from re import Match
 from typing import (
     TYPE_CHECKING,
     Any,
     TypeVar,
     cast,
 )
-from collections.abc import Iterator
-from re import Match
 
 from zenml.client import Client
 from zenml.logger import get_logger

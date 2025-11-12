@@ -34,9 +34,7 @@ class SparkModelMaterializer(BaseMaterializer):
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(
-        self, model_type: type[Any]
-    ) -> Transformer | Estimator | Model:  # type: ignore[type-arg]
+    def load(self, model_type: type[Any]) -> Transformer | Estimator | Model:  # type: ignore[type-arg]
         """Reads and returns a Spark ML model.
 
         Args:

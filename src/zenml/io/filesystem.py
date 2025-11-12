@@ -28,12 +28,12 @@
 """Defines the filesystem abstraction of ZenML."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterable
 from typing import (
     Any,
     ClassVar,
     Union,
 )
-from collections.abc import Callable, Iterable
 
 PathType = Union[bytes, str]
 

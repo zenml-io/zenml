@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base class for all the Event Hub."""
 
-
 from pydantic import ValidationError
 
 from zenml import EventSourceResponse

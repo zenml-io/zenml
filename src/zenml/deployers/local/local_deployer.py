@@ -19,11 +19,11 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 import psutil

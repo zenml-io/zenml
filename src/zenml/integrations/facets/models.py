@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models used by the Facets integration."""
 
-
 import pandas as pd
 from pydantic import BaseModel, ConfigDict
 

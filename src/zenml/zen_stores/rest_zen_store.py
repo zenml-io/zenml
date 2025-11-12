@@ -16,6 +16,7 @@
 import os
 import re
 import time
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
@@ -25,7 +26,6 @@ from typing import (
     TypeVar,
     Union,
 )
-from collections.abc import Sequence
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
@@ -321,9 +321,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    verify_ssl: bool | str = Field(
-        default=True, union_mode="left_to_right"
-    )
+    verify_ssl: bool | str = Field(default=True, union_mode="left_to_right")
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
     connection_pool_size: int = 10
 
@@ -358,9 +356,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     @field_validator("verify_ssl")
     @classmethod
-    def validate_verify_ssl(
-        cls, verify_ssl: bool | str
-    ) -> bool | str:
+    def validate_verify_ssl(cls, verify_ssl: bool | str) -> bool | str:
         """Validates that the verify_ssl either points to a file or is a bool.
 
         Args:
@@ -3641,9 +3637,7 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponse,
         )
 
-    def deactivate_user(
-        self, user_name_or_id: str | UUID
-    ) -> UserResponse:
+    def deactivate_user(self, user_name_or_id: str | UUID) -> UserResponse:
         """Deactivates a user.
 
         Args:

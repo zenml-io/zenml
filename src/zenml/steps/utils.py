@@ -19,16 +19,16 @@ import contextlib
 import inspect
 import textwrap
 from collections import Counter
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     TypeVar,
 )
-from collections.abc import Callable
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client

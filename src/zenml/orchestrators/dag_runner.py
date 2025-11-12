@@ -16,9 +16,9 @@
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from enum import Enum
 from typing import Any
-from collections.abc import Callable
 
 from zenml.logger import get_logger
 

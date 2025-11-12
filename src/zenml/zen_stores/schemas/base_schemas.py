@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Base classes for SQLModel schemas."""
 
+from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeVar
-from collections.abc import Sequence
 from uuid import UUID, uuid4
 
 from sqlalchemy.sql.base import ExecutableOption

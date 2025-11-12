@@ -16,12 +16,12 @@
 import copy
 import os
 import string
+from collections.abc import Mapping
 from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
 )
-from collections.abc import Mapping
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel

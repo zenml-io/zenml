@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML server deployer singleton implementation."""
 
-from typing import ClassVar
 from collections.abc import Generator
+from typing import ClassVar
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import ServerProviderType, StoreType

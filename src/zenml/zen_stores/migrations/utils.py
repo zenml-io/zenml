@@ -17,11 +17,11 @@ import json
 import os
 import re
 import shutil
+from collections.abc import Callable, Generator
 from typing import (
     Any,
     cast,
 )
-from collections.abc import Callable, Generator
 
 import pymysql
 from pydantic import BaseModel, ConfigDict

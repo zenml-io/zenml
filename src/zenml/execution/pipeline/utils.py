@@ -14,6 +14,7 @@
 """Pipeline execution utilities."""
 
 import contextvars
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
@@ -21,7 +22,6 @@ from typing import (
     Optional,
     Union,
 )
-from collections.abc import Generator
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate

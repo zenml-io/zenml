@@ -17,8 +17,8 @@ import base64
 import functools
 import random
 import string
-from typing import Any, TypeVar, cast
 from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 from pydantic import BaseModel
 

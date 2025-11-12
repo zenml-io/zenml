@@ -14,7 +14,7 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import wandb
 

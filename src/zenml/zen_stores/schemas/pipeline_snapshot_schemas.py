@@ -14,8 +14,8 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint

@@ -24,8 +24,8 @@ import os
 import signal
 import sys
 import types
-from typing import Any, TypeVar, cast
 from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 import psutil
 

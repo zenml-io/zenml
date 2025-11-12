@@ -51,9 +51,7 @@ class DagConfiguration(BaseModel):
 
     local_stores_path: str | None = None
 
-    schedule: datetime.timedelta | str = Field(
-        union_mode="left_to_right"
-    )
+    schedule: datetime.timedelta | str = Field(union_mode="left_to_right")
     start_date: datetime.datetime
     end_date: datetime.datetime | None = None
     catchup: bool = False

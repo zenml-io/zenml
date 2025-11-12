@@ -14,13 +14,13 @@
 """Base orchestrator class."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
     cast,
 )
-from collections.abc import Callable, Iterator
 from uuid import UUID
 
 from pydantic import model_validator
@@ -641,9 +641,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> tuple[
-        ExecutionStatus | None, dict[str, ExecutionStatus] | None
-    ]:
+    ) -> tuple[ExecutionStatus | None, dict[str, ExecutionStatus] | None]:
         """Refreshes the status of a specific pipeline run.
 
         Args:

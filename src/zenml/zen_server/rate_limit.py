@@ -16,6 +16,7 @@
 import inspect
 import time
 from collections import defaultdict
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
 from typing import (
@@ -23,7 +24,6 @@ from typing import (
     TypeVar,
     cast,
 )
-from collections.abc import Callable, Generator
 
 from starlette.requests import Request
 

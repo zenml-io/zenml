@@ -14,8 +14,8 @@
 """Registry for all plugins."""
 
 import math
-from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict
 

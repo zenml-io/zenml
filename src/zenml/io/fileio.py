@@ -14,8 +14,8 @@
 """Functionality for reading, writing and managing files."""
 
 import os
-from typing import Any
 from collections.abc import Callable, Iterable
+from typing import Any
 
 # this import required for CI to get local filesystem
 from zenml.io import local_filesystem  # noqa

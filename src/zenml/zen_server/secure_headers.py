@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Secure headers for the ZenML Server."""
 
-
 import secure
 
 from zenml.zen_server.utils import server_config

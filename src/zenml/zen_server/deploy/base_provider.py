@@ -14,8 +14,8 @@
 """Base ZenML server provider class."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
 from collections.abc import Generator
+from typing import ClassVar
 
 from pydantic import ValidationError
 

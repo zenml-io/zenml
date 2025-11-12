@@ -16,9 +16,9 @@
 import asyncio
 import base64
 import json
+from collections.abc import Callable
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Optional
-from collections.abc import Callable
 from uuid import UUID, uuid4
 
 from fastapi import Request, Response
@@ -196,8 +196,8 @@ class RequestManager:
         self.transaction_ttl = transaction_ttl
         self.request_timeout = request_timeout
 
-        self.request_contexts: ContextVar[RequestContext | None] = (
-            ContextVar("request_contexts", default=None)
+        self.request_contexts: ContextVar[RequestContext | None] = ContextVar(
+            "request_contexts", default=None
         )
 
     @property

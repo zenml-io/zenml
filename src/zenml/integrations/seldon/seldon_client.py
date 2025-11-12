@@ -17,8 +17,8 @@ import base64
 import json
 import re
 import time
-from typing import Any, Literal
 from collections.abc import Generator
+from typing import Any, Literal
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config

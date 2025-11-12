@@ -16,12 +16,12 @@
 import hashlib
 import json
 import os
+from collections.abc import Iterable
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
 )
-from collections.abc import Iterable
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (

@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Pagination utilities."""
 
-from typing import Any, TypeVar
 from collections.abc import Callable
+from typing import Any, TypeVar
 
 from zenml.models import BaseIdentifiedResponse, Page
 

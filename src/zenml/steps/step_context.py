@@ -14,12 +14,12 @@
 """Step context class."""
 
 import contextvars
+from collections.abc import Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
 )
-from collections.abc import Mapping, Sequence
 
 from typing_extensions import Self
 
@@ -348,9 +348,7 @@ class StepContext(context_utils.BaseContext):
 
         return materializer_class(artifact_uri)
 
-    def get_output_artifact_uri(
-        self, output_name: str | None = None
-    ) -> str:
+    def get_output_artifact_uri(self, output_name: str | None = None) -> str:
         """Returns the artifact URI for a given step output.
 
         Args:

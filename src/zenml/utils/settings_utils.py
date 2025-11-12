@@ -14,8 +14,8 @@
 """Utility functions for ZenML settings."""
 
 import re
-from typing import TYPE_CHECKING
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from zenml.config.constants import (
     DEPLOYMENT_SETTINGS_KEY,

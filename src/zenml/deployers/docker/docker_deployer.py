@@ -16,11 +16,11 @@
 import copy
 import os
 import sys
+from collections.abc import Generator
 from typing import (
     Any,
     cast,
 )
-from collections.abc import Generator
 
 import docker.errors as docker_errors
 from docker.client import DockerClient

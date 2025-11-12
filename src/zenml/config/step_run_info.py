@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Step run info."""
 
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 from uuid import UUID
 
 from zenml.config.frozen_base_model import FrozenBaseModel

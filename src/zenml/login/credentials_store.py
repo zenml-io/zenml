@@ -230,9 +230,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         if last_modified_time != self.last_modified_time:
             self._load_credentials()
 
-    def get_password(
-        self, server_url: str
-    ) -> tuple[str | None, str | None]:
+    def get_password(self, server_url: str) -> tuple[str | None, str | None]:
         """Retrieve the username and password from the credentials store for a specific server URL.
 
         Args:

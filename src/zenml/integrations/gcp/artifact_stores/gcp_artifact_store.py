@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Artifact Store."""
 
+from collections.abc import Callable, Iterable
 from typing import (
     Any,
     Union,
     cast,
 )
-from collections.abc import Callable, Iterable
 
 import gcsfs
 from google.cloud import storage

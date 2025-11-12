@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """RBAC utility functions."""
 
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     TypeVar,
 )
-from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import BaseModel

@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 """Cache policy."""
 
-from typing import Any, Union
+from typing import Annotated, Any, Union
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
-from typing import Annotated
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.logger import get_logger

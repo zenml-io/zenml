@@ -15,6 +15,7 @@
 
 import contextvars
 import inspect
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
@@ -24,7 +25,6 @@ from typing import (
     Union,
     overload,
 )
-from collections.abc import Sequence
 from uuid import UUID
 
 from zenml import ExternalArtifact

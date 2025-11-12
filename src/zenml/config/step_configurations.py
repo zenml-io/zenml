@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
+from collections.abc import Mapping
 from typing import (
     TYPE_CHECKING,
     Any,
 )
-from collections.abc import Mapping
 from uuid import UUID
 
 from pydantic import (

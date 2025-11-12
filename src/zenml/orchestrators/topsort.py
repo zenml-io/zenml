@@ -31,8 +31,8 @@ Implementation heavily inspired by TFX:
 https://github.com/tensorflow/tfx/blob/master/tfx/utils/topsort.py
 """
 
-from typing import TypeVar
 from collections.abc import Callable, Sequence
+from typing import TypeVar
 
 from zenml.logger import get_logger
 

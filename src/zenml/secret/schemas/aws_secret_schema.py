@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """AWS Authentication Secret Schema definition."""
 
-
 from zenml.secret.base_secret import BaseSecretSchema
 
 

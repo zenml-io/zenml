@@ -30,11 +30,11 @@
 import glob
 import os
 import shutil
+from collections.abc import Callable, Iterable
 from typing import (
     Any,
     ClassVar,
 )
-from collections.abc import Callable, Iterable
 
 from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry

@@ -16,9 +16,9 @@
 import queue
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
-from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -93,9 +93,7 @@ class DagRunner:
         node_startup_function: Callable[[Node], NodeStatus],
         node_monitoring_function: Callable[[Node], NodeStatus],
         node_stop_function: Callable[[Node], None] | None = None,
-        interrupt_function: None | (
-            Callable[[], InterruptMode | None]
-        ) = None,
+        interrupt_function: None | (Callable[[], InterruptMode | None]) = None,
         monitoring_interval: float = 1.0,
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,

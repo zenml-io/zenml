@@ -133,9 +133,7 @@ class SkypilotBaseOrchestratorSettings(BaseSettings):
         default=None, union_mode="left_to_right"
     )
     disk_size: int | None = None
-    disk_tier: Literal["high", "medium", "low", "ultra", "best"] | None = (
-        None
-    )
+    disk_tier: Literal["high", "medium", "low", "ultra", "best"] | None = None
 
     # Run settings
     cluster_name: str | None = None

@@ -15,12 +15,12 @@
 
 import math
 import re
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     Any,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions

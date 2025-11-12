@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Zen Server deployment definitions."""
 
-
 from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import ServerProviderType, ServiceState

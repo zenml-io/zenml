@@ -14,9 +14,9 @@
 """Utility functions and classes for ZenML analytics."""
 
 import json
+from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, cast
-from collections.abc import Callable
 from uuid import UUID
 
 from zenml.analytics import identify, track

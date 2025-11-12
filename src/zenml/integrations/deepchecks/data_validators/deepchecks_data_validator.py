@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks data validator."""
 
+from collections.abc import Sequence
 from typing import (
     Any,
     ClassVar,
 )
-from collections.abc import Sequence
 
 import pandas as pd
 from deepchecks.core.checks import BaseCheck
@@ -93,9 +93,7 @@ class DeepchecksDataValidator(BaseDataValidator):
         cls,
         check_enum: type[DeepchecksValidationCheck],
         reference_dataset: pd.DataFrame | DataLoader[Any],
-        comparison_dataset: None | (
-            pd.DataFrame | DataLoader[Any]
-        ) = None,
+        comparison_dataset: None | (pd.DataFrame | DataLoader[Any]) = None,
         models: list[ClassifierMixin | Module] | None = None,
         check_list: Sequence[str] | None = None,
         dataset_kwargs: dict[str, Any] = {},

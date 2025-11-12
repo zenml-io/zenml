@@ -16,12 +16,12 @@
 import datetime
 import json
 import re
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     Any,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 import boto3

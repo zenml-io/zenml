@@ -14,9 +14,9 @@
 """Base class for event hub implementations."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
-from collections.abc import Callable
 
 from zenml import EventSourceResponse
 from zenml.config.global_config import GlobalConfiguration

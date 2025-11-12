@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Util functions for materializers."""
 
-from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from zenml.materializers.base_materializer import BaseMaterializer

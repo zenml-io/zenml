@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation for Seldon secret schemas."""
 
-
 from zenml.secret.base_secret import BaseSecretSchema
 
 

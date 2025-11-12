@@ -556,9 +556,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
                         pod_settings = step_settings.pod_settings
 
-                        node_selector_constraint: tuple[str, str] | None = (
-                            None
-                        )
+                        node_selector_constraint: tuple[str, str] | None = None
                         if pod_settings and (
                             GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
                             in pod_settings.node_selectors.keys()
@@ -882,9 +880,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> tuple[
-        ExecutionStatus | None, dict[str, ExecutionStatus] | None
-    ]:
+    ) -> tuple[ExecutionStatus | None, dict[str, ExecutionStatus] | None]:
         """Refreshes the status of a specific pipeline run.
 
         Args:

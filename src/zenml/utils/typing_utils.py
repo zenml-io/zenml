@@ -18,11 +18,9 @@ https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/typing.py
 """
 
 import typing
-from typing import Any, Union, cast
+from typing import Annotated, Any, Literal, Union, cast
 from typing import get_args as _typing_get_args
 from typing import get_origin as _typing_get_origin
-
-from typing import Annotated, Literal
 
 # Annotated[...] is implemented by returning an instance of one of these
 # classes, depending on python/typing_extensions version.
@@ -57,12 +55,12 @@ def is_none_type(type_: Any) -> bool:
 def is_union(type_: type[Any] | None) -> bool:
     """Checks if the provided type is a union type.
 
-        Args:
-            type_: type to check.
+    Args:
+        type_: type to check.
 
-        Returns:
-            boolean indicating whether the type is union type.
-        """
+    Returns:
+        boolean indicating whether the type is union type.
+    """
     import types
 
     return type_ is Union or type_ is types.UnionType  # type: ignore[comparison-overlap]

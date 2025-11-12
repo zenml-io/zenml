@@ -17,11 +17,11 @@ import json
 import os
 import re
 import tempfile
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     cast,
 )
-from collections.abc import Generator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer

@@ -61,9 +61,7 @@ class ArtifactConfig(BaseModel):
     """
 
     name: str | None = None
-    version: str | int | None = Field(
-        default=None, union_mode="smart"
-    )
+    version: str | int | None = Field(default=None, union_mode="smart")
     tags: list[str] | None = None
     run_metadata: dict[str, MetadataType] | None = None
 

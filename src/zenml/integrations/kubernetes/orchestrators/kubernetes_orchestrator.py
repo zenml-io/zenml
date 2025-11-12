@@ -33,13 +33,13 @@
 import os
 import random
 import socket
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Optional,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -1054,9 +1054,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> tuple[
-        ExecutionStatus | None, dict[str, ExecutionStatus] | None
-    ]:
+    ) -> tuple[ExecutionStatus | None, dict[str, ExecutionStatus] | None]:
         """Refreshes the status of a specific pipeline run.
 
         Args:

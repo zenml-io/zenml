@@ -45,8 +45,8 @@ class StoreConfiguration(BaseModel):
     type: StoreType
     url: str
     secrets_store: SerializeAsAny[SecretsStoreConfiguration] | None = None
-    backup_secrets_store: None | (
-        SerializeAsAny[SecretsStoreConfiguration]
+    backup_secrets_store: (
+        None | (SerializeAsAny[SecretsStoreConfiguration])
     ) = None
 
     @classmethod

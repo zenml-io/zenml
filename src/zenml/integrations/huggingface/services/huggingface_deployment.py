@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Deployment service."""
 
-from typing import Any
 from collections.abc import Generator
+from typing import Any
 
 from huggingface_hub import (
     InferenceClient,

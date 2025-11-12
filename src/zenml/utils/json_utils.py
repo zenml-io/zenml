@@ -19,6 +19,7 @@ https://github.com/pydantic/pydantic/blob/v1.10.15/pydantic/json.py
 
 import datetime
 from collections import deque
+from collections.abc import Callable
 from decimal import Decimal
 from enum import Enum
 from ipaddress import (
@@ -33,7 +34,6 @@ from pathlib import Path
 from re import Pattern
 from types import GeneratorType
 from typing import Any
-from collections.abc import Callable
 from uuid import UUID
 
 from pydantic import NameEmail, SecretBytes, SecretStr

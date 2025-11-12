@@ -14,8 +14,8 @@
 """SQL Model Implementations for Flavors."""
 
 import json
-from typing import Any, Optional
 from collections.abc import Sequence
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint

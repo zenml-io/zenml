@@ -497,9 +497,7 @@ class ZenMLProClient(metaclass=SingletonMetaClass):
 
         return response_model.model_validate(response_body)
 
-    def _delete_resource(
-        self, resource_id: str | UUID, route: str
-    ) -> None:
+    def _delete_resource(self, resource_id: str | UUID, route: str) -> None:
         """Delete a resource.
 
         Args:

@@ -16,6 +16,7 @@
 import copy
 import hashlib
 import inspect
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import (
@@ -25,7 +26,6 @@ from typing import (
     TypeVar,
     Union,
 )
-from collections.abc import Callable, Iterator, Mapping, Sequence
 from uuid import UUID
 
 import yaml
@@ -736,9 +736,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def build(
         self,
         settings: Mapping[str, "SettingsOrDict"] | None = None,
-        step_configurations: None | (
-            Mapping[str, "StepConfigurationUpdateOrDict"]
-        ) = None,
+        step_configurations: None
+        | (Mapping[str, "StepConfigurationUpdateOrDict"]) = None,
         config_path: str | None = None,
     ) -> Optional["PipelineBuildResponse"]:
         """Builds Docker images for the pipeline.
@@ -825,9 +824,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         schedule: Schedule | None = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Mapping[str, "SettingsOrDict"] | None = None,
-        step_configurations: None | (
-            Mapping[str, "StepConfigurationUpdateOrDict"]
-        ) = None,
+        step_configurations: None
+        | (Mapping[str, "StepConfigurationUpdateOrDict"]) = None,
         extra: dict[str, Any] | None = None,
         config_path: str | None = None,
         prevent_build_reuse: bool = False,
@@ -1510,9 +1508,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         run_name: str | None = None,
         schedule: Schedule | None = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
-        step_configurations: None | (
-            Mapping[str, "StepConfigurationUpdateOrDict"]
-        ) = None,
+        step_configurations: None
+        | (Mapping[str, "StepConfigurationUpdateOrDict"]) = None,
         steps: Mapping[str, "StepConfigurationUpdateOrDict"] | None = None,
         config_path: str | None = None,
         unlisted: bool = False,

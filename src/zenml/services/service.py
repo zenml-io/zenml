@@ -16,6 +16,7 @@
 import json
 import time
 from abc import abstractmethod
+from collections.abc import Callable, Generator
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -23,7 +24,6 @@ from typing import (
     ClassVar,
     TypeVar,
 )
-from collections.abc import Callable, Generator
 from uuid import UUID
 
 from pydantic import ConfigDict

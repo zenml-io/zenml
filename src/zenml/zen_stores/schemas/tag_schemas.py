@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, Optional
 from collections.abc import Sequence
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column, UniqueConstraint

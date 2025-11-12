@@ -17,6 +17,7 @@ import functools
 import json
 import os
 from abc import ABCMeta
+from collections.abc import Callable, Generator, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -26,7 +27,6 @@ from typing import (
     TypeVar,
     cast,
 )
-from collections.abc import Callable, Generator, Mapping, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
@@ -1318,9 +1318,8 @@ class Client(metaclass=ClientMetaClass):
         stack_spec_file: str | None = None,
         labels: dict[str, Any] | None = None,
         description: str | None = None,
-        component_updates: None | (
-            dict[StackComponentType, list[UUID | str]]
-        ) = None,
+        component_updates: None
+        | (dict[StackComponentType, list[UUID | str]]) = None,
         add_secrets: Sequence[UUID | str] | None = None,
         remove_secrets: Sequence[UUID | str] | None = None,
         environment: dict[str, Any] | None = None,
@@ -1538,9 +1537,7 @@ class Client(metaclass=ClientMetaClass):
 
         return self.get_stack(stack_id)
 
-    def activate_stack(
-        self, stack_name_id_or_prefix: str | UUID
-    ) -> None:
+    def activate_stack(self, stack_name_id_or_prefix: str | UUID) -> None:
         """Sets the stack as active.
 
         Args:
@@ -6183,10 +6180,7 @@ class Client(metaclass=ClientMetaClass):
         list_resources: bool = True,
         register: bool = True,
     ) -> tuple[
-        None | (
-                ServiceConnectorResponse |
-                ServiceConnectorRequest
-        ),
+        None | (ServiceConnectorResponse | ServiceConnectorRequest),
         ServiceConnectorResourcesModel | None,
     ]:
         """Create, validate and/or register a service connector.
@@ -6498,10 +6492,7 @@ class Client(metaclass=ClientMetaClass):
         list_resources: bool = True,
         update: bool = True,
     ) -> tuple[
-        None | (
-                ServiceConnectorResponse |
-                ServiceConnectorUpdate
-        ),
+        None | (ServiceConnectorResponse | ServiceConnectorUpdate),
         ServiceConnectorResourcesModel | None,
     ]:
         """Validate and/or register an updated service connector.
@@ -7257,9 +7248,8 @@ class Client(metaclass=ClientMetaClass):
     def get_model_version(
         self,
         model_name_or_id: str | UUID | None = None,
-        model_version_name_or_number_or_id: None | (
-            str | int | ModelStages | UUID
-        ) = None,
+        model_version_name_or_number_or_id: None
+        | (str | int | ModelStages | UUID) = None,
         project: str | UUID | None = None,
         hydrate: bool = True,
     ) -> ModelVersionResponse:

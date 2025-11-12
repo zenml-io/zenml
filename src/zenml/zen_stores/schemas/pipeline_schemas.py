@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint

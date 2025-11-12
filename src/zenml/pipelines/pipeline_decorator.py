@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML pipeline decorator definition."""
 
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -21,7 +22,6 @@ from typing import (
     Union,
     overload,
 )
-from collections.abc import Callable
 from uuid import UUID
 
 from zenml.enums import ExecutionMode

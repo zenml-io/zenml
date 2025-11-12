@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Deployment settings."""
 
+from collections.abc import Callable
 from enum import Enum, IntFlag, auto
 from typing import (
     Any,
     ClassVar,
 )
-from collections.abc import Callable
 
 from pydantic import (
     BaseModel,

@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks data drift validation step."""
 
-from typing import Any, cast
 from collections.abc import Sequence
+from typing import Any, cast
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult

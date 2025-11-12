@@ -15,10 +15,10 @@
 
 import inspect
 import os
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, TypeVar, Union
-from collections.abc import Callable, Iterator
 
 import click
 

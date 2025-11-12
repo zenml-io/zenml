@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of user tables."""
 
+from collections.abc import Sequence
 from datetime import datetime
 from secrets import token_hex
 from typing import Any
-from collections.abc import Sequence
 from uuid import UUID
 
 from passlib.context import CryptContext

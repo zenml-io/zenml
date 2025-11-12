@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from typing import Any, ClassVar, cast
 from collections.abc import Sequence
+from typing import Any, ClassVar, cast
 
 from zenml.client import Client
 from zenml.enums import StackComponentType

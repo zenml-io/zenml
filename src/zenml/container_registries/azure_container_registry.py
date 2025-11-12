@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of an Azure Container Registry class."""
 
-
 from zenml.constants import DOCKER_REGISTRY_RESOURCE_TYPE
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,

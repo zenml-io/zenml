@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of the Azure Artifact Store integration."""
 
+from collections.abc import Callable, Iterable
 from typing import (
     Any,
     Union,
     cast,
 )
-from collections.abc import Callable, Iterable
 
 import adlfs
 

@@ -13,8 +13,8 @@
 # permissions and limitations under the License.
 """SQLModel implementation of curated visualization tables."""
 
-from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint

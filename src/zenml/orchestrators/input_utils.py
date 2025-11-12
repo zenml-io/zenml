@@ -55,9 +55,7 @@ def resolve_step_inputs(
 
     step_runs = step_runs or {}
 
-    steps_to_fetch = {
-        input_.step_name for input_ in step.spec.inputs.values()
-    }
+    steps_to_fetch = {input_.step_name for input_ in step.spec.inputs.values()}
     # Remove all the step runs that we've already fetched.
     steps_to_fetch.difference_update(step_runs.keys())
 

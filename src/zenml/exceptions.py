@@ -14,7 +14,6 @@
 """ZenML specific exception definitions."""
 
 
-
 class ZenMLBaseException(Exception):
     """Base exception for all ZenML Exceptions."""
 

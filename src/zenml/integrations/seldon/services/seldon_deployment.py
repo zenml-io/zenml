@@ -15,8 +15,8 @@
 
 import json
 import os
-from typing import Any, cast
 from collections.abc import Generator
+from typing import Any, cast
 from uuid import UUID
 
 import requests

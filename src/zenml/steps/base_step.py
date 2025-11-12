@@ -18,6 +18,7 @@ import hashlib
 import inspect
 from abc import abstractmethod
 from collections import defaultdict
+from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
@@ -27,7 +28,6 @@ from typing import (
     Union,
     cast,
 )
-from collections.abc import Generator, Mapping, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError

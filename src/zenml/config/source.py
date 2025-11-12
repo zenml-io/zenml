@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Source classes."""
 
+from collections.abc import Callable
 from enum import Enum
 from types import BuiltinFunctionType, FunctionType, ModuleType
-from typing import TYPE_CHECKING, Any, Union
-from collections.abc import Callable
+from typing import TYPE_CHECKING, Annotated, Any, Union
 from uuid import UUID
 
 from pydantic import (
@@ -27,7 +27,6 @@ from pydantic import (
     SerializeAsAny,
     field_validator,
 )
-from typing import Annotated
 
 from zenml.logger import get_logger
 

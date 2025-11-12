@@ -20,6 +20,7 @@ import queue
 import re
 import threading
 import time
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from datetime import datetime
@@ -27,7 +28,6 @@ from types import TracebackType
 from typing import (
     Any,
 )
-from collections.abc import Generator, Iterator
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field

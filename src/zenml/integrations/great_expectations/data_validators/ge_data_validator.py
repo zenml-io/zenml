@@ -14,8 +14,8 @@
 """Implementation of the Great Expectations data validator."""
 
 import os
-from typing import Any, ClassVar, cast
 from collections.abc import Sequence
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]

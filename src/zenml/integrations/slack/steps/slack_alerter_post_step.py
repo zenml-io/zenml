@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step that allows you to post messages to Slack."""
 
-
 from zenml import get_step_context, step
 from zenml.client import Client
 from zenml.integrations.slack.alerters.slack_alerter import (

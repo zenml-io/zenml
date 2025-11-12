@@ -16,8 +16,8 @@
 import base64
 import os
 import sys
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 from kubernetes import client as k8s_client
 

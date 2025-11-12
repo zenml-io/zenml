@@ -15,10 +15,10 @@
 
 import time
 from collections import OrderedDict
+from collections import OrderedDict as OrderedDictType
+from collections.abc import Callable
 from threading import Lock
 from typing import Any
-from collections.abc import Callable
-from collections import OrderedDict as OrderedDictType
 from uuid import UUID
 
 from zenml.logger import get_logger

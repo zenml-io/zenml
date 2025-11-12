@@ -361,9 +361,7 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
                 f"--password-stdin {container_registry_url}"
             )
             # Send the password to stdin
-            stdin.channel.send(
-                f"{container_registry_password}\n".encode()
-            )
+            stdin.channel.send(f"{container_registry_password}\n".encode())
             stdin.channel.shutdown_write()
 
             # Log stdout

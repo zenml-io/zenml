@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a containerized service endpoint."""
 
-
 from pydantic import Field
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS

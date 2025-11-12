@@ -14,8 +14,8 @@
 """Core CLI functionality."""
 
 import os
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 import click
 import rich
@@ -41,9 +41,8 @@ class TagGroup(click.Group):
         self,
         name: str | None = None,
         tag: CliCategories | None = None,
-        commands: None | (
-            dict[str, click.Command] | Sequence[click.Command]
-        ) = None,
+        commands: None
+        | (dict[str, click.Command] | Sequence[click.Command]) = None,
         **kwargs: dict[str, Any],
     ) -> None:
         """Initialize the Tag group.
@@ -100,9 +99,7 @@ class ZenMLCLI(click.Group):
             ctx: The click context.
             formatter: The click formatter.
         """
-        commands: list[
-            tuple[CliCategories, str, Command | TagGroup]
-        ] = []
+        commands: list[tuple[CliCategories, str, Command | TagGroup]] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it

@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Page model definitions."""
 
-from typing import Generic, TypeVar
 from collections.abc import Generator
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 from pydantic.types import NonNegativeInt, PositiveInt

@@ -16,11 +16,11 @@
 import json
 import os
 import re
+from collections.abc import Iterable, Sequence
 from typing import (
     Any,
     cast,
 )
-from collections.abc import Iterable, Sequence
 
 from docker.client import DockerClient
 from docker.errors import DockerException

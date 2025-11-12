@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Run Metadata Lazy Loader definition."""
 
-
 from pydantic import BaseModel
 
 from zenml.metadata.metadata_types import MetadataType

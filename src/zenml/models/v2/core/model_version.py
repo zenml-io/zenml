@@ -611,9 +611,7 @@ class ModelVersionResponse(
         """
         return self._get_linked_object(name, version, ArtifactType.SERVICE)
 
-    def set_stage(
-        self, stage: str | ModelStages, force: bool = False
-    ) -> None:
+    def set_stage(self, stage: str | ModelStages, force: bool = False) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:

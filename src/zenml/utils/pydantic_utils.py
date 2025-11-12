@@ -15,9 +15,9 @@
 
 import inspect
 import json
+from collections.abc import Callable
 from json.decoder import JSONDecodeError
 from typing import Any, TypeVar, Union, cast
-from collections.abc import Callable
 
 import yaml
 from pydantic import (
@@ -83,9 +83,7 @@ def update_model(
 class TemplateGenerator:
     """Class to generate templates for pydantic models or classes."""
 
-    def __init__(
-        self, instance_or_class: BaseModel | type[BaseModel]
-    ) -> None:
+    def __init__(self, instance_or_class: BaseModel | type[BaseModel]) -> None:
         """Initializes the template generator.
 
         Args:

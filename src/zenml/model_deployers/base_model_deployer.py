@@ -15,12 +15,12 @@
 
 import contextlib
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from typing import (
     Any,
     ClassVar,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 from zenml.client import Client

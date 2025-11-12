@@ -19,8 +19,8 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Any
 from collections.abc import Generator
+from typing import Any
 
 import docker.errors as docker_errors
 from docker.client import DockerClient

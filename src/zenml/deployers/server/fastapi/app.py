@@ -14,10 +14,10 @@
 """FastAPI application for running ZenML pipeline deployments."""
 
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
 from typing import Any, cast
-from collections.abc import AsyncGenerator
 
 from anyio import to_thread
 from asgiref.typing import (

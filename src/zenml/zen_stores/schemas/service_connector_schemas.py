@@ -15,9 +15,9 @@
 
 import base64
 import json
+from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional, cast
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint

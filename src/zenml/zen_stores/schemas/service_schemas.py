@@ -15,8 +15,8 @@
 
 import base64
 import json
-from typing import Any, Optional
 from collections.abc import Sequence
+from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -68,9 +68,7 @@ class ServiceSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="services")
-    service_source: str | None = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
+    service_source: str | None = Field(sa_column=Column(TEXT, nullable=True))
     service_type: str = Field(sa_column=Column(TEXT, nullable=False))
     type: str = Field(sa_column=Column(TEXT, nullable=False))
     flavor: str = Field(sa_column=Column(TEXT, nullable=False))
@@ -80,12 +78,8 @@ class ServiceSchema(NamedSchema, table=True):
     config: bytes
     status: bytes | None
     endpoint: bytes | None
-    prediction_url: str | None = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
-    health_check_url: str | None = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
+    prediction_url: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    health_check_url: str | None = Field(sa_column=Column(TEXT, nullable=True))
     pipeline_name: str | None = Field(sa_column=Column(TEXT, nullable=True))
     pipeline_step_name: str | None = Field(
         sa_column=Column(TEXT, nullable=True)

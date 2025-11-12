@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlalchemy import Column, String, UniqueConstraint

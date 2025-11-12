@@ -196,7 +196,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             f"@{host}:"
             r"(?P<port>\d+)?"
             r"(?(scheme_with_delimiter)/|/?)"
-            fr"{group}/{project}(\.git)?$",
+            rf"{group}/{project}(\.git)?$",
         )
         if ssh_regex.fullmatch(url):
             return True

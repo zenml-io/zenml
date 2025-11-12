@@ -43,9 +43,7 @@ class ServerSettingsSchema(SQLModel, table=True):
     enable_analytics: bool = Field(default=False)
     display_announcements: bool | None = Field(nullable=True)
     display_updates: bool | None = Field(nullable=True)
-    onboarding_state: str | None = Field(
-        sa_column=Column(TEXT, nullable=True)
-    )
+    onboarding_state: str | None = Field(sa_column=Column(TEXT, nullable=True))
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
 

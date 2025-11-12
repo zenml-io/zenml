@@ -19,13 +19,13 @@ import inspect
 import os
 import site
 import sys
+from collections.abc import Callable, Iterator
 from distutils.sysconfig import get_python_lib
 from pathlib import Path, PurePath
 from types import BuiltinFunctionType, FunctionType, ModuleType
 from typing import (
     Any,
 )
-from collections.abc import Callable, Iterator
 from uuid import UUID
 
 from zenml.config.source import (
@@ -60,9 +60,7 @@ BuiltinFunctionTypeSource = Source(
 )
 
 
-_CUSTOM_SOURCE_ROOT: str | None = os.getenv(
-    ENV_ZENML_CUSTOM_SOURCE_ROOT, None
-)
+_CUSTOM_SOURCE_ROOT: str | None = os.getenv(ENV_ZENML_CUSTOM_SOURCE_ROOT, None)
 
 _SHARED_TEMPDIR: str | None = None
 _resolved_notebook_sources: dict[str, str] = {}
@@ -146,12 +144,12 @@ def load(source: Source | str) -> Any:
 
 def resolve(
     obj: (
-        type[Any] |
-        Callable[..., Any] |
-        ModuleType |
-        FunctionType |
-        BuiltinFunctionType |
-        NoneType
+        type[Any]
+        | Callable[..., Any]
+        | ModuleType
+        | FunctionType
+        | BuiltinFunctionType
+        | NoneType
     ),
     skip_validation: bool = False,
 ) -> Source:

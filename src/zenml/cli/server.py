@@ -89,9 +89,7 @@ DEPRECATED: Please use `zenml login --local` instead.
 )
 def up(
     docker: bool = False,
-    ip_address: (
-        ipaddress.IPv4Address | ipaddress.IPv6Address | None
-    ) = None,
+    ip_address: (ipaddress.IPv4Address | ipaddress.IPv6Address | None) = None,
     port: int | None = None,
     blocking: bool = False,
     image: str | None = None,

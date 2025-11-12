@@ -15,9 +15,9 @@
 
 import signal
 import time
+from collections.abc import Callable
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
-from collections.abc import Callable
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step

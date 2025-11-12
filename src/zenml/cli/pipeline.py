@@ -92,9 +92,7 @@ def pipeline() -> None:
     required=False,
     help="Path to JSON file containing parameters for the pipeline function.",
 )
-def register_pipeline(
-    source: str, parameters_path: str | None = None
-) -> None:
+def register_pipeline(source: str, parameters_path: str | None = None) -> None:
     """Register a pipeline.
 
     Args:

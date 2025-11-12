@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """SQLModel implementation for authorized OAuth2 devices."""
 
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from secrets import token_hex
 from typing import Any, Optional
-from collections.abc import Sequence
 from uuid import UUID
 
 from passlib.context import CryptContext

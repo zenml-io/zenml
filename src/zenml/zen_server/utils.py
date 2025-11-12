@@ -20,6 +20,7 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
@@ -28,7 +29,6 @@ from typing import (
     TypeVar,
     overload,
 )
-from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 import psutil
@@ -361,8 +361,8 @@ def async_fastapi_endpoint_wrapper(
     *,
     deduplicate: bool | None = None,
 ) -> (
-    Callable[P, Awaitable[Any]] |
-    Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]
+    Callable[P, Awaitable[Any]]
+    | Callable[[Callable[P, R]], Callable[P, Awaitable[Any]]]
 ):
     """Decorator for FastAPI endpoints.
 

@@ -14,10 +14,10 @@
 """Authentication module for ZenML server."""
 
 import functools
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, cast
-from collections.abc import Awaitable, Callable
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 

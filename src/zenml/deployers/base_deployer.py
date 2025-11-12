@@ -17,13 +17,13 @@ import secrets
 import string
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
     cast,
 )
-from collections.abc import Generator
 from uuid import UUID
 
 import requests

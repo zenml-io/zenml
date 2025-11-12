@@ -17,12 +17,12 @@ import itertools
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     Optional,
 )
-from collections.abc import Sequence
 
 import zenml
 from zenml.config import DockerSettings

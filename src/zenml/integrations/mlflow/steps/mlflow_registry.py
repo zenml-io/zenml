@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-
 from mlflow.tracking import artifact_utils
 
 from zenml import __version__, get_step_context, step

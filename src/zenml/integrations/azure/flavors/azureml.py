@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """AzureML definitions."""
 
-
 from pydantic import model_validator
 
 from zenml.config.base_settings import BaseSettings

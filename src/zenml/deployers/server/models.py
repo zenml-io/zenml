@@ -116,9 +116,7 @@ class SnapshotInfo(BaseModel):
     """Snapshot info model."""
 
     id: UUID = Field(title="The ID of the snapshot.")
-    name: str | None = Field(
-        default=None, title="The name of the snapshot."
-    )
+    name: str | None = Field(default=None, title="The name of the snapshot.")
 
 
 class AppInfo(BaseModel):

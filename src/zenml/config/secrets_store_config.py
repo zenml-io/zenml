@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML secrets store configurations."""
 
-
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.enums import SecretsStoreType

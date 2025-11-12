@@ -17,8 +17,8 @@ import contextlib
 import inspect
 import shutil
 import tempfile
-from typing import Any, ClassVar, cast
 from collections.abc import Iterator
+from typing import Any, ClassVar, cast
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType, VisualizationType

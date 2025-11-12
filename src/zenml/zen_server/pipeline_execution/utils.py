@@ -17,9 +17,9 @@ import hashlib
 import os
 import sys
 import threading
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
-from collections.abc import Callable
 from uuid import UUID
 
 from packaging import version

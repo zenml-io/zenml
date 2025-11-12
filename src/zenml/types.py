@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Custom ZenML types."""
 
-from typing import TYPE_CHECKING, Any, Union
 from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Union
 
 if TYPE_CHECKING:
     from types import FunctionType

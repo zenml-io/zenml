@@ -14,13 +14,12 @@
 """Utility classes for adding type information to Pydantic models."""
 
 import json
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, Field
 
 # TODO: Investigate if we can solve this import a different way.
 from pydantic._internal._model_construction import ModelMetaclass
-from typing import Literal
 
 from zenml.utils import source_utils
 

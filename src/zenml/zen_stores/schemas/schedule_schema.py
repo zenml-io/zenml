@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipeline Schedules."""
 
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Optional
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint

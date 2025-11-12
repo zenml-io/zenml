@@ -300,9 +300,7 @@ class Model(BaseModel):
             version=version,
         )
 
-    def set_stage(
-        self, stage: str | ModelStages, force: bool = False
-    ) -> None:
+    def set_stage(self, stage: str | ModelStages, force: bool = False) -> None:
         """Sets this Model to a desired stage.
 
         Args:
@@ -723,11 +721,11 @@ class Model(BaseModel):
         """
         return hash(
             "::".join(
-                    str(v)
-                    for v in (
-                        self.name,
-                        self.version,
-                    )
+                str(v)
+                for v in (
+                    self.name,
+                    self.version,
+                )
             )
         )
 

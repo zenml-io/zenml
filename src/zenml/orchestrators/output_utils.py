@@ -14,8 +14,8 @@
 """Utilities for outputs."""
 
 import os
-from typing import TYPE_CHECKING
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from zenml.client import Client

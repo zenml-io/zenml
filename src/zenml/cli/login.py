@@ -124,9 +124,7 @@ def _display_login_menu() -> LoginMethod:
 
 def start_local_server(
     docker: bool = False,
-    ip_address: (
-        ipaddress.IPv4Address | ipaddress.IPv6Address | None
-    ) = None,
+    ip_address: (ipaddress.IPv4Address | ipaddress.IPv6Address | None) = None,
     port: int | None = None,
     blocking: bool = False,
     image: str | None = None,
@@ -815,9 +813,7 @@ def login(
     local: bool = False,
     docker: bool = False,
     restart: bool = False,
-    ip_address: (
-        ipaddress.IPv4Address | ipaddress.IPv6Address | None
-    ) = None,
+    ip_address: (ipaddress.IPv4Address | ipaddress.IPv6Address | None) = None,
     port: int | None = None,
     blocking: bool = False,
     image: str | None = None,

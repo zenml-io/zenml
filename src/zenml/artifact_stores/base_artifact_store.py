@@ -17,6 +17,7 @@ import inspect
 import os
 import textwrap
 from abc import abstractmethod
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import (
     Any,
@@ -24,7 +25,6 @@ from typing import (
     Union,
     cast,
 )
-from collections.abc import Callable, Iterable
 
 from pydantic import Field, model_validator
 

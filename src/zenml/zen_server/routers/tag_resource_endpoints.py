@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for the link between tags and resources."""
 
-
 from fastapi import APIRouter, Security
 
 from zenml.constants import (

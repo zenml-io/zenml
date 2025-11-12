@@ -14,11 +14,11 @@
 """Implementation of the Evidently data validator."""
 
 import os
+from collections.abc import Sequence
 from typing import (
     Any,
     ClassVar,
 )
-from collections.abc import Sequence
 
 import pandas as pd
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore

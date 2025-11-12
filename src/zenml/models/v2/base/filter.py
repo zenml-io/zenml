@@ -591,9 +591,9 @@ class BaseFilter(BaseModel):
         default=None, description="Updated", union_mode="left_to_right"
     )
 
-    _rbac_configuration: None | (
-        tuple[UUID, dict[str, set[UUID] | None]]
-    ) = None
+    _rbac_configuration: None | (tuple[UUID, dict[str, set[UUID] | None]]) = (
+        None
+    )
 
     @field_validator("sort_by", mode="before")
     @classmethod

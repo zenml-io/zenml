@@ -14,6 +14,7 @@
 """Util functions for step and pipeline entrypoint functions."""
 
 import inspect
+from collections.abc import Callable, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -21,7 +22,6 @@ from typing import (
     NoReturn,
     Union,
 )
-from collections.abc import Callable, Sequence
 
 from pydantic import ConfigDict, ValidationError, create_model
 

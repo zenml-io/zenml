@@ -14,8 +14,8 @@
 """Notebook utilities."""
 
 import hashlib
-from typing import Any, Optional, TypeVar, Union
 from collections.abc import Callable
+from typing import Any, Optional, TypeVar, Union
 
 from zenml.environment import Environment
 from zenml.logger import get_logger

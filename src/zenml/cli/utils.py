@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable, Iterator, Sequence
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -33,7 +34,6 @@ from typing import (
     Union,
     cast,
 )
-from collections.abc import Callable, Iterator, Sequence
 
 import click
 import yaml

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """AzureML definitions."""
 
-
 from azure.ai.ml import MLClient
 from azure.ai.ml.entities import Compute
 from azure.core.exceptions import (

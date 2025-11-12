@@ -16,12 +16,12 @@
 import os
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
     Union,
 )
-from collections.abc import Callable
 from uuid import UUID
 
 from asgiref.compatibility import guarantee_single_callable

@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
 from typing import (
     Any,
     Union,
     cast,
 )
-from collections.abc import Callable, Generator, Iterable
 
 import boto3
 import s3fs

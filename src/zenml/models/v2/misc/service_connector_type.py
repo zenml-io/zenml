@@ -628,9 +628,7 @@ class ServiceConnectorResourcesModel(BaseModel):
         """
         return [resource.resource_type for resource in self.resources]
 
-    def set_error(
-        self, error: str, resource_type: str | None = None
-    ) -> None:
+    def set_error(self, error: str, resource_type: str | None = None) -> None:
         """Set a global error message or an error for a single resource type.
 
         Args:

@@ -37,6 +37,7 @@ import re
 import sys
 import time
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -53,7 +54,6 @@ from typing import (
     get_origin,
     overload,
 )
-from collections.abc import Callable, Sequence
 from uuid import UUID
 
 from packaging import version
@@ -617,8 +617,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     type: StoreType = StoreType.SQL
 
     secrets_store: SerializeAsAny[SecretsStoreConfiguration] | None = None
-    backup_secrets_store: None | (
-        SerializeAsAny[SecretsStoreConfiguration]
+    backup_secrets_store: (
+        None | (SerializeAsAny[SecretsStoreConfiguration])
     ) = None
 
     driver: SQLDatabaseDriver | None = None
@@ -1106,10 +1106,10 @@ class SqlZenStore(BaseZenStore):
         query: Select[Any] | SelectOfScalar[Any],
         table: type[AnySchema],
         filter_model: BaseFilter,
-        custom_schema_to_model_conversion: None | (
-            Callable[..., AnyResponse]
-        ) = None,
-        custom_fetch: None | (
+        custom_schema_to_model_conversion: None
+        | (Callable[..., AnyResponse]) = None,
+        custom_fetch: None
+        | (
             Callable[
                 [
                     Session,
@@ -8636,8 +8636,8 @@ class SqlZenStore(BaseZenStore):
         def fetch_connectors(
             session: Session,
             query: (
-                Select[ServiceConnectorSchema] |
-                SelectOfScalar[ServiceConnectorSchema]
+                Select[ServiceConnectorSchema]
+                | SelectOfScalar[ServiceConnectorSchema]
             ),
             filter_model: BaseFilter,
         ) -> Sequence[ServiceConnectorSchema]:
@@ -8969,8 +8969,8 @@ class SqlZenStore(BaseZenStore):
     def _list_filtered_service_connectors(
         session: Session,
         query: (
-            Select[ServiceConnectorSchema] |
-            SelectOfScalar[ServiceConnectorSchema]
+            Select[ServiceConnectorSchema]
+            | SelectOfScalar[ServiceConnectorSchema]
         ),
         filter_model: ServiceConnectorFilter,
     ) -> Sequence[ServiceConnectorSchema]:
@@ -11337,9 +11337,7 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
             )
 
-    def get_auth_user(
-        self, user_name_or_id: str | UUID
-    ) -> UserAuthModel:
+    def get_auth_user(self, user_name_or_id: str | UUID) -> UserAuthModel:
         """Gets the auth model to a specific user.
 
         Args:
@@ -11767,9 +11765,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(project)
             session.commit()
 
-    def count_projects(
-        self, filter_model: ProjectFilter | None = None
-    ) -> int:
+    def count_projects(self, filter_model: ProjectFilter | None = None) -> int:
         """Count all projects.
 
         Args:

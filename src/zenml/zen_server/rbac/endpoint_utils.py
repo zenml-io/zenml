@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """High-level helper functions to write endpoints with RBAC."""
 
-from typing import Any, TypeVar, Union
 from collections.abc import Callable
+from typing import Any, TypeVar, Union
 from uuid import UUID
 
 from zenml.models import (

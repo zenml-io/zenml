@@ -1822,9 +1822,8 @@ def connect_stack(
 
 def _get_service_connector_info(
     cloud_provider: str,
-    connector_details: None | (
-        ServiceConnectorResponse | ServiceConnectorRequest
-    ),
+    connector_details: None
+    | (ServiceConnectorResponse | ServiceConnectorRequest),
 ) -> ServiceConnectorInfo:
     """Get a service connector info with given cloud provider.
 

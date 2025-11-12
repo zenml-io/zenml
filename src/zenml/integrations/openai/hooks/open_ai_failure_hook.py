@@ -49,9 +49,7 @@ def openai_alerter_failure_hook_helper(
         openai_secret = client.get_secret(
             "openai", allow_partial_name_match=False
         )
-        openai_api_key: str | None = openai_secret.secret_values.get(
-            "api_key"
-        )
+        openai_api_key: str | None = openai_secret.secret_values.get("api_key")
     except (KeyError, NotImplementedError):
         openai_api_key = None
 

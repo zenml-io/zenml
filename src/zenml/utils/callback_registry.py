@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """Callback registry implementation."""
 
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from typing_extensions import ParamSpec
 

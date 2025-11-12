@@ -15,8 +15,8 @@
 
 import base64
 import json
-from typing import Any, cast
 from collections.abc import Sequence
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, VARCHAR, Column, UniqueConstraint

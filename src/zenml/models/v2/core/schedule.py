@@ -58,9 +58,7 @@ class ScheduleRequest(ProjectScopedRequest):
         "start_time", "end_time", "run_once_start_time", mode="after"
     )
     @classmethod
-    def _ensure_tzunaware_utc(
-        cls, value: datetime | None
-    ) -> datetime | None:
+    def _ensure_tzunaware_utc(cls, value: datetime | None) -> datetime | None:
         """Ensures that all datetimes are timezone unaware and in UTC time.
 
         Args:

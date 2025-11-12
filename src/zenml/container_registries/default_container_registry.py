@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a default container registry class."""
 
-
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryFlavor,
 )

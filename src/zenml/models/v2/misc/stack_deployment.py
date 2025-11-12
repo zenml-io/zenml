@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models related to cloud stack deployments."""
 
-
 from pydantic import BaseModel, Field
 
 from zenml.enums import StackDeploymentProvider

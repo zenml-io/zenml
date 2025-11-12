@@ -14,9 +14,9 @@
 """Proxy design pattern utils."""
 
 from abc import ABC
+from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar, cast
-from collections.abc import Callable
 
 C = TypeVar("C", bound=type[ABC])
 F = TypeVar("F", bound=Callable[..., Any])

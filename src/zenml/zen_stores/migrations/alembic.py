@@ -18,9 +18,9 @@ library that automatically configures Alembic to use the ZenML SQL store
 database connection.
 """
 
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, Union
-from collections.abc import Callable, Sequence
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext

@@ -14,9 +14,9 @@
 """Functionality to generate stack component CLI commands."""
 
 import time
+from collections.abc import Callable
 from importlib import import_module
 from typing import Any, cast
-from collections.abc import Callable
 from uuid import UUID
 
 import click
