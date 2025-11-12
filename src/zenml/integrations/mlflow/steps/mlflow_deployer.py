@@ -118,7 +118,9 @@ def mlflow_model_deployer_step(
     if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
         # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
         # In MLflow 2.x, use the artifact URI directly
-        if pkg_version.parse(mlflow.version.VERSION) >= pkg_version.parse("3.0.0"):
+        if pkg_version.parse(mlflow.version.VERSION) >= pkg_version.parse(
+            "3.0.0"
+        ):
             model_uri = f"runs:/{mlflow_run_id}/{model_name}"
         else:
             model_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]

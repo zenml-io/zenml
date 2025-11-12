@@ -15,7 +15,9 @@
 
 from typing import Optional
 
+import mlflow
 from mlflow.tracking import artifact_utils
+from packaging import version as pkg_version
 
 from zenml import __version__, get_step_context, step
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
@@ -124,9 +126,16 @@ def mlflow_register_model_step(
     if not model_source_uri and client.list_artifacts(
         mlflow_run_id, trained_model_name
     ):
-        model_source_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]
-            run_id=mlflow_run_id, artifact_path=trained_model_name
-        )
+        # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
+        # In MLflow 2.x, use the artifact URI directly
+        if pkg_version.parse(mlflow.version.VERSION) >= pkg_version.parse(
+            "3.0.0"
+        ):
+            model_source_uri = f"runs:/{mlflow_run_id}/{trained_model_name}"
+        else:
+            model_source_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]
+                run_id=mlflow_run_id, artifact_path=trained_model_name
+            )
     if not model_source_uri:
         raise RuntimeError(
             "No model source URI provided or no model found in the "
