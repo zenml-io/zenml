@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -22,7 +22,7 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 )
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.models import DeploymentResponse
+from zenml.models import DeploymentResponse, PipelineSnapshotResponse
 from zenml.utils import uuid_utils
 
 logger = get_logger(__name__)
@@ -37,6 +37,15 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     This entrypoint configuration handles the startup and configuration
     of the ZenML pipeline deployment FastAPI application.
     """
+
+    def __init__(self, arguments: List[str]):
+        """Initializes the entrypoint configuration.
+
+        Args:
+            arguments: Command line arguments to configure this object.
+        """
+        super().__init__(arguments)
+        self._deployment: Optional["DeploymentResponse"] = None
 
     @classmethod
     def get_entrypoint_options(cls) -> Dict[str, bool]:
@@ -82,7 +91,37 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         return base_args + deployment_args
 
-    def load_deployment(self) -> "DeploymentResponse":
+    @property
+    def snapshot(self) -> "PipelineSnapshotResponse":
+        """The snapshot configured for this entrypoint configuration.
+
+        Returns:
+            The snapshot.
+
+        Raises:
+            RuntimeError: If the deployment has no snapshot.
+        """
+        if self._snapshot is None:
+            snapshot = self.deployment.snapshot
+            if snapshot is None:
+                raise RuntimeError(
+                    f"Deployment {self.deployment.id} has no snapshot"
+                )
+            self._snapshot = snapshot
+        return self._snapshot
+
+    @property
+    def deployment(self) -> "DeploymentResponse":
+        """The deployment configured for this entrypoint configuration.
+
+        Returns:
+            The deployment.
+        """
+        if self._deployment is None:
+            self._deployment = self._load_deployment()
+        return self._deployment
+
+    def _load_deployment(self) -> "DeploymentResponse":
         """Loads the deployment.
 
         Returns:
@@ -99,21 +138,14 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
 
         This method starts the FastAPI server with the configured parameters
         and the specified pipeline deployment.
-
-        Raises:
-            RuntimeError: If the deployment has no snapshot.
         """
         from zenml.deployers.server.app import BaseDeploymentAppRunner
 
         # Activate integrations to ensure all components are available
         integration_registry.activate_integrations()
 
-        deployment = self.load_deployment()
-        if not deployment.snapshot:
-            raise RuntimeError(f"Deployment {deployment.id} has no snapshot")
-
         # Download code if necessary (for remote execution environments)
         self.download_code_if_necessary()
 
-        app_runner = BaseDeploymentAppRunner.load_app_runner(deployment)
+        app_runner = BaseDeploymentAppRunner.load_app_runner(self.deployment)
         app_runner.run()
