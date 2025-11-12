@@ -8,6 +8,10 @@ description: Experimental feature for dynamically generated DAGs
 **Experimental Feature**: Dynamic pipelines are currently an experimental feature. There are known issues and limitations, and the interface is subject to change. This feature is only supported by the `local` and `kubernetes` orchestrators. If you encounter any issues or have feedback, please let us know at [https://github.com/zenml-io/zenml/issues](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
+{% hint style="info" %}
+**Version Requirement**: Dynamic pipelines are available starting from ZenML version 0.91.1.
+{% endhint %}
+
 ## Why Dynamic Pipelines?
 
 Traditional ZenML pipelines require you to define the entire DAG structure at pipeline definition time. While this works well for many use cases, there are scenarios where you need more flexibility:
