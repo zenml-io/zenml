@@ -243,9 +243,13 @@ class KubernetesApplier:
             grace_period_seconds: Optional grace period override.
 
         Returns:
-            Total number of resources deleted.
+            Total number of resources actually deleted (excluding 404s and skipped namespaces).
         """
         total_deleted = 0
+        deleted_resources: List[str] = []
+        already_deleted_resources: List[str] = []
+        failed_resources: List[str] = []
+
         body = k8s_client.V1DeleteOptions()
         if propagation_policy:
             body.propagation_policy = propagation_policy
@@ -253,11 +257,17 @@ class KubernetesApplier:
             body.grace_period_seconds = grace_period_seconds
 
         for item in reversed(inventory):
+            resource_desc = (
+                f"{item.kind}/{item.name} "
+                f"(apiVersion: {item.api_version}, "
+                f"namespace: {item.namespace or 'cluster-scoped'})"
+            )
+
             # Never delete namespaces - they may be shared by multiple deployments
             # and deleting them would cascade-delete all resources in the namespace
             if item.kind == "Namespace":
-                logger.debug(
-                    f"Skipping namespace '{item.name}' deletion "
+                logger.info(
+                    f"⏩ Skipping namespace '{item.name}' "
                     f"(namespaces are never deleted to prevent accidental "
                     f"cascade deletion of shared resources)"
                 )
@@ -274,24 +284,27 @@ class KubernetesApplier:
 
                 res.delete(**kwargs)
                 total_deleted += 1
-                logger.debug(
-                    f"Deleted {item.kind}/{item.name} "
-                    f"in {item.namespace or 'cluster'}"
-                )
+                deleted_resources.append(resource_desc)
+                logger.info(f"✅ Deleted {resource_desc}")
 
             except ApiException as e:
                 if e.status == 404:
-                    logger.debug(
-                        f"Resource {item.kind}/{item.name} already deleted"
-                    )
+                    already_deleted_resources.append(resource_desc)
+                    logger.info(f"⏭️  Already deleted: {resource_desc}")
                     continue
-                logger.warning(
-                    f"Failed to delete {item.kind}/{item.name}: {e.reason}"
-                )
+                error_msg = f"{resource_desc}: {e.reason}"
+                failed_resources.append(error_msg)
+                logger.error(f"❌ Failed to delete {error_msg}")
             except Exception as e:
-                logger.warning(
-                    f"Failed to delete {item.kind}/{item.name}: {e}"
-                )
+                error_msg = f"{resource_desc}: {str(e)}"
+                failed_resources.append(error_msg)
+                logger.error(f"❌ Failed to delete {error_msg}")
+
+        # Log summary if there were any issues
+        if failed_resources:
+            logger.warning(
+                f"Failed to delete {len(failed_resources)}/{len(inventory)} resource(s)"
+            )
 
         return total_deleted
 
