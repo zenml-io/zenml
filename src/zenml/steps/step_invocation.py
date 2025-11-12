@@ -34,15 +34,15 @@ class StepInvocation:
         self,
         id: str,
         step: "BaseStep",
-        input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[
+        input_artifacts: dict[str, "StepArtifact"],
+        external_artifacts: dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
-        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
-        parameters: Dict[str, Any],
-        default_parameters: Dict[str, Any],
-        upstream_steps: Set[str],
+        model_artifacts_or_metadata: dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: dict[str, "ClientLazyLoader"],
+        parameters: dict[str, Any],
+        default_parameters: dict[str, Any],
+        upstream_steps: set[str],
         pipeline: "Pipeline",
     ) -> None:
         """Initialize a step invocation.
@@ -73,7 +73,7 @@ class StepInvocation:
 
     def finalize(
         self,
-        parameters_to_ignore: Set[str],
+        parameters_to_ignore: set[str],
         skip_input_validation: bool = False,
     ) -> "StepConfiguration":
         """Finalizes a step invocation.
@@ -108,7 +108,7 @@ class StepInvocation:
         )
         self.step.configure(parameters=parameters_to_apply)
 
-        external_artifacts: Dict[str, ExternalArtifactConfiguration] = {}
+        external_artifacts: dict[str, ExternalArtifactConfiguration] = {}
         for key, artifact in self.external_artifacts.items():
             if isinstance(artifact, ArtifactVersionResponse):
                 external_artifacts[key] = ExternalArtifactConfiguration(

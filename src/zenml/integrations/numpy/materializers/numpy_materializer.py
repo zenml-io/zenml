@@ -70,7 +70,7 @@ def _ensure_dtype_compatibility(arr: "NDArray[Any]") -> "NDArray[Any]":
 
 
 def _create_array(
-    data: Any, dtype: Optional[Union["np.dtype[Any]", Type[Any]]] = None
+    data: Any, dtype: Union["np.dtype[Any]", type[Any]] | None = None
 ) -> "NDArray[Any]":
     """Create arrays with consistent behavior across NumPy versions.
 
@@ -91,10 +91,10 @@ def _create_array(
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (np.ndarray,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> "Any":
+    def load(self, data_type: type[Any]) -> "Any":
         """Reads a numpy array from a `.npy` file.
 
         Args:
@@ -166,7 +166,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     def save_visualizations(
         self, arr: "NDArray[Any]"
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Saves visualizations for a numpy array.
 
         If the array is 1D, a histogram is saved. If the array is 2D or 3D with
@@ -233,7 +233,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, arr: "NDArray[Any]"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given numpy array.
 
         Args:
@@ -253,7 +253,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     def _extract_numeric_metadata(
         self, arr: "NDArray[Any]"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extracts numeric metadata from a numpy array.
 
         Args:
@@ -268,7 +268,7 @@ class NumpyMaterializer(BaseMaterializer):
         min_val = np.min(arr).item()
         max_val = np.max(arr).item()
 
-        numpy_metadata: Dict[str, "MetadataType"] = {
+        numpy_metadata: dict[str, "MetadataType"] = {
             "shape": tuple(arr.shape),
             "dtype": DType(arr.dtype.type),
             "mean": np.mean(arr).item(),
@@ -280,7 +280,7 @@ class NumpyMaterializer(BaseMaterializer):
 
     def _extract_text_metadata(
         self, arr: "NDArray[Any]"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extracts text metadata from a numpy array.
 
         Args:
@@ -304,7 +304,7 @@ class NumpyMaterializer(BaseMaterializer):
         total_words = len(words)
         most_common_word, most_common_count = word_counts.most_common(1)[0]
 
-        text_metadata: Dict[str, "MetadataType"] = {
+        text_metadata: dict[str, "MetadataType"] = {
             "shape": tuple(arr.shape),
             "dtype": DType(arr.dtype.type),
             "unique_words": unique_words,

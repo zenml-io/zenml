@@ -26,16 +26,16 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class IntegrationRegistry(object):
+class IntegrationRegistry:
     """Registry to keep track of ZenML Integrations."""
 
     def __init__(self) -> None:
         """Initializing the integration registry."""
-        self._integrations: Dict[str, Type["Integration"]] = {}
+        self._integrations: dict[str, type["Integration"]] = {}
         self._initialized = False
 
     @property
-    def integrations(self) -> Dict[str, Type["Integration"]]:
+    def integrations(self) -> dict[str, type["Integration"]]:
         """Method to get integrations dictionary.
 
         Returns:
@@ -62,7 +62,7 @@ class IntegrationRegistry(object):
         )
 
     def register_integration(
-        self, key: str, type_: Type["Integration"]
+        self, key: str, type_: type["Integration"]
     ) -> None:
         """Method to register an integration with a given name.
 
@@ -108,7 +108,7 @@ class IntegrationRegistry(object):
                 logger.debug(f"Integration `{name}` could not be activated.")
 
     @property
-    def list_integration_names(self) -> List[str]:
+    def list_integration_names(self) -> list[str]:
         """Get a list of all possible integrations.
 
         Returns:
@@ -119,9 +119,9 @@ class IntegrationRegistry(object):
 
     def select_integration_requirements(
         self,
-        integration_name: Optional[str] = None,
-        target_os: Optional[str] = None,
-    ) -> List[str]:
+        integration_name: str | None = None,
+        target_os: str | None = None,
+    ) -> list[str]:
         """Select the requirements for a given integration or all integrations.
 
         Args:
@@ -157,9 +157,9 @@ class IntegrationRegistry(object):
 
     def select_uninstall_requirements(
         self,
-        integration_name: Optional[str] = None,
-        target_os: Optional[str] = None,
-    ) -> List[str]:
+        integration_name: str | None = None,
+        target_os: str | None = None,
+    ) -> list[str]:
         """Select the uninstall requirements for a given integration or all integrations.
 
         Args:
@@ -193,7 +193,7 @@ class IntegrationRegistry(object):
                 ].get_uninstall_requirements(target_os=target_os)
             ]
 
-    def is_installed(self, integration_name: Optional[str] = None) -> bool:
+    def is_installed(self, integration_name: str | None = None) -> bool:
         """Checks if all requirements for an integration are installed.
 
         Args:
@@ -221,7 +221,7 @@ class IntegrationRegistry(object):
                 f"{self.list_integration_names}"
             )
 
-    def get_installed_integrations(self) -> List[str]:
+    def get_installed_integrations(self) -> list[str]:
         """Returns list of installed integrations.
 
         Returns:

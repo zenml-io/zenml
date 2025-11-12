@@ -39,16 +39,16 @@ class CodeRepositoryRequest(ProjectScopedRequest):
         title="The name of the code repository.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         description="Configuration for the code repository."
     )
     source: Source = Field(description="The code repository source.")
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         description="Optional URL of a logo (png, jpg or svg) for the "
         "code repository.",
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="Code repository description.",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
@@ -61,24 +61,24 @@ class CodeRepositoryRequest(ProjectScopedRequest):
 class CodeRepositoryUpdate(BaseUpdate):
     """Update model for code repositories."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the code repository.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    config: Optional[Dict[str, Any]] = Field(
+    config: dict[str, Any] | None = Field(
         description="Configuration for the code repository.",
         default=None,
     )
-    source: Optional[SourceWithValidator] = Field(
+    source: SourceWithValidator | None = Field(
         description="The code repository source.", default=None
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         description="Optional URL of a logo (png, jpg or svg) for the "
         "code repository.",
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="Code repository description.",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
@@ -92,7 +92,7 @@ class CodeRepositoryResponseBody(ProjectScopedResponseBody):
     """Response body for code repositories."""
 
     source: Source = Field(description="The code repository source.")
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         description="Optional URL of a logo (png, jpg or svg) for the "
         "code repository.",
@@ -102,10 +102,10 @@ class CodeRepositoryResponseBody(ProjectScopedResponseBody):
 class CodeRepositoryResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for code repositories."""
 
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         description="Configuration for the code repository."
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         description="Code repository description.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -151,7 +151,7 @@ class CodeRepositoryResponse(
         return self.get_body().source
 
     @property
-    def logo_url(self) -> Optional[str]:
+    def logo_url(self) -> str | None:
         """The `logo_url` property.
 
         Returns:
@@ -160,7 +160,7 @@ class CodeRepositoryResponse(
         return self.get_body().logo_url
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """The `config` property.
 
         Returns:
@@ -169,7 +169,7 @@ class CodeRepositoryResponse(
         return self.get_metadata().config
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -184,7 +184,7 @@ class CodeRepositoryResponse(
 class CodeRepositoryFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all code repositories."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="Name of the code repository.",
         default=None,
     )

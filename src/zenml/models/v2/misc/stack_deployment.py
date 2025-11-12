@@ -40,22 +40,22 @@ class StackDeploymentInfo(BaseModel):
         title="The instructions for post-deployment.",
         description="The instructions for post-deployment.",
     )
-    integrations: List[str] = Field(
+    integrations: list[str] = Field(
         title="ZenML integrations required for the stack.",
         description="The list of ZenML integrations that need to be installed "
         "for the stack to be usable.",
     )
-    permissions: Dict[str, List[str]] = Field(
+    permissions: dict[str, list[str]] = Field(
         title="The permissions granted to ZenML to access the cloud resources.",
         description="The permissions granted to ZenML to access the cloud "
         "resources, as a dictionary grouping permissions by resource.",
     )
-    locations: Dict[str, str] = Field(
+    locations: dict[str, str] = Field(
         title="The locations where the stack can be deployed.",
         description="The locations where the stack can be deployed, as a "
         "dictionary mapping location names to descriptions.",
     )
-    skypilot_default_regions: Dict[str, str] = Field(
+    skypilot_default_regions: dict[str, str] = Field(
         title="The locations where the Skypilot clusters can be deployed by default.",
         description="The locations where the Skypilot clusters can be deployed by default, as a "
         "dictionary mapping location names to descriptions.",
@@ -71,12 +71,12 @@ class StackDeploymentConfig(BaseModel):
     deployment_url_text: str = Field(
         title="A textual description for the cloud provider console URL.",
     )
-    configuration: Optional[str] = Field(
+    configuration: str | None = Field(
         default=None,
         title="Configuration for the stack deployment that the user must "
         "manually configure into the cloud provider console.",
     )
-    instructions: Optional[str] = Field(
+    instructions: str | None = Field(
         default=None,
         title="Instructions for deploying the stack.",
     )
@@ -89,7 +89,7 @@ class DeployedStack(BaseModel):
         title="The stack that was deployed.",
         description="The stack that was deployed.",
     )
-    service_connector: Optional[ServiceConnectorResponse] = Field(
+    service_connector: ServiceConnectorResponse | None = Field(
         default=None,
         title="The service connector for the deployed stack.",
         description="The service connector for the deployed stack.",

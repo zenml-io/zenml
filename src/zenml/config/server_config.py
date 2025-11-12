@@ -253,20 +253,20 @@ class ServerConfiguration(BaseModel):
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
-    server_url: Optional[str] = None
-    dashboard_url: Optional[str] = None
+    server_url: str | None = None
+    dashboard_url: str | None = None
     root_url_path: str = ""
-    metadata: Dict[str, str] = {}
+    metadata: dict[str, str] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
     jwt_token_algorithm: str = DEFAULT_ZENML_JWT_TOKEN_ALGORITHM
-    jwt_token_issuer: Optional[str] = None
-    jwt_token_audience: Optional[str] = None
+    jwt_token_issuer: str | None = None
+    jwt_token_audience: str | None = None
     jwt_token_leeway_seconds: int = DEFAULT_ZENML_JWT_TOKEN_LEEWAY
-    jwt_token_expire_minutes: Optional[int] = None
+    jwt_token_expire_minutes: int | None = None
     jwt_secret_key: str = Field(default_factory=generate_jwt_secret_key)
-    auth_cookie_name: Optional[str] = None
-    auth_cookie_domain: Optional[str] = None
-    cors_allow_origins: Optional[List[str]] = None
+    auth_cookie_name: str | None = None
+    auth_cookie_domain: str | None = None
+    cors_allow_origins: list[str] | None = None
     max_failed_device_auth_attempts: int = (
         DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS
     )
@@ -274,8 +274,8 @@ class ServerConfiguration(BaseModel):
     device_auth_polling_interval: int = (
         DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING
     )
-    device_expiration_minutes: Optional[int] = None
-    trusted_device_expiration_minutes: Optional[int] = None
+    device_expiration_minutes: int | None = None
+    trusted_device_expiration_minutes: int | None = None
 
     generic_api_token_lifetime: PositiveInt = (
         DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME
@@ -284,14 +284,14 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME
     )
 
-    external_login_url: Optional[str] = None
-    external_user_info_url: Optional[str] = None
-    external_server_id: Optional[UUID] = None
+    external_login_url: str | None = None
+    external_user_info_url: str | None = None
+    external_server_id: UUID | None = None
 
-    rbac_implementation_source: Optional[str] = None
-    feature_gate_implementation_source: Optional[str] = None
-    reportable_resources: List[str] = []
-    workload_manager_implementation_source: Optional[str] = None
+    rbac_implementation_source: str | None = None
+    feature_gate_implementation_source: str | None = None
+    reportable_resources: list[str] = []
+    workload_manager_implementation_source: str | None = None
     max_concurrent_snapshot_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS
     )
@@ -303,35 +303,35 @@ class ServerConfiguration(BaseModel):
     login_rate_limit_minute: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE
     login_rate_limit_day: int = DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY
 
-    secure_headers_server: Union[bool, str] = Field(
+    secure_headers_server: bool | str = Field(
         default=True,
         union_mode="left_to_right",
     )
-    secure_headers_hsts: Union[bool, str] = Field(
+    secure_headers_hsts: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS,
         union_mode="left_to_right",
     )
-    secure_headers_xfo: Union[bool, str] = Field(
+    secure_headers_xfo: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO,
         union_mode="left_to_right",
     )
-    secure_headers_content: Union[bool, str] = Field(
+    secure_headers_content: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT,
         union_mode="left_to_right",
     )
-    secure_headers_csp: Union[bool, str] = Field(
+    secure_headers_csp: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP,
         union_mode="left_to_right",
     )
-    secure_headers_referrer: Union[bool, str] = Field(
+    secure_headers_referrer: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_REFERRER,
         union_mode="left_to_right",
     )
-    secure_headers_cache: Union[bool, str] = Field(
+    secure_headers_cache: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_CACHE,
         union_mode="left_to_right",
     )
-    secure_headers_permissions: Union[bool, str] = Field(
+    secure_headers_permissions: bool | str = Field(
         default=DEFAULT_ZENML_SERVER_SECURE_HEADERS_PERMISSIONS,
         union_mode="left_to_right",
     )
@@ -358,12 +358,12 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT
     )
 
-    _deployment_id: Optional[UUID] = None
+    _deployment_id: UUID | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _validate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate the server configuration.
 
         Args:
@@ -589,7 +589,7 @@ class ServerConfiguration(BaseModel):
         Returns:
             The server configuration.
         """
-        env_server_config: Dict[str, Any] = {}
+        env_server_config: dict[str, Any] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue
@@ -693,9 +693,9 @@ class ServerProConfiguration(BaseModel):
     oauth2_client_secret: str
     oauth2_audience: str
     organization_id: UUID
-    organization_name: Optional[str] = None
+    organization_name: str | None = None
     workspace_id: UUID
-    workspace_name: Optional[str] = None
+    workspace_name: str | None = None
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
 
     @field_validator("api_url", "dashboard_url")
@@ -718,7 +718,7 @@ class ServerProConfiguration(BaseModel):
         Returns:
             The server Pro configuration.
         """
-        env_server_config: Dict[str, Any] = {}
+        env_server_config: dict[str, Any] = {}
         for k, v in os.environ.items():
             if v == "":
                 continue

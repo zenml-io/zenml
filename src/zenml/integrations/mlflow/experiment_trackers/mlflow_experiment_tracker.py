@@ -103,7 +103,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         return cast(MLFlowExperimentTrackerConfig, self._config)
 
     @property
-    def local_path(self) -> Optional[str]:
+    def local_path(self) -> str | None:
         """Path to the local directory where the MLflow artifacts are stored.
 
         Returns:
@@ -140,7 +140,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             )
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Mlflow experiment tracker.
 
         Returns:
@@ -212,7 +212,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -221,7 +221,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
-        metadata: Dict[str, Any] = {
+        metadata: dict[str, Any] = {
             METADATA_EXPERIMENT_TRACKER_URL: Uri(
                 self.get_tracking_uri(as_plain_text=False)
             ),
@@ -317,7 +317,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             "true" if self.config.tracking_insecure_tls else "false"
         )
 
-    def get_run_id(self, experiment_name: str, run_name: str) -> Optional[str]:
+    def get_run_id(self, experiment_name: str, run_name: str) -> str | None:
         """Gets the if of a run with the given name and experiment.
 
         Args:
@@ -393,7 +393,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             return experiment_name
 
     @staticmethod
-    def _get_internal_tags() -> Dict[str, Any]:
+    def _get_internal_tags() -> dict[str, Any]:
         """Gets ZenML internal tags for MLflow runs.
 
         Returns:

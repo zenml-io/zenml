@@ -71,7 +71,7 @@ class RunTemplateRequest(ProjectScopedRequest):
         title="The name of the run template.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -83,7 +83,7 @@ class RunTemplateRequest(ProjectScopedRequest):
         default=False,
         title="Whether the run template is hidden.",
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         default=None,
         title="Tags of the run template.",
     )
@@ -95,24 +95,24 @@ class RunTemplateRequest(ProjectScopedRequest):
 class RunTemplateUpdate(BaseUpdate):
     """Run template update model."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The name of the run template.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    hidden: Optional[bool] = Field(
+    hidden: bool | None = Field(
         default=None,
         title="Whether the run template is hidden.",
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         default=None, title="New tags to add to the run template."
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         default=None, title="Tags to remove from the run template."
     )
 
@@ -135,17 +135,17 @@ class RunTemplateResponseBody(ProjectScopedResponseBody):
 class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for run templates."""
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the run template.",
     )
-    pipeline_spec: Optional[PipelineSpec] = Field(
+    pipeline_spec: PipelineSpec | None = Field(
         default=None, title="The spec of the pipeline."
     )
-    config_template: Optional[Dict[str, Any]] = Field(
+    config_template: dict[str, Any] | None = Field(
         default=None, title="Run configuration template."
     )
-    config_schema: Optional[Dict[str, Any]] = Field(
+    config_schema: dict[str, Any] | None = Field(
         default=None, title="Run configuration schema."
     )
 
@@ -153,29 +153,29 @@ class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
 class RunTemplateResponseResources(ProjectScopedResponseResources):
     """All resource models associated with the run template."""
 
-    source_snapshot: Optional[PipelineSnapshotResponse] = Field(
+    source_snapshot: PipelineSnapshotResponse | None = Field(
         default=None,
         title="The snapshot that is the source of the template.",
     )
-    pipeline: Optional[PipelineResponse] = Field(
+    pipeline: PipelineResponse | None = Field(
         default=None, title="The pipeline associated with the template."
     )
-    build: Optional[PipelineBuildResponse] = Field(
+    build: PipelineBuildResponse | None = Field(
         default=None,
         title="The pipeline build associated with the template.",
     )
-    code_reference: Optional[CodeReferenceResponse] = Field(
+    code_reference: CodeReferenceResponse | None = Field(
         default=None,
         title="The code reference associated with the template.",
     )
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         title="Tags associated with the run template.",
     )
-    latest_run_id: Optional[UUID] = Field(
+    latest_run_id: UUID | None = Field(
         default=None,
         title="The ID of the latest run of the run template.",
     )
-    latest_run_status: Optional[ExecutionStatus] = Field(
+    latest_run_status: ExecutionStatus | None = Field(
         default=None,
         title="The status of the latest run of the run template.",
     )
@@ -227,7 +227,7 @@ class RunTemplateResponse(
         return self.get_body().hidden
 
     @property
-    def latest_run_id(self) -> Optional[UUID]:
+    def latest_run_id(self) -> UUID | None:
         """The `latest_run_id` property.
 
         Returns:
@@ -236,7 +236,7 @@ class RunTemplateResponse(
         return self.get_resources().latest_run_id
 
     @property
-    def latest_run_status(self) -> Optional[ExecutionStatus]:
+    def latest_run_status(self) -> ExecutionStatus | None:
         """The `latest_run_status` property.
 
         Returns:
@@ -245,7 +245,7 @@ class RunTemplateResponse(
         return self.get_resources().latest_run_status
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -254,7 +254,7 @@ class RunTemplateResponse(
         return self.get_metadata().description
 
     @property
-    def pipeline_spec(self) -> Optional[PipelineSpec]:
+    def pipeline_spec(self) -> PipelineSpec | None:
         """The `pipeline_spec` property.
 
         Returns:
@@ -263,7 +263,7 @@ class RunTemplateResponse(
         return self.get_metadata().pipeline_spec
 
     @property
-    def config_template(self) -> Optional[Dict[str, Any]]:
+    def config_template(self) -> dict[str, Any] | None:
         """The `config_template` property.
 
         Returns:
@@ -272,7 +272,7 @@ class RunTemplateResponse(
         return self.get_metadata().config_template
 
     @property
-    def config_schema(self) -> Optional[Dict[str, Any]]:
+    def config_schema(self) -> dict[str, Any] | None:
         """The `config_schema` property.
 
         Returns:
@@ -281,7 +281,7 @@ class RunTemplateResponse(
         return self.get_metadata().config_schema
 
     @property
-    def source_snapshot(self) -> Optional[PipelineSnapshotResponse]:
+    def source_snapshot(self) -> PipelineSnapshotResponse | None:
         """The `source_snapshot` property.
 
         Returns:
@@ -290,7 +290,7 @@ class RunTemplateResponse(
         return self.get_resources().source_snapshot
 
     @property
-    def pipeline(self) -> Optional[PipelineResponse]:
+    def pipeline(self) -> PipelineResponse | None:
         """The `pipeline` property.
 
         Returns:
@@ -299,7 +299,7 @@ class RunTemplateResponse(
         return self.get_resources().pipeline
 
     @property
-    def build(self) -> Optional[PipelineBuildResponse]:
+    def build(self) -> PipelineBuildResponse | None:
         """The `build` property.
 
         Returns:
@@ -308,7 +308,7 @@ class RunTemplateResponse(
         return self.get_resources().build
 
     @property
-    def code_reference(self) -> Optional[CodeReferenceResponse]:
+    def code_reference(self) -> CodeReferenceResponse | None:
         """The `code_reference` property.
 
         Returns:
@@ -317,7 +317,7 @@ class RunTemplateResponse(
         return self.get_resources().code_reference
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -332,7 +332,7 @@ class RunTemplateResponse(
 class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     """Model for filtering of run templates."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
@@ -347,51 +347,51 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the run template.",
     )
-    hidden: Optional[bool] = Field(
+    hidden: bool | None = Field(
         default=None,
         description="Whether the run template is hidden.",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUID | str | None = Field(
         default=None,
         description="Pipeline associated with the template.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUID | str | None = Field(
         default=None,
         description="Build associated with the template.",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUID | str | None = Field(
         default=None,
         description="Stack associated with the template.",
         union_mode="left_to_right",
     )
-    code_repository_id: Optional[Union[UUID, str]] = Field(
+    code_repository_id: UUID | str | None = Field(
         default=None,
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUID | str | None = Field(
         default=None,
         description="Name/ID of the pipeline associated with the template.",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUID | str | None = Field(
         default=None,
         description="Name/ID of the stack associated with the template.",
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

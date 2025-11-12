@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 class AWSImageBuilder(BaseImageBuilder):
     """AWS Code Build image builder implementation."""
 
-    _code_build_client: Optional[Any] = None
+    _code_build_client: Any | None = None
 
     @property
     def config(self) -> AWSImageBuilderConfig:
@@ -73,7 +73,7 @@ class AWSImageBuilder(BaseImageBuilder):
             Stack validator.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.flavor != "s3":
                 return False, (
                     "The AWS Image Builder requires an S3 Artifact Store to "
@@ -126,7 +126,7 @@ class AWSImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: dict[str, Any],
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -169,7 +169,7 @@ class AWSImageBuilder(BaseImageBuilder):
         # Pass authentication credentials as environment variables, if
         # the container registry has credentials and if implicit authentication
         # is disabled
-        environment_variables_override: Dict[str, str] = {}
+        environment_variables_override: dict[str, str] = {}
         pre_build_commands = []
         if not self.config.implicit_container_registry_auth:
             credentials = container_registry.credentials

@@ -33,7 +33,7 @@ class LocalServerDeploymentConfig(BaseModel):
     provider: ServerProviderType
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         """Get the configured server URL.
 
         Returns:
@@ -73,10 +73,10 @@ class LocalServerDeploymentStatus(BaseModel):
     """
 
     status: ServiceState
-    status_message: Optional[str] = None
+    status_message: str | None = None
     connected: bool
-    url: Optional[str] = None
-    ca_crt: Optional[str] = None
+    url: str | None = None
+    ca_crt: str | None = None
 
 
 class LocalServerDeployment(BaseModel):
@@ -88,7 +88,7 @@ class LocalServerDeployment(BaseModel):
     """
 
     config: LocalServerDeploymentConfig
-    status: Optional[LocalServerDeploymentStatus] = None
+    status: LocalServerDeploymentStatus | None = None
 
     @property
     def is_running(self) -> bool:

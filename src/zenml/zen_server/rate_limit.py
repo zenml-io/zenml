@@ -20,14 +20,13 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import (
     Any,
-    Callable,
     Dict,
-    Generator,
     List,
     Optional,
     TypeVar,
     cast,
 )
+from collections.abc import Callable, Generator
 
 from starlette.requests import Request
 
@@ -43,8 +42,8 @@ class RequestLimiter:
 
     def __init__(
         self,
-        day_limit: Optional[int] = None,
-        minute_limit: Optional[int] = None,
+        day_limit: int | None = None,
+        minute_limit: int | None = None,
     ):
         """Initializes the limiter.
 
@@ -62,7 +61,7 @@ class RequestLimiter:
             raise ValueError("Pass either day or minuter limits, or both.")
         self.day_limit = day_limit
         self.minute_limit = minute_limit
-        self.limiter: Dict[str, List[float]] = defaultdict(list)
+        self.limiter: dict[str, list[float]] = defaultdict(list)
 
     def hit_limiter(self, request: Request) -> None:
         """Increase the number of hits in the limiter.
@@ -156,8 +155,8 @@ class RequestLimiter:
 
 
 def rate_limit_requests(
-    day_limit: Optional[int] = None,
-    minute_limit: Optional[int] = None,
+    day_limit: int | None = None,
+    minute_limit: int | None = None,
 ) -> Callable[..., Any]:
     """Decorator to handle exceptions in the API.
 

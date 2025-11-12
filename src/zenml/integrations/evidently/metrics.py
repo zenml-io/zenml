@@ -73,15 +73,15 @@ class EvidentlyMetricConfig(BaseModel):
     """
 
     class_path: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
     is_generator: bool = False
-    columns: Optional[Union[str, List[str]]] = Field(
+    columns: str | list[str] | None = Field(
         default=None, union_mode="left_to_right"
     )
     skip_id_column: bool = False
 
     @staticmethod
-    def get_metric_class(metric_name: str) -> Union[Metric, MetricPreset]:
+    def get_metric_class(metric_name: str) -> Metric | MetricPreset:
         """Get the Evidently metric or metric preset class from a string.
 
         Args:
@@ -129,8 +129,8 @@ class EvidentlyMetricConfig(BaseModel):
     @classmethod
     def metric_generator(
         cls,
-        metric: Union[Type[Metric], str],
-        columns: Optional[Union[str, List[str]]] = None,
+        metric: type[Metric] | str,
+        columns: str | list[str] | None = None,
         skip_id_column: bool = False,
         **parameters: Any,
     ) -> "EvidentlyMetricConfig":
@@ -230,7 +230,7 @@ class EvidentlyMetricConfig(BaseModel):
     @classmethod
     def metric(
         cls,
-        metric: Union[Type[Metric], Type[MetricPreset], str],
+        metric: type[Metric] | type[MetricPreset] | str,
         **parameters: Any,
     ) -> "EvidentlyMetricConfig":
         """Create a declarative configuration for an Evidently Metric.
@@ -302,7 +302,7 @@ class EvidentlyMetricConfig(BaseModel):
         return config
 
     @classmethod
-    def default_metrics(cls) -> List["EvidentlyMetricConfig"]:
+    def default_metrics(cls) -> list["EvidentlyMetricConfig"]:
         """Default Evidently metric configurations.
 
         Call this to fetch a default list of Evidently metrics to use in cases
@@ -324,7 +324,7 @@ class EvidentlyMetricConfig(BaseModel):
 
     def to_evidently_metric(
         self,
-    ) -> Union[Metric, MetricPreset, BaseGenerator]:
+    ) -> Metric | MetricPreset | BaseGenerator:
         """Create an Evidently Metric, MetricPreset or metric generator object.
 
         Call this method to create an Evidently Metric, MetricPreset or metric

@@ -29,7 +29,7 @@ class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
     """Materializer for Langchain OpenAI Embeddings."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (OpenAIEmbeddings,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (OpenAIEmbeddings,)
 
     def save(self, embeddings: Any) -> None:
         """Saves the embeddings model after clearing non-picklable clients.
@@ -44,7 +44,7 @@ class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):
         # Use the parent class's save implementation which uses cloudpickle
         super().save(embeddings)
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Loads the embeddings model and lets it recreate clients when needed.
 
         Args:

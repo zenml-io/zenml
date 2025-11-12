@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for all ZenML data validators."""
 
-from typing import Any, ClassVar, Optional, Sequence, Type, cast
+from typing import Any, ClassVar, Optional, Type, cast
+from collections.abc import Sequence
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
@@ -29,7 +30,7 @@ class BaseDataValidator(StackComponent):
     """Base class for all ZenML data validators."""
 
     NAME: ClassVar[str]
-    FLAVOR: ClassVar[Type["BaseDataValidatorFlavor"]]
+    FLAVOR: ClassVar[type["BaseDataValidatorFlavor"]]
 
     @property
     def config(self) -> BaseDataValidatorConfig:
@@ -73,8 +74,8 @@ class BaseDataValidator(StackComponent):
     def data_profiling(
         self,
         dataset: Any,
-        comparison_dataset: Optional[Any] = None,
-        profile_list: Optional[Sequence[Any]] = None,
+        comparison_dataset: Any | None = None,
+        profile_list: Sequence[Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """Analyze one or more datasets and generate a data profile.
@@ -121,8 +122,8 @@ class BaseDataValidator(StackComponent):
     def data_validation(
         self,
         dataset: Any,
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[Any]] = None,
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """Run data validation checks on a dataset.
@@ -167,8 +168,8 @@ class BaseDataValidator(StackComponent):
         self,
         dataset: Any,
         model: Any,
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[Any]] = None,
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         """Run model validation checks.
@@ -227,7 +228,7 @@ class BaseDataValidatorFlavor(Flavor):
         return StackComponentType.DATA_VALIDATOR
 
     @property
-    def config_class(self) -> Type[BaseDataValidatorConfig]:
+    def config_class(self) -> type[BaseDataValidatorConfig]:
         """Config class for data validator.
 
         Returns:
@@ -236,7 +237,7 @@ class BaseDataValidatorFlavor(Flavor):
         return BaseDataValidatorConfig
 
     @property
-    def implementation_class(self) -> Type[BaseDataValidator]:
+    def implementation_class(self) -> type[BaseDataValidator]:
         """Implementation for data validator.
 
         Returns:

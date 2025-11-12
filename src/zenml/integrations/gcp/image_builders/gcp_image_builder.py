@@ -69,7 +69,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
             Stack validator.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             assert stack.container_registry
 
             if stack.container_registry.config.is_local:
@@ -98,7 +98,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: dict[str, Any],
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -141,7 +141,7 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         self,
         image_name: str,
         cloud_build_context: str,
-        build_options: Dict[str, Any],
+        build_options: dict[str, Any],
     ) -> cloudbuild_v1.Build:
         """Configures the build to be run to generate the Docker image.
 

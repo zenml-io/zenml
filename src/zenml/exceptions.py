@@ -21,8 +21,8 @@ class ZenMLBaseException(Exception):
 
     def __init__(
         self,
-        message: Optional[str] = None,
-        url: Optional[str] = None,
+        message: str | None = None,
+        url: str | None = None,
     ):
         """The BaseException used to format messages displayed to the user.
 
@@ -177,8 +177,8 @@ class OAuthError(ValueError):
         self,
         error: str,
         status_code: int = 400,
-        error_description: Optional[str] = None,
-        error_uri: Optional[str] = None,
+        error_description: str | None = None,
+        error_uri: str | None = None,
     ) -> None:
         """Initializes the OAuthError.
 
@@ -193,7 +193,7 @@ class OAuthError(ValueError):
         self.error_description = error_description
         self.error_uri = error_uri
 
-    def to_dict(self) -> Dict[str, Optional[str]]:
+    def to_dict(self) -> dict[str, str | None]:
         """Returns the OAuthError as a dictionary.
 
         Returns:

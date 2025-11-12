@@ -16,7 +16,8 @@
 import base64
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -58,16 +59,16 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     description: str
     auth_method: str = Field(sa_column=Column(TEXT))
     resource_types: bytes
-    resource_id: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    resource_id: str | None = Field(sa_column=Column(TEXT, nullable=True))
     supports_instances: bool
-    configuration: Optional[bytes]
-    secret_id: Optional[UUID]
-    expires_at: Optional[datetime]
-    expires_skew_tolerance: Optional[int]
-    expiration_seconds: Optional[int]
-    labels: Optional[bytes]
+    configuration: bytes | None
+    secret_id: UUID | None
+    expires_at: datetime | None
+    expires_skew_tolerance: int | None
+    expiration_seconds: int | None
+    labels: bytes | None
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -78,7 +79,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="service_connectors"
     )
-    components: List["StackComponentSchema"] = Relationship(
+    components: list["StackComponentSchema"] = Relationship(
         back_populates="connector",
     )
 
@@ -109,7 +110,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         return options
 
     @property
-    def resource_types_list(self) -> List[str]:
+    def resource_types_list(self) -> list[str]:
         """Returns the resource types as a list.
 
         Returns:
@@ -122,7 +123,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         return resource_types
 
     @property
-    def labels_dict(self) -> Dict[str, str]:
+    def labels_dict(self) -> dict[str, str]:
         """Returns the labels as a dictionary.
 
         Returns:
@@ -131,9 +132,9 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         if self.labels is None:
             return {}
         labels_dict = json.loads(base64.b64decode(self.labels).decode())
-        return cast(Dict[str, str], labels_dict)
+        return cast(dict[str, str], labels_dict)
 
-    def has_labels(self, labels: Dict[str, Optional[str]]) -> bool:
+    def has_labels(self, labels: dict[str, str | None]) -> bool:
         """Checks if the connector has the given labels.
 
         Args:
@@ -156,7 +157,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     def from_request(
         cls,
         connector_request: ServiceConnectorRequest,
-        secret_id: Optional[UUID] = None,
+        secret_id: UUID | None = None,
     ) -> "ServiceConnectorSchema":
         """Create a `ServiceConnectorSchema` from a `ServiceConnectorRequest`.
 
@@ -200,7 +201,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     def update(
         self,
         connector_update: ServiceConnectorUpdate,
-        secret_id: Optional[UUID] = None,
+        secret_id: UUID | None = None,
     ) -> "ServiceConnectorSchema":
         """Updates a `ServiceConnectorSchema` from a `ServiceConnectorUpdate`.
 

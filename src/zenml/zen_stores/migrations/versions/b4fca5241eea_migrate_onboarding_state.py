@@ -48,11 +48,11 @@ def upgrade() -> None:
         # -> Migrate to the new server keys
         state = json.loads(existing_onboarding_state)
 
-        if isinstance(state, Dict):
+        if isinstance(state, dict):
             for key in state.keys():
                 if key in ONBOARDING_KEY_MAPPING:
                     new_state.extend(ONBOARDING_KEY_MAPPING[key])
-        elif isinstance(state, List):
+        elif isinstance(state, list):
             # Somehow the state is already converted, probably shouldn't happen
             return
 

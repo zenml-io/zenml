@@ -60,19 +60,19 @@ class ArtifactConfig(BaseModel):
             is used.
     """
 
-    name: Optional[str] = None
-    version: Optional[Union[str, int]] = Field(
+    name: str | None = None
+    version: str | int | None = Field(
         default=None, union_mode="smart"
     )
-    tags: Optional[List[str]] = None
-    run_metadata: Optional[Dict[str, MetadataType]] = None
+    tags: list[str] | None = None
+    run_metadata: dict[str, MetadataType] | None = None
 
-    artifact_type: Optional[ArtifactType] = None
+    artifact_type: ArtifactType | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _remove_old_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _remove_old_attributes(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Remove old attributes that are not used anymore.
 
         Args:

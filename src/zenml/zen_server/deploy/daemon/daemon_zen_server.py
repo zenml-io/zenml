@@ -65,15 +65,15 @@ class DaemonServerDeploymentConfig(LocalServerDeploymentConfig):
     """
 
     port: int = 8237
-    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = Field(
+    ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address = Field(
         default=ipaddress.IPv4Address(DEFAULT_LOCAL_SERVICE_IP_ADDRESS),
         union_mode="left_to_right",
     )
     blocking: bool = False
-    store: Optional[StoreConfiguration] = None
+    store: StoreConfiguration | None = None
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         """Get the configured server URL.
 
         Returns:
@@ -144,14 +144,14 @@ class DaemonZenServer(LocalDaemonService):
         """
         config_filename = os.path.join(cls.config_path(), "service.json")
         try:
-            with open(config_filename, "r") as f:
+            with open(config_filename) as f:
                 return cast(
                     "DaemonZenServer", DaemonZenServer.from_json(f.read())
                 )
         except FileNotFoundError:
             return None
 
-    def _get_daemon_cmd(self) -> Tuple[List[str], Dict[str, str]]:
+    def _get_daemon_cmd(self) -> tuple[list[str], dict[str, str]]:
         """Get the command to start the daemon.
 
         Overrides the base class implementation to add the environment variable

@@ -26,7 +26,7 @@ class OrganizationRead(BaseRestAPIModel):
     id: UUID
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     created: datetime
     updated: datetime

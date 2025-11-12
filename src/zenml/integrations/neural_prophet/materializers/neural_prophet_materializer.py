@@ -33,6 +33,6 @@ DEFAULT_FILENAME = "entire_model.pt"
 class NeuralProphetMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (NeuralProphet,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (NeuralProphet,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     FILENAME: ClassVar[str] = DEFAULT_FILENAME

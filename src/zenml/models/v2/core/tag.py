@@ -86,13 +86,13 @@ class TagRequest(UserScopedRequest):
 class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
-    name: Optional[str] = None
-    exclusive: Optional[bool] = None
-    color: Optional[ColorVariants] = None
+    name: str | None = None
+    exclusive: bool | None = None
+    color: ColorVariants | None = None
 
     @field_validator("name")
     @classmethod
-    def validate_name_not_uuid(cls, value: Optional[str]) -> Optional[str]:
+    def validate_name_not_uuid(cls, value: str | None) -> str | None:
         """Validates that the tag name is not a UUID.
 
         Args:
@@ -195,29 +195,29 @@ class TagResponse(
 class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_type",
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="The unique title of the tag.", default=None
     )
-    color: Optional[ColorVariants] = Field(
+    color: ColorVariants | None = Field(
         description="The color variant assigned to the tag.", default=None
     )
-    exclusive: Optional[bool] = Field(
+    exclusive: bool | None = Field(
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )
-    resource_type: Optional[TaggableResourceTypes] = Field(
+    resource_type: TaggableResourceTypes | None = Field(
         description="Filter tags associated with a specific resource type.",
         default=None,
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

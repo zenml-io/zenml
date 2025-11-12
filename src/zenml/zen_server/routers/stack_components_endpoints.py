@@ -74,7 +74,7 @@ types_router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_stack_component(
     component: ComponentRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
     """Creates a stack component.
@@ -86,7 +86,7 @@ def create_stack_component(
     Returns:
         The created stack component.
     """
-    rbac_read_checks: List[BaseModel] = []
+    rbac_read_checks: list[BaseModel] = []
     if component.connector:
         service_connector = zen_store().get_service_connector(
             component.connector
@@ -142,7 +142,7 @@ def list_stack_components(
     component_filter_model: ComponentFilter = Depends(
         make_dependable(ComponentFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
@@ -230,7 +230,7 @@ def update_stack_component(
                 mode="json", exclude_unset=True
             )
 
-    rbac_read_checks: List[BaseModel] = []
+    rbac_read_checks: list[BaseModel] = []
     if component_update.connector:
         service_connector = zen_store().get_service_connector(
             component_update.connector
@@ -283,7 +283,7 @@ def deregister_stack_component(
 @async_fastapi_endpoint_wrapper
 def get_stack_component_types(
     _: AuthContext = Security(authorize),
-) -> List[str]:
+) -> list[str]:
     """Get a list of all stack component types.
 
     Returns:

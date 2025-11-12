@@ -13,7 +13,8 @@
 # permissions and limitations under the License.
 """SQLModel implementation of curated visualization tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -74,8 +75,8 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         custom_constraint_name="fk_curated_visualization_artifact_visualization_id",
     )
 
-    display_name: Optional[str] = Field(default=None)
-    display_order: Optional[int] = Field(default=None)
+    display_name: str | None = Field(default=None)
+    display_order: int | None = Field(default=None)
     layout_size: str = Field(
         default=CuratedVisualizationSize.FULL_WIDTH.value,
         nullable=False,
@@ -106,7 +107,7 @@ class CuratedVisualizationSchema(BaseSchema, table=True):
         Returns:
             A list of query options.
         """
-        options: List[ExecutableOption] = []
+        options: list[ExecutableOption] = []
 
         if include_resources:
             options.append(selectinload(jl_arg(cls.artifact_visualization)))

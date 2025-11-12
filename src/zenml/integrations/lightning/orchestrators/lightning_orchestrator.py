@@ -99,7 +99,7 @@ class LightningOrchestrator(BaseOrchestrator):
         return cast(LightningOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[LightningOrchestratorSettings]:
+    def settings_class(self) -> type[LightningOrchestratorSettings]:
         """Settings class for the Lightning orchestrator.
 
         Returns:
@@ -160,10 +160,10 @@ class LightningOrchestrator(BaseOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -241,7 +241,7 @@ class LightningOrchestrator(BaseOrchestrator):
 
         def _construct_lightning_steps(
             snapshot: "PipelineSnapshotResponse",
-        ) -> Dict[str, Dict[str, Any]]:
+        ) -> dict[str, dict[str, Any]]:
             """Construct the steps for the pipeline.
 
             Args:
@@ -367,7 +367,7 @@ class LightningOrchestrator(BaseOrchestrator):
         orchestrator_run_id: str,
         requirements: str,
         settings: LightningOrchestratorSettings,
-        steps_commands: Dict[str, Dict[str, Any]],
+        steps_commands: dict[str, dict[str, Any]],
         code_path: str,
         filename: str,
         env_file_path: str,
@@ -474,11 +474,11 @@ class LightningOrchestrator(BaseOrchestrator):
         self,
         orchestrator_run_id: str,
         step_name: str,
-        details: Dict[str, Any],
+        details: dict[str, Any],
         code_path: str,
         filename: str,
         env_file_path: str,
-        custom_commands: Optional[List[str]] = None,
+        custom_commands: list[str] | None = None,
     ) -> None:
         """Run a step in a new studio.
 
@@ -531,7 +531,7 @@ class LightningOrchestrator(BaseOrchestrator):
         studio.delete()
 
     def _run_step_in_main_studio(
-        self, studio: Studio, details: Dict[str, Any], filename: str
+        self, studio: Studio, details: dict[str, Any], filename: str
     ) -> None:
         """Run a step in the main studio.
 

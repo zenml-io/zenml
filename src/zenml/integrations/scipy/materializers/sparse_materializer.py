@@ -29,10 +29,10 @@ DATA_FILENAME = "data.npz"
 class SparseMaterializer(BaseMaterializer):
     """Materializer to read and write scipy sparse matrices."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (spmatrix,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (spmatrix,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> spmatrix:
+    def load(self, data_type: type[Any]) -> spmatrix:
         """Reads spmatrix from npz file.
 
         Args:
@@ -54,7 +54,7 @@ class SparseMaterializer(BaseMaterializer):
         with fileio.open(os.path.join(self.uri, DATA_FILENAME), "wb") as f:
             save_npz(f, mat)
 
-    def extract_metadata(self, mat: spmatrix) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, mat: spmatrix) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `spmatrix` object.
 
         Args:

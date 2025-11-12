@@ -59,27 +59,27 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
         description="The timeout to wait until the pod is running in seconds.",
     )
 
-    env: List[Dict[str, Any]] = Field(
+    env: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Environment variables section of the Kubernetes container spec. "
         "Used to configure secrets and environment variables for registry access.",
     )
-    env_from: List[Dict[str, Any]] = Field(
+    env_from: list[dict[str, Any]] = Field(
         default_factory=list,
         description="EnvFrom section of the Kubernetes container spec. "
         "Used to load environment variables from ConfigMaps or Secrets.",
     )
-    volume_mounts: List[Dict[str, Any]] = Field(
+    volume_mounts: list[dict[str, Any]] = Field(
         default_factory=list,
         description="VolumeMounts section of the Kubernetes container spec. "
         "Used to mount volumes containing credentials or other data.",
     )
-    volumes: List[Dict[str, Any]] = Field(
+    volumes: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Volumes section of the Kubernetes pod spec. "
         "Used to define volumes for credentials or other data.",
     )
-    service_account_name: Optional[str] = Field(
+    service_account_name: str | None = Field(
         None,
         description="Name of the Kubernetes service account to use for the Kaniko pod. "
         "This service account should have the necessary permissions for building and pushing images.",
@@ -91,7 +91,7 @@ class KanikoImageBuilderConfig(BaseImageBuilderConfig):
         "If `False`, the build context will be streamed over stdin of the kubectl process.",
     )
 
-    executor_args: List[str] = Field(
+    executor_args: list[str] = Field(
         default_factory=list,
         description="Additional arguments to forward to the Kaniko executor. "
         "See Kaniko documentation for available flags, e.g. ['--compressed-caching=false'].",
@@ -111,7 +111,7 @@ class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):
         return KANIKO_IMAGE_BUILDER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -120,7 +120,7 @@ class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -138,7 +138,7 @@ class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/kaniko.png"
 
     @property
-    def config_class(self) -> Type[KanikoImageBuilderConfig]:
+    def config_class(self) -> type[KanikoImageBuilderConfig]:
         """Config class.
 
         Returns:
@@ -147,7 +147,7 @@ class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):
         return KanikoImageBuilderConfig
 
     @property
-    def implementation_class(self) -> Type["KanikoImageBuilder"]:
+    def implementation_class(self) -> type["KanikoImageBuilder"]:
         """Implementation class.
 
         Returns:

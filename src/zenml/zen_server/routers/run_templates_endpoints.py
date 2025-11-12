@@ -88,7 +88,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_run_template(
     run_template: RunTemplateRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> RunTemplateResponse:
     """Create a run template.
@@ -127,7 +127,7 @@ def list_run_templates(
     filter_model: RunTemplateFilter = Depends(
         make_dependable(RunTemplateFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[RunTemplateResponse]:
@@ -243,7 +243,7 @@ if server_config().workload_manager_enabled:
     @async_fastapi_endpoint_wrapper
     def create_template_run(
         template_id: UUID,
-        config: Optional[PipelineRunConfiguration] = None,
+        config: PipelineRunConfiguration | None = None,
         auth_context: AuthContext = Security(authorize),
     ) -> PipelineRunResponse:
         """Run a pipeline from a template.

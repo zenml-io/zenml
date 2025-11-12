@@ -90,7 +90,7 @@ logger = get_logger(__name__)
 
 def dissect_schedule_arn(
     schedule_arn: str,
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """Extracts the region and the name from an EventBridge schedule ARN.
 
     Args:
@@ -120,7 +120,7 @@ def dissect_schedule_arn(
 
 def dissect_pipeline_execution_arn(
     pipeline_execution_arn: str,
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None, str | None]:
     """Extract region name, pipeline name, and execution id from the ARN.
 
     Args:
@@ -159,7 +159,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         return cast(SagemakerOrchestratorConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         In the remote case, checks that the stack contains a container registry,
@@ -171,7 +171,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             for component in stack.components.values():
                 if not component.config.is_local:
                     continue
@@ -216,7 +216,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Sagemaker orchestrator.
 
         Returns:
@@ -275,10 +275,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -437,10 +437,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
 
             # Construct S3 inputs to container for step
-            training_inputs: Optional[
-                Union[TrainingInput, Dict[str, TrainingInput]]
-            ] = None
-            processing_inputs: Optional[List[ProcessingInput]] = None
+            training_inputs: None | (
+                TrainingInput | dict[str, TrainingInput]
+            ) = None
+            processing_inputs: list[ProcessingInput] | None = None
 
             if step_settings.input_data_s3_uri is None:
                 pass
@@ -514,7 +514,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                     )
 
-            final_step_environment: Dict[str, Union[str, PipelineVariable]] = {
+            final_step_environment: dict[str, str | PipelineVariable] = {
                 key: str(value) for key, value in step_environment.items()
             }
             final_step_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
@@ -535,7 +535,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 sagemaker_step = TrainingStep(
                     name=step_name,
                     depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
+                        Optional[list[Union[str, Step, StepCollection]]],
                         step.spec.upstream_steps,
                     ),
                     inputs=training_inputs,
@@ -545,7 +545,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 # Create Processor and ProcessingStep
                 processor = Processor(
                     entrypoint=cast(
-                        Optional[List[Union[str, PipelineVariable]]],
+                        Optional[list[Union[str, PipelineVariable]]],
                         entrypoint,
                     ),
                     env=final_step_environment,
@@ -556,7 +556,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     name=step_name,
                     processor=processor,
                     depends_on=cast(
-                        Optional[List[Union[str, Step, StepCollection]]],
+                        Optional[list[Union[str, Step, StepCollection]]],
                         step.spec.upstream_steps,
                     ),
                     inputs=processing_inputs,
@@ -787,7 +787,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:
@@ -810,8 +810,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -881,7 +881,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         self,
         execution_arn: str,
         settings: SagemakerOrchestratorSettings,
-    ) -> Dict[str, MetadataType]:
+    ) -> dict[str, MetadataType]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
@@ -892,7 +892,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             A dictionary of metadata related to the pipeline run.
         """
         # Orchestrator Run ID
-        metadata: Dict[str, MetadataType] = {
+        metadata: dict[str, MetadataType] = {
             "pipeline_execution_arn": execution_arn,
             METADATA_ORCHESTRATOR_RUN_ID: execution_arn,
         }
@@ -914,7 +914,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
     def _compute_orchestrator_url(
         self,
         execution_arn: Any,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
@@ -953,7 +953,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
     def _compute_orchestrator_logs_url(
         execution_arn: Any,
         settings: SagemakerOrchestratorSettings,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
@@ -989,7 +989,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
     @staticmethod
     def generate_schedule_metadata(
         schedule_arn: str,
-    ) -> Dict[str, MetadataType]:
+    ) -> dict[str, MetadataType]:
         """Attaches metadata to the ZenML Schedules.
 
         Args:

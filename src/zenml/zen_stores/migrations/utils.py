@@ -19,13 +19,12 @@ import re
 import shutil
 from typing import (
     Any,
-    Callable,
     Dict,
-    Generator,
     List,
     Optional,
     cast,
 )
+from collections.abc import Callable, Generator
 
 import pymysql
 from pydantic import BaseModel, ConfigDict
@@ -50,13 +49,13 @@ class MigrationUtils(BaseModel):
     """Utilities for database migration, backup and recovery."""
 
     url: URL
-    connect_args: Dict[str, Any]
-    engine_args: Dict[str, Any]
+    connect_args: dict[str, Any]
+    engine_args: dict[str, Any]
 
-    _engine: Optional[Engine] = None
-    _master_engine: Optional[Engine] = None
+    _engine: Engine | None = None
+    _master_engine: Engine | None = None
 
-    def create_engine(self, database: Optional[str] = None) -> Engine:
+    def create_engine(self, database: str | None = None) -> Engine:
         """Get the SQLAlchemy engine for a database.
 
         Args:
@@ -115,7 +114,7 @@ class MigrationUtils(BaseModel):
 
     def database_exists(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
     ) -> bool:
         """Check if a database exists.
 
@@ -147,7 +146,7 @@ class MigrationUtils(BaseModel):
 
     def drop_database(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
     ) -> None:
         """Drops a mysql database.
 
@@ -163,7 +162,7 @@ class MigrationUtils(BaseModel):
 
     def create_database(
         self,
-        database: Optional[str] = None,
+        database: str | None = None,
         drop: bool = False,
     ) -> None:
         """Creates a mysql database.
@@ -182,7 +181,7 @@ class MigrationUtils(BaseModel):
             conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{database}`"))
 
     def backup_database_to_storage(
-        self, store_db_info: Callable[[Dict[str, Any]], None]
+        self, store_db_info: Callable[[dict[str, Any]], None]
     ) -> None:
         """Backup the database to a storage location.
 
@@ -358,7 +357,7 @@ class MigrationUtils(BaseModel):
                         )
 
     def restore_database_from_storage(
-        self, load_db_info: Callable[[], Generator[Dict[str, Any], None, None]]
+        self, load_db_info: Callable[[], Generator[dict[str, Any], None, None]]
     ) -> None:
         """Restore the database from a backup storage location.
 
@@ -385,7 +384,7 @@ class MigrationUtils(BaseModel):
 
         with self.engine.begin() as connection:
             # read the DB information one JSON object at a time
-            self_references: Dict[str, bool] = {}
+            self_references: dict[str, bool] = {}
             for table_dump in load_db_info():
                 table_name = table_dump["table"]
                 if "create_stmt" in table_dump:
@@ -515,7 +514,7 @@ class MigrationUtils(BaseModel):
 
         with open(dump_file, "w") as f:
 
-            def json_dump(obj: Dict[str, Any]) -> None:
+            def json_dump(obj: dict[str, Any]) -> None:
                 """Dump a JSON object to the dump file.
 
                 Args:
@@ -566,9 +565,9 @@ class MigrationUtils(BaseModel):
             return
 
         # read the DB dump file one JSON object at a time
-        with open(dump_file, "r") as f:
+        with open(dump_file) as f:
 
-            def json_load() -> Generator[Dict[str, Any], None, None]:
+            def json_load() -> Generator[dict[str, Any], None, None]:
                 """Generator that loads the JSON objects in the dump file.
 
                 Yields:
@@ -590,7 +589,7 @@ class MigrationUtils(BaseModel):
 
         logger.info(f"Database successfully restored from '{dump_file}'")
 
-    def backup_database_to_memory(self) -> List[Dict[str, Any]]:
+    def backup_database_to_memory(self) -> list[dict[str, Any]]:
         """Backup the database in memory.
 
         Returns:
@@ -605,9 +604,9 @@ class MigrationUtils(BaseModel):
                 "In-memory backup is not supported for sqlite databases."
             )
 
-        db_dump: List[Dict[str, Any]] = []
+        db_dump: list[dict[str, Any]] = []
 
-        def store_in_mem(obj: Dict[str, Any]) -> None:
+        def store_in_mem(obj: dict[str, Any]) -> None:
             """Store a JSON object in the in-memory database backup.
 
             Args:
@@ -624,7 +623,7 @@ class MigrationUtils(BaseModel):
         return db_dump
 
     def restore_database_from_memory(
-        self, db_dump: List[Dict[str, Any]]
+        self, db_dump: list[dict[str, Any]]
     ) -> None:
         """Restore the database from an in-memory backup.
 
@@ -641,14 +640,13 @@ class MigrationUtils(BaseModel):
                 "In-memory backup is not supported for sqlite databases."
             )
 
-        def load_from_mem() -> Generator[Dict[str, Any], None, None]:
+        def load_from_mem() -> Generator[dict[str, Any], None, None]:
             """Generator that loads the JSON objects from the in-memory backup.
 
             Yields:
                 The loaded JSON objects.
             """
-            for obj in db_dump:
-                yield obj
+            yield from db_dump
 
         # Call the generic restore method with a function that loads the
         # JSON objects from the in-memory database backup

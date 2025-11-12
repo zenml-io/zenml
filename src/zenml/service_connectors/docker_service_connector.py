@@ -58,7 +58,7 @@ class DockerCredentials(AuthenticationConfig):
 class DockerConfiguration(DockerCredentials):
     """Docker client configuration."""
 
-    registry: Optional[str] = Field(
+    registry: str | None = Field(
         default=None,
         title="Registry server URL. Omit to use DockerHub.",
     )
@@ -159,7 +159,7 @@ class DockerServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid Docker
                 registry.
         """
-        registry: Optional[str] = None
+        registry: str | None = None
         if re.match(
             r"^(https?://)?[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*(:[0-9]+)?(/.+)*$",
             resource_id,
@@ -321,9 +321,9 @@ class DockerServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> "DockerServiceConnector":
         """Auto-configure the connector.
@@ -351,9 +351,9 @@ class DockerServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify that the connector can authenticate and access resources.
 
         Args:

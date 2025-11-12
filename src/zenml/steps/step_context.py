@@ -19,11 +19,10 @@ from typing import (
     Any,
     Dict,
     List,
-    Mapping,
     Optional,
-    Sequence,
     Type,
 )
+from collections.abc import Mapping, Sequence
 
 from typing_extensions import Self
 
@@ -81,10 +80,10 @@ class RunContext(metaclass=SingletonMetaClass):
     def __init__(self) -> None:
         """Create the run context."""
         self.initialized = False
-        self._state: Optional[Any] = None
+        self._state: Any | None = None
 
     @property
-    def state(self) -> Optional[Any]:
+    def state(self) -> Any | None:
         """Returns the pipeline state.
 
         Returns:
@@ -100,7 +99,7 @@ class RunContext(metaclass=SingletonMetaClass):
             )
         return self._state
 
-    def initialize(self, state: Optional[Any]) -> None:
+    def initialize(self, state: Any | None) -> None:
         """Initialize the run context.
 
         Args:
@@ -146,7 +145,7 @@ class StepContext(context_utils.BaseContext):
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        output_materializers: Mapping[str, Sequence[Type["BaseMaterializer"]]],
+        output_materializers: Mapping[str, Sequence[type["BaseMaterializer"]]],
         output_artifact_uris: Mapping[str, str],
         output_artifact_configs: Mapping[str, Optional["ArtifactConfig"]],
     ) -> None:
@@ -223,7 +222,7 @@ class StepContext(context_utils.BaseContext):
         )
 
     @property
-    def pipeline_state(self) -> Optional[Any]:
+    def pipeline_state(self) -> Any | None:
         """Returns the pipeline state.
 
         Returns:
@@ -256,7 +255,7 @@ class StepContext(context_utils.BaseContext):
         return self.model_version.to_model_class()
 
     @property
-    def inputs(self) -> Dict[str, "StepRunInputResponse"]:
+    def inputs(self) -> dict[str, "StepRunInputResponse"]:
         """Returns the input artifacts of the current step.
 
         Returns:
@@ -265,7 +264,7 @@ class StepContext(context_utils.BaseContext):
         return self.step_run.regular_inputs
 
     def _get_output(
-        self, output_name: Optional[str] = None
+        self, output_name: str | None = None
     ) -> "StepContextOutput":
         """Returns the materializer and artifact URI for a given step output.
 
@@ -310,9 +309,9 @@ class StepContext(context_utils.BaseContext):
 
     def get_output_materializer(
         self,
-        output_name: Optional[str] = None,
-        custom_materializer_class: Optional[Type["BaseMaterializer"]] = None,
-        data_type: Optional[Type[Any]] = None,
+        output_name: str | None = None,
+        custom_materializer_class: type["BaseMaterializer"] | None = None,
+        data_type: type[Any] | None = None,
     ) -> "BaseMaterializer":
         """Returns a materializer for a given step output.
 
@@ -353,7 +352,7 @@ class StepContext(context_utils.BaseContext):
         return materializer_class(artifact_uri)
 
     def get_output_artifact_uri(
-        self, output_name: Optional[str] = None
+        self, output_name: str | None = None
     ) -> str:
         """Returns the artifact URI for a given step output.
 
@@ -369,8 +368,8 @@ class StepContext(context_utils.BaseContext):
         return self._get_output(output_name).artifact_uri
 
     def get_output_metadata(
-        self, output_name: Optional[str] = None
-    ) -> Dict[str, "MetadataType"]:
+        self, output_name: str | None = None
+    ) -> dict[str, "MetadataType"]:
         """Returns the metadata for a given step output.
 
         Args:
@@ -390,7 +389,7 @@ class StepContext(context_utils.BaseContext):
             )
         return custom_metadata
 
-    def get_output_tags(self, output_name: Optional[str] = None) -> List[str]:
+    def get_output_tags(self, output_name: str | None = None) -> list[str]:
         """Returns the tags for a given step output.
 
         Args:
@@ -412,8 +411,8 @@ class StepContext(context_utils.BaseContext):
 
     def add_output_metadata(
         self,
-        metadata: Dict[str, "MetadataType"],
-        output_name: Optional[str] = None,
+        metadata: dict[str, "MetadataType"],
+        output_name: str | None = None,
     ) -> None:
         """Adds metadata for a given step output.
 
@@ -431,8 +430,8 @@ class StepContext(context_utils.BaseContext):
 
     def add_output_tags(
         self,
-        tags: List[str],
-        output_name: Optional[str] = None,
+        tags: list[str],
+        output_name: str | None = None,
     ) -> None:
         """Adds tags for a given step output.
 
@@ -450,8 +449,8 @@ class StepContext(context_utils.BaseContext):
 
     def remove_output_tags(
         self,
-        tags: List[str],
-        output_name: Optional[str] = None,
+        tags: list[str],
+        output_name: str | None = None,
     ) -> None:
         """Removes tags for a given step output.
 
@@ -495,15 +494,15 @@ class StepContext(context_utils.BaseContext):
 class StepContextOutput:
     """Represents a step output in the step context."""
 
-    materializer_classes: Sequence[Type["BaseMaterializer"]]
+    materializer_classes: Sequence[type["BaseMaterializer"]]
     artifact_uri: str
-    run_metadata: Optional[Dict[str, "MetadataType"]] = None
+    run_metadata: dict[str, "MetadataType"] | None = None
     artifact_config: Optional["ArtifactConfig"]
-    tags: Optional[List[str]] = None
+    tags: list[str] | None = None
 
     def __init__(
         self,
-        materializer_classes: Sequence[Type["BaseMaterializer"]],
+        materializer_classes: Sequence[type["BaseMaterializer"]],
         artifact_uri: str,
         artifact_config: Optional["ArtifactConfig"],
     ):

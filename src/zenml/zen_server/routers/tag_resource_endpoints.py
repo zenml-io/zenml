@@ -64,9 +64,9 @@ def create_tag_resource(
 )
 @async_fastapi_endpoint_wrapper
 def batch_create_tag_resource(
-    tag_resources: List[TagResourceRequest],
+    tag_resources: list[TagResourceRequest],
     _: AuthContext = Security(authorize),
-) -> List[TagResourceResponse]:
+) -> list[TagResourceResponse]:
     """Attach different tags to different resources.
 
     Args:
@@ -104,7 +104,7 @@ def delete_tag_resource(
 )
 @async_fastapi_endpoint_wrapper
 def batch_delete_tag_resource(
-    tag_resources: List[TagResourceRequest],
+    tag_resources: list[TagResourceRequest],
     _: AuthContext = Security(authorize),
 ) -> None:
     """Detach different tags from different resources.

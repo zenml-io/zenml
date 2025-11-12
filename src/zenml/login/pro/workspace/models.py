@@ -67,7 +67,7 @@ class ZenMLServiceStatus(BaseRestAPIModel):
     server_url: str = Field(
         description="The ZenML server URL.",
     )
-    version: Optional[str] = Field(
+    version: str | None = Field(
         default=None,
         description="The ZenML server version.",
     )
@@ -76,11 +76,11 @@ class ZenMLServiceStatus(BaseRestAPIModel):
 class ZenMLServiceRead(BaseRestAPIModel):
     """Pydantic Model for viewing a ZenML service."""
 
-    configuration: Optional[ZenMLServiceConfiguration] = Field(
+    configuration: ZenMLServiceConfiguration | None = Field(
         description="The service configuration."
     )
 
-    status: Optional[ZenMLServiceStatus] = Field(
+    status: ZenMLServiceStatus | None = Field(
         default=None,
         description="Information about the service status. Only set if the "
         "service is deployed and active.",
@@ -93,7 +93,7 @@ class WorkspaceRead(BaseRestAPIModel):
     id: UUID
 
     name: str
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="The description of the workspace."
     )
 
@@ -129,7 +129,7 @@ class WorkspaceRead(BaseRestAPIModel):
         return self.organization.name
 
     @property
-    def version(self) -> Optional[str]:
+    def version(self) -> str | None:
         """Get the ZenML service version.
 
         Returns:
@@ -144,7 +144,7 @@ class WorkspaceRead(BaseRestAPIModel):
         return version
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         """Get the ZenML server URL.
 
         Returns:

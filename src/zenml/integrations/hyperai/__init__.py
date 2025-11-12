@@ -37,7 +37,7 @@ class HyperAIIntegration(Integration):
         from zenml.integrations.hyperai import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the HyperAI integration.
         
         Returns:

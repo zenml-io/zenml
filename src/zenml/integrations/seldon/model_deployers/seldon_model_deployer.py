@@ -59,9 +59,9 @@ class SeldonModelDeployer(BaseModelDeployer):
     """Seldon Core model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "Seldon Core"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = SeldonModelDeployerFlavor
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = SeldonModelDeployerFlavor
 
-    _client: Optional[SeldonClient] = None
+    _client: SeldonClient | None = None
 
     @property
     def config(self) -> SeldonModelDeployerConfig:
@@ -73,7 +73,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         return cast(SeldonModelDeployerConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is a container registry and image builder in the stack.
 
         Returns:
@@ -88,7 +88,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "SeldonDeploymentService",
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information that might be relevant to the user.
 
         Args:
@@ -122,7 +122,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             return self._client
 
         connector = self.get_connector()
-        kube_client: Optional[k8s_client.ApiClient] = None
+        kube_client: k8s_client.ApiClient | None = None
         if connector:
             if not self.config.kubernetes_namespace:
                 raise RuntimeError(
@@ -180,7 +180,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -201,7 +201,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         return builds
 
-    def _create_or_update_kubernetes_secret(self) -> Optional[str]:
+    def _create_or_update_kubernetes_secret(self) -> str | None:
         """Create or update the Kubernetes secret used to access the artifact store.
 
         Uses the information stored in the ZenML secret configured for the model deployer.

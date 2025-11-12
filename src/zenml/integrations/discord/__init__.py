@@ -34,7 +34,7 @@ class DiscordIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["aiohttp","asyncio"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Discord integration.
 
         Returns:

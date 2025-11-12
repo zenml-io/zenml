@@ -26,13 +26,12 @@ from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    Generator,
-    Iterator,
     List,
     Optional,
     Type,
     Union,
 )
+from collections.abc import Generator, Iterator
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -87,26 +86,26 @@ class LogEntry(BaseModel):
     """A structured log entry with parsed information."""
 
     message: str = Field(description="The log message content")
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="The name of the logger",
     )
-    level: Optional[LoggingLevels] = Field(
+    level: LoggingLevels | None = Field(
         default=None,
         description="The log level",
     )
-    timestamp: Optional[datetime] = Field(
+    timestamp: datetime | None = Field(
         default=None,
         description="When the log was created",
     )
-    module: Optional[str] = Field(
+    module: str | None = Field(
         default=None, description="The module that generated this log entry"
     )
-    filename: Optional[str] = Field(
+    filename: str | None = Field(
         default=None,
         description="The name of the file that generated this log entry",
     )
-    lineno: Optional[int] = Field(
+    lineno: int | None = Field(
         default=None, description="The fileno that generated this log entry"
     )
     chunk_index: int = Field(
@@ -190,7 +189,7 @@ class ArtifactStoreHandler(logging.Handler):
         except Exception:
             pass
 
-    def _split_to_chunks(self, message: str) -> List[str]:
+    def _split_to_chunks(self, message: str) -> list[str]:
         """Split a large message into chunks.
 
         Args:
@@ -244,7 +243,7 @@ def remove_ansi_escape_codes(text: str) -> str:
     return ansi_escape.sub("", text)
 
 
-def parse_log_entry(log_line: str) -> Optional[LogEntry]:
+def parse_log_entry(log_line: str) -> LogEntry | None:
     """Parse a single log entry into a LogEntry object.
 
     Handles two formats:
@@ -289,8 +288,8 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
 
 def prepare_logs_uri(
     artifact_store: "BaseArtifactStore",
-    step_name: Optional[str] = None,
-    log_key: Optional[str] = None,
+    step_name: str | None = None,
+    log_key: str | None = None,
 ) -> str:
     """Generates and prepares a URI for the log file or folder for a step.
 
@@ -335,9 +334,9 @@ def prepare_logs_uri(
 
 def fetch_log_records(
     zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
+    artifact_store_id: str | UUID,
     logs_uri: str,
-) -> List[LogEntry]:
+) -> list[LogEntry]:
     """Fetches log entries.
 
     Args:
@@ -364,7 +363,7 @@ def fetch_log_records(
 
 def _stream_logs_line_by_line(
     zen_store: "BaseZenStore",
-    artifact_store_id: Union[str, UUID],
+    artifact_store_id: str | UUID,
     logs_uri: str,
 ) -> Iterator[str]:
     """Stream logs line by line without loading the entire file into memory.
@@ -453,7 +452,7 @@ class PipelineLogsStorage:
 
         # Queue and log storage thread for async processing
         self.log_queue: queue.Queue[str] = queue.Queue(maxsize=max_queue_size)
-        self.log_storage_thread: Optional[threading.Thread] = None
+        self.log_storage_thread: threading.Thread | None = None
         self.shutdown_event = threading.Event()
         self.merge_event = threading.Event()
 
@@ -633,7 +632,7 @@ class PipelineLogsStorage:
         """
         return f"{time.time()}{suffix}{LOGS_EXTENSION}"
 
-    def write_buffer(self, buffer_to_write: List[str]) -> None:
+    def write_buffer(self, buffer_to_write: list[str]) -> None:
         """Write the given buffer to file. This runs in the log storage thread.
 
         Args:
@@ -758,8 +757,8 @@ class PipelineLogsStorageContext:
 
         # Additional configuration
         self.prepend_step_name = prepend_step_name
-        self.original_step_names_in_console: Optional[bool] = None
-        self._original_root_level: Optional[int] = None
+        self.original_step_names_in_console: bool | None = None
+        self._original_root_level: int | None = None
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -806,9 +805,9 @@ class PipelineLogsStorageContext:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit condition of the context manager.
 
@@ -861,7 +860,7 @@ class PipelineLogsStorageContext:
 def setup_orchestrator_logging(
     run_id: UUID,
     snapshot: "PipelineSnapshotResponse",
-    logs_response: Optional[LogsResponse] = None,
+    logs_response: LogsResponse | None = None,
 ) -> Any:
     """Set up logging for an orchestrator environment.
 
@@ -937,9 +936,9 @@ def setup_orchestrator_logging(
 def setup_pipeline_logging(
     source: str,
     snapshot: "PipelineSnapshotResponse",
-    run_id: Optional[UUID] = None,
-    logs_response: Optional[LogsResponse] = None,
-) -> Generator[Optional[LogsRequest], None, None]:
+    run_id: UUID | None = None,
+    logs_response: LogsResponse | None = None,
+) -> Generator[LogsRequest | None, None, None]:
     """Set up logging for a pipeline run.
 
     Args:

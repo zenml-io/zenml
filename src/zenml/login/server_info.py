@@ -25,7 +25,7 @@ from zenml.zen_stores.rest_zen_store import (
 logger = get_logger(__name__)
 
 
-def get_server_info(url: str) -> Optional[ServerModel]:
+def get_server_info(url: str) -> ServerModel | None:
     """Retrieve server information from a remote ZenML server.
 
     Args:

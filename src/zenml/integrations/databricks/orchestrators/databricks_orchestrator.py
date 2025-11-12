@@ -79,7 +79,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
     """Databricks orchestrator."""
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         In the remote case, checks that the stack contains a container registry,
@@ -91,7 +91,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             for component in stack.components.values():
                 if not component.config.is_local:
                     continue
@@ -135,7 +135,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         return cast(DatabricksOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[DatabricksOrchestratorSettings]:
+    def settings_class(self) -> type[DatabricksOrchestratorSettings]:
         """Settings class for the Databricks orchestrator.
 
         Returns:
@@ -174,10 +174,10 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -232,7 +232,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_databricks_pipeline(
             zenml_project_wheel: str, job_cluster_key: str
-        ) -> List[DatabricksTask]:
+        ) -> list[DatabricksTask]:
             """Create a databrcks task for each step.
 
             This should contain the name of the step or task and configures the
@@ -373,8 +373,8 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         self,
         pipeline_name: str,
         settings: DatabricksOrchestratorSettings,
-        tasks: List[DatabricksTask],
-        env_vars: Dict[str, str],
+        tasks: list[DatabricksTask],
+        env_vars: dict[str, str],
         job_cluster_key: str,
         schedule: Optional["ScheduleResponse"] = None,
     ) -> None:
@@ -454,7 +454,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:

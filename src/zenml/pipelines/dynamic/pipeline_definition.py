@@ -49,7 +49,7 @@ class DynamicPipeline(Pipeline):
     def __init__(
         self,
         *args: Any,
-        depends_on: Optional[List["BaseStep"]] = None,
+        depends_on: list["BaseStep"] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the pipeline.
@@ -63,7 +63,7 @@ class DynamicPipeline(Pipeline):
         self._depends_on = depends_on or []
         self._validate_depends_on(self._depends_on)
 
-    def _validate_depends_on(self, depends_on: List["BaseStep"]) -> None:
+    def _validate_depends_on(self, depends_on: list["BaseStep"]) -> None:
         """Validates the steps that the pipeline depends on.
 
         Args:
@@ -87,7 +87,7 @@ class DynamicPipeline(Pipeline):
             static_ids.add(static_id)
 
     @property
-    def depends_on(self) -> List["BaseStep"]:
+    def depends_on(self) -> list["BaseStep"]:
         """The steps that the pipeline depends on.
 
         Returns:
@@ -148,7 +148,7 @@ class DynamicPipeline(Pipeline):
 
     def __call__(
         self, *args: Any, **kwargs: Any
-    ) -> Optional[PipelineRunResponse]:
+    ) -> PipelineRunResponse | None:
         """Run the pipeline on the active stack.
 
         Args:
@@ -183,7 +183,7 @@ class DynamicPipeline(Pipeline):
         self.prepare(*args, **kwargs)
         return self._run()
 
-    def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
+    def _compute_output_schema(self) -> dict[str, Any] | None:
         """Computes the output schema for the pipeline.
 
         Returns:
@@ -191,11 +191,11 @@ class DynamicPipeline(Pipeline):
         """
         try:
             outputs = parse_return_type_annotations(self.entrypoint)
-            model_fields: Dict[str, Any] = {
+            model_fields: dict[str, Any] = {
                 name: (output.resolved_annotation, ...)
                 for name, output in outputs.items()
             }
-            output_model: Type[BaseModel] = create_model(
+            output_model: type[BaseModel] = create_model(
                 "PipelineOutput",
                 __config__=ConfigDict(extra="forbid"),
                 **model_fields,

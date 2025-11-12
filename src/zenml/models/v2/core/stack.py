@@ -68,11 +68,11 @@ class StackRequest(UserScopedRequest):
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    stack_spec_path: Optional[str] = Field(
+    stack_spec_path: str | None = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = (
+    components: dict[StackComponentType, list[UUID | ComponentInfo]] = (
         Field(
             title="The mapping for the components of the full stack registration.",
             description="The mapping from component types to either UUIDs of "
@@ -80,20 +80,20 @@ class StackRequest(UserScopedRequest):
             "components.",
         )
     )
-    environment: Optional[Dict[str, str]] = Field(
+    environment: dict[str, str] | None = Field(
         default=None,
         title="Environment variables to set when running on this stack.",
     )
-    secrets: Optional[List[Union[UUID, str]]] = Field(
+    secrets: list[UUID | str] | None = Field(
         default=None,
         title="Secrets to set as environment variables when running on this "
         "stack.",
     )
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         default=None,
         title="The stack labels.",
     )
-    service_connectors: List[Union[UUID, ServiceConnectorInfo]] = Field(
+    service_connectors: list[UUID | ServiceConnectorInfo] = Field(
         default=[],
         title="The service connectors dictionary for the full stack "
         "registration.",
@@ -104,8 +104,8 @@ class StackRequest(UserScopedRequest):
 
     @field_validator("components")
     def _validate_components(
-        cls, value: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]
-    ) -> Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]:
+        cls, value: dict[StackComponentType, list[UUID | ComponentInfo]]
+    ) -> dict[StackComponentType, list[UUID | ComponentInfo]]:
         """Validate the components of the stack.
 
         Args:
@@ -160,38 +160,38 @@ class DefaultStackRequest(StackRequest):
 class StackUpdate(BaseUpdate):
     """Update model for stacks."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the stack.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    stack_spec_path: Optional[str] = Field(
+    stack_spec_path: str | None = Field(
         title="The path to the stack spec used for mlstacks deployments.",
         default=None,
     )
-    components: Optional[Dict[StackComponentType, List[UUID]]] = Field(
+    components: dict[StackComponentType, list[UUID]] | None = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type.",
         default=None,
     )
-    environment: Optional[Dict[str, str]] = Field(
+    environment: dict[str, str] | None = Field(
         default=None,
         title="Environment variables to set when running on this stack.",
     )
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         default=None,
         title="The stack labels.",
     )
-    add_secrets: Optional[List[Union[UUID, str]]] = Field(
+    add_secrets: list[UUID | str] | None = Field(
         default=None,
         title="New secrets to add to the stack.",
     )
-    remove_secrets: Optional[List[Union[UUID, str]]] = Field(
+    remove_secrets: list[UUID | str] | None = Field(
         default=None,
         title="Secrets to remove from the stack.",
     )
@@ -199,10 +199,10 @@ class StackUpdate(BaseUpdate):
     @field_validator("components")
     def _validate_components(
         cls,
-        value: Optional[
-            Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]
-        ],
-    ) -> Optional[Dict[StackComponentType, List[Union[UUID, ComponentInfo]]]]:
+        value: None | (
+            dict[StackComponentType, list[UUID | ComponentInfo]]
+        ),
+    ) -> dict[StackComponentType, list[UUID | ComponentInfo]] | None:
         """Validate the components of the stack.
 
         Args:
@@ -240,29 +240,29 @@ class StackResponseBody(UserScopedResponseBody):
 class StackResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stacks."""
 
-    components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
+    components: dict[StackComponentType, list["ComponentResponse"]] = Field(
         title="A mapping of stack component types to the actual"
         "instances of components of this type."
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default="",
         title="The description of the stack",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    stack_spec_path: Optional[str] = Field(
+    stack_spec_path: str | None = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
     )
-    environment: Dict[str, str] = Field(
+    environment: dict[str, str] = Field(
         default={},
         title="Environment variables to set when running on this stack.",
     )
-    secrets: List[UUID] = Field(
+    secrets: list[UUID] = Field(
         default=[],
         title="Secrets to set as environment variables when running on this "
         "stack.",
     )
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         default=None,
         title="The stack labels.",
     )
@@ -308,7 +308,7 @@ class StackResponse(
             and StackComponentType.ORCHESTRATOR in self.components
         )
 
-    def to_yaml(self) -> Dict[str, Any]:
+    def to_yaml(self) -> dict[str, Any]:
         """Create yaml representation of the Stack Model.
 
         Returns:
@@ -340,7 +340,7 @@ class StackResponse(
         return yaml_data
 
     # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Add the stack components to the stack analytics metadata.
 
         Returns:
@@ -362,7 +362,7 @@ class StackResponse(
         return metadata
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """The `description` property.
 
         Returns:
@@ -371,7 +371,7 @@ class StackResponse(
         return self.get_metadata().description
 
     @property
-    def stack_spec_path(self) -> Optional[str]:
+    def stack_spec_path(self) -> str | None:
         """The `stack_spec_path` property.
 
         Returns:
@@ -382,7 +382,7 @@ class StackResponse(
     @property
     def components(
         self,
-    ) -> Dict[StackComponentType, List["ComponentResponse"]]:
+    ) -> dict[StackComponentType, list["ComponentResponse"]]:
         """The `components` property.
 
         Returns:
@@ -391,7 +391,7 @@ class StackResponse(
         return self.get_metadata().components
 
     @property
-    def environment(self) -> Dict[str, str]:
+    def environment(self) -> dict[str, str]:
         """The `environment` property.
 
         Returns:
@@ -400,7 +400,7 @@ class StackResponse(
         return self.get_metadata().environment
 
     @property
-    def secrets(self) -> List[UUID]:
+    def secrets(self) -> list[UUID]:
         """The `secrets` property.
 
         Returns:
@@ -409,7 +409,7 @@ class StackResponse(
         return self.get_metadata().secrets
 
     @property
-    def labels(self) -> Optional[Dict[str, Any]]:
+    def labels(self) -> dict[str, Any] | None:
         """The `labels` property.
 
         Returns:
@@ -424,31 +424,31 @@ class StackResponse(
 class StackFilter(UserScopedFilter):
     """Model to enable advanced stack filtering."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
         "component",
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the stack",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Description of the stack"
     )
-    component_id: Optional[Union[UUID, str]] = Field(
+    component_id: UUID | str | None = Field(
         default=None,
         description="Component in the stack",
         union_mode="left_to_right",
     )
-    component: Optional[Union[UUID, str]] = Field(
+    component: UUID | str | None = Field(
         default=None, description="Name/ID of a component in the stack."
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

@@ -62,7 +62,7 @@ class AuthenticationConfig(BaseModel):
     """Base authentication configuration."""
 
     @property
-    def all_values(self) -> Dict[str, Any]:
+    def all_values(self) -> dict[str, Any]:
         """Get all values as a dictionary.
 
         Returns:
@@ -75,7 +75,7 @@ class ServiceConnectorMeta(ModelMetaclass):
     """Metaclass responsible for automatically registering ServiceConnector classes."""
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: tuple[type[Any], ...], dct: dict[str, Any]
     ) -> "ServiceConnectorMeta":
         """Creates a new ServiceConnector class and registers it.
 
@@ -88,7 +88,7 @@ class ServiceConnectorMeta(ModelMetaclass):
             The ServiceConnectorMeta class.
         """
         cls = cast(
-            Type["ServiceConnector"], super().__new__(mcs, name, bases, dct)
+            type["ServiceConnector"], super().__new__(mcs, name, bases, dct)
         )
 
         # Skip the following validation and registration for the base class.
@@ -146,18 +146,18 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     types of resources that they need to access.
     """
 
-    id: Optional[UUID] = None
-    name: Optional[str] = None
+    id: UUID | None = None
+    name: str | None = None
     auth_method: str
-    resource_type: Optional[str] = None
-    resource_id: Optional[str] = None
-    expires_at: Optional[datetime] = None
-    expires_skew_tolerance: Optional[int] = None
-    expiration_seconds: Optional[int] = None
+    resource_type: str | None = None
+    resource_id: str | None = None
+    expires_at: datetime | None = None
+    expires_skew_tolerance: int | None = None
+    expiration_seconds: int | None = None
     config: AuthenticationConfig
     allow_implicit_auth_methods: bool = False
 
-    _TYPE: ClassVar[Optional[ServiceConnectorTypeModel]] = None
+    _TYPE: ClassVar[ServiceConnectorTypeModel | None] = None
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize a new service connector instance.
@@ -304,9 +304,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     @abstractmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> "ServiceConnector":
         """Auto-configure a connector instance.
@@ -341,9 +341,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     @abstractmethod
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify and list all the resources that the connector can access.
 
         This method uses the connector's configuration to verify that it can
@@ -466,8 +466,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         return copy
 
     def _validate_resource_id(
-        self, resource_type: str, resource_id: Optional[str]
-    ) -> Optional[str]:
+        self, resource_type: str, resource_id: str | None
+    ) -> str | None:
         """Validate a resource ID value of a certain type against the connector configuration.
 
         Args:
@@ -554,7 +554,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         return self.get_type()
 
     @property
-    def supported_resource_types(self) -> List[str]:
+    def supported_resource_types(self) -> list[str]:
         """The resource types supported by this connector instance.
 
         Returns:
@@ -596,11 +596,11 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         # instance is configured to access any of the supported resource
         # types (a multi-type connector). We represent that here by setting the
         # resource type to None.
-        resource_type: Optional[str] = None
+        resource_type: str | None = None
         if len(model.resource_types) == 1:
             resource_type = model.resource_types[0]
 
-        expiration_seconds: Optional[int] = None
+        expiration_seconds: int | None = None
         try:
             method_spec, _ = spec.find_resource_specifications(
                 model.auth_method,
@@ -658,9 +658,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_model(
         self,
-        name: Optional[str] = None,
+        name: str | None = None,
         description: str = "",
-        labels: Optional[Dict[str, str]] = None,
+        labels: dict[str, str] | None = None,
     ) -> "ServiceConnectorRequest":
         """Convert the connector instance to a service connector model.
 
@@ -707,11 +707,11 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_response_model(
         self,
-        user: Optional[UserResponse] = None,
-        name: Optional[str] = None,
-        id: Optional[UUID] = None,
+        user: UserResponse | None = None,
+        name: str | None = None,
+        id: UUID | None = None,
         description: str = "",
-        labels: Optional[Dict[str, str]] = None,
+        labels: dict[str, str] | None = None,
     ) -> "ServiceConnectorResponse":
         """Convert the connector instance to a service connector response model.
 
@@ -808,12 +808,12 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def validate_runtime_args(
         self,
-        resource_type: Optional[str],
-        resource_id: Optional[str] = None,
+        resource_type: str | None,
+        resource_id: str | None = None,
         require_resource_type: bool = False,
         require_resource_id: bool = False,
         **kwargs: Any,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Validate the runtime arguments against the connector configuration.
 
         Validate that the supplied runtime arguments are compatible with the
@@ -970,9 +970,9 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
     @classmethod
     def auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> Optional["ServiceConnector"]:
         """Auto-configure a connector instance.
@@ -1092,8 +1092,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verify and optionally list all the resources that the connector can access.
@@ -1161,7 +1161,7 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             resources.set_error(error)
             return resources
 
-        verify_resource_types: List[Optional[str]] = []
+        verify_resource_types: list[str | None] = []
         verify_resource_id = None
         if not list_resources and not resource_id:
             # If we're not listing resources, we're only verifying that the
@@ -1281,8 +1281,8 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def get_connector_client(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
     ) -> "ServiceConnector":
         """Get a connector client that can be used to connect to a resource.
 

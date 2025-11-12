@@ -20,12 +20,12 @@ import tempfile
 from typing import (
     TYPE_CHECKING,
     Dict,
-    Generator,
     Optional,
     Tuple,
     Type,
     cast,
 )
+from collections.abc import Generator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
@@ -64,7 +64,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
     """Deployer that runs deployments as Hugging Face Spaces."""
 
     @property
-    def settings_class(self) -> Optional[Type[BaseSettings]]:
+    def settings_class(self) -> type[BaseSettings] | None:
         """Settings class for the Hugging Face deployer.
 
         Returns:
@@ -82,7 +82,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         return cast(HuggingFaceDeployerConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -91,7 +91,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         def _validate_requirements(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             """Check if all requirements are met.
 
             Args:
@@ -122,7 +122,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
             custom_validation_function=_validate_requirements,
         )
 
-    def _get_token(self) -> Optional[str]:
+    def _get_token(self) -> str | None:
         """Get the Hugging Face token.
 
         Returns:
@@ -193,7 +193,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
     def _get_entrypoint_and_command(
         self, deployment: DeploymentResponse
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Generate ENTRYPOINT and CMD for the Dockerfile.
 
         Args:
@@ -253,8 +253,8 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Provision a Huggingface Space deployment.
@@ -590,7 +590,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get logs from a Huggingface Space deployment.
 
@@ -610,7 +610,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
     def do_deprovision_deployment(
         self, deployment: DeploymentResponse, timeout: int
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Deprovision a Huggingface Space deployment.
 
         Args:

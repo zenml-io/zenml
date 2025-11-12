@@ -31,7 +31,7 @@ def _fk_constraint_name(table: str, column: str) -> str:
     return f"fk_{table}_{column}_workspace"
 
 
-def _get_changed_tables() -> Set[str]:
+def _get_changed_tables() -> set[str]:
     return {
         "artifact",
         "flavor",

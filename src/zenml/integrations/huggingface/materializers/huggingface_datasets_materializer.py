@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 DEFAULT_DATASET_DIR = "hf_datasets"
 
 
-def extract_repo_name(checksum_str: str) -> Optional[str]:
+def extract_repo_name(checksum_str: str) -> str | None:
     """Extracts the repo name from the checksum string.
 
     An example of a checksum_str is:
@@ -71,14 +71,14 @@ def extract_repo_name(checksum_str: str) -> Optional[str]:
 class HFDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from huggingface datasets."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset, DatasetDict)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Dataset, DatasetDict)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
         ArtifactType.DATA_ANALYSIS
     )
 
     def load(
-        self, data_type: Union[Type[Dataset], Type[DatasetDict]]
-    ) -> Union[Dataset, DatasetDict]:
+        self, data_type: type[Dataset] | type[DatasetDict]
+    ) -> Dataset | DatasetDict:
         """Reads Dataset.
 
         Args:
@@ -94,7 +94,7 @@ class HFDatasetMaterializer(BaseMaterializer):
             )
             return load_from_disk(temp_dir)
 
-    def save(self, ds: Union[Dataset, DatasetDict]) -> None:
+    def save(self, ds: Dataset | DatasetDict) -> None:
         """Writes a Dataset to the specified dir.
 
         Args:
@@ -109,8 +109,8 @@ class HFDatasetMaterializer(BaseMaterializer):
             )
 
     def extract_metadata(
-        self, ds: Union[Dataset, DatasetDict]
-    ) -> Dict[str, "MetadataType"]:
+        self, ds: Dataset | DatasetDict
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:
@@ -126,7 +126,7 @@ class HFDatasetMaterializer(BaseMaterializer):
         if isinstance(ds, Dataset):
             return pandas_materializer.extract_metadata(ds.to_pandas())
         elif isinstance(ds, DatasetDict):
-            metadata: Dict[str, Dict[str, "MetadataType"]] = defaultdict(dict)
+            metadata: dict[str, dict[str, "MetadataType"]] = defaultdict(dict)
             for dataset_name, dataset in ds.items():
                 dataset_metadata = pandas_materializer.extract_metadata(
                     dataset.to_pandas()
@@ -137,8 +137,8 @@ class HFDatasetMaterializer(BaseMaterializer):
         raise ValueError(f"Unsupported type {type(ds)}")
 
     def save_visualizations(
-        self, ds: Union[Dataset, DatasetDict]
-    ) -> Dict[str, VisualizationType]:
+        self, ds: Dataset | DatasetDict
+    ) -> dict[str, VisualizationType]:
         """Save visualizations for the dataset.
 
         Args:

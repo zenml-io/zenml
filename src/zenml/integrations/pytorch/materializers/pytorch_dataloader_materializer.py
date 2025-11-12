@@ -32,11 +32,11 @@ DEFAULT_FILENAME = "entire_dataloader.pt"
 class PyTorchDataLoaderMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write PyTorch dataloaders and datasets."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataLoader, Dataset)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (DataLoader, Dataset)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
 
-    def extract_metadata(self, dataloader: Any) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, dataloader: Any) -> dict[str, "MetadataType"]:
         """Extract metadata from the given dataloader or dataset.
 
         Args:
@@ -45,7 +45,7 @@ class PyTorchDataLoaderMaterializer(BasePyTorchMaterializer):
         Returns:
             The extracted metadata as a dictionary.
         """
-        metadata: Dict[str, "MetadataType"] = {}
+        metadata: dict[str, "MetadataType"] = {}
         if isinstance(dataloader, DataLoader):
             if hasattr(dataloader.dataset, "__len__"):
                 metadata["num_samples"] = len(dataloader.dataset)

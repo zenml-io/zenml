@@ -76,7 +76,7 @@ def run(
         logger.info(
             "Loading service daemon configuration from %s", service_config_file
         )
-        with open(service_config_file, "r") as f:
+        with open(service_config_file) as f:
             config = f.read()
 
         integration_registry.activate_integrations()

@@ -38,7 +38,7 @@ def sanitize_studio_name(studio_name: str) -> str:
     return re.sub(r"[-]+", "-", studio_name)
 
 
-def gather_requirements(docker_settings: "DockerSettings") -> List[str]:
+def gather_requirements(docker_settings: "DockerSettings") -> list[str]:
     """Gather the requirements files.
 
     Args:

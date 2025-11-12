@@ -109,14 +109,14 @@ class GithubEvent(BaseEvent):
     before: str
     after: str
     repository: Repository
-    commits: List[Commit]
-    head_commit: Optional[Commit] = None
-    tags: Optional[List[Tag]] = None
-    pull_requests: Optional[List[PullRequest]] = None
+    commits: list[Commit]
+    head_commit: Commit | None = None
+    tags: list[Tag] | None = None
+    pull_requests: list[PullRequest] | None = None
     model_config = ConfigDict(extra="allow")
 
     @property
-    def branch(self) -> Optional[str]:
+    def branch(self) -> str | None:
         """The branch the event happened on.
 
         Returns:
@@ -127,7 +127,7 @@ class GithubEvent(BaseEvent):
         return None
 
     @property
-    def event_type(self) -> Union[GithubEventType, str]:
+    def event_type(self) -> GithubEventType | str:
         """The type of github event.
 
         Args:
@@ -152,9 +152,9 @@ class GithubEvent(BaseEvent):
 class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for github event filters."""
 
-    repo: Optional[str] = None
-    branch: Optional[str] = None
-    event_type: Optional[GithubEventType] = None
+    repo: str | None = None
+    branch: str | None = None
+    event_type: GithubEventType | None = None
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event.
@@ -182,15 +182,15 @@ class GithubWebhookEventFilterConfiguration(WebhookEventFilterConfig):
 class GithubWebhookEventSourceConfiguration(WebhookEventSourceConfig):
     """Configuration for github source filters."""
 
-    webhook_secret: Optional[str] = Field(
+    webhook_secret: str | None = Field(
         default=None,
         title="The webhook secret for the event source.",
     )
-    webhook_secret_id: Optional[UUID] = Field(
+    webhook_secret_id: UUID | None = Field(
         default=None,
         description="The ID of the secret containing the webhook secret.",
     )
-    rotate_secret: Optional[bool] = Field(
+    rotate_secret: bool | None = Field(
         default=None, description="Set to rotate the webhook secret."
     )
 
@@ -202,7 +202,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
     """Handler for all github events."""
 
     @property
-    def config_class(self) -> Type[GithubWebhookEventSourceConfiguration]:
+    def config_class(self) -> type[GithubWebhookEventSourceConfiguration]:
         """Returns the webhook event source configuration class.
 
         Returns:
@@ -211,7 +211,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         return GithubWebhookEventSourceConfiguration
 
     @property
-    def filter_class(self) -> Type[GithubWebhookEventFilterConfiguration]:
+    def filter_class(self) -> type[GithubWebhookEventFilterConfiguration]:
         """Returns the webhook event filter configuration class.
 
         Returns:
@@ -220,7 +220,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         return GithubWebhookEventFilterConfiguration
 
     @property
-    def flavor_class(self) -> Type[BaseWebhookEventSourceFlavor]:
+    def flavor_class(self) -> type[BaseWebhookEventSourceFlavor]:
         """Returns the flavor class of the plugin.
 
         Returns:
@@ -232,7 +232,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
 
         return GithubWebhookEventSourceFlavor
 
-    def _interpret_event(self, event: Dict[str, Any]) -> GithubEvent:
+    def _interpret_event(self, event: dict[str, Any]) -> GithubEvent:
         """Converts the generic event body into a event-source specific pydantic model.
 
         Args:
@@ -252,8 +252,8 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             return github_event
 
     def _load_payload(
-        self, raw_body: bytes, headers: Dict[str, str]
-    ) -> Dict[str, Any]:
+        self, raw_body: bytes, headers: dict[str, str]
+    ) -> dict[str, Any]:
         """Converts the raw body of the request into a python dictionary.
 
         For github webhooks users can optionally choose to urlencode the
@@ -278,7 +278,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
 
     def _get_webhook_secret(
         self, event_source: EventSourceResponse
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the webhook secret for the event source.
 
         Args:
@@ -464,7 +464,7 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         self,
         event_source: EventSourceResponse,
         config: EventSourceConfig,
-        force: Optional[bool] = False,
+        force: bool | None = False,
     ) -> None:
         """Process an event source before it is deleted from the database.
 

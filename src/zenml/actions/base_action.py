@@ -56,10 +56,10 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
     TYPE: ClassVar[PluginType] = PluginType.ACTION
 
     # Action specific
-    ACTION_CONFIG_CLASS: ClassVar[Type[ActionConfig]]
+    ACTION_CONFIG_CLASS: ClassVar[type[ActionConfig]]
 
     @classmethod
-    def get_action_config_schema(cls) -> Dict[str, Any]:
+    def get_action_config_schema(cls) -> dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
@@ -97,9 +97,9 @@ class BaseActionFlavor(BasePluginFlavor, ABC):
 class BaseActionHandler(BasePlugin, ABC):
     """Implementation for an action handler."""
 
-    _event_hub: Optional[BaseEventHub] = None
+    _event_hub: BaseEventHub | None = None
 
-    def __init__(self, event_hub: Optional[BaseEventHub] = None) -> None:
+    def __init__(self, event_hub: BaseEventHub | None = None) -> None:
         """Event source handler initialization.
 
         Args:
@@ -122,7 +122,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[ActionConfig]:
+    def config_class(self) -> type[ActionConfig]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
@@ -131,7 +131,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
     @property
     @abstractmethod
-    def flavor_class(self) -> Type[BaseActionFlavor]:
+    def flavor_class(self) -> type[BaseActionFlavor]:
         """Returns the flavor class of the plugin.
 
         Returns:
@@ -173,7 +173,7 @@ class BaseActionHandler(BasePlugin, ABC):
 
     def event_hub_callback(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         trigger_execution: TriggerExecutionResponse,
         auth_context: AuthContext,
     ) -> None:
@@ -442,7 +442,7 @@ class BaseActionHandler(BasePlugin, ABC):
         return action
 
     def validate_action_configuration(
-        self, action_config: Dict[str, Any]
+        self, action_config: dict[str, Any]
     ) -> ActionConfig:
         """Validate and return the action configuration.
 
@@ -464,7 +464,7 @@ class BaseActionHandler(BasePlugin, ABC):
         self,
         action_config: ActionConfig,
         hydrate: bool = False,
-    ) -> Dict[ResourceType, BaseResponse[Any, Any, Any]]:
+    ) -> dict[ResourceType, BaseResponse[Any, Any, Any]]:
         """Extract related resources for this action.
 
         Args:
@@ -605,7 +605,7 @@ class BaseActionHandler(BasePlugin, ABC):
         self,
         action: ActionResponse,
         config: ActionConfig,
-        force: Optional[bool] = False,
+        force: bool | None = False,
     ) -> None:
         """Process an action before it is deleted from the database.
 

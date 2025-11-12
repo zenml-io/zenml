@@ -17,15 +17,14 @@ from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
-    Iterator,
     List,
     Optional,
     Tuple,
     Type,
     cast,
 )
+from collections.abc import Callable, Iterator
 from uuid import UUID
 
 from pydantic import model_validator
@@ -72,8 +71,8 @@ class SubmissionResult:
 
     def __init__(
         self,
-        wait_for_completion: Optional[Callable[[], None]] = None,
-        metadata: Optional[Dict[str, MetadataType]] = None,
+        wait_for_completion: Callable[[], None] | None = None,
+        metadata: dict[str, MetadataType] | None = None,
     ):
         """Initialize a submission result.
 
@@ -93,7 +92,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _deprecations(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _deprecations(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate and/or remove deprecated fields.
 
         Args:
@@ -180,10 +179,10 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -210,9 +209,9 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a dynamic pipeline to the orchestrator.
 
         Args:
@@ -231,9 +230,9 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         deployment: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[Iterator[Dict[str, MetadataType]]]:
+    ) -> Iterator[dict[str, MetadataType]] | None:
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
@@ -264,8 +263,8 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self._prepare_run(snapshot=snapshot)
 
-        pipeline_run_id: Optional[UUID] = None
-        schedule_id: Optional[UUID] = None
+        pipeline_run_id: UUID | None = None
+        schedule_id: UUID | None = None
         if snapshot.schedule:
             schedule_id = snapshot.schedule.id
         if placeholder_run:
@@ -474,7 +473,7 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
     def launch_dynamic_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+        self, step_run_info: "StepRunInfo", environment: dict[str, str]
     ) -> None:
         """Launch a dynamic step.
 
@@ -527,7 +526,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self._active_snapshot = None
 
     @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
+    def supported_execution_modes(self) -> list[ExecutionMode]:
         """Returns the supported execution modes for this flavor.
 
         Returns:
@@ -646,8 +645,8 @@ class BaseOrchestrator(StackComponent, ABC):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -799,7 +798,7 @@ class BaseOrchestratorFlavor(Flavor):
         return StackComponentType.ORCHESTRATOR
 
     @property
-    def config_class(self) -> Type[BaseOrchestratorConfig]:
+    def config_class(self) -> type[BaseOrchestratorConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
@@ -809,7 +808,7 @@ class BaseOrchestratorFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type["BaseOrchestrator"]:
+    def implementation_class(self) -> type["BaseOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

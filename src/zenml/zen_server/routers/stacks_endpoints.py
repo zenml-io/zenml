@@ -70,7 +70,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_stack(
     stack: StackRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     auth_context: AuthContext = Security(authorize),
 ) -> StackResponse:
     """Creates a stack.
@@ -83,7 +83,7 @@ def create_stack(
     Returns:
         The created stack.
     """
-    rbac_read_checks: List[BaseModel] = []
+    rbac_read_checks: list[BaseModel] = []
 
     # Check the service connector creation
     is_connector_create_needed = False
@@ -147,7 +147,7 @@ def create_stack(
 )
 @async_fastapi_endpoint_wrapper
 def list_stacks(
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
@@ -216,7 +216,7 @@ def update_stack(
     Returns:
         The updated stack.
     """
-    rbac_read_checks: List[BaseModel] = []
+    rbac_read_checks: list[BaseModel] = []
     if stack_update.components:
         rbac_read_checks.extend(
             [

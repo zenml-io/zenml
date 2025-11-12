@@ -35,7 +35,7 @@ class TektonIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kfp"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Tekton integration.
 
         Returns:

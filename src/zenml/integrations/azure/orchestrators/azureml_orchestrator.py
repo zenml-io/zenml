@@ -89,7 +89,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         return cast(AzureMLOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the AzureML orchestrator.
 
         Returns:
@@ -98,7 +98,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         return AzureMLOrchestratorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         In the remote case, checks that the stack contains a container registry,
@@ -110,7 +110,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             for component in stack.components.values():
                 if not component.config.is_local:
                     continue
@@ -160,8 +160,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         step_name: str,
         env_name: str,
         image: str,
-        command: List[str],
-        arguments: List[str],
+        command: list[str],
+        arguments: list[str],
     ) -> CommandComponent:
         """Creates a CommandComponent to run on AzureML Pipelines.
 
@@ -201,10 +201,10 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -294,7 +294,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             """Create an AzureML pipeline."""
             # Here we have to track the inputs and outputs so that we can bind
             # the components to each other to execute them in a specific order.
-            component_outputs: Dict[str, Any] = {}
+            component_outputs: dict[str, Any] = {}
             for component_name, component in components.items():
                 # Inputs
                 component_inputs = {}
@@ -321,9 +321,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # Scheduling
         if schedule := snapshot.schedule:
             try:
-                schedule_trigger: Optional[
-                    Union[CronTrigger, RecurrenceTrigger]
-                ] = None
+                schedule_trigger: None | (
+                    CronTrigger | RecurrenceTrigger
+                ) = None
 
                 start_time = None
                 if schedule.start_time is not None:
@@ -423,7 +423,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:
@@ -460,8 +460,8 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -542,7 +542,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         # AzureML doesn't support step-level status fetching yet
         return pipeline_status, None
 
-    def compute_metadata(self, job: Any) -> Dict[str, MetadataType]:
+    def compute_metadata(self, job: Any) -> dict[str, MetadataType]:
         """Generate run metadata based on the generated AzureML PipelineJob.
 
         Args:
@@ -552,7 +552,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             A dictionary of metadata related to the pipeline run.
         """
         # Metadata
-        metadata: Dict[str, MetadataType] = {}
+        metadata: dict[str, MetadataType] = {}
 
         # Orchestrator Run ID
         if run_id := self._compute_orchestrator_run_id(job):
@@ -565,7 +565,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         return metadata
 
     @staticmethod
-    def _compute_orchestrator_url(job: Any) -> Optional[str]:
+    def _compute_orchestrator_url(job: Any) -> str | None:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
@@ -587,7 +587,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _compute_orchestrator_run_id(job: Any) -> Optional[str]:
+    def _compute_orchestrator_run_id(job: Any) -> str | None:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:

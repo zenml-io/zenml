@@ -36,9 +36,9 @@ def sanitize_cluster_name(name: str) -> str:
 
 def prepare_docker_setup(
     container_registry_uri: str,
-    credentials: Optional[Tuple[str, str]] = None,
+    credentials: tuple[str, str] | None = None,
     use_sudo: bool = True,
-) -> Tuple[Optional[str], Dict[str, str]]:
+) -> tuple[str | None, dict[str, str]]:
     """Prepare Docker login setup command and environment variables.
 
     Args:
@@ -71,8 +71,8 @@ def create_docker_run_command(
     image: str,
     entrypoint_str: str,
     arguments_str: str,
-    environment: Dict[str, str],
-    docker_run_args: List[str],
+    environment: dict[str, str],
+    docker_run_args: list[str],
     use_sudo: bool = True,
 ) -> str:
     """Create a Docker run command string.
@@ -102,10 +102,10 @@ def create_docker_run_command(
 def prepare_task_kwargs(
     settings: SkypilotBaseOrchestratorSettings,
     run_command: str,
-    setup: Optional[str],
-    task_envs: Dict[str, str],
+    setup: str | None,
+    task_envs: dict[str, str],
     task_name: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Prepare task keyword arguments for sky.Task.
 
     Args:
@@ -146,9 +146,9 @@ def prepare_task_kwargs(
 def prepare_resources_kwargs(
     cloud: "Cloud",
     settings: SkypilotBaseOrchestratorSettings,
-    default_instance_type: Optional[str] = None,
-    kubernetes_image: Optional[str] = None,
-) -> Dict[str, Any]:
+    default_instance_type: str | None = None,
+    kubernetes_image: str | None = None,
+) -> dict[str, Any]:
     """Prepare resources keyword arguments for sky.Resources.
 
     Args:
@@ -189,9 +189,9 @@ def prepare_resources_kwargs(
 
 def prepare_launch_kwargs(
     settings: SkypilotBaseOrchestratorSettings,
-    down: Optional[bool] = None,
-    idle_minutes_to_autostop: Optional[int] = None,
-) -> Dict[str, Any]:
+    down: bool | None = None,
+    idle_minutes_to_autostop: int | None = None,
+) -> dict[str, Any]:
     """Prepare launch keyword arguments for sky.launch.
 
     Args:
@@ -238,7 +238,7 @@ def prepare_launch_kwargs(
 
 def sky_job_get(
     request_id: str, stream_logs: bool, cluster_name: str
-) -> Optional[SubmissionResult]:
+) -> SubmissionResult | None:
     """Handle SkyPilot request results based on stream_logs setting.
 
     SkyPilot API exec and launch methods are asynchronous and return a request ID.

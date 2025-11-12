@@ -76,7 +76,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_pipeline(
     pipeline: PipelineRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineResponse:
     """Creates a pipeline.
@@ -124,7 +124,7 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:

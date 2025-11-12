@@ -310,7 +310,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
 
 
-def get_root_static_files() -> List[str]:
+def get_root_static_files() -> list[str]:
     """Get the list of static files in the root dashboard directory.
 
     These files are static files that are not in the /static subdirectory

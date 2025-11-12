@@ -34,13 +34,13 @@ if TYPE_CHECKING:
 
     from zenml.metadata.metadata_types import MetadataType
 
-step_exception_info: ContextVar[Optional[ExceptionInfo]] = ContextVar(
+step_exception_info: ContextVar[ExceptionInfo | None] = ContextVar(
     "step_exception_info", default=None
 )
 
 
 def publish_successful_step_run(
-    step_run_id: "UUID", output_artifact_ids: Dict[str, List["UUID"]]
+    step_run_id: "UUID", output_artifact_ids: dict[str, list["UUID"]]
 ) -> "StepRunResponse":
     """Publishes a successful step run.
 
@@ -64,8 +64,8 @@ def publish_successful_step_run(
 def publish_step_run_status_update(
     step_run_id: "UUID",
     status: "ExecutionStatus",
-    end_time: Optional[datetime] = None,
-    exception_info: Optional[ExceptionInfo] = None,
+    end_time: datetime | None = None,
+    exception_info: ExceptionInfo | None = None,
 ) -> "StepRunResponse":
     """Publishes a step run update.
 
@@ -163,8 +163,8 @@ def publish_failed_pipeline_run(
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,
-    status_reason: Optional[str] = None,
-    end_time: Optional[datetime] = None,
+    status_reason: str | None = None,
+    end_time: datetime | None = None,
 ) -> "PipelineRunResponse":
     """Publishes a pipeline run status update.
 
@@ -199,7 +199,7 @@ def publish_pipeline_run_status_update(
 
 def get_pipeline_run_status(
     run_status: ExecutionStatus,
-    step_statuses: List[ExecutionStatus],
+    step_statuses: list[ExecutionStatus],
     num_steps: int,
     is_dynamic_pipeline: bool,
 ) -> ExecutionStatus:
@@ -252,7 +252,7 @@ def get_pipeline_run_status(
 
 def publish_pipeline_run_metadata(
     pipeline_run_id: "UUID",
-    pipeline_run_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+    pipeline_run_metadata: dict["UUID", dict[str, "MetadataType"]],
 ) -> None:
     """Publishes the given pipeline run metadata.
 
@@ -276,7 +276,7 @@ def publish_pipeline_run_metadata(
 
 def publish_step_run_metadata(
     step_run_id: "UUID",
-    step_run_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+    step_run_metadata: dict["UUID", dict[str, "MetadataType"]],
 ) -> None:
     """Publishes the given step run metadata.
 
@@ -300,7 +300,7 @@ def publish_step_run_metadata(
 
 def publish_schedule_metadata(
     schedule_id: "UUID",
-    schedule_metadata: Dict["UUID", Dict[str, "MetadataType"]],
+    schedule_metadata: dict["UUID", dict[str, "MetadataType"]],
 ) -> None:
     """Publishes the given schedule metadata.
 

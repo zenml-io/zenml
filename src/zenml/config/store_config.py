@@ -44,10 +44,10 @@ class StoreConfiguration(BaseModel):
 
     type: StoreType
     url: str
-    secrets_store: Optional[SerializeAsAny[SecretsStoreConfiguration]] = None
-    backup_secrets_store: Optional[
+    secrets_store: SerializeAsAny[SecretsStoreConfiguration] | None = None
+    backup_secrets_store: None | (
         SerializeAsAny[SecretsStoreConfiguration]
-    ] = None
+    ) = None
 
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
@@ -67,7 +67,7 @@ class StoreConfiguration(BaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def validate_store_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_store_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate the secrets store configuration.
 
         Args:

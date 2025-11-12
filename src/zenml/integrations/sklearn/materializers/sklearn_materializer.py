@@ -37,7 +37,7 @@ from zenml.materializers.cloudpickle_materializer import (
 class SklearnMaterializer(CloudpickleMaterializer):
     """Materializer to read data to and from sklearn."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         BaseEstimator,
         ClassifierMixin,
         ClusterMixin,

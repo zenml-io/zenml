@@ -31,7 +31,7 @@ class BasePyTorchMaterializer(BaseMaterializer):
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Uses `torch.load` to load a PyTorch object.
 
         Args:

@@ -60,7 +60,7 @@ class ApiTransactionRequest(UserScopedRequest):
 class ApiTransactionUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    result: Optional[PlainSerializedSecretStr] = Field(
+    result: PlainSerializedSecretStr | None = Field(
         default=None,
         title="The response payload.",
     )
@@ -69,7 +69,7 @@ class ApiTransactionUpdate(BaseUpdate):
         "completion."
     )
 
-    def get_result(self) -> Optional[str]:
+    def get_result(self) -> str | None:
         """Get the result of the API transaction.
 
         Returns:
@@ -104,7 +104,7 @@ class ApiTransactionResponseBody(UserScopedResponseBody):
     completed: bool = Field(
         title="Whether the transaction is completed.",
     )
-    result: Optional[PlainSerializedSecretStr] = Field(
+    result: PlainSerializedSecretStr | None = Field(
         default=None,
         title="The response payload.",
     )
@@ -165,7 +165,7 @@ class ApiTransactionResponse(
         return self.get_body().completed
 
     @property
-    def result(self) -> Optional[PlainSerializedSecretStr]:
+    def result(self) -> PlainSerializedSecretStr | None:
         """The `result` property.
 
         Returns:
@@ -173,7 +173,7 @@ class ApiTransactionResponse(
         """
         return self.get_body().result
 
-    def get_result(self) -> Optional[str]:
+    def get_result(self) -> str | None:
         """Get the result of the API transaction.
 
         Returns:

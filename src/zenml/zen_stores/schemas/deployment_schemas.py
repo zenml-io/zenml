@@ -14,7 +14,8 @@
 """SQLModel implementation of pipeline deployments table."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -80,7 +81,7 @@ class DeploymentSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="deployments")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -91,11 +92,11 @@ class DeploymentSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="deployments")
 
     status: str
-    url: Optional[str] = Field(
+    url: str | None = Field(
         default=None,
         sa_column=Column(TEXT, nullable=True),
     )
-    auth_key: Optional[str] = Field(
+    auth_key: str | None = Field(
         default=None,
         sa_column=Column(TEXT, nullable=True),
     )
@@ -108,7 +109,7 @@ class DeploymentSchema(NamedSchema, table=True):
             nullable=False,
         ),
     )
-    snapshot_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSnapshotSchema.__tablename__,
         source_column="snapshot_id",
@@ -120,7 +121,7 @@ class DeploymentSchema(NamedSchema, table=True):
         back_populates="deployment",
     )
 
-    deployer_id: Optional[UUID] = build_foreign_key_field(
+    deployer_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="deployer_id",
@@ -130,7 +131,7 @@ class DeploymentSchema(NamedSchema, table=True):
     )
     deployer: Optional["StackComponentSchema"] = Relationship()
 
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.DEPLOYMENT.value}', foreign(TagResourceSchema.resource_id)==DeploymentSchema.id)",
             secondary="tag_resource",
@@ -140,7 +141,7 @@ class DeploymentSchema(NamedSchema, table=True):
         ),
     )
 
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"
@@ -207,7 +208,7 @@ class DeploymentSchema(NamedSchema, table=True):
         Returns:
             The created `DeploymentResponse`.
         """
-        status: Optional[DeploymentStatus] = None
+        status: DeploymentStatus | None = None
         if self.status in DeploymentStatus.values():
             status = DeploymentStatus(self.status)
         elif self.status is not None:

@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Column, String, UniqueConstraint
@@ -64,7 +65,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         title="Whether the run template is hidden.",
     )
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -73,7 +74,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         )
     )
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -89,7 +90,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    source_snapshot_id: Optional[UUID] = build_foreign_key_field(
+    source_snapshot_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target="pipeline_snapshot",
         source_column="source_snapshot_id",
@@ -108,7 +109,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         }
     )
 
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
             secondary="tag_resource",

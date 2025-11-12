@@ -45,7 +45,7 @@ class BaseCodeRepository(ABC):
         self,
         id: UUID,
         name: str,
-        config: Dict[str, Any],
+        config: dict[str, Any],
     ) -> None:
         """Initializes a code repository.
 
@@ -78,7 +78,7 @@ class BaseCodeRepository(ABC):
         Returns:
             The loaded code repository object.
         """
-        class_: Type[BaseCodeRepository] = (
+        class_: type[BaseCodeRepository] = (
             source_utils.load_and_validate_class(
                 source=model.source, expected_class=BaseCodeRepository
             )
@@ -86,7 +86,7 @@ class BaseCodeRepository(ABC):
         return class_(id=model.id, name=model.name, config=model.config)
 
     @classmethod
-    def validate_config(cls, config: Dict[str, Any]) -> None:
+    def validate_config(cls, config: dict[str, Any]) -> None:
         """Validate the code repository config.
 
         This method should check that the config/credentials are valid and
@@ -120,7 +120,7 @@ class BaseCodeRepository(ABC):
         return self._name
 
     @property
-    def requirements(self) -> Set[str]:
+    def requirements(self) -> set[str]:
         """Set of PyPI requirements for the repository.
 
         Returns:
@@ -144,7 +144,7 @@ class BaseCodeRepository(ABC):
 
     @abstractmethod
     def download_files(
-        self, commit: str, directory: str, repo_sub_directory: Optional[str]
+        self, commit: str, directory: str, repo_sub_directory: str | None
     ) -> None:
         """Downloads files from the code repository to a local directory.
 

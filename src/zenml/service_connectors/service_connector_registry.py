@@ -33,7 +33,7 @@ class ServiceConnectorRegistry:
 
     def __init__(self) -> None:
         """Initialize the service connector registry."""
-        self.service_connector_types: Dict[str, ServiceConnectorTypeModel] = {}
+        self.service_connector_types: dict[str, ServiceConnectorTypeModel] = {}
         self.initialized = False
         self.lock = threading.RLock()
 
@@ -122,10 +122,10 @@ class ServiceConnectorRegistry:
 
     def list_service_connector_types(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-    ) -> List[ServiceConnectorTypeModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+    ) -> list[ServiceConnectorTypeModel]:
         """Find one or more service connector types that match the given criteria.
 
         Args:
@@ -141,7 +141,7 @@ class ServiceConnectorRegistry:
         """
         self.register_builtin_service_connectors()
 
-        matches: List[ServiceConnectorTypeModel] = []
+        matches: list[ServiceConnectorTypeModel] = []
         for service_connector_type in self.service_connector_types.values():
             if (
                 (

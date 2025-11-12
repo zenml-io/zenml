@@ -21,8 +21,8 @@ from zenml.utils.json_utils import pydantic_encoder
 
 
 def recursive_update(
-    original: Dict[str, Any], update: Dict[str, Any]
-) -> Dict[str, Any]:
+    original: dict[str, Any], update: dict[str, Any]
+) -> dict[str, Any]:
     """Recursively updates a dictionary.
 
     Args:
@@ -33,9 +33,9 @@ def recursive_update(
         The updated dictionary.
     """
     for key, value in update.items():
-        if isinstance(value, Dict):
+        if isinstance(value, dict):
             original_value = original.get(key, None) or {}
-            if isinstance(original_value, Dict):
+            if isinstance(original_value, dict):
                 original[key] = recursive_update(original_value, value)
             else:
                 original[key] = value
@@ -45,8 +45,8 @@ def recursive_update(
 
 
 def remove_none_values(
-    dict_: Dict[str, Any], recursive: bool = False
-) -> Dict[str, Any]:
+    dict_: dict[str, Any], recursive: bool = False
+) -> dict[str, Any]:
     """Removes all key-value pairs with `None` value.
 
     Args:
@@ -67,7 +67,7 @@ def remove_none_values(
         Returns:
             The updated dictionary value.
         """
-        if recursive and isinstance(value, Dict):
+        if recursive and isinstance(value, dict):
             return remove_none_values(value, recursive=True)
         else:
             return value
@@ -75,7 +75,7 @@ def remove_none_values(
     return {k: _maybe_recurse(v) for k, v in dict_.items() if v is not None}
 
 
-def dict_to_bytes(dict_: Dict[str, Any]) -> bytes:
+def dict_to_bytes(dict_: dict[str, Any]) -> bytes:
     """Converts a dictionary to bytes.
 
     Args:

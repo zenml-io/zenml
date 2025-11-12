@@ -124,13 +124,13 @@ def _display_login_menu() -> LoginMethod:
 
 def start_local_server(
     docker: bool = False,
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address, None
-    ] = None,
-    port: Optional[int] = None,
+    ip_address: (
+        ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    ) = None,
+    port: int | None = None,
     blocking: bool = False,
-    image: Optional[str] = None,
-    ngrok_token: Optional[str] = None,
+    image: str | None = None,
+    ngrok_token: str | None = None,
     restart: bool = False,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
@@ -179,7 +179,7 @@ def start_local_server(
 
     deployer = LocalServerDeployer()
 
-    config_attrs: Dict[str, Any] = dict(
+    config_attrs: dict[str, Any] = dict(
         provider=provider,
     )
     if not docker:
@@ -219,8 +219,8 @@ def start_local_server(
 
 def connect_to_server(
     url: str,
-    api_key: Optional[str] = None,
-    verify_ssl: Union[str, bool] = True,
+    api_key: str | None = None,
+    verify_ssl: str | bool = True,
     refresh: bool = False,
     pro_server: bool = False,
 ) -> None:
@@ -301,11 +301,11 @@ def connect_to_server(
 
 
 def connect_to_pro_server(
-    pro_server: Optional[str] = None,
-    api_key: Optional[str] = None,
+    pro_server: str | None = None,
+    api_key: str | None = None,
     refresh: bool = False,
-    pro_api_url: Optional[str] = None,
-    verify_ssl: Union[str, bool] = True,
+    pro_api_url: str | None = None,
+    verify_ssl: str | bool = True,
 ) -> None:
     """Connect the client to a ZenML Pro server.
 
@@ -404,7 +404,7 @@ def connect_to_pro_server(
             "your session expires."
         )
 
-        workspace_id: Optional[str] = None
+        workspace_id: str | None = None
         if token.device_metadata:
             # TODO: is this still correct?
             workspace_id = token.device_metadata.get("tenant_id")
@@ -525,7 +525,7 @@ def connect_to_pro_server(
 
 def is_pro_server(
     url: str,
-) -> Tuple[Optional[bool], Optional[str]]:
+) -> tuple[bool | None, str | None]:
     """Check if the server at the given URL is a ZenML Pro server.
 
     Args:
@@ -806,23 +806,23 @@ def _fail_if_authentication_environment_variables_set() -> None:
     "to a self-hosted ZenML Pro deployment.",
 )
 def login(
-    server: Optional[str] = None,
+    server: str | None = None,
     pro: bool = False,
     refresh: bool = False,
     api_key: bool = False,
     no_verify_ssl: bool = False,
-    ssl_ca_cert: Optional[str] = None,
+    ssl_ca_cert: str | None = None,
     local: bool = False,
     docker: bool = False,
     restart: bool = False,
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address, None
-    ] = None,
-    port: Optional[int] = None,
+    ip_address: (
+        ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    ) = None,
+    port: int | None = None,
     blocking: bool = False,
-    image: Optional[str] = None,
-    ngrok_token: Optional[str] = None,
-    pro_api_url: Optional[str] = None,
+    image: str | None = None,
+    ngrok_token: str | None = None,
+    pro_api_url: str | None = None,
 ) -> None:
     """Connect to a remote ZenML server.
 
@@ -868,7 +868,7 @@ def login(
         )
         return
 
-    api_key_value: Optional[str] = None
+    api_key_value: str | None = None
     if api_key:
         # Read the API key from the user
         api_key_value = click.prompt(
@@ -893,14 +893,14 @@ def login(
         return
 
     # Get the server that the client is currently connected to, if any
-    current_non_local_server: Optional[str] = None
+    current_non_local_server: str | None = None
     gc = GlobalConfiguration()
     store_cfg = gc.store_configuration
     if store_cfg.type == StoreType.REST:
         if not connected_to_local_server():
             current_non_local_server = store_cfg.url
 
-    verify_ssl: Union[str, bool] = (
+    verify_ssl: str | bool = (
         ssl_ca_cert if ssl_ca_cert is not None else not no_verify_ssl
     )
 
@@ -1109,11 +1109,11 @@ def login(
     "from a self-hosted ZenML Pro deployment.",
 )
 def logout(
-    server: Optional[str] = None,
+    server: str | None = None,
     local: bool = False,
     clear: bool = False,
     pro: bool = False,
-    pro_api_url: Optional[str] = None,
+    pro_api_url: str | None = None,
 ) -> None:
     """Disconnect from a ZenML server.
 

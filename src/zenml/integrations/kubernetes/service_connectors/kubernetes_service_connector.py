@@ -49,7 +49,7 @@ logger = get_logger(__name__)
 class KubernetesServerCredentials(AuthenticationConfig):
     """Kubernetes server authentication config."""
 
-    certificate_authority: Optional[PlainSerializedSecretStr] = Field(
+    certificate_authority: PlainSerializedSecretStr | None = Field(
         default=None,
         title="Kubernetes CA Certificate (base64 encoded)",
     )
@@ -96,15 +96,15 @@ class KubernetesUserPasswordConfig(
 class KubernetesTokenCredentials(AuthenticationConfig):
     """Kubernetes token authentication config."""
 
-    client_certificate: Optional[PlainSerializedSecretStr] = Field(
+    client_certificate: PlainSerializedSecretStr | None = Field(
         default=None,
         title="Kubernetes Client Certificate (base64 encoded)",
     )
-    client_key: Optional[PlainSerializedSecretStr] = Field(
+    client_key: PlainSerializedSecretStr | None = Field(
         default=None,
         title="Kubernetes Client Key (base64 encoded)",
     )
-    token: Optional[PlainSerializedSecretStr] = Field(
+    token: PlainSerializedSecretStr | None = Field(
         default=None,
         title="Kubernetes Token",
     )
@@ -323,7 +323,7 @@ class KubernetesServiceConnector(ServiceConnector):
         """
         cfg = self.config
         cluster_name = cfg.cluster_name
-        delete_files: List[str] = []
+        delete_files: list[str] = []
 
         if self.auth_method == KubernetesAuthenticationMethods.PASSWORD:
             assert isinstance(cfg, KubernetesUserPasswordConfig)
@@ -454,10 +454,10 @@ class KubernetesServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        kubernetes_context: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        kubernetes_context: str | None = None,
         **kwargs: Any,
     ) -> "KubernetesServiceConnector":
         """Auto-configure the connector.
@@ -510,7 +510,7 @@ class KubernetesServiceConnector(ServiceConnector):
                 insecure=kube_config.verify_ssl is False,
             )
         else:
-            token: Optional[str] = None
+            token: str | None = None
             if kube_config.api_key:
                 token = kube_config.api_key["authorization"].removeprefix(
                     "Bearer "
@@ -545,9 +545,9 @@ class KubernetesServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify and list all the resources that the connector can access.
 
         Args:

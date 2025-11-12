@@ -36,7 +36,7 @@ STACK_DEPLOYMENT_PROVIDERS = {
 
 def get_stack_deployment_class(
     provider: StackDeploymentProvider,
-) -> Type[ZenMLCloudStackDeployment]:
+) -> type[ZenMLCloudStackDeployment]:
     """Get the ZenML Cloud Stack Deployment class for the specified provider.
 
     Args:

@@ -27,7 +27,7 @@ from zenml.enums import ArtifactSaveType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 
-MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+MaterializerClassOrSource = Union[str, Source, type[BaseMaterializer]]
 
 
 logger = get_logger(__name__)
@@ -71,8 +71,8 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     ```
     """
 
-    value: Optional[Any] = None
-    materializer: Optional[MaterializerClassOrSource] = Field(
+    value: Any | None = None
+    materializer: MaterializerClassOrSource | None = Field(
         default=None, union_mode="left_to_right"
     )
     store_artifact_metadata: bool = True

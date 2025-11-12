@@ -126,7 +126,7 @@ class KubeClientKFPClient(kfp.Client):  # type: ignore[misc]
 class TektonOrchestrator(ContainerizedOrchestrator):
     """Orchestrator responsible for running pipelines using Tekton."""
 
-    _k8s_client: Optional[k8s_client.ApiClient] = None
+    _k8s_client: k8s_client.ApiClient | None = None
 
     def _get_kfp_client(
         self,
@@ -243,7 +243,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 f"Error while trying to fetch tekoton cookie: {errh}"
             )
-        cookie_dict: Dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call, unused-ignore]
+        cookie_dict: dict[str, str] = session.cookies.get_dict()  # type: ignore[no-untyped-call, unused-ignore]
 
         if "authservice_session" not in cookie_dict:
             raise RuntimeError("Invalid username and/or password!")
@@ -262,7 +262,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         return cast(TektonOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Tekton orchestrator.
 
         Returns:
@@ -270,7 +270,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         """
         return TektonOrchestratorSettings
 
-    def get_kubernetes_contexts(self) -> Tuple[List[str], Optional[str]]:
+    def get_kubernetes_contexts(self) -> tuple[list[str], str | None]:
         """Get the list of configured Kubernetes contexts and the active context.
 
         Returns:
@@ -287,14 +287,14 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         return context_names, active_context_name
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures a stack with only remote components and a container registry.
 
         Returns:
             A `StackValidator` instance.
         """
 
-        def _validate(stack: "Stack") -> Tuple[bool, str]:
+        def _validate(stack: "Stack") -> tuple[bool, str]:
             container_registry = stack.container_registry
 
             # should not happen, because the stack validation takes care of
@@ -414,8 +414,8 @@ class TektonOrchestrator(ContainerizedOrchestrator):
     def _create_dynamic_component(
         self,
         image: str,
-        command: List[str],
-        arguments: List[str],
+        command: list[str],
+        arguments: list[str],
         component_name: str,
     ) -> dsl.PipelineTask:
         """Creates a dynamic container component for a Tekton pipeline.
@@ -459,10 +459,10 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -510,7 +510,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             Returns:
                 pipeline_func
             """
-            step_name_to_dynamic_component: Dict[str, Any] = {}
+            step_name_to_dynamic_component: dict[str, Any] = {}
 
             for step_name, step in snapshot.step_configurations.items():
                 image = self.get_image(
@@ -530,7 +530,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                 step_settings = cast(
                     TektonOrchestratorSettings, self.get_settings(step)
                 )
-                node_selector_constraint: Optional[Tuple[str, str]] = None
+                node_selector_constraint: tuple[str, str] | None = None
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
                     ignored_fields = pod_settings.model_fields_set - {
@@ -627,7 +627,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         snapshot: "PipelineSnapshotResponse",
         pipeline_file_path: str,
         run_name: str,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Tries to upload and run a KFP pipeline.
 
         Args:
@@ -828,7 +828,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         self,
         dynamic_component: dsl.PipelineTask,
         resource_settings: "ResourceSettings",
-        node_selector_constraint: Optional[Tuple[str, str]] = None,
+        node_selector_constraint: tuple[str, str] | None = None,
     ) -> dsl.PipelineTask:
         """Adds resource requirements to the container.
 

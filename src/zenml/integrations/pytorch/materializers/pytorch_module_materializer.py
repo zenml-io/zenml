@@ -41,7 +41,7 @@ class PyTorchModuleMaterializer(BasePyTorchMaterializer):
     https://pytorch.org/tutorials/beginner/saving_loading_models.html
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Module,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     FILENAME: ClassVar[str] = DEFAULT_FILENAME
 
@@ -66,7 +66,7 @@ class PyTorchModuleMaterializer(BasePyTorchMaterializer):
                 # is intended for use with trusted data sources.
                 torch.save(model.state_dict(), f, pickle_module=cloudpickle)  # nosec
 
-    def extract_metadata(self, model: Module) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, model: Module) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Model` object.
 
         Args:

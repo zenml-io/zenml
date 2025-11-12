@@ -19,10 +19,10 @@ from typing import (
     ClassVar,
     Dict,
     Optional,
-    Sequence,
     Tuple,
     Type,
 )
+from collections.abc import Sequence
 
 import pandas as pd
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
@@ -45,13 +45,13 @@ class EvidentlyDataValidator(BaseDataValidator):
     """Evidently data validator stack component."""
 
     NAME: ClassVar[str] = "Evidently"
-    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+    FLAVOR: ClassVar[type[BaseDataValidatorFlavor]] = (
         EvidentlyDataValidatorFlavor
     )
 
     @classmethod
     def _unpack_options(
-        cls, option_list: Sequence[Tuple[str, Dict[str, Any]]]
+        cls, option_list: Sequence[tuple[str, dict[str, Any]]]
     ) -> Sequence[Any]:
         """Unpack Evidently options.
 
@@ -165,10 +165,10 @@ class EvidentlyDataValidator(BaseDataValidator):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
-        comparison_dataset: Optional[pd.DataFrame] = None,
-        profile_list: Optional[Sequence[EvidentlyMetricConfig]] = None,
-        column_mapping: Optional[ColumnMapping] = None,
-        report_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
+        comparison_dataset: pd.DataFrame | None = None,
+        profile_list: Sequence[EvidentlyMetricConfig] | None = None,
+        column_mapping: ColumnMapping | None = None,
+        report_options: Sequence[tuple[str, dict[str, Any]]] = [],
         download_nltk_data: bool = False,
         **kwargs: Any,
     ) -> Report:
@@ -235,10 +235,10 @@ class EvidentlyDataValidator(BaseDataValidator):
     def data_validation(
         self,
         dataset: Any,
-        comparison_dataset: Optional[Any] = None,
-        check_list: Optional[Sequence[EvidentlyTestConfig]] = None,
-        test_options: Sequence[Tuple[str, Dict[str, Any]]] = [],
-        column_mapping: Optional[ColumnMapping] = None,
+        comparison_dataset: Any | None = None,
+        check_list: Sequence[EvidentlyTestConfig] | None = None,
+        test_options: Sequence[tuple[str, dict[str, Any]]] = [],
+        column_mapping: ColumnMapping | None = None,
         download_nltk_data: bool = False,
         **kwargs: Any,
     ) -> TestSuite:

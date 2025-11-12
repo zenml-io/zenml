@@ -21,13 +21,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     Optional,
     Tuple,
     Type,
     Union,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 import requests
@@ -77,7 +77,7 @@ DEFAULT_DEPLOYMENT_LCM_TIMEOUT = 600
 class BaseDeployerSettings(BaseSettings):
     """Base settings for all deployers."""
 
-    auth_key: Optional[str] = None
+    auth_key: str | None = None
     generate_auth_key: bool = False
     lcm_timeout: int = DEFAULT_DEPLOYMENT_LCM_TIMEOUT
 
@@ -223,7 +223,7 @@ class BaseDeployer(StackComponent, ABC):
             )
 
     def _check_deployment_snapshot(
-        self, snapshot: Optional[PipelineSnapshotResponse] = None
+        self, snapshot: PipelineSnapshotResponse | None = None
     ) -> None:
         """Check if the snapshot was created for this deployer.
 
@@ -253,7 +253,7 @@ class BaseDeployer(StackComponent, ABC):
     def _check_snapshot_already_deployed(
         self,
         snapshot: PipelineSnapshotResponse,
-        new_deployment_id_or_name: Union[str, UUID],
+        new_deployment_id_or_name: str | UUID,
     ) -> None:
         """Check if the snapshot is already deployed to another deployment.
 
@@ -358,7 +358,7 @@ class BaseDeployer(StackComponent, ABC):
         deployment: DeploymentResponse,
         desired_status: DeploymentStatus,
         timeout: int,
-    ) -> Tuple[DeploymentResponse, DeploymentOperationalState]:
+    ) -> tuple[DeploymentResponse, DeploymentOperationalState]:
         """Poll the deployment until it reaches the desired status, an error occurs or times out.
 
         Args:
@@ -432,7 +432,7 @@ class BaseDeployer(StackComponent, ABC):
         self,
         deployment: "DeploymentResponse",
         stack: Optional["Stack"] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Returns the deployment metadata.
 
         Args:
@@ -464,9 +464,9 @@ class BaseDeployer(StackComponent, ABC):
         self,
         snapshot: PipelineSnapshotResponse,
         stack: "Stack",
-        deployment_name_or_id: Union[str, UUID],
+        deployment_name_or_id: str | UUID,
         replace: bool = True,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> DeploymentResponse:
         """Provision a deployment.
 
@@ -696,8 +696,8 @@ class BaseDeployer(StackComponent, ABC):
 
     def refresh_deployment(
         self,
-        deployment_name_or_id: Union[str, UUID],
-        project: Optional[UUID] = None,
+        deployment_name_or_id: str | UUID,
+        project: UUID | None = None,
     ) -> DeploymentResponse:
         """Refresh the status of a deployment by name or ID.
 
@@ -754,9 +754,9 @@ class BaseDeployer(StackComponent, ABC):
 
     def deprovision_deployment(
         self,
-        deployment_name_or_id: Union[str, UUID],
-        project: Optional[UUID] = None,
-        timeout: Optional[int] = None,
+        deployment_name_or_id: str | UUID,
+        project: UUID | None = None,
+        timeout: int | None = None,
     ) -> DeploymentResponse:
         """Deprovision a deployment.
 
@@ -861,10 +861,10 @@ class BaseDeployer(StackComponent, ABC):
 
     def delete_deployment(
         self,
-        deployment_name_or_id: Union[str, UUID],
-        project: Optional[UUID] = None,
+        deployment_name_or_id: str | UUID,
+        project: UUID | None = None,
         force: bool = False,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Deprovision and delete a deployment.
 
@@ -907,10 +907,10 @@ class BaseDeployer(StackComponent, ABC):
 
     def get_deployment_logs(
         self,
-        deployment_name_or_id: Union[str, UUID],
-        project: Optional[UUID] = None,
+        deployment_name_or_id: str | UUID,
+        project: UUID | None = None,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a deployment.
 
@@ -961,8 +961,8 @@ class BaseDeployer(StackComponent, ABC):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Abstract method to deploy a pipeline as an HTTP deployment.
@@ -1039,7 +1039,7 @@ class BaseDeployer(StackComponent, ABC):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Abstract method to get the logs of a deployment.
 
@@ -1066,7 +1066,7 @@ class BaseDeployer(StackComponent, ABC):
         self,
         deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Abstract method to deprovision a deployment.
 
         Concrete deployer subclasses must implement the following
@@ -1119,7 +1119,7 @@ class BaseDeployerFlavor(Flavor):
         return StackComponentType.DEPLOYER
 
     @property
-    def config_class(self) -> Type[BaseDeployerConfig]:
+    def config_class(self) -> type[BaseDeployerConfig]:
         """Returns `BaseDeployerConfig` config class.
 
         Returns:
@@ -1129,5 +1129,5 @@ class BaseDeployerFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseDeployer]:
+    def implementation_class(self) -> type[BaseDeployer]:
         """The class that implements the deployer."""

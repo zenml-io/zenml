@@ -40,7 +40,7 @@ class SparkStepOperatorSettings(BaseSettings):
     """
 
     deploy_mode: str = "cluster"
-    submit_kwargs: Optional[Dict[str, Any]] = None
+    submit_kwargs: dict[str, Any] | None = None
 
 
 class SparkStepOperatorConfig(
@@ -71,7 +71,7 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
         return "spark"
 
     @property
-    def config_class(self) -> Type[SparkStepOperatorConfig]:
+    def config_class(self) -> type[SparkStepOperatorConfig]:
         """Returns `SparkStepOperatorConfig` config class.
 
         Returns:
@@ -80,7 +80,7 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
         return SparkStepOperatorConfig
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -89,7 +89,7 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -98,7 +98,7 @@ class SparkStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_sdk_docs_url()
 
     @property
-    def implementation_class(self) -> Type["SparkStepOperator"]:
+    def implementation_class(self) -> type["SparkStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:

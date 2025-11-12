@@ -57,7 +57,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         return cast(NeptuneExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Neptune experiment tracker.
 
         Returns:
@@ -86,7 +86,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:

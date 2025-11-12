@@ -32,14 +32,13 @@ import os
 import shutil
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Iterable,
     List,
     Optional,
     Set,
     Tuple,
 )
+from collections.abc import Callable, Iterable
 
 from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry
@@ -52,7 +51,7 @@ class LocalFilesystem(BaseFilesystem):
     https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/plugins/local.py
     """
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
+    SUPPORTED_SCHEMES: ClassVar[set[str]] = {""}
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
@@ -103,7 +102,7 @@ class LocalFilesystem(BaseFilesystem):
         return os.path.exists(path)
 
     @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(pattern: PathType) -> list[PathType]:
         """Return the paths that match a glob pattern.
 
         Args:
@@ -127,7 +126,7 @@ class LocalFilesystem(BaseFilesystem):
         return os.path.isdir(path)
 
     @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(path: PathType) -> list[PathType]:
         """Returns a list of files under a given directory in the filesystem.
 
         Args:
@@ -223,8 +222,8 @@ class LocalFilesystem(BaseFilesystem):
     def walk(
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:

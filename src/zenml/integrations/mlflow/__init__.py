@@ -47,8 +47,8 @@ class MlflowIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+        cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:
@@ -77,7 +77,7 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow import services  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the MLflow integration.
 
         Returns:

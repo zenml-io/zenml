@@ -65,7 +65,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_service(
     service: ServiceRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceResponse:
     """Creates a new service.

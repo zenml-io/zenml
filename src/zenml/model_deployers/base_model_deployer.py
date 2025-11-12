@@ -19,12 +19,12 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    Generator,
     List,
     Optional,
     Type,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 from zenml.client import Client
@@ -82,7 +82,7 @@ class BaseModelDeployer(StackComponent, ABC):
     """
 
     NAME: ClassVar[str]
-    FLAVOR: ClassVar[Type["BaseModelDeployerFlavor"]]
+    FLAVOR: ClassVar[type["BaseModelDeployerFlavor"]]
 
     @property
     def config(self) -> BaseModelDeployerConfig:
@@ -268,7 +268,7 @@ class BaseModelDeployer(StackComponent, ABC):
     @abstractmethod
     def get_model_server_info(
         service: BaseService,
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Give implementation specific way to extract relevant model server properties for the user.
 
         Args:
@@ -280,19 +280,19 @@ class BaseModelDeployer(StackComponent, ABC):
 
     def find_model_server(
         self,
-        config: Optional[Dict[str, Any]] = None,
-        running: Optional[bool] = None,
-        service_uuid: Optional[UUID] = None,
-        pipeline_name: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        service_name: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_version: Optional[str] = None,
-        service_type: Optional[ServiceType] = None,
-        type: Optional[str] = None,
-        flavor: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
-    ) -> List[BaseService]:
+        config: dict[str, Any] | None = None,
+        running: bool | None = None,
+        service_uuid: UUID | None = None,
+        pipeline_name: str | None = None,
+        pipeline_step_name: str | None = None,
+        service_name: str | None = None,
+        model_name: str | None = None,
+        model_version: str | None = None,
+        service_type: ServiceType | None = None,
+        type: str | None = None,
+        flavor: str | None = None,
+        pipeline_run_id: str | None = None,
+    ) -> list[BaseService]:
         """Abstract method to find one or more a model servers that match the given criteria.
 
         Args:
@@ -528,7 +528,7 @@ class BaseModelDeployer(StackComponent, ABC):
         self,
         uuid: UUID,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a model server.
 
@@ -578,7 +578,7 @@ class BaseModelDeployerFlavor(Flavor):
         return StackComponentType.MODEL_DEPLOYER
 
     @property
-    def config_class(self) -> Type[BaseModelDeployerConfig]:
+    def config_class(self) -> type[BaseModelDeployerConfig]:
         """Returns `BaseModelDeployerConfig` config class.
 
         Returns:
@@ -588,14 +588,14 @@ class BaseModelDeployerFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseModelDeployer]:
+    def implementation_class(self) -> type[BaseModelDeployer]:
         """The class that implements the model deployer."""
 
 
 def get_model_version_id_if_exists(
-    model_name: Optional[str],
-    model_version: Optional[str],
-) -> Optional[UUID]:
+    model_name: str | None,
+    model_version: str | None,
+) -> UUID | None:
     """Get the model version id if it exists.
 
     Args:

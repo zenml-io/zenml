@@ -102,7 +102,7 @@ class AWSBaseConfig(AuthenticationConfig):
     region: str = Field(
         title="AWS Region",
     )
-    endpoint_url: Optional[str] = Field(
+    endpoint_url: str | None = Field(
         default=None,
         title="AWS Endpoint URL",
     )
@@ -111,13 +111,13 @@ class AWSBaseConfig(AuthenticationConfig):
 class AWSSessionPolicy(AuthenticationConfig):
     """AWS session IAM policy configuration."""
 
-    policy_arns: Optional[List[str]] = Field(
+    policy_arns: list[str] | None = Field(
         default=None,
         title="ARNs of the IAM managed policies that you want to use as a "
         "managed session policy. The policies must exist in the same account "
         "as the IAM user that is requesting temporary credentials.",
     )
-    policy: Optional[str] = Field(
+    policy: str | None = Field(
         default=None,
         title="An IAM policy in JSON format that you want to use as an inline "
         "session policy",
@@ -127,11 +127,11 @@ class AWSSessionPolicy(AuthenticationConfig):
 class AWSImplicitConfig(AWSBaseConfig, AWSSessionPolicy):
     """AWS implicit configuration."""
 
-    profile_name: Optional[str] = Field(
+    profile_name: str | None = Field(
         default=None,
         title="AWS Profile Name",
     )
-    role_arn: Optional[str] = Field(
+    role_arn: str | None = Field(
         default=None,
         title="Optional AWS IAM Role ARN to assume",
     )
@@ -645,10 +645,10 @@ class AWSServiceConnector(ServiceConnector):
 
     config: AWSBaseConfig
 
-    _account_id: Optional[str] = None
-    _session_cache: Dict[
-        Tuple[str, Optional[str], Optional[str]],
-        Tuple[boto3.Session, Optional[datetime.datetime]],
+    _account_id: str | None = None
+    _session_cache: dict[
+        tuple[str, str | None, str | None],
+        tuple[boto3.Session, datetime.datetime | None],
     ] = {}
 
     @classmethod
@@ -689,9 +689,9 @@ class AWSServiceConnector(ServiceConnector):
     def get_boto3_session(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[boto3.Session, Optional[datetime.datetime]]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[boto3.Session, datetime.datetime | None]:
         """Get a boto3 session for the specified resource.
 
         Args:
@@ -765,9 +765,9 @@ class AWSServiceConnector(ServiceConnector):
     def _get_iam_policy(
         self,
         region_id: str,
-        resource_type: Optional[str],
-        resource_id: Optional[str] = None,
-    ) -> Optional[str]:
+        resource_type: str | None,
+        resource_id: str | None = None,
+    ) -> str | None:
         """Get the IAM inline policy to use for the specified resource.
 
         Args:
@@ -874,9 +874,9 @@ class AWSServiceConnector(ServiceConnector):
     def _authenticate(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[boto3.Session, Optional[datetime.datetime]]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[boto3.Session, datetime.datetime | None]:
         """Authenticate to AWS and return a boto3 session.
 
         Args:
@@ -894,7 +894,7 @@ class AWSServiceConnector(ServiceConnector):
             NotImplementedError: If the authentication method is not supported.
         """
         cfg = self.config
-        policy_kwargs: Dict[str, Any] = {}
+        policy_kwargs: dict[str, Any] = {}
 
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
             self._check_implicit_auth_method_allowed()
@@ -1166,7 +1166,7 @@ class AWSServiceConnector(ServiceConnector):
         # - the S3 bucket name
         #
         # We need to extract the bucket name from the provided resource ID
-        bucket_name: Optional[str] = None
+        bucket_name: str | None = None
         if re.match(
             r"^arn:aws:s3:::[a-z0-9][a-z0-9\-\.]{1,61}[a-z0-9](/.*)*$",
             resource_id,
@@ -1220,7 +1220,7 @@ class AWSServiceConnector(ServiceConnector):
         # We need to extract the region ID and registry ID from
         # the provided resource ID
         config_region_id = self.config.region
-        region_id: Optional[str] = None
+        region_id: str | None = None
         if re.match(
             r"^arn:aws:ecr:[a-z0-9-]+:\d{12}:repository(/.+)*$",
             resource_id,
@@ -1276,8 +1276,8 @@ class AWSServiceConnector(ServiceConnector):
         # We need to extract the cluster name and region ID from the
         # provided resource ID
         config_region_id = self.config.region
-        cluster_name: Optional[str] = None
-        region_id: Optional[str] = None
+        cluster_name: str | None = None
+        region_id: str | None = None
         if re.match(
             r"^arn:aws:eks:[a-z0-9-]+:\d{12}:cluster/[0-9A-Za-z][A-Za-z0-9\-_]*$",
             resource_id,
@@ -1440,7 +1440,7 @@ class AWSServiceConnector(ServiceConnector):
 
     def _configure_local_client(
         self,
-        profile_name: Optional[str] = None,
+        profile_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Configure a local client to authenticate and connect to a resource.
@@ -1526,12 +1526,12 @@ class AWSServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        region_name: Optional[str] = None,
-        profile_name: Optional[str] = None,
-        role_arn: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        region_name: str | None = None,
+        profile_name: str | None = None,
+        role_arn: str | None = None,
         **kwargs: Any,
     ) -> "AWSServiceConnector":
         """Auto-configure the connector.
@@ -1571,8 +1571,8 @@ class AWSServiceConnector(ServiceConnector):
                 the environment.
         """
         auth_config: AWSBaseConfig
-        expiration_seconds: Optional[int] = None
-        expires_at: Optional[datetime.datetime] = None
+        expiration_seconds: int | None = None
+        expires_at: datetime.datetime | None = None
         if auth_method == AWSAuthenticationMethods.IMPLICIT:
             if region_name is None:
                 raise ValueError(
@@ -1776,9 +1776,9 @@ class AWSServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify and list all the resources that the connector can access.
 
         Args:
@@ -1899,7 +1899,7 @@ class AWSServiceConnector(ServiceConnector):
                     logger.error(msg)
                     raise AuthorizationException(msg) from e
 
-                return cast(List[str], clusters["clusters"])
+                return cast(list[str], clusters["clusters"])
             else:
                 # Check if the specified EKS cluster exists
                 cluster_name = self._parse_eks_resource_id(resource_id)

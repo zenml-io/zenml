@@ -77,7 +77,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     @click.pass_obj
     def list_registered_models(
         model_registry: "BaseModelRegistry",
-        metadata: Optional[Dict[str, str]],
+        metadata: dict[str, str] | None,
     ) -> None:
         """List of all registered models within the model registry.
 
@@ -124,8 +124,8 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def register_model(
         model_registry: "BaseModelRegistry",
         name: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
+        description: str | None,
+        metadata: dict[str, str] | None,
     ) -> None:
         """Register a model with the active model registry.
 
@@ -219,8 +219,8 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def update_model(
         model_registry: "BaseModelRegistry",
         name: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
+        description: str | None,
+        metadata: dict[str, str] | None,
     ) -> None:
         """Update a model in the active model registry.
 
@@ -418,10 +418,10 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         model_registry: "BaseModelRegistry",
         name: str,
         version: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-        stage: Optional[str],
-        remove_metadata: Optional[List[str]],
+        description: str | None,
+        metadata: dict[str, str] | None,
+        stage: str | None,
+        remove_metadata: list[str] | None,
     ) -> None:
         """Update a model version in the active model registry.
 
@@ -508,12 +508,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
     def list_model_versions(
         model_registry: "BaseModelRegistry",
         name: str,
-        model_uri: Optional[str],
-        count: Optional[int],
-        metadata: Optional[Dict[str, str]],
+        model_uri: str | None,
+        count: int | None,
+        metadata: dict[str, str] | None,
         order_by_date: str,
-        created_after: Optional[datetime],
-        created_before: Optional[datetime],
+        created_after: datetime | None,
+        created_before: datetime | None,
     ) -> None:
         """List all model versions in the active model registry.
 
@@ -618,12 +618,12 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
         name: str,
         version: str,
         model_uri: str,
-        description: Optional[str],
-        metadata: Optional[Dict[str, str]],
-        zenml_version: Optional[str],
-        zenml_run_name: Optional[str],
-        zenml_pipeline_name: Optional[str],
-        zenml_step_name: Optional[str],
+        description: str | None,
+        metadata: dict[str, str] | None,
+        zenml_version: str | None,
+        zenml_run_name: str | None,
+        zenml_pipeline_name: str | None,
+        zenml_step_name: str | None,
     ) -> None:
         """Register a model version in the active model registry.
 

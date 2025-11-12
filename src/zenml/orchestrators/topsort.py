@@ -31,7 +31,8 @@ Implementation heavily inspired by TFX:
 https://github.com/tensorflow/tfx/blob/master/tfx/utils/topsort.py
 """
 
-from typing import Callable, List, Sequence, TypeVar
+from typing import List, TypeVar
+from collections.abc import Callable, Sequence
 
 from zenml.logger import get_logger
 
@@ -43,9 +44,9 @@ NodeT = TypeVar("NodeT")
 def topsorted_layers(
     nodes: Sequence[NodeT],
     get_node_id_fn: Callable[[NodeT], str],
-    get_parent_nodes: Callable[[NodeT], List[NodeT]],
-    get_child_nodes: Callable[[NodeT], List[NodeT]],
-) -> List[List[NodeT]]:
+    get_parent_nodes: Callable[[NodeT], list[NodeT]],
+    get_child_nodes: Callable[[NodeT], list[NodeT]],
+) -> list[list[NodeT]]:
     """Sorts the DAG of nodes in topological order.
 
     Args:
@@ -67,15 +68,15 @@ def topsorted_layers(
         ValueError: If the nodes are not unique.
     """
     # Make sure the nodes are unique.
-    node_ids = set(get_node_id_fn(n) for n in nodes)
+    node_ids = {get_node_id_fn(n) for n in nodes}
     if len(node_ids) != len(nodes):
         raise ValueError("Nodes must have unique ids.")
 
     # The outputs of get_(parent|child)_nodes should always be deduplicated,
     # and references to unknown nodes should be removed.
     def _apply_and_clean(
-        func: Callable[[NodeT], List[NodeT]], func_name: str, node: NodeT
-    ) -> List[NodeT]:
+        func: Callable[[NodeT], list[NodeT]], func_name: str, node: NodeT
+    ) -> list[NodeT]:
         seen_inner_node_ids = set()
         result = []
         for inner_node in func(node):
@@ -104,10 +105,10 @@ def topsorted_layers(
 
         return result
 
-    def get_clean_parent_nodes(node: NodeT) -> List[NodeT]:
+    def get_clean_parent_nodes(node: NodeT) -> list[NodeT]:
         return _apply_and_clean(get_parent_nodes, "get_parent_nodes", node)
 
-    def get_clean_child_nodes(node: NodeT) -> List[NodeT]:
+    def get_clean_child_nodes(node: NodeT) -> list[NodeT]:
         return _apply_and_clean(get_child_nodes, "get_child_nodes", node)
 
     # The first layer contains nodes with no incoming edges.
@@ -126,10 +127,10 @@ def topsorted_layers(
                 # Include the child node if all its parents are visited. If the child
                 # node is part of a cycle, it will never be included since it will have
                 # at least one unvisited parent node which is also part of the cycle.
-                parent_node_ids = set(
+                parent_node_ids = {
                     get_node_id_fn(p)
                     for p in get_clean_parent_nodes(child_node)
-                )
+                }
                 if parent_node_ids.issubset(visited_node_ids):
                     next_layer.append(child_node)
         layer = next_layer

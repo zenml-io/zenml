@@ -82,7 +82,7 @@ class GCPSecretsStoreConfiguration(ServiceConnectorSecretsStoreConfiguration):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def populate_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def populate_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Populate the connector configuration from legacy attributes.
 
         Args:
@@ -132,13 +132,13 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
     config: GCPSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.GCP
-    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]] = (
+    CONFIG_TYPE: ClassVar[type[ServiceConnectorSecretsStoreConfiguration]] = (
         GCPSecretsStoreConfiguration
     )
     SERVICE_CONNECTOR_TYPE: ClassVar[str] = GCP_CONNECTOR_TYPE
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str] = GCP_RESOURCE_TYPE
 
-    _client: Optional[SecretManagerServiceClient] = None
+    _client: SecretManagerServiceClient | None = None
 
     @property
     def client(self) -> SecretManagerServiceClient:
@@ -203,7 +203,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -246,7 +246,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
 
         logger.debug(f"Created GCP secret {gcp_secret.name}")
 
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -312,7 +312,7 @@ class GCPSecretsStore(ServiceConnectorSecretsStore):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

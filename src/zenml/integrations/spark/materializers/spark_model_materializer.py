@@ -27,7 +27,7 @@ DEFAULT_FILEPATH = "model"
 class SparkModelMaterializer(BaseMaterializer):
     """Materializer to read/write Spark models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         Transformer,
         Estimator,
         Model,
@@ -35,8 +35,8 @@ class SparkModelMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
     def load(
-        self, model_type: Type[Any]
-    ) -> Union[Transformer, Estimator, Model]:  # type: ignore[type-arg]
+        self, model_type: type[Any]
+    ) -> Transformer | Estimator | Model:  # type: ignore[type-arg]
         """Reads and returns a Spark ML model.
 
         Args:
@@ -50,7 +50,7 @@ class SparkModelMaterializer(BaseMaterializer):
 
     def save(
         self,
-        model: Union[Transformer, Estimator, Model],  # type: ignore[type-arg]
+        model: Transformer | Estimator | Model,  # type: ignore[type-arg]
     ) -> None:
         """Writes a spark model.
 

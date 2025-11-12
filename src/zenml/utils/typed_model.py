@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 # TODO: Investigate if we can solve this import a different way.
 from pydantic._internal._model_construction import ModelMetaclass
-from typing_extensions import Literal
+from typing import Literal
 
 from zenml.utils import source_utils
 
@@ -29,7 +29,7 @@ class BaseTypedModelMeta(ModelMetaclass):
     """Metaclass responsible for adding type information to Pydantic models."""
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: tuple[type[Any], ...], dct: dict[str, Any]
     ) -> "BaseTypedModelMeta":
         """Creates a Pydantic BaseModel class.
 
@@ -59,7 +59,7 @@ class BaseTypedModelMeta(ModelMetaclass):
         dct.setdefault("__annotations__", dict())["type"] = type_ann
         dct["type"] = type
         cls = cast(
-            Type["BaseTypedModel"], super().__new__(mcs, name, bases, dct)
+            type["BaseTypedModel"], super().__new__(mcs, name, bases, dct)
         )
         return cls
 
@@ -104,7 +104,7 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
     @classmethod
     def from_dict(
         cls,
-        model_dict: Dict[str, Any],
+        model_dict: dict[str, Any],
     ) -> "BaseTypedModel":
         """Instantiate a Pydantic model from a serialized JSON-able dict representation.
 

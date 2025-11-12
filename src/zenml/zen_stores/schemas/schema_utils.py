@@ -45,7 +45,7 @@ def build_foreign_key_field(
     target_column: str,
     ondelete: str,
     nullable: bool,
-    custom_constraint_name: Optional[str] = None,
+    custom_constraint_name: str | None = None,
     **sa_column_kwargs: Any,
 ) -> Any:
     """Build a SQLModel foreign key field.
@@ -94,7 +94,7 @@ def build_foreign_key_field(
     )
 
 
-def get_index_name(table_name: str, column_names: List[str]) -> str:
+def get_index_name(table_name: str, column_names: list[str]) -> str:
     """Get the name for an index.
 
     Args:
@@ -110,7 +110,7 @@ def get_index_name(table_name: str, column_names: List[str]) -> str:
 
 
 def build_index(
-    table_name: str, column_names: List[str], **kwargs: Any
+    table_name: str, column_names: list[str], **kwargs: Any
 ) -> Index:
     """Build an index object.
 

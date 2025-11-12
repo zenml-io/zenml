@@ -36,7 +36,7 @@ class VLLMIntegration(Integration):
         from zenml.integrations.vllm import services
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the vLLM integration.
 
         Returns:

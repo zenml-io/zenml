@@ -48,10 +48,10 @@ class UserAuthModel(BaseZenModel):
         "account."
     )
 
-    activation_token: Optional[PlainSerializedSecretStr] = Field(
+    activation_token: PlainSerializedSecretStr | None = Field(
         default=None, exclude=True
     )
-    password: Optional[PlainSerializedSecretStr] = Field(
+    password: PlainSerializedSecretStr | None = Field(
         default=None, exclude=True
     )
     name: str = Field(
@@ -65,7 +65,7 @@ class UserAuthModel(BaseZenModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    email_opted_in: Optional[bool] = Field(
+    email_opted_in: bool | None = Field(
         default=None,
         title="Whether the user agreed to share their email. Only relevant for "
         "user accounts",
@@ -100,7 +100,7 @@ class UserAuthModel(BaseZenModel):
         )
 
     @classmethod
-    def _get_hashed_secret(cls, secret: Optional[SecretStr]) -> Optional[str]:
+    def _get_hashed_secret(cls, secret: SecretStr | None) -> str | None:
         """Hashes the input secret and returns the hash value.
 
         Only applied if supplied and if not already hashed.
@@ -118,7 +118,7 @@ class UserAuthModel(BaseZenModel):
         pwd_context = cls._get_crypt_context()
         return pwd_context.hash(secret.get_secret_value())
 
-    def get_password(self) -> Optional[str]:
+    def get_password(self) -> str | None:
         """Get the password.
 
         Returns:
@@ -128,7 +128,7 @@ class UserAuthModel(BaseZenModel):
             return None
         return self.password.get_secret_value()
 
-    def get_hashed_password(self) -> Optional[str]:
+    def get_hashed_password(self) -> str | None:
         """Returns the hashed password, if configured.
 
         Returns:
@@ -136,7 +136,7 @@ class UserAuthModel(BaseZenModel):
         """
         return self._get_hashed_secret(self.password)
 
-    def get_hashed_activation_token(self) -> Optional[str]:
+    def get_hashed_activation_token(self) -> str | None:
         """Returns the hashed activation token, if configured.
 
         Returns:
@@ -160,7 +160,7 @@ class UserAuthModel(BaseZenModel):
         # even when the user or password is not set, we still want to execute
         # the password hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        password_hash: Optional[str] = None
+        password_hash: str | None = None
         if (
             user is not None
             # Disable password verification for service accounts as an extra

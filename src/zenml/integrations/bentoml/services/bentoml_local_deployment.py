@@ -69,7 +69,7 @@ class BentoMLDeploymentEndpoint(LocalDaemonServiceEndpoint):
     monitor: HTTPEndpointHealthMonitor
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Gets the prediction URL for the endpoint.
 
         Returns:
@@ -94,13 +94,13 @@ class SSLBentoMLParametersConfig(BaseModel):
         ssl_ciphers: SSL ciphers
     """
 
-    ssl_certfile: Optional[str] = None
-    ssl_keyfile: Optional[str] = None
-    ssl_keyfile_password: Optional[str] = None
-    ssl_version: Optional[int] = None
-    ssl_cert_reqs: Optional[int] = None
-    ssl_ca_certs: Optional[str] = None
-    ssl_ciphers: Optional[str] = None
+    ssl_certfile: str | None = None
+    ssl_keyfile: str | None = None
+    ssl_keyfile_password: str | None = None
+    ssl_version: int | None = None
+    ssl_cert_reqs: int | None = None
+    ssl_ca_certs: str | None = None
+    ssl_ciphers: str | None = None
 
 
 class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
@@ -123,15 +123,15 @@ class BentoMLLocalDeploymentConfig(LocalDaemonServiceConfig):
     model_name: str
     model_uri: str
     bento_tag: str
-    bento_uri: Optional[str] = None
-    apis: List[str] = []
+    bento_uri: str | None = None
+    apis: list[str] = []
     workers: int = 1
-    port: Optional[int] = None
+    port: int | None = None
     backlog: int = 2048
     production: bool = False
     working_dir: str
-    host: Optional[str] = None
-    ssl_parameters: Optional[SSLBentoMLParametersConfig] = Field(
+    host: str | None = None
+    ssl_parameters: SSLBentoMLParametersConfig | None = Field(
         default_factory=SSLBentoMLParametersConfig
     )
 
@@ -159,7 +159,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
 
     def __init__(
         self,
-        config: Union[BentoMLLocalDeploymentConfig, Dict[str, Any]],
+        config: BentoMLLocalDeploymentConfig | dict[str, Any],
         **attrs: Any,
     ) -> None:
         """Initialize the BentoML deployment service.
@@ -258,7 +258,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
                 logger.info("Stopping BentoML prediction service...")
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """Get the URI where the http server is running.
 
         Returns:
@@ -270,7 +270,7 @@ class BentoMLLocalDeploymentService(LocalDaemonService, BaseDeploymentService):
         return self.endpoint.prediction_url
 
     @property
-    def prediction_apis_urls(self) -> Optional[List[str]]:
+    def prediction_apis_urls(self) -> list[str] | None:
         """Get the URI where the prediction api services is answering requests.
 
         Returns:

@@ -14,7 +14,8 @@
 """Core CLI functionality."""
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Sequence
 
 import click
 import rich
@@ -38,12 +39,12 @@ class TagGroup(click.Group):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        tag: Optional[CliCategories] = None,
-        commands: Optional[
-            Union[Dict[str, click.Command], Sequence[click.Command]]
-        ] = None,
-        **kwargs: Dict[str, Any],
+        name: str | None = None,
+        tag: CliCategories | None = None,
+        commands: None | (
+            dict[str, click.Command] | Sequence[click.Command]
+        ) = None,
+        **kwargs: dict[str, Any],
     ) -> None:
         """Initialize the Tag group.
 
@@ -53,7 +54,7 @@ class TagGroup(click.Group):
             commands: The commands of the group.
             kwargs: Additional keyword arguments.
         """
-        super(TagGroup, self).__init__(name, commands, **kwargs)
+        super().__init__(name, commands, **kwargs)
         self.tag = tag or CliCategories.OTHER_COMMANDS
 
 
@@ -99,8 +100,8 @@ class ZenMLCLI(click.Group):
             ctx: The click context.
             formatter: The click formatter.
         """
-        commands: List[
-            Tuple[CliCategories, str, Union[Command, TagGroup]]
+        commands: list[
+            tuple[CliCategories, str, Command | TagGroup]
         ] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
@@ -132,7 +133,7 @@ class ZenMLCLI(click.Group):
                     ),
                 )
             )
-            rows: List[Tuple[str, str, str]] = []
+            rows: list[tuple[str, str, str]] = []
             for tag, subcommand, cmd in commands:
                 help_ = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help_))

@@ -37,8 +37,8 @@ class KubernetesSparkStepOperatorConfig(SparkStepOperatorConfig):
             components (to create and watch the pods).
     """
 
-    namespace: Optional[str] = None
-    service_account: Optional[str] = None
+    namespace: str | None = None
+    service_account: str | None = None
 
 
 class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
@@ -54,7 +54,7 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
         return SPARK_KUBERNETES_STEP_OPERATOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -63,7 +63,7 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -81,7 +81,7 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/spark.png"
 
     @property
-    def config_class(self) -> Type[KubernetesSparkStepOperatorConfig]:
+    def config_class(self) -> type[KubernetesSparkStepOperatorConfig]:
         """Returns `KubernetesSparkStepOperatorConfig` config class.
 
         Returns:
@@ -90,7 +90,7 @@ class KubernetesSparkStepOperatorFlavor(SparkStepOperatorFlavor):
         return KubernetesSparkStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["KubernetesSparkStepOperator"]:
+    def implementation_class(self) -> type["KubernetesSparkStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:

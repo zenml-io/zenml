@@ -14,7 +14,8 @@
 """Base ZenML server provider class."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Generator, Optional, Tuple, Type
+from typing import ClassVar, Optional, Tuple, Type
+from collections.abc import Generator
 
 from pydantic import ValidationError
 
@@ -48,7 +49,7 @@ class BaseServerProvider(ABC):
     """
 
     TYPE: ClassVar[ServerProviderType]
-    CONFIG_TYPE: ClassVar[Type[LocalServerDeploymentConfig]] = (
+    CONFIG_TYPE: ClassVar[type[LocalServerDeploymentConfig]] = (
         LocalServerDeploymentConfig
     )
 
@@ -87,7 +88,7 @@ class BaseServerProvider(ABC):
     def deploy_server(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> LocalServerDeployment:
         """Deploy a new ZenML server.
 
@@ -121,7 +122,7 @@ class BaseServerProvider(ABC):
     def update_server(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> LocalServerDeployment:
         """Update an existing ZenML server deployment.
 
@@ -165,7 +166,7 @@ class BaseServerProvider(ABC):
     def remove_server(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Tears down and removes all resources and files associated with a ZenML server deployment.
 
@@ -218,7 +219,7 @@ class BaseServerProvider(ABC):
         self,
         config: LocalServerDeploymentConfig,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Retrieve the logs of a ZenML server.
 
@@ -255,7 +256,7 @@ class BaseServerProvider(ABC):
             The status of the server deployment.
         """
         gc = GlobalConfiguration()
-        url: Optional[str] = None
+        url: str | None = None
         if service.is_running:
             # all services must have an endpoint
             assert service.endpoint is not None
@@ -291,7 +292,7 @@ class BaseServerProvider(ABC):
     def _get_service_configuration(
         cls,
         server_config: LocalServerDeploymentConfig,
-    ) -> Tuple[
+    ) -> tuple[
         ServiceConfig,
         ServiceEndpointConfig,
         ServiceEndpointHealthMonitorConfig,
@@ -309,7 +310,7 @@ class BaseServerProvider(ABC):
     def _create_service(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Create, start and return a service instance for a ZenML server deployment.
 
@@ -328,7 +329,7 @@ class BaseServerProvider(ABC):
         self,
         service: BaseService,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Update an existing service instance for a ZenML server deployment.
 
@@ -347,7 +348,7 @@ class BaseServerProvider(ABC):
     def _start_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Start a service instance for a ZenML server deployment.
 
@@ -365,7 +366,7 @@ class BaseServerProvider(ABC):
     def _stop_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Stop a service instance for a ZenML server deployment.
 
@@ -383,7 +384,7 @@ class BaseServerProvider(ABC):
     def _delete_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Remove a service instance for a ZenML server deployment.
 

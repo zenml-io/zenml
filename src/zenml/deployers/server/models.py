@@ -30,17 +30,17 @@ class DeploymentInvocationResponseMetadata(BaseModel):
     deployment_id: UUID = Field(title="The ID of the deployment.")
     deployment_name: str = Field(title="The name of the deployment.")
     snapshot_id: UUID = Field(title="The ID of the snapshot.")
-    snapshot_name: Optional[str] = Field(
+    snapshot_name: str | None = Field(
         default=None, title="The name of the snapshot."
     )
     pipeline_name: str = Field(title="The name of the pipeline.")
-    run_id: Optional[UUID] = Field(
+    run_id: UUID | None = Field(
         default=None, title="The ID of the pipeline run."
     )
-    run_name: Optional[str] = Field(
+    run_name: str | None = Field(
         default=None, title="The name of the pipeline run."
     )
-    parameters_used: Dict[str, Any] = Field(
+    parameters_used: dict[str, Any] = Field(
         title="The parameters used for the pipeline execution."
     )
 
@@ -51,7 +51,7 @@ class BaseDeploymentInvocationRequest(BaseModel):
     parameters: BaseModel = Field(
         title="The parameters for the pipeline execution."
     )
-    run_name: Optional[str] = Field(
+    run_name: str | None = Field(
         default=None, title="Custom name for the pipeline run."
     )
     timeout: int = Field(
@@ -70,7 +70,7 @@ class BaseDeploymentInvocationResponse(BaseModel):
     success: bool = Field(
         title="Whether the pipeline execution was successful."
     )
-    outputs: Optional[Dict[str, Any]] = Field(
+    outputs: dict[str, Any] | None = Field(
         default=None,
         title="The outputs of the pipeline execution, if the pipeline execution "
         "was successful.",
@@ -81,7 +81,7 @@ class BaseDeploymentInvocationResponse(BaseModel):
     metadata: DeploymentInvocationResponseMetadata = Field(
         title="The metadata of the pipeline execution."
     )
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         title="The error that occurred, if the pipeline invocation failed.",
     )
@@ -91,13 +91,13 @@ class PipelineInfo(BaseModel):
     """Pipeline info model."""
 
     name: str = Field(title="The name of the pipeline.")
-    parameters: Optional[Dict[str, Any]] = Field(
+    parameters: dict[str, Any] | None = Field(
         default=None, title="The parameters of the pipeline."
     )
-    input_schema: Optional[Dict[str, Any]] = Field(
+    input_schema: dict[str, Any] | None = Field(
         default=None, title="The input schema of the pipeline."
     )
-    output_schema: Optional[Dict[str, Any]] = Field(
+    output_schema: dict[str, Any] | None = Field(
         default=None, title="The output schema of the pipeline."
     )
 
@@ -116,7 +116,7 @@ class SnapshotInfo(BaseModel):
     """Snapshot info model."""
 
     id: UUID = Field(title="The ID of the snapshot.")
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None, title="The name of the snapshot."
     )
 
@@ -149,7 +149,7 @@ class ServiceInfo(BaseModel):
     total_executions: int = Field(
         title="The total number of pipeline executions."
     )
-    last_execution_time: Optional[datetime] = Field(
+    last_execution_time: datetime | None = Field(
         default=None, title="The time of the last pipeline execution."
     )
     status: str = Field(title="The status of the pipeline service.")
@@ -162,6 +162,6 @@ class ExecutionMetrics(BaseModel):
     total_executions: int = Field(
         title="The total number of pipeline executions."
     )
-    last_execution_time: Optional[datetime] = Field(
+    last_execution_time: datetime | None = Field(
         default=None, title="The time of the last pipeline execution."
     )

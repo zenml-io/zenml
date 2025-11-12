@@ -30,5 +30,5 @@ class FacetsComparison(BaseModel):
             `[{"name": "dataset_name", "table": pd.DataFrame}, ...]`.
     """
 
-    datasets: List[Dict[str, Union[str, pd.DataFrame]]]
+    datasets: list[dict[str, str | pd.DataFrame]]
     model_config = ConfigDict(arbitrary_types_allowed=True)

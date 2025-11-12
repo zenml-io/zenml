@@ -53,7 +53,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_run_metadata(
     run_metadata: RunMetadataRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Creates run metadata.
@@ -72,7 +72,7 @@ def create_run_metadata(
 
     run_metadata.user = auth_context.user.id
 
-    verify_models: List[Any] = []
+    verify_models: list[Any] = []
     for resource in run_metadata.resources:
         if resource.type == MetadataResourceTypes.PIPELINE_RUN:
             verify_models.append(zen_store().get_run(resource.id))

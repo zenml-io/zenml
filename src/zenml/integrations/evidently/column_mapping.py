@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML representation of an Evidently column mapping."""
 
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Union
+from collections.abc import Sequence
 
 from evidently import ColumnMapping  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field
@@ -40,21 +41,21 @@ class EvidentlyColumnMapping(BaseModel):
         text_features: text features
     """
 
-    target: Optional[str] = None
-    prediction: Optional[Union[str, Sequence[str]]] = Field(
+    target: str | None = None
+    prediction: str | Sequence[str] | None = Field(
         default="prediction", union_mode="left_to_right"
     )
-    datetime: Optional[str] = None
-    id: Optional[str] = None
-    numerical_features: Optional[List[str]] = None
-    categorical_features: Optional[List[str]] = None
-    datetime_features: Optional[List[str]] = None
-    target_names: Optional[List[str]] = None
-    task: Optional[str] = None
-    pos_label: Optional[Union[str, int]] = Field(
+    datetime: str | None = None
+    id: str | None = None
+    numerical_features: list[str] | None = None
+    categorical_features: list[str] | None = None
+    datetime_features: list[str] | None = None
+    target_names: list[str] | None = None
+    task: str | None = None
+    pos_label: str | int | None = Field(
         default=1, union_mode="left_to_right"
     )
-    text_features: Optional[List[str]] = None
+    text_features: list[str] | None = None
 
     model_config = ConfigDict(
         validate_assignment=True,

@@ -27,7 +27,7 @@ from zenml.integrations.discord.alerters.discord_alerter import (
 @step
 def discord_alerter_ask_step(
     message: str,
-    params: Optional[DiscordAlerterParameters] = None,
+    params: DiscordAlerterParameters | None = None,
 ) -> bool:
     """Posts a message to the Discord alerter component and waits for approval.
 

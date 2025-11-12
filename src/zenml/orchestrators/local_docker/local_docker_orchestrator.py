@@ -55,7 +55,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
     """
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Local Docker orchestrator.
 
         Returns:
@@ -73,7 +73,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return cast(LocalDockerOrchestratorConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is an image builder in the stack.
 
         Returns:
@@ -105,10 +105,10 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -158,8 +158,8 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
 
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
-        failed_steps: List[str] = []
-        skipped_steps: List[str] = []
+        failed_steps: list[str] = []
+        skipped_steps: list[str] = []
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -278,7 +278,7 @@ class LocalDockerOrchestrator(ContainerizedOrchestrator):
         return None
 
     @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
+    def supported_execution_modes(self) -> list[ExecutionMode]:
         """Supported execution modes for this orchestrator.
 
         Returns:
@@ -300,7 +300,7 @@ class LocalDockerOrchestratorSettings(BaseSettings):
             of what can be passed.)
     """
 
-    run_args: Dict[str, Any] = {}
+    run_args: dict[str, Any] = {}
 
 
 class LocalDockerOrchestratorConfig(
@@ -340,7 +340,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         return "local_docker"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -349,7 +349,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -367,7 +367,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/docker.png"
 
     @property
-    def config_class(self) -> Type[BaseOrchestratorConfig]:
+    def config_class(self) -> type[BaseOrchestratorConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
@@ -376,7 +376,7 @@ class LocalDockerOrchestratorFlavor(BaseOrchestratorFlavor):
         return LocalDockerOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["LocalDockerOrchestrator"]:
+    def implementation_class(self) -> type["LocalDockerOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

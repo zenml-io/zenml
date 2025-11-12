@@ -29,7 +29,7 @@ class OAuthDeviceAuthorizationRequest(BaseModel):
     """OAuth2 device authorization grant request."""
 
     client_id: UUID
-    device_id: Optional[UUID] = None
+    device_id: UUID | None = None
 
 
 class OAuthDeviceVerificationRequest(BaseModel):
@@ -50,10 +50,10 @@ class OAuthDeviceTokenRequest(BaseModel):
 class OAuthDeviceUserAgentHeader(BaseModel):
     """OAuth2 device user agent header."""
 
-    hostname: Optional[str] = None
-    os: Optional[str] = None
-    python_version: Optional[str] = None
-    zenml_version: Optional[str] = None
+    hostname: str | None = None
+    os: str | None = None
+    python_version: str | None = None
+    zenml_version: str | None = None
 
     @classmethod
     def decode(cls, header_str: str) -> "OAuthDeviceUserAgentHeader":
@@ -107,7 +107,7 @@ class OAuthDeviceAuthorizationResponse(BaseModel):
     device_code: str
     user_code: str
     verification_uri: str
-    verification_uri_complete: Optional[str] = None
+    verification_uri_complete: str | None = None
     expires_in: int
     interval: int
 
@@ -117,12 +117,12 @@ class OAuthTokenResponse(BaseModel):
 
     access_token: str
     token_type: str
-    expires_in: Optional[int] = None
-    refresh_token: Optional[str] = None
-    csrf_token: Optional[str] = None
-    scope: Optional[str] = None
-    device_id: Optional[UUID] = None
-    device_metadata: Optional[Dict[str, Any]] = None
+    expires_in: int | None = None
+    refresh_token: str | None = None
+    csrf_token: str | None = None
+    scope: str | None = None
+    device_id: UUID | None = None
+    device_metadata: dict[str, Any] | None = None
 
     model_config = ConfigDict(
         # Allow extra attributes to allow compatibility with different versions

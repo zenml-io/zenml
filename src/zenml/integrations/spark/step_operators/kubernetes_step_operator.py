@@ -57,7 +57,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         return cast(KubernetesSparkStepOperatorConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -65,7 +65,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
             registry and a remote artifact store.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The Spark step operator runs code remotely and "
@@ -110,7 +110,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -139,7 +139,7 @@ class KubernetesSparkStepOperator(SparkStepOperator):
         self,
         spark_config: SparkConf,
         info: "StepRunInfo",
-        environment: Dict[str, str],
+        environment: dict[str, str],
     ) -> None:
         """Configures Spark to run on Kubernetes.
 

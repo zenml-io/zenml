@@ -45,7 +45,7 @@ class FacetsMaterializer(BaseMaterializer):
 
     def save_visualizations(
         self, data: FacetsComparison
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Save a Facets visualization of the data.
 
         Args:

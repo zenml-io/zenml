@@ -30,8 +30,8 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 def great_expectations_validator_step(
     dataset: pd.DataFrame,
     expectation_suite_name: str,
-    data_asset_name: Optional[str] = None,
-    action_list: Optional[List[Dict[str, Any]]] = None,
+    data_asset_name: str | None = None,
+    action_list: list[dict[str, Any]] | None = None,
     exit_on_error: bool = False,
 ) -> CheckpointResult:
     """Shortcut function to create a new instance of the GreatExpectationsValidatorStep step.

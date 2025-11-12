@@ -16,12 +16,12 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Optional,
     Tuple,
     Union,
 )
+from collections.abc import Callable
 
 from pydantic import ConfigDict, ValidationError
 
@@ -40,9 +40,9 @@ if TYPE_CHECKING:
 
 def _validate_hook_arguments(
     _func: Callable[..., Any],
-    hook_kwargs: Dict[str, Any],
-    exception_arg: Union[BaseException, bool] = False,
-) -> Dict[str, Any]:
+    hook_kwargs: dict[str, Any],
+    exception_arg: BaseException | bool = False,
+) -> dict[str, Any]:
     """Validates hook arguments.
 
     Args:
@@ -58,7 +58,7 @@ def _validate_hook_arguments(
     """
     # Validate hook arguments
     try:
-        hook_args: Tuple[Any, ...] = ()
+        hook_args: tuple[Any, ...] = ()
         if isinstance(exception_arg, BaseException):
             hook_args = (exception_arg,)
         elif exception_arg is True:
@@ -98,9 +98,9 @@ def _validate_hook_arguments(
 
 def resolve_and_validate_hook(
     hook: Union["HookSpecification", "InitHookSpecification"],
-    hook_kwargs: Optional[Dict[str, Any]] = None,
+    hook_kwargs: dict[str, Any] | None = None,
     allow_exception_arg: bool = False,
-) -> Tuple[Source, Optional[Dict[str, Any]]]:
+) -> tuple[Source, dict[str, Any] | None]:
     """Resolves and validates a hook callback and its arguments.
 
     Args:
@@ -135,8 +135,8 @@ def resolve_and_validate_hook(
 
 def load_and_run_hook(
     hook_source: "Source",
-    hook_parameters: Optional[Dict[str, Any]] = None,
-    step_exception: Optional[BaseException] = None,
+    hook_parameters: dict[str, Any] | None = None,
+    step_exception: BaseException | None = None,
     raise_on_error: bool = False,
 ) -> Any:
     """Loads hook source and runs the hook.

@@ -65,24 +65,24 @@ class Model(BaseModel):
     """
 
     name: str
-    license: Optional[str] = None
-    description: Optional[str] = None
-    audience: Optional[str] = None
-    use_cases: Optional[str] = None
-    limitations: Optional[str] = None
-    trade_offs: Optional[str] = None
-    ethics: Optional[str] = None
-    tags: Optional[List[str]] = None
-    version: Optional[Union[ModelStages, int, str]] = Field(
+    license: str | None = None
+    description: str | None = None
+    audience: str | None = None
+    use_cases: str | None = None
+    limitations: str | None = None
+    trade_offs: str | None = None
+    ethics: str | None = None
+    tags: list[str] | None = None
+    version: ModelStages | int | str | None = Field(
         default=None, union_mode="smart"
     )
     save_models_to_registry: bool = True
 
     # technical attributes
-    model_version_id: Optional[UUID] = None
+    model_version_id: UUID | None = None
     suppress_class_validation_warnings: bool = False
-    _model_id: Optional[UUID] = PrivateAttr(None)
-    _number: Optional[int] = PrivateAttr(None)
+    _model_id: UUID | None = PrivateAttr(None)
+    _number: int | None = PrivateAttr(None)
     _created_model_version: bool = PrivateAttr(False)
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -160,7 +160,7 @@ class Model(BaseModel):
         return self._number
 
     @property
-    def stage(self) -> Optional[ModelStages]:
+    def stage(self) -> ModelStages | None:
         """Get version stage from  the Model Control Plane.
 
         Returns:
@@ -180,7 +180,7 @@ class Model(BaseModel):
             )
         return None
 
-    def load_artifact(self, name: str, version: Optional[str] = None) -> Any:
+    def load_artifact(self, name: str, version: str | None = None) -> Any:
         """Load artifact from the Model Control Plane.
 
         Args:
@@ -210,7 +210,7 @@ class Model(BaseModel):
     def get_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version.
 
@@ -234,7 +234,7 @@ class Model(BaseModel):
     def get_model_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the model artifact linked to this model version.
 
@@ -258,7 +258,7 @@ class Model(BaseModel):
     def get_data_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the data artifact linked to this model version.
 
@@ -282,7 +282,7 @@ class Model(BaseModel):
     def get_deployment_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the deployment artifact linked to this model version.
 
@@ -304,7 +304,7 @@ class Model(BaseModel):
         )
 
     def set_stage(
-        self, stage: Union[str, ModelStages], force: bool = False
+        self, stage: str | ModelStages, force: bool = False
     ) -> None:
         """Sets this Model to a desired stage.
 
@@ -317,7 +317,7 @@ class Model(BaseModel):
 
     def log_metadata(
         self,
-        metadata: Dict[str, "MetadataType"],
+        metadata: dict[str, "MetadataType"],
     ) -> None:
         """Log model version metadata.
 
@@ -340,7 +340,7 @@ class Model(BaseModel):
         )
 
     @property
-    def run_metadata(self) -> Dict[str, "MetadataType"]:
+    def run_metadata(self) -> dict[str, "MetadataType"]:
         """Get model version run metadata.
 
         Returns:
@@ -371,7 +371,7 @@ class Model(BaseModel):
     def delete_artifact(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
         only_link: bool = True,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
@@ -438,7 +438,7 @@ class Model(BaseModel):
     def _lazy_artifact_get(
         self,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
     ) -> Optional["ArtifactVersionResponse"]:
         from zenml.models.v2.core.artifact_version import (
             LazyArtifactVersionResponse,
@@ -479,7 +479,7 @@ class Model(BaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _root_validator(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate all in one.
 
         Args:
@@ -599,7 +599,7 @@ class Model(BaseModel):
             )
             self.model_version_id = mv.id
 
-        difference: Dict[str, Any] = {}
+        difference: dict[str, Any] = {}
         if mv.metadata:
             if self.description and mv.description != self.description:
                 difference["description"] = {
@@ -726,18 +726,16 @@ class Model(BaseModel):
         """
         return hash(
             "::".join(
-                (
                     str(v)
                     for v in (
                         self.name,
                         self.version,
                     )
-                )
             )
         )
 
     @property
-    def _lazy_version(self) -> Optional[str]:
+    def _lazy_version(self) -> str | None:
         """Get version name for lazy loader.
 
         This getter ensures that new model version

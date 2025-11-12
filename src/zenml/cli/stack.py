@@ -243,24 +243,24 @@ def stack() -> None:
 )
 def register_stack(
     stack_name: str,
-    artifact_store: Optional[str] = None,
-    orchestrator: Optional[str] = None,
-    container_registry: Optional[str] = None,
-    model_registry: Optional[str] = None,
-    step_operator: Optional[str] = None,
-    feature_store: Optional[str] = None,
-    model_deployer: Optional[str] = None,
-    experiment_tracker: Optional[str] = None,
-    alerter: Optional[str] = None,
-    annotator: Optional[str] = None,
-    data_validator: Optional[str] = None,
-    image_builder: Optional[str] = None,
-    deployer: Optional[str] = None,
+    artifact_store: str | None = None,
+    orchestrator: str | None = None,
+    container_registry: str | None = None,
+    model_registry: str | None = None,
+    step_operator: str | None = None,
+    feature_store: str | None = None,
+    model_deployer: str | None = None,
+    experiment_tracker: str | None = None,
+    alerter: str | None = None,
+    annotator: str | None = None,
+    data_validator: str | None = None,
+    image_builder: str | None = None,
+    deployer: str | None = None,
     set_stack: bool = False,
-    provider: Optional[str] = None,
-    connector: Optional[str] = None,
-    secrets: List[str] = [],
-    environment_variables: List[str] = [],
+    provider: str | None = None,
+    connector: str | None = None,
+    secrets: list[str] = [],
+    environment_variables: list[str] = [],
 ) -> None:
     """Register a stack.
 
@@ -324,17 +324,17 @@ def register_stack(
     except KeyError:
         pass
 
-    environment: Dict[str, str] = {}
+    environment: dict[str, str] = {}
     for environment_variable in environment_variables:
         key, value = environment_variable.split("=", 1)
         environment[key] = value
 
-    labels: Dict[str, str] = {}
-    components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
+    labels: dict[str, str] = {}
+    components: dict[StackComponentType, list[UUID | ComponentInfo]] = {}
 
     # Cloud Flow
-    created_objects: Set[str] = set()
-    service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
+    created_objects: set[str] = set()
+    service_connector: UUID | ServiceConnectorInfo | None = None
     if provider is not None and connector is None:
         service_connector_response = None
         use_auto_configure = False
@@ -367,7 +367,7 @@ def register_stack(
                 show_default=True,
             )
 
-        connector_selected: Optional[int] = None
+        connector_selected: int | None = None
         if not use_auto_configure:
             service_connector_response = None
             existing_connectors = client.list_service_connectors(
@@ -438,7 +438,7 @@ def register_stack(
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
         )
         for component_type, preset_name in needed_components:
-            component_info: Optional[Union[UUID, ComponentInfo]] = None
+            component_info: UUID | ComponentInfo | None = None
             if preset_name is not None:
                 component_response = client.get_stack_component(
                     component_type, preset_name
@@ -461,7 +461,7 @@ def register_stack(
                         ]
 
                         # if some existing components are found - prompt user what to do
-                        component_selected: Optional[int] = None
+                        component_selected: int | None = None
                         component_selected = cli_utils.multi_choice_prompt(
                             object_type=component_type.value.replace("_", " "),
                             choices=[
@@ -733,23 +733,23 @@ def register_stack(
     multiple=True,
 )
 def update_stack(
-    stack_name_or_id: Optional[str] = None,
-    artifact_store: Optional[str] = None,
-    orchestrator: Optional[str] = None,
-    container_registry: Optional[str] = None,
-    step_operator: Optional[str] = None,
-    feature_store: Optional[str] = None,
-    model_deployer: Optional[str] = None,
-    experiment_tracker: Optional[str] = None,
-    alerter: Optional[str] = None,
-    annotator: Optional[str] = None,
-    data_validator: Optional[str] = None,
-    image_builder: Optional[str] = None,
-    model_registry: Optional[str] = None,
-    deployer: Optional[str] = None,
-    secrets: List[str] = [],
-    remove_secrets: List[str] = [],
-    environment_variables: List[str] = [],
+    stack_name_or_id: str | None = None,
+    artifact_store: str | None = None,
+    orchestrator: str | None = None,
+    container_registry: str | None = None,
+    step_operator: str | None = None,
+    feature_store: str | None = None,
+    model_deployer: str | None = None,
+    experiment_tracker: str | None = None,
+    alerter: str | None = None,
+    annotator: str | None = None,
+    data_validator: str | None = None,
+    image_builder: str | None = None,
+    model_registry: str | None = None,
+    deployer: str | None = None,
+    secrets: list[str] = [],
+    remove_secrets: list[str] = [],
+    environment_variables: list[str] = [],
 ) -> None:
     """Update a stack.
 
@@ -776,7 +776,7 @@ def update_stack(
     """
     client = Client()
 
-    environment: Dict[str, Any] = {}
+    environment: dict[str, Any] = {}
     for environment_variable in environment_variables:
         key, value = environment_variable.split("=", 1)
         # Fallback to None if the value is empty so the existing environment
@@ -784,7 +784,7 @@ def update_stack(
         environment[key] = value or None
 
     with console.status("Updating stack...\n"):
-        updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
+        updates: dict[StackComponentType, list[str | UUID]] = dict()
         if artifact_store:
             updates[StackComponentType.ARTIFACT_STORE] = [artifact_store]
         if alerter:
@@ -929,18 +929,18 @@ def update_stack(
     required=False,
 )
 def remove_stack_component(
-    stack_name_or_id: Optional[str] = None,
-    container_registry_flag: Optional[bool] = False,
-    step_operator_flag: Optional[bool] = False,
-    feature_store_flag: Optional[bool] = False,
-    model_deployer_flag: Optional[bool] = False,
-    experiment_tracker_flag: Optional[bool] = False,
-    alerter_flag: Optional[bool] = False,
-    annotator_flag: Optional[bool] = False,
-    data_validator_flag: Optional[bool] = False,
-    image_builder_flag: Optional[bool] = False,
-    model_registry_flag: Optional[str] = None,
-    deployer_flag: Optional[bool] = False,
+    stack_name_or_id: str | None = None,
+    container_registry_flag: bool | None = False,
+    step_operator_flag: bool | None = False,
+    feature_store_flag: bool | None = False,
+    model_deployer_flag: bool | None = False,
+    experiment_tracker_flag: bool | None = False,
+    alerter_flag: bool | None = False,
+    annotator_flag: bool | None = False,
+    data_validator_flag: bool | None = False,
+    image_builder_flag: bool | None = False,
+    model_registry_flag: str | None = None,
+    deployer_flag: bool | None = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -963,7 +963,7 @@ def remove_stack_component(
     client = Client()
 
     with console.status("Updating the stack...\n"):
-        stack_component_update: Dict[StackComponentType, List[Any]] = dict()
+        stack_component_update: dict[StackComponentType, list[Any]] = dict()
 
         if container_registry_flag:
             stack_component_update[StackComponentType.CONTAINER_REGISTRY] = []
@@ -1074,7 +1074,7 @@ def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
     type=click.STRING,
     required=False,
 )
-def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
+def describe_stack(stack_name_or_id: str | None = None) -> None:
     """Show details about a named stack or the active stack.
 
     Args:
@@ -1201,8 +1201,8 @@ def get_active_stack() -> None:
 @click.argument("stack_name_or_id", type=str, required=False)
 @click.argument("filename", type=str, required=False)
 def export_stack(
-    stack_name_or_id: Optional[str] = None,
-    filename: Optional[str] = None,
+    stack_name_or_id: str | None = None,
+    filename: str | None = None,
 ) -> None:
     """Export a stack to YAML.
 
@@ -1232,7 +1232,7 @@ def export_stack(
 
 def _import_stack_component(
     component_type: StackComponentType,
-    component_dict: Dict[str, Any],
+    component_dict: dict[str, Any],
 ) -> UUID:
     """Import a single stack component with given type/config.
 
@@ -1289,7 +1289,7 @@ def _import_stack_component(
 )
 def import_stack(
     stack_name: str,
-    filename: Optional[str],
+    filename: str | None,
     ignore_version_mismatch: bool = False,
 ) -> None:
     """Import a stack from YAML.
@@ -1385,7 +1385,7 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
         except KeyError as err:
             cli_utils.exception(err)
 
-        component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
+        component_mapping: dict[StackComponentType, str | UUID] = {}
 
         for c_type, c_list in stack_to_copy.components.items():
             if c_list:
@@ -1414,7 +1414,7 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
 )
 def register_secrets(
     skip_existing: bool,
-    stack_name_or_id: Optional[str] = None,
+    stack_name_or_id: str | None = None,
 ) -> None:
     """Interactively registers all required secrets for a stack.
 
@@ -1588,8 +1588,8 @@ connectors.
 def deploy(
     ctx: click.Context,
     provider: str,
-    stack_name: Optional[str] = None,
-    location: Optional[str] = None,
+    stack_name: str | None = None,
+    location: str | None = None,
     set_stack: bool = False,
 ) -> None:
     """Deploy and register a fully functional cloud ZenML stack.
@@ -1796,8 +1796,8 @@ To use the `{deployed_stack.stack.name}` stack to run pipelines:
     type=click.BOOL,
 )
 def connect_stack(
-    stack_name_or_id: Optional[str] = None,
-    connector: Optional[str] = None,
+    stack_name_or_id: str | None = None,
+    connector: str | None = None,
     interactive: bool = False,
     no_verify: bool = False,
 ) -> None:
@@ -1827,9 +1827,9 @@ def connect_stack(
 
 def _get_service_connector_info(
     cloud_provider: str,
-    connector_details: Optional[
-        Union[ServiceConnectorResponse, ServiceConnectorRequest]
-    ],
+    connector_details: None | (
+        ServiceConnectorResponse | ServiceConnectorRequest
+    ),
 ) -> ServiceConnectorInfo:
     """Get a service connector info with given cloud provider.
 
@@ -1912,7 +1912,7 @@ def _get_stack_component_info(
     component_type: str,
     cloud_provider: str,
     resources_info: ServiceConnectorResourcesInfo,
-    service_connector_index: Optional[int] = None,
+    service_connector_index: int | None = None,
 ) -> ComponentInfo:
     """Get a stack component info with given type and service connector.
 
@@ -2072,8 +2072,8 @@ def _get_stack_component_info(
     "only valid if the output file is provided.",
 )
 def export_requirements(
-    stack_name_or_id: Optional[str] = None,
-    output_file: Optional[str] = None,
+    stack_name_or_id: str | None = None,
+    output_file: str | None = None,
     overwrite: bool = False,
 ) -> None:
     """Exports stack requirements so they can be installed using pip.

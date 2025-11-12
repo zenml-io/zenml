@@ -112,7 +112,7 @@ class CustomFormatter(logging.Formatter):
         else:
             return "%(message)s"
 
-    COLORS: Dict[LoggingLevels, str] = {
+    COLORS: dict[LoggingLevels, str] = {
         LoggingLevels.DEBUG: grey,
         LoggingLevels.INFO: white,
         LoggingLevels.WARN: yellow,

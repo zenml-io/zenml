@@ -128,18 +128,18 @@ class ResourceSettings(BaseSettings):
             Only relevant to deployed pipelines.
     """
 
-    cpu_count: Optional[PositiveFloat] = None
-    gpu_count: Optional[NonNegativeInt] = None
-    memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
+    cpu_count: PositiveFloat | None = None
+    gpu_count: NonNegativeInt | None = None
+    memory: str | None = Field(pattern=MEMORY_REGEX, default=None)
 
     # Settings only applicable for deployers and deployed pipelines
-    min_replicas: Optional[NonNegativeInt] = None
-    max_replicas: Optional[NonNegativeInt] = None
-    autoscaling_metric: Optional[
+    min_replicas: NonNegativeInt | None = None
+    max_replicas: NonNegativeInt | None = None
+    autoscaling_metric: None | (
         Literal["cpu", "memory", "concurrency", "rps"]
-    ] = None
-    autoscaling_target: Optional[PositiveFloat] = None
-    max_concurrency: Optional[PositiveInt] = None
+    ) = None
+    autoscaling_target: PositiveFloat | None = None
+    max_concurrency: PositiveInt | None = None
 
     @property
     def empty(self) -> bool:
@@ -154,8 +154,8 @@ class ResourceSettings(BaseSettings):
         return len(self.model_dump(exclude_unset=True, exclude_none=True)) == 0
 
     def get_memory(
-        self, unit: Union[str, ByteUnit] = ByteUnit.GB
-    ) -> Optional[float]:
+        self, unit: str | ByteUnit = ByteUnit.GB
+    ) -> float | None:
         """Gets the memory configuration in a specific unit.
 
         Args:

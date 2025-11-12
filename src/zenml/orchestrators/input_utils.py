@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 def resolve_step_inputs(
     step: "Step",
     pipeline_run: "PipelineRunResponse",
-    step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
-) -> Dict[str, "StepRunInputResponse"]:
+    step_runs: dict[str, "StepRunResponse"] | None = None,
+) -> dict[str, "StepRunInputResponse"]:
     """Resolves inputs for the current step.
 
     Args:
@@ -55,9 +55,9 @@ def resolve_step_inputs(
 
     step_runs = step_runs or {}
 
-    steps_to_fetch = set(
+    steps_to_fetch = {
         input_.step_name for input_ in step.spec.inputs.values()
-    )
+    }
     # Remove all the step runs that we've already fetched.
     steps_to_fetch.difference_update(step_runs.keys())
 
@@ -68,7 +68,7 @@ def resolve_step_inputs(
             )
         )
 
-    input_artifacts: Dict[str, StepRunInputResponse] = {}
+    input_artifacts: dict[str, StepRunInputResponse] = {}
     for name, input_ in step.spec.inputs.items():
         try:
             step_run = step_runs[input_.step_name]

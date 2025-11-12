@@ -42,8 +42,8 @@ class LabelStudioAnnotatorSettings(BaseSettings):
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    port: Optional[int] = DEFAULT_LOCAL_LABEL_STUDIO_PORT
-    api_key: Optional[str] = SecretField(default=None)
+    port: int | None = DEFAULT_LOCAL_LABEL_STUDIO_PORT
+    api_key: str | None = SecretField(default=None)
 
 
 class LabelStudioAnnotatorConfig(
@@ -72,7 +72,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         return LABEL_STUDIO_ANNOTATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -81,7 +81,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -99,7 +99,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png"
 
     @property
-    def config_class(self) -> Type[LabelStudioAnnotatorConfig]:
+    def config_class(self) -> type[LabelStudioAnnotatorConfig]:
         """Returns `LabelStudioAnnotatorConfig` config class.
 
         Returns:
@@ -108,7 +108,7 @@ class LabelStudioAnnotatorFlavor(BaseAnnotatorFlavor):
         return LabelStudioAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["LabelStudioAnnotator"]:
+    def implementation_class(self) -> type["LabelStudioAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:

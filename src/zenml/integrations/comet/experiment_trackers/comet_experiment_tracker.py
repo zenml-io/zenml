@@ -52,7 +52,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         return cast(CometExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[CometExperimentTrackerSettings]:
+    def settings_class(self) -> type[CometExperimentTrackerSettings]:
         """Settings class for the Comet experiment tracker.
 
         Returns:
@@ -80,7 +80,7 @@ class CometExperimentTracker(BaseExperimentTracker):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -89,8 +89,8 @@ class CometExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
-        exp_url: Optional[str] = None
-        exp_name: Optional[str] = None
+        exp_url: str | None = None
+        exp_name: str | None = None
 
         if self.experiment:
             exp_url = self.experiment.url
@@ -128,8 +128,8 @@ class CometExperimentTracker(BaseExperimentTracker):
 
     def log_metrics(
         self,
-        metrics: Dict[str, Any],
-        step: Optional[int] = None,
+        metrics: dict[str, Any],
+        step: int | None = None,
     ) -> None:
         """Logs metrics to the Comet experiment.
 
@@ -140,7 +140,7 @@ class CometExperimentTracker(BaseExperimentTracker):
         if self.experiment:
             self.experiment.log_metrics(metrics, step=step)
 
-    def log_params(self, params: Dict[str, Any]) -> None:
+    def log_params(self, params: dict[str, Any]) -> None:
         """Logs parameters to the Comet experiment.
 
         Args:
@@ -152,8 +152,8 @@ class CometExperimentTracker(BaseExperimentTracker):
     def _initialize_comet(
         self,
         run_name: str,
-        tags: List[str],
-        settings: Union[Dict[str, Any], None] = None,
+        tags: list[str],
+        settings: dict[str, Any] | None = None,
     ) -> None:
         """Initializes a Comet experiment.
 

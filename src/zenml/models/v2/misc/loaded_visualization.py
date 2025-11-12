@@ -24,4 +24,4 @@ class LoadedVisualization(BaseModel):
     """Model for loaded visualizations."""
 
     type: VisualizationType
-    value: Union[str, bytes] = Field(union_mode="left_to_right")
+    value: str | bytes = Field(union_mode="left_to_right")

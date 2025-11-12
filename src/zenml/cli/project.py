@@ -89,7 +89,7 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
 def register_project(
     project_name: str,
     set_project: bool = False,
-    display_name: Optional[str] = None,
+    display_name: str | None = None,
     set_default: bool = False,
 ) -> None:
     """Register a new project.
@@ -167,7 +167,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
 
 @project.command("describe")
 @click.argument("project_name_or_id", type=str, required=False)
-def describe_project(project_name_or_id: Optional[str] = None) -> None:
+def describe_project(project_name_or_id: str | None = None) -> None:
     """Get the project.
 
     Args:

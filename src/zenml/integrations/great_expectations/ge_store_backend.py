@@ -92,7 +92,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
         )
 
     def _build_object_path(
-        self, key: Tuple[str, ...], is_prefix: bool = False
+        self, key: tuple[str, ...], is_prefix: bool = False
     ) -> str:
         """Build a filepath corresponding to an object key.
 
@@ -118,7 +118,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
             object_key = object_relative_path
         return os.path.join(self.root_path, object_key)
 
-    def _get(self, key: Tuple[str, ...]) -> str:  # type: ignore[override]
+    def _get(self, key: tuple[str, ...]) -> str:  # type: ignore[override]
         """Get the value of an object from the store.
 
         Args:
@@ -142,7 +142,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
             )
         return contents
 
-    def _get_all(self) -> List[Any]:
+    def _get_all(self) -> list[Any]:
         """Get all objects in the store.
 
         Raises:
@@ -153,7 +153,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
             "Method `_get_all` is not implemented for this store backend."
         )
 
-    def _set(self, key: Tuple[str, ...], value: str, **kwargs: Any) -> str:  # type: ignore[override]
+    def _set(self, key: tuple[str, ...], value: str, **kwargs: Any) -> str:  # type: ignore[override]
         """Set the value of an object in the store.
 
         Args:
@@ -178,8 +178,8 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
 
     def _move(
         self,
-        source_key: Tuple[str, ...],
-        dest_key: Tuple[str, ...],
+        source_key: tuple[str, ...],
+        dest_key: tuple[str, ...],
         **kwargs: Any,
     ) -> None:
         """Associate an object with a different key in the store.
@@ -198,7 +198,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
                 os.makedirs(parent_dir, exist_ok=True)
             fileio.rename(source_path, dest_path, overwrite=True)
 
-    def list_keys(self, prefix: Tuple[str, ...] = ()) -> List[Tuple[str, ...]]:
+    def list_keys(self, prefix: tuple[str, ...] = ()) -> list[tuple[str, ...]]:
         """List the keys of all objects identified by a partial key.
 
         Args:
@@ -230,7 +230,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
                     key_list.append(key)
         return key_list
 
-    def remove_key(self, key: Tuple[str, ...]) -> bool:  # type: ignore[override]
+    def remove_key(self, key: tuple[str, ...]) -> bool:  # type: ignore[override]
         """Delete an object from the store.
 
         Args:
@@ -250,7 +250,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
             return True
         return False
 
-    def _has_key(self, key: Tuple[str, ...]) -> bool:
+    def _has_key(self, key: tuple[str, ...]) -> bool:
         """Check if an object is present in the store.
 
         Args:
@@ -264,7 +264,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
         return result
 
     def get_url_for_key(  # type: ignore[override]
-        self, key: Tuple[str, ...], protocol: Optional[str] = None
+        self, key: tuple[str, ...], protocol: str | None = None
     ) -> str:
         """Get the URL of an object in the store.
 
@@ -284,7 +284,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
         return filepath
 
     def get_public_url_for_key(
-        self, key: str, protocol: Optional[str] = None
+        self, key: str, protocol: str | None = None
     ) -> str:
         """Get the public URL of an object in the store.
 
@@ -322,7 +322,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):
             end_path = os.path.dirname(end_path)
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """Get the store configuration.
 
         Returns:

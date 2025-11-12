@@ -45,7 +45,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
     """Databricks endpoint model deployer."""
 
     NAME: ClassVar[str] = "Databricks"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = (
         DatabricksModelDeployerFlavor
     )
 
@@ -59,7 +59,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
         return cast(DatabricksModelDeployerConfig, self._config)
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -69,7 +69,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
 
         def _validate_if_secret_or_token_is_present(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             """Check if client id and client secret or secret name is present in the stack.
 
             Args:
@@ -234,7 +234,7 @@ class DatabricksModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "DatabricksDeploymentService",
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information that might be relevant to the user.
 
         Args:

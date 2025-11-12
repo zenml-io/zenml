@@ -63,7 +63,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_datasets(self) -> List[Any]:
+    def get_datasets(self) -> list[Any]:
         """Gets the datasets currently available for annotation.
 
         Returns:
@@ -71,7 +71,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_dataset_names(self) -> List[str]:
+    def get_dataset_names(self) -> list[str]:
         """Gets the names of the datasets currently available for annotation.
 
         Returns:
@@ -79,7 +79,7 @@ class BaseAnnotator(StackComponent, ABC):
         """
 
     @abstractmethod
-    def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
+    def get_dataset_stats(self, dataset_name: str) -> tuple[int, int]:
         """Gets the statistics of a dataset.
 
         Args:
@@ -165,7 +165,7 @@ class BaseAnnotatorFlavor(Flavor):
         return StackComponentType.ANNOTATOR
 
     @property
-    def config_class(self) -> Type[BaseAnnotatorConfig]:
+    def config_class(self) -> type[BaseAnnotatorConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -175,7 +175,7 @@ class BaseAnnotatorFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseAnnotator]:
+    def implementation_class(self) -> type[BaseAnnotator]:
         """Implementation class.
 
         Returns:

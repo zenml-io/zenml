@@ -22,17 +22,17 @@ from collections import Counter
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Optional,
     Tuple,
     TypeVar,
     Union,
 )
+from collections.abc import Callable
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing_extensions import Annotated
+from typing import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
@@ -61,10 +61,10 @@ class OutputSignature(BaseModel):
     """The signature of an output artifact."""
 
     resolved_annotation: Any = None
-    artifact_config: Optional[ArtifactConfig] = None
+    artifact_config: ArtifactConfig | None = None
     has_custom_name: bool = False
 
-    def get_output_types(self) -> Tuple[Any, ...]:
+    def get_output_types(self) -> tuple[Any, ...]:
         """Get all output types that match the type annotation.
 
         Returns:
@@ -87,7 +87,7 @@ class OutputSignature(BaseModel):
             return (self.resolved_annotation,)
 
 
-def get_args(obj: Any) -> Tuple[Any, ...]:
+def get_args(obj: Any) -> tuple[Any, ...]:
     """Get arguments of a type annotation.
 
     Example:
@@ -107,7 +107,7 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
-) -> Dict[str, OutputSignature]:
+) -> dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
     Args:
@@ -126,7 +126,7 @@ def parse_return_type_annotations(
     """
     signature = inspect.signature(func, follow_wrapped=True)
     return_annotation = signature.return_annotation
-    output_name: Optional[str]
+    output_name: str | None
 
     # Return type annotated as `None`
     if return_annotation is None:
@@ -147,7 +147,7 @@ def parse_return_type_annotations(
     if typing_utils.get_origin(return_annotation) is tuple:
         requires_multiple_artifacts = has_tuple_return(func)
         if requires_multiple_artifacts:
-            output_signature: Dict[str, Any] = {}
+            output_signature: dict[str, Any] = {}
             args = typing_utils.get_args(return_annotation)
             if args[-1] is Ellipsis:
                 raise RuntimeError(
@@ -213,7 +213,7 @@ def resolve_type_annotation(obj: Any) -> Any:
 
 def get_artifact_config_from_annotation_metadata(
     annotation: Any,
-) -> Optional[ArtifactConfig]:
+) -> ArtifactConfig | None:
     """Get the artifact config from the annotation metadata of a step output.
 
     Example:
@@ -298,7 +298,7 @@ class ReturnVisitor(ast.NodeVisitor):
         self._inside_function = False
 
     def _visit_function(
-        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef
     ) -> None:
         """Visit a (async) function definition node.
 
@@ -436,10 +436,10 @@ def has_only_none_returns(func: Callable[..., Any]) -> bool:
 
 
 def log_step_metadata(
-    metadata: Dict[str, "MetadataType"],
-    step_name: Optional[str] = None,
-    pipeline_name_id_or_prefix: Optional[Union[str, UUID]] = None,
-    run_id: Optional[str] = None,
+    metadata: dict[str, "MetadataType"],
+    step_name: str | None = None,
+    pipeline_name_id_or_prefix: str | UUID | None = None,
+    run_id: str | None = None,
 ) -> None:
     """Logs step metadata.
 
@@ -544,7 +544,7 @@ def run_as_single_step_pipeline(
             "error above for more details."
         ) from e
 
-    inputs: Dict[str, Any] = {}
+    inputs: dict[str, Any] = {}
     for key, value in validated_arguments.items():
         try:
             __step.entrypoint_definition.validate_input(key=key, value=value)
@@ -592,8 +592,8 @@ T = TypeVar("T")
 
 
 def get_unique_step_output_names(
-    step_outputs: Dict[Tuple[str, str], T],
-) -> Dict[Tuple[str, str], Tuple[T, str]]:
+    step_outputs: dict[tuple[str, str], T],
+) -> dict[tuple[str, str], tuple[T, str]]:
     """Get unique step output names.
 
     Given a dictionary of step outputs indexed by (invocation_id, output_name),

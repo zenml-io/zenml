@@ -272,7 +272,7 @@ def update_heartbeat(
 def get_step_configuration(
     step_id: UUID,
     _: AuthContext = Security(authorize),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the configuration of a specific step.
 
     Args:
@@ -325,7 +325,7 @@ def get_step_status(
 def get_step_logs(
     step_id: UUID,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
+) -> list[LogEntry]:
     """Get log entries for a step.
 
     Args:

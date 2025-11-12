@@ -44,11 +44,11 @@ class CloudpickleMaterializer(BaseMaterializer):
     only used as a fallback materializer inside the materializer registry.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (object,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (object,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     SKIP_REGISTRATION: ClassVar[bool] = True
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads an artifact from a cloudpickle file.
 
         Args:

@@ -53,7 +53,7 @@ class ApiTransactionSchema(BaseSchema, table=True):
     method: str
     url: str = Field(sa_column=Column(TEXT, nullable=False))
     completed: bool = Field(default=False)
-    result: Optional[str] = Field(
+    result: str | None = Field(
         default=None,
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -62,7 +62,7 @@ class ApiTransactionSchema(BaseSchema, table=True):
             nullable=True,
         ),
     )
-    expired: Optional[datetime] = Field(default=None, nullable=True)
+    expired: datetime | None = Field(default=None, nullable=True)
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,

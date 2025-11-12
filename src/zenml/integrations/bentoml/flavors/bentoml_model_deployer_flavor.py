@@ -50,7 +50,7 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         return BENTOML_MODEL_DEPLOYER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -59,7 +59,7 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -77,7 +77,7 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/bentoml.png"
 
     @property
-    def config_class(self) -> Type[BentoMLModelDeployerConfig]:
+    def config_class(self) -> type[BentoMLModelDeployerConfig]:
         """Returns `BentoMLModelDeployerConfig` config class.
 
         Returns:
@@ -86,7 +86,7 @@ class BentoMLModelDeployerFlavor(BaseModelDeployerFlavor):
         return BentoMLModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["BentoMLModelDeployer"]:
+    def implementation_class(self) -> type["BentoMLModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

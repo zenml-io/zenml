@@ -28,11 +28,11 @@ class MaterializerRegistry:
 
     def __init__(self) -> None:
         """Initialize the materializer registry."""
-        self.default_materializer: Optional[Type["BaseMaterializer"]] = None
-        self.materializer_types: Dict[Type[Any], Type["BaseMaterializer"]] = {}
+        self.default_materializer: type["BaseMaterializer"] | None = None
+        self.materializer_types: dict[type[Any], type["BaseMaterializer"]] = {}
 
     def register_materializer_type(
-        self, key: Type[Any], type_: Type["BaseMaterializer"]
+        self, key: type[Any], type_: type["BaseMaterializer"]
     ) -> None:
         """Registers a new materializer.
 
@@ -51,7 +51,7 @@ class MaterializerRegistry:
             )
 
     def register_and_overwrite_type(
-        self, key: Type[Any], type_: Type["BaseMaterializer"]
+        self, key: type[Any], type_: type["BaseMaterializer"]
     ) -> None:
         """Registers a new materializer and also overwrites a default if set.
 
@@ -62,7 +62,7 @@ class MaterializerRegistry:
         self.materializer_types[key] = type_
         logger.debug(f"Registered materializer {type_} for {key}")
 
-    def __getitem__(self, key: Type[Any]) -> Type["BaseMaterializer"]:
+    def __getitem__(self, key: type[Any]) -> type["BaseMaterializer"]:
         """Get a single materializers based on the key.
 
         Args:
@@ -77,7 +77,7 @@ class MaterializerRegistry:
                 return materializer
         return self.get_default_materializer()
 
-    def get_default_materializer(self) -> Type["BaseMaterializer"]:
+    def get_default_materializer(self) -> type["BaseMaterializer"]:
         """Get the default materializer that is used if no other is found.
 
         Returns:
@@ -94,7 +94,7 @@ class MaterializerRegistry:
 
     def get_materializer_types(
         self,
-    ) -> Dict[Type[Any], Type["BaseMaterializer"]]:
+    ) -> dict[type[Any], type["BaseMaterializer"]]:
         """Get all registered materializer types.
 
         Returns:
@@ -102,7 +102,7 @@ class MaterializerRegistry:
         """
         return self.materializer_types
 
-    def is_registered(self, key: Type[Any]) -> bool:
+    def is_registered(self, key: type[Any]) -> bool:
         """Returns if a materializer class is registered for the given type.
 
         Args:

@@ -16,7 +16,7 @@
 from typing import Tuple
 
 
-def split_s3_path(s3_path: str) -> Tuple[str, str]:
+def split_s3_path(s3_path: str) -> tuple[str, str]:
     """Split S3 URI into bucket and key.
 
     Args:

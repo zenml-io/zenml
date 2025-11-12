@@ -91,8 +91,8 @@ def validate_snapshot_is_templatable(
 def generate_config_template(
     snapshot: PipelineSnapshotSchema,
     pipeline_configuration: "PipelineConfiguration",
-    step_configurations: Dict[str, "Step"],
-) -> Dict[str, Any]:
+    step_configurations: dict[str, "Step"],
+) -> dict[str, Any]:
     """Generate a run configuration template for a snapshot.
 
     Args:
@@ -135,8 +135,8 @@ def generate_config_template(
 
 def generate_config_schema(
     snapshot: PipelineSnapshotSchema,
-    step_configurations: Dict[str, "Step"],
-) -> Dict[str, Any]:
+    step_configurations: dict[str, "Step"],
+) -> dict[str, Any]:
     """Generate a run configuration schema for the snapshot.
 
     Args:
@@ -155,7 +155,7 @@ def generate_config_schema(
     experiment_trackers = []
     step_operators = []
 
-    settings_fields: Dict[str, Any] = {
+    settings_fields: dict[str, Any] = {
         "resources": (Optional[ResourceSettings], None)
     }
     for component in stack.components:
@@ -187,7 +187,7 @@ def generate_config_schema(
 
     settings_model = create_model("Settings", **settings_fields)
 
-    generic_step_fields: Dict[str, Any] = {}
+    generic_step_fields: dict[str, Any] = {}
 
     for key, field_info in StepConfigurationUpdate.model_fields.items():
         if key in [
@@ -223,12 +223,12 @@ def generate_config_schema(
 
     generic_step_fields["settings"] = (Optional[settings_model], None)
 
-    all_steps: Dict[str, Any] = {}
+    all_steps: dict[str, Any] = {}
     all_steps_required = False
     for step_name, step in step_configurations.items():
         step_fields = generic_step_fields.copy()
         if step.config.parameters:
-            parameter_fields: Dict[str, Any] = {}
+            parameter_fields: dict[str, Any] = {}
 
             for parameter_name in step.config.parameters:
                 # Pydantic doesn't allow field names to start with an underscore
@@ -273,7 +273,7 @@ def generate_config_schema(
 
     all_steps_model = create_model("Steps", **all_steps)
 
-    top_level_fields: Dict[str, Any] = {}
+    top_level_fields: dict[str, Any] = {}
 
     for key, field_info in PipelineRunConfiguration.model_fields.items():
         if key in ["schedule", "build", "steps", "settings", "parameters"]:

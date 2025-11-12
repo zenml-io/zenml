@@ -66,13 +66,13 @@ class ActionRequest(ProjectScopedRequest):
         title="The subtype of the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The configuration for the action.",
     )
     service_account_id: UUID = Field(
         title="The service account that is used to execute the action.",
     )
-    auth_window: Optional[int] = Field(
+    auth_window: int | None = Field(
         default=None,
         title="The time window in minutes for which the service account is "
         "authorized to execute the action. Set this to 0 to authorize the "
@@ -87,25 +87,25 @@ class ActionRequest(ProjectScopedRequest):
 class ActionUpdate(BaseUpdate):
     """Update model for actions."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The new name for the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The new description for the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Optional[Dict[str, Any]] = Field(
+    configuration: dict[str, Any] | None = Field(
         default=None,
         title="The configuration for the action.",
     )
-    service_account_id: Optional[UUID] = Field(
+    service_account_id: UUID | None = Field(
         default=None,
         title="The service account that is used to execute the action.",
     )
-    auth_window: Optional[int] = Field(
+    auth_window: int | None = Field(
         default=None,
         title="The time window in minutes for which the service account is "
         "authorized to execute the action. Set this to 0 to authorize the "
@@ -152,7 +152,7 @@ class ActionResponseMetadata(ProjectScopedResponseMetadata):
         title="The description of the action.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The configuration for the action.",
     )
     auth_window: int = Field(
@@ -229,7 +229,7 @@ class ActionResponse(
         return self.get_metadata().auth_window
 
     @property
-    def configuration(self) -> Dict[str, Any]:
+    def configuration(self) -> dict[str, Any]:
         """The `configuration` property.
 
         Returns:
@@ -237,7 +237,7 @@ class ActionResponse(
         """
         return self.get_metadata().configuration
 
-    def set_configuration(self, configuration: Dict[str, Any]) -> None:
+    def set_configuration(self, configuration: dict[str, Any]) -> None:
         """Set the `configuration` property.
 
         Args:
@@ -262,15 +262,15 @@ class ActionResponse(
 class ActionFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all actions."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the action.",
     )
-    flavor: Optional[str] = Field(
+    flavor: str | None = Field(
         default=None,
         title="The flavor of the action.",
     )
-    plugin_subtype: Optional[str] = Field(
+    plugin_subtype: str | None = Field(
         default=None,
         title="The subtype of the action.",
     )

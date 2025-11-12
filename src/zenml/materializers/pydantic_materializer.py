@@ -34,9 +34,9 @@ class PydanticMaterializer(BaseMaterializer):
     """Handle Pydantic BaseModel objects."""
 
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseModel,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (BaseModel,)
 
-    def load(self, data_type: Type[BaseModel]) -> Any:
+    def load(self, data_type: type[BaseModel]) -> Any:
         """Reads BaseModel from JSON.
 
         Args:
@@ -58,7 +58,7 @@ class PydanticMaterializer(BaseMaterializer):
         data_path = os.path.join(self.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(data_path, data.model_dump_json())
 
-    def extract_metadata(self, data: BaseModel) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, data: BaseModel) -> dict[str, "MetadataType"]:
         """Extract metadata from the given BaseModel object.
 
         Args:
@@ -69,7 +69,7 @@ class PydanticMaterializer(BaseMaterializer):
         """
         return {"schema": data.schema()}
 
-    def compute_content_hash(self, data: BaseModel) -> Optional[str]:
+    def compute_content_hash(self, data: BaseModel) -> str | None:
         """Compute the content hash of the given data.
 
         Args:
@@ -85,7 +85,7 @@ class PydanticMaterializer(BaseMaterializer):
         hash_.update(json.dumps(json_data, sort_keys=True).encode())
         return hash_.hexdigest()
 
-    def save_visualizations(self, data: Any) -> Dict[str, "VisualizationType"]:
+    def save_visualizations(self, data: Any) -> dict[str, "VisualizationType"]:
         """Save visualizations for the given data.
 
         Args:

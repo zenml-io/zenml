@@ -15,7 +15,8 @@
 
 from datetime import datetime
 from secrets import token_hex
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, Optional, Tuple
+from collections.abc import Sequence
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -55,11 +56,11 @@ class APIKeySchema(NamedSchema, table=True):
 
     description: str = Field(sa_column=Column(TEXT))
     key: str
-    previous_key: Optional[str] = Field(default=None, nullable=True)
+    previous_key: str | None = Field(default=None, nullable=True)
     retain_period: int = Field(default=0)
     active: bool = Field(default=True)
-    last_login: Optional[datetime] = None
-    last_rotated: Optional[datetime] = None
+    last_login: datetime | None = None
+    last_rotated: datetime | None = None
 
     service_account_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -123,7 +124,7 @@ class APIKeySchema(NamedSchema, table=True):
         cls,
         service_account_id: UUID,
         request: APIKeyRequest,
-    ) -> Tuple["APIKeySchema", str]:
+    ) -> tuple["APIKeySchema", str]:
         """Convert a `APIKeyRequest` to a `APIKeySchema`.
 
         Args:
@@ -257,7 +258,7 @@ class APIKeySchema(NamedSchema, table=True):
     def rotate(
         self,
         rotate_request: APIKeyRotateRequest,
-    ) -> Tuple["APIKeySchema", str]:
+    ) -> tuple["APIKeySchema", str]:
         """Rotate the key for an `APIKeySchema`.
 
         Args:

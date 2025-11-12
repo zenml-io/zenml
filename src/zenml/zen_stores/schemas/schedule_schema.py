@@ -14,7 +14,8 @@
 """SQL Model Implementations for Pipeline Schedules."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -74,7 +75,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     project: "ProjectSchema" = Relationship(back_populates="schedules")
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -84,7 +85,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="schedules")
 
-    pipeline_id: Optional[UUID] = build_foreign_key_field(
+    pipeline_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSchema.__tablename__,
         source_column="pipeline_id",
@@ -97,7 +98,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="schedule"
     )
 
-    orchestrator_id: Optional[UUID] = build_foreign_key_field(
+    orchestrator_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="orchestrator_id",
@@ -109,7 +110,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         back_populates="schedules"
     )
 
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.SCHEDULE.value}', foreign(RunMetadataResourceSchema.resource_id)==ScheduleSchema.id)",
@@ -119,12 +120,12 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     active: bool
-    cron_expression: Optional[str] = Field(nullable=True)
-    start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True)
-    interval_second: Optional[float] = Field(nullable=True)
+    cron_expression: str | None = Field(nullable=True)
+    start_time: datetime | None = Field(nullable=True)
+    end_time: datetime | None = Field(nullable=True)
+    interval_second: float | None = Field(nullable=True)
     catchup: bool
-    run_once_start_time: Optional[datetime] = Field(nullable=True)
+    run_once_start_time: datetime | None = Field(nullable=True)
 
     @classmethod
     def get_query_options(

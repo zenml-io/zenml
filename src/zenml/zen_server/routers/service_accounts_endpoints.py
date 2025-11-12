@@ -120,7 +120,7 @@ def create_service_account(
 )
 @async_fastapi_endpoint_wrapper
 def get_service_account(
-    service_account_name_or_id: Union[str, UUID],
+    service_account_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
     hydrate: bool = True,
 ) -> ServiceAccountResponse:
@@ -182,7 +182,7 @@ def list_service_accounts(
 )
 @async_fastapi_endpoint_wrapper
 def update_service_account(
-    service_account_name_or_id: Union[str, UUID],
+    service_account_name_or_id: str | UUID,
     service_account_update: ServiceAccountUpdate,
     _: AuthContext = Security(authorize),
 ) -> ServiceAccountResponse:
@@ -222,7 +222,7 @@ def update_service_account(
 )
 @async_fastapi_endpoint_wrapper
 def delete_service_account(
-    service_account_name_or_id: Union[str, UUID],
+    service_account_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a specific service account.
@@ -311,7 +311,7 @@ def create_api_key(
 @async_fastapi_endpoint_wrapper
 def get_api_key(
     service_account_id: UUID,
-    api_key_name_or_id: Union[str, UUID],
+    api_key_name_or_id: str | UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
@@ -378,7 +378,7 @@ def list_api_keys(
 @async_fastapi_endpoint_wrapper
 def update_api_key(
     service_account_id: UUID,
-    api_key_name_or_id: Union[str, UUID],
+    api_key_name_or_id: str | UUID,
     api_key_update: APIKeyUpdate,
     _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
@@ -424,7 +424,7 @@ def update_api_key(
 @async_fastapi_endpoint_wrapper
 def rotate_api_key(
     service_account_id: UUID,
-    api_key_name_or_id: Union[str, UUID],
+    api_key_name_or_id: str | UUID,
     rotate_request: APIKeyRotateRequest,
     _: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
@@ -467,7 +467,7 @@ def rotate_api_key(
 @async_fastapi_endpoint_wrapper
 def delete_api_key(
     service_account_id: UUID,
-    api_key_name_or_id: Union[str, UUID],
+    api_key_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes an API key.

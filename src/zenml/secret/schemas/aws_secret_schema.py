@@ -23,4 +23,4 @@ class AWSSecretSchema(BaseSecretSchema):
 
     aws_access_key_id: str
     aws_secret_access_key: str
-    aws_session_token: Optional[str] = None
+    aws_session_token: str | None = None

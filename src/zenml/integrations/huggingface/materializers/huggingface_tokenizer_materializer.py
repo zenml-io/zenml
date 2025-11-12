@@ -31,12 +31,12 @@ DEFAULT_TOKENIZER_DIR = "hf_tokenizer"
 class HFTokenizerMaterializer(BaseMaterializer):
     """Materializer to read tokenizer to and from huggingface tokenizer."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         PreTrainedTokenizerBase,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> PreTrainedTokenizerBase:
+    def load(self, data_type: type[Any]) -> PreTrainedTokenizerBase:
         """Reads Tokenizer.
 
         Args:
@@ -51,7 +51,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
             )
             return AutoTokenizer.from_pretrained(temp_dir)
 
-    def save(self, tokenizer: Type[Any]) -> None:
+    def save(self, tokenizer: type[Any]) -> None:
         """Writes a Tokenizer to the specified dir.
 
         Args:

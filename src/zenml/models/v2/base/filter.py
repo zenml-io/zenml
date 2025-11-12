@@ -81,11 +81,11 @@ class Filter(BaseModel, ABC):
     This operation set is defined in the ALLOWED_OPS class variable.
     """
 
-    ALLOWED_OPS: ClassVar[List[str]] = []
+    ALLOWED_OPS: ClassVar[list[str]] = []
 
     operation: GenericFilterOps
     column: str
-    value: Optional[Any] = None
+    value: Any | None = None
 
     @field_validator("operation", mode="before")
     @classmethod
@@ -111,7 +111,7 @@ class Filter(BaseModel, ABC):
 
     def generate_query_conditions(
         self,
-        table: Type["SQLModel"],
+        table: type["SQLModel"],
     ) -> "ColumnElement[bool]":
         """Generate the query conditions for the database.
 
@@ -147,7 +147,7 @@ class Filter(BaseModel, ABC):
 class BoolFilter(Filter):
     """Filter for all Boolean fields."""
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
+    ALLOWED_OPS: ClassVar[list[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
     ]
@@ -170,7 +170,7 @@ class BoolFilter(Filter):
 class StrFilter(Filter):
     """Filter for all string fields."""
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
+    ALLOWED_OPS: ClassVar[list[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.STARTSWITH,
@@ -455,9 +455,9 @@ class UUIDFilter(StrFilter):
 class NumericFilter(Filter):
     """Filter for all numeric fields."""
 
-    value: Union[float, datetime] = Field(union_mode="left_to_right")
+    value: float | datetime = Field(union_mode="left_to_right")
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
+    ALLOWED_OPS: ClassVar[list[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.GT,
@@ -491,11 +491,11 @@ class NumericFilter(Filter):
 class DatetimeFilter(Filter):
     """Filter for all datetime fields."""
 
-    value: Union[datetime, Tuple[datetime, datetime]] = Field(
+    value: datetime | tuple[datetime, datetime] = Field(
         union_mode="left_to_right"
     )
 
-    ALLOWED_OPS: ClassVar[List[str]] = [
+    ALLOWED_OPS: ClassVar[list[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
         GenericFilterOps.GT,
@@ -553,19 +553,19 @@ class BaseFilter(BaseModel):
     """
 
     # List of fields that cannot be used as filters.
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         "sort_by",
         "page",
         "size",
         "logical_operator",
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = []
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = []
 
     # List of fields that are not even mentioned as options in the CLI.
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = []
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = []
 
     # List of fields that are wrapped with `fastapi.Query(default)` in API.
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = []
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = []
 
     sort_by: str = Field(
         default="created", description="Which column to sort by."
@@ -584,21 +584,21 @@ class BaseFilter(BaseModel):
         le=PAGE_SIZE_MAXIMUM,
         description="Page size",
     )
-    id: Optional[Union[UUID, str]] = Field(
+    id: UUID | str | None = Field(
         default=None,
         description="Id for this resource",
         union_mode="left_to_right",
     )
-    created: Optional[Union[datetime, str]] = Field(
+    created: datetime | str | None = Field(
         default=None, description="Created", union_mode="left_to_right"
     )
-    updated: Optional[Union[datetime, str]] = Field(
+    updated: datetime | str | None = Field(
         default=None, description="Updated", union_mode="left_to_right"
     )
 
-    _rbac_configuration: Optional[
-        Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
-    ] = None
+    _rbac_configuration: None | (
+        tuple[UUID, dict[str, set[UUID] | None]]
+    ) = None
 
     @field_validator("sort_by", mode="before")
     @classmethod
@@ -654,7 +654,7 @@ class BaseFilter(BaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def filter_ops(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def filter_ops(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Parse incoming filters to ensure all filters are legal.
 
         Args:
@@ -667,7 +667,7 @@ class BaseFilter(BaseModel):
         return data
 
     @property
-    def list_of_filters(self) -> List[Filter]:
+    def list_of_filters(self) -> list[Filter]:
         """Converts the class variables into a list of usable Filter Models.
 
         Returns:
@@ -678,7 +678,7 @@ class BaseFilter(BaseModel):
         )
 
     @property
-    def sorting_params(self) -> Tuple[str, SorterOps]:
+    def sorting_params(self) -> tuple[str, SorterOps]:
         """Converts the class variables into a list of usable Filter Models.
 
         Returns:
@@ -699,7 +699,7 @@ class BaseFilter(BaseModel):
     def configure_rbac(
         self,
         authenticated_user_id: UUID,
-        **column_allowed_ids: Optional[Set[UUID]],
+        **column_allowed_ids: set[UUID] | None,
     ) -> None:
         """Configure RBAC allowed column values.
 
@@ -715,7 +715,7 @@ class BaseFilter(BaseModel):
 
     def generate_rbac_filter(
         self,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> Optional["ColumnElement[bool]"]:
         """Generates an optional RBAC filter.
 
@@ -756,7 +756,7 @@ class BaseFilter(BaseModel):
             return None
 
     @classmethod
-    def _generate_filter_list(cls, values: Dict[str, Any]) -> List[Filter]:
+    def _generate_filter_list(cls, values: dict[str, Any]) -> list[Filter]:
         """Create a list of filters from a (column, value) dictionary.
 
         Args:
@@ -765,7 +765,7 @@ class BaseFilter(BaseModel):
         Returns:
             A list of filters.
         """
-        list_of_filters: List[Filter] = []
+        list_of_filters: list[Filter] = []
 
         for key, value in values.items():
             # Ignore excluded filters
@@ -788,7 +788,7 @@ class BaseFilter(BaseModel):
         return list_of_filters
 
     @staticmethod
-    def _resolve_operator(value: Any) -> Tuple[Any, GenericFilterOps]:
+    def _resolve_operator(value: Any) -> tuple[Any, GenericFilterOps]:
         """Determine the operator and filter value from a user-provided value.
 
         If the user-provided value is a string of the form "operator:value",
@@ -828,9 +828,9 @@ class BaseFilter(BaseModel):
 
     def generate_name_or_id_query_conditions(
         self,
-        value: Union[UUID, str],
-        table: Type["NamedSchema"],
-        additional_columns: Optional[List[str]] = None,
+        value: UUID | str,
+        table: type["NamedSchema"],
+        additional_columns: list[str] | None = None,
     ) -> "ColumnElement[bool]":
         """Generate filter conditions for name or id of a table.
 
@@ -871,7 +871,7 @@ class BaseFilter(BaseModel):
     @staticmethod
     def generate_custom_query_conditions_for_column(
         value: Any,
-        table: Type["SQLModel"],
+        table: type["SQLModel"],
         column: str,
     ) -> "ColumnElement[bool]":
         """Generate custom filter conditions for a column of a table.
@@ -900,7 +900,7 @@ class BaseFilter(BaseModel):
         return self.size * (self.page - 1)
 
     def generate_filter(
-        self, table: Type["AnySchema"]
+        self, table: type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
@@ -930,8 +930,8 @@ class BaseFilter(BaseModel):
             raise RuntimeError("No valid logical operator was supplied.")
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         This can be overridden by subclasses to define custom filters that are
@@ -948,7 +948,7 @@ class BaseFilter(BaseModel):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -974,7 +974,7 @@ class BaseFilter(BaseModel):
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query.
 
@@ -1005,7 +1005,7 @@ class BaseFilter(BaseModel):
 class FilterGenerator:
     """Helper class to define filters for a class."""
 
-    def __init__(self, model_class: Type[BaseModel]) -> None:
+    def __init__(self, model_class: type[BaseModel]) -> None:
         """Initialize the object.
 
         Args:
@@ -1192,7 +1192,7 @@ class FilterGenerator:
             ValueError: If the value is not a valid datetime.
         """
         try:
-            filter_value: Union[datetime, Tuple[datetime, datetime]]
+            filter_value: datetime | tuple[datetime, datetime]
             if isinstance(value, datetime):
                 filter_value = value
             elif "," in value:

@@ -16,7 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -24,6 +23,7 @@ from typing import (
     Union,
     overload,
 )
+from collections.abc import Callable
 from uuid import UUID
 
 from zenml.enums import ExecutionMode
@@ -51,26 +51,26 @@ def pipeline(_func: "F") -> "Pipeline": ...
 @overload
 def pipeline(
     *,
-    name: Optional[str] = None,
-    dynamic: Optional[bool] = None,
-    depends_on: Optional[List["BaseStep"]] = None,
-    enable_cache: Optional[bool] = None,
-    enable_artifact_metadata: Optional[bool] = None,
-    enable_step_logs: Optional[bool] = None,
-    environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[Union[UUID, str]]] = None,
-    enable_pipeline_logs: Optional[bool] = None,
-    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    tags: Optional[List[Union[str, "Tag"]]] = None,
-    extra: Optional[Dict[str, Any]] = None,
+    name: str | None = None,
+    dynamic: bool | None = None,
+    depends_on: list["BaseStep"] | None = None,
+    enable_cache: bool | None = None,
+    enable_artifact_metadata: bool | None = None,
+    enable_step_logs: bool | None = None,
+    environment: dict[str, Any] | None = None,
+    secrets: list[UUID | str] | None = None,
+    enable_pipeline_logs: bool | None = None,
+    settings: dict[str, "SettingsOrDict"] | None = None,
+    tags: list[Union[str, "Tag"]] | None = None,
+    extra: dict[str, Any] | None = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
-    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_init_kwargs: dict[str, Any] | None = None,
     on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    substitutions: Optional[Dict[str, str]] = None,
+    substitutions: dict[str, str] | None = None,
     execution_mode: Optional["ExecutionMode"] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
@@ -79,26 +79,26 @@ def pipeline(
 def pipeline(
     _func: Optional["F"] = None,
     *,
-    name: Optional[str] = None,
-    dynamic: Optional[bool] = None,
-    depends_on: Optional[List["BaseStep"]] = None,
-    enable_cache: Optional[bool] = None,
-    enable_artifact_metadata: Optional[bool] = None,
-    enable_step_logs: Optional[bool] = None,
-    environment: Optional[Dict[str, Any]] = None,
-    secrets: Optional[List[Union[UUID, str]]] = None,
-    enable_pipeline_logs: Optional[bool] = None,
-    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    tags: Optional[List[Union[str, "Tag"]]] = None,
-    extra: Optional[Dict[str, Any]] = None,
+    name: str | None = None,
+    dynamic: bool | None = None,
+    depends_on: list["BaseStep"] | None = None,
+    enable_cache: bool | None = None,
+    enable_artifact_metadata: bool | None = None,
+    enable_step_logs: bool | None = None,
+    environment: dict[str, Any] | None = None,
+    secrets: list[UUID | str] | None = None,
+    enable_pipeline_logs: bool | None = None,
+    settings: dict[str, "SettingsOrDict"] | None = None,
+    tags: list[Union[str, "Tag"]] | None = None,
+    extra: dict[str, Any] | None = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
-    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_init_kwargs: dict[str, Any] | None = None,
     on_cleanup: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
-    substitutions: Optional[Dict[str, str]] = None,
+    substitutions: dict[str, str] | None = None,
     execution_mode: Optional["ExecutionMode"] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
@@ -148,7 +148,7 @@ def pipeline(
         from zenml.pipelines.pipeline_definition import Pipeline
 
         PipelineClass = Pipeline
-        pipeline_args: Dict[str, Any] = {}
+        pipeline_args: dict[str, Any] = {}
 
         if dynamic:
             from zenml.pipelines.dynamic.pipeline_definition import (

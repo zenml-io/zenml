@@ -55,7 +55,7 @@ class EventSourceRequest(ProjectScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The event source configuration.",
     )
 
@@ -66,21 +66,21 @@ class EventSourceRequest(ProjectScopedRequest):
 class EventSourceUpdate(BaseUpdate):
     """Update model for event sources."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The updated name of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The updated description of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Optional[Dict[str, Any]] = Field(
+    configuration: dict[str, Any] | None = Field(
         default=None,
         title="The updated event source configuration.",
     )
-    is_active: Optional[bool] = Field(
+    is_active: bool | None = Field(
         default=None,
         title="The status of the event source.",
     )
@@ -131,7 +131,7 @@ class EventSourceResponseMetadata(ProjectScopedResponseMetadata):
         title="The description of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The event source configuration.",
     )
 
@@ -206,7 +206,7 @@ class EventSourceResponse(
         return self.get_metadata().description
 
     @property
-    def configuration(self) -> Dict[str, Any]:
+    def configuration(self) -> dict[str, Any]:
         """The `configuration` property.
 
         Returns:
@@ -214,7 +214,7 @@ class EventSourceResponse(
         """
         return self.get_metadata().configuration
 
-    def set_configuration(self, configuration: Dict[str, Any]) -> None:
+    def set_configuration(self, configuration: dict[str, Any]) -> None:
         """Set the `configuration` property.
 
         Args:
@@ -229,15 +229,15 @@ class EventSourceResponse(
 class EventSourceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all EventSourceModels."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the event source",
     )
-    flavor: Optional[str] = Field(
+    flavor: str | None = Field(
         default=None,
         description="Flavor of the event source",
     )
-    plugin_subtype: Optional[str] = Field(
+    plugin_subtype: str | None = Field(
         default=None,
         title="The plugin sub type of the event source.",
         max_length=STR_FIELD_MAX_LENGTH,

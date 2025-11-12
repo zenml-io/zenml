@@ -53,7 +53,7 @@ def upgrade() -> None:
         )
     )
     # find unique tags and de-json tags
-    unique_tags: Set[str] = set()
+    unique_tags: set[str] = set()
     model_tags_prepared = []
     for id_, tags in model_tags:
         try:

@@ -52,7 +52,7 @@ ARTIFACT_FILENAME = "artifact.json"
 class GreatExpectationsMaterializer(BaseMaterializer):
     """Materializer to read/write Great Expectation objects."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         ExpectationSuite,
         CheckpointResult,
     )
@@ -62,7 +62,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
 
     @staticmethod
     def preprocess_checkpoint_result_dict(
-        artifact_dict: Dict[str, Any],
+        artifact_dict: dict[str, Any],
     ) -> None:
         """Pre-processes a GE checkpoint dict before it is used to de-serialize a GE CheckpointResult object.
 
@@ -97,7 +97,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             validation_dict[validation_ident] = validation_results
         artifact_dict["run_results"] = validation_dict
 
-    def load(self, data_type: Type[Any]) -> SerializableDictDot:
+    def load(self, data_type: type[Any]) -> SerializableDictDot:
         """Reads and returns a Great Expectations object.
 
         Args:
@@ -130,8 +130,8 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         yaml_utils.write_json(filepath, artifact_dict)
 
     def save_visualizations(
-        self, data: Union[ExpectationSuite, CheckpointResult]
-    ) -> Dict[str, VisualizationType]:
+        self, data: ExpectationSuite | CheckpointResult
+    ) -> dict[str, VisualizationType]:
         """Saves visualizations for the given Great Expectations object.
 
         Args:
@@ -160,8 +160,8 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         return visualizations
 
     def extract_metadata(
-        self, data: Union[ExpectationSuite, CheckpointResult]
-    ) -> Dict[str, "MetadataType"]:
+        self, data: ExpectationSuite | CheckpointResult
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given Great Expectations object.
 
         Args:

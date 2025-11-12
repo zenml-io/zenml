@@ -40,7 +40,7 @@ if TYPE_CHECKING:
         ServerDeploymentType,
     )
 
-Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+Json = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 logger = get_logger(__name__)
 
@@ -57,13 +57,13 @@ class AnalyticsContext:
         """
         self.analytics_opt_in: bool = False
 
-        self.user_id: Optional[UUID] = None
-        self.external_user_id: Optional[UUID] = None
-        self.executed_by_service_account: Optional[bool] = None
-        self.client_id: Optional[UUID] = None
-        self.server_id: Optional[UUID] = None
-        self.external_server_id: Optional[UUID] = None
-        self.server_metadata: Optional[Dict[str, str]] = None
+        self.user_id: UUID | None = None
+        self.external_user_id: UUID | None = None
+        self.executed_by_service_account: bool | None = None
+        self.client_id: UUID | None = None
+        self.server_id: UUID | None = None
+        self.external_server_id: UUID | None = None
+        self.server_metadata: dict[str, str] | None = None
 
         self.database_type: Optional["ServerDatabaseType"] = None
         self.deployment_type: Optional["ServerDeploymentType"] = None
@@ -153,9 +153,9 @@ class AnalyticsContext:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> bool:
         """Exit context manager.
 
@@ -181,7 +181,7 @@ class AnalyticsContext:
         """
         return handle_bool_env_var(ENV_ZENML_SERVER)
 
-    def identify(self, traits: Optional[Dict[str, Any]] = None) -> bool:
+    def identify(self, traits: dict[str, Any] | None = None) -> bool:
         """Identify the user through segment.
 
         Args:
@@ -221,7 +221,7 @@ class AnalyticsContext:
     def group(
         self,
         group_id: UUID,
-        traits: Optional[Dict[str, Any]] = None,
+        traits: dict[str, Any] | None = None,
     ) -> bool:
         """Group the user.
 
@@ -245,7 +245,7 @@ class AnalyticsContext:
     def track(
         self,
         event: "AnalyticsEvent",
-        properties: Optional[Dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
     ) -> bool:
         """Track an event.
 

@@ -48,7 +48,7 @@ class DaemonServerProvider(BaseServerProvider):
     """Daemon ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.DAEMON
-    CONFIG_TYPE: ClassVar[Type[LocalServerDeploymentConfig]] = (
+    CONFIG_TYPE: ClassVar[type[LocalServerDeploymentConfig]] = (
         DaemonServerDeploymentConfig
     )
 
@@ -79,7 +79,7 @@ class DaemonServerProvider(BaseServerProvider):
     def _get_service_configuration(
         cls,
         server_config: LocalServerDeploymentConfig,
-    ) -> Tuple[
+    ) -> tuple[
         ServiceConfig,
         ServiceEndpointConfig,
         ServiceEndpointHealthMonitorConfig,
@@ -116,7 +116,7 @@ class DaemonServerProvider(BaseServerProvider):
     def _create_service(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Create, start and return the local daemon ZenML server deployment service.
 
@@ -166,7 +166,7 @@ class DaemonServerProvider(BaseServerProvider):
         self,
         service: BaseService,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Update the local daemon ZenML server deployment service.
 
@@ -207,7 +207,7 @@ class DaemonServerProvider(BaseServerProvider):
     def _start_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Start the local daemon ZenML server deployment service.
 
@@ -228,7 +228,7 @@ class DaemonServerProvider(BaseServerProvider):
     def _stop_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Stop the local daemon ZenML server deployment service.
 
@@ -249,7 +249,7 @@ class DaemonServerProvider(BaseServerProvider):
     def _delete_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Remove the local daemon ZenML server deployment service.
 

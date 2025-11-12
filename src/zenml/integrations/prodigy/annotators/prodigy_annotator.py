@@ -58,7 +58,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         instance_url = DEFAULT_LOCAL_INSTANCE_HOST
         port = DEFAULT_LOCAL_PRODIGY_PORT
         if self.config.custom_config_path:
-            with open(self.config.custom_config_path, "r") as f:
+            with open(self.config.custom_config_path) as f:
                 config = json.load(f)
             instance_url = config.get("instance_url", instance_url)
             port = config.get("port", port)
@@ -78,16 +78,16 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return self.get_url()
 
-    def get_datasets(self) -> List[Any]:
+    def get_datasets(self) -> list[Any]:
         """Gets the datasets currently available for annotation.
 
         Returns:
             A list of datasets (str).
         """
         datasets = self._get_db().datasets
-        return cast(List[Any], datasets)
+        return cast(list[Any], datasets)
 
-    def get_dataset_names(self) -> List[str]:
+    def get_dataset_names(self) -> list[str]:
         """Gets the names of the datasets.
 
         Returns:
@@ -95,7 +95,7 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
         """
         return self.get_datasets()
 
-    def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
+    def get_dataset_stats(self, dataset_name: str) -> tuple[int, int]:
         """Gets the statistics of the given dataset.
 
         Args:
@@ -148,8 +148,8 @@ class ProdigyAnnotator(BaseAnnotator, AuthenticationMixin):
     def _get_db(
         self,
         custom_database: PeeweeDatabase = None,
-        display_id: Optional[str] = None,
-        display_name: Optional[str] = None,
+        display_id: str | None = None,
+        display_name: str | None = None,
     ) -> ProdigyDatabase:
         """Gets Prodigy database / client.
 

@@ -20,13 +20,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     List,
     Optional,
     Tuple,
     Type,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 import boto3
@@ -79,47 +79,47 @@ AWS_APP_RUNNER_MAX_CONCURRENCY = 1000
 class AppRunnerDeploymentMetadata(BaseModel):
     """Metadata for an App Runner deployment."""
 
-    service_name: Optional[str] = None
-    service_arn: Optional[str] = None
-    service_url: Optional[str] = None
-    region: Optional[str] = None
-    service_id: Optional[str] = None
-    status: Optional[str] = None
-    source_configuration: Optional[Dict[str, Any]] = None
-    instance_configuration: Optional[Dict[str, Any]] = None
-    auto_scaling_configuration_summary: Optional[Dict[str, Any]] = None
-    auto_scaling_configuration_arn: Optional[str] = None
-    health_check_configuration: Optional[Dict[str, Any]] = None
-    network_configuration: Optional[Dict[str, Any]] = None
-    observability_configuration: Optional[Dict[str, Any]] = None
-    encryption_configuration: Optional[Dict[str, Any]] = None
-    cpu: Optional[str] = None
-    memory: Optional[str] = None
-    port: Optional[int] = None
-    auto_scaling_max_concurrency: Optional[int] = None
-    auto_scaling_max_size: Optional[int] = None
-    auto_scaling_min_size: Optional[int] = None
-    is_publicly_accessible: Optional[bool] = None
-    health_check_grace_period_seconds: Optional[int] = None
-    health_check_interval_seconds: Optional[int] = None
-    health_check_path: Optional[str] = None
-    health_check_protocol: Optional[str] = None
-    health_check_timeout_seconds: Optional[int] = None
-    health_check_healthy_threshold: Optional[int] = None
-    health_check_unhealthy_threshold: Optional[int] = None
-    tags: Optional[Dict[str, str]] = None
-    traffic_allocation: Optional[Dict[str, int]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    deleted_at: Optional[str] = None
-    secret_arn: Optional[str] = None
+    service_name: str | None = None
+    service_arn: str | None = None
+    service_url: str | None = None
+    region: str | None = None
+    service_id: str | None = None
+    status: str | None = None
+    source_configuration: dict[str, Any] | None = None
+    instance_configuration: dict[str, Any] | None = None
+    auto_scaling_configuration_summary: dict[str, Any] | None = None
+    auto_scaling_configuration_arn: str | None = None
+    health_check_configuration: dict[str, Any] | None = None
+    network_configuration: dict[str, Any] | None = None
+    observability_configuration: dict[str, Any] | None = None
+    encryption_configuration: dict[str, Any] | None = None
+    cpu: str | None = None
+    memory: str | None = None
+    port: int | None = None
+    auto_scaling_max_concurrency: int | None = None
+    auto_scaling_max_size: int | None = None
+    auto_scaling_min_size: int | None = None
+    is_publicly_accessible: bool | None = None
+    health_check_grace_period_seconds: int | None = None
+    health_check_interval_seconds: int | None = None
+    health_check_path: str | None = None
+    health_check_protocol: str | None = None
+    health_check_timeout_seconds: int | None = None
+    health_check_healthy_threshold: int | None = None
+    health_check_unhealthy_threshold: int | None = None
+    tags: dict[str, str] | None = None
+    traffic_allocation: dict[str, int] | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+    deleted_at: str | None = None
+    secret_arn: str | None = None
 
     @classmethod
     def from_app_runner_service(
         cls,
-        service: Dict[str, Any],
+        service: dict[str, Any],
         region: str,
-        secret_arn: Optional[str] = None,
+        secret_arn: str | None = None,
     ) -> "AppRunnerDeploymentMetadata":
         """Create metadata from an App Runner service.
 
@@ -253,11 +253,11 @@ class AppRunnerDeploymentMetadata(BaseModel):
 class AWSDeployer(ContainerizedDeployer):
     """Deployer responsible for deploying pipelines on AWS App Runner."""
 
-    _boto_session: Optional[boto3.Session] = None
-    _region: Optional[str] = None
-    _app_runner_client: Optional[Any] = None
-    _secrets_manager_client: Optional[Any] = None
-    _logs_client: Optional[Any] = None
+    _boto_session: boto3.Session | None = None
+    _region: str | None = None
+    _app_runner_client: Any | None = None
+    _secrets_manager_client: Any | None = None
+    _logs_client: Any | None = None
 
     @property
     def config(self) -> AWSDeployerConfig:
@@ -269,7 +269,7 @@ class AWSDeployer(ContainerizedDeployer):
         return cast(AWSDeployerConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the AWS deployer.
 
         Returns:
@@ -278,7 +278,7 @@ class AWSDeployer(ContainerizedDeployer):
         return AWSDeployerSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Ensures there is an image builder in the stack.
 
         Returns:
@@ -291,7 +291,7 @@ class AWSDeployer(ContainerizedDeployer):
             }
         )
 
-    def _get_boto_session_and_region(self) -> Tuple[boto3.Session, str]:
+    def _get_boto_session_and_region(self) -> tuple[boto3.Session, str]:
         """Get an authenticated boto3 session and determine the region.
 
         Returns:
@@ -389,7 +389,7 @@ class AWSDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         settings: AWSDeployerSettings,
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """Get the tags for a deployment to be used for AWS resources.
 
         Args:
@@ -604,7 +604,7 @@ class AWSDeployer(ContainerizedDeployer):
                 f"Failed to create/update secret {secret_name}: {e}"
             )
 
-    def _get_secret_arn(self, deployment: DeploymentResponse) -> Optional[str]:
+    def _get_secret_arn(self, deployment: DeploymentResponse) -> str | None:
         """Get the existing AWS Secrets Manager secret ARN for a deployment.
 
         Args:
@@ -819,10 +819,10 @@ class AWSDeployer(ContainerizedDeployer):
     def _prepare_environment_variables(
         self,
         deployment: DeploymentResponse,
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         settings: AWSDeployerSettings,
-    ) -> Tuple[Dict[str, str], Dict[str, str], Optional[str]]:
+    ) -> tuple[dict[str, str], dict[str, str], str | None]:
         """Prepare environment variables for App Runner, handling secrets appropriately.
 
         Args:
@@ -838,7 +838,7 @@ class AWSDeployer(ContainerizedDeployer):
             - Optional secret ARN (None if no secrets or fallback to env vars).
         """
         secret_refs = {}
-        active_secret_arn: Optional[str] = None
+        active_secret_arn: str | None = None
 
         env_vars = {**settings.environment_variables, **environment}
 
@@ -894,7 +894,7 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _get_app_runner_service(
         self, deployment: DeploymentResponse
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get an existing App Runner service for a deployment.
 
         Args:
@@ -925,9 +925,9 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _get_service_operational_state(
         self,
-        service: Dict[str, Any],
+        service: dict[str, Any],
         region: str,
-        secret_arn: Optional[str] = None,
+        secret_arn: str | None = None,
     ) -> DeploymentOperationalState:
         """Get the operational state of an App Runner service.
 
@@ -982,7 +982,7 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _requires_service_replacement(
         self,
-        existing_service: Dict[str, Any],
+        existing_service: dict[str, Any],
         settings: AWSDeployerSettings,
     ) -> bool:
         """Check if the service configuration requires replacement.
@@ -1029,9 +1029,9 @@ class AWSDeployer(ContainerizedDeployer):
     def _convert_resource_settings_to_aws_format(
         self,
         resource_settings: ResourceSettings,
-        resource_combinations: List[Tuple[float, float]],
+        resource_combinations: list[tuple[float, float]],
         strict_resource_matching: bool = False,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Convert ResourceSettings to AWS App Runner resource format.
 
         AWS App Runner only supports specific CPU-memory combinations.
@@ -1065,11 +1065,11 @@ class AWSDeployer(ContainerizedDeployer):
 
     def _select_aws_cpu_memory_combination(
         self,
-        requested_cpu: Optional[float],
-        requested_memory_gb: Optional[float],
-        resource_combinations: List[Tuple[float, float]],
+        requested_cpu: float | None,
+        requested_memory_gb: float | None,
+        resource_combinations: list[tuple[float, float]],
         strict_resource_matching: bool = False,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Select the best AWS App Runner CPU-memory combination.
 
         AWS App Runner only supports specific CPU and memory combinations, e.g.:
@@ -1162,7 +1162,7 @@ class AWSDeployer(ContainerizedDeployer):
     def _convert_scaling_settings_to_aws_format(
         self,
         resource_settings: ResourceSettings,
-    ) -> Tuple[int, int, int]:
+    ) -> tuple[int, int, int]:
         """Convert ResourceSettings scaling to AWS App Runner format.
 
         Args:
@@ -1202,8 +1202,8 @@ class AWSDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Serve a pipeline as an App Runner service.
@@ -1309,7 +1309,7 @@ class AWSDeployer(ContainerizedDeployer):
         container_port = (
             snapshot.pipeline_configuration.deployment_settings.uvicorn_port
         )
-        image_config: Dict[str, Any] = {
+        image_config: dict[str, Any] = {
             "Port": str(container_port),
             "StartCommand": " ".join(entrypoint + arguments),
         }
@@ -1590,7 +1590,7 @@ class AWSDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of an App Runner deployment.
 
@@ -1699,7 +1699,7 @@ class AWSDeployer(ContainerizedDeployer):
         self,
         deployment: DeploymentResponse,
         timeout: int,
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Deprovision an App Runner deployment.
 
         Args:

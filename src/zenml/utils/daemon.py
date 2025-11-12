@@ -24,7 +24,8 @@ import os
 import signal
 import sys
 import types
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Optional, TypeVar, cast
+from collections.abc import Callable
 
 import psutil
 
@@ -42,7 +43,7 @@ CHILD_PROCESS_WAIT_TIMEOUT = 5
 
 def daemonize(
     pid_file: str,
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
     working_directory: str = "/",
 ) -> Callable[[F], F]:
     """Decorator that executes the decorated function as a daemon process.
@@ -113,7 +114,7 @@ def daemonize(
 
 
 def setup_daemon(
-    pid_file: Optional[str] = None, log_file: Optional[str] = None
+    pid_file: str | None = None, log_file: str | None = None
 ) -> None:
     """Sets up a daemon process.
 
@@ -179,7 +180,7 @@ def setup_daemon(
             os.remove(pid_file)
         sys.stderr.flush()
 
-    def sighndl(signum: int, frame: Optional[types.FrameType]) -> None:
+    def sighndl(signum: int, frame: types.FrameType | None) -> None:
         """Daemon signal handler.
 
         Args:
@@ -229,16 +230,16 @@ def stop_daemon(pid_file: str) -> None:
             kill.
     """
     try:
-        with open(pid_file, "r") as f:
+        with open(pid_file) as f:
             pid = int(f.read().strip())
-    except (IOError, FileNotFoundError):
+    except (OSError, FileNotFoundError):
         logger.debug("Daemon PID file '%s' does not exist.", pid_file)
         return
 
     stop_process(pid)
 
 
-def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
+def get_daemon_pid_if_running(pid_file: str) -> int | None:
     """Read and return the PID value from a PID file.
 
     It does this if the daemon process tracked by the PID file is running.
@@ -251,9 +252,9 @@ def get_daemon_pid_if_running(pid_file: str) -> Optional[int]:
         The PID of the daemon process if it is running, otherwise None.
     """
     try:
-        with open(pid_file, "r") as f:
+        with open(pid_file) as f:
             pid = int(f.read().strip())
-    except (IOError, FileNotFoundError):
+    except (OSError, FileNotFoundError):
         logger.debug(
             f"Daemon PID file '{pid_file}' does not exist or cannot be read.",
         )
@@ -313,7 +314,7 @@ else:
         daemon_function: F,
         *args: Any,
         pid_file: str,
-        log_file: Optional[str] = None,
+        log_file: str | None = None,
         working_directory: str = "/",
         **kwargs: Any,
     ) -> None:

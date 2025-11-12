@@ -51,7 +51,7 @@ class BaseImageBuilder(StackComponent, ABC):
         return cast(BaseImageBuilderConfig, self._config)
 
     @property
-    def build_context_class(self) -> Type["BuildContext"]:
+    def build_context_class(self) -> type["BuildContext"]:
         """Build context class to use.
 
         The default build context class creates a build context that works
@@ -79,7 +79,7 @@ class BaseImageBuilder(StackComponent, ABC):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: dict[str, Any],
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds a Docker image.
@@ -155,7 +155,7 @@ class BaseImageBuilderFlavor(Flavor, ABC):
         return StackComponentType.IMAGE_BUILDER
 
     @property
-    def config_class(self) -> Type[BaseImageBuilderConfig]:
+    def config_class(self) -> type[BaseImageBuilderConfig]:
         """Config class.
 
         Returns:
@@ -164,7 +164,7 @@ class BaseImageBuilderFlavor(Flavor, ABC):
         return BaseImageBuilderConfig
 
     @property
-    def implementation_class(self) -> Type[BaseImageBuilder]:
+    def implementation_class(self) -> type[BaseImageBuilder]:
         """Implementation class.
 
         Returns:

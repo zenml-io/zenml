@@ -27,7 +27,7 @@ from zenml.integrations.discord.alerters.discord_alerter import (
 @step
 def discord_alerter_post_step(
     message: str,
-    params: Optional[DiscordAlerterParameters] = None,
+    params: DiscordAlerterParameters | None = None,
 ) -> bool:
     """Post a message to the Discord alerter component of the active stack.
 

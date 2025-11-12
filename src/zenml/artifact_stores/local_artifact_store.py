@@ -46,7 +46,7 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
         path: The path to the local artifact store.
     """
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
+    SUPPORTED_SCHEMES: ClassVar[set[str]] = {""}
 
     path: str = ""
 
@@ -88,7 +88,7 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
     All methods are inherited from the default `LocalFilesystem`.
     """
 
-    _path: Optional[str] = None
+    _path: str | None = None
 
     @staticmethod
     def get_default_local_path(id_: "UUID") -> str:
@@ -126,7 +126,7 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
         return self._path
 
     @property
-    def local_path(self) -> Optional[str]:
+    def local_path(self) -> str | None:
         """Returns the local path of the artifact store.
 
         Returns:
@@ -135,7 +135,7 @@ class LocalArtifactStore(LocalFilesystem, BaseArtifactStore):
         return self.path
 
     @property
-    def custom_cache_key(self) -> Optional[bytes]:
+    def custom_cache_key(self) -> bytes | None:
         """Custom cache key.
 
         The client ID is returned here to invalidate caching when using the same
@@ -160,7 +160,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "local"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -169,7 +169,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -187,7 +187,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/local.svg"
 
     @property
-    def config_class(self) -> Type[LocalArtifactStoreConfig]:
+    def config_class(self) -> type[LocalArtifactStoreConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -196,7 +196,7 @@ class LocalArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return LocalArtifactStoreConfig
 
     @property
-    def implementation_class(self) -> Type[LocalArtifactStore]:
+    def implementation_class(self) -> type[LocalArtifactStore]:
         """Implementation class.
 
         Returns:

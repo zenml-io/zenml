@@ -122,7 +122,7 @@ class StackComponentConfig(BaseModel, ABC):
         super().__init__(**kwargs)
 
     @property
-    def required_secrets(self) -> Set[secret_utils.SecretReference]:
+    def required_secrets(self) -> set[secret_utils.SecretReference]:
         """All required secrets for this stack component.
 
         Returns:
@@ -259,7 +259,7 @@ class StackComponentConfig(BaseModel, ABC):
     @model_validator(mode="before")
     @classmethod
     @pydantic_utils.before_validator_handler
-    def _convert_json_strings(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_json_strings(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Converts potential JSON strings.
 
         Args:
@@ -332,15 +332,15 @@ class StackComponent:
         config: StackComponentConfig,
         flavor: str,
         type: StackComponentType,
-        user: Optional[UUID],
+        user: UUID | None,
         created: datetime,
         updated: datetime,
-        environment: Optional[Dict[str, str]] = None,
-        secrets: Optional[List[UUID]] = None,
-        labels: Optional[Dict[str, Any]] = None,
-        connector_requirements: Optional[ServiceConnectorRequirements] = None,
-        connector: Optional[UUID] = None,
-        connector_resource_id: Optional[str] = None,
+        environment: dict[str, str] | None = None,
+        secrets: list[UUID] | None = None,
+        labels: dict[str, Any] | None = None,
+        connector_requirements: ServiceConnectorRequirements | None = None,
+        connector: UUID | None = None,
+        connector_resource_id: str | None = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -390,7 +390,7 @@ class StackComponent:
         self.connector_requirements = connector_requirements
         self.connector = connector
         self.connector_resource_id = connector_resource_id
-        self._connector_instance: Optional[ServiceConnector] = None
+        self._connector_instance: ServiceConnector | None = None
 
     @classmethod
     def from_model(
@@ -481,7 +481,7 @@ class StackComponent:
         return self._config
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Class specifying available settings for this component.
 
         Returns:
@@ -631,7 +631,7 @@ class StackComponent:
         return self._connector_instance
 
     @property
-    def log_file(self) -> Optional[str]:
+    def log_file(self) -> str | None:
         """Optional path to a log file for the stack component.
 
         Returns:
@@ -643,7 +643,7 @@ class StackComponent:
         return None
 
     @property
-    def requirements(self) -> Set[str]:
+    def requirements(self) -> set[str]:
         """Set of PyPI requirements for the component.
 
         Returns:
@@ -654,7 +654,7 @@ class StackComponent:
         return set(get_requirements_for_module(self.__module__))
 
     @property
-    def apt_packages(self) -> List[str]:
+    def apt_packages(self) -> list[str]:
         """List of APT package requirements for the component.
 
         Returns:
@@ -666,7 +666,7 @@ class StackComponent:
         return integration.APT_PACKAGES if integration else []
 
     @property
-    def local_path(self) -> Optional[str]:
+    def local_path(self) -> str | None:
         """Path to a local directory to store persistent information.
 
         This property should only be implemented by components that need to
@@ -701,7 +701,7 @@ class StackComponent:
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -714,7 +714,7 @@ class StackComponent:
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:
@@ -734,7 +734,7 @@ class StackComponent:
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -754,7 +754,7 @@ class StackComponent:
         """
 
     @property
-    def post_registration_message(self) -> Optional[str]:
+    def post_registration_message(self) -> str | None:
         """Optional message printed after the stack component is registered.
 
         Returns:

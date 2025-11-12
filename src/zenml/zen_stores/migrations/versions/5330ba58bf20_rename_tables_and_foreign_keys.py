@@ -87,12 +87,12 @@ def _create_fk_constraint(
         )
 
 
-def _get_changes() -> Tuple[
-    List[str],
-    List[str],
-    List[str],
-    List[Tuple[str, str, str, str, str]],
-    List[Tuple[str, str, str, str, str]],
+def _get_changes() -> tuple[
+    list[str],
+    list[str],
+    list[str],
+    list[tuple[str, str, str, str, str]],
+    list[tuple[str, str, str, str, str]],
 ]:
     """Define the data that should be changed in the schema.
 
@@ -108,7 +108,7 @@ def _get_changes() -> Tuple[
             (source, target, source_column, target_column, ondelete)
     """
     # Define all the tables that should be renamed
-    table_name_mapping: Dict[str, str] = {
+    table_name_mapping: dict[str, str] = {
         "roleschema": "role",
         "stepinputartifactschema": "step_run_input_artifact",
         "userroleassignmentschema": "user_role_assignment",
@@ -140,7 +140,7 @@ def _get_changes() -> Tuple[
         "pipeline_run",
         "stack",
     ]
-    new_fk_constraints: List[Tuple[str, str, str, str, str]] = [
+    new_fk_constraints: list[tuple[str, str, str, str, str]] = [
         *[
             (source, "workspace", "project_id", "id", "CASCADE")
             for source in project_user_fk_tables
@@ -240,7 +240,7 @@ def upgrade() -> None:
     # foreign key number.
     if engine_name == "mysql":
         old_fk_constraints.sort(key=lambda x: (x[0], x[2]))
-    source_table_fk_constraint_counts: Dict[str, int] = defaultdict(int)
+    source_table_fk_constraint_counts: dict[str, int] = defaultdict(int)
 
     # Drop old foreign key constraints.
     for source, target, source_column, _, _ in old_fk_constraints:

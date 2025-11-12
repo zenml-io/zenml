@@ -60,7 +60,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -75,7 +75,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -84,7 +84,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -102,7 +102,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azure-skypilot.png"
 
     @property
-    def config_class(self) -> Type[BaseOrchestratorConfig]:
+    def config_class(self) -> type[BaseOrchestratorConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
@@ -111,7 +111,7 @@ class SkypilotAzureOrchestratorFlavor(BaseOrchestratorFlavor):
         return SkypilotAzureOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotAzureOrchestrator"]:
+    def implementation_class(self) -> type["SkypilotAzureOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

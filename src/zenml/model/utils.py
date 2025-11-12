@@ -34,9 +34,9 @@ logger = get_logger(__name__)
 
 
 def log_model_metadata(
-    metadata: Dict[str, "MetadataType"],
-    model_name: Optional[str] = None,
-    model_version: Optional[Union[ModelStages, int, str]] = None,
+    metadata: dict[str, "MetadataType"],
+    model_name: str | None = None,
+    model_version: ModelStages | int | str | None = None,
 ) -> None:
     """Log model version metadata.
 
@@ -139,7 +139,7 @@ def link_artifact_to_model(
 def link_service_to_model(
     service_id: UUID,
     model: Optional["Model"] = None,
-    model_version_id: Optional[UUID] = None,
+    model_version_id: UUID | None = None,
 ) -> None:
     """Links a service to a model.
 

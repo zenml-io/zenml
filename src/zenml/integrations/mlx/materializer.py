@@ -32,10 +32,10 @@ NUMPY_FILENAME = "data.npy"
 class MLXArrayMaterializer(BaseMaterializer):
     """A materializer for MLX arrays."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (mx.array,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (mx.array,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> mx.array:
+    def load(self, data_type: type[Any]) -> mx.array:
         """Reads data from a `.npy` file, and returns an MLX array.
 
         Args:

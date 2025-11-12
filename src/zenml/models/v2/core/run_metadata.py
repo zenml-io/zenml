@@ -30,20 +30,20 @@ from zenml.models.v2.misc.run_metadata import RunMetadataResource
 class RunMetadataRequest(ProjectScopedRequest):
     """Request model for run metadata."""
 
-    resources: List[RunMetadataResource] = Field(
+    resources: list[RunMetadataResource] = Field(
         title="The list of resources that this metadata belongs to."
     )
-    stack_component_id: Optional[UUID] = Field(
+    stack_component_id: UUID | None = Field(
         title="The ID of the stack component that this metadata belongs to.",
         default=None,
     )
-    values: Dict[str, "MetadataType"] = Field(
+    values: dict[str, "MetadataType"] = Field(
         title="The metadata to be created.",
     )
-    types: Dict[str, "MetadataTypeEnum"] = Field(
+    types: dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
-    publisher_step_id: Optional[UUID] = Field(
+    publisher_step_id: UUID | None = Field(
         title="The ID of the step execution that published this metadata.",
         default=None,
     )

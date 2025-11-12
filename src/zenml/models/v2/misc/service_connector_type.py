@@ -49,7 +49,7 @@ class ResourceTypeModel(BaseModel):
         default="",
         title="A description of the resource type.",
     )
-    auth_methods: List[str] = Field(
+    auth_methods: list[str] = Field(
         title="The list of authentication methods that can be used to access "
         "resources of this type.",
     )
@@ -64,12 +64,12 @@ class ResourceTypeModel(BaseModel):
         "access a single resource and a resource ID is not required to access "
         "the resource.",
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         title="Optionally, a URL pointing to a png,"
         "svg or jpg file can be attached.",
     )
-    emoji: Optional[str] = Field(
+    emoji: str | None = Field(
         default=None,
         title="Optionally, a python-rich emoji can be attached.",
     )
@@ -104,33 +104,33 @@ class AuthenticationMethodModel(BaseModel):
         default="",
         title="A description of the authentication method.",
     )
-    config_schema: Dict[str, Any] = Field(
+    config_schema: dict[str, Any] = Field(
         default_factory=dict,
         title="The JSON schema of the configuration for this authentication "
         "method.",
     )
-    min_expiration_seconds: Optional[int] = Field(
+    min_expiration_seconds: int | None = Field(
         default=None,
         title="The minimum number of seconds that the authentication "
         "session can be configured to be valid for. Set to None for "
         "authentication sessions and long-lived credentials that don't expire.",
     )
-    max_expiration_seconds: Optional[int] = Field(
+    max_expiration_seconds: int | None = Field(
         default=None,
         title="The maximum number of seconds that the authentication "
         "session can be configured to be valid for. Set to None for "
         "authentication sessions and long-lived credentials that don't expire.",
     )
-    default_expiration_seconds: Optional[int] = Field(
+    default_expiration_seconds: int | None = Field(
         default=None,
         title="The default number of seconds that the authentication "
         "session is valid for. Set to None for authentication sessions and "
         "long-lived credentials that don't expire.",
     )
-    _config_class: Optional[Type[BaseModel]] = None
+    _config_class: type[BaseModel] | None = None
 
     def __init__(
-        self, config_class: Optional[Type[BaseModel]] = None, **values: Any
+        self, config_class: type[BaseModel] | None = None, **values: Any
     ):
         """Initialize the authentication method.
 
@@ -146,7 +146,7 @@ class AuthenticationMethodModel(BaseModel):
         self._config_class = config_class
 
     @property
-    def config_class(self) -> Optional[Type[BaseModel]]:
+    def config_class(self) -> type[BaseModel] | None:
         """Get the configuration class for the authentication method.
 
         Returns:
@@ -168,8 +168,8 @@ class AuthenticationMethodModel(BaseModel):
         )
 
     def validate_expiration(
-        self, expiration_seconds: Optional[int]
-    ) -> Optional[int]:
+        self, expiration_seconds: int | None
+    ) -> int | None:
         """Validate the expiration time.
 
         Args:
@@ -243,11 +243,11 @@ class ServiceConnectorTypeModel(BaseModel):
         default="",
         title="A description of the service connector.",
     )
-    resource_types: List[ResourceTypeModel] = Field(
+    resource_types: list[ResourceTypeModel] = Field(
         title="A list of resource types that the connector can be used to "
         "access.",
     )
-    auth_methods: List[AuthenticationMethodModel] = Field(
+    auth_methods: list[AuthenticationMethodModel] = Field(
         title="A list of specifications describing the authentication "
         "methods that are supported by the service connector, along with the "
         "configuration and secrets attributes that need to be configured for "
@@ -258,20 +258,20 @@ class ServiceConnectorTypeModel(BaseModel):
         title="Models if the connector can be configured automatically based "
         "on information extracted from a local environment.",
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         title="Optionally, a URL pointing to a png,"
         "svg or jpg can be attached.",
     )
-    emoji: Optional[str] = Field(
+    emoji: str | None = Field(
         default=None,
         title="Optionally, a python-rich emoji can be attached.",
     )
-    docs_url: Optional[str] = Field(
+    docs_url: str | None = Field(
         default=None,
         title="Optionally, a URL pointing to docs, within docs.zenml.io.",
     )
-    sdk_docs_url: Optional[str] = Field(
+    sdk_docs_url: str | None = Field(
         default=None,
         title="Optionally, a URL pointing to SDK docs,"
         "within sdkdocs.zenml.io.",
@@ -284,10 +284,10 @@ class ServiceConnectorTypeModel(BaseModel):
         default=False,
         title="If True, the service connector is available remotely.",
     )
-    _connector_class: Optional[Type["ServiceConnector"]] = None
+    _connector_class: type["ServiceConnector"] | None = None
 
     @property
-    def connector_class(self) -> Optional[Type["ServiceConnector"]]:
+    def connector_class(self) -> type["ServiceConnector"] | None:
         """Get the service connector class.
 
         Returns:
@@ -307,7 +307,7 @@ class ServiceConnectorTypeModel(BaseModel):
         return f"{self.emoji} {self.connector_type}"
 
     @property
-    def emojified_resource_types(self) -> List[str]:
+    def emojified_resource_types(self) -> list[str]:
         """Get the emojified connector types.
 
         Returns:
@@ -319,7 +319,7 @@ class ServiceConnectorTypeModel(BaseModel):
         ]
 
     def set_connector_class(
-        self, connector_class: Type["ServiceConnector"]
+        self, connector_class: type["ServiceConnector"]
     ) -> None:
         """Set the service connector class.
 
@@ -331,8 +331,8 @@ class ServiceConnectorTypeModel(BaseModel):
     @field_validator("resource_types")
     @classmethod
     def validate_resource_types(
-        cls, values: List[ResourceTypeModel]
-    ) -> List[ResourceTypeModel]:
+        cls, values: list[ResourceTypeModel]
+    ) -> list[ResourceTypeModel]:
         """Validate that the resource types are unique.
 
         Args:
@@ -359,8 +359,8 @@ class ServiceConnectorTypeModel(BaseModel):
     @field_validator("auth_methods")
     @classmethod
     def validate_auth_methods(
-        cls, values: List[AuthenticationMethodModel]
-    ) -> List[AuthenticationMethodModel]:
+        cls, values: list[AuthenticationMethodModel]
+    ) -> list[AuthenticationMethodModel]:
         """Validate that the authentication methods are unique.
 
         Args:
@@ -387,7 +387,7 @@ class ServiceConnectorTypeModel(BaseModel):
     @property
     def resource_type_dict(
         self,
-    ) -> Dict[str, ResourceTypeModel]:
+    ) -> dict[str, ResourceTypeModel]:
         """Returns a map of resource types to resource type specifications.
 
         Returns:
@@ -398,7 +398,7 @@ class ServiceConnectorTypeModel(BaseModel):
     @property
     def auth_method_dict(
         self,
-    ) -> Dict[str, AuthenticationMethodModel]:
+    ) -> dict[str, AuthenticationMethodModel]:
         """Returns a map of authentication methods to authentication method specifications.
 
         Returns:
@@ -410,8 +410,8 @@ class ServiceConnectorTypeModel(BaseModel):
     def find_resource_specifications(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-    ) -> Tuple[AuthenticationMethodModel, Optional[ResourceTypeModel]]:
+        resource_type: str | None = None,
+    ) -> tuple[AuthenticationMethodModel, ResourceTypeModel | None]:
         """Find the specifications for a configurable resource.
 
         Validate the supplied connector configuration parameters against the
@@ -486,9 +486,9 @@ class ServiceConnectorRequirements(BaseModel):
             the service connector instance must be able to access.
     """
 
-    connector_type: Optional[str] = None
+    connector_type: str | None = None
     resource_type: str
-    resource_id_attr: Optional[str] = None
+    resource_id_attr: str | None = None
 
     def is_satisfied_by(
         self,
@@ -496,7 +496,7 @@ class ServiceConnectorRequirements(BaseModel):
             "ServiceConnectorResponse", "ServiceConnectorRequest"
         ],
         component: Union["ComponentResponse", "ComponentBase"],
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Check if the requirements are satisfied by a connector.
 
         Args:
@@ -551,7 +551,7 @@ class ServiceConnectorTypedResourcesModel(BaseModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    resource_ids: Optional[List[str]] = Field(
+    resource_ids: list[str] | None = Field(
         default=None,
         title="The resource IDs of all resource instances that the service "
         "connector instance can be used to access. Omitted (set to None) for "
@@ -564,7 +564,7 @@ class ServiceConnectorTypedResourcesModel(BaseModel):
         "listed.",
     )
 
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         title="An error message describing why the service connector instance "
         "could not list the resources that it is configured to access.",
@@ -578,13 +578,13 @@ class ServiceConnectorResourcesModel(BaseModel):
     can provide access to.
     """
 
-    id: Optional[UUID] = Field(
+    id: UUID | None = Field(
         default=None,
         title="The ID of the service connector instance providing this "
         "resource.",
     )
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The name of the service connector instance providing this "
         "resource.",
@@ -595,21 +595,21 @@ class ServiceConnectorResourcesModel(BaseModel):
         title="The type of service connector.", union_mode="left_to_right"
     )
 
-    resources: List[ServiceConnectorTypedResourcesModel] = Field(
+    resources: list[ServiceConnectorTypedResourcesModel] = Field(
         default_factory=list,
         title="The list of resources that the service connector instance can "
         "give access to. Contains one entry for every resource type "
         "that the connector is configured for.",
     )
 
-    error: Optional[str] = Field(
+    error: str | None = Field(
         default=None,
         title="A global error message describing why the service connector "
         "instance could not authenticate to the remote service.",
     )
 
     @property
-    def resources_dict(self) -> Dict[str, ServiceConnectorTypedResourcesModel]:
+    def resources_dict(self) -> dict[str, ServiceConnectorTypedResourcesModel]:
         """Get the resources as a dictionary indexed by resource type.
 
         Returns:
@@ -620,7 +620,7 @@ class ServiceConnectorResourcesModel(BaseModel):
         }
 
     @property
-    def resource_types(self) -> List[str]:
+    def resource_types(self) -> list[str]:
         """Get the resource types.
 
         Returns:
@@ -629,7 +629,7 @@ class ServiceConnectorResourcesModel(BaseModel):
         return [resource.resource_type for resource in self.resources]
 
     def set_error(
-        self, error: str, resource_type: Optional[str] = None
+        self, error: str, resource_type: str | None = None
     ) -> None:
         """Set a global error message or an error for a single resource type.
 
@@ -662,7 +662,7 @@ class ServiceConnectorResourcesModel(BaseModel):
                 resource.resource_ids = None
 
     def set_resource_ids(
-        self, resource_type: str, resource_ids: List[str]
+        self, resource_type: str, resource_ids: list[str]
     ) -> None:
         """Set the resource IDs for a resource type.
 
@@ -706,8 +706,8 @@ class ServiceConnectorResourcesModel(BaseModel):
         return self.connector_type
 
     def get_emojified_resource_types(
-        self, resource_type: Optional[str] = None
-    ) -> List[str]:
+        self, resource_type: str | None = None
+    ) -> list[str]:
         """Get the emojified resource type.
 
         Args:
@@ -736,7 +736,7 @@ class ServiceConnectorResourcesModel(BaseModel):
             return [resource_type]
         return list(self.resources_dict.keys())
 
-    def get_default_resource_id(self) -> Optional[str]:
+    def get_default_resource_id(self) -> str | None:
         """Get the default resource ID, if included in the resource list.
 
         The default resource ID is a resource ID supplied by the connector
@@ -773,7 +773,7 @@ class ServiceConnectorResourcesModel(BaseModel):
     def from_connector_model(
         cls,
         connector_model: "ServiceConnectorResponse",
-        resource_type: Optional[str] = None,
+        resource_type: str | None = None,
     ) -> "ServiceConnectorResourcesModel":
         """Initialize a resource model from a connector model.
 

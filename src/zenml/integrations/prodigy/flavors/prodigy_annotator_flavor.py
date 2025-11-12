@@ -36,7 +36,7 @@ class ProdigyAnnotatorConfig(BaseAnnotatorConfig, AuthenticationConfigMixin):
         custom_config_path: The path to a custom config file for Prodigy.
     """
 
-    custom_config_path: Optional[str] = None
+    custom_config_path: str | None = None
 
 
 class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
@@ -52,7 +52,7 @@ class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
         return PRODIGY_ANNOTATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -61,7 +61,7 @@ class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -79,7 +79,7 @@ class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/prodigy.png"
 
     @property
-    def config_class(self) -> Type[ProdigyAnnotatorConfig]:
+    def config_class(self) -> type[ProdigyAnnotatorConfig]:
         """Returns `ProdigyAnnotatorConfig` config class.
 
         Returns:
@@ -88,7 +88,7 @@ class ProdigyAnnotatorFlavor(BaseAnnotatorFlavor):
         return ProdigyAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["ProdigyAnnotator"]:
+    def implementation_class(self) -> type["ProdigyAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:

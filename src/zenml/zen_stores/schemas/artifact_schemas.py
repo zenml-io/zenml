@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import ValidationError
@@ -84,11 +85,11 @@ class ArtifactSchema(NamedSchema, table=True):
 
     # Fields
     has_custom_name: bool
-    versions: List["ArtifactVersionSchema"] = Relationship(
+    versions: list["ArtifactVersionSchema"] = Relationship(
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
             secondary="tag_resource",
@@ -108,7 +109,7 @@ class ArtifactSchema(NamedSchema, table=True):
     )
     project: "ProjectSchema" = Relationship()
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -284,12 +285,12 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
     # Fields
     version: str
-    version_number: Optional[int]
+    version_number: int | None
     type: str
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
             secondary="tag_resource",
@@ -299,7 +300,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    content_hash: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    content_hash: str | None = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     artifact_id: UUID = build_foreign_key_field(
@@ -310,7 +311,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    artifact_store_id: Optional[UUID] = build_foreign_key_field(
+    artifact_store_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=StackComponentSchema.__tablename__,
         source_column="artifact_store_id",
@@ -318,7 +319,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -341,7 +342,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_versions"
     )
     project: "ProjectSchema" = Relationship(back_populates="artifact_versions")
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
@@ -349,23 +350,23 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    visualizations: List["ArtifactVisualizationSchema"] = Relationship(
+    visualizations: list["ArtifactVisualizationSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
     # Needed for cascade deletion behavior
-    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
+    model_versions_artifacts_links: list["ModelVersionArtifactSchema"] = (
         Relationship(
             back_populates="artifact_version",
             sa_relationship_kwargs={"cascade": "delete"},
         )
     )
-    output_of_step_runs: List["StepRunOutputArtifactSchema"] = Relationship(
+    output_of_step_runs: list["StepRunOutputArtifactSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    input_of_step_runs: List["StepRunInputArtifactSchema"] = Relationship(
+    input_of_step_runs: list["StepRunInputArtifactSchema"] = Relationship(
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
@@ -410,7 +411,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         return options
 
     @property
-    def producer_run_ids(self) -> Optional[Tuple[UUID, UUID]]:
+    def producer_run_ids(self) -> tuple[UUID, UUID] | None:
         """Fetch the producer run IDs for this artifact version.
 
         Raises:

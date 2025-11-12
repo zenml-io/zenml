@@ -104,9 +104,9 @@ class Tag(BaseModel):
     """A model representing a tag."""
 
     name: str
-    color: Optional[ColorVariants] = None
-    exclusive: Optional[bool] = None
-    cascade: Optional[bool] = None
+    color: ColorVariants | None = None
+    exclusive: bool | None = None
+    cascade: bool | None = None
 
     def to_request(self) -> "TagRequest":
         """Convert the tag to a TagRequest.
@@ -127,30 +127,30 @@ class Tag(BaseModel):
 
 @overload
 def add_tags(
-    tags: Union[str, Tag, List[Union[str, Tag]]],
+    tags: str | Tag | list[str | Tag],
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    run: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    run: UUID | str,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    artifact: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    artifact: UUID | str,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
+    tags: str | Tag | list[str | Tag],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -158,7 +158,7 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
+    tags: str | Tag | list[str | Tag],
     artifact_name: str,
     artifact_version: str,
 ) -> None: ...
@@ -167,63 +167,63 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
+    tags: str | Tag | list[str | Tag],
     infer_artifact: bool = False,
-    artifact_name: Optional[str] = None,
+    artifact_name: str | None = None,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    pipeline: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    pipeline: UUID | str,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    run_template: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    run_template: UUID | str,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    snapshot: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    snapshot: UUID | str,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: Union[str, Tag, List[Union[str, Tag]]],
-    deployment: Union[UUID, str],
+    tags: str | Tag | list[str | Tag],
+    deployment: UUID | str,
 ) -> None: ...
 
 
 def add_tags(
-    tags: Union[str, Tag, List[Union[str, Tag]]],
+    tags: str | Tag | list[str | Tag],
     # Pipelines
-    pipeline: Optional[Union[UUID, str]] = None,
+    pipeline: UUID | str | None = None,
     # Runs
-    run: Optional[Union[UUID, str]] = None,
+    run: UUID | str | None = None,
     # Run Templates
-    run_template: Optional[Union[UUID, str]] = None,
+    run_template: UUID | str | None = None,
     # Snapshots
-    snapshot: Optional[Union[UUID, str]] = None,
+    snapshot: UUID | str | None = None,
     # Deployments
-    deployment: Optional[Union[UUID, str]] = None,
+    deployment: UUID | str | None = None,
     # Artifacts
-    artifact: Optional[Union[UUID, str]] = None,
+    artifact: UUID | str | None = None,
     # Artifact Versions
-    artifact_version_id: Optional[UUID] = None,
-    artifact_name: Optional[str] = None,
-    artifact_version: Optional[str] = None,
-    infer_artifact: Optional[bool] = None,
+    artifact_version_id: UUID | None = None,
+    artifact_name: str | None = None,
+    artifact_version: str | None = None,
+    infer_artifact: bool | None = None,
 ) -> None:
     """Add tags to various resource types in a generalized way.
 
@@ -522,62 +522,62 @@ def add_tags(
 
 @overload
 def remove_tags(
-    tags: Union[str, List[str]],
+    tags: str | list[str],
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    pipeline: Union[UUID, str],
+    tags: str | list[str],
+    pipeline: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    run: Union[UUID, str],
+    tags: str | list[str],
+    run: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    run_template: Union[UUID, str],
+    tags: str | list[str],
+    run_template: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    snapshot: Union[UUID, str],
+    tags: str | list[str],
+    snapshot: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    deployment: Union[UUID, str],
+    tags: str | list[str],
+    deployment: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
-    artifact: Union[UUID, str],
+    tags: str | list[str],
+    artifact: UUID | str,
 ) -> None: ...
 
 
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
+    tags: str | list[str],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -585,7 +585,7 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
+    tags: str | list[str],
     artifact_name: str,
     artifact_version: str,
 ) -> None: ...
@@ -594,31 +594,31 @@ def remove_tags(
 @overload
 def remove_tags(
     *,
-    tags: Union[str, List[str]],
+    tags: str | list[str],
     infer_artifact: bool = False,
-    artifact_name: Optional[str] = None,
+    artifact_name: str | None = None,
 ) -> None: ...
 
 
 def remove_tags(
-    tags: Union[str, List[str]],
+    tags: str | list[str],
     # Pipelines
-    pipeline: Optional[Union[UUID, str]] = None,
+    pipeline: UUID | str | None = None,
     # Runs
-    run: Optional[Union[UUID, str]] = None,
+    run: UUID | str | None = None,
     # Run Templates
-    run_template: Optional[Union[UUID, str]] = None,
+    run_template: UUID | str | None = None,
     # Snapshots
-    snapshot: Optional[Union[UUID, str]] = None,
+    snapshot: UUID | str | None = None,
     # Deployments
-    deployment: Optional[Union[UUID, str]] = None,
+    deployment: UUID | str | None = None,
     # Artifacts
-    artifact: Optional[Union[UUID, str]] = None,
+    artifact: UUID | str | None = None,
     # Artifact Versions
-    artifact_version_id: Optional[UUID] = None,
-    artifact_name: Optional[str] = None,
-    artifact_version: Optional[str] = None,
-    infer_artifact: Optional[bool] = None,
+    artifact_version_id: UUID | None = None,
+    artifact_name: str | None = None,
+    artifact_version: str | None = None,
+    infer_artifact: bool | None = None,
 ) -> None:
     """Remove tags from various resource types in a generalized way.
 

@@ -104,8 +104,8 @@ class Resource(BaseModel):
     """RBAC resource model."""
 
     type: str
-    id: Optional[UUID] = None
-    project_id: Optional[UUID] = None
+    id: UUID | None = None
+    project_id: UUID | None = None
 
     def __str__(self) -> str:
         """Convert to a string.
@@ -135,7 +135,7 @@ class Resource(BaseModel):
         Returns:
             The converted resource.
         """
-        project_id: Optional[str] = None
+        project_id: str | None = None
         if ":" in resource:
             (
                 project_id,
@@ -145,7 +145,7 @@ class Resource(BaseModel):
             project_id = None
             resource_type_and_id = resource
 
-        resource_id: Optional[str] = None
+        resource_id: str | None = None
         if "/" in resource_type_and_id:
             resource_type, resource_id = resource_type_and_id.split("/")
         else:

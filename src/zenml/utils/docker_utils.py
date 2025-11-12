@@ -19,14 +19,13 @@ import re
 from typing import (
     Any,
     Dict,
-    Iterable,
     List,
     Optional,
-    Sequence,
     Tuple,
     Union,
     cast,
 )
+from collections.abc import Iterable, Sequence
 
 from docker.client import DockerClient
 from docker.errors import DockerException
@@ -56,7 +55,7 @@ def check_docker() -> bool:
     return False
 
 
-def _parse_dockerignore(dockerignore_path: str) -> List[str]:
+def _parse_dockerignore(dockerignore_path: str) -> list[str]:
     """Parses a dockerignore file and returns a list of patterns to ignore.
 
     Args:
@@ -84,9 +83,9 @@ def _parse_dockerignore(dockerignore_path: str) -> List[str]:
 
 def _create_custom_build_context(
     dockerfile_contents: str,
-    build_context_root: Optional[str] = None,
-    dockerignore: Optional[str] = None,
-    extra_files: Sequence[Tuple[str, str]] = (),
+    build_context_root: str | None = None,
+    dockerignore: str | None = None,
+    extra_files: Sequence[tuple[str, str]] = (),
 ) -> Any:
     """Creates a docker build context.
 
@@ -175,10 +174,10 @@ def _create_custom_build_context(
 
 def build_image(
     image_name: str,
-    dockerfile: Union[str, List[str]],
-    build_context_root: Optional[str] = None,
-    dockerignore: Optional[str] = None,
-    extra_files: Sequence[Tuple[str, str]] = (),
+    dockerfile: str | list[str],
+    build_context_root: str | None = None,
+    dockerignore: str | None = None,
+    extra_files: Sequence[tuple[str, str]] = (),
     **custom_build_options: Any,
 ) -> None:
     """Builds a docker image.
@@ -243,7 +242,7 @@ def build_image(
 
 
 def push_image(
-    image_name: str, docker_client: Optional[DockerClient] = None
+    image_name: str, docker_client: DockerClient | None = None
 ) -> str:
     """Pushes an image to a container registry.
 
@@ -277,7 +276,7 @@ def push_image(
         prefix_candidates.append(f"{image_name_without_index}@")
 
     image = docker_client.images.get(image_name)
-    repo_digests: List[str] = image.attrs["RepoDigests"]
+    repo_digests: list[str] = image.attrs["RepoDigests"]
 
     for digest in repo_digests:
         if digest.startswith(tuple(prefix_candidates)):
@@ -307,7 +306,7 @@ def tag_image(image_name: str, target: str) -> None:
     image.tag(target)
 
 
-def get_image_digest(image_name: str) -> Optional[str]:
+def get_image_digest(image_name: str) -> str | None:
     """Gets the digest of an image.
 
     Args:
@@ -371,7 +370,7 @@ def _try_get_docker_client_from_env() -> DockerClient:
         ) from e
 
 
-def _process_stream(stream: Iterable[bytes]) -> List[Dict[str, Any]]:
+def _process_stream(stream: Iterable[bytes]) -> list[dict[str, Any]]:
     """Processes the output stream of a docker command call.
 
     Args:

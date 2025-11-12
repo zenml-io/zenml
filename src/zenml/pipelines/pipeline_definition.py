@@ -21,19 +21,16 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
-    Iterator,
     List,
-    Mapping,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Type,
     TypeVar,
     Union,
 )
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from uuid import UUID
 
 import yaml
@@ -122,7 +119,7 @@ if TYPE_CHECKING:
     from zenml.types import HookSpecification, InitHookSpecification
 
     StepConfigurationUpdateOrDict = Union[
-        Dict[str, Any], StepConfigurationUpdate
+        dict[str, Any], StepConfigurationUpdate
     ]
 
 logger = get_logger(__name__)
@@ -137,24 +134,24 @@ class Pipeline:
         self,
         name: str,
         entrypoint: F,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[UUID, str]]] = None,
-        enable_pipeline_logs: Optional[bool] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[Union[str, "Tag"]]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        environment: dict[str, Any] | None = None,
+        secrets: list[UUID | str] | None = None,
+        enable_pipeline_logs: bool | None = None,
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        tags: list[Union[str, "Tag"]] | None = None,
+        extra: dict[str, Any] | None = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
-        on_init_kwargs: Optional[Dict[str, Any]] = None,
+        on_init_kwargs: dict[str, Any] | None = None,
         on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
-        substitutions: Optional[Dict[str, str]] = None,
+        substitutions: dict[str, str] | None = None,
         execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
         **kwargs: Any,
@@ -199,13 +196,13 @@ class Pipeline:
             cache_policy: Cache policy for this pipeline.
             **kwargs: Additional keyword arguments.
         """
-        self._invocations: Dict[str, StepInvocation] = {}
-        self._run_args: Dict[str, Any] = {}
+        self._invocations: dict[str, StepInvocation] = {}
+        self._run_args: dict[str, Any] = {}
 
         self._configuration = PipelineConfiguration(
             name=name,
         )
-        self._from_config_file: Dict[str, Any] = {}
+        self._from_config_file: dict[str, Any] = {}
         with self.__suppress_configure_warnings__():
             self.configure(
                 enable_cache=enable_cache,
@@ -230,8 +227,8 @@ class Pipeline:
                 cache_policy=cache_policy,
             )
         self.entrypoint = entrypoint
-        self._parameters: Dict[str, Any] = {}
-        self._output_artifacts: List[StepArtifact] = []
+        self._parameters: dict[str, Any] = {}
+        self._output_artifacts: list[StepArtifact] = []
 
         self.__suppress_warnings_flag__ = False
 
@@ -254,7 +251,7 @@ class Pipeline:
         return False
 
     @property
-    def enable_cache(self) -> Optional[bool]:
+    def enable_cache(self) -> bool | None:
         """If caching is enabled for the pipeline.
 
         Returns:
@@ -272,7 +269,7 @@ class Pipeline:
         return self._configuration
 
     @property
-    def invocations(self) -> Dict[str, StepInvocation]:
+    def invocations(self) -> dict[str, StepInvocation]:
         """Returns the step invocations of this pipeline.
 
         This dictionary will only be populated once the pipeline has been
@@ -344,25 +341,25 @@ class Pipeline:
 
     def configure(
         self,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Sequence[Union[UUID, str]]] = None,
-        enable_pipeline_logs: Optional[bool] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[Union[str, "Tag"]]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        environment: dict[str, Any] | None = None,
+        secrets: Sequence[UUID | str] | None = None,
+        enable_pipeline_logs: bool | None = None,
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        tags: list[Union[str, "Tag"]] | None = None,
+        extra: dict[str, Any] | None = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
-        on_init_kwargs: Optional[Dict[str, Any]] = None,
+        on_init_kwargs: dict[str, Any] | None = None,
         on_cleanup: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional["StepRetryConfig"] = None,
-        parameters: Optional[Dict[str, Any]] = None,
-        substitutions: Optional[Dict[str, str]] = None,
+        parameters: dict[str, Any] | None = None,
+        substitutions: dict[str, str] | None = None,
         execution_mode: Optional["ExecutionMode"] = None,
         cache_policy: Optional["CachePolicyOrString"] = None,
         merge: bool = True,
@@ -534,7 +531,7 @@ class Pipeline:
         return self
 
     @property
-    def required_parameters(self) -> List[str]:
+    def required_parameters(self) -> list[str]:
         """List of required parameters for the pipeline entrypoint.
 
         Returns:
@@ -548,7 +545,7 @@ class Pipeline:
         ]
 
     @property
-    def missing_parameters(self) -> List[str]:
+    def missing_parameters(self) -> list[str]:
         """List of missing parameters for the pipeline entrypoint.
 
         Returns:
@@ -589,7 +586,7 @@ class Pipeline:
 
     def _validate_entrypoint_args(
         self, *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validates the arguments for the pipeline entrypoint.
 
         Args:
@@ -619,8 +616,8 @@ class Pipeline:
         return validated_args
 
     def _apply_config_parameters(
-        self, kwargs: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
         """Applies the configuration parameters to the code arguments.
 
         Args:
@@ -743,11 +740,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def build(
         self,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        step_configurations: Optional[
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        step_configurations: None | (
             Mapping[str, "StepConfigurationUpdateOrDict"]
-        ] = None,
-        config_path: Optional[str] = None,
+        ) = None,
+        config_path: str | None = None,
     ) -> Optional["PipelineBuildResponse"]:
         """Builds Docker images for the pipeline.
 
@@ -793,7 +790,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def deploy(
         self,
         deployment_name: str,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> DeploymentResponse:
@@ -824,20 +821,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _create_snapshot(
         self,
         *,
-        run_name: Optional[str] = None,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        enable_pipeline_logs: Optional[bool] = None,
-        schedule: Optional[Schedule] = None,
+        run_name: str | None = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        enable_pipeline_logs: bool | None = None,
+        schedule: Schedule | None = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        step_configurations: Optional[
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        step_configurations: None | (
             Mapping[str, "StepConfigurationUpdateOrDict"]
-        ] = None,
-        extra: Optional[Dict[str, Any]] = None,
-        config_path: Optional[str] = None,
+        ) = None,
+        extra: dict[str, Any] | None = None,
+        config_path: str | None = None,
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
         **snapshot_request_kwargs: Any,
@@ -1015,7 +1012,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _run(
         self,
-    ) -> Optional[PipelineRunResponse]:
+    ) -> PipelineRunResponse | None:
         """Runs the pipeline on the active stack.
 
         Returns:
@@ -1254,8 +1251,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        run_id: Optional[UUID] = None,
-    ) -> Dict[str, Any]:
+        run_id: UUID | None = None,
+    ) -> dict[str, Any]:
         """Compute analytics metadata for the pipeline snapshot.
 
         Args:
@@ -1293,8 +1290,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         }
 
     def _compile(
-        self, config_path: Optional[str] = None, **run_configuration_args: Any
-    ) -> Tuple[
+        self, config_path: str | None = None, **run_configuration_args: Any
+    ) -> tuple[
         "PipelineSnapshotBase",
         Optional["Schedule"],
         Union["PipelineBuildBase", UUID, None],
@@ -1367,16 +1364,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def add_step_invocation(
         self,
         step: "BaseStep",
-        input_artifacts: Dict[str, StepArtifact],
-        external_artifacts: Dict[
+        input_artifacts: dict[str, StepArtifact],
+        external_artifacts: dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
-        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
-        parameters: Dict[str, Any],
-        default_parameters: Dict[str, Any],
-        upstream_steps: Set[str],
-        custom_id: Optional[str] = None,
+        model_artifacts_or_metadata: dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: dict[str, "ClientLazyLoader"],
+        parameters: dict[str, Any],
+        default_parameters: dict[str, Any],
+        upstream_steps: set[str],
+        custom_id: str | None = None,
         allow_id_suffix: bool = True,
     ) -> str:
         """Adds a step invocation to the pipeline.
@@ -1445,7 +1442,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def _compute_invocation_id(
         self,
         step: "BaseStep",
-        custom_id: Optional[str] = None,
+        custom_id: str | None = None,
         allow_suffix: bool = True,
     ) -> str:
         """Compute the invocation ID.
@@ -1480,8 +1477,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         raise RuntimeError("Unable to find step ID")
 
     def _parse_config_file(
-        self, config_path: Optional[str], matcher: List[str]
-    ) -> Dict[str, Any]:
+        self, config_path: str | None, matcher: list[str]
+    ) -> dict[str, Any]:
         """Parses the given configuration file and sets `self._from_config_file`.
 
         Args:
@@ -1491,9 +1488,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             Parsed config file according to matcher settings.
         """
-        _from_config_file: Dict[str, Any] = {}
+        _from_config_file: dict[str, Any] = {}
         if config_path:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 _from_config_file = yaml.load(f, Loader=yaml.SafeLoader)
 
             _from_config_file = dict_utils.remove_none_values(
@@ -1515,14 +1512,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def with_options(
         self,
-        run_name: Optional[str] = None,
-        schedule: Optional[Schedule] = None,
+        run_name: str | None = None,
+        schedule: Schedule | None = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
-        step_configurations: Optional[
+        step_configurations: None | (
             Mapping[str, "StepConfigurationUpdateOrDict"]
-        ] = None,
-        steps: Optional[Mapping[str, "StepConfigurationUpdateOrDict"]] = None,
-        config_path: Optional[str] = None,
+        ) = None,
+        steps: Mapping[str, "StepConfigurationUpdateOrDict"] | None = None,
+        config_path: str | None = None,
         unlisted: bool = False,
         prevent_build_reuse: bool = False,
         **kwargs: Any,
@@ -1595,7 +1592,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def __call__(
         self, *args: Any, **kwargs: Any
-    ) -> Optional[PipelineRunResponse]:
+    ) -> PipelineRunResponse | None:
         """Handle a call of the pipeline.
 
         This method does one of two things:
@@ -1690,9 +1687,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def create_snapshot(
         self,
         name: str,
-        description: Optional[str] = None,
-        replace: Optional[bool] = None,
-        tags: Optional[List[str]] = None,
+        description: str | None = None,
+        replace: bool | None = None,
+        tags: list[str] | None = None,
     ) -> PipelineSnapshotResponse:
         """Create a snapshot of the pipeline.
 
@@ -1718,7 +1715,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _reconfigure_from_file_with_overrides(
         self,
-        config_path: Optional[str] = None,
+        config_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Update the pipeline configuration from config file.
@@ -1749,7 +1746,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with self.__suppress_configure_warnings__():
             self.configure(**_from_config_file)
 
-    def _compute_output_schema(self) -> Optional[Dict[str, Any]]:
+    def _compute_output_schema(self) -> dict[str, Any] | None:
         """Computes the output schema for the pipeline.
 
         Returns:
@@ -1764,14 +1761,14 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 }
             )
 
-            fields: Dict[str, Any] = {
+            fields: dict[str, Any] = {
                 entry[1]: (
                     entry[0].annotation.resolved_annotation,
                     ...,
                 )
                 for _, entry in unique_step_output_mapping.items()
             }
-            output_model_class: Type[BaseModel] = create_model(
+            output_model_class: type[BaseModel] = create_model(
                 "PipelineOutput",
                 __config__=ConfigDict(arbitrary_types_allowed=True),
                 **fields,
@@ -1788,7 +1785,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         return None
 
-    def _compute_input_model(self) -> Optional[Type[BaseModel]]:
+    def _compute_input_model(self) -> type[BaseModel] | None:
         """Create a Pydantic model that represents the pipeline input parameters.
 
         Returns:
@@ -1804,8 +1801,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 self.entrypoint
             )
 
-            defaults: Dict[str, Any] = self._parameters
-            model_args: Dict[str, Any] = {}
+            defaults: dict[str, Any] = self._parameters
+            model_args: dict[str, Any] = {}
             for name, param in entrypoint_definition.inputs.items():
                 if name in defaults:
                     default_value = defaults[name]
@@ -1817,7 +1814,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 model_args[name] = (param.annotation, default_value)
 
             model_args["__config__"] = ConfigDict(extra="forbid")
-            params_model: Type[BaseModel] = create_model(
+            params_model: type[BaseModel] = create_model(
                 "PipelineInput",
                 **model_args,
             )
@@ -1830,7 +1827,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
             return None
 
-    def _compute_input_schema(self) -> Optional[Dict[str, Any]]:
+    def _compute_input_schema(self) -> dict[str, Any] | None:
         """Create a JSON schema that represents the pipeline input parameters.
 
         Returns:

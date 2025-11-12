@@ -32,7 +32,7 @@ class ProdigyIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["urllib3"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Prodigy integration.
 
         Returns:

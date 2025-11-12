@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 class ServiceAccountRequest(BaseRequest):
     """Request model for service accounts."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "name",
         "active",
     ]
@@ -52,13 +52,13 @@ class ServiceAccountRequest(BaseRequest):
         max_length=STR_FIELD_MAX_LENGTH,
         title="The display name of the service account.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     active: bool = Field(title="Whether the service account is active or not.")
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         default=None,
         title="The avatar URL for the account.",
     )
@@ -69,7 +69,7 @@ class ServiceAccountRequest(BaseRequest):
 class ServiceAccountInternalRequest(ServiceAccountRequest):
     """Internal request model for service accounts."""
 
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: UUID | None = Field(
         default=None,
         title="The external user ID associated with the account.",
     )
@@ -81,29 +81,29 @@ class ServiceAccountInternalRequest(ServiceAccountRequest):
 class ServiceAccountUpdate(BaseUpdate):
     """Update model for service accounts."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["name", "active"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["name", "active"]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The unique name for the service account.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    full_name: Optional[str] = Field(
+    full_name: str | None = Field(
         title="The display name of the service account.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="A description of the service account.",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    active: Optional[bool] = Field(
+    active: bool | None = Field(
         title="Whether the service account is active or not.",
         default=None,
     )
 
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         default=None,
         title="The avatar URL for the account.",
     )
@@ -114,7 +114,7 @@ class ServiceAccountUpdate(BaseUpdate):
 class ServiceAccountInternalUpdate(ServiceAccountUpdate):
     """Internal update model for service accounts."""
 
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: UUID | None = Field(
         default=None,
         title="The external user ID associated with the account.",
     )
@@ -131,7 +131,7 @@ class ServiceAccountResponseBody(BaseDatedResponseBody):
         title="The display name of the service account.",
     )
     active: bool = Field(default=False, title="Whether the account is active.")
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         default=None,
         title="The avatar URL for the account.",
     )
@@ -146,7 +146,7 @@ class ServiceAccountResponseMetadata(BaseResponseMetadata):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
 
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: UUID | None = Field(
         default=None,
         title="The external user ID associated with the account.",
     )
@@ -165,7 +165,7 @@ class ServiceAccountResponse(
 ):
     """Response model for service accounts."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "name",
         "active",
     ]
@@ -249,7 +249,7 @@ class ServiceAccountResponse(
         return self.get_metadata().description
 
     @property
-    def external_user_id(self) -> Optional[UUID]:
+    def external_user_id(self) -> UUID | None:
         """The `external_user_id` property.
 
         Returns:
@@ -258,7 +258,7 @@ class ServiceAccountResponse(
         return self.get_metadata().external_user_id
 
     @property
-    def avatar_url(self) -> Optional[str]:
+    def avatar_url(self) -> str | None:
         """The `avatar_url` property.
 
         Returns:
@@ -271,20 +271,20 @@ class ServiceAccountResponse(
 class ServiceAccountFilter(BaseFilter):
     """Model to enable advanced filtering of service accounts."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the user",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="Filter by the service account description.",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: bool | str | None = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUID | str | None = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",
@@ -293,7 +293,7 @@ class ServiceAccountFilter(BaseFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Override to filter out user accounts from the query.
 

@@ -26,7 +26,7 @@ class LightningOrchestratorEntrypointConfiguration:
     """Entrypoint configuration for the Lightning master/orchestrator VM."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all the options required for running this entrypoint.
 
         Returns:
@@ -39,7 +39,7 @@ class LightningOrchestratorEntrypointConfiguration:
         return options
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
+    def get_entrypoint_command(cls) -> list[str]:
         """Returns a command that runs the entrypoint module.
 
         Returns:
@@ -57,7 +57,7 @@ class LightningOrchestratorEntrypointConfiguration:
         cls,
         run_name: str,
         snapshot_id: "UUID",
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

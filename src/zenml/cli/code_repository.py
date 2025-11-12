@@ -81,10 +81,10 @@ def code_repository() -> None:
 def register_code_repository(
     name: str,
     type_: str,
-    source_path: Optional[str],
-    description: Optional[str],
-    logo_url: Optional[str],
-    args: List[str],
+    source_path: str | None,
+    description: str | None,
+    logo_url: str | None,
+    args: list[str],
 ) -> None:
     """Register a code repository.
 
@@ -243,10 +243,10 @@ def list_code_repositories(**kwargs: Any) -> None:
 )
 def update_code_repository(
     name_or_id: str,
-    name: Optional[str],
-    description: Optional[str],
-    logo_url: Optional[str],
-    args: List[str],
+    name: str | None,
+    description: str | None,
+    logo_url: str | None,
+    args: list[str],
 ) -> None:
     """Update a code repository.
 

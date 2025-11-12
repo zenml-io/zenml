@@ -136,25 +136,25 @@ class ModelVersionArtifactFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    artifact_version_id: Optional[Union[UUID, str]] = Field(
+    artifact_version_id: UUID | str | None = Field(
         default=None,
         description="Filter by artifact ID",
         union_mode="left_to_right",
     )
-    artifact_name: Optional[str] = Field(
+    artifact_name: str | None = Field(
         default=None,
         description="Name of the artifact",
     )
-    only_data_artifacts: Optional[bool] = False
-    only_model_artifacts: Optional[bool] = False
-    only_deployment_artifacts: Optional[bool] = False
-    has_custom_name: Optional[bool] = None
-    user: Optional[Union[UUID, str]] = Field(
+    only_data_artifacts: bool | None = False
+    only_model_artifacts: bool | None = False
+    only_deployment_artifacts: bool | None = False
+    has_custom_name: bool | None = None
+    user: UUID | str | None = Field(
         default=None,
         description="Name/ID of the user that created the artifact.",
     )
@@ -168,8 +168,8 @@ class ModelVersionArtifactFilter(BaseFilter):
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List[Union["ColumnElement[bool]"]]:
+        self, table: type["AnySchema"]
+    ) -> list[Union["ColumnElement[bool]"]]:
         """Get custom filters.
 
         Args:

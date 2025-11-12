@@ -90,13 +90,13 @@ DEPRECATED: Please use `zenml login --local` instead.
 )
 def up(
     docker: bool = False,
-    ip_address: Union[
-        ipaddress.IPv4Address, ipaddress.IPv6Address, None
-    ] = None,
-    port: Optional[int] = None,
+    ip_address: (
+        ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    ) = None,
+    port: int | None = None,
     blocking: bool = False,
-    image: Optional[str] = None,
-    ngrok_token: Optional[str] = None,
+    image: str | None = None,
+    ngrok_token: str | None = None,
 ) -> None:
     """Start the ZenML dashboard locally and connect the client to it.
 
@@ -142,7 +142,7 @@ DEPRECATED: Please use `zenml server show` instead.
     default=None,
     help="Specify an ngrok auth token to use for exposing the ZenML server.",
 )
-def legacy_show(ngrok_token: Optional[str] = None) -> None:
+def legacy_show(ngrok_token: str | None = None) -> None:
     """Show the ZenML dashboard.
 
     Args:
@@ -376,12 +376,12 @@ def status() -> None:
     type=str,
 )
 def connect(
-    url: Optional[str] = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    api_key: Optional[str] = None,
+    url: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    api_key: str | None = None,
     no_verify_ssl: bool = False,
-    ssl_ca_cert: Optional[str] = None,
+    ssl_ca_cert: str | None = None,
 ) -> None:
     """Connect to a remote ZenML server.
 
@@ -465,7 +465,7 @@ def disconnect_server() -> None:
 def logs(
     follow: bool = False,
     raw: bool = False,
-    tail: Optional[int] = None,
+    tail: int | None = None,
 ) -> None:
     """Display the logs for a ZenML server.
 
@@ -570,7 +570,7 @@ def server() -> None:
 def server_list(
     verbose: bool = False,
     all: bool = False,
-    pro_api_url: Optional[str] = None,
+    pro_api_url: str | None = None,
 ) -> None:
     """List all ZenML servers that this client is authorized to access.
 
@@ -608,7 +608,7 @@ def server_list(
         # that the user has never connected to (and are therefore not stored in
         # the credentials store).
 
-        accessible_pro_servers: List[WorkspaceRead] = []
+        accessible_pro_servers: list[WorkspaceRead] = []
         try:
             client = ZenMLProClient(pro_api_url)
             accessible_pro_servers = client.workspace.list(member_only=not all)
@@ -727,7 +727,7 @@ def server_list(
 
     # Figure out if the client is already connected to one of the
     # servers in the list
-    current_server: List[ServerCredentials] = []
+    current_server: list[ServerCredentials] = []
     if current_store_config.type == StoreType.REST:
         current_server = [
             s for s in all_servers if s.url == current_store_config.url
@@ -768,7 +768,7 @@ def server_list(
     "server. Only used when `--local` is set. Primarily used for accessing the "
     "local dashboard in Colab.",
 )
-def show(local: bool = False, ngrok_token: Optional[str] = None) -> None:
+def show(local: bool = False, ngrok_token: str | None = None) -> None:
     """Show the ZenML dashboard.
 
     Args:

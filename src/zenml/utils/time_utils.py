@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 
 
-def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
+def utc_now(tz_aware: bool | datetime = False) -> datetime:
     """Get the current time in the UTC timezone.
 
     Args:
@@ -116,7 +116,7 @@ def seconds_to_human_readable(time_seconds: int) -> str:
 def expires_in(
     expires_at: datetime,
     expired_str: str,
-    skew_tolerance: Optional[int] = None,
+    skew_tolerance: int | None = None,
 ) -> str:
     """Returns a human-readable string of the time until an expiration.
 

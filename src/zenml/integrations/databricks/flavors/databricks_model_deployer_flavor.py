@@ -35,9 +35,9 @@ class DatabricksBaseConfig(BaseModel):
 
     workload_size: str
     scale_to_zero_enabled: bool = False
-    env_vars: Optional[Dict[str, str]] = None
-    workload_type: Optional[str] = None
-    endpoint_secret_name: Optional[str] = None
+    env_vars: dict[str, str] | None = None
+    workload_type: str | None = None
+    endpoint_secret_name: str | None = None
 
 
 class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
@@ -51,9 +51,9 @@ class DatabricksModelDeployerConfig(BaseModelDeployerConfig):
     """
 
     host: str
-    secret_name: Optional[str] = None
-    client_id: Optional[str] = SecretField(default=None)
-    client_secret: Optional[str] = SecretField(default=None)
+    secret_name: str | None = None
+    client_id: str | None = SecretField(default=None)
+    client_secret: str | None = SecretField(default=None)
 
 
 class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -69,7 +69,7 @@ class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
         return DATABRICKS_MODEL_DEPLOYER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -78,7 +78,7 @@ class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -96,7 +96,7 @@ class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/databricks.png"
 
     @property
-    def config_class(self) -> Type[DatabricksModelDeployerConfig]:
+    def config_class(self) -> type[DatabricksModelDeployerConfig]:
         """Returns `DatabricksModelDeployerConfig` config class.
 
         Returns:
@@ -105,7 +105,7 @@ class DatabricksModelDeployerFlavor(BaseModelDeployerFlavor):
         return DatabricksModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["DatabricksModelDeployer"]:
+    def implementation_class(self) -> type["DatabricksModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

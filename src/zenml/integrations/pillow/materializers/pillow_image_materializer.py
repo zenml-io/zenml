@@ -41,10 +41,10 @@ class PillowImageMaterializer(BaseMaterializer):
     https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Image.Image,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Image.Image,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Image.Image]) -> Image.Image:
+    def load(self, data_type: type[Image.Image]) -> Image.Image:
         """Read from artifact store.
 
         Args:
@@ -86,7 +86,7 @@ class PillowImageMaterializer(BaseMaterializer):
 
     def save_visualizations(
         self, image: Image.Image
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Finds and saves the given image as a visualization.
 
         Args:
@@ -103,7 +103,7 @@ class PillowImageMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, image: Image.Image
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Image` object.
 
         Args:

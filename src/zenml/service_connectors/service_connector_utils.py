@@ -29,11 +29,11 @@ from zenml.utils.pagination_utils import depaginate
 
 
 def _prepare_resource_info(
-    connector_details: Union[UUID, ServiceConnectorInfo],
-    resource_ids: List[str],
+    connector_details: UUID | ServiceConnectorInfo,
+    resource_ids: list[str],
     stack_component_type: StackComponentType,
     flavor: str,
-    required_configuration: Dict[str, str],
+    required_configuration: dict[str, str],
     flavor_display_name: str,
     use_resource_value_as_fixed_config: bool = False,
 ) -> ResourcesInfo:
@@ -57,9 +57,9 @@ def _prepare_resource_info(
 
 def _raise_specific_cloud_exception_if_needed(
     cloud_provider: str,
-    artifact_stores: List[ResourcesInfo],
-    orchestrators: List[ResourcesInfo],
-    container_registries: List[ResourcesInfo],
+    artifact_stores: list[ResourcesInfo],
+    orchestrators: list[ResourcesInfo],
+    container_registries: list[ResourcesInfo],
 ) -> None:
     AWS_DOCS = "https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector"
     GCP_DOCS = "https://docs.zenml.io/stacks/service-connectors/connector-types/gcp-service-connector"
@@ -164,7 +164,7 @@ def _raise_specific_cloud_exception_if_needed(
 
 
 def get_resources_options_from_resource_model_for_full_stack(
-    connector_details: Union[UUID, ServiceConnectorInfo],
+    connector_details: UUID | ServiceConnectorInfo,
 ) -> ServiceConnectorResourcesInfo:
     """Get the resource options from the resource model for the full stack.
 
@@ -206,9 +206,9 @@ def get_resources_options_from_resource_model_for_full_stack(
     else:
         connector_type = resource_model.connector_type.connector_type
 
-    artifact_stores: List[ResourcesInfo] = []
-    orchestrators: List[ResourcesInfo] = []
-    container_registries: List[ResourcesInfo] = []
+    artifact_stores: list[ResourcesInfo] = []
+    orchestrators: list[ResourcesInfo] = []
+    container_registries: list[ResourcesInfo] = []
 
     if connector_type == "aws":
         for each in resources:

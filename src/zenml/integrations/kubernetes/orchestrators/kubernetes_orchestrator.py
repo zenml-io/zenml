@@ -37,13 +37,13 @@ from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Dict,
-    Generator,
     List,
     Optional,
     Tuple,
     Type,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -100,7 +100,7 @@ logger = get_logger(__name__)
 class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
-    _k8s_client: Optional[k8s_client.ApiClient] = None
+    _k8s_client: k8s_client.ApiClient | None = None
 
     def should_build_pipeline_image(
         self, snapshot: "PipelineSnapshotBase"
@@ -122,7 +122,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             return super().should_build_pipeline_image(snapshot)
 
     def get_kube_client(
-        self, incluster: Optional[bool] = None
+        self, incluster: bool | None = None
     ) -> k8s_client.ApiClient:
         """Getter for the Kubernetes API client.
 
@@ -227,7 +227,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return cast(KubernetesOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Kubernetes orchestrator.
 
         Returns:
@@ -235,7 +235,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
-    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+    def get_kubernetes_contexts(self) -> tuple[list[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
         Raises:
@@ -257,14 +257,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return context_names, active_context_name
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Defines the validator that checks whether the stack is valid.
 
         Returns:
             Stack validator.
         """
 
-        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_local_requirements(stack: "Stack") -> tuple[bool, str]:
             """Validates that the stack contains no local components.
 
             Args:
@@ -411,7 +411,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         return f"zenml-token-{snapshot_id}"
 
     @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
+    def supported_execution_modes(self) -> list[ExecutionMode]:
         """Returns the supported execution modes for this flavor.
 
         Returns:
@@ -427,10 +427,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submit a static pipeline to the orchestrator.
 
         Args:
@@ -480,9 +480,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a dynamic pipeline to the orchestrator.
 
         Args:
@@ -517,14 +517,14 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _prepare_job_manifest(
         self,
         name: str,
-        command: List[str],
-        args: List[str],
+        command: list[str],
+        args: list[str],
         image: str,
-        environment: Dict[str, str],
-        labels: Dict[str, str],
-        annotations: Dict[str, str],
+        environment: dict[str, str],
+        labels: dict[str, str],
+        annotations: dict[str, str],
         settings: KubernetesOrchestratorSettings,
-        pod_settings: Optional[KubernetesPodSettings] = None,
+        pod_settings: KubernetesPodSettings | None = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -614,7 +614,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         self,
         settings: KubernetesOrchestratorSettings,
         pipeline_name: str,
-        step_name: Optional[str] = None,
+        step_name: str | None = None,
     ) -> str:
         """Gets a job name for a Kubernetes job.
 
@@ -640,7 +640,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _create_auth_secret_if_necessary(
         self,
         snapshot: "PipelineSnapshotResponse",
-        environment: Dict[str, str],
+        environment: dict[str, str],
         pod_settings: KubernetesPodSettings,
     ) -> Generator[None, None, None]:
         """Creates an authentication secret if necessary.
@@ -702,11 +702,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _submit_orchestrator_job(
         self,
         snapshot: "PipelineSnapshotResponse",
-        command: List[str],
-        args: List[str],
-        environment: Dict[str, str],
+        command: list[str],
+        args: list[str],
+        environment: dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits an orchestrator job to Kubernetes.
 
         Args:
@@ -838,7 +838,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     return None
 
     def launch_dynamic_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+        self, step_run_info: "StepRunInfo", environment: dict[str, str]
     ) -> None:
         """Launches a dynamic step on Kubernetes.
 
@@ -1058,8 +1058,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -1127,7 +1127,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def _map_job_status_to_execution_status(
         self, job: k8s_client.V1Job
-    ) -> Optional[ExecutionStatus]:
+    ) -> ExecutionStatus | None:
         """Map Kubernetes job status to ZenML execution status.
 
         Args:
@@ -1148,7 +1148,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:

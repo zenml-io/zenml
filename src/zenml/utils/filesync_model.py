@@ -43,7 +43,7 @@ class FileSyncModel(BaseModel):
     """
 
     _config_file: str
-    _config_file_timestamp: Optional[float] = None
+    _config_file_timestamp: float | None = None
 
     @model_validator(mode="wrap")
     @classmethod
@@ -116,7 +116,7 @@ class FileSyncModel(BaseModel):
             key: attribute name.
             value: attribute value.
         """
-        super(FileSyncModel, self).__setattr__(key, value)
+        super().__setattr__(key, value)
         if key.startswith("_"):
             return
         self.write_config()
@@ -132,7 +132,7 @@ class FileSyncModel(BaseModel):
         """
         if not key.startswith("_") and key in self.__dict__:
             self.load_config()
-        return super(FileSyncModel, self).__getattribute__(key)
+        return super().__getattribute__(key)
 
     def write_config(self) -> None:
         """Writes the model to the configuration file."""
@@ -156,6 +156,6 @@ class FileSyncModel(BaseModel):
         # refresh the model from the configuration file values
         config_dict = yaml_utils.read_yaml(self._config_file)
         for key, value in config_dict.items():
-            super(FileSyncModel, self).__setattr__(key, value)
+            super().__setattr__(key, value)
 
         self._config_file_timestamp = file_timestamp

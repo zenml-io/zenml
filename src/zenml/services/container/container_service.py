@@ -19,7 +19,8 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from collections.abc import Generator
 
 import docker.errors as docker_errors
 from docker.client import DockerClient
@@ -67,7 +68,7 @@ class ContainerServiceConfig(ServiceConfig):
         image: the container image to use for the service.
     """
 
-    root_runtime_path: Optional[str] = None
+    root_runtime_path: str | None = None
     singleton: bool = False
     image: str = DOCKER_ZENML_SERVER_DEFAULT_IMAGE
 
@@ -80,10 +81,10 @@ class ContainerServiceStatus(ServiceStatus):
             file used to start the service daemon and the logfile) are located
     """
 
-    runtime_path: Optional[str] = None
+    runtime_path: str | None = None
 
     @property
-    def config_file(self) -> Optional[str]:
+    def config_file(self) -> str | None:
         """Get the path to the service configuration file.
 
         Returns:
@@ -95,7 +96,7 @@ class ContainerServiceStatus(ServiceStatus):
         return os.path.join(self.runtime_path, SERVICE_CONFIG_FILE_NAME)
 
     @property
-    def log_file(self) -> Optional[str]:
+    def log_file(self) -> str | None:
         """Get the path to the log file where the service output is/has been logged.
 
         Returns:
@@ -168,9 +169,9 @@ class ContainerService(BaseService):
         default_factory=ContainerServiceStatus
     )
     # TODO [ENG-705]: allow multiple endpoints per service
-    endpoint: Optional[ContainerServiceEndpoint] = None
+    endpoint: ContainerServiceEndpoint | None = None
 
-    _docker_client: Optional[DockerClient] = None
+    _docker_client: DockerClient | None = None
 
     @property
     def docker_client(self) -> DockerClient:
@@ -210,7 +211,7 @@ class ContainerService(BaseService):
             )
         return msg
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the docker container.
 
         Returns:
@@ -222,7 +223,7 @@ class ContainerService(BaseService):
         if not check_docker():
             return (ServiceState.INACTIVE, "Docker daemon is not running")
 
-        container: Optional[Container] = None
+        container: Container | None = None
         try:
             container = self.docker_client.containers.get(self.container_id)
         except docker_errors.NotFound:
@@ -268,7 +269,7 @@ class ContainerService(BaseService):
                     prefix="zenml-service-"
                 )
 
-    def _get_container_cmd(self) -> Tuple[List[str], Dict[str, str]]:
+    def _get_container_cmd(self) -> tuple[list[str], dict[str, str]]:
         """Get the command to run the service container.
 
         The default implementation provided by this class is the following:
@@ -320,7 +321,7 @@ class ContainerService(BaseService):
 
         return command, command_env
 
-    def _get_container_volumes(self) -> Dict[str, Dict[str, str]]:
+    def _get_container_volumes(self) -> dict[str, dict[str, str]]:
         """Get the volumes to mount into the service container.
 
         The default implementation provided by this class mounts the
@@ -336,7 +337,7 @@ class ContainerService(BaseService):
             A dictionary mapping host paths to dictionaries containing
             the mount options for each volume.
         """
-        volumes: Dict[str, Dict[str, str]] = {}
+        volumes: dict[str, dict[str, str]] = {}
 
         assert self.status.runtime_path is not None
 
@@ -353,7 +354,7 @@ class ContainerService(BaseService):
         return volumes
 
     @property
-    def container(self) -> Optional[Container]:
+    def container(self) -> Container | None:
         """Get the docker container for the service.
 
         Returns:
@@ -400,7 +401,7 @@ class ContainerService(BaseService):
 
         self._setup_runtime_path()
 
-        ports: Dict[int, Optional[int]] = {}
+        ports: dict[int, int | None] = {}
         if self.endpoint:
             self.endpoint.prepare_for_start()
             if self.endpoint.status.port:
@@ -410,7 +411,7 @@ class ContainerService(BaseService):
         volumes = self._get_container_volumes()
 
         try:
-            uid_args: Dict[str, Any] = {}
+            uid_args: dict[str, Any] = {}
             if sys.platform == "win32":
                 # File permissions are not checked on Windows. This if clause
                 # prevents mypy from complaining about unused 'type: ignore'
@@ -494,7 +495,7 @@ class ContainerService(BaseService):
         self._stop_daemon(force)
 
     def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
+        self, follow: bool = False, tail: int | None = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 
@@ -510,7 +511,7 @@ class ContainerService(BaseService):
         ):
             return
 
-        with open(self.status.log_file, "r") as f:
+        with open(self.status.log_file) as f:
             if tail:
                 # TODO[ENG-864]: implement a more efficient tailing mechanism that
                 #   doesn't read the entire file

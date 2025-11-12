@@ -106,8 +106,8 @@ class GCPUserAccountCredentials(AuthenticationConfig):
     @classmethod
     @before_validator_handler
     def validate_user_account_dict(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert the user account credentials to JSON if given in dict format.
 
         Args:
@@ -202,8 +202,8 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
     @classmethod
     @before_validator_handler
     def validate_service_account_dict(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert the service account credentials to JSON if given in dict format.
 
         Args:
@@ -309,8 +309,8 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
     @classmethod
     @before_validator_handler
     def validate_service_account_dict(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Convert the external account credentials to JSON if given in dict format.
 
         Args:
@@ -438,7 +438,7 @@ class GCPUserAccountConfig(GCPBaseProjectIDConfig, GCPUserAccountCredentials):
 class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
     """GCP service account configuration."""
 
-    project_id: Optional[str] = None
+    project_id: str | None = None
 
     @property
     def gcp_project_id(self) -> str:
@@ -469,7 +469,7 @@ class GCPExternalAccountConfig(
 class GCPOAuth2TokenConfig(GCPBaseProjectIDConfig, GCPOAuth2Token):
     """GCP OAuth 2.0 configuration."""
 
-    service_account_email: Optional[str] = Field(
+    service_account_email: str | None = Field(
         default=None,
         title="GCP Service Account Email",
         description="The email address of the service account that signed the "
@@ -622,7 +622,7 @@ class ZenMLGCPAWSExternalAccountCredentials(gcp_aws.Credentials):  # type: ignor
 
     def _get_security_credentials(
         self, request: Any, imdsv2_session_token: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get the security credentials from the local environment.
 
         This method is a copy of the original method from the
@@ -1083,11 +1083,11 @@ class GCPServiceConnector(ServiceConnector):
 
     config: GCPBaseConfig
 
-    _session_cache: Dict[
-        Tuple[str, Optional[str], Optional[str]],
-        Tuple[
+    _session_cache: dict[
+        tuple[str, str | None, str | None],
+        tuple[
             gcp_credentials.Credentials,
-            Optional[datetime.datetime],
+            datetime.datetime | None,
         ],
     ] = {}
 
@@ -1103,9 +1103,9 @@ class GCPServiceConnector(ServiceConnector):
     def get_session(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[gcp_credentials.Credentials, Optional[datetime.datetime]]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[gcp_credentials.Credentials, datetime.datetime | None]:
         """Get a GCP session object with credentials for the specified resource.
 
         Args:
@@ -1147,9 +1147,9 @@ class GCPServiceConnector(ServiceConnector):
     @classmethod
     def _get_scopes(
         cls,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Get the OAuth 2.0 scopes to use for the specified resource type.
 
         Args:
@@ -1166,11 +1166,11 @@ class GCPServiceConnector(ServiceConnector):
     def _authenticate(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[
         gcp_credentials.Credentials,
-        Optional[datetime.datetime],
+        datetime.datetime | None,
     ]:
         """Authenticate to GCP and return a session with credentials.
 
@@ -1187,7 +1187,7 @@ class GCPServiceConnector(ServiceConnector):
         """
         cfg = self.config
         scopes = self._get_scopes(resource_type, resource_id)
-        expires_at: Optional[datetime.datetime] = None
+        expires_at: datetime.datetime | None = None
         if auth_method == GCPAuthenticationMethods.IMPLICIT:
             self._check_implicit_auth_method_allowed()
 
@@ -1330,7 +1330,7 @@ class GCPServiceConnector(ServiceConnector):
         # - the GCS bucket name
         #
         # We need to extract the bucket name from the provided resource ID
-        bucket_name: Optional[str] = None
+        bucket_name: str | None = None
         if re.match(
             r"^gs://[a-z0-9][a-z0-9_-]{1,61}[a-z0-9](/.*)*$",
             resource_id,
@@ -1356,7 +1356,7 @@ class GCPServiceConnector(ServiceConnector):
     def _parse_gar_resource_id(
         self,
         resource_id: str,
-    ) -> Tuple[str, Optional[str]]:
+    ) -> tuple[str, str | None]:
         """Validate and convert a GAR resource ID to a Google Artifact Registry ID and name.
 
         Args:
@@ -1379,9 +1379,9 @@ class GCPServiceConnector(ServiceConnector):
         # We need to extract the project ID and registry ID from
         # the provided resource ID
         config_project_id = self.config.gcp_project_id
-        project_id: Optional[str] = None
+        project_id: str | None = None
         canonical_url: str
-        registry_name: Optional[str] = None
+        registry_name: str | None = None
 
         # A Google Artifact Registry URI uses the <location>-docker-pkg.dev
         # domain format with the project ID as the first part of the URL path
@@ -1613,7 +1613,7 @@ class GCPServiceConnector(ServiceConnector):
         resource_type = self.resource_type
 
         if resource_type in [GCP_RESOURCE_TYPE, GCS_RESOURCE_TYPE]:
-            gcloud_config_json: Optional[str] = None
+            gcloud_config_json: str | None = None
 
             # There is no way to configure the local gcloud CLI to use
             # temporary OAuth 2.0 tokens. However, we can configure it to use
@@ -1732,9 +1732,9 @@ class GCPServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs: Any,
     ) -> "GCPServiceConnector":
         """Auto-configure the connector.
@@ -1768,7 +1768,7 @@ class GCPServiceConnector(ServiceConnector):
         auth_config: GCPBaseConfig
 
         scopes = cls._get_scopes()
-        expires_at: Optional[datetime.datetime] = None
+        expires_at: datetime.datetime | None = None
 
         try:
             # Determine the credentials from the environment
@@ -1883,7 +1883,7 @@ class GCPServiceConnector(ServiceConnector):
                         "account JSON file or run 'gcloud auth application-"
                         "default login' to generate a new ADC file."
                     )
-                with open(service_account_json_file, "r") as f:
+                with open(service_account_json_file) as f:
                     service_account_json = f.read()
                 auth_config = GCPServiceAccountConfig(
                     project_id=project_id,
@@ -1928,7 +1928,7 @@ class GCPServiceConnector(ServiceConnector):
                         "account JSON file or run 'gcloud auth application-"
                         "default login' to generate a new ADC file."
                     )
-                with open(external_account_json_file, "r") as f:
+                with open(external_account_json_file) as f:
                     external_account_json = f.read()
                 auth_config = GCPExternalAccountConfig(
                     project_id=project_id,
@@ -1951,9 +1951,9 @@ class GCPServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify and list all the resources that the connector can access.
 
         Args:
@@ -2056,7 +2056,7 @@ class GCPServiceConnector(ServiceConnector):
             # For backwards compatibility, we initialize the list of resource
             # IDs with all GCR supported registries for the configured GCP
             # project
-            resource_ids: List[str] = [
+            resource_ids: list[str] = [
                 f"{location}gcr.io/{self.config.gcp_project_id}"
                 for location in ["", "us.", "eu.", "asia."]
             ]
@@ -2076,7 +2076,7 @@ class GCPServiceConnector(ServiceConnector):
                 ]
 
                 # Then, we need to fetch all the repositories in each location
-                repository_names: List[str] = []
+                repository_names: list[str] = []
                 for location in location_names:
                     repositories = gar_client.list_repositories(
                         parent=f"projects/{self.config.gcp_project_id}/locations/{location}"

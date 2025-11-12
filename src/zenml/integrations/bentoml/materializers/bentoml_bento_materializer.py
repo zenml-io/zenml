@@ -35,10 +35,10 @@ logger = get_logger(__name__)
 class BentoMaterializer(BaseMaterializer):
     """Materializer for Bentoml Bento objects."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (bento.Bento,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (bento.Bento,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[bento.Bento]) -> bento.Bento:
+    def load(self, data_type: type[bento.Bento]) -> bento.Bento:
         """Read from artifact store and return a Bento object.
 
         Args:
@@ -76,7 +76,7 @@ class BentoMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, bento: bento.Bento
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Bento` object.
 
         Args:

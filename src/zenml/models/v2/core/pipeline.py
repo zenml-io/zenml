@@ -67,12 +67,12 @@ class PipelineRequest(ProjectScopedRequest):
         title="The name of the pipeline.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         default=None,
         title="Tags of the pipeline.",
     )
@@ -84,15 +84,15 @@ class PipelineRequest(ProjectScopedRequest):
 class PipelineUpdate(BaseUpdate):
     """Update model for pipelines."""
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the pipeline.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         default=None, title="New tags to add to the pipeline."
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         default=None, title="Tags to remove from the pipeline."
     )
 
@@ -107,7 +107,7 @@ class PipelineResponseBody(ProjectScopedResponseBody):
 class PipelineResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipelines."""
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the pipeline.",
     )
@@ -120,18 +120,18 @@ class PipelineResponseResources(ProjectScopedResponseResources):
         default=None,
         title="The user that created the latest run of this pipeline.",
     )
-    latest_run_id: Optional[UUID] = Field(
+    latest_run_id: UUID | None = Field(
         default=None,
         title="The ID of the latest run of the pipeline.",
     )
-    latest_run_status: Optional[ExecutionStatus] = Field(
+    latest_run_status: ExecutionStatus | None = Field(
         default=None,
         title="The status of the latest run of the pipeline.",
     )
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         title="Tags associated with the pipeline.",
     )
-    visualizations: List["CuratedVisualizationResponse"] = Field(
+    visualizations: list["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline.",
     )
@@ -162,7 +162,7 @@ class PipelineResponse(
         return Client().zen_store.get_pipeline(self.id)
 
     # Helper methods
-    def get_runs(self, **kwargs: Any) -> List["PipelineRunResponse"]:
+    def get_runs(self, **kwargs: Any) -> list["PipelineRunResponse"]:
         """Get runs of this pipeline.
 
         Can be used to fetch runs other than `self.runs` and supports
@@ -180,7 +180,7 @@ class PipelineResponse(
         return Client().list_pipeline_runs(pipeline_id=self.id, **kwargs).items
 
     @property
-    def runs(self) -> List["PipelineRunResponse"]:
+    def runs(self) -> list["PipelineRunResponse"]:
         """Returns the 20 most recent runs of this pipeline in descending order.
 
         Returns:
@@ -235,7 +235,7 @@ class PipelineResponse(
         return runs[0]
 
     @property
-    def latest_run_id(self) -> Optional[UUID]:
+    def latest_run_id(self) -> UUID | None:
         """The `latest_run_id` property.
 
         Returns:
@@ -244,7 +244,7 @@ class PipelineResponse(
         return self.get_resources().latest_run_id
 
     @property
-    def latest_run_status(self) -> Optional[ExecutionStatus]:
+    def latest_run_status(self) -> ExecutionStatus | None:
         """The `latest_run_status` property.
 
         Returns:
@@ -253,7 +253,7 @@ class PipelineResponse(
         return self.get_resources().latest_run_status
 
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -268,33 +268,33 @@ class PipelineResponse(
 class PipelineFilter(ProjectScopedFilter, TaggableFilter):
     """Pipeline filter model."""
 
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_PIPELINES_BY_LATEST_RUN_KEY,
     ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
         "latest_run_user",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the Pipeline",
     )
-    latest_run_status: Optional[str] = Field(
+    latest_run_status: str | None = Field(
         default=None,
         description="Filter by the status of the latest run of a pipeline. "
         "This will always be applied as an `AND` filter for now.",
     )
 
-    latest_run_user: Optional[Union[UUID, str]] = Field(
+    latest_run_user: UUID | str | None = Field(
         default=None,
         description="Filter by the name or id of the last user that executed the pipeline. ",
     )
@@ -309,7 +309,7 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         return bool(self.latest_run_user) or bool(self.latest_run_status)
 
     def apply_filter(
-        self, query: AnyQuery, table: Type["AnySchema"]
+        self, query: AnyQuery, table: type["AnySchema"]
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -380,7 +380,7 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query.
 

@@ -76,14 +76,14 @@ def is_standard_dtype(dtype_str: str) -> bool:
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         pd.DataFrame,
         pd.Series,
     )
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Define `self.data_path`.
 
@@ -109,7 +109,7 @@ class PandasMaterializer(BaseMaterializer):
             self.parquet_path = os.path.join(self.uri, PARQUET_FILENAME)
             self.csv_path = os.path.join(self.uri, CSV_FILENAME)
 
-    def load(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
+    def load(self, data_type: type[Any]) -> pd.DataFrame | pd.Series:
         """Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.
 
         Args:
@@ -174,8 +174,8 @@ class PandasMaterializer(BaseMaterializer):
 
         # validate the type of the data.
         def is_dataframe_or_series(
-            df: Union[pd.DataFrame, pd.Series],
-        ) -> Union[pd.DataFrame, pd.Series]:
+            df: pd.DataFrame | pd.Series,
+        ) -> pd.DataFrame | pd.Series:
             """Checks if the data is a `pd.DataFrame` or `pd.Series`.
 
             Args:
@@ -195,7 +195,7 @@ class PandasMaterializer(BaseMaterializer):
 
         return is_dataframe_or_series(df)
 
-    def save(self, df: Union[pd.DataFrame, pd.Series]) -> None:
+    def save(self, df: pd.DataFrame | pd.Series) -> None:
         """Writes a pandas dataframe or series to the specified filename.
 
         Args:
@@ -212,8 +212,8 @@ class PandasMaterializer(BaseMaterializer):
                 df.to_csv(f, index=True)
 
     def save_visualizations(
-        self, df: Union[pd.DataFrame, pd.Series]
-    ) -> Dict[str, VisualizationType]:
+        self, df: pd.DataFrame | pd.Series
+    ) -> dict[str, VisualizationType]:
         """Save visualizations of the given pandas dataframe or series.
 
         Creates two visualizations:
@@ -258,8 +258,8 @@ class PandasMaterializer(BaseMaterializer):
         return visualizations
 
     def extract_metadata(
-        self, df: Union[pd.DataFrame, pd.Series]
-    ) -> Dict[str, "MetadataType"]:
+        self, df: pd.DataFrame | pd.Series
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given pandas dataframe or series.
 
         Args:
@@ -279,7 +279,7 @@ class PandasMaterializer(BaseMaterializer):
             series_obj = df  # Keep original Series for some calculations
             df = df.to_frame(name="series")
 
-        pandas_metadata: Dict[str, "MetadataType"] = {"shape": original_shape}
+        pandas_metadata: dict[str, "MetadataType"] = {"shape": original_shape}
 
         # Add information about custom data types to metadata
         custom_types = {}

@@ -14,7 +14,8 @@
 """Functionality for reading, writing and managing files."""
 
 import os
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
+from typing import Any, List, Optional, Tuple, Type
+from collections.abc import Callable, Iterable
 
 # this import required for CI to get local filesystem
 from zenml.io import local_filesystem  # noqa
@@ -25,7 +26,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def _get_filesystem(path: "PathType") -> Type["BaseFilesystem"]:
+def _get_filesystem(path: "PathType") -> type["BaseFilesystem"]:
     """Returns a filesystem class for a given path from the registry.
 
     Args:
@@ -106,7 +107,7 @@ def exists(path: "PathType") -> bool:
     return _get_filesystem(path).exists(path)
 
 
-def glob(pattern: "PathType") -> List["PathType"]:
+def glob(pattern: "PathType") -> list["PathType"]:
     """Find all files matching the given pattern.
 
     Args:
@@ -130,7 +131,7 @@ def isdir(path: "PathType") -> bool:
     return _get_filesystem(path).isdir(path)
 
 
-def listdir(path: str, only_file_names: bool = True) -> List[str]:
+def listdir(path: str, only_file_names: bool = True) -> list[str]:
     """Lists all files in a directory.
 
     Args:
@@ -147,7 +148,7 @@ def listdir(path: str, only_file_names: bool = True) -> List[str]:
             else convert_to_str(f)
             for f in _get_filesystem(path).listdir(path)
         ]
-    except IOError:
+    except OSError:
         logger.debug(f"Dir {path} not found.")
         return []
 
@@ -236,7 +237,7 @@ def stat(path: "PathType") -> Any:
     return _get_filesystem(path).stat(path)
 
 
-def size(path: "PathType") -> Optional[int]:
+def size(path: "PathType") -> int | None:
     """Get the size of a file or directory in bytes.
 
     Args:
@@ -277,8 +278,8 @@ def size(path: "PathType") -> Optional[int]:
 def walk(
     top: "PathType",
     topdown: bool = True,
-    onerror: Optional[Callable[..., None]] = None,
-) -> Iterable[Tuple["PathType", List["PathType"], List["PathType"]]]:
+    onerror: Callable[..., None] | None = None,
+) -> Iterable[tuple["PathType", list["PathType"], list["PathType"]]]:
     """Return an iterator that walks the contents of the given directory.
 
     Args:

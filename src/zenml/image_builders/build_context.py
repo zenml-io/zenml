@@ -34,8 +34,8 @@ class BuildContext(Archivable):
 
     def __init__(
         self,
-        root: Optional[str] = None,
-        dockerignore_file: Optional[str] = None,
+        root: str | None = None,
+        dockerignore_file: str | None = None,
     ) -> None:
         """Initializes a build context.
 
@@ -50,7 +50,7 @@ class BuildContext(Archivable):
         self._dockerignore_file = dockerignore_file
 
     @property
-    def dockerignore_file(self) -> Optional[str]:
+    def dockerignore_file(self) -> str | None:
         """The dockerignore file to use.
 
         Returns:
@@ -98,7 +98,7 @@ class BuildContext(Archivable):
                 os.path.join(self._root, ".dockerignore"),
             )
 
-    def get_files(self) -> Dict[str, str]:
+    def get_files(self) -> dict[str, str]:
         """Gets all regular files that should be included in the archive.
 
         Returns:
@@ -111,7 +111,7 @@ class BuildContext(Archivable):
             exclude_patterns = self._get_exclude_patterns()
 
             archive_paths = cast(
-                Set[str],
+                set[str],
                 docker_build_utils.exclude_paths(
                     self._root, patterns=exclude_patterns
                 ),
@@ -123,7 +123,7 @@ class BuildContext(Archivable):
         else:
             return {}
 
-    def _get_exclude_patterns(self) -> List[str]:
+    def _get_exclude_patterns(self) -> list[str]:
         """Gets all exclude patterns from the dockerignore file.
 
         Returns:
@@ -143,7 +143,7 @@ class BuildContext(Archivable):
             return []
 
     @staticmethod
-    def _parse_dockerignore(dockerignore_path: str) -> List[str]:
+    def _parse_dockerignore(dockerignore_path: str) -> list[str]:
         """Parses a dockerignore file and returns a list of patterns to ignore.
 
         Args:

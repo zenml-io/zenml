@@ -15,7 +15,8 @@
 
 import json
 import os
-from typing import Any, Dict, Generator, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
+from collections.abc import Generator
 from uuid import UUID
 
 import requests
@@ -65,17 +66,17 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
-    parameters: Optional[List[SeldonDeploymentPredictorParameter]]
-    resources: Optional[SeldonResourceRequirements]
+    parameters: list[SeldonDeploymentPredictorParameter] | None
+    resources: SeldonResourceRequirements | None
     replicas: int = 1
-    secret_name: Optional[str]
-    model_metadata: Dict[str, Any] = Field(default_factory=dict)
-    extra_args: Dict[str, Any] = Field(default_factory=dict)
-    is_custom_deployment: Optional[bool] = False
-    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
-    serviceAccountName: Optional[str] = None
+    secret_name: str | None
+    model_metadata: dict[str, Any] = Field(default_factory=dict)
+    extra_args: dict[str, Any] = Field(default_factory=dict)
+    is_custom_deployment: bool | None = False
+    spec: dict[Any, Any] | None = Field(default_factory=dict)
+    serviceAccountName: str | None = None
 
-    def get_seldon_deployment_labels(self) -> Dict[str, str]:
+    def get_seldon_deployment_labels(self) -> dict[str, str]:
         """Generate labels for the Seldon Core deployment from the service configuration.
 
         These labels are attached to the Seldon Core deployment resource
@@ -101,7 +102,7 @@ class SeldonDeploymentConfig(ServiceConfig):
         SeldonClient.sanitize_labels(labels)
         return labels
 
-    def get_seldon_deployment_annotations(self) -> Dict[str, str]:
+    def get_seldon_deployment_annotations(self) -> dict[str, str]:
         """Generate annotations for the Seldon Core deployment from the service configuration.
 
         The annotations are used to store additional information about the
@@ -197,7 +198,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         )
         return model_deployer.seldon_client
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the Seldon Core deployment.
 
         Returns:
@@ -242,7 +243,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         """
         return f"zenml-{str(self.uuid)}"
 
-    def _get_seldon_deployment_labels(self) -> Dict[str, str]:
+    def _get_seldon_deployment_labels(self) -> dict[str, str]:
         """Generate the labels for the Seldon Core deployment from the service configuration.
 
         Returns:
@@ -335,7 +336,7 @@ class SeldonDeploymentService(BaseDeploymentService):
     def get_logs(
         self,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Get the logs of a Seldon Core model deployment.
 
@@ -353,7 +354,7 @@ class SeldonDeploymentService(BaseDeploymentService):
         )
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """The prediction URI exposed by the prediction service.
 
         Returns:

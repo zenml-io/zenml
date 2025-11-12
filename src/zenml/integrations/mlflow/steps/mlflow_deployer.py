@@ -50,13 +50,13 @@ logger = get_logger(__name__)
 def mlflow_model_deployer_step(
     model: UnmaterializedArtifact,
     deploy_decision: bool = True,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
     model_name: str = "model",
     workers: int = 1,
     mlserver: bool = False,
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
-) -> Optional[MLFlowDeploymentService]:
+) -> MLFlowDeploymentService | None:
     """Model deployer pipeline step for MLflow.
 
     This step deploys a model logged in the MLflow artifact store to a
@@ -191,8 +191,8 @@ def mlflow_model_deployer_step(
 @step(enable_cache=False)
 def mlflow_model_registry_deployer_step(
     registry_model_name: str,
-    registry_model_version: Optional[str] = None,
-    registry_model_stage: Optional[ModelVersionStage] = None,
+    registry_model_version: str | None = None,
+    registry_model_stage: ModelVersionStage | None = None,
     replace_existing: bool = True,
     model_name: str = "model",
     workers: int = 1,

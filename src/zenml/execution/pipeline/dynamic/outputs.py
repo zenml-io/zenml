@@ -31,7 +31,7 @@ class OutputArtifact(ArtifactVersionResponse):
     step_name: str
 
 
-StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
+StepRunOutputs = Union[None, OutputArtifact, tuple[OutputArtifact, ...]]
 
 
 class _BaseStepRunFuture:
@@ -122,7 +122,7 @@ class StepRunOutputsFuture(_BaseStepRunFuture):
         self,
         wrapped: Future[StepRunOutputs],
         invocation_id: str,
-        output_keys: List[str],
+        output_keys: list[str],
     ) -> None:
         """Initialize the future.
 

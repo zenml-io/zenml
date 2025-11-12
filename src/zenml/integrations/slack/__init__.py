@@ -33,7 +33,7 @@ class SlackIntegration(Integration):
     REQUIREMENTS = ["slack-sdk==3.30.0"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Slack integration.
 
         Returns:

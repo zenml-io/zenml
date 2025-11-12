@@ -52,7 +52,7 @@ class ServerModel(BaseModel):
 
     id: UUID = Field(default_factory=uuid4, title="The unique server id.")
 
-    name: Optional[str] = Field(None, title="The name of the ZenML server.")
+    name: str | None = Field(None, title="The name of the ZenML server.")
 
     version: str = Field(
         title="The ZenML version that the server is running.",
@@ -97,47 +97,47 @@ class ServerModel(BaseModel):
         title="Enable server-side analytics.",
     )
 
-    metadata: Dict[str, str] = Field(
+    metadata: dict[str, str] = Field(
         {},
         title="The metadata associated with the server.",
     )
 
-    last_user_activity: Optional[datetime] = Field(
+    last_user_activity: datetime | None = Field(
         None,
         title="Timestamp of latest user activity traced on the server.",
     )
 
-    pro_dashboard_url: Optional[str] = Field(
+    pro_dashboard_url: str | None = Field(
         None,
         title="The base URL of the ZenML Pro dashboard to which the server "
         "is connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_api_url: Optional[str] = Field(
+    pro_api_url: str | None = Field(
         None,
         title="The base URL of the ZenML Pro API to which the server is "
         "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_organization_id: Optional[UUID] = Field(
+    pro_organization_id: UUID | None = Field(
         None,
         title="The ID of the ZenML Pro organization to which the server is "
         "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_organization_name: Optional[str] = Field(
+    pro_organization_name: str | None = Field(
         None,
         title="The name of the ZenML Pro organization to which the server is "
         "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_workspace_id: Optional[UUID] = Field(
+    pro_workspace_id: UUID | None = Field(
         None,
         title="The ID of the ZenML Pro workspace to which the server is "
         "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_workspace_name: Optional[str] = Field(
+    pro_workspace_name: str | None = Field(
         None,
         title="The name of the ZenML Pro workspace to which the server is "
         "connected. Only set if the server is a ZenML Pro server.",

@@ -31,10 +31,10 @@ DEFAULT_FILENAME = "data.binary"
 class XgboostDMatrixMaterializer(BaseMaterializer):
     """Materializer to read data to and from xgboost.DMatrix."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (xgb.DMatrix,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (xgb.DMatrix,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> xgb.DMatrix:
+    def load(self, data_type: type[Any]) -> xgb.DMatrix:
         """Reads a xgboost.DMatrix binary file and loads it.
 
         Args:
@@ -69,7 +69,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, dataset: xgb.DMatrix
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:

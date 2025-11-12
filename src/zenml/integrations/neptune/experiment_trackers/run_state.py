@@ -34,18 +34,18 @@ class RunProvider(metaclass=SingletonMetaClass):
     def __init__(self) -> None:
         """Initialize RunProvider. Called with no arguments."""
         self._active_run: Optional["Run"] = None
-        self._project: Optional[str] = None
-        self._run_name: Optional[str] = None
-        self._token: Optional[str] = None
-        self._tags: Optional[List[str]] = None
+        self._project: str | None = None
+        self._run_name: str | None = None
+        self._token: str | None = None
+        self._tags: list[str] | None = None
         self._initialized = False
 
     def initialize(
         self,
-        project: Optional[str] = None,
-        token: Optional[str] = None,
-        run_name: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        project: str | None = None,
+        token: str | None = None,
+        run_name: str | None = None,
+        tags: list[str] | None = None,
     ) -> None:
         """Initialize the run state.
 
@@ -62,7 +62,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         self._initialized = True
 
     @property
-    def project(self) -> Optional[Any]:
+    def project(self) -> Any | None:
         """Getter for project name.
 
         Returns:
@@ -71,7 +71,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         return self._project
 
     @property
-    def token(self) -> Optional[Any]:
+    def token(self) -> Any | None:
         """Getter for API token.
 
         Returns:
@@ -80,7 +80,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         return self._token
 
     @property
-    def run_name(self) -> Optional[Any]:
+    def run_name(self) -> Any | None:
         """Getter for run name.
 
         Returns:
@@ -89,7 +89,7 @@ class RunProvider(metaclass=SingletonMetaClass):
         return self._run_name
 
     @property
-    def tags(self) -> Optional[Any]:
+    def tags(self) -> Any | None:
         """Getter for run tags.
 
         Returns:

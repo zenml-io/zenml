@@ -28,6 +28,6 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write PyTorch models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Module,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Module,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     FILENAME: ClassVar[str] = CHECKPOINT_NAME

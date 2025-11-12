@@ -38,12 +38,12 @@ class ServerSettingsSchema(SQLModel, table=True):
 
     id: UUID = Field(primary_key=True)
     server_name: str
-    logo_url: Optional[str] = Field(nullable=True)
+    logo_url: str | None = Field(nullable=True)
     active: bool = Field(default=False)
     enable_analytics: bool = Field(default=False)
-    display_announcements: Optional[bool] = Field(nullable=True)
-    display_updates: Optional[bool] = Field(nullable=True)
-    onboarding_state: Optional[str] = Field(
+    display_announcements: bool | None = Field(nullable=True)
+    display_updates: bool | None = Field(nullable=True)
+    onboarding_state: str | None = Field(
         sa_column=Column(TEXT, nullable=True)
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
@@ -72,7 +72,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         return self
 
     def update_onboarding_state(
-        self, completed_steps: Set[str]
+        self, completed_steps: set[str]
     ) -> "ServerSettingsSchema":
         """Update the onboarding state.
 

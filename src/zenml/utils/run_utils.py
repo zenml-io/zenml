@@ -167,7 +167,7 @@ def refresh_run_status(
     return run
 
 
-def build_dag(steps: Dict[str, List[str]]) -> Dict[str, Set[str]]:
+def build_dag(steps: dict[str, list[str]]) -> dict[str, set[str]]:
     """Build DAG with downstream steps from a list of steps.
 
     Args:
@@ -176,7 +176,7 @@ def build_dag(steps: Dict[str, List[str]]) -> Dict[str, Set[str]]:
     Returns:
         The DAG with downstream steps.
     """
-    dag: Dict[str, Set[str]] = {step: set() for step in steps}
+    dag: dict[str, set[str]] = {step: set() for step in steps}
 
     for step_name, upstream_steps in steps.items():
         for upstream_step in upstream_steps:
@@ -186,8 +186,8 @@ def build_dag(steps: Dict[str, List[str]]) -> Dict[str, Set[str]]:
 
 
 def find_all_downstream_steps(
-    step_name: str, dag: Dict[str, Set[str]]
-) -> Set[str]:
+    step_name: str, dag: dict[str, set[str]]
+) -> set[str]:
     """Find all downstream steps of a given step.
 
     Args:

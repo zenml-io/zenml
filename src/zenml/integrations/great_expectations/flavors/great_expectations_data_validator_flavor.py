@@ -54,16 +54,16 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
             Expectations docs are generated and can be visualized locally.
     """
 
-    context_root_dir: Optional[str] = None
-    context_config: Optional[Dict[str, Any]] = None
+    context_root_dir: str | None = None
+    context_config: dict[str, Any] | None = None
     configure_zenml_stores: bool = False
     configure_local_docs: bool = True
 
     @field_validator("context_root_dir")
     @classmethod
     def _ensure_valid_context_root_dir(
-        cls, context_root_dir: Optional[str] = None
-    ) -> Optional[str]:
+        cls, context_root_dir: str | None = None
+    ) -> str | None:
         """Ensures that the root directory is an absolute path and points to an existing path.
 
         Args:
@@ -87,7 +87,7 @@ class GreatExpectationsDataValidatorConfig(BaseDataValidatorConfig):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def validate_context_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_context_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert the context configuration if given in JSON/YAML format.
 
         Args:
@@ -137,7 +137,7 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
         return GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -146,7 +146,7 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -164,7 +164,7 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/greatexpectations.jpeg"
 
     @property
-    def config_class(self) -> Type[GreatExpectationsDataValidatorConfig]:
+    def config_class(self) -> type[GreatExpectationsDataValidatorConfig]:
         """Returns `GreatExpectationsDataValidatorConfig` config class.
 
         Returns:
@@ -173,7 +173,7 @@ class GreatExpectationsDataValidatorFlavor(BaseDataValidatorFlavor):
         return GreatExpectationsDataValidatorConfig
 
     @property
-    def implementation_class(self) -> Type["GreatExpectationsDataValidator"]:
+    def implementation_class(self) -> type["GreatExpectationsDataValidator"]:
         """Implementation class for this flavor.
 
         Returns:

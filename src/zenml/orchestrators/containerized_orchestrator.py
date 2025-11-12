@@ -28,7 +28,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     """Base class for containerized orchestrators."""
 
     @property
-    def requirements(self) -> Set[str]:
+    def requirements(self) -> set[str]:
         """Set of PyPI requirements for the component.
 
         Returns:
@@ -46,7 +46,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
     @staticmethod
     def get_image(
         snapshot: "PipelineSnapshotResponse",
-        step_name: Optional[str] = None,
+        step_name: str | None = None,
     ) -> str:
         """Gets the Docker image for the pipeline/a step.
 
@@ -88,7 +88,7 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:

@@ -77,21 +77,21 @@ AZURE_ACR_OAUTH_SCOPE = "repository:*:*"
 class AzureBaseConfig(AuthenticationConfig):
     """Azure base configuration."""
 
-    subscription_id: Optional[UUID] = Field(
+    subscription_id: UUID | None = Field(
         default=None,
         title="Azure Subscription ID",
         description="The subscription ID of the Azure account. If not "
         "specified, ZenML will attempt to retrieve the subscription ID from "
         "Azure using the configured credentials.",
     )
-    tenant_id: Optional[UUID] = Field(
+    tenant_id: UUID | None = Field(
         default=None,
         title="Azure Tenant ID",
         description="The tenant ID of the Azure account. If not specified, "
         "ZenML will attempt to retrieve the tenant from Azure using the "
         "configured credentials.",
     )
-    resource_group: Optional[str] = Field(
+    resource_group: str | None = Field(
         default=None,
         title="Azure Resource Group",
         description="A resource group may be used to restrict the scope of "
@@ -99,7 +99,7 @@ class AzureBaseConfig(AuthenticationConfig):
         "specified, ZenML will retrieve resources from all resource groups "
         "accessible with the configured credentials.",
     )
-    storage_account: Optional[str] = Field(
+    storage_account: str | None = Field(
         default=None,
         title="Azure Storage Account",
         description="The name of an Azure storage account may be used to "
@@ -457,12 +457,12 @@ class AzureServiceConnector(ServiceConnector):
 
     config: AzureBaseConfig
 
-    _subscription_id: Optional[str] = None
-    _subscription_name: Optional[str] = None
-    _tenant_id: Optional[str] = None
-    _session_cache: Dict[
+    _subscription_id: str | None = None
+    _subscription_name: str | None = None
+    _tenant_id: str | None = None
+    _session_cache: dict[
         str,
-        Tuple[TokenCredential, Optional[datetime.datetime]],
+        tuple[TokenCredential, datetime.datetime | None],
     ] = {}
 
     @classmethod
@@ -475,7 +475,7 @@ class AzureServiceConnector(ServiceConnector):
         return AZURE_SERVICE_CONNECTOR_TYPE_SPEC
 
     @property
-    def subscription(self) -> Tuple[str, str]:
+    def subscription(self) -> tuple[str, str]:
         """Get the Azure subscription ID and name.
 
         Returns:
@@ -578,9 +578,9 @@ class AzureServiceConnector(ServiceConnector):
     def get_azure_credential(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[TokenCredential, Optional[datetime.datetime]]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[TokenCredential, datetime.datetime | None]:
         """Get an Azure credential for the specified resource.
 
         Args:
@@ -622,9 +622,9 @@ class AzureServiceConnector(ServiceConnector):
     def _authenticate(
         self,
         auth_method: str,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> Tuple[TokenCredential, Optional[datetime.datetime]]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> tuple[TokenCredential, datetime.datetime | None]:
         """Authenticate to Azure and return a token credential.
 
         Args:
@@ -711,7 +711,7 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid Azure blob
                 resource ID.
         """
-        container_name: Optional[str] = None
+        container_name: str | None = None
         if re.match(
             r"^(az|abfs)://[a-z0-9](?!.*--)[a-z0-9-]{1,61}[a-z0-9](/.*)*$",
             resource_id,
@@ -758,7 +758,7 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid ACR
                 resource ID.
         """
-        registry_name: Optional[str] = None
+        registry_name: str | None = None
         if re.match(
             r"^(https?://)?[a-zA-Z0-9]+\.azurecr\.io(/.+)*$",
             resource_id,
@@ -783,7 +783,7 @@ class AzureServiceConnector(ServiceConnector):
 
     def _parse_aks_resource_id(
         self, resource_id: str
-    ) -> Tuple[Optional[str], str]:
+    ) -> tuple[str | None, str]:
         """Validate and convert an AKS resource ID to an AKS cluster name.
 
         The resource ID could mean different things:
@@ -804,7 +804,7 @@ class AzureServiceConnector(ServiceConnector):
             ValueError: If the provided resource ID is not a valid AKS cluster
                 name.
         """
-        resource_group: Optional[str] = self.config.resource_group
+        resource_group: str | None = self.config.resource_group
         if re.match(
             r"^[a-zA-Z0-9_.()-]+/[a-zA-Z0-9]+[a-zA-Z0-9_-]*[a-zA-Z0-9]+$",
             resource_id,
@@ -1045,11 +1045,11 @@ class AzureServiceConnector(ServiceConnector):
     @classmethod
     def _auto_configure(
         cls,
-        auth_method: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        resource_group: Optional[str] = None,
-        storage_account: Optional[str] = None,
+        auth_method: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        resource_group: str | None = None,
+        storage_account: str | None = None,
         **kwargs: Any,
     ) -> "AzureServiceConnector":
         """Auto-configure the connector.
@@ -1089,8 +1089,8 @@ class AzureServiceConnector(ServiceConnector):
                 the environment.
         """
         auth_config: AzureBaseConfig
-        expiration_seconds: Optional[int] = None
-        expires_at: Optional[datetime.datetime] = None
+        expiration_seconds: int | None = None
+        expires_at: datetime.datetime | None = None
         if auth_method == AzureAuthenticationMethods.IMPLICIT:
             auth_config = AzureBaseConfig(
                 resource_group=resource_group,
@@ -1165,8 +1165,8 @@ class AzureServiceConnector(ServiceConnector):
         return resource_id.split("/")[4]
 
     def _list_blob_containers(
-        self, credential: TokenCredential, container_name: Optional[str] = None
-    ) -> Dict[str, str]:
+        self, credential: TokenCredential, container_name: str | None = None
+    ) -> dict[str, str]:
         """Get the list of blob storage containers that the connector can access.
 
         Args:
@@ -1192,7 +1192,7 @@ class AzureServiceConnector(ServiceConnector):
         # is provided, we only need to find the storage account that contains
         # it.
 
-        storage_accounts: List[str] = []
+        storage_accounts: list[str] = []
         if self.config.storage_account:
             storage_accounts = [self.config.storage_account]
         else:
@@ -1239,7 +1239,7 @@ class AzureServiceConnector(ServiceConnector):
                 account.name for account in accounts if account.name
             ]
 
-        containers: Dict[str, str] = {}
+        containers: dict[str, str] = {}
         for storage_account in storage_accounts:
             account_url = f"https://{storage_account}.blob.core.windows.net/"
 
@@ -1301,8 +1301,8 @@ class AzureServiceConnector(ServiceConnector):
         return containers
 
     def _list_acr_registries(
-        self, credential: TokenCredential, registry_name: Optional[str] = None
-    ) -> Dict[str, str]:
+        self, credential: TokenCredential, registry_name: str | None = None
+    ) -> dict[str, str]:
         """Get the list of ACR registries that the connector can access.
 
         Args:
@@ -1322,7 +1322,7 @@ class AzureServiceConnector(ServiceConnector):
         """
         subscription_id, _ = self.subscription
 
-        container_registries: Dict[str, str] = {}
+        container_registries: dict[str, str] = {}
         if registry_name and self.config.resource_group:
             try:
                 container_client = ContainerRegistryManagementClient(
@@ -1419,9 +1419,9 @@ class AzureServiceConnector(ServiceConnector):
     def _list_aks_clusters(
         self,
         credential: TokenCredential,
-        cluster_name: Optional[str] = None,
-        resource_group: Optional[str] = None,
-    ) -> List[Tuple[str, str]]:
+        cluster_name: str | None = None,
+        resource_group: str | None = None,
+    ) -> list[tuple[str, str]]:
         """Get the list of AKS clusters that the connector can access.
 
         Args:
@@ -1444,7 +1444,7 @@ class AzureServiceConnector(ServiceConnector):
         """
         subscription_id, _ = self.subscription
 
-        clusters: List[Tuple[str, str]] = []
+        clusters: list[tuple[str, str]] = []
         if cluster_name and resource_group:
             try:
                 container_client = ContainerServiceClient(
@@ -1547,9 +1547,9 @@ class AzureServiceConnector(ServiceConnector):
 
     def _verify(
         self,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-    ) -> List[str]:
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+    ) -> list[str]:
         """Verify and list all the resources that the connector can access.
 
         Args:
@@ -1600,7 +1600,7 @@ class AzureServiceConnector(ServiceConnector):
                     "supported for blob storage resources"
                 )
 
-            container_name: Optional[str] = None
+            container_name: str | None = None
             if resource_id:
                 container_name = self._parse_blob_container_resource_id(
                     resource_id
@@ -1614,7 +1614,7 @@ class AzureServiceConnector(ServiceConnector):
             return [f"az://{container}" for container in containers.keys()]
 
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
-            registry_name: Optional[str] = None
+            registry_name: str | None = None
             if resource_id:
                 registry_name = self._parse_acr_resource_id(resource_id)
 
@@ -1626,7 +1626,7 @@ class AzureServiceConnector(ServiceConnector):
             return [f"{registry}.azurecr.io" for registry in registries.keys()]
 
         if resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE:
-            cluster_name: Optional[str] = None
+            cluster_name: str | None = None
             resource_group = self.config.resource_group
             if resource_id:
                 resource_group, cluster_name = self._parse_aks_resource_id(
@@ -1722,7 +1722,7 @@ class AzureServiceConnector(ServiceConnector):
             resource_id=resource_id,
         )
 
-        resource_group: Optional[str]
+        resource_group: str | None
         registry_name: str
         cluster_name: str
 

@@ -74,7 +74,7 @@ class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     type: SecretsStoreType = SecretsStoreType.SQL
-    encryption_key: Optional[PlainSerializedSecretStr] = None
+    encryption_key: PlainSerializedSecretStr | None = None
     model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the certificate attributes can be expanded to the contents
@@ -99,11 +99,11 @@ class SqlSecretsStore(BaseSecretsStore):
 
     config: SqlSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.SQL
-    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]] = (
+    CONFIG_TYPE: ClassVar[type[SecretsStoreConfiguration]] = (
         SqlSecretsStoreConfiguration
     )
 
-    _encryption_engine: Optional[AesGcmEngine] = None
+    _encryption_engine: AesGcmEngine | None = None
 
     def __init__(
         self,
@@ -185,7 +185,7 @@ class SqlSecretsStore(BaseSecretsStore):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -212,7 +212,7 @@ class SqlSecretsStore(BaseSecretsStore):
             session.add(secret_in_db)
             session.commit()
 
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -246,7 +246,7 @@ class SqlSecretsStore(BaseSecretsStore):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

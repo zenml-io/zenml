@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 def get_requirements_for_stack(
     stack: "StackResponse",
-    python_version: Optional[str] = None,
-) -> Tuple[List[str], List[str]]:
+    python_version: str | None = None,
+) -> tuple[list[str], list[str]]:
     """Get requirements for a stack model.
 
     Args:
@@ -34,8 +34,8 @@ def get_requirements_for_stack(
     Returns:
         Tuple of PyPI and APT requirements of the stack.
     """
-    pypi_requirements: Set[str] = set()
-    apt_packages: Set[str] = set()
+    pypi_requirements: set[str] = set()
+    apt_packages: set[str] = set()
 
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -57,8 +57,8 @@ def get_requirements_for_stack(
 
 def get_requirements_for_component(
     component: "ComponentResponse",
-    python_version: Optional[str] = None,
-) -> Tuple[List[str], List[str]]:
+    python_version: str | None = None,
+) -> tuple[list[str], list[str]]:
     """Get requirements for a component model.
 
     Args:

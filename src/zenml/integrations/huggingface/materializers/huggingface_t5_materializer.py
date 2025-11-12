@@ -37,8 +37,8 @@ class HFT5Materializer(BaseMaterializer):
     )
 
     def load(
-        self, data_type: Type[Any]
-    ) -> Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast]:
+        self, data_type: type[Any]
+    ) -> T5ForConditionalGeneration | T5Tokenizer | T5TokenizerFast:
         """Reads a T5ForConditionalGeneration model or T5Tokenizer from a serialized zip file.
 
         Args:
@@ -77,7 +77,7 @@ class HFT5Materializer(BaseMaterializer):
 
     def save(
         self,
-        obj: Union[T5ForConditionalGeneration, T5Tokenizer, T5TokenizerFast],
+        obj: T5ForConditionalGeneration | T5Tokenizer | T5TokenizerFast,
     ) -> None:
         """Creates a serialization for a T5ForConditionalGeneration model or T5Tokenizer.
 

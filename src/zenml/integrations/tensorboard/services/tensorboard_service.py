@@ -71,7 +71,7 @@ class TensorboardService(LocalDaemonService):
 
     def __init__(
         self,
-        config: Union[TensorboardServiceConfig, Dict[str, Any]],
+        config: TensorboardServiceConfig | dict[str, Any],
         **attrs: Any,
     ) -> None:
         """Initialization for TensorBoard service.

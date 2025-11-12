@@ -53,12 +53,12 @@ class ServiceConnectorSecretsStoreConfiguration(SecretsStoreConfiguration):
     """
 
     auth_method: str
-    auth_config: Dict[str, Any] = Field(default_factory=dict)
+    auth_config: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def validate_auth_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_auth_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Convert the authentication configuration if given in JSON format.
 
         Args:
@@ -99,13 +99,13 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
     """
 
     config: ServiceConnectorSecretsStoreConfiguration
-    CONFIG_TYPE: ClassVar[Type[ServiceConnectorSecretsStoreConfiguration]]
+    CONFIG_TYPE: ClassVar[type[ServiceConnectorSecretsStoreConfiguration]]
     SERVICE_CONNECTOR_TYPE: ClassVar[str]
     SERVICE_CONNECTOR_RESOURCE_TYPE: ClassVar[str]
 
-    _connector: Optional[ServiceConnector] = None
-    _client: Optional[Any] = None
-    _lock: Optional[Lock] = None
+    _connector: ServiceConnector | None = None
+    _client: Any | None = None
+    _lock: Lock | None = None
 
     def _initialize(self) -> None:
         """Initialize the secrets store."""

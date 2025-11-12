@@ -77,7 +77,7 @@ class StepRunRequestFactory:
         )
 
     def create_request(
-        self, invocation_id: str, dynamic_config: Optional[Step] = None
+        self, invocation_id: str, dynamic_config: Step | None = None
     ) -> StepRunRequest:
         """Create a step run request.
 
@@ -105,7 +105,7 @@ class StepRunRequestFactory:
     def populate_request(
         self,
         request: StepRunRequest,
-        step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
+        step_runs: dict[str, "StepRunResponse"] | None = None,
     ) -> None:
         """Populate a step run request with additional information.
 
@@ -193,7 +193,7 @@ class StepRunRequestFactory:
 
     def _get_docstring_and_source_code(
         self, step: "Step"
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Get the docstring and source code for the step.
 
         Args:
@@ -220,7 +220,7 @@ class StepRunRequestFactory:
     @staticmethod
     def _get_docstring_and_source_code_from_step_instance(
         step: "Step",
-    ) -> Tuple[Optional[str], str]:
+    ) -> tuple[str | None, str]:
         """Get the docstring and source code of a step.
 
         Args:
@@ -245,7 +245,7 @@ class StepRunRequestFactory:
 
     def _try_to_get_docstring_and_source_code_from_template(
         self, invocation_id: str
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Try to get the docstring and source code via a potential template.
 
         Args:
@@ -278,8 +278,8 @@ class StepRunRequestFactory:
 
 def find_cacheable_invocation_candidates(
     snapshot: "PipelineSnapshotResponse",
-    finished_invocations: Set[str],
-) -> Set[str]:
+    finished_invocations: set[str],
+) -> set[str]:
     """Find invocations that can potentially be cached.
 
     Args:
@@ -314,7 +314,7 @@ def create_cached_step_runs(
     snapshot: "PipelineSnapshotResponse",
     pipeline_run: PipelineRunResponse,
     stack: "Stack",
-) -> Set[str]:
+) -> set[str]:
     """Create all cached step runs for a pipeline run.
 
     Args:
@@ -325,14 +325,14 @@ def create_cached_step_runs(
     Returns:
         The invocation IDs of the created step runs.
     """
-    cached_invocations: Set[str] = set()
-    visited_invocations: Set[str] = set()
+    cached_invocations: set[str] = set()
+    visited_invocations: set[str] = set()
     request_factory = StepRunRequestFactory(
         snapshot=snapshot, pipeline_run=pipeline_run, stack=stack
     )
     # This is used to cache the step runs that we created to avoid unnecessary
     # server requests.
-    step_runs: Dict[str, "StepRunResponse"] = {}
+    step_runs: dict[str, "StepRunResponse"] = {}
 
     while (
         cache_candidates := find_cacheable_invocation_candidates(
@@ -413,7 +413,7 @@ def log_model_version_dashboard_url(
 
 
 def link_output_artifacts_to_model_version(
-    artifacts: Dict[str, List[ArtifactVersionResponse]],
+    artifacts: dict[str, list[ArtifactVersionResponse]],
     model_version: ModelVersionResponse,
 ) -> None:
     """Link the outputs of a step run to a model version.
@@ -454,8 +454,8 @@ def publish_cached_step_run(
 
 
 def fetch_step_runs_by_names(
-    step_run_names: List[str], pipeline_run: "PipelineRunResponse"
-) -> Dict[str, "StepRunResponse"]:
+    step_run_names: list[str], pipeline_run: "PipelineRunResponse"
+) -> dict[str, "StepRunResponse"]:
     """Fetch step runs by names.
 
     Args:

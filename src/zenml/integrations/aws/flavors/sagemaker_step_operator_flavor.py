@@ -36,31 +36,31 @@ if TYPE_CHECKING:
 class SagemakerStepOperatorSettings(BaseSettings):
     """Settings for the Sagemaker step operator."""
 
-    instance_type: Optional[str] = Field(
+    instance_type: str | None = Field(
         None,
         description="DEPRECATED: The instance type to use for the step execution. "
         "Use estimator_args instead. Example: 'ml.m5.xlarge'",
     )
-    experiment_name: Optional[str] = Field(
+    experiment_name: str | None = Field(
         None,
         description="The name for the experiment to which the job will be associated. "
         "If not provided, the job runs would be independent. Example: 'my-training-experiment'",
     )
-    input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
+    input_data_s3_uri: str | dict[str, str] | None = Field(
         default=None,
         union_mode="left_to_right",
         description="S3 URI where training data is located if not locally. "
         "Example string: 's3://my-bucket/my-data/train'. Example dict: "
         "{'training': 's3://bucket/train', 'validation': 's3://bucket/val'}",
     )
-    estimator_args: Dict[str, Any] = Field(
+    estimator_args: dict[str, Any] = Field(
         default_factory=dict,
         description="Arguments that are directly passed to the SageMaker Estimator. "
         "See SageMaker documentation for available arguments and instance types. Example: "
         "{'instance_type': 'ml.m5.xlarge', 'instance_count': 1, "
         "'train_max_run': 3600, 'input_mode': 'File'}",
     )
-    environment: Dict[str, str] = Field(
+    environment: dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to pass to the container during execution. "
         "Example: {'LOG_LEVEL': 'INFO', 'DEBUG_MODE': 'False'}",
@@ -82,7 +82,7 @@ class SagemakerStepOperatorConfig(
         "running in SageMaker. This role must have the necessary permissions "
         "to access SageMaker and S3 resources.",
     )
-    bucket: Optional[str] = Field(
+    bucket: str | None = Field(
         None,
         description="Name of the S3 bucket to use for storing artifacts from the job run. "
         "If not provided, a default bucket will be created based on the format: "
@@ -118,7 +118,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -131,7 +131,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
         return ServiceConnectorRequirements(resource_type=AWS_RESOURCE_TYPE)
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -140,7 +140,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -158,7 +158,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/sagemaker.png"
 
     @property
-    def config_class(self) -> Type[SagemakerStepOperatorConfig]:
+    def config_class(self) -> type[SagemakerStepOperatorConfig]:
         """Returns SagemakerStepOperatorConfig config class.
 
         Returns:
@@ -167,7 +167,7 @@ class SagemakerStepOperatorFlavor(BaseStepOperatorFlavor):
         return SagemakerStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["SagemakerStepOperator"]:
+    def implementation_class(self) -> type["SagemakerStepOperator"]:
         """Implementation class.
 
         Returns:

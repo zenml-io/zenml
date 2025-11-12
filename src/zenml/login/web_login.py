@@ -40,9 +40,9 @@ logger = get_logger(__name__)
 
 
 def web_login(
-    url: Optional[str] = None,
-    verify_ssl: Optional[Union[str, bool]] = None,
-    pro_api_url: Optional[str] = None,
+    url: str | None = None,
+    verify_ssl: str | bool | None = None,
+    pro_api_url: str | None = None,
 ) -> APIToken:
     """Implements the OAuth2 Device Authorization Grant flow.
 
@@ -86,7 +86,7 @@ def web_login(
 
     # Make a request to the OAuth2 server to get the device code and user code.
     # The client ID used for the request is the unique ID of the ZenML client.
-    response: Optional[requests.Response] = None
+    response: requests.Response | None = None
 
     # Add the following information in the user agent header to be used by users
     # to identify the ZenML client:

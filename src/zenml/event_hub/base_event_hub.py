@@ -15,7 +15,8 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from collections.abc import Callable
 
 from zenml import EventSourceResponse
 from zenml.config.global_config import GlobalConfiguration
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ActionHandlerCallback = Callable[
-    [Dict[str, Any], TriggerExecutionResponse, AuthContext], None
+    [dict[str, Any], TriggerExecutionResponse, AuthContext], None
 ]
 
 
@@ -54,7 +55,7 @@ class BaseEventHub(ABC):
     unaware of each other.
     """
 
-    action_handlers: Dict[Tuple[str, str], ActionHandlerCallback] = {}
+    action_handlers: dict[tuple[str, str], ActionHandlerCallback] = {}
 
     @property
     def zen_store(self) -> "SqlZenStore":
@@ -133,7 +134,7 @@ class BaseEventHub(ABC):
         token = JWTToken(
             user_id=trigger.action.service_account.id,
         )
-        expires: Optional[datetime] = None
+        expires: datetime | None = None
         if trigger.action.auth_window:
             expires = utc_now() + timedelta(minutes=trigger.action.auth_window)
         encoded_token = token.encode(expires=expires)

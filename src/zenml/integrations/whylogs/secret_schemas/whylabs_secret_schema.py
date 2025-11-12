@@ -30,4 +30,4 @@ class WhylabsSecretSchema(BaseSecretSchema):
 
     whylabs_default_org_id: str
     whylabs_api_key: str
-    whylabs_default_dataset_id: Optional[str] = None
+    whylabs_default_dataset_id: str | None = None

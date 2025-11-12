@@ -41,7 +41,7 @@ class OrganizationClient:
 
     def get(
         self,
-        id_or_name: Union[UUID, str],
+        id_or_name: UUID | str,
     ) -> OrganizationRead:
         """Get an organization by id or name.
 
@@ -61,7 +61,7 @@ class OrganizationClient:
         self,
         offset: int = 0,
         limit: int = 20,
-    ) -> List[OrganizationRead]:
+    ) -> list[OrganizationRead]:
         """List organizations.
 
         Args:

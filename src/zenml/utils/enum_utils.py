@@ -29,7 +29,7 @@ class StrEnum(str, Enum):
         return self.value  # type: ignore
 
     @classmethod
-    def names(cls) -> List[str]:
+    def names(cls) -> list[str]:
         """Get all enum names as a list of strings.
 
         Returns:
@@ -38,7 +38,7 @@ class StrEnum(str, Enum):
         return [c.name for c in cls]
 
     @classmethod
-    def values(cls) -> List[str]:
+    def values(cls) -> list[str]:
         """Get all enum values as a list of strings.
 
         Returns:

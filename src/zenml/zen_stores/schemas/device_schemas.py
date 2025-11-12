@@ -15,7 +15,8 @@
 
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, Optional, Tuple
+from collections.abc import Sequence
 from uuid import UUID
 
 from passlib.context import CryptContext
@@ -51,19 +52,19 @@ class OAuthDeviceSchema(BaseSchema, table=True):
     device_code: str
     status: str
     failed_auth_attempts: int = 0
-    expires: Optional[datetime] = None
-    last_login: Optional[datetime] = None
+    expires: datetime | None = None
+    last_login: datetime | None = None
     trusted_device: bool = False
-    os: Optional[str] = None
-    ip_address: Optional[str] = None
-    hostname: Optional[str] = None
-    python_version: Optional[str] = None
-    zenml_version: Optional[str] = None
-    city: Optional[str] = None
-    region: Optional[str] = None
-    country: Optional[str] = None
+    os: str | None = None
+    ip_address: str | None = None
+    hostname: str | None = None
+    python_version: str | None = None
+    zenml_version: str | None = None
+    city: str | None = None
+    region: str | None = None
+    country: str | None = None
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -137,7 +138,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
     @classmethod
     def from_request(
         cls, request: OAuthDeviceInternalRequest
-    ) -> Tuple["OAuthDeviceSchema", str, str]:
+    ) -> tuple["OAuthDeviceSchema", str, str]:
         """Create an authorized device DB entry from a device authorization request.
 
         Args:
@@ -199,7 +200,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
 
     def internal_update(
         self, device_update: OAuthDeviceInternalUpdate
-    ) -> Tuple["OAuthDeviceSchema", Optional[str], Optional[str]]:
+    ) -> tuple["OAuthDeviceSchema", str | None, str | None]:
         """Update an authorized device from an internal device update model.
 
         Args:
@@ -210,8 +211,8 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             code, if they were generated.
         """
         now = utc_now()
-        user_code: Optional[str] = None
-        device_code: Optional[str] = None
+        user_code: str | None = None
+        device_code: str | None = None
 
         # This call also takes care of setting fields that have the same
         # name in the internal model and the schema.

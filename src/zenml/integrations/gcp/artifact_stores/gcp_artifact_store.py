@@ -15,15 +15,14 @@
 
 from typing import (
     Any,
-    Callable,
     Dict,
-    Iterable,
     List,
     Optional,
     Tuple,
     Union,
     cast,
 )
+from collections.abc import Callable, Iterable
 
 import gcsfs
 from google.cloud import storage
@@ -46,7 +45,7 @@ PathType = Union[bytes, str]
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
-    _filesystem: Optional[gcsfs.GCSFileSystem] = None
+    _filesystem: gcsfs.GCSFileSystem | None = None
 
     @property
     def config(self) -> GCPArtifactStoreConfig:
@@ -59,7 +58,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     def get_credentials(
         self,
-    ) -> Optional[Union[Dict[str, Any], gcp_credentials.Credentials]]:
+    ) -> dict[str, Any] | gcp_credentials.Credentials | None:
         """Returns the credentials for the GCP Artifact Store if configured.
 
         Returns:
@@ -153,7 +152,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    def glob(self, pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> list[PathType]:
         """Return all paths that match the given glob pattern.
 
         The glob pattern may include:
@@ -185,7 +184,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    def listdir(self, path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> list[PathType]:
         """Return a list of files in a directory.
 
         Args:
@@ -198,7 +197,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if path_without_prefix.startswith(GCP_PATH_PREFIX):
             path_without_prefix = path_without_prefix[len(GCP_PATH_PREFIX) :]
 
-        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+        def _extract_basename(file_dict: dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by GCP.
 
             Args:
@@ -279,7 +278,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         self.filesystem.delete(path=path, recursive=True)
 
-    def stat(self, path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> dict[str, Any]:
         """Return stat info for the given path.
 
         Args:
@@ -305,8 +304,8 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self,
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:

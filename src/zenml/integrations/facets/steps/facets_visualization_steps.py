@@ -44,7 +44,7 @@ def facets_visualization_step(
 
 @step
 def facets_list_visualization_step(
-    dataframes: List[pd.DataFrame],
+    dataframes: list[pd.DataFrame],
 ) -> FacetsComparison:
     """Visualize and compare dataset statistics with Facets.
 
@@ -54,7 +54,7 @@ def facets_list_visualization_step(
     Returns:
         `FacetsComparison` object.
     """
-    datasets: List[Dict[str, Union[str, pd.DataFrame]]] = []
+    datasets: list[dict[str, str | pd.DataFrame]] = []
     for i, df in enumerate(dataframes):
         datasets.append({"name": f"dataset_{i}", "table": df})
     return FacetsComparison(datasets=datasets)
@@ -62,7 +62,7 @@ def facets_list_visualization_step(
 
 @step
 def facets_dict_visualization_step(
-    dataframes: Dict[str, pd.DataFrame],
+    dataframes: dict[str, pd.DataFrame],
 ) -> FacetsComparison:
     """Visualize and compare dataset statistics with Facets.
 
@@ -73,7 +73,7 @@ def facets_dict_visualization_step(
     Returns:
         `FacetsComparison` object.
     """
-    datasets: List[Dict[str, Union[str, pd.DataFrame]]] = []
+    datasets: list[dict[str, str | pd.DataFrame]] = []
     for name, df in dataframes.items():
         datasets.append({"name": name, "table": df})
     return FacetsComparison(datasets=datasets)

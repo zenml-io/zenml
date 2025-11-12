@@ -29,11 +29,11 @@ DEFAULT_FILENAME = "uuid.txt"
 class UUIDMaterializer(BaseMaterializer):
     """Materializer to handle UUID objects."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (uuid.UUID,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (uuid.UUID,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
     def __init__(
-        self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
+        self, uri: str, artifact_store: BaseArtifactStore | None = None
     ):
         """Define `self.data_path`.
 
@@ -44,7 +44,7 @@ class UUIDMaterializer(BaseMaterializer):
         super().__init__(uri, artifact_store)
         self.data_path = os.path.join(self.uri, DEFAULT_FILENAME)
 
-    def load(self, _: Type[uuid.UUID]) -> uuid.UUID:
+    def load(self, _: type[uuid.UUID]) -> uuid.UUID:
         """Read UUID from artifact store.
 
         Args:
@@ -66,7 +66,7 @@ class UUIDMaterializer(BaseMaterializer):
         with self.artifact_store.open(self.data_path, "w") as f:
             f.write(str(data))
 
-    def extract_metadata(self, data: uuid.UUID) -> Dict[str, MetadataType]:
+    def extract_metadata(self, data: uuid.UUID) -> dict[str, MetadataType]:
         """Extract metadata from the UUID.
 
         Args:
@@ -79,7 +79,7 @@ class UUIDMaterializer(BaseMaterializer):
             "string_representation": str(data),
         }
 
-    def compute_content_hash(self, data: uuid.UUID) -> Optional[str]:
+    def compute_content_hash(self, data: uuid.UUID) -> str | None:
         """Compute the content hash of the given data.
 
         Args:

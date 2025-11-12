@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class VertexOrchestratorSettings(BaseSettings):
     """Settings for the Vertex orchestrator."""
 
-    labels: Dict[str, str] = Field(
+    labels: dict[str, str] = Field(
         default_factory=dict,
         description="Labels to assign to the pipeline job. "
         "Example: {'environment': 'production', 'team': 'ml-ops'}",
@@ -52,7 +52,7 @@ class VertexOrchestratorSettings(BaseSettings):
         "the client returns immediately and the pipeline is executed "
         "asynchronously.",
     )
-    node_selector_constraint: Optional[Tuple[str, str]] = Field(
+    node_selector_constraint: tuple[str, str] | None = Field(
         None,
         description="Each constraint is a key-value pair label. For the container "
         "to be eligible to run on a node, the node must have each of the "
@@ -61,12 +61,12 @@ class VertexOrchestratorSettings(BaseSettings):
         "Hint: the selected region (location) must provide the requested accelerator"
         "(see https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).",
     )
-    pod_settings: Optional[KubernetesPodSettings] = Field(
+    pod_settings: KubernetesPodSettings | None = Field(
         None,
         description="Pod settings to apply to the orchestrator and step pods.",
     )
 
-    custom_job_parameters: Optional[VertexCustomJobParameters] = Field(
+    custom_job_parameters: VertexCustomJobParameters | None = Field(
         None, description="Custom parameters for the Vertex AI custom job."
     )
 
@@ -90,32 +90,32 @@ class VertexOrchestratorConfig(
         "Vertex AI Pipelines is available in specific regions: "
         "https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability",
     )
-    pipeline_root: Optional[str] = Field(
+    pipeline_root: str | None = Field(
         None,
         description="A Cloud Storage URI that will be used by the Vertex AI Pipelines. "
         "If not provided but the artifact store in the stack is a GCPArtifactStore, "
         "then a subdirectory of the artifact store will be used.",
     )
-    encryption_spec_key_name: Optional[str] = Field(
+    encryption_spec_key_name: str | None = Field(
         None,
         description="The Cloud KMS resource identifier of the customer managed "
         "encryption key used to protect the job. Has the form: "
         "projects/<PROJECT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>. "
         "The key needs to be in the same region as where the compute resource is created.",
     )
-    workload_service_account: Optional[str] = Field(
+    workload_service_account: str | None = Field(
         None,
         description="The service account for workload run-as account. Users submitting "
         "jobs must have act-as permission on this run-as account. If not provided, "
         "the Compute Engine default service account for the GCP project is used.",
     )
-    network: Optional[str] = Field(
+    network: str | None = Field(
         None,
         description="The full name of the Compute Engine Network to which the job "
         "should be peered. For example, 'projects/12345/global/networks/myVPC'. "
         "If not provided, the job will not be peered with any network.",
     )
-    private_service_connect: Optional[str] = Field(
+    private_service_connect: str | None = Field(
         None,
         description="The full name of a Private Service Connect endpoint to which "
         "the job should be peered. For example, "
@@ -124,27 +124,27 @@ class VertexOrchestratorConfig(
     )
 
     # Deprecated
-    cpu_limit: Optional[str] = Field(
+    cpu_limit: str | None = Field(
         None,
         description="DEPRECATED: The maximum CPU limit for this operator. "
         "Use custom_job_parameters or pod_settings instead.",
     )
-    memory_limit: Optional[str] = Field(
+    memory_limit: str | None = Field(
         None,
         description="DEPRECATED: The maximum memory limit for this operator. "
         "Use custom_job_parameters or pod_settings instead.",
     )
-    gpu_limit: Optional[int] = Field(
+    gpu_limit: int | None = Field(
         None,
         description="DEPRECATED: The GPU limit for the operator. "
         "Use custom_job_parameters or pod_settings instead.",
     )
-    function_service_account: Optional[str] = Field(
+    function_service_account: str | None = Field(
         None,
         description="DEPRECATED: The service account for cloud function run-as account, "
         "for scheduled pipelines. This functionality is no longer supported.",
     )
-    scheduler_service_account: Optional[str] = Field(
+    scheduler_service_account: str | None = Field(
         None,
         description="DEPRECATED: The service account used by the Google Cloud Scheduler "
         "to trigger and authenticate to the pipeline Cloud Function on a schedule. "
@@ -206,7 +206,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -221,7 +221,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -230,7 +230,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -248,7 +248,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/vertexai.png"
 
     @property
-    def config_class(self) -> Type[VertexOrchestratorConfig]:
+    def config_class(self) -> type[VertexOrchestratorConfig]:
         """Returns VertexOrchestratorConfig config class.
 
         Returns:
@@ -257,7 +257,7 @@ class VertexOrchestratorFlavor(BaseOrchestratorFlavor):
         return VertexOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["VertexOrchestrator"]:
+    def implementation_class(self) -> type["VertexOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

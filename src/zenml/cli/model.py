@@ -36,7 +36,7 @@ from zenml.utils.dict_utils import remove_none_values
 logger = get_logger(__name__)
 
 
-def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
+def _model_to_print(model: ModelResponse) -> dict[str, Any]:
     return {
         "id": model.id,
         "name": model.name,
@@ -58,7 +58,7 @@ def _model_to_print(model: ModelResponse) -> Dict[str, Any]:
 
 def _model_version_to_print(
     model_version: ModelVersionResponse,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "id": model_version.id,
         "model": model_version.model.name,
@@ -169,15 +169,15 @@ def list_models(**kwargs: Any) -> None:
 )
 def register_model(
     name: str,
-    license: Optional[str],
-    description: Optional[str],
-    audience: Optional[str],
-    use_cases: Optional[str],
-    tradeoffs: Optional[str],
-    ethical: Optional[str],
-    limitations: Optional[str],
-    tag: Optional[List[str]],
-    save_models_to_registry: Optional[bool],
+    license: str | None,
+    description: str | None,
+    audience: str | None,
+    use_cases: str | None,
+    tradeoffs: str | None,
+    ethical: str | None,
+    limitations: str | None,
+    tag: list[str] | None,
+    save_models_to_registry: bool | None,
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -299,17 +299,17 @@ def register_model(
 )
 def update_model(
     model_name_or_id: str,
-    name: Optional[str],
-    license: Optional[str],
-    description: Optional[str],
-    audience: Optional[str],
-    use_cases: Optional[str],
-    tradeoffs: Optional[str],
-    ethical: Optional[str],
-    limitations: Optional[str],
-    tag: Optional[List[str]],
-    remove_tag: Optional[List[str]],
-    save_models_to_registry: Optional[bool],
+    name: str | None,
+    license: str | None,
+    description: str | None,
+    audience: str | None,
+    use_cases: str | None,
+    tradeoffs: str | None,
+    ethical: str | None,
+    limitations: str | None,
+    tag: list[str] | None,
+    remove_tag: list[str] | None,
+    save_models_to_registry: bool | None,
 ) -> None:
     """Register a new model in the Model Control Plane.
 
@@ -460,11 +460,11 @@ def list_model_versions(**kwargs: Any) -> None:
 def update_model_version(
     model_name_or_id: str,
     model_version_name_or_number_or_id: str,
-    stage: Optional[str],
-    name: Optional[str],
-    description: Optional[str],
-    tag: Optional[List[str]],
-    remove_tag: Optional[List[str]],
+    stage: str | None,
+    name: str | None,
+    description: str | None,
+    tag: list[str] | None,
+    remove_tag: list[str] | None,
     force: bool = False,
 ) -> None:
     """Update an existing model version stage in the Model Control Plane.
@@ -567,7 +567,7 @@ def delete_model_version(
 
 def _print_artifacts_links_generic(
     model_name_or_id: str,
-    model_version_name_or_number_or_id: Optional[str] = None,
+    model_version_name_or_number_or_id: str | None = None,
     only_data_artifacts: bool = False,
     only_deployment_artifacts: bool = False,
     only_model_artifacts: bool = False,
@@ -625,7 +625,7 @@ def _print_artifacts_links_generic(
 @cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_data_artifacts(
     model_name: str,
-    model_version: Optional[str] = None,
+    model_version: str | None = None,
     **kwargs: Any,
 ) -> None:
     """List data artifacts linked to a model version in the Model Control Plane.
@@ -653,7 +653,7 @@ def list_model_version_data_artifacts(
 @cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_model_artifacts(
     model_name: str,
-    model_version: Optional[str] = None,
+    model_version: str | None = None,
     **kwargs: Any,
 ) -> None:
     """List model artifacts linked to a model version in the Model Control Plane.
@@ -681,7 +681,7 @@ def list_model_version_model_artifacts(
 @cli_utils.list_options(ModelVersionArtifactFilter)
 def list_model_version_deployment_artifacts(
     model_name: str,
-    model_version: Optional[str] = None,
+    model_version: str | None = None,
     **kwargs: Any,
 ) -> None:
     """List deployment artifacts linked to a model version in the Model Control Plane.
@@ -709,7 +709,7 @@ def list_model_version_deployment_artifacts(
 @cli_utils.list_options(ModelVersionPipelineRunFilter)
 def list_model_version_pipeline_runs(
     model_name: str,
-    model_version: Optional[str] = None,
+    model_version: str | None = None,
     **kwargs: Any,
 ) -> None:
     """List pipeline runs of a model version in the Model Control Plane.

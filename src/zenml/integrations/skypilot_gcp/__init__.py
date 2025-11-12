@@ -43,7 +43,7 @@ class SkypilotGCPIntegration(Integration):
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Skypilot GCP integration.
 
         Returns:

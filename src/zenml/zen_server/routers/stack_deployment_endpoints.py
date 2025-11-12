@@ -78,7 +78,7 @@ def get_stack_deployment_config(
     request: Request,
     provider: StackDeploymentProvider,
     stack_name: str,
-    location: Optional[str] = None,
+    location: str | None = None,
     terraform: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> StackDeploymentConfig:
@@ -143,11 +143,11 @@ def get_stack_deployment_config(
 def get_deployed_stack(
     provider: StackDeploymentProvider,
     stack_name: str,
-    location: Optional[str] = None,
-    date_start: Optional[datetime.datetime] = None,
+    location: str | None = None,
+    date_start: datetime.datetime | None = None,
     terraform: bool = False,
     _: AuthContext = Security(authorize),
-) -> Optional[DeployedStack]:
+) -> DeployedStack | None:
     """Return a matching ZenML stack that was deployed and registered.
 
     Args:

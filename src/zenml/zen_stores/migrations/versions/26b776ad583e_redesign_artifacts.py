@@ -108,7 +108,7 @@ def upgrade() -> None:
 
     # For each cached artifact, find the ID of the original produced artifact
     # and link all input artifact entries to the produced artifact.
-    cached_to_produced_mapping: Dict[str, str] = {}
+    cached_to_produced_mapping: dict[str, str] = {}
     for cached_artifact in cached_artifacts:
         produced_artifact = _find_produced_artifact(cached_artifact)
         cached_to_produced_mapping[cached_artifact.id] = produced_artifact.id

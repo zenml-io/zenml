@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Deepchecks data drift validation step."""
 
-from typing import Any, Dict, Optional, Sequence, cast
+from typing import Any, Dict, Optional, cast
+from collections.abc import Sequence
 
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
@@ -31,10 +32,10 @@ from zenml.integrations.deepchecks.validation_checks import (
 def deepchecks_data_drift_check_step(
     reference_dataset: pd.DataFrame,
     target_dataset: pd.DataFrame,
-    check_list: Optional[Sequence[DeepchecksDataDriftCheck]] = None,
-    dataset_kwargs: Optional[Dict[str, Any]] = None,
-    check_kwargs: Optional[Dict[str, Any]] = None,
-    run_kwargs: Optional[Dict[str, Any]] = None,
+    check_list: Sequence[DeepchecksDataDriftCheck] | None = None,
+    dataset_kwargs: dict[str, Any] | None = None,
+    check_kwargs: dict[str, Any] | None = None,
+    run_kwargs: dict[str, Any] | None = None,
 ) -> SuiteResult:
     """Run data drift checks on two pandas datasets using Deepchecks.
 

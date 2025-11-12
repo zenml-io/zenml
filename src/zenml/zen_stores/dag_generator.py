@@ -25,10 +25,10 @@ class DAGGeneratorHelper:
 
     def __init__(self) -> None:
         """Initialize the DAG generator helper."""
-        self.step_nodes: Dict[str, PipelineRunDAG.Node] = {}
-        self.artifact_nodes: Dict[str, PipelineRunDAG.Node] = {}
-        self.triggered_run_nodes: Dict[str, PipelineRunDAG.Node] = {}
-        self.edges: List[PipelineRunDAG.Edge] = []
+        self.step_nodes: dict[str, PipelineRunDAG.Node] = {}
+        self.artifact_nodes: dict[str, PipelineRunDAG.Node] = {}
+        self.triggered_run_nodes: dict[str, PipelineRunDAG.Node] = {}
+        self.edges: list[PipelineRunDAG.Edge] = []
 
     def get_step_node_id(self, name: str) -> str:
         """Get the ID of a step node.
@@ -81,7 +81,7 @@ class DAGGeneratorHelper:
         self,
         node_id: str,
         name: str,
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add a step node to the DAG.
@@ -109,7 +109,7 @@ class DAGGeneratorHelper:
         self,
         node_id: str,
         name: str,
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add an artifact node to the DAG.
@@ -137,7 +137,7 @@ class DAGGeneratorHelper:
         self,
         node_id: str,
         name: str,
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         **metadata: Any,
     ) -> PipelineRunDAG.Node:
         """Add a triggered run node to the DAG.

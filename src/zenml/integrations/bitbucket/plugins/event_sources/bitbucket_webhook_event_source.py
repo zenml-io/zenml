@@ -58,9 +58,9 @@ class BitbucketEventType(StrEnum):
 class User(BaseModel):
     """Bitbucket User."""
 
-    name: Optional[str] = None
-    email: Optional[str] = None
-    username: Optional[str] = None
+    name: str | None = None
+    email: str | None = None
+    username: str | None = None
 
 
 class Commit(BaseModel):
@@ -68,7 +68,7 @@ class Commit(BaseModel):
 
     hash: str
     message: str
-    links: Dict[str, Any]
+    links: dict[str, Any]
     author: User
 
 
@@ -78,21 +78,21 @@ class Repository(BaseModel):
     uuid: str
     name: str
     full_name: str
-    links: Dict[str, Any]
+    links: dict[str, Any]
 
 
 class PushChange(BaseModel):
     """Bitbucket Push Change."""
 
-    new: Optional[Dict[str, Any]] = None
-    old: Optional[Dict[str, Any]] = None
-    commits: List[Commit]
+    new: dict[str, Any] | None = None
+    old: dict[str, Any] | None = None
+    commits: list[Commit]
 
 
 class Push(BaseModel):
     """Bitbucket Push."""
 
-    changes: List[PushChange]
+    changes: list[PushChange]
 
 
 class BitbucketEvent(BaseEvent):
@@ -104,7 +104,7 @@ class BitbucketEvent(BaseEvent):
     model_config = ConfigDict(extra="allow")
 
     @property
-    def branch(self) -> Optional[str]:
+    def branch(self) -> str | None:
         """The branch the event happened on.
 
         Returns:
@@ -117,7 +117,7 @@ class BitbucketEvent(BaseEvent):
         return None
 
     @property
-    def event_type(self) -> Union[BitbucketEventType, str]:
+    def event_type(self) -> BitbucketEventType | str:
         """The type of Bitbucket event.
 
         Args:
@@ -151,9 +151,9 @@ class BitbucketEvent(BaseEvent):
 class BitbucketWebhookEventFilterConfiguration(WebhookEventFilterConfig):
     """Configuration for Bitbucket event filters."""
 
-    repo: Optional[str] = None
-    branch: Optional[str] = None
-    event_type: Optional[BitbucketEventType] = None
+    repo: str | None = None
+    branch: str | None = None
+    event_type: BitbucketEventType | None = None
 
     def event_matches_filter(self, event: BaseEvent) -> bool:
         """Checks the filter against the inbound event.
@@ -181,15 +181,15 @@ class BitbucketWebhookEventFilterConfiguration(WebhookEventFilterConfig):
 class BitbucketWebhookEventSourceConfiguration(WebhookEventSourceConfig):
     """Configuration for Bitbucket source filters."""
 
-    webhook_secret: Optional[str] = Field(
+    webhook_secret: str | None = Field(
         default=None,
         title="The webhook secret for the event source.",
     )
-    webhook_secret_id: Optional[UUID] = Field(
+    webhook_secret_id: UUID | None = Field(
         default=None,
         description="The ID of the secret containing the webhook secret.",
     )
-    rotate_secret: Optional[bool] = Field(
+    rotate_secret: bool | None = Field(
         default=None, description="Set to rotate the webhook secret."
     )
 
@@ -201,7 +201,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
     """Handler for all Bitbucket events."""
 
     @property
-    def config_class(self) -> Type[BitbucketWebhookEventSourceConfiguration]:
+    def config_class(self) -> type[BitbucketWebhookEventSourceConfiguration]:
         """Returns the webhook event source configuration class.
 
         Returns:
@@ -210,7 +210,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         return BitbucketWebhookEventSourceConfiguration
 
     @property
-    def filter_class(self) -> Type[BitbucketWebhookEventFilterConfiguration]:
+    def filter_class(self) -> type[BitbucketWebhookEventFilterConfiguration]:
         """Returns the webhook event filter configuration class.
 
         Returns:
@@ -219,7 +219,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         return BitbucketWebhookEventFilterConfiguration
 
     @property
-    def flavor_class(self) -> Type[BaseWebhookEventSourceFlavor]:
+    def flavor_class(self) -> type[BaseWebhookEventSourceFlavor]:
         """Returns the flavor class of the plugin.
 
         Returns:
@@ -231,7 +231,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
 
         return BitbucketWebhookEventSourceFlavor
 
-    def _interpret_event(self, event: Dict[str, Any]) -> BitbucketEvent:
+    def _interpret_event(self, event: dict[str, Any]) -> BitbucketEvent:
         """Converts the generic event body into a event-source specific pydantic model.
 
         Args:
@@ -252,7 +252,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
 
     def _get_webhook_secret(
         self, event_source: EventSourceResponse
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the webhook secret for the event source.
 
         Args:
@@ -440,7 +440,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         self,
         event_source: EventSourceResponse,
         config: EventSourceConfig,
-        force: Optional[bool] = False,
+        force: bool | None = False,
     ) -> None:
         """Process an event source before it is deleted from the database.
 

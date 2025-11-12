@@ -97,7 +97,7 @@ def _remove_file_scheme(uri: str) -> str:
 class MLFlowModelRegistry(BaseModelRegistry):
     """Register models using MLflow."""
 
-    _client: Optional[MlflowClient] = None
+    _client: MlflowClient | None = None
 
     @property
     def config(self) -> MLFlowModelRegistryConfig:
@@ -127,14 +127,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
         return self._client
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates that the stack contains an mlflow experiment tracker.
 
         Returns:
             A StackValidator instance.
         """
 
-        def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_stack_requirements(stack: "Stack") -> tuple[bool, str]:
             """Validates that all the requirements are met for the stack.
 
             Args:
@@ -181,8 +181,8 @@ class MLFlowModelRegistry(BaseModelRegistry):
     def register_model(
         self,
         name: str,
-        description: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
+        description: str | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> RegisteredModel:
         """Register a model to the MLflow model registry.
 
@@ -254,9 +254,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
     def update_model(
         self,
         name: str,
-        description: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        remove_metadata: Optional[List[str]] = None,
+        description: str | None = None,
+        metadata: dict[str, str] | None = None,
+        remove_metadata: list[str] | None = None,
     ) -> RegisteredModel:
         """Update a model in the MLflow model registry.
 
@@ -347,9 +347,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
     def list_models(
         self,
-        name: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> List[RegisteredModel]:
+        name: str | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> list[RegisteredModel]:
         """List models in the MLflow model registry.
 
         Args:
@@ -391,10 +391,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
     def register_model_version(
         self,
         name: str,
-        version: Optional[str] = None,
-        model_source_uri: Optional[str] = None,
-        description: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
+        version: str | None = None,
+        model_source_uri: str | None = None,
+        description: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
         **kwargs: Any,
     ) -> RegistryModelVersion:
         """Register a model version to the MLflow model registry.
@@ -492,10 +492,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
         self,
         name: str,
         version: str,
-        description: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
-        remove_metadata: Optional[List[str]] = None,
-        stage: Optional[ModelVersionStage] = None,
+        description: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
+        remove_metadata: list[str] | None = None,
+        stage: ModelVersionStage | None = None,
     ) -> RegistryModelVersion:
         """Update a model version in the MLflow model registry.
 
@@ -606,16 +606,16 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
     def list_model_versions(
         self,
-        name: Optional[str] = None,
-        model_source_uri: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
-        stage: Optional[ModelVersionStage] = None,
-        count: Optional[int] = None,
-        created_after: Optional[datetime] = None,
-        created_before: Optional[datetime] = None,
-        order_by_date: Optional[str] = None,
+        name: str | None = None,
+        model_source_uri: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
+        stage: ModelVersionStage | None = None,
+        count: int | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        order_by_date: str | None = None,
         **kwargs: Any,
-    ) -> List[RegistryModelVersion]:
+    ) -> list[RegistryModelVersion]:
         """List model versions from the MLflow model registry.
 
         Args:

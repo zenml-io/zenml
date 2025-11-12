@@ -19,10 +19,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     Optional,
     Union,
 )
+from collections.abc import Generator
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
@@ -37,7 +37,7 @@ from zenml.stack import Stack
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
-        Dict[str, Any], StepConfigurationUpdate
+        dict[str, Any], StepConfigurationUpdate
     ]
 
 logger = get_logger(__name__)

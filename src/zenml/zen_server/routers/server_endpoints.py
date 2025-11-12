@@ -139,7 +139,7 @@ def server_load_info(_: AuthContext = Security(authorize)) -> ServerLoadInfo:
 @async_fastapi_endpoint_wrapper
 def get_onboarding_state(
     _: AuthContext = Security(authorize),
-) -> List[str]:
+) -> list[str]:
     """Get the onboarding state of the server.
 
     Returns:
@@ -234,7 +234,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     @async_fastapi_endpoint_wrapper
     def activate_server(
         activate_request: ServerActivationRequest,
-    ) -> Optional[UserResponse]:
+    ) -> UserResponse | None:
         """Updates a stack.
 
         Args:

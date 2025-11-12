@@ -54,7 +54,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         return cast(LabelStudioAnnotatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[LabelStudioAnnotatorSettings]:
+    def settings_class(self) -> type[LabelStudioAnnotatorSettings]:
         """Settings class for the Label Studio annotator.
 
         Returns:
@@ -86,7 +86,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         project_id = self.get_id_from_name(dataset_name)
         return f"{self.get_url()}/projects/{project_id}/"
 
-    def get_id_from_name(self, dataset_name: str) -> Optional[int]:
+    def get_id_from_name(self, dataset_name: str) -> int | None:
         """Gets the ID of the given dataset.
 
         Args:
@@ -101,16 +101,16 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
                 return cast(int, project.get_params()["id"])
         return None
 
-    def get_datasets(self) -> List[Any]:
+    def get_datasets(self) -> list[Any]:
         """Gets the datasets currently available for annotation.
 
         Returns:
             A list of datasets.
         """
         datasets = self._get_client().get_projects()
-        return cast(List[Any], datasets)
+        return cast(list[Any], datasets)
 
-    def get_dataset_names(self) -> List[str]:
+    def get_dataset_names(self) -> list[str]:
         """Gets the names of the datasets.
 
         Returns:
@@ -120,7 +120,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             dataset.get_params()["title"] for dataset in self.get_datasets()
         ]
 
-    def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
+    def get_dataset_stats(self, dataset_name: str) -> tuple[int, int]:
         """Gets the statistics of the given dataset.
 
         Args:
@@ -280,7 +280,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def get_converted_dataset(
         self, dataset_name: str, output_format: str
-    ) -> Dict[Any, Any]:
+    ) -> dict[Any, Any]:
         """Extract annotated tasks in a specific converted format.
 
         Args:
@@ -367,7 +367,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def _get_azure_import_storage_sources(
         self, dataset_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Gets a list of all Azure import storage sources.
 
         Args:
@@ -383,7 +383,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         query_url = f"/api/storages/azure?project={dataset_id}"
         response = self._get_client().make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return cast(List[Dict[str, Any]], response.json())
+            return cast(list[dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -391,7 +391,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def _get_gcs_import_storage_sources(
         self, dataset_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Gets a list of all Google Cloud Storage import storage sources.
 
         Args:
@@ -407,7 +407,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         query_url = f"/api/storages/gcs?project={dataset_id}"
         response = self._get_client().make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return cast(List[Dict[str, Any]], response.json())
+            return cast(list[dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -415,7 +415,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def _get_s3_import_storage_sources(
         self, dataset_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Gets a list of all AWS S3 import storage sources.
 
         Args:
@@ -431,7 +431,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         query_url = f"/api/storages/s3?project={dataset_id}"
         response = self._get_client().make_request(method="GET", url=query_url)
         if response.status_code == 200:
-            return cast(List[Dict[str, Any]], response.json())
+            return cast(list[dict[str, Any]], response.json())
         else:
             raise ConnectionError(
                 f"Unable to get list of import storage sources. Client raised HTTP error {response.status_code}."
@@ -484,7 +484,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
             for source in storage_sources
         )
 
-    def get_parsed_label_config(self, dataset_id: int) -> Dict[str, Any]:
+    def get_parsed_label_config(self, dataset_id: int) -> dict[str, Any]:
         """Returns the parsed Label Studio label config for a dataset.
 
         Args:
@@ -499,7 +499,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         # TODO: check if client actually is connected etc
         dataset = self._get_client().get_project(dataset_id)
         if dataset:
-            return cast(Dict[str, Any], dataset.parsed_label_config)
+            return cast(dict[str, Any], dataset.parsed_label_config)
         raise ValueError("No dataset found for the given id.")
 
     def populate_artifact_store_parameters(
@@ -682,7 +682,7 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         uri: str,
         params: LabelStudioDatasetSyncParameters,
         dataset: Project,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Syncs the external storage for the given project.
 
         Args:
@@ -813,4 +813,4 @@ class LabelStudioAnnotator(BaseAnnotator, AuthenticationMixin):
         synced_storage = self._get_client().sync_storage(
             storage_id=storage["id"], storage_type=storage["type"]
         )
-        return cast(Dict[str, Any], synced_storage)
+        return cast(dict[str, Any], synced_storage)

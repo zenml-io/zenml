@@ -30,8 +30,8 @@ from zenml.integrations.great_expectations.data_validators.ge_data_validator imp
 def great_expectations_profiler_step(
     dataset: pd.DataFrame,
     expectation_suite_name: str,
-    data_asset_name: Optional[str] = None,
-    profiler_kwargs: Optional[Dict[str, Any]] = None,
+    data_asset_name: str | None = None,
+    profiler_kwargs: dict[str, Any] | None = None,
     overwrite_existing_suite: bool = True,
 ) -> ExpectationSuite:
     """Infer data validation rules from a pandas dataset.

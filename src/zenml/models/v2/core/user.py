@@ -53,35 +53,35 @@ class UserBase(BaseModel):
 
     # Fields
 
-    email: Optional[str] = Field(
+    email: str | None = Field(
         default=None,
         title="The email address associated with the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    email_opted_in: Optional[bool] = Field(
+    email_opted_in: bool | None = Field(
         default=None,
         title="Whether the user agreed to share their email. Only relevant for "
         "user accounts",
         description="`null` if not answered, `true` if agreed, "
         "`false` if skipped.",
     )
-    password: Optional[str] = Field(
+    password: str | None = Field(
         default=None,
         title="A password for the user.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    activation_token: Optional[str] = Field(
+    activation_token: str | None = Field(
         default=None, max_length=STR_FIELD_MAX_LENGTH
     )
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: UUID | None = Field(
         default=None,
         title="The external user ID associated with the account.",
     )
-    user_metadata: Optional[Dict[str, Any]] = Field(
+    user_metadata: dict[str, Any] | None = Field(
         default=None,
         title="The metadata associated with the user.",
     )
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         default=None,
         title="The avatar URL for the account.",
     )
@@ -98,7 +98,7 @@ class UserBase(BaseModel):
         return CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     @classmethod
-    def _create_hashed_secret(cls, secret: Optional[str]) -> Optional[str]:
+    def _create_hashed_secret(cls, secret: str | None) -> str | None:
         """Hashes the input secret and returns the hash value.
 
         Only applied if supplied and if not already hashed.
@@ -114,7 +114,7 @@ class UserBase(BaseModel):
         pwd_context = cls._get_crypt_context()
         return pwd_context.hash(secret)
 
-    def create_hashed_password(self) -> Optional[str]:
+    def create_hashed_password(self) -> str | None:
         """Hashes the password.
 
         Returns:
@@ -122,7 +122,7 @@ class UserBase(BaseModel):
         """
         return self._create_hashed_secret(self.password)
 
-    def create_hashed_activation_token(self) -> Optional[str]:
+    def create_hashed_activation_token(self) -> str | None:
         """Hashes the activation token.
 
         Returns:
@@ -147,7 +147,7 @@ class UserRequest(UserBase, BaseRequest):
     """Request model for users."""
 
     # Analytics fields for user request models
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "name",
         "full_name",
         "active",
@@ -182,30 +182,30 @@ class UserRequest(UserBase, BaseRequest):
 class UserUpdate(UserBase, BaseUpdate):
     """Update model for users."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The unique username for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    full_name: Optional[str] = Field(
+    full_name: str | None = Field(
         default=None,
         title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    is_admin: Optional[bool] = Field(
+    is_admin: bool | None = Field(
         default=None,
         title="Whether the account is an administrator.",
     )
-    active: Optional[bool] = Field(
+    active: bool | None = Field(
         default=None, title="Whether the account is active."
     )
-    old_password: Optional[str] = Field(
+    old_password: str | None = Field(
         default=None,
         title="The previous password for the user. Only relevant for user "
         "accounts. Required when updating the password.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    default_project_id: Optional[UUID] = Field(
+    default_project_id: UUID | None = Field(
         default=None,
         title="The default project ID for the user.",
     )
@@ -260,7 +260,7 @@ class UserResponseBody(BaseDatedResponseBody):
     """Response body for users."""
 
     active: bool = Field(default=False, title="Whether the account is active.")
-    activation_token: Optional[str] = Field(
+    activation_token: str | None = Field(
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
         title="The activation token for the user. Only relevant for user "
@@ -271,7 +271,7 @@ class UserResponseBody(BaseDatedResponseBody):
         title="The display name for the account.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    email_opted_in: Optional[bool] = Field(
+    email_opted_in: bool | None = Field(
         default=None,
         title="Whether the user agreed to share their email. Only relevant for "
         "user accounts",
@@ -284,11 +284,11 @@ class UserResponseBody(BaseDatedResponseBody):
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
     )
-    default_project_id: Optional[UUID] = Field(
+    default_project_id: UUID | None = Field(
         default=None,
         title="The default project ID for the user.",
     )
-    avatar_url: Optional[str] = Field(
+    avatar_url: str | None = Field(
         default=None,
         title="The avatar URL for the account.",
     )
@@ -297,18 +297,18 @@ class UserResponseBody(BaseDatedResponseBody):
 class UserResponseMetadata(BaseResponseMetadata):
     """Response metadata for users."""
 
-    email: Optional[str] = Field(
+    email: str | None = Field(
         default="",
         title="The email address associated with the account. Only relevant "
         "for user accounts.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    external_user_id: Optional[UUID] = Field(
+    external_user_id: UUID | None = Field(
         default=None,
         title="The external user ID associated with the account. Only relevant "
         "for user accounts.",
     )
-    user_metadata: Dict[str, Any] = Field(
+    user_metadata: dict[str, Any] = Field(
         default={},
         title="The metadata associated with the user.",
     )
@@ -330,7 +330,7 @@ class UserResponse(
     well for use by the analytics on the client-side.
     """
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "name",
         "full_name",
         "active",
@@ -364,7 +364,7 @@ class UserResponse(
         return self.get_body().active
 
     @property
-    def activation_token(self) -> Optional[str]:
+    def activation_token(self) -> str | None:
         """The `activation_token` property.
 
         Returns:
@@ -382,7 +382,7 @@ class UserResponse(
         return self.get_body().full_name
 
     @property
-    def email_opted_in(self) -> Optional[bool]:
+    def email_opted_in(self) -> bool | None:
         """The `email_opted_in` property.
 
         Returns:
@@ -409,7 +409,7 @@ class UserResponse(
         return self.get_body().is_admin
 
     @property
-    def email(self) -> Optional[str]:
+    def email(self) -> str | None:
         """The `email` property.
 
         Returns:
@@ -418,7 +418,7 @@ class UserResponse(
         return self.get_metadata().email
 
     @property
-    def external_user_id(self) -> Optional[UUID]:
+    def external_user_id(self) -> UUID | None:
         """The `external_user_id` property.
 
         Returns:
@@ -427,7 +427,7 @@ class UserResponse(
         return self.get_metadata().external_user_id
 
     @property
-    def user_metadata(self) -> Dict[str, Any]:
+    def user_metadata(self) -> dict[str, Any]:
         """The `user_metadata` property.
 
         Returns:
@@ -436,7 +436,7 @@ class UserResponse(
         return self.get_metadata().user_metadata
 
     @property
-    def default_project_id(self) -> Optional[UUID]:
+    def default_project_id(self) -> UUID | None:
         """The `default_project_id` property.
 
         Returns:
@@ -445,7 +445,7 @@ class UserResponse(
         return self.get_body().default_project_id
 
     @property
-    def avatar_url(self) -> Optional[str]:
+    def avatar_url(self) -> str | None:
         """The `avatar_url` property.
 
         Returns:
@@ -472,29 +472,29 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: Optional[str] = Field(
+    full_name: str | None = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: Optional[str] = Field(
+    email: str | None = Field(
         default=None,
         description="Email of the user",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: bool | str | None = Field(
         default=None,
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    email_opted_in: Optional[Union[bool, str]] = Field(
+    email_opted_in: bool | str | None = Field(
         default=None,
         description="Whether the user has opted in to emails",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUID | str | None = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",
@@ -503,7 +503,7 @@ class UserFilter(BaseFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Override to filter out service accounts from the query.
 

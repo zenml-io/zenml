@@ -91,15 +91,15 @@ class HashiCorpVaultSecretsStoreConfiguration(SecretsStoreConfiguration):
 
     type: SecretsStoreType = SecretsStoreType.HASHICORP
     vault_addr: str
-    vault_namespace: Optional[str] = None
-    mount_point: Optional[str] = None
+    vault_namespace: str | None = None
+    mount_point: str | None = None
     auth_method: HashiCorpVaultAuthMethod = HashiCorpVaultAuthMethod.TOKEN
-    auth_mount_point: Optional[str] = None
-    vault_token: Optional[PlainSerializedSecretStr] = None
-    app_role_id: Optional[str] = None
-    app_secret_id: Optional[str] = None
-    aws_role: Optional[str] = None
-    aws_header_value: Optional[str] = None
+    auth_mount_point: str | None = None
+    vault_token: PlainSerializedSecretStr | None = None
+    app_role_id: str | None = None
+    app_secret_id: str | None = None
+    aws_role: str | None = None
+    aws_header_value: str | None = None
     max_versions: int = 1
 
     model_config = ConfigDict(extra="ignore")
@@ -131,13 +131,13 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
     config: HashiCorpVaultSecretsStoreConfiguration
     TYPE: ClassVar[SecretsStoreType] = SecretsStoreType.HASHICORP
-    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]] = (
+    CONFIG_TYPE: ClassVar[type[SecretsStoreConfiguration]] = (
         HashiCorpVaultSecretsStoreConfiguration
     )
 
-    _client: Optional[hvac.Client] = None
-    _expires_at: Optional[datetime] = None
-    _renew_at: Optional[datetime] = None
+    _client: hvac.Client | None = None
+    _expires_at: datetime | None = None
+    _renew_at: datetime | None = None
 
     @property
     def client(self) -> hvac.Client:
@@ -150,7 +150,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
             ValueError: If the configuration is invalid.
         """
 
-        def update_ttls(response: Dict[str, Any]) -> None:
+        def update_ttls(response: dict[str, Any]) -> None:
             """Update the TTLs for the client.
 
             Args:
@@ -286,7 +286,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
     def store_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Store secret values for a new secret.
 
@@ -319,7 +319,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
 
         logger.debug(f"Created HashiCorp Vault secret: {vault_secret_id}")
 
-    def get_secret_values(self, secret_id: UUID) -> Dict[str, str]:
+    def get_secret_values(self, secret_id: UUID) -> dict[str, str]:
         """Get the secret values for an existing secret.
 
         Args:
@@ -385,7 +385,7 @@ class HashiCorpVaultSecretsStore(BaseSecretsStore):
     def update_secret_values(
         self,
         secret_id: UUID,
-        secret_values: Dict[str, str],
+        secret_values: dict[str, str],
     ) -> None:
         """Updates secret values for an existing secret.
 

@@ -37,7 +37,7 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         return DEEPCHECKS_DATA_VALIDATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -46,7 +46,7 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -64,7 +64,7 @@ class DeepchecksDataValidatorFlavor(BaseDataValidatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/deepchecks.png"
 
     @property
-    def implementation_class(self) -> Type["DeepchecksDataValidator"]:
+    def implementation_class(self) -> type["DeepchecksDataValidator"]:
         """Implementation class.
 
         Returns:

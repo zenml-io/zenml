@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 def visualize_artifact(
-    artifact: "ArtifactVersionResponse", title: Optional[str] = None
+    artifact: "ArtifactVersionResponse", title: str | None = None
 ) -> None:
     """Visualize an artifact in notebook environments.
 

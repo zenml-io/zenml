@@ -25,10 +25,10 @@ class BitbucketIntegration(Integration):
     """Definition of bitbucket integration for ZenML."""
 
     NAME = BITBUCKET
-    REQUIREMENTS: List[str] = []
+    REQUIREMENTS: list[str] = []
 
     @classmethod
-    def plugin_flavors(cls) -> List[Type[BasePluginFlavor]]:
+    def plugin_flavors(cls) -> list[type[BasePluginFlavor]]:
         """Declare the event flavors for the bitbucket integration.
 
         Returns:

@@ -40,9 +40,9 @@ class VLLMModelDeployer(BaseModelDeployer):
     """vLLM Inference Server."""
 
     NAME: ClassVar[str] = "VLLM"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = VLLMModelDeployerFlavor
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = VLLMModelDeployerFlavor
 
-    _service_path: Optional[str] = None
+    _service_path: str | None = None
 
     @property
     def config(self) -> VLLMModelDeployerConfig:
@@ -100,7 +100,7 @@ class VLLMModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "VLLMDeploymentService",
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information on the model server.
 
         Args:

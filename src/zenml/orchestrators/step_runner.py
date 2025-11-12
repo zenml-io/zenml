@@ -120,8 +120,8 @@ class StepRunner:
         self,
         pipeline_run: "PipelineRunResponse",
         step_run: "StepRunResponse",
-        input_artifacts: Dict[str, StepRunInputResponse],
-        output_artifact_uris: Dict[str, str],
+        input_artifacts: dict[str, StepRunInputResponse],
+        output_artifact_uris: dict[str, str],
         step_run_info: StepRunInfo,
     ) -> None:
         """Runs the step.
@@ -354,8 +354,8 @@ class StepRunner:
     def _evaluate_artifact_names_in_collections(
         self,
         step_run: "StepRunResponse",
-        output_annotations: Dict[str, OutputSignature],
-        collections: List[Dict[str, Any]],
+        output_annotations: dict[str, OutputSignature],
+        collections: list[dict[str, Any]],
     ) -> None:
         """Evaluates the artifact names in the collections.
 
@@ -392,7 +392,7 @@ class StepRunner:
 
     def _load_output_materializers(
         self,
-    ) -> Dict[str, Tuple[Type[BaseMaterializer], ...]]:
+    ) -> dict[str, tuple[type[BaseMaterializer], ...]]:
         """Loads the output materializers for the step.
 
         Returns:
@@ -403,7 +403,7 @@ class StepRunner:
             output_materializers = []
 
             for source in output.materializer_source:
-                materializer_class: Type[BaseMaterializer] = (
+                materializer_class: type[BaseMaterializer] = (
                     source_utils.load_and_validate_class(
                         source, expected_class=BaseMaterializer
                     )
@@ -416,10 +416,10 @@ class StepRunner:
 
     def _parse_inputs(
         self,
-        args: List[str],
-        annotations: Dict[str, Any],
-        input_artifacts: Dict[str, StepRunInputResponse],
-    ) -> Dict[str, Any]:
+        args: list[str],
+        annotations: dict[str, Any],
+        input_artifacts: dict[str, StepRunInputResponse],
+    ) -> dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
@@ -433,7 +433,7 @@ class StepRunner:
         Raises:
             RuntimeError: If a function argument value is missing.
         """
-        function_params: Dict[str, Any] = {}
+        function_params: dict[str, Any] = {}
 
         if args and args[0] == "self":
             args.pop(0)
@@ -456,7 +456,7 @@ class StepRunner:
         return function_params
 
     def _load_input_artifact(
-        self, artifact: "ArtifactVersionResponse", data_type: Type[Any]
+        self, artifact: "ArtifactVersionResponse", data_type: type[Any]
     ) -> Any:
         """Loads an input artifact.
 
@@ -482,7 +482,7 @@ class StepRunner:
             register_artifact_store_filesystem,
         )
 
-        materializer_class: Type[BaseMaterializer] = (
+        materializer_class: type[BaseMaterializer] = (
             source_utils.load_and_validate_class(
                 artifact.materializer, expected_class=BaseMaterializer
             )
@@ -510,8 +510,8 @@ class StepRunner:
     def _validate_outputs(
         self,
         return_values: Any,
-        output_annotations: Dict[str, OutputSignature],
-    ) -> Dict[str, Any]:
+        output_annotations: dict[str, OutputSignature],
+    ) -> dict[str, Any]:
         """Validates the step function outputs.
 
         Args:
@@ -565,7 +565,7 @@ class StepRunner:
 
         from zenml.steps.utils import get_args
 
-        validated_outputs: Dict[str, Any] = {}
+        validated_outputs: dict[str, Any] = {}
         for return_value, (output_name, output_annotation) in zip(
             return_values, output_annotations.items()
         ):
@@ -587,13 +587,13 @@ class StepRunner:
 
     def _store_output_artifacts(
         self,
-        output_data: Dict[str, Any],
-        output_materializers: Dict[str, Tuple[Type[BaseMaterializer], ...]],
-        output_artifact_uris: Dict[str, str],
-        output_annotations: Dict[str, OutputSignature],
+        output_data: dict[str, Any],
+        output_materializers: dict[str, tuple[type[BaseMaterializer], ...]],
+        output_artifact_uris: dict[str, str],
+        output_annotations: dict[str, OutputSignature],
         artifact_metadata_enabled: bool,
         artifact_visualization_enabled: bool,
-    ) -> Dict[str, "ArtifactVersionResponse"]:
+    ) -> dict[str, "ArtifactVersionResponse"]:
         """Stores the output artifacts of the step.
 
         Args:
@@ -636,7 +636,7 @@ class StepRunner:
                 ].default_materializer_source
 
                 if default_materializer_source:
-                    default_materializer_class: Type[BaseMaterializer] = (
+                    default_materializer_class: type[BaseMaterializer] = (
                         source_utils.load_and_validate_class(
                             default_materializer_source,
                             expected_class=BaseMaterializer,

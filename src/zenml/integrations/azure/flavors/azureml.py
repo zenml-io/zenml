@@ -70,18 +70,18 @@ class AzureMLComputeSettings(BaseSettings):
     mode: AzureMLComputeTypes = AzureMLComputeTypes.SERVERLESS
 
     # Common Configuration for Compute Instances and Clusters
-    compute_name: Optional[str] = None
-    size: Optional[str] = None
+    compute_name: str | None = None
+    size: str | None = None
 
     # Additional configuration for a Compute Instance
-    idle_time_before_shutdown_minutes: Optional[int] = None
+    idle_time_before_shutdown_minutes: int | None = None
 
     # Additional configuration for a Compute Cluster
-    idle_time_before_scaledown_down: Optional[int] = None
-    location: Optional[str] = None
-    min_instances: Optional[int] = None
-    max_instances: Optional[int] = None
-    tier: Optional[str] = None
+    idle_time_before_scaledown_down: int | None = None
+    location: str | None = None
+    min_instances: int | None = None
+    max_instances: int | None = None
+    tier: str | None = None
 
     @model_validator(mode="after")
     def azureml_settings_validator(self) -> "AzureMLComputeSettings":

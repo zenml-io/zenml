@@ -58,7 +58,7 @@ def create_or_get_compute(
     client: MLClient,
     settings: AzureMLComputeSettings,
     default_compute_name: str,
-) -> Optional[str]:
+) -> str | None:
     """Creates or fetches the compute target if defined in the settings.
 
     Args:

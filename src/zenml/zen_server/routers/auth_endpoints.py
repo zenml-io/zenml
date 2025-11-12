@@ -98,11 +98,11 @@ class OAuthLoginRequestForm:
 
     def __init__(
         self,
-        grant_type: Optional[str] = Form(None),
-        username: Optional[str] = Form(None),
-        password: Optional[str] = Form(None),
-        client_id: Optional[str] = Form(None),
-        device_code: Optional[str] = Form(None),
+        grant_type: str | None = Form(None),
+        username: str | None = Form(None),
+        password: str | None = Form(None),
+        client_id: str | None = Form(None),
+        device_code: str | None = Form(None),
     ):
         """Initializes the form.
 
@@ -231,7 +231,7 @@ def token(
     request: Request,
     response: Response,
     auth_form_data: OAuthLoginRequestForm = Depends(),
-) -> Union[OAuthTokenResponse, OAuthRedirectResponse]:
+) -> OAuthTokenResponse | OAuthRedirectResponse:
     """OAuth2 token endpoint.
 
     Args:
@@ -246,7 +246,7 @@ def token(
         ValueError: If the grant type is invalid.
     """
     config = server_config()
-    cookie_response: Optional[Response] = response
+    cookie_response: Response | None = response
 
     if auth_form_data.grant_type == OAuthGrantTypes.OAUTH_PASSWORD:
         auth_context = authenticate_credentials(
@@ -475,10 +475,10 @@ def device_authorization(
 @async_fastapi_endpoint_wrapper
 def api_token(
     token_type: APITokenType = APITokenType.GENERIC,
-    expires_in: Optional[int] = None,
-    schedule_id: Optional[UUID] = None,
-    pipeline_run_id: Optional[UUID] = None,
-    deployment_id: Optional[UUID] = None,
+    expires_in: int | None = None,
+    schedule_id: UUID | None = None,
+    pipeline_run_id: UUID | None = None,
+    deployment_id: UUID | None = None,
     auth_context: AuthContext = Security(authorize),
 ) -> str:
     """Generate an API token for the current user.
@@ -588,7 +588,7 @@ def api_token(
             f"deployment {token.deployment_id}."
         )
 
-    project_id: Optional[UUID] = None
+    project_id: UUID | None = None
 
     if schedule_id:
         # The schedule must exist

@@ -16,7 +16,8 @@
 import signal
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from collections.abc import Callable
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -54,7 +55,7 @@ logger = get_logger(__name__)
 
 
 def _get_step_operator(
-    stack: "Stack", step_operator_name: Optional[str]
+    stack: "Stack", step_operator_name: str | None
 ) -> "BaseStepOperator":
     """Fetches the step operator from the stack.
 
@@ -136,7 +137,7 @@ class StepLauncher:
         self._invocation_id = step.spec.invocation_id
 
         # Internal properties and methods
-        self._step_run: Optional[StepRunResponse] = None
+        self._step_run: StepRunResponse | None = None
         self._setup_signal_handlers()
 
     def _setup_signal_handlers(self) -> None:
@@ -387,7 +388,7 @@ class StepLauncher:
 
         return step_run
 
-    def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
+    def _create_or_reuse_run(self) -> tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
 
         Returns:
@@ -549,7 +550,7 @@ class StepLauncher:
 
     def _run_step_with_step_operator(
         self,
-        step_operator_name: Optional[str],
+        step_operator_name: str | None,
         step_run_info: StepRunInfo,
     ) -> None:
         """Runs the current step with a step operator.
@@ -621,8 +622,8 @@ class StepLauncher:
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
         step_run_info: StepRunInfo,
-        input_artifacts: Dict[str, StepRunInputResponse],
-        output_artifact_uris: Dict[str, str],
+        input_artifacts: dict[str, StepRunInputResponse],
+        output_artifact_uris: dict[str, str],
     ) -> None:
         """Runs the current step without a step operator.
 

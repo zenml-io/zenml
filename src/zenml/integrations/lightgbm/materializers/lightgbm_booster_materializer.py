@@ -28,10 +28,10 @@ DEFAULT_FILENAME = "model.txt"
 class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (lgb.Booster,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (lgb.Booster,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> lgb.Booster:
+    def load(self, data_type: type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file.
 
         Args:

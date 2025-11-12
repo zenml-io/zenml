@@ -165,7 +165,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         # 2. Create a new user without a password and have it activated at a
         # later time with an activation token
 
-        token: Optional[str] = None
+        token: str | None = None
         if user.password is None:
             user.active = False
             token = user.generate_activation_token()
@@ -195,7 +195,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 )
 @async_fastapi_endpoint_wrapper
 def get_user(
-    user_name_or_id: Union[str, UUID],
+    user_name_or_id: str | UUID,
     hydrate: bool = True,
     auth_context: AuthContext = Security(authorize),
 ) -> UserResponse:
@@ -239,7 +239,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @async_fastapi_endpoint_wrapper
     def activate_user(
-        user_name_or_id: Union[str, UUID],
+        user_name_or_id: str | UUID,
         user_update: UserUpdate,
     ) -> UserResponse:
         """Activates a specific user.
@@ -299,7 +299,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @async_fastapi_endpoint_wrapper
     def deactivate_user(
-        user_name_or_id: Union[str, UUID],
+        user_name_or_id: str | UUID,
         auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
         """Deactivates a user and generates a new activation token for it.
@@ -347,7 +347,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @async_fastapi_endpoint_wrapper
     def delete_user(
-        user_name_or_id: Union[str, UUID],
+        user_name_or_id: str | UUID,
         auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Deletes a specific user.
@@ -389,7 +389,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     )
     @async_fastapi_endpoint_wrapper
     def email_opt_in_response(
-        user_name_or_id: Union[str, UUID],
+        user_name_or_id: str | UUID,
         user_response: UserUpdate,
         auth_context: AuthContext = Security(authorize),
     ) -> UserResponse:
@@ -441,7 +441,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 )
 @async_fastapi_endpoint_wrapper
 def update_user(
-    user_name_or_id: Union[str, UUID],
+    user_name_or_id: str | UUID,
     user_update: UserUpdate,
     request: Request,
     auth_context: AuthContext = Security(authorize),
@@ -709,9 +709,9 @@ if server_config().rbac_enabled:
     def update_user_resource_membership(
         resource_type: str,
         resource_id: UUID,
-        actions: List[str],
-        user_id: Optional[str] = None,
-        team_id: Optional[str] = None,
+        actions: list[str],
+        user_id: str | None = None,
+        team_id: str | None = None,
         auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Updates resource memberships of a user.

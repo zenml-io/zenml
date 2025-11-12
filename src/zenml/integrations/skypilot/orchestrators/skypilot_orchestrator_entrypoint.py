@@ -125,7 +125,7 @@ def main() -> None:
             use_sudo=False,  # Entrypoint doesn't use sudo
         )
 
-        unique_resource_configs: Dict[str, str] = {}
+        unique_resource_configs: dict[str, str] = {}
         for step_name, step in snapshot.step_configurations.items():
             settings = cast(
                 SkypilotBaseOrchestratorSettings,

@@ -20,13 +20,13 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Iterator,
     List,
-    Match,
     Optional,
     TypeVar,
     cast,
 )
+from collections.abc import Iterator
+from re import Match
 
 from zenml.client import Client
 from zenml.logger import get_logger
@@ -46,7 +46,7 @@ ENV_VAR_CHUNK_SUFFIX = "_CHUNK_"
 
 def split_environment_variables(
     size_limit: int,
-    env: Optional[Dict[str, str]] = None,
+    env: dict[str, str] | None = None,
 ) -> None:
     """Split long environment variables into chunks.
 
@@ -64,7 +64,7 @@ def split_environment_variables(
             more than 10 chunks.
     """
     if env is None:
-        env = cast(Dict[str, str], os.environ)
+        env = cast(dict[str, str], os.environ)
 
     for key, value in env.copy().items():
         if len(value) <= size_limit:
@@ -90,7 +90,7 @@ def split_environment_variables(
 
 
 def reconstruct_environment_variables(
-    env: Optional[Dict[str, str]] = None,
+    env: dict[str, str] | None = None,
 ) -> None:
     """Reconstruct environment variables that were split into chunks.
 
@@ -103,9 +103,9 @@ def reconstruct_environment_variables(
             environment variables are used.
     """
     if env is None:
-        env = cast(Dict[str, str], os.environ)
+        env = cast(dict[str, str], os.environ)
 
-    chunks: Dict[str, List[str]] = {}
+    chunks: dict[str, list[str]] = {}
     for key in env.keys():
         if not key[:-1].endswith(ENV_VAR_CHUNK_SUFFIX):
             continue
@@ -171,7 +171,7 @@ def substitute_env_variable_placeholders(
 
 
 @contextlib.contextmanager
-def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
+def temporary_environment(environment: dict[str, str]) -> Iterator[None]:
     """Temporarily set environment variables.
 
     Args:
@@ -205,7 +205,7 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
 
 def get_step_environment(
     step_config: "StepConfiguration", stack: "Stack"
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Get the environment variables for a step.
 
     Args:
@@ -230,7 +230,7 @@ def get_step_environment(
 
 def get_step_secret_environment(
     step_config: "StepConfiguration", stack: "Stack"
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Get the environment variables for a step.
 
     Args:

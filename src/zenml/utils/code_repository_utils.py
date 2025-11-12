@@ -30,7 +30,7 @@ from zenml.utils.pagination_utils import depaginate
 logger = get_logger(__name__)
 
 
-_CODE_REPOSITORY_CACHE: Dict[str, Optional["LocalRepositoryContext"]] = {}
+_CODE_REPOSITORY_CACHE: dict[str, Optional["LocalRepositoryContext"]] = {}
 
 
 def set_custom_local_repository(
@@ -84,7 +84,7 @@ def set_custom_local_repository(
 
 
 def find_active_code_repository(
-    path: Optional[str] = None,
+    path: str | None = None,
 ) -> Optional["LocalRepositoryContext"]:
     """Find the active code repository for a given path.
 

@@ -36,7 +36,7 @@ class SlackAlerterSettings(BaseSettings):
         timeout: The amount of seconds to wait for the ask method.
     """
 
-    slack_channel_id: Optional[str] = None
+    slack_channel_id: str | None = None
     timeout: int = 300
 
 
@@ -51,7 +51,7 @@ class SlackAlerterConfig(BaseAlerterConfig, SlackAlerterSettings):
 
     slack_token: str = SecretField()
 
-    default_slack_channel_id: Optional[str] = None
+    default_slack_channel_id: str | None = None
     _deprecation_validator = deprecate_pydantic_attributes(
         ("default_slack_channel_id", "slack_channel_id")
     )
@@ -106,7 +106,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
         return SLACK_ALERTER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -115,7 +115,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at SDK docs explaining this flavor.
 
         Returns:
@@ -133,7 +133,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack.png"
 
     @property
-    def config_class(self) -> Type[SlackAlerterConfig]:
+    def config_class(self) -> type[SlackAlerterConfig]:
         """Returns `SlackAlerterConfig` config class.
 
         Returns:
@@ -142,7 +142,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
         return SlackAlerterConfig
 
     @property
-    def implementation_class(self) -> Type["SlackAlerter"]:
+    def implementation_class(self) -> type["SlackAlerter"]:
         """Implementation class for this flavor.
 
         Returns:

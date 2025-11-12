@@ -76,21 +76,21 @@ class UserSchema(NamedSchema, table=True):
 
     is_service_account: bool = Field(default=False)
     full_name: str
-    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    email: Optional[str] = Field(nullable=True)
-    avatar_url: Optional[str] = Field(
+    description: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    email: str | None = Field(nullable=True)
+    avatar_url: str | None = Field(
         default=None,
         sa_column=Column(TEXT, nullable=True),
     )
     active: bool
-    password: Optional[str] = Field(nullable=True)
-    activation_token: Optional[str] = Field(nullable=True)
-    email_opted_in: Optional[bool] = Field(nullable=True)
-    external_user_id: Optional[UUID] = Field(nullable=True)
+    password: str | None = Field(nullable=True)
+    activation_token: str | None = Field(nullable=True)
+    email_opted_in: bool | None = Field(nullable=True)
+    external_user_id: UUID | None = Field(nullable=True)
     is_admin: bool = Field(default=False)
-    user_metadata: Optional[str] = Field(nullable=True)
+    user_metadata: str | None = Field(nullable=True)
 
-    default_project_id: Optional[UUID] = build_foreign_key_field(
+    default_project_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target="project",
         source_column="default_project_id",
@@ -99,84 +99,84 @@ class UserSchema(NamedSchema, table=True):
         nullable=True,
     )
 
-    stacks: List["StackSchema"] = Relationship(back_populates="user")
-    components: List["StackComponentSchema"] = Relationship(
+    stacks: list["StackSchema"] = Relationship(back_populates="user")
+    components: list["StackComponentSchema"] = Relationship(
         back_populates="user",
     )
-    flavors: List["FlavorSchema"] = Relationship(back_populates="user")
-    actions: List["ActionSchema"] = Relationship(
+    flavors: list["FlavorSchema"] = Relationship(back_populates="user")
+    actions: list["ActionSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={
             "cascade": "delete",
             "primaryjoin": "UserSchema.id==ActionSchema.user_id",
         },
     )
-    event_sources: List["EventSourceSchema"] = Relationship(
+    event_sources: list["EventSourceSchema"] = Relationship(
         back_populates="user"
     )
-    pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
-    schedules: List["ScheduleSchema"] = Relationship(
+    pipelines: list["PipelineSchema"] = Relationship(back_populates="user")
+    schedules: list["ScheduleSchema"] = Relationship(
         back_populates="user",
     )
-    runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
-    run_templates: List["RunTemplateSchema"] = Relationship(
+    runs: list["PipelineRunSchema"] = Relationship(back_populates="user")
+    run_templates: list["RunTemplateSchema"] = Relationship(
         back_populates="user",
     )
-    step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
-    builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
-    artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
-    artifact_versions: List["ArtifactVersionSchema"] = Relationship(
+    step_runs: list["StepRunSchema"] = Relationship(back_populates="user")
+    builds: list["PipelineBuildSchema"] = Relationship(back_populates="user")
+    artifacts: list["ArtifactSchema"] = Relationship(back_populates="user")
+    artifact_versions: list["ArtifactVersionSchema"] = Relationship(
         back_populates="user"
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         back_populates="user"
     )
-    secrets: List["SecretSchema"] = Relationship(
+    secrets: list["SecretSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    triggers: List["TriggerSchema"] = Relationship(
+    triggers: list["TriggerSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={
             "cascade": "delete",
             "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
         },
     )
-    auth_actions: List["ActionSchema"] = Relationship(
+    auth_actions: list["ActionSchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={
             "cascade": "delete",
             "primaryjoin": "UserSchema.id==ActionSchema.service_account_id",
         },
     )
-    snapshots: List["PipelineSnapshotSchema"] = Relationship(
+    snapshots: list["PipelineSnapshotSchema"] = Relationship(
         back_populates="user",
     )
-    code_repositories: List["CodeRepositorySchema"] = Relationship(
+    code_repositories: list["CodeRepositorySchema"] = Relationship(
         back_populates="user",
     )
-    services: List["ServiceSchema"] = Relationship(back_populates="user")
-    service_connectors: List["ServiceConnectorSchema"] = Relationship(
+    services: list["ServiceSchema"] = Relationship(back_populates="user")
+    service_connectors: list["ServiceConnectorSchema"] = Relationship(
         back_populates="user",
     )
-    models: List["ModelSchema"] = Relationship(
+    models: list["ModelSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions: List["ModelVersionSchema"] = Relationship(
+    model_versions: list["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    auth_devices: List["OAuthDeviceSchema"] = Relationship(
+    auth_devices: list["OAuthDeviceSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    api_keys: List["APIKeySchema"] = Relationship(
+    api_keys: list["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    deployments: List["DeploymentSchema"] = Relationship(
+    deployments: list["DeploymentSchema"] = Relationship(
         back_populates="user",
     )
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         back_populates="user",
     )
 
@@ -209,7 +209,7 @@ class UserSchema(NamedSchema, table=True):
 
     @classmethod
     def from_service_account_request(
-        cls, model: Union[ServiceAccountRequest, ServiceAccountInternalRequest]
+        cls, model: ServiceAccountRequest | ServiceAccountInternalRequest
     ) -> "UserSchema":
         """Create a `UserSchema` from a Service Account request.
 

@@ -55,7 +55,7 @@ logger = get_logger(__name__)
 VERTEX_DOCKER_IMAGE_KEY = "vertex_step_operator"
 
 
-def validate_accelerator_type(accelerator_type: Optional[str] = None) -> None:
+def validate_accelerator_type(accelerator_type: str | None = None) -> None:
     """Validates that the accelerator type is valid.
 
     Args:
@@ -97,7 +97,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         return cast(VertexStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Vertex step operator.
 
         Returns:
@@ -106,7 +106,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         return VertexStepOperatorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -114,7 +114,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             registry and a remote artifact store.
         """
 
-        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_remote_components(stack: "Stack") -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The Vertex step operator runs code remotely and "
@@ -150,7 +150,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -174,8 +174,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launches a step on VertexAI.
 

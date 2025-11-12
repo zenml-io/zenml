@@ -75,7 +75,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -92,7 +92,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -101,7 +101,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -119,7 +119,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png"
 
     @property
-    def config_class(self) -> Type[AWSContainerRegistryConfig]:
+    def config_class(self) -> type[AWSContainerRegistryConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -128,7 +128,7 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return AWSContainerRegistryConfig
 
     @property
-    def implementation_class(self) -> Type["AWSContainerRegistry"]:
+    def implementation_class(self) -> type["AWSContainerRegistry"]:
         """Implementation class.
 
         Returns:

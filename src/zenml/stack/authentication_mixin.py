@@ -33,7 +33,7 @@ class AuthenticationConfigMixin(StackComponentConfig):
     Field descriptions are defined inline using Field() descriptors.
     """
 
-    authentication_secret: Optional[str] = Field(
+    authentication_secret: str | None = Field(
         default=None,
         description="Name of the ZenML secret containing authentication credentials.",
     )
@@ -57,7 +57,7 @@ class AuthenticationMixin(StackComponent):
 
     def get_authentication_secret(
         self,
-    ) -> Optional[SecretResponse]:
+    ) -> SecretResponse | None:
         """Gets the secret referred to by the authentication secret attribute.
 
         Returns:
@@ -83,8 +83,8 @@ class AuthenticationMixin(StackComponent):
             )
 
     def get_typed_authentication_secret(
-        self, expected_schema_type: Type[T]
-    ) -> Optional[T]:
+        self, expected_schema_type: type[T]
+    ) -> T | None:
         """Gets a typed secret referred to by the authentication secret attribute.
 
         Args:

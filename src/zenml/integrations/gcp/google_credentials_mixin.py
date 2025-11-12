@@ -34,11 +34,11 @@ class GoogleCredentialsConfigMixin(StackComponentConfig):
     Field descriptions are defined inline using Field() descriptors.
     """
 
-    project: Optional[str] = Field(
+    project: str | None = Field(
         default=None,
         description="Google Cloud Project ID. Auto-detected from environment if not specified.",
     )
-    service_account_path: Optional[str] = Field(
+    service_account_path: str | None = Field(
         default=None,
         description="Path to service account JSON key file for authentication. "
         "Uses Application Default Credentials if not provided.",
@@ -57,7 +57,7 @@ class GoogleCredentialsMixin(StackComponent):
         """
         return cast(GoogleCredentialsConfigMixin, self._config)
 
-    def _get_authentication(self) -> Tuple["Credentials", str]:
+    def _get_authentication(self) -> tuple["Credentials", str]:
         """Get GCP credentials and the project ID associated with the credentials.
 
         If `service_account_path` is provided, then the credentials will be

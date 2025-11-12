@@ -42,14 +42,14 @@ if TYPE_CHECKING:
 class WandbExperimentTrackerSettings(BaseSettings):
     """Settings for the Wandb experiment tracker."""
 
-    run_name: Optional[str] = Field(
+    run_name: str | None = Field(
         None, description="The Wandb run name to use for tracking experiments."
     )
-    tags: List[str] = Field(
+    tags: list[str] = Field(
         default_factory=list,
         description="Tags to attach to the Wandb run for categorization and filtering.",
     )
-    settings: Dict[str, Any] = Field(
+    settings: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional settings for the Wandb run configuration.",
     )
@@ -84,7 +84,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
             if isinstance(value, BaseModel):
                 return value.model_dump()  # type: ignore[no-untyped-call]
             elif hasattr(value, "make_static"):
-                return cast(Dict[str, Any], value.make_static())
+                return cast(dict[str, Any], value.make_static())
             elif hasattr(value, "to_dict"):
                 return value.to_dict()
             else:
@@ -102,12 +102,12 @@ class WandbExperimentTrackerConfig(
         description="API key that should be authorized to log to the configured "
         "Wandb entity and project. Required for authentication."
     )
-    entity: Optional[str] = Field(
+    entity: str | None = Field(
         None,
         description="Name of an existing Wandb entity (team or user account) "
         "to log experiments to.",
     )
-    project_name: Optional[str] = Field(
+    project_name: str | None = Field(
         None,
         description="Name of an existing Wandb project to log experiments to. "
         "If not specified, a default project will be used.",
@@ -127,7 +127,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return WANDB_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -136,7 +136,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at SDK docs explaining this flavor.
 
         Returns:
@@ -154,7 +154,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/wandb.png"
 
     @property
-    def config_class(self) -> Type[WandbExperimentTrackerConfig]:
+    def config_class(self) -> type[WandbExperimentTrackerConfig]:
         """Returns `WandbExperimentTrackerConfig` config class.
 
         Returns:
@@ -163,7 +163,7 @@ class WandbExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return WandbExperimentTrackerConfig
 
     @property
-    def implementation_class(self) -> Type["WandbExperimentTracker"]:
+    def implementation_class(self) -> type["WandbExperimentTracker"]:
         """Implementation class for this flavor.
 
         Returns:

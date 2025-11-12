@@ -18,7 +18,7 @@ from typing import Dict
 import torch
 
 
-def count_module_params(module: torch.nn.Module) -> Dict[str, int]:
+def count_module_params(module: torch.nn.Module) -> dict[str, int]:
     """Get the total and trainable parameters of a module.
 
     Args:

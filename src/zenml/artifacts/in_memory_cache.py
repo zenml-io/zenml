@@ -28,7 +28,7 @@ class InMemoryArtifactCache(context_utils.BaseContext):
     def __init__(self) -> None:
         """Initialize the artifact cache."""
         super().__init__()
-        self._cache: Dict[UUID, Any] = {}
+        self._cache: dict[UUID, Any] = {}
 
     def clear(self) -> None:
         """Clear the artifact cache."""

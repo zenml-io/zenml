@@ -42,7 +42,7 @@ class Archivable(ABC):
             *args: Unused args for subclasses.
             **kwargs: Unused keyword args for subclasses.
         """
-        self._extra_files: Dict[str, str] = {}
+        self._extra_files: dict[str, str] = {}
 
     def add_file(self, source: str, destination: str) -> None:
         """Adds a file to the archive.
@@ -103,7 +103,7 @@ class Archivable(ABC):
         """
         files = self.get_files()
         extra_files = self.get_extra_files()
-        close_fileobj: Optional[Any] = None
+        close_fileobj: Any | None = None
         fileobj: Any = output_file
 
         if archive_type == ArchiveType.ZIP:
@@ -160,7 +160,7 @@ class Archivable(ABC):
         output_file.seek(0)
 
     @abstractmethod
-    def get_files(self) -> Dict[str, str]:
+    def get_files(self) -> dict[str, str]:
         """Gets all regular files that should be included in the archive.
 
         Returns:
@@ -168,7 +168,7 @@ class Archivable(ABC):
             in the archive.
         """
 
-    def get_extra_files(self) -> Dict[str, str]:
+    def get_extra_files(self) -> dict[str, str]:
         """Gets all extra files that should be included in the archive.
 
         Returns:

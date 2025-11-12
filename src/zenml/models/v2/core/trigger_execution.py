@@ -39,7 +39,7 @@ class TriggerExecutionRequest(BaseRequest):
     """Model for creating a new Trigger execution."""
 
     trigger: UUID
-    event_metadata: Dict[str, Any] = {}
+    event_metadata: dict[str, Any] = {}
 
 
 # ------------------ Update Model ------------------
@@ -55,7 +55,7 @@ class TriggerExecutionResponseBody(BaseDatedResponseBody):
 class TriggerExecutionResponseMetadata(BaseResponseMetadata):
     """Response metadata for trigger executions."""
 
-    event_metadata: Dict[str, Any] = {}
+    event_metadata: dict[str, Any] = {}
 
 
 class TriggerExecutionResponseResources(BaseResponseResources):
@@ -97,7 +97,7 @@ class TriggerExecutionResponse(
         return self.get_resources().trigger
 
     @property
-    def event_metadata(self) -> Dict[str, Any]:
+    def event_metadata(self) -> dict[str, Any]:
         """The `event_metadata` property.
 
         Returns:
@@ -112,7 +112,7 @@ class TriggerExecutionResponse(
 class TriggerExecutionFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all trigger executions."""
 
-    trigger_id: Optional[Union[UUID, str]] = Field(
+    trigger_id: UUID | str | None = Field(
         default=None,
         description="ID of the trigger of the execution.",
         union_mode="left_to_right",

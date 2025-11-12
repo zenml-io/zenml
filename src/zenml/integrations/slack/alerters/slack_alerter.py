@@ -39,27 +39,27 @@ DEFAULT_DISAPPROVE_MSG_OPTIONS = ["decline", "disapprove", "no", "reject"]
 class SlackAlerterPayload(BaseModel):
     """Slack alerter payload implementation."""
 
-    pipeline_name: Optional[str] = None
-    step_name: Optional[str] = None
-    stack_name: Optional[str] = None
+    pipeline_name: str | None = None
+    step_name: str | None = None
+    stack_name: str | None = None
 
 
 class SlackAlerterParameters(BaseAlerterStepParameters):
     """Slack alerter parameters."""
 
     # The ID of the Slack channel to use for communication.
-    slack_channel_id: Optional[str] = None
+    slack_channel_id: str | None = None
 
     # Set of messages that lead to approval in alerter.ask()
-    approve_msg_options: Optional[List[str]] = None
+    approve_msg_options: list[str] | None = None
 
     # Set of messages that lead to disapproval in alerter.ask()
-    disapprove_msg_options: Optional[List[str]] = None
-    payload: Optional[SlackAlerterPayload] = None
-    include_format_blocks: Optional[bool] = True
+    disapprove_msg_options: list[str] | None = None
+    payload: SlackAlerterPayload | None = None
+    include_format_blocks: bool | None = True
 
     # Allowing user to use their own custom blocks in the Slack post message
-    blocks: Optional[List[Dict]] = None  # type: ignore
+    blocks: list[dict] | None = None  # type: ignore
 
 
 class SlackAlerter(BaseAlerter):
@@ -75,7 +75,7 @@ class SlackAlerter(BaseAlerter):
         return cast(SlackAlerterConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[SlackAlerterSettings]:
+    def settings_class(self) -> type[SlackAlerterSettings]:
         """Settings class for the Slack alerter.
 
         Returns:
@@ -84,7 +84,7 @@ class SlackAlerter(BaseAlerter):
         return SlackAlerterSettings
 
     def _get_channel_id(
-        self, params: Optional[BaseAlerterStepParameters] = None
+        self, params: BaseAlerterStepParameters | None = None
     ) -> str:
         """Get the Slack channel ID to be used by post/ask.
 
@@ -152,8 +152,8 @@ class SlackAlerter(BaseAlerter):
 
     @staticmethod
     def _get_approve_msg_options(
-        params: Optional[BaseAlerterStepParameters],
-    ) -> List[str]:
+        params: BaseAlerterStepParameters | None,
+    ) -> list[str]:
         """Define which messages will lead to approval during ask().
 
         Args:
@@ -172,8 +172,8 @@ class SlackAlerter(BaseAlerter):
 
     @staticmethod
     def _get_disapprove_msg_options(
-        params: Optional[BaseAlerterStepParameters],
-    ) -> List[str]:
+        params: BaseAlerterStepParameters | None,
+    ) -> list[str]:
         """Define which messages will lead to disapproval during ask().
 
         Args:
@@ -192,9 +192,9 @@ class SlackAlerter(BaseAlerter):
 
     @staticmethod
     def _create_blocks(
-        message: Optional[str],
-        params: Optional[BaseAlerterStepParameters],
-    ) -> List[Dict]:  # type: ignore
+        message: str | None,
+        params: BaseAlerterStepParameters | None,
+    ) -> list[dict]:  # type: ignore
         """Helper function to create slack blocks.
 
         Args:
@@ -261,8 +261,8 @@ class SlackAlerter(BaseAlerter):
 
     def post(
         self,
-        message: Optional[str] = None,
-        params: Optional[BaseAlerterStepParameters] = None,
+        message: str | None = None,
+        params: BaseAlerterStepParameters | None = None,
     ) -> bool:
         """Post a message to a Slack channel.
 
@@ -300,7 +300,7 @@ class SlackAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self, question: str, params: BaseAlerterStepParameters | None = None
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 

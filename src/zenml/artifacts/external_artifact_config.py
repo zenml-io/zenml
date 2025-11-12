@@ -30,12 +30,12 @@ class ExternalArtifactConfiguration(BaseModel):
     Lightweight class to pass in the steps for runtime inference.
     """
 
-    id: Optional[UUID] = None
+    id: UUID | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _remove_old_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _remove_old_attributes(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Remove old attributes that are not used anymore.
 
         Args:

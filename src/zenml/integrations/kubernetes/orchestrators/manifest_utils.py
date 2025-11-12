@@ -16,7 +16,8 @@
 import base64
 import os
 import sys
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Mapping
 
 from kubernetes import client as k8s_client
 
@@ -95,18 +96,18 @@ def add_local_stores_mount(
 
 
 def build_pod_manifest(
-    pod_name: Optional[str],
+    pod_name: str | None,
     image_name: str,
-    command: List[str],
-    args: List[str],
+    command: list[str],
+    args: list[str],
     privileged: bool,
-    pod_settings: Optional[KubernetesPodSettings] = None,
-    service_account_name: Optional[str] = None,
-    env: Optional[Dict[str, str]] = None,
-    labels: Optional[Dict[str, str]] = None,
+    pod_settings: KubernetesPodSettings | None = None,
+    service_account_name: str | None = None,
+    env: dict[str, str] | None = None,
+    labels: dict[str, str] | None = None,
     mount_local_stores: bool = False,
-    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
-    termination_grace_period_seconds: Optional[int] = 30,
+    owner_references: list[k8s_client.V1OwnerReference] | None = None,
+    termination_grace_period_seconds: int | None = 30,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -277,7 +278,7 @@ def build_role_binding_manifest_for_service_account(
     role_name: str,
     service_account_name: str,
     namespace: str = "default",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a manifest for a role binding of a service account.
 
     Args:
@@ -310,7 +311,7 @@ def build_role_binding_manifest_for_service_account(
 
 def build_service_account_manifest(
     name: str, namespace: str = "default"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build the manifest for a service account.
 
     Args:
@@ -329,7 +330,7 @@ def build_service_account_manifest(
     }
 
 
-def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
+def build_namespace_manifest(namespace: str) -> dict[str, Any]:
     """Build the manifest for a new namespace.
 
     Args:
@@ -349,9 +350,9 @@ def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
 
 def build_secret_manifest(
     name: str,
-    data: Mapping[str, Optional[str]],
+    data: Mapping[str, str | None],
     secret_type: str = "Opaque",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Builds a Kubernetes secret manifest.
 
     Args:
@@ -398,13 +399,13 @@ def pod_template_manifest_from_pod(
 def build_job_manifest(
     job_name: str,
     pod_template: k8s_client.V1PodTemplateSpec,
-    backoff_limit: Optional[int] = None,
-    ttl_seconds_after_finished: Optional[int] = None,
-    labels: Optional[Dict[str, str]] = None,
-    annotations: Optional[Dict[str, str]] = None,
-    active_deadline_seconds: Optional[int] = None,
-    pod_failure_policy: Optional[Dict[str, Any]] = None,
-    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+    backoff_limit: int | None = None,
+    ttl_seconds_after_finished: int | None = None,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    active_deadline_seconds: int | None = None,
+    pod_failure_policy: dict[str, Any] | None = None,
+    owner_references: list[k8s_client.V1OwnerReference] | None = None,
 ) -> k8s_client.V1Job:
     """Build a Kubernetes job manifest.
 
@@ -461,8 +462,8 @@ def job_template_manifest_from_job(
 def build_cron_job_manifest(
     job_template: k8s_client.V1JobTemplateSpec,
     cron_expression: str,
-    successful_jobs_history_limit: Optional[int] = None,
-    failed_jobs_history_limit: Optional[int] = None,
+    successful_jobs_history_limit: int | None = None,
+    failed_jobs_history_limit: int | None = None,
 ) -> k8s_client.V1CronJob:
     """Build a Kubernetes cron job manifest.
 

@@ -36,7 +36,7 @@ def resolve_duplicate_versions() -> None:
         artifact_version_table.c.version,
     )
 
-    versions_per_artifact: Dict[str, Set[str]] = defaultdict(set)
+    versions_per_artifact: dict[str, set[str]] = defaultdict(set)
 
     for id, artifact_id, version in connection.execute(query).fetchall():
         versions = versions_per_artifact[artifact_id]

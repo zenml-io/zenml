@@ -116,7 +116,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Dict[str, bool]:
+    def get_entrypoint_options(cls) -> dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -129,7 +129,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
     def get_entrypoint_arguments(
         cls,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         The argument list should be something that

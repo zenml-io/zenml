@@ -48,31 +48,31 @@ DISALLOWED_PIPELINE_NAMES = ["unlisted"]
 class PipelineConfigurationUpdate(FrozenBaseModel):
     """Class for pipeline configuration updates."""
 
-    enable_cache: Optional[bool] = None
-    enable_artifact_metadata: Optional[bool] = None
-    enable_artifact_visualization: Optional[bool] = None
-    enable_step_logs: Optional[bool] = None
-    environment: Dict[str, Any] = {}
-    secrets: List[Union[str, UUID]] = []
-    enable_pipeline_logs: Optional[bool] = None
-    execution_mode: Optional[ExecutionMode] = None
-    settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    tags: Optional[List[Union[str, "Tag"]]] = None
-    extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    init_hook_source: Optional[SourceWithValidator] = None
-    init_hook_kwargs: Optional[Dict[str, Any]] = None
-    cleanup_hook_source: Optional[SourceWithValidator] = None
-    model: Optional[Model] = None
-    parameters: Optional[Dict[str, Any]] = None
-    retry: Optional[StepRetryConfig] = None
-    substitutions: Dict[str, str] = {}
-    cache_policy: Optional[CachePolicyWithValidator] = None
+    enable_cache: bool | None = None
+    enable_artifact_metadata: bool | None = None
+    enable_artifact_visualization: bool | None = None
+    enable_step_logs: bool | None = None
+    environment: dict[str, Any] = {}
+    secrets: list[str | UUID] = []
+    enable_pipeline_logs: bool | None = None
+    execution_mode: ExecutionMode | None = None
+    settings: dict[str, SerializeAsAny[BaseSettings]] = {}
+    tags: list[Union[str, "Tag"]] | None = None
+    extra: dict[str, Any] = {}
+    failure_hook_source: SourceWithValidator | None = None
+    success_hook_source: SourceWithValidator | None = None
+    init_hook_source: SourceWithValidator | None = None
+    init_hook_kwargs: dict[str, Any] | None = None
+    cleanup_hook_source: SourceWithValidator | None = None
+    model: Model | None = None
+    parameters: dict[str, Any] | None = None
+    retry: StepRetryConfig | None = None
+    substitutions: dict[str, str] = {}
+    cache_policy: CachePolicyWithValidator | None = None
 
     def finalize_substitutions(
-        self, start_time: Optional[datetime] = None, inplace: bool = False
-    ) -> Dict[str, str]:
+        self, start_time: datetime | None = None, inplace: bool = False
+    ) -> dict[str, str]:
         """Returns the full substitutions dict.
 
         Args:

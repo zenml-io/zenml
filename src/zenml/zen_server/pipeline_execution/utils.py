@@ -18,7 +18,8 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+from collections.abc import Callable
 from uuid import UUID
 
 from packaging import version
@@ -143,7 +144,7 @@ def run_snapshot(
     auth_context: AuthContext,
     request: PipelineSnapshotRunRequest,
     sync: bool = False,
-    template_id: Optional[UUID] = None,
+    template_id: UUID | None = None,
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -423,8 +424,8 @@ def generate_image_hash(dockerfile: str) -> str:
 
 
 def generate_dockerfile(
-    pypi_requirements: List[str],
-    apt_packages: List[str],
+    pypi_requirements: list[str],
+    apt_packages: list[str],
     zenml_version: str,
     python_version: str,
 ) -> str:
@@ -476,7 +477,7 @@ def generate_dockerfile(
 def snapshot_request_from_source_snapshot(
     source_snapshot: PipelineSnapshotResponse,
     config: PipelineRunConfiguration,
-    template_id: Optional[UUID] = None,
+    template_id: UUID | None = None,
 ) -> "PipelineSnapshotRequest":
     """Generate a snapshot request from a source snapshot.
 
@@ -612,7 +613,7 @@ def get_pipeline_run_analytics_metadata(
     stack: StackResponse,
     source_snapshot_id: UUID,
     run_id: UUID,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get metadata for the pipeline run analytics event.
 
     Args:

@@ -27,11 +27,11 @@ class LazyRunMetadataResponse(BaseModel):
     a pipeline context available only during pipeline compilation.
     """
 
-    lazy_load_artifact_name: Optional[str] = None
-    lazy_load_artifact_version: Optional[str] = None
-    lazy_load_metadata_name: Optional[str] = None
+    lazy_load_artifact_name: str | None = None
+    lazy_load_artifact_version: str | None = None
+    lazy_load_metadata_name: str | None = None
     lazy_load_model_name: str
-    lazy_load_model_version: Optional[str] = None
+    lazy_load_model_version: str | None = None
 
 
 class RunMetadataLazyGetter:
@@ -45,9 +45,9 @@ class RunMetadataLazyGetter:
     def __init__(
         self,
         _lazy_load_model_name: str,
-        _lazy_load_model_version: Optional[str],
-        _lazy_load_artifact_name: Optional[str] = None,
-        _lazy_load_artifact_version: Optional[str] = None,
+        _lazy_load_model_version: str | None,
+        _lazy_load_artifact_name: str | None = None,
+        _lazy_load_artifact_version: str | None = None,
     ):
         """Initialize a RunMetadataLazyGetter.
 

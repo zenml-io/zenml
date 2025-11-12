@@ -34,7 +34,7 @@ class DefaultContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return ContainerRegistryFlavor.DEFAULT.value
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -43,7 +43,7 @@ class DefaultContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:

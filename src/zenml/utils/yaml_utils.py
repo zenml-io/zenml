@@ -27,7 +27,7 @@ from zenml.utils import io_utils
 
 def write_yaml(
     file_path: str,
-    contents: Union[Dict[Any, Any], List[Any]],
+    contents: dict[Any, Any] | list[Any],
     sort_keys: bool = True,
 ) -> None:
     """Write contents as YAML format to file_path.
@@ -51,7 +51,7 @@ def write_yaml(
     )
 
 
-def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
+def append_yaml(file_path: str, contents: dict[Any, Any]) -> None:
     """Append contents to a YAML file at file_path.
 
     Args:
@@ -121,7 +121,7 @@ def comment_out_yaml(yaml_string: str) -> str:
 def write_json(
     file_path: str,
     contents: Any,
-    encoder: Optional[Type[json.JSONEncoder]] = None,
+    encoder: type[json.JSONEncoder] | None = None,
     **json_dump_args: Any,
 ) -> None:
     """Write contents as JSON format to file_path.

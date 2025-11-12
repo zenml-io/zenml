@@ -15,15 +15,14 @@
 
 from typing import (
     Any,
-    Callable,
     Dict,
-    Iterable,
     List,
     Optional,
     Tuple,
     Union,
     cast,
 )
+from collections.abc import Callable, Iterable
 
 import adlfs
 
@@ -41,7 +40,7 @@ PathType = Union[bytes, str]
 class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Microsoft Azure based artifacts."""
 
-    _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
+    _filesystem: adlfs.AzureBlobFileSystem | None = None
 
     @property
     def config(self) -> AzureArtifactStoreConfig:
@@ -52,7 +51,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return cast(AzureArtifactStoreConfig, self._config)
 
-    def get_credentials(self) -> Optional[AzureSecretSchema]:
+    def get_credentials(self) -> AzureSecretSchema | None:
         """Returns the credentials for the Azure Artifact Store if configured.
 
         Returns:
@@ -122,7 +121,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             )
         return self._filesystem
 
-    def _split_path(self, path: PathType) -> Tuple[str, str]:
+    def _split_path(self, path: PathType) -> tuple[str, str]:
         """Splits a path into the filesystem prefix and remainder.
 
         Example:
@@ -197,7 +196,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    def glob(self, pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> list[PathType]:
         """Return all paths that match the given glob pattern.
 
         The glob pattern may include:
@@ -229,7 +228,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    def listdir(self, path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> list[PathType]:
         """Return a list of files in a directory.
 
         Args:
@@ -240,7 +239,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         _, path = self._split_path(path)
 
-        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+        def _extract_basename(file_dict: dict[str, Any]) -> str:
             """Extracts the basename from a dictionary returned by the Azure filesystem.
 
             Args:
@@ -318,7 +317,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         self.filesystem.delete(path=path, recursive=True)
 
-    def stat(self, path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> dict[str, Any]:
         """Return stat info for the given path.
 
         Args:
@@ -344,8 +343,8 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self,
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:

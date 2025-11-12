@@ -61,7 +61,7 @@ class SkypilotLambdaOrchestrator(SkypilotBaseOrchestrator):
         return cast(SkypilotLambdaOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Skypilot orchestrator.
 
         Returns:

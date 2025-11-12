@@ -60,7 +60,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[WebhookEventSourceConfig]:
+    def config_class(self) -> type[WebhookEventSourceConfig]:
         """Returns the webhook event source configuration class.
 
         Returns:
@@ -69,7 +69,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
 
     @property
     @abstractmethod
-    def filter_class(self) -> Type[WebhookEventFilterConfig]:
+    def filter_class(self) -> type[WebhookEventFilterConfig]:
         """Returns the webhook event filter configuration class.
 
         Returns:
@@ -110,7 +110,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         return True
 
     @abstractmethod
-    def _interpret_event(self, event: Dict[str, Any]) -> BaseEvent:
+    def _interpret_event(self, event: dict[str, Any]) -> BaseEvent:
         """Converts the generic event body into a event-source specific pydantic model.
 
         Args:
@@ -123,7 +123,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
     @abstractmethod
     def _get_webhook_secret(
         self, event_source: EventSourceResponse
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get the webhook secret for the event source.
 
         Inheriting classes should implement this method to retrieve the webhook
@@ -139,7 +139,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         """
 
     def _validate_webhook_event_signature(
-        self, raw_body: bytes, headers: Dict[str, str], webhook_secret: str
+        self, raw_body: bytes, headers: dict[str, str], webhook_secret: str
     ) -> None:
         """Validate the signature of an incoming webhook event.
 
@@ -169,8 +169,8 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
             )
 
     def _load_payload(
-        self, raw_body: bytes, headers: Dict[str, str]
-    ) -> Dict[Any, Any]:
+        self, raw_body: bytes, headers: dict[str, str]
+    ) -> dict[Any, Any]:
         """Converts the raw body of the request into a python dictionary.
 
         Args:
@@ -186,7 +186,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         # For now assume all webhook events are json encoded and parse
         # the body as such.
         try:
-            body_dict: Dict[Any, Any] = json.loads(raw_body)
+            body_dict: dict[Any, Any] = json.loads(raw_body)
             return body_dict
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON body received: {e}")
@@ -195,7 +195,7 @@ class BaseWebhookEventSourceHandler(BaseEventSourceHandler, ABC):
         self,
         event_source: EventSourceResponse,
         raw_body: bytes,
-        headers: Dict[str, str],
+        headers: dict[str, str],
     ) -> None:
         """Process an incoming webhook event.
 

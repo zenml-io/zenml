@@ -15,7 +15,8 @@
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
@@ -90,12 +91,12 @@ class StackSchema(NamedSchema, table=True):
         ),
     )
 
-    description: Optional[str] = Field(default=None)
-    stack_spec_path: Optional[str]
-    labels: Optional[bytes]
-    environment: Optional[bytes] = Field(default=None)
+    description: str | None = Field(default=None)
+    stack_spec_path: str | None
+    labels: bytes | None
+    environment: bytes | None = Field(default=None)
 
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -105,15 +106,15 @@ class StackSchema(NamedSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="stacks")
 
-    components: List["StackComponentSchema"] = Relationship(
+    components: list["StackComponentSchema"] = Relationship(
         back_populates="stacks",
         link_model=StackCompositionSchema,
     )
-    builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
-    snapshots: List["PipelineSnapshotSchema"] = Relationship(
+    builds: list["PipelineBuildSchema"] = Relationship(back_populates="stack")
+    snapshots: list["PipelineSnapshotSchema"] = Relationship(
         back_populates="stack",
     )
-    secrets: List["SecretSchema"] = Relationship(
+    secrets: list["SecretSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK.value}', foreign(SecretResourceSchema.resource_id)==StackSchema.id)",
             secondary="secret_resource",
@@ -225,7 +226,7 @@ class StackSchema(NamedSchema, table=True):
     def update(
         self,
         stack_update: "StackUpdate",
-        components: List["StackComponentSchema"],
+        components: list["StackComponentSchema"],
     ) -> "StackSchema":
         """Updates a stack schema with a stack update model.
 

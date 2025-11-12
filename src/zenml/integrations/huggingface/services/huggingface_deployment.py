@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Deployment service."""
 
-from typing import Any, Dict, Generator, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
+from collections.abc import Generator
 
 from huggingface_hub import (
     InferenceClient,
@@ -123,7 +124,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         )
 
     @property
-    def prediction_url(self) -> Optional[str]:
+    def prediction_url(self) -> str | None:
         """The prediction URI exposed by the prediction service.
 
         Returns:
@@ -141,7 +142,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         """
         return self.hf_endpoint.client
 
-    def _validate_endpoint_configuration(self) -> Dict[str, str]:
+    def _validate_endpoint_configuration(self) -> dict[str, str]:
         """Validates the configuration to provision a Huggingface service.
 
         Raises:
@@ -229,7 +230,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
                 "Face console for more details."
             )
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the current operational state of the Hugging Face deployment.
 
         Returns:
@@ -309,7 +310,7 @@ class HuggingFaceDeploymentService(BaseDeploymentService):
         )
 
     def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
+        self, follow: bool = False, tail: int | None = None
     ) -> Generator[str, bool, None]:
         """Retrieve the service logs.
 

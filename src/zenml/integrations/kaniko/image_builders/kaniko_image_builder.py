@@ -62,7 +62,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         return False
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates that the stack contains a container registry.
 
         Returns:
@@ -71,7 +71,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             assert stack.container_registry
 
             if stack.container_registry.config.is_local:
@@ -106,7 +106,7 @@ class KanikoImageBuilder(BaseImageBuilder):
         self,
         image_name: str,
         build_context: "BuildContext",
-        docker_build_options: Dict[str, Any],
+        docker_build_options: dict[str, Any],
         container_registry: Optional["BaseContainerRegistry"] = None,
     ) -> str:
         """Builds and pushes a Docker image.
@@ -175,7 +175,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
     def _generate_spec_overrides(
         self, pod_name: str, image_name: str, context: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generates Kubernetes spec overrides for the Kaniko build Pod.
 
         These values are used to override the default specification of the
@@ -200,7 +200,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             "--image-name-with-digest-file=/dev/termination-log",
         ] + self.config.executor_args
 
-        optional_spec_args: Dict[str, Any] = {}
+        optional_spec_args: dict[str, Any] = {}
         if self.config.service_account_name:
             optional_spec_args["serviceAccountName"] = (
                 self.config.service_account_name
@@ -229,7 +229,7 @@ class KanikoImageBuilder(BaseImageBuilder):
     def _run_kaniko_build(
         self,
         pod_name: str,
-        spec_overrides: Dict[str, Any],
+        spec_overrides: dict[str, Any],
         build_context: "BuildContext",
     ) -> None:
         """Runs the Kaniko build in Kubernetes.

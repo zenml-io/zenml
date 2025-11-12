@@ -30,15 +30,14 @@
 from abc import ABC, abstractmethod
 from typing import (
     Any,
-    Callable,
     ClassVar,
-    Iterable,
     List,
     Optional,
     Set,
     Tuple,
     Union,
 )
+from collections.abc import Callable, Iterable
 
 PathType = Union[bytes, str]
 
@@ -50,7 +49,7 @@ class BaseFilesystem(ABC):
     https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py
     """
 
-    SUPPORTED_SCHEMES: ClassVar[Set[str]]
+    SUPPORTED_SCHEMES: ClassVar[set[str]]
 
     @staticmethod
     @abstractmethod
@@ -96,7 +95,7 @@ class BaseFilesystem(ABC):
 
     @staticmethod
     @abstractmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(pattern: PathType) -> list[PathType]:
         """Find all files matching the given pattern.
 
         Args:
@@ -120,7 +119,7 @@ class BaseFilesystem(ABC):
 
     @staticmethod
     @abstractmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(path: PathType) -> list[PathType]:
         """Lists all files in a directory.
 
         Args:
@@ -218,8 +217,8 @@ class BaseFilesystem(ABC):
     def walk(
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:

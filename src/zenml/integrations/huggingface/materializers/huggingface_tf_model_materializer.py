@@ -33,10 +33,10 @@ DEFAULT_TF_MODEL_DIR = "hf_tf_model"
 class HFTFModelMaterializer(BaseMaterializer):
     """Materializer to read Tensorflow model to and from huggingface pretrained model."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (TFPreTrainedModel,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (TFPreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
 
-    def load(self, data_type: Type[TFPreTrainedModel]) -> TFPreTrainedModel:
+    def load(self, data_type: type[TFPreTrainedModel]) -> TFPreTrainedModel:
         """Reads HFModel.
 
         Args:
@@ -72,7 +72,7 @@ class HFTFModelMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, model: TFPreTrainedModel
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `PreTrainedModel` object.
 
         Args:

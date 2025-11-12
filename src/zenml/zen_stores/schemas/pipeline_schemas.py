@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -64,7 +65,7 @@ class PipelineSchema(NamedSchema, table=True):
         ),
     )
     # Fields
-    description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    description: str | None = Field(sa_column=Column(TEXT, nullable=True))
 
     # Foreign keys
     project_id: UUID = build_foreign_key_field(
@@ -75,7 +76,7 @@ class PipelineSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -88,17 +89,17 @@ class PipelineSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="pipelines")
     project: "ProjectSchema" = Relationship(back_populates="pipelines")
 
-    schedules: List["ScheduleSchema"] = Relationship(
+    schedules: list["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    builds: List["PipelineBuildSchema"] = Relationship(
+    builds: list["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
-    snapshots: List["PipelineSnapshotSchema"] = Relationship(
+    snapshots: list["PipelineSnapshotSchema"] = Relationship(
         back_populates="pipeline",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    tags: List["TagSchema"] = Relationship(
+    tags: list["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
             secondary="tag_resource",
@@ -107,7 +108,7 @@ class PipelineSchema(NamedSchema, table=True):
             overlaps="tags",
         ),
     )
-    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+    visualizations: list["CuratedVisualizationSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=(
                 "and_(CuratedVisualizationSchema.resource_type"

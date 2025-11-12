@@ -62,7 +62,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         return snapshot.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
 
     @property
-    def requirements(self) -> Set[str]:
+    def requirements(self) -> set[str]:
         """Set of PyPI requirements for the deployer.
 
         Returns:
@@ -79,7 +79,7 @@ class ContainerizedDeployer(BaseDeployer, ABC):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:

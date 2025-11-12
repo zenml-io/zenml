@@ -161,7 +161,7 @@ def register_annotator_subcommands() -> None:
     def dataset_annotate(
         annotator: "BaseAnnotator",
         dataset_name: str,
-        kwargs: Tuple[str, ...],
+        kwargs: tuple[str, ...],
     ) -> None:
         """Command to launch the annotation interface for a dataset.
 

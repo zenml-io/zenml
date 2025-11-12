@@ -52,7 +52,7 @@ class RawUsageEvent(BaseModel):
     total: int = Field(
         description="The total amount of entities of this type."
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default={},
         description="Allows attaching additional metadata to events.",
     )

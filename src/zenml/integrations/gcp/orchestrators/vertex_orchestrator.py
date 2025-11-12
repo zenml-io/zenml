@@ -140,7 +140,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return cast(VertexOrchestratorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Vertex orchestrator.
 
         Returns:
@@ -149,7 +149,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         return VertexOrchestratorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates that the stack contains a container registry.
 
         Also validates that the artifact store is not local.
@@ -158,7 +158,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             A StackValidator instance.
         """
 
-        def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
+        def _validate_stack_requirements(stack: "Stack") -> tuple[bool, str]:
             """Validates that all the stack components are not local.
 
             Args:
@@ -249,8 +249,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     def _create_container_component(
         self,
         image: str,
-        command: List[str],
-        arguments: List[str],
+        command: list[str],
+        arguments: list[str],
         component_name: str,
     ) -> BaseComponent:
         """Creates a container component for a Vertex pipeline.
@@ -291,7 +291,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         component: BaseComponent,
         settings: VertexOrchestratorSettings,
-        environment: Dict[str, str],
+        environment: dict[str, str],
     ) -> BaseComponent:
         """Convert a component to a custom training job component.
 
@@ -375,10 +375,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -442,7 +442,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             Returns:
                 pipeline_func
             """
-            step_name_to_dynamic_component: Dict[str, BaseComponent] = {}
+            step_name_to_dynamic_component: dict[str, BaseComponent] = {}
 
             for step_name, step in snapshot.step_configurations.items():
                 image = self.get_image(
@@ -560,7 +560,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
                         pod_settings = step_settings.pod_settings
 
-                        node_selector_constraint: Optional[Tuple[str, str]] = (
+                        node_selector_constraint: tuple[str, str] | None = (
                             None
                         )
                         if pod_settings and (
@@ -628,7 +628,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         run_name: str,
         settings: VertexOrchestratorSettings,
         schedule: Optional["ScheduleResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Uploads and run the pipeline on the Vertex AI Pipelines service.
 
         Args:
@@ -802,7 +802,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get general component-specific metadata for a pipeline run.
 
         Args:
@@ -826,7 +826,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         self,
         dynamic_component: dsl.PipelineTask,
         resource_settings: "ResourceSettings",
-        node_selector_constraint: Optional[Tuple[str, str]] = None,
+        node_selector_constraint: tuple[str, str] | None = None,
     ) -> dsl.PipelineTask:
         """Adds resource requirements to the container.
 
@@ -886,8 +886,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
-    ) -> Tuple[
-        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ) -> tuple[
+        ExecutionStatus | None, dict[str, ExecutionStatus] | None
     ]:
         """Refreshes the status of a specific pipeline run.
 
@@ -967,7 +967,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
     def compute_metadata(
         self, job: aiplatform.PipelineJob
-    ) -> Dict[str, MetadataType]:
+    ) -> dict[str, MetadataType]:
         """Generate run metadata based on the corresponding Vertex PipelineJob.
 
         Args:
@@ -976,7 +976,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Returns:
             A dictionary of metadata related to the pipeline run.
         """
-        metadata: Dict[str, MetadataType] = {}
+        metadata: dict[str, MetadataType] = {}
 
         # Orchestrator Run ID
         if run_id := self._compute_orchestrator_run_id(job):
@@ -995,7 +995,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     @staticmethod
     def _compute_orchestrator_url(
         job: aiplatform.PipelineJob,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
@@ -1015,7 +1015,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     @staticmethod
     def _compute_orchestrator_logs_url(
         job: aiplatform.PipelineJob,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate the Logs Explorer URL upon pipeline execution.
 
         Args:
@@ -1042,7 +1042,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
     @staticmethod
     def _compute_orchestrator_run_id(
         job: aiplatform.PipelineJob,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Fetch the Orchestrator Run ID upon pipeline execution.
 
         Args:

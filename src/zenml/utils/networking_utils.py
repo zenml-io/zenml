@@ -47,7 +47,7 @@ def port_available(port: int, address: str = "127.0.0.1") -> bool:
                 # missing code paths.
                 pass
             s.bind((address, port))
-    except socket.error as e:
+    except OSError as e:
         logger.debug("Port %d unavailable on %s: %s", port, address, e)
         return False
 
@@ -68,9 +68,9 @@ def find_available_port() -> int:
 
 
 def lookup_preferred_or_free_port(
-    preferred_ports: List[int] = [],
+    preferred_ports: list[int] = [],
     allocate_port_if_busy: bool = True,
-    range: Tuple[int, int] = SCAN_PORT_RANGE,
+    range: tuple[int, int] = SCAN_PORT_RANGE,
     address: str = "127.0.0.1",
 ) -> int:
     """Find a preferred TCP port that is available or search for a free TCP port.
@@ -98,21 +98,21 @@ def lookup_preferred_or_free_port(
             if port_available(port, address):
                 return port
         if not allocate_port_if_busy:
-            raise IOError(f"TCP port {preferred_ports} is not available.")
+            raise OSError(f"TCP port {preferred_ports} is not available.")
 
     available_port = scan_for_available_port(
         start=range[0], stop=range[1], address=address
     )
     if available_port:
         return available_port
-    raise IOError(f"No free TCP ports found in range {range}")
+    raise OSError(f"No free TCP ports found in range {range}")
 
 
 def scan_for_available_port(
     start: int = SCAN_PORT_RANGE[0],
     stop: int = SCAN_PORT_RANGE[1],
     address: str = "127.0.0.1",
-) -> Optional[int]:
+) -> int | None:
     """Scan the local network for an available port in the given range.
 
     Args:
@@ -149,7 +149,7 @@ def port_is_open(hostname: str, port: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             result = sock.connect_ex((hostname, port))
             return result == 0
-    except socket.error as e:
+    except OSError as e:
         logger.debug(
             f"Error checking TCP port {port} on host {hostname}: {str(e)}"
         )

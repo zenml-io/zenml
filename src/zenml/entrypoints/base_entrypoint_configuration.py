@@ -58,7 +58,7 @@ class BaseEntrypointConfiguration(ABC):
         entrypoint_args: The parsed arguments passed to the entrypoint.
     """
 
-    def __init__(self, arguments: List[str]):
+    def __init__(self, arguments: list[str]):
         """Initializes the entrypoint configuration.
 
         Args:
@@ -68,7 +68,7 @@ class BaseEntrypointConfiguration(ABC):
         self._snapshot: Optional["PipelineSnapshotResponse"] = None
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
+    def get_entrypoint_command(cls) -> list[str]:
         """Returns a command that runs the entrypoint module.
 
         This entrypoint module is responsible for running the entrypoint
@@ -85,7 +85,7 @@ class BaseEntrypointConfiguration(ABC):
         return DEFAULT_ENTRYPOINT_COMMAND
 
     @classmethod
-    def get_entrypoint_options(cls) -> Dict[str, bool]:
+    def get_entrypoint_options(cls) -> dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
@@ -103,7 +103,7 @@ class BaseEntrypointConfiguration(ABC):
     def get_entrypoint_arguments(
         cls,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         The argument list should be something that
@@ -146,7 +146,7 @@ class BaseEntrypointConfiguration(ABC):
         return arguments
 
     @classmethod
-    def _parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
+    def _parse_arguments(cls, arguments: list[str]) -> dict[str, Any]:
         """Parses command line arguments.
 
         This method will create an `argparse.ArgumentParser` and add required

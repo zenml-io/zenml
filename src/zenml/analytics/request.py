@@ -28,7 +28,7 @@ from zenml.constants import ANALYTICS_SERVER_URL
 logger = logging.getLogger(__name__)
 
 
-def post(batch: List[str], timeout: int = 15) -> requests.Response:
+def post(batch: list[str], timeout: int = 15) -> requests.Response:
     """Post a batch of messages to the ZenML analytics server.
 
     Args:

@@ -57,21 +57,21 @@ class Schedule(BaseModel):
             in the local timezone.
     """
 
-    name: Optional[str] = None
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    interval_second: Optional[timedelta] = None
+    name: str | None = None
+    cron_expression: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    interval_second: timedelta | None = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime] = None
+    run_once_start_time: datetime | None = None
 
     @field_validator(
         "start_time", "end_time", "run_once_start_time", mode="after"
     )
     @classmethod
     def _ensure_timezone(
-        cls, value: Optional[datetime], info: ValidationInfo
-    ) -> Optional[datetime]:
+        cls, value: datetime | None, info: ValidationInfo
+    ) -> datetime | None:
         """Ensures that all datetimes are timezone aware.
 
         Args:

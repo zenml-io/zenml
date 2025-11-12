@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 def create_batch_request(
     context: AbstractDataContext,
     dataset: pd.DataFrame,
-    data_asset_name: Optional[str],
+    data_asset_name: str | None,
 ) -> RuntimeBatchRequest:
     """Create a temporary runtime GE batch request from a dataset step artifact.
 
@@ -62,7 +62,7 @@ def create_batch_request(
     data_asset_name = data_asset_name or f"{pipeline_name}_{step_name}"
     batch_identifier = "default"
 
-    datasource_config: Dict[str, Any] = {
+    datasource_config: dict[str, Any] = {
         "name": datasource_name,
         "class_name": "Datasource",
         "module_name": "great_expectations.datasource",

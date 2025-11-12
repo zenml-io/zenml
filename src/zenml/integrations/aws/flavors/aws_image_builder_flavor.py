@@ -63,7 +63,7 @@ class AWSImageBuilderConfig(BaseImageBuilderConfig):
 
     code_build_project: str
     build_image: str = DEFAULT_CLOUDBUILD_IMAGE
-    custom_env_vars: Optional[Dict[str, str]] = None
+    custom_env_vars: dict[str, str] | None = None
     compute_type: str = DEFAULT_CLOUDBUILD_COMPUTE_TYPE
     implicit_container_registry_auth: bool = True
 
@@ -83,7 +83,7 @@ class AWSImageBuilderFlavor(BaseImageBuilderFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -99,7 +99,7 @@ class AWSImageBuilderFlavor(BaseImageBuilderFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -108,7 +108,7 @@ class AWSImageBuilderFlavor(BaseImageBuilderFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -126,7 +126,7 @@ class AWSImageBuilderFlavor(BaseImageBuilderFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/aws.png"
 
     @property
-    def config_class(self) -> Type[BaseImageBuilderConfig]:
+    def config_class(self) -> type[BaseImageBuilderConfig]:
         """The config class.
 
         Returns:
@@ -135,7 +135,7 @@ class AWSImageBuilderFlavor(BaseImageBuilderFlavor):
         return AWSImageBuilderConfig
 
     @property
-    def implementation_class(self) -> Type["AWSImageBuilder"]:
+    def implementation_class(self) -> type["AWSImageBuilder"]:
         """Implementation class.
 
         Returns:

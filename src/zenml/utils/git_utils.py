@@ -23,8 +23,8 @@ from git.repo import Repo
 def clone_git_repository(
     url: str,
     to_path: str,
-    branch: Optional[str] = None,
-    commit: Optional[str] = None,
+    branch: str | None = None,
+    commit: str | None = None,
 ) -> Repo:
     """Clone a Git repository.
 

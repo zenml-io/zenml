@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
-Array_Like = Union[np.ndarray[Any, Any], List[Any], str, bytes, Dict[str, Any]]
+Array_Like = Union[np.ndarray[Any, Any], list[Any], str, bytes, dict[str, Any]]
 
 
 class ZenMLCustomModel:
@@ -78,7 +78,7 @@ class ZenMLCustomModel:
 
             self.model = load_model_from_metadata(self.model_uri)
         except Exception as e:
-            logger.error("Failed to load model: {}".format(e))
+            logger.error(f"Failed to load model: {e}")
             return False
         self.ready = True
         return self.ready
@@ -86,7 +86,7 @@ class ZenMLCustomModel:
     def predict(
         self,
         X: Array_Like,
-        features_names: Optional[List[str]],
+        features_names: list[str] | None,
         **kwargs: Any,
     ) -> Array_Like:
         """Predict the given request.
@@ -112,7 +112,7 @@ class ZenMLCustomModel:
             try:
                 prediction = {"predictions": self.predict_func(self.model, X)}
             except Exception as e:
-                raise Exception("Failed to predict: {}".format(e))
+                raise Exception(f"Failed to predict: {e}")
             if isinstance(prediction, dict):
                 return prediction
             else:

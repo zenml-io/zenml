@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 class ErrorModel(BaseModel):
     """Base class for error responses."""
 
-    detail: Optional[Any] = None
+    detail: Any | None = None
 
 
 error_response = dict(model=ErrorModel)
@@ -67,7 +67,7 @@ error_response = dict(model=ErrorModel)
 # An exception may be associated with multiple status codes if the same
 # exception can be reconstructed from two or more HTTP error responses with
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
-REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
+REST_API_EXCEPTIONS: list[tuple[type[Exception], int]] = [
     # 409 Conflict
     (EntityExistsError, 409),
     # 403 Forbidden
@@ -99,8 +99,8 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
 
 
 def error_detail(
-    error: Exception, exception_type: Optional[Type[Exception]] = None
-) -> List[str]:
+    error: Exception, exception_type: type[Exception] | None = None
+) -> list[str]:
     """Convert an Exception to API representation.
 
     Args:
@@ -141,7 +141,7 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     from fastapi import HTTPException
 
     status_code = 0
-    matching_exception_type: Optional[Type[Exception]] = None
+    matching_exception_type: type[Exception] | None = None
 
     for exception_type, exc_status_code in REST_API_EXCEPTIONS:
         if error.__class__ is exception_type:
@@ -179,7 +179,7 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
 
 def exception_from_response(
     response: requests.Response,
-) -> Optional[Exception]:
+) -> Exception | None:
     """Convert an error HTTP response to an exception.
 
     Uses the REST_API_EXCEPTIONS list to determine the appropriate exception
@@ -199,7 +199,7 @@ def exception_from_response(
         into an exception.
     """
 
-    def unpack_exc() -> Tuple[Optional[str], str]:
+    def unpack_exc() -> tuple[str | None, str]:
         """Unpack the response body into an exception name and message.
 
         Returns:
@@ -233,7 +233,7 @@ def exception_from_response(
         return detail[0], message
 
     exc_name, exc_msg = unpack_exc()
-    default_exc: Optional[Type[Exception]] = None
+    default_exc: type[Exception] | None = None
 
     for exception, status_code in REST_API_EXCEPTIONS:
         if response.status_code != status_code:

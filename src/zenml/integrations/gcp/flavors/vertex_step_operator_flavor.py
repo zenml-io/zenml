@@ -63,13 +63,13 @@ class VertexStepOperatorConfig(
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
-    encryption_spec_key_name: Optional[str] = None
+    encryption_spec_key_name: str | None = None
 
-    network: Optional[str] = None
+    network: str | None = None
 
-    reserved_ip_ranges: Optional[str] = None
+    reserved_ip_ranges: str | None = None
 
-    service_account: Optional[str] = None
+    service_account: str | None = None
 
     @property
     def is_remote(self) -> bool:
@@ -100,7 +100,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -115,7 +115,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -124,7 +124,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -142,7 +142,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/vertexai.png"
 
     @property
-    def config_class(self) -> Type[VertexStepOperatorConfig]:
+    def config_class(self) -> type[VertexStepOperatorConfig]:
         """Returns `VertexStepOperatorConfig` config class.
 
         Returns:
@@ -151,7 +151,7 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
         return VertexStepOperatorConfig
 
     @property
-    def implementation_class(self) -> Type["VertexStepOperator"]:
+    def implementation_class(self) -> type["VertexStepOperator"]:
         """Implementation class for this flavor.
 
         Returns:

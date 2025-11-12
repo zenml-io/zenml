@@ -42,7 +42,7 @@ class Flavor:
         """
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -51,7 +51,7 @@ class Flavor:
         return None
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -60,7 +60,7 @@ class Flavor:
         return None
 
     @property
-    def logo_url(self) -> Optional[str]:
+    def logo_url(self) -> str | None:
         """A url to represent the flavor in the dashboard.
 
         Returns:
@@ -79,7 +79,7 @@ class Flavor:
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[StackComponent]:
+    def implementation_class(self) -> type[StackComponent]:
         """Implementation class for this flavor.
 
         Returns:
@@ -88,7 +88,7 @@ class Flavor:
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[StackComponentConfig]:
+    def config_class(self) -> type[StackComponentConfig]:
         """Returns `StackComponentConfig` config class.
 
         Returns:
@@ -96,7 +96,7 @@ class Flavor:
         """
 
     @property
-    def config_schema(self) -> Dict[str, Any]:
+    def config_schema(self) -> dict[str, Any]:
         """The config schema for a flavor.
 
         Returns:
@@ -107,7 +107,7 @@ class Flavor:
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -158,7 +158,7 @@ class Flavor:
 
     def to_model(
         self,
-        integration: Optional[str] = None,
+        integration: str | None = None,
         is_custom: bool = True,
     ) -> FlavorRequest:
         """Converts a flavor to a model.
@@ -266,7 +266,7 @@ class Flavor:
 
 def validate_flavor_source(
     source: str, component_type: StackComponentType
-) -> Type["Flavor"]:
+) -> type["Flavor"]:
     """Import a StackComponent class from a given source and validate its type.
 
     Args:

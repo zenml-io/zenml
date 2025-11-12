@@ -50,12 +50,12 @@ class ArgillaAnnotatorSettings(BaseSettings):
     """
 
     instance_url: str = DEFAULT_LOCAL_INSTANCE_URL
-    api_key: Optional[str] = SecretField(default=None)
-    port: Optional[int] = DEFAULT_LOCAL_ARGILLA_PORT
-    headers: Optional[str] = None
-    httpx_extra_kwargs: Optional[str] = None
+    api_key: str | None = SecretField(default=None)
+    port: int | None = DEFAULT_LOCAL_ARGILLA_PORT
+    headers: str | None = None
+    httpx_extra_kwargs: str | None = None
 
-    extra_headers: Optional[str] = None
+    extra_headers: str | None = None
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("extra_headers", "headers"),
@@ -101,7 +101,7 @@ class ArgillaAnnotatorFlavor(BaseAnnotatorFlavor):
         return ARGILLA_ANNOTATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -110,7 +110,7 @@ class ArgillaAnnotatorFlavor(BaseAnnotatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -128,7 +128,7 @@ class ArgillaAnnotatorFlavor(BaseAnnotatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/argilla.png"
 
     @property
-    def config_class(self) -> Type[ArgillaAnnotatorConfig]:
+    def config_class(self) -> type[ArgillaAnnotatorConfig]:
         """Returns `ArgillaAnnotatorConfig` config class.
 
         Returns:
@@ -137,7 +137,7 @@ class ArgillaAnnotatorFlavor(BaseAnnotatorFlavor):
         return ArgillaAnnotatorConfig
 
     @property
-    def implementation_class(self) -> Type["ArgillaAnnotator"]:
+    def implementation_class(self) -> type["ArgillaAnnotator"]:
         """Implementation class for this flavor.
 
         Returns:

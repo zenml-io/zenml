@@ -16,7 +16,8 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union, cast
+from collections.abc import Awaitable, Callable
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -94,14 +95,14 @@ class AuthContext(BaseModel):
     """The authentication context."""
 
     user: UserResponse
-    access_token: Optional[JWTToken] = None
-    encoded_access_token: Optional[str] = None
-    device: Optional[OAuthDeviceInternalResponse] = None
-    api_key: Optional[APIKeyInternalResponse] = None
+    access_token: JWTToken | None = None
+    encoded_access_token: str | None = None
+    device: OAuthDeviceInternalResponse | None = None
+    api_key: APIKeyInternalResponse | None = None
 
 
 def _fetch_and_verify_api_key(
-    api_key_id: UUID, key_to_verify: Optional[str] = None
+    api_key_id: UUID, key_to_verify: str | None = None
 ) -> APIKeyInternalResponse:
     """Fetches an API key from the database and verifies it.
 
@@ -172,11 +173,11 @@ def _fetch_and_verify_api_key(
 
 
 def authenticate_credentials(
-    user_name_or_id: Optional[Union[str, UUID]] = None,
-    password: Optional[str] = None,
-    access_token: Optional[str] = None,
-    csrf_token: Optional[str] = None,
-    activation_token: Optional[str] = None,
+    user_name_or_id: str | UUID | None = None,
+    password: str | None = None,
+    access_token: str | None = None,
+    csrf_token: str | None = None,
+    activation_token: str | None = None,
 ) -> AuthContext:
     """Verify if user authentication credentials are valid.
 
@@ -205,8 +206,8 @@ def authenticate_credentials(
     Raises:
         CredentialsNotValid: If the credentials are invalid.
     """
-    user: Optional[UserAuthModel] = None
-    auth_context: Optional[AuthContext] = None
+    user: UserAuthModel | None = None
+    auth_context: AuthContext | None = None
     if user_name_or_id:
         try:
             # NOTE: this method will not return a user if the user name or ID
@@ -311,14 +312,14 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
-        api_key_model: Optional[APIKeyInternalResponse] = None
+        api_key_model: APIKeyInternalResponse | None = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
             # verify if the API key hasn't been deactivated or deleted in the
             # meantime.
             api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
 
-        device_model: Optional[OAuthDeviceInternalResponse] = None
+        device_model: OAuthDeviceInternalResponse | None = None
         if decoded_token.device_id:
             if server_config().auth_scheme in [
                 AuthScheme.NO_AUTH,
@@ -388,7 +389,7 @@ def authenticate_credentials(
             # queries.
 
             @cache_result(expiry=30)
-            def get_schedule_active(schedule_id: UUID) -> Optional[bool]:
+            def get_schedule_active(schedule_id: UUID) -> bool | None:
                 """Get the active status of a schedule.
 
                 Args:
@@ -433,7 +434,7 @@ def authenticate_credentials(
             @cache_result(expiry=30)
             def check_if_pipeline_run_in_progress(
                 pipeline_run_id: UUID,
-            ) -> Tuple[Optional[bool], Optional[datetime]]:
+            ) -> tuple[bool | None, datetime | None]:
                 """Get the status of a pipeline run.
 
                 Args:
@@ -662,7 +663,7 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
 
 
 def authenticate_external_user(
-    external_access_token: str, request: Optional[Request] = None
+    external_access_token: str, request: Request | None = None
 ) -> AuthContext:
     """Implement external authentication.
 
@@ -706,7 +707,7 @@ def authenticate_external_user(
             "Error fetching user information from external authenticator."
         )
 
-    external_user: Optional[ExternalUserModel] = None
+    external_user: ExternalUserModel | None = None
 
     if 200 <= auth_response.status_code < 300:
         try:
@@ -753,7 +754,7 @@ def authenticate_external_user(
 
     # Check if the external user already exists in the ZenML server database
     # If not, create a new user. If yes, update the existing user.
-    user: Optional[UserResponse] = None
+    user: UserResponse | None = None
     if not external_user.is_service_account:
         users = store.list_users(
             UserFilter(
@@ -957,14 +958,14 @@ def authenticate_api_key(
 
 def generate_access_token(
     user_id: UUID,
-    response: Optional[Response] = None,
-    request: Optional[Request] = None,
-    device: Optional[OAuthDeviceInternalResponse] = None,
-    api_key: Optional[APIKeyInternalResponse] = None,
-    expires_in: Optional[int] = None,
-    schedule_id: Optional[UUID] = None,
-    pipeline_run_id: Optional[UUID] = None,
-    deployment_id: Optional[UUID] = None,
+    response: Response | None = None,
+    request: Request | None = None,
+    device: OAuthDeviceInternalResponse | None = None,
+    api_key: APIKeyInternalResponse | None = None,
+    expires_in: int | None = None,
+    schedule_id: UUID | None = None,
+    pipeline_run_id: UUID | None = None,
+    deployment_id: UUID | None = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -993,7 +994,7 @@ def generate_access_token(
     # If the expiration time is not supplied, the JWT tokens are set to expire
     # according to the values configured in the server config. Device tokens are
     # handled separately from regular user tokens.
-    expires: Optional[datetime] = None
+    expires: datetime | None = None
     if expires_in == 0:
         expires_in = None
     elif expires_in is not None:
@@ -1018,7 +1019,7 @@ def generate_access_token(
     if response and request:
         # Extract the origin domain from the request; use the referer as a
         # fallback
-        origin_domain: Optional[str] = None
+        origin_domain: str | None = None
         origin = request.headers.get("origin", request.headers.get("referer"))
         if origin:
             # If the request origin is known, we use it to determine whether
@@ -1026,7 +1027,7 @@ def generate_access_token(
             # measures.
             origin_domain = urlparse(origin).netloc
 
-        server_domain: Optional[str] = config.auth_cookie_domain
+        server_domain: str | None = config.auth_cookie_domain
         # If the server's cookie domain is not explicitly set in the
         # server's configuration, we use other sources to determine it:
         #
@@ -1045,8 +1046,8 @@ def generate_access_token(
         if origin_domain and server_domain:
             same_site = is_same_or_subdomain(origin_domain, server_domain)
 
-    csrf_token: Optional[str] = None
-    session_id: Optional[UUID] = None
+    csrf_token: str | None = None
+    session_id: UUID | None = None
     if not same_site:
         # If responding to a cross-site login request, we need to generate and
         # sign a CSRF token associated with the authentication session.
@@ -1089,7 +1090,7 @@ def generate_access_token(
 def generate_download_token(
     download_type: DownloadType,
     resource_id: UUID,
-    extra_claims: Optional[Dict[str, Any]] = None,
+    extra_claims: dict[str, Any] | None = None,
     expires_in_seconds: int = 30,
 ) -> str:
     """Generate a JWT token for downloading content.
@@ -1127,7 +1128,7 @@ def verify_download_token(
     token: str,
     download_type: DownloadType,
     resource_id: UUID,
-    extra_claims: Optional[Dict[str, Any]] = None,
+    extra_claims: dict[str, Any] | None = None,
 ) -> None:
     """Verify a JWT token for downloading content.
 
@@ -1145,7 +1146,7 @@ def verify_download_token(
     config = server_config()
     try:
         claims = cast(
-            Dict[str, Any],
+            dict[str, Any],
             jwt.decode(
                 token,
                 config.jwt_secret_key,
@@ -1196,7 +1197,7 @@ def http_authentication(
 class CookieOAuth2TokenBearer(OAuth2PasswordBearer):
     """OAuth2 token bearer authentication scheme that uses a cookie."""
 
-    async def __call__(self, request: Request) -> Optional[str]:
+    async def __call__(self, request: Request) -> str | None:
         """Extract the bearer token from the request.
 
         Args:

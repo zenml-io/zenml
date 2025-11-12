@@ -16,16 +16,14 @@
 from contextlib import contextmanager
 from typing import (
     Any,
-    Callable,
     Dict,
-    Generator,
-    Iterable,
     List,
     Optional,
     Tuple,
     Union,
     cast,
 )
+from collections.abc import Callable, Generator, Iterable
 
 import boto3
 import s3fs
@@ -117,7 +115,7 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
 class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
-    _filesystem: Optional[ZenMLS3Filesystem] = None
+    _filesystem: ZenMLS3Filesystem | None = None
 
     is_versioned: bool = False
 
@@ -158,7 +156,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     def get_credentials(
         self,
-    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None, str | None, str | None]:
         """Gets authentication credentials.
 
         If an authentication secret is configured, the secret values are
@@ -290,7 +288,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    def glob(self, pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> list[PathType]:
         """Return all paths that match the given glob pattern.
 
         The glob pattern may include:
@@ -319,7 +317,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    def listdir(self, path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> list[PathType]:
         """Return a list of files in a directory.
 
         Args:
@@ -334,7 +332,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if path.startswith("s3://"):
             path = path[5:]
 
-        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+        def _extract_basename(file_dict: dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by the S3 filesystem.
 
             Args:
@@ -415,7 +413,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         self.filesystem.delete(path=path, recursive=True)
 
-    def stat(self, path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> dict[str, Any]:
         """Return stat info for the given path.
 
         Args:
@@ -441,8 +439,8 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self,
         top: PathType,
         topdown: bool = True,
-        onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        onerror: Callable[..., None] | None = None,
+    ) -> Iterable[tuple[PathType, list[PathType], list[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
 
         Args:

@@ -59,7 +59,7 @@ class AzureMLStepOperator(BaseStepOperator):
         return cast(AzureMLStepOperatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the AzureML step operator.
 
         Returns:
@@ -68,7 +68,7 @@ class AzureMLStepOperator(BaseStepOperator):
         return AzureMLStepOperatorSettings
 
     @property
-    def validator(self) -> Optional[StackValidator]:
+    def validator(self) -> StackValidator | None:
         """Validates the stack.
 
         Returns:
@@ -78,7 +78,7 @@ class AzureMLStepOperator(BaseStepOperator):
 
         def _validate_remote_components(
             stack: "Stack",
-        ) -> Tuple[bool, str]:
+        ) -> tuple[bool, str]:
             if stack.artifact_store.config.is_local:
                 return False, (
                     "The AzureML step operator runs code remotely and "
@@ -138,7 +138,7 @@ class AzureMLStepOperator(BaseStepOperator):
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
-    ) -> List["BuildConfiguration"]:
+    ) -> list["BuildConfiguration"]:
         """Gets the Docker builds required for the component.
 
         Args:
@@ -162,8 +162,8 @@ class AzureMLStepOperator(BaseStepOperator):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Launches a step on AzureML.
 

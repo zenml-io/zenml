@@ -56,7 +56,7 @@ if TYPE_CHECKING:
 class PipelineBuildBase(BaseZenModel):
     """Base model for pipeline builds."""
 
-    images: Dict[str, BuildItem] = Field(
+    images: dict[str, BuildItem] = Field(
         default={}, title="The images of this build."
     )
     is_local: bool = Field(
@@ -66,13 +66,13 @@ class PipelineBuildBase(BaseZenModel):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         title="The version of ZenML used for this build.", default=None
     )
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         title="The Python version used for this build.", default=None
     )
-    duration: Optional[int] = Field(
+    duration: int | None = Field(
         title="The duration of the build in seconds.", default=None
     )
 
@@ -89,7 +89,7 @@ class PipelineBuildBase(BaseZenModel):
         )
 
     @staticmethod
-    def get_image_key(component_key: str, step: Optional[str] = None) -> str:
+    def get_image_key(component_key: str, step: str | None = None) -> str:
         """Get the image key.
 
         Args:
@@ -104,7 +104,7 @@ class PipelineBuildBase(BaseZenModel):
         else:
             return component_key
 
-    def get_image(self, component_key: str, step: Optional[str] = None) -> str:
+    def get_image(self, component_key: str, step: str | None = None) -> str:
         """Get the image built for a specific key.
 
         Args:
@@ -119,8 +119,8 @@ class PipelineBuildBase(BaseZenModel):
         return self._get_item(component_key=component_key, step=step).image
 
     def get_settings_checksum(
-        self, component_key: str, step: Optional[str] = None
-    ) -> Optional[str]:
+        self, component_key: str, step: str | None = None
+    ) -> str | None:
         """Get the settings checksum for a specific key.
 
         Args:
@@ -137,7 +137,7 @@ class PipelineBuildBase(BaseZenModel):
         ).settings_checksum
 
     def _get_item(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, step: str | None = None
     ) -> "BuildItem":
         """Get the item for a specific key.
 
@@ -174,15 +174,15 @@ class PipelineBuildBase(BaseZenModel):
 class PipelineBuildRequest(PipelineBuildBase, ProjectScopedRequest):
     """Request model for pipelines builds."""
 
-    checksum: Optional[str] = Field(title="The build checksum.", default=None)
-    stack_checksum: Optional[str] = Field(
+    checksum: str | None = Field(title="The build checksum.", default=None)
+    stack_checksum: str | None = Field(
         title="The stack checksum.", default=None
     )
 
-    stack: Optional[UUID] = Field(
+    stack: UUID | None = Field(
         title="The stack that was used for this build.", default=None
     )
-    pipeline: Optional[UUID] = Field(
+    pipeline: UUID | None = Field(
         title="The pipeline that was used for this build.", default=None
     )
 
@@ -200,7 +200,7 @@ class PipelineBuildResponseBody(ProjectScopedResponseBody):
 class PipelineBuildResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline builds."""
 
-    __zenml_skip_dehydration__: ClassVar[List[str]] = [
+    __zenml_skip_dehydration__: ClassVar[list[str]] = [
         "images",
     ]
 
@@ -210,17 +210,17 @@ class PipelineBuildResponseMetadata(ProjectScopedResponseMetadata):
     stack: Optional["StackResponse"] = Field(
         default=None, title="The stack that was used for this build."
     )
-    images: Dict[str, "BuildItem"] = Field(
+    images: dict[str, "BuildItem"] = Field(
         default={}, title="The images of this build."
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         default=None, title="The version of ZenML used for this build."
     )
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         default=None, title="The Python version used for this build."
     )
-    checksum: Optional[str] = Field(default=None, title="The build checksum.")
-    stack_checksum: Optional[str] = Field(
+    checksum: str | None = Field(default=None, title="The build checksum.")
+    stack_checksum: str | None = Field(
         default=None, title="The stack checksum."
     )
     is_local: bool = Field(
@@ -230,7 +230,7 @@ class PipelineBuildResponseMetadata(ProjectScopedResponseMetadata):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
-    duration: Optional[int] = Field(
+    duration: int | None = Field(
         title="The duration of the build in seconds.", default=None
     )
 
@@ -259,7 +259,7 @@ class PipelineBuildResponse(
         return Client().zen_store.get_build(self.id)
 
     # Helper methods
-    def to_yaml(self) -> Dict[str, Any]:
+    def to_yaml(self) -> dict[str, Any]:
         """Create a yaml representation of the pipeline build.
 
         Create a yaml representation of the pipeline build that can be used
@@ -269,7 +269,7 @@ class PipelineBuildResponse(
             The yaml representation of the pipeline build.
         """
         # Get the base attributes
-        yaml_dict: Dict[str, Any] = json.loads(
+        yaml_dict: dict[str, Any] = json.loads(
             self.model_dump_json(
                 exclude={
                     "body",
@@ -301,7 +301,7 @@ class PipelineBuildResponse(
         )
 
     @staticmethod
-    def get_image_key(component_key: str, step: Optional[str] = None) -> str:
+    def get_image_key(component_key: str, step: str | None = None) -> str:
         """Get the image key.
 
         Args:
@@ -316,7 +316,7 @@ class PipelineBuildResponse(
         else:
             return component_key
 
-    def get_image(self, component_key: str, step: Optional[str] = None) -> str:
+    def get_image(self, component_key: str, step: str | None = None) -> str:
         """Get the image built for a specific key.
 
         Args:
@@ -331,8 +331,8 @@ class PipelineBuildResponse(
         return self._get_item(component_key=component_key, step=step).image
 
     def get_settings_checksum(
-        self, component_key: str, step: Optional[str] = None
-    ) -> Optional[str]:
+        self, component_key: str, step: str | None = None
+    ) -> str | None:
         """Get the settings checksum for a specific key.
 
         Args:
@@ -349,7 +349,7 @@ class PipelineBuildResponse(
         ).settings_checksum
 
     def _get_item(
-        self, component_key: str, step: Optional[str] = None
+        self, component_key: str, step: str | None = None
     ) -> "BuildItem":
         """Get the item for a specific key.
 
@@ -402,7 +402,7 @@ class PipelineBuildResponse(
         return self.get_metadata().stack
 
     @property
-    def images(self) -> Dict[str, "BuildItem"]:
+    def images(self) -> dict[str, "BuildItem"]:
         """The `images` property.
 
         Returns:
@@ -411,7 +411,7 @@ class PipelineBuildResponse(
         return self.get_metadata().images
 
     @property
-    def zenml_version(self) -> Optional[str]:
+    def zenml_version(self) -> str | None:
         """The `zenml_version` property.
 
         Returns:
@@ -420,7 +420,7 @@ class PipelineBuildResponse(
         return self.get_metadata().zenml_version
 
     @property
-    def python_version(self) -> Optional[str]:
+    def python_version(self) -> str | None:
         """The `python_version` property.
 
         Returns:
@@ -429,7 +429,7 @@ class PipelineBuildResponse(
         return self.get_metadata().python_version
 
     @property
-    def checksum(self) -> Optional[str]:
+    def checksum(self) -> str | None:
         """The `checksum` property.
 
         Returns:
@@ -438,7 +438,7 @@ class PipelineBuildResponse(
         return self.get_metadata().checksum
 
     @property
-    def stack_checksum(self) -> Optional[str]:
+    def stack_checksum(self) -> str | None:
         """The `stack_checksum` property.
 
         Returns:
@@ -465,7 +465,7 @@ class PipelineBuildResponse(
         return self.get_metadata().contains_code
 
     @property
-    def duration(self) -> Optional[int]:
+    def duration(self) -> int | None:
         """The `duration` property.
 
         Returns:
@@ -480,55 +480,55 @@ class PipelineBuildResponse(
 class PipelineBuildFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "container_registry_id",
     ]
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUID | str | None = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUID | str | None = Field(
         description="Stack associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    container_registry_id: Optional[Union[UUID, str]] = Field(
+    container_registry_id: UUID | str | None = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
         union_mode="left_to_right",
     )
-    is_local: Optional[bool] = Field(
+    is_local: bool | None = Field(
         description="Whether the build images are stored in a container "
         "registry or locally.",
         default=None,
     )
-    contains_code: Optional[bool] = Field(
+    contains_code: bool | None = Field(
         description="Whether any image of the build contains user code.",
         default=None,
     )
-    zenml_version: Optional[str] = Field(
+    zenml_version: str | None = Field(
         description="The version of ZenML used for this build.", default=None
     )
-    python_version: Optional[str] = Field(
+    python_version: str | None = Field(
         description="The Python version used for this build.", default=None
     )
-    checksum: Optional[str] = Field(
+    checksum: str | None = Field(
         description="The build checksum.", default=None
     )
-    stack_checksum: Optional[str] = Field(
+    stack_checksum: str | None = Field(
         description="The stack checksum.", default=None
     )
-    duration: Optional[Union[int, str]] = Field(
+    duration: int | str | None = Field(
         description="The duration of the build in seconds.", default=None
     )
 
     def get_custom_filters(
         self,
-        table: Type["AnySchema"],
-    ) -> List["ColumnElement[bool]"]:
+        table: type["AnySchema"],
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

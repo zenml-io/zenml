@@ -27,13 +27,13 @@ logger = get_logger(__name__)
 
 
 def validate_stack_component_config(
-    configuration_dict: Dict[str, Any],
-    flavor: Union[FlavorResponse, str],
+    configuration_dict: dict[str, Any],
+    flavor: FlavorResponse | str,
     component_type: StackComponentType,
-    zen_store: Optional[BaseZenStore] = None,
+    zen_store: BaseZenStore | None = None,
     validate_custom_flavors: bool = True,
-    existing_config: Optional[Dict[str, Any]] = None,
-) -> Optional[StackComponentConfig]:
+    existing_config: dict[str, Any] | None = None,
+) -> StackComponentConfig | None:
     """Validate the configuration of a stack component.
 
     Args:

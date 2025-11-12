@@ -36,7 +36,7 @@ from zenml.utils.server_utils import get_local_server
 logger = get_logger(__name__)
 
 
-def get_cloud_dashboard_url() -> Optional[str]:
+def get_cloud_dashboard_url() -> str | None:
     """Get the base url of the cloud dashboard if the server is a ZenML Pro workspace.
 
     Returns:
@@ -53,7 +53,7 @@ def get_cloud_dashboard_url() -> Optional[str]:
     return None
 
 
-def get_server_dashboard_url() -> Optional[str]:
+def get_server_dashboard_url() -> str | None:
     """Get the base url of the dashboard deployed by the server.
 
     Returns:
@@ -74,7 +74,7 @@ def get_server_dashboard_url() -> Optional[str]:
     return None
 
 
-def get_stack_url(stack: StackResponse) -> Optional[str]:
+def get_stack_url(stack: StackResponse) -> str | None:
     """Function to get the dashboard URL of a given stack model.
 
     Args:
@@ -98,7 +98,7 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     return None
 
 
-def get_component_url(component: ComponentResponse) -> Optional[str]:
+def get_component_url(component: ComponentResponse) -> str | None:
     """Function to get the dashboard URL of a given component model.
 
     Args:
@@ -119,7 +119,7 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     return None
 
 
-def get_run_url(run: PipelineRunResponse) -> Optional[str]:
+def get_run_url(run: PipelineRunResponse) -> str | None:
     """Function to get the dashboard URL of a given pipeline run.
 
     Args:
@@ -141,7 +141,7 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
 
 def get_model_version_url(
     model_version: ModelVersionResponse,
-) -> Optional[str]:
+) -> str | None:
     """Function to get the dashboard URL of a given model version.
 
     Args:
@@ -157,7 +157,7 @@ def get_model_version_url(
     return None
 
 
-def get_deployment_url(deployment: DeploymentResponse) -> Optional[str]:
+def get_deployment_url(deployment: DeploymentResponse) -> str | None:
     """Function to get the dashboard URL of a given deployment.
 
     Args:
@@ -243,7 +243,7 @@ def show_dashboard_with_url(url: str) -> None:
 
 def show_dashboard(
     local: bool = False,
-    ngrok_token: Optional[str] = None,
+    ngrok_token: str | None = None,
 ) -> None:
     """Show the ZenML dashboard.
 
@@ -259,7 +259,7 @@ def show_dashboard(
     """
     from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
 
-    url: Optional[str] = None
+    url: str | None = None
     if not local:
         gc = GlobalConfiguration()
         if gc.store_configuration.type == StoreType.REST:

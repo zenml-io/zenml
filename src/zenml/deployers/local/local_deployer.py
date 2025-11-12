@@ -22,13 +22,13 @@ import time
 from typing import (
     TYPE_CHECKING,
     Dict,
-    Generator,
     List,
     Optional,
     Tuple,
     Type,
     cast,
 )
+from collections.abc import Generator
 from uuid import UUID
 
 import psutil
@@ -81,10 +81,10 @@ class LocalDeploymentMetadata(BaseModel):
         log_file: Path to log file.
     """
 
-    pid: Optional[int] = None
-    port: Optional[int] = None
-    address: Optional[str] = None
-    log_file: Optional[str] = None
+    pid: int | None = None
+    port: int | None = None
+    address: str | None = None
+    log_file: str | None = None
 
     @classmethod
     def from_deployment(
@@ -115,9 +115,9 @@ class LocalDeployerSettings(BaseDeployerSettings):
             code changes.
     """
 
-    port: Optional[int] = None
+    port: int | None = None
     allocate_port_if_busy: bool = True
-    port_range: Tuple[int, int] = (8000, 65535)
+    port_range: tuple[int, int] = (8000, 65535)
     address: str = "127.0.0.1"
     blocking: bool = False
     auto_reload: bool = False
@@ -140,7 +140,7 @@ class LocalDeployer(BaseDeployer):
     """Deployer that runs deployments as local daemon processes."""
 
     @property
-    def settings_class(self) -> Optional[Type[BaseSettings]]:
+    def settings_class(self) -> type[BaseSettings] | None:
         """Settings class for the local deployer.
 
         Returns:
@@ -200,8 +200,8 @@ class LocalDeployer(BaseDeployer):
         self,
         deployment: DeploymentResponse,
         stack: "Stack",
-        environment: Dict[str, str],
-        secrets: Dict[str, str],
+        environment: dict[str, str],
+        secrets: dict[str, str],
         timeout: int,
     ) -> DeploymentOperationalState:
         """Provision a local daemon deployment.
@@ -221,7 +221,7 @@ class LocalDeployer(BaseDeployer):
         """
         assert deployment.snapshot, "Pipeline snapshot not found"
 
-        child_env: Dict[str, str] = dict(os.environ)
+        child_env: dict[str, str] = dict(os.environ)
         child_env.update(environment)
         child_env.update(secrets)
 
@@ -241,7 +241,7 @@ class LocalDeployer(BaseDeployer):
                     f"'{deployment.name}' with PID {existing_meta.pid}: {e}"
                 )
 
-        preferred_ports: List[int] = []
+        preferred_ports: list[int] = []
         if settings.port:
             preferred_ports.append(settings.port)
         if existing_meta.port:
@@ -254,7 +254,7 @@ class LocalDeployer(BaseDeployer):
                 range=settings.port_range,
                 address=settings.address,
             )
-        except IOError as e:
+        except OSError as e:
             raise DeploymentProvisionError(str(e))
 
         address = settings.address
@@ -402,7 +402,7 @@ class LocalDeployer(BaseDeployer):
         self,
         deployment: DeploymentResponse,
         follow: bool = False,
-        tail: Optional[int] = None,
+        tail: int | None = None,
     ) -> Generator[str, bool, None]:
         """Read logs from the local daemon log file.
 
@@ -428,7 +428,7 @@ class LocalDeployer(BaseDeployer):
         try:
 
             def _read_tail(path: str, n: int) -> Generator[str, bool, None]:
-                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(path, encoding="utf-8", errors="ignore") as f:
                     lines = f.readlines()
                     for line in lines[-n:]:
                         yield line.rstrip("\n")
@@ -438,13 +438,13 @@ class LocalDeployer(BaseDeployer):
                     yield from _read_tail(log_file, tail)
                 else:
                     with open(
-                        log_file, "r", encoding="utf-8", errors="ignore"
+                        log_file, encoding="utf-8", errors="ignore"
                     ) as f:
                         for line in f:
                             yield line.rstrip("\n")
                 return
 
-            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            with open(log_file, encoding="utf-8", errors="ignore") as f:
                 if not tail:
                     tail = DEFAULT_TAIL_FOLLOW_LINES
                 lines = f.readlines()
@@ -470,7 +470,7 @@ class LocalDeployer(BaseDeployer):
 
     def do_deprovision_deployment(
         self, deployment: DeploymentResponse, timeout: int
-    ) -> Optional[DeploymentOperationalState]:
+    ) -> DeploymentOperationalState | None:
         """Deprovision a local daemon deployment.
 
         Args:
@@ -516,7 +516,7 @@ class LocalDeployerFlavor(BaseDeployerFlavor):
         return "local"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -525,7 +525,7 @@ class LocalDeployerFlavor(BaseDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -543,7 +543,7 @@ class LocalDeployerFlavor(BaseDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/local.png"
 
     @property
-    def config_class(self) -> Type[BaseDeployerConfig]:
+    def config_class(self) -> type[BaseDeployerConfig]:
         """Config class for the flavor.
 
         Returns:
@@ -552,7 +552,7 @@ class LocalDeployerFlavor(BaseDeployerFlavor):
         return LocalDeployerConfig
 
     @property
-    def implementation_class(self) -> Type[LocalDeployer]:
+    def implementation_class(self) -> type[LocalDeployer]:
         """Implementation class for this flavor.
 
         Returns:

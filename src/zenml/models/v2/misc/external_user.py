@@ -24,10 +24,10 @@ class ExternalUserModel(BaseModel):
 
     id: UUID
     username: str
-    email: Optional[str] = None
-    name: Optional[str] = None
+    email: str | None = None
+    name: str | None = None
     is_admin: bool = False
     is_service_account: bool = False
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
 
     model_config = ConfigDict(extra="ignore")

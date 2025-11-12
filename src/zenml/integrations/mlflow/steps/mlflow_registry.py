@@ -38,14 +38,14 @@ logger = get_logger(__name__)
 def mlflow_register_model_step(
     model: UnmaterializedArtifact,
     name: str,
-    version: Optional[str] = None,
-    trained_model_name: Optional[str] = "model",
-    model_source_uri: Optional[str] = None,
-    experiment_name: Optional[str] = None,
-    run_name: Optional[str] = None,
-    run_id: Optional[str] = None,
-    description: Optional[str] = None,
-    metadata: Optional[ModelRegistryModelMetadata] = None,
+    version: str | None = None,
+    trained_model_name: str | None = "model",
+    model_source_uri: str | None = None,
+    experiment_name: str | None = None,
+    run_name: str | None = None,
+    run_id: str | None = None,
+    description: str | None = None,
+    metadata: ModelRegistryModelMetadata | None = None,
 ) -> None:
     """MLflow model registry step.
 

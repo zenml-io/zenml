@@ -42,7 +42,7 @@ class LocalOrchestrator(BaseOrchestrator):
     does not support running on a schedule.
     """
 
-    _orchestrator_run_id: Optional[str] = None
+    _orchestrator_run_id: str | None = None
 
     @property
     def run_init_cleanup_at_step_level(self) -> bool:
@@ -67,10 +67,10 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        base_environment: Dict[str, str],
-        step_environments: Dict[str, Dict[str, str]],
+        base_environment: dict[str, str],
+        step_environments: dict[str, dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a pipeline to the orchestrator.
 
         This method should only submit the pipeline and not wait for it to
@@ -101,9 +101,9 @@ class LocalOrchestrator(BaseOrchestrator):
 
         execution_mode = snapshot.pipeline_configuration.execution_mode
 
-        failed_steps: List[str] = []
-        step_exception: Optional[Exception] = None
-        skipped_steps: List[str] = []
+        failed_steps: list[str] = []
+        step_exception: Exception | None = None
+        skipped_steps: list[str] = []
 
         self.run_init_hook(snapshot=snapshot)
 
@@ -190,9 +190,9 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         stack: "Stack",
-        environment: Dict[str, str],
+        environment: dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
-    ) -> Optional[SubmissionResult]:
+    ) -> SubmissionResult | None:
         """Submits a dynamic pipeline to the orchestrator.
 
         Args:
@@ -240,7 +240,7 @@ class LocalOrchestrator(BaseOrchestrator):
         return self._orchestrator_run_id
 
     @property
-    def supported_execution_modes(self) -> List[ExecutionMode]:
+    def supported_execution_modes(self) -> list[ExecutionMode]:
         """Returns the supported execution modes for this flavor.
 
         Returns:
@@ -288,7 +288,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
         return "local"
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -297,7 +297,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at SDK docs explaining this flavor.
 
         Returns:
@@ -315,7 +315,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/local.png"
 
     @property
-    def config_class(self) -> Type[BaseOrchestratorConfig]:
+    def config_class(self) -> type[BaseOrchestratorConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
@@ -324,7 +324,7 @@ class LocalOrchestratorFlavor(BaseOrchestratorFlavor):
         return LocalOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type[LocalOrchestrator]:
+    def implementation_class(self) -> type[LocalOrchestrator]:
         """Implementation class for this flavor.
 
         Returns:

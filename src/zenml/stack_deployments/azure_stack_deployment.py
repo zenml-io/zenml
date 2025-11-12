@@ -118,7 +118,7 @@ ZenML's access to your Azure subscription.
 """
 
     @classmethod
-    def integrations(cls) -> List[str]:
+    def integrations(cls) -> list[str]:
         """Return the ZenML integrations required for the stack.
 
         Returns:
@@ -128,7 +128,7 @@ ZenML's access to your Azure subscription.
         return ["azure"]
 
     @classmethod
-    def permissions(cls) -> Dict[str, List[str]]:
+    def permissions(cls) -> dict[str, list[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
         Returns:
@@ -151,7 +151,7 @@ ZenML's access to your Azure subscription.
         }
 
     @classmethod
-    def locations(cls) -> Dict[str, str]:
+    def locations(cls) -> dict[str, str]:
         """Return the locations where the ZenML stack can be deployed.
 
         Returns:
@@ -227,7 +227,7 @@ ZenML's access to your Azure subscription.
         }
 
     @classmethod
-    def skypilot_default_regions(cls) -> Dict[str, str]:
+    def skypilot_default_regions(cls) -> dict[str, str]:
         """Returns the regions supported by default for the Skypilot.
 
         Returns:

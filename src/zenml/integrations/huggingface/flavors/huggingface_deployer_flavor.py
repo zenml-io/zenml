@@ -39,7 +39,7 @@ class HuggingFaceDeployerSettings(BaseDeployerSettings):
         private: Whether to create a private Space (default: True for security)
     """
 
-    space_hardware: Optional[str] = Field(
+    space_hardware: str | None = Field(
         default=None,
         description="Hardware tier for Space execution. Controls compute resources "
         "available to the deployed pipeline. Options: 'cpu-basic' (2 vCPU, 16GB RAM), "
@@ -48,7 +48,7 @@ class HuggingFaceDeployerSettings(BaseDeployerSettings):
         "https://huggingface.co/docs/hub/spaces-gpus for full list. Defaults to "
         "cpu-basic if not specified",
     )
-    space_storage: Optional[str] = Field(
+    space_storage: str | None = Field(
         default=None,
         description="Persistent storage tier for Space data. Determines available disk "
         "space for artifacts and logs. Options: 'small' (20GB), 'medium' (150GB), "
@@ -68,7 +68,7 @@ class HuggingFaceDeployerConfig(
 ):
     """Configuration for the Hugging Face deployer."""
 
-    token: Optional[str] = SecretField(
+    token: str | None = SecretField(
         default=None,
         description="Hugging Face API token for authentication with write permissions. "
         "Can reference a ZenML secret using {{secret_name.key}} syntax or provide "
@@ -76,7 +76,7 @@ class HuggingFaceDeployerConfig(
         "with 'write' access enabled. Example: '{{hf_token.token}}' references the "
         "'token' key in the 'hf_token' secret",
     )
-    organization: Optional[str] = Field(
+    organization: str | None = Field(
         default=None,
         description="Hugging Face organization name to deploy Spaces under. If not "
         "specified, Spaces are created under the authenticated user's account. "
@@ -105,7 +105,7 @@ class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
         return HUGGINGFACE_DEPLOYER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A URL to point at docs explaining this flavor.
 
         Returns:
@@ -114,7 +114,7 @@ class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A URL to point at SDK docs explaining this flavor.
 
         Returns:
@@ -132,7 +132,7 @@ class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/huggingface.png"
 
     @property
-    def config_class(self) -> Type[BaseDeployerConfig]:
+    def config_class(self) -> type[BaseDeployerConfig]:
         """Returns `HuggingFaceDeployerConfig` config class.
 
         Returns:
@@ -141,7 +141,7 @@ class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
         return HuggingFaceDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["HuggingFaceDeployer"]:
+    def implementation_class(self) -> type["HuggingFaceDeployer"]:
         """Implementation class for this flavor.
 
         Returns:
@@ -156,7 +156,7 @@ class HuggingFaceDeployerFlavor(BaseDeployerFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for this flavor.
 
         Returns:

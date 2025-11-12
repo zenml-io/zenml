@@ -37,7 +37,7 @@ class WhylogsIntegration(Integration):
         from zenml.integrations.whylogs import secret_schemas  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Great Expectations integration.
 
         Returns:
@@ -50,8 +50,8 @@ class WhylogsIntegration(Integration):
         return [WhylogsDataValidatorFlavor]
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+    def get_requirements(cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:

@@ -39,7 +39,7 @@ class SecretsStoreConfiguration(BaseModel):
     """
 
     type: SecretsStoreType
-    class_path: Optional[str] = None
+    class_path: str | None = None
 
     @model_validator(mode="after")
     def validate_custom(self) -> "SecretsStoreConfiguration":

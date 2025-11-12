@@ -62,8 +62,8 @@ class BaseSecretsStoreBackend(BaseModel):
 
     def _get_secret_metadata(
         self,
-        secret_id: Optional[UUID] = None,
-    ) -> Dict[str, str]:
+        secret_id: UUID | None = None,
+    ) -> dict[str, str]:
         """Get a dictionary with metadata that can be used as tags/labels.
 
         This utility method can be used with Secrets Managers that can
@@ -86,7 +86,7 @@ class BaseSecretsStoreBackend(BaseModel):
         # from other secrets that might be stored in the same backend and
         # to distinguish between different ZenML deployments using the same
         # backend.
-        metadata: Dict[str, str] = {ZENML_SECRET_LABEL: str(self.server_id)}
+        metadata: dict[str, str] = {ZENML_SECRET_LABEL: str(self.server_id)}
 
         # Include the secret ID if provided.
         if secret_id is not None:
@@ -96,7 +96,7 @@ class BaseSecretsStoreBackend(BaseModel):
 
     def _create_secret_from_metadata(
         self,
-        metadata: Dict[str, str],
+        metadata: dict[str, str],
         created: datetime,
         updated: datetime,
     ) -> ZenMLSecretMetadata:
@@ -147,7 +147,7 @@ class BaseSecretsStoreBackend(BaseModel):
     @abstractmethod
     def list_secrets(
         self,
-    ) -> List[ZenMLSecretMetadata]:
+    ) -> list[ZenMLSecretMetadata]:
         """List all ZenML secrets in the secrets store backend.
 
         Returns:
@@ -160,8 +160,8 @@ class AWSSecretsStoreBackend(BaseSecretsStoreBackend):
 
     @staticmethod
     def _get_aws_secret_filters(
-        metadata: Dict[str, str],
-    ) -> List[Dict[str, str]]:
+        metadata: dict[str, str],
+    ) -> list[dict[str, str]]:
         """Convert ZenML secret metadata to AWS secret filters.
 
         Args:
@@ -170,7 +170,7 @@ class AWSSecretsStoreBackend(BaseSecretsStoreBackend):
         Returns:
             The AWS secret filters.
         """
-        aws_filters: List[Dict[str, Any]] = []
+        aws_filters: list[dict[str, Any]] = []
         for k, v in metadata.items():
             aws_filters.append(
                 {
@@ -193,7 +193,7 @@ class AWSSecretsStoreBackend(BaseSecretsStoreBackend):
 
     def list_secrets(
         self,
-    ) -> List[ZenMLSecretMetadata]:
+    ) -> list[ZenMLSecretMetadata]:
         """List all ZenML secrets in the AWS secrets store backend.
 
         Returns:
@@ -211,7 +211,7 @@ class AWSSecretsStoreBackend(BaseSecretsStoreBackend):
         metadata = self._get_secret_metadata()
         aws_filters = self._get_aws_secret_filters(metadata)
 
-        results: List[ZenMLSecretMetadata] = []
+        results: list[ZenMLSecretMetadata] = []
 
         try:
             # AWS Secrets Manager API pagination is wrapped around the
@@ -231,7 +231,7 @@ class AWSSecretsStoreBackend(BaseSecretsStoreBackend):
                 for secret in page["SecretList"]:
                     try:
                         # Convert the AWS secret tags to a metadata dictionary.
-                        unpacked_metadata: Dict[str, str] = {
+                        unpacked_metadata: dict[str, str] = {
                             tag["Key"]: tag["Value"] for tag in secret["Tags"]
                         }
 
@@ -274,7 +274,7 @@ class GCPSecretsStoreBackend(BaseSecretsStoreBackend):
 
     def _convert_gcp_secret(
         self,
-        labels: Dict[str, str],
+        labels: dict[str, str],
     ) -> ZenMLSecretMetadata:
         """Create a ZenML secret model from data stored in an GCP secret.
 
@@ -317,7 +317,7 @@ class GCPSecretsStoreBackend(BaseSecretsStoreBackend):
             updated=updated,
         )
 
-    def list_secrets(self) -> List[ZenMLSecretMetadata]:
+    def list_secrets(self) -> list[ZenMLSecretMetadata]:
         """List all secrets.
 
         Returns:
@@ -361,7 +361,7 @@ class AzureSecretsStoreBackend(BaseSecretsStoreBackend):
 
     def _convert_azure_secret(
         self,
-        tags: Dict[str, str],
+        tags: dict[str, str],
     ) -> ZenMLSecretMetadata:
         """Create a ZenML secret model from data stored in an Azure secret.
 
@@ -395,7 +395,7 @@ class AzureSecretsStoreBackend(BaseSecretsStoreBackend):
             updated=updated,
         )
 
-    def list_secrets(self) -> List[ZenMLSecretMetadata]:
+    def list_secrets(self) -> list[ZenMLSecretMetadata]:
         """List all secrets.
 
         Returns:
@@ -410,7 +410,7 @@ class AzureSecretsStoreBackend(BaseSecretsStoreBackend):
 
         assert isinstance(self.client, SecretClient)
 
-        results: List[ZenMLSecretMetadata] = []
+        results: list[ZenMLSecretMetadata] = []
 
         try:
             all_secrets = self.client.list_properties_of_secrets()
@@ -449,7 +449,7 @@ class HashiCorpVaultSecretsStoreBackend(BaseSecretsStoreBackend):
 
     def _convert_vault_secret(
         self,
-        vault_secret: Dict[str, Any],
+        vault_secret: dict[str, Any],
     ) -> ZenMLSecretMetadata:
         """Create a ZenML secret model from data stored in an HashiCorp Vault secret.
 
@@ -484,7 +484,7 @@ class HashiCorpVaultSecretsStoreBackend(BaseSecretsStoreBackend):
             updated=updated,
         )
 
-    def list_secrets(self) -> List[ZenMLSecretMetadata]:
+    def list_secrets(self) -> list[ZenMLSecretMetadata]:
         """List all secrets.
 
         Note that returned secrets do not include any secret values. To fetch
@@ -505,7 +505,7 @@ class HashiCorpVaultSecretsStoreBackend(BaseSecretsStoreBackend):
 
         assert isinstance(self.client, Client)
 
-        results: List[ZenMLSecretMetadata] = []
+        results: list[ZenMLSecretMetadata] = []
 
         try:
             # List all ZenML secrets in the Vault

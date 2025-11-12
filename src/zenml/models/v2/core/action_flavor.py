@@ -30,7 +30,7 @@ class ActionFlavorResponseBody(BasePluginResponseBody):
 class ActionFlavorResponseMetadata(BasePluginResponseMetadata):
     """Response metadata for action flavors."""
 
-    config_schema: Dict[str, Any]
+    config_schema: dict[str, Any]
 
 
 class ActionFlavorResponseResources(BasePluginResponseResources):
@@ -48,7 +48,7 @@ class ActionFlavorResponse(
 
     # Body and metadata properties
     @property
-    def config_schema(self) -> Dict[str, Any]:
+    def config_schema(self) -> dict[str, Any]:
         """The `source_config_schema` property.
 
         Returns:

@@ -23,17 +23,15 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     List,
-    Mapping,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
     cast,
 )
+from collections.abc import Generator, Mapping, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -87,7 +85,7 @@ if TYPE_CHECKING:
     from zenml.models import ArtifactVersionResponse
     from zenml.types import HookSpecification
 
-    MaterializerClassOrSource = Union[str, Source, Type["BaseMaterializer"]]
+    MaterializerClassOrSource = Union[str, Source, type["BaseMaterializer"]]
     OutputMaterializersSpecification = Union[
         "MaterializerClassOrSource",
         Sequence["MaterializerClassOrSource"],
@@ -111,28 +109,28 @@ class BaseStep:
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[Union[bool, str]] = None,
-        step_operator: Optional[Union[bool, str]] = None,
-        parameters: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        experiment_tracker: bool | str | None = None,
+        step_operator: bool | str | None = None,
+        parameters: dict[str, Any] | None = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[str, UUID]]] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        environment: dict[str, Any] | None = None,
+        secrets: list[str | UUID] | None = None,
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        extra: dict[str, Any] | None = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
-        retry: Optional[StepRetryConfig] = None,
-        substitutions: Optional[Dict[str, str]] = None,
-        cache_policy: Optional[CachePolicyOrString] = None,
-        runtime: Optional[StepRuntime] = None,
+        retry: StepRetryConfig | None = None,
+        substitutions: dict[str, str] | None = None,
+        cache_policy: CachePolicyOrString | None = None,
+        runtime: StepRuntime | None = None,
     ) -> None:
         """Initializes a step.
 
@@ -254,7 +252,7 @@ class BaseStep:
         """
 
     @classmethod
-    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
+    def load_from_source(cls, source: Source | str) -> "BaseStep":
         """Loads a step from source.
 
         Args:
@@ -311,7 +309,7 @@ class BaseStep:
         return self.source_code
 
     @property
-    def docstring(self) -> Optional[str]:
+    def docstring(self) -> str | None:
         """The docstring of this step.
 
         Returns:
@@ -320,7 +318,7 @@ class BaseStep:
         return self.__doc__
 
     @property
-    def caching_parameters(self) -> Dict[str, Any]:
+    def caching_parameters(self) -> dict[str, Any]:
         """Caching parameters for this step.
 
         Returns:
@@ -349,13 +347,13 @@ class BaseStep:
 
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
-    ) -> Tuple[
-        Dict[str, "StepArtifact"],
-        Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
-        Dict[str, "ModelVersionDataLazyLoader"],
-        Dict[str, "ClientLazyLoader"],
-        Dict[str, Any],
-        Dict[str, Any],
+    ) -> tuple[
+        dict[str, "StepArtifact"],
+        dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
+        dict[str, "ModelVersionDataLazyLoader"],
+        dict[str, "ClientLazyLoader"],
+        dict[str, Any],
+        dict[str, Any],
     ]:
         """Parses the call args for the step entrypoint.
 
@@ -387,7 +385,7 @@ class BaseStep:
             ) from e
 
         artifacts = {}
-        external_artifacts: Dict[
+        external_artifacts: dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ] = {}
         model_artifacts_or_metadata = {}
@@ -470,7 +468,7 @@ class BaseStep:
     def __call__(
         self,
         *args: Any,
-        id: Optional[str] = None,
+        id: str | None = None,
         after: Union[
             str,
             StepArtifact,
@@ -632,7 +630,7 @@ class BaseStep:
     def submit(
         self,
         *args: Any,
-        id: Optional[str] = None,
+        id: str | None = None,
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         **kwargs: Any,
     ) -> "StepRunOutputsFuture":
@@ -681,7 +679,7 @@ class BaseStep:
         return self.configuration.name
 
     @property
-    def enable_cache(self) -> Optional[bool]:
+    def enable_cache(self) -> bool | None:
         """If caching is enabled for the step.
 
         Returns:
@@ -700,27 +698,27 @@ class BaseStep:
 
     def configure(
         self: T,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[Union[bool, str]] = None,
-        step_operator: Optional[Union[bool, str]] = None,
-        parameters: Optional[Dict[str, Any]] = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        experiment_tracker: bool | str | None = None,
+        step_operator: bool | str | None = None,
+        parameters: dict[str, Any] | None = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[Sequence[Union[str, UUID]]] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        environment: dict[str, Any] | None = None,
+        secrets: Sequence[str | UUID] | None = None,
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        extra: dict[str, Any] | None = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
-        retry: Optional[StepRetryConfig] = None,
-        substitutions: Optional[Dict[str, str]] = None,
-        cache_policy: Optional[CachePolicyOrString] = None,
-        runtime: Optional[StepRuntime] = None,
+        retry: StepRetryConfig | None = None,
+        substitutions: dict[str, str] | None = None,
+        cache_policy: CachePolicyOrString | None = None,
+        runtime: StepRuntime | None = None,
         merge: bool = True,
     ) -> T:
         """Configures the step.
@@ -779,7 +777,7 @@ class BaseStep:
         from zenml.hooks.hook_validators import resolve_and_validate_hook
 
         def _resolve_if_necessary(
-            value: Union[str, Source, Type[Any]],
+            value: str | Source | type[Any],
         ) -> Source:
             if isinstance(value, str):
                 return Source.from_import_path(value)
@@ -788,13 +786,13 @@ class BaseStep:
             else:
                 return source_utils.resolve(value)
 
-        def _convert_to_tuple(value: Any) -> Tuple[Source, ...]:
+        def _convert_to_tuple(value: Any) -> tuple[Source, ...]:
             if isinstance(value, str) or not isinstance(value, Sequence):
                 return (_resolve_if_necessary(value),)
             else:
                 return tuple(_resolve_if_necessary(v) for v in value)
 
-        outputs: Dict[str, Dict[str, Tuple[Source, ...]]] = defaultdict(dict)
+        outputs: dict[str, dict[str, tuple[Source, ...]]] = defaultdict(dict)
         allowed_output_names = set(self.entrypoint_definition.outputs)
 
         if output_materializers:
@@ -853,27 +851,27 @@ class BaseStep:
 
     def with_options(
         self,
-        enable_cache: Optional[bool] = None,
-        enable_artifact_metadata: Optional[bool] = None,
-        enable_artifact_visualization: Optional[bool] = None,
-        enable_step_logs: Optional[bool] = None,
-        experiment_tracker: Optional[Union[bool, str]] = None,
-        step_operator: Optional[Union[bool, str]] = None,
-        parameters: Optional[Dict[str, Any]] = None,
+        enable_cache: bool | None = None,
+        enable_artifact_metadata: bool | None = None,
+        enable_artifact_visualization: bool | None = None,
+        enable_step_logs: bool | None = None,
+        experiment_tracker: bool | str | None = None,
+        step_operator: bool | str | None = None,
+        parameters: dict[str, Any] | None = None,
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
-        environment: Optional[Dict[str, Any]] = None,
-        secrets: Optional[List[Union[str, UUID]]] = None,
-        settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        environment: dict[str, Any] | None = None,
+        secrets: list[str | UUID] | None = None,
+        settings: Mapping[str, "SettingsOrDict"] | None = None,
+        extra: dict[str, Any] | None = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
-        retry: Optional[StepRetryConfig] = None,
-        substitutions: Optional[Dict[str, str]] = None,
-        cache_policy: Optional[CachePolicyOrString] = None,
-        runtime: Optional[StepRuntime] = None,
+        retry: StepRetryConfig | None = None,
+        substitutions: dict[str, str] | None = None,
+        cache_policy: CachePolicyOrString | None = None,
+        runtime: StepRuntime | None = None,
         merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
@@ -980,7 +978,7 @@ class BaseStep:
         self,
         config: "StepConfigurationUpdate",
         merge: bool = True,
-        runtime_parameters: Dict[str, Any] = {},
+        runtime_parameters: dict[str, Any] = {},
     ) -> None:
         """Applies an update to the step configuration.
 
@@ -1028,7 +1026,7 @@ class BaseStep:
     def _validate_configuration(
         self,
         config: "StepConfigurationUpdate",
-        runtime_parameters: Dict[str, Any],
+        runtime_parameters: dict[str, Any],
     ) -> None:
         """Validates a configuration update.
 
@@ -1045,8 +1043,8 @@ class BaseStep:
 
     def _validate_function_parameters(
         self,
-        parameters: Optional[Dict[str, Any]],
-        runtime_parameters: Dict[str, Any],
+        parameters: dict[str, Any] | None,
+        runtime_parameters: dict[str, Any],
     ) -> None:
         """Validates step function parameters.
 
@@ -1140,10 +1138,10 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _validate_inputs(
         self,
-        input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
-        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
+        input_artifacts: dict[str, "StepArtifact"],
+        external_artifacts: dict[str, "ExternalArtifactConfiguration"],
+        model_artifacts_or_metadata: dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: dict[str, "ClientLazyLoader"],
     ) -> None:
         """Validates the step inputs.
 
@@ -1174,10 +1172,10 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, "StepArtifact"],
-        external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
-        model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
-        client_lazy_loaders: Dict[str, "ClientLazyLoader"],
+        input_artifacts: dict[str, "StepArtifact"],
+        external_artifacts: dict[str, "ExternalArtifactConfiguration"],
+        model_artifacts_or_metadata: dict[str, "ModelVersionDataLazyLoader"],
+        client_lazy_loaders: dict[str, "ClientLazyLoader"],
         skip_input_validation: bool = False,
     ) -> "StepConfiguration":
         """Finalizes the configuration after the step was called.
@@ -1209,7 +1207,7 @@ To avoid this consider setting step parameters only in one place (config or code
             StepConfigurationUpdate,
         )
 
-        outputs: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        outputs: dict[str, dict[str, Any]] = defaultdict(dict)
 
         for (
             output_name,
@@ -1232,7 +1230,7 @@ To avoid this consider setting step parameters only in one place (config or code
                 if output_annotation.resolved_annotation is Any:
                     continue
 
-                materializer_classes: List[Type["BaseMaterializer"]] = [
+                materializer_classes: list[type["BaseMaterializer"]] = [
                     source_utils.load(materializer_source)
                     for materializer_source in output.materializer_source
                 ]
@@ -1308,7 +1306,7 @@ To avoid this consider setting step parameters only in one place (config or code
             self._configuration.model_dump()
         )
 
-    def _finalize_parameters(self) -> Dict[str, Any]:
+    def _finalize_parameters(self) -> dict[str, Any]:
         """Finalizes the config parameters for running this step.
 
         Returns:

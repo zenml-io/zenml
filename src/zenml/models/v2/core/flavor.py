@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 class FlavorRequest(UserScopedRequest):
     """Request model for stack component flavors."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "type",
         "integration",
     ]
@@ -50,20 +50,20 @@ class FlavorRequest(UserScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     type: StackComponentType = Field(title="The type of the Flavor.")
-    config_schema: Dict[str, Any] = Field(
+    config_schema: dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
     )
-    connector_type: Optional[str] = Field(
+    connector_type: str | None = Field(
         default=None,
         title="The type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_resource_type: Optional[str] = Field(
+    connector_resource_type: str | None = Field(
         default=None,
         title="The resource type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_resource_id_attr: Optional[str] = Field(
+    connector_resource_id_attr: str | None = Field(
         default=None,
         title="The name of an attribute in the stack component configuration "
         "that plays the role of resource ID when linked to a service "
@@ -74,20 +74,20 @@ class FlavorRequest(UserScopedRequest):
         title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    integration: Optional[str] = Field(
+    integration: str | None = Field(
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
     )
-    docs_url: Optional[str] = Field(
+    docs_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to docs, within docs.zenml.io.",
     )
-    sdk_docs_url: Optional[str] = Field(
+    sdk_docs_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to SDK docs,"
         "within sdkdocs.zenml.io.",
@@ -104,60 +104,60 @@ class FlavorRequest(UserScopedRequest):
 class FlavorUpdate(BaseUpdate):
     """Update model for stack component flavors."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    type: Optional[StackComponentType] = Field(
+    type: StackComponentType | None = Field(
         title="The type of the Flavor.", default=None
     )
-    config_schema: Optional[Dict[str, Any]] = Field(
+    config_schema: dict[str, Any] | None = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
         default=None,
     )
-    connector_type: Optional[str] = Field(
+    connector_type: str | None = Field(
         title="The type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    connector_resource_type: Optional[str] = Field(
+    connector_resource_type: str | None = Field(
         title="The resource type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    connector_resource_id_attr: Optional[str] = Field(
+    connector_resource_id_attr: str | None = Field(
         title="The name of an attribute in the stack component configuration "
         "that plays the role of resource ID when linked to a service "
         "connector.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    source: Optional[str] = Field(
+    source: str | None = Field(
         title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    integration: Optional[str] = Field(
+    integration: str | None = Field(
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
         default=None,
     )
-    docs_url: Optional[str] = Field(
+    docs_url: str | None = Field(
         title="Optionally, a url pointing to docs, within docs.zenml.io.",
         default=None,
     )
-    sdk_docs_url: Optional[str] = Field(
+    sdk_docs_url: str | None = Field(
         title="Optionally, a url pointing to SDK docs,"
         "within sdkdocs.zenml.io.",
         default=None,
     )
-    is_custom: Optional[bool] = Field(
+    is_custom: bool | None = Field(
         title="Whether or not this flavor is a custom, user created flavor.",
         default=None,
     )
@@ -170,7 +170,7 @@ class FlavorResponseBody(UserScopedResponseBody):
     """Response body for stack component flavors."""
 
     type: StackComponentType = Field(title="The type of the Flavor.")
-    integration: Optional[str] = Field(
+    integration: str | None = Field(
         title="The name of the integration that the Flavor belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
@@ -178,7 +178,7 @@ class FlavorResponseBody(UserScopedResponseBody):
         title="The path to the module which contains this Flavor.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
@@ -192,31 +192,31 @@ class FlavorResponseBody(UserScopedResponseBody):
 class FlavorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stack component flavors."""
 
-    config_schema: Dict[str, Any] = Field(
+    config_schema: dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
     )
-    connector_type: Optional[str] = Field(
+    connector_type: str | None = Field(
         default=None,
         title="The type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_resource_type: Optional[str] = Field(
+    connector_resource_type: str | None = Field(
         default=None,
         title="The resource type of the connector that this flavor uses.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    connector_resource_id_attr: Optional[str] = Field(
+    connector_resource_id_attr: str | None = Field(
         default=None,
         title="The name of an attribute in the stack component configuration "
         "that plays the role of resource ID when linked to a service "
         "connector.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    docs_url: Optional[str] = Field(
+    docs_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to docs, within docs.zenml.io.",
     )
-    sdk_docs_url: Optional[str] = Field(
+    sdk_docs_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to SDK docs,"
         "within sdkdocs.zenml.io.",
@@ -237,7 +237,7 @@ class FlavorResponse(
     """Response model for stack component flavors."""
 
     # Analytics
-    ANALYTICS_FIELDS: ClassVar[List[str]] = [
+    ANALYTICS_FIELDS: ClassVar[list[str]] = [
         "id",
         "type",
         "integration",
@@ -292,7 +292,7 @@ class FlavorResponse(
         return self.get_body().type
 
     @property
-    def integration(self) -> Optional[str]:
+    def integration(self) -> str | None:
         """The `integration` property.
 
         Returns:
@@ -310,7 +310,7 @@ class FlavorResponse(
         return self.get_body().source
 
     @property
-    def logo_url(self) -> Optional[str]:
+    def logo_url(self) -> str | None:
         """The `logo_url` property.
 
         Returns:
@@ -328,7 +328,7 @@ class FlavorResponse(
         return self.get_body().is_custom
 
     @property
-    def config_schema(self) -> Dict[str, Any]:
+    def config_schema(self) -> dict[str, Any]:
         """The `config_schema` property.
 
         Returns:
@@ -337,7 +337,7 @@ class FlavorResponse(
         return self.get_metadata().config_schema
 
     @property
-    def connector_type(self) -> Optional[str]:
+    def connector_type(self) -> str | None:
         """The `connector_type` property.
 
         Returns:
@@ -346,7 +346,7 @@ class FlavorResponse(
         return self.get_metadata().connector_type
 
     @property
-    def connector_resource_type(self) -> Optional[str]:
+    def connector_resource_type(self) -> str | None:
         """The `connector_resource_type` property.
 
         Returns:
@@ -355,7 +355,7 @@ class FlavorResponse(
         return self.get_metadata().connector_resource_type
 
     @property
-    def connector_resource_id_attr(self) -> Optional[str]:
+    def connector_resource_id_attr(self) -> str | None:
         """The `connector_resource_id_attr` property.
 
         Returns:
@@ -364,7 +364,7 @@ class FlavorResponse(
         return self.get_metadata().connector_resource_id_attr
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """The `docs_url` property.
 
         Returns:
@@ -373,7 +373,7 @@ class FlavorResponse(
         return self.get_metadata().docs_url
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """The `sdk_docs_url` property.
 
         Returns:
@@ -388,15 +388,15 @@ class FlavorResponse(
 class FlavorFilter(UserScopedFilter):
     """Model to enable advanced stack component flavor filtering."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the flavor",
     )
-    type: Optional[str] = Field(
+    type: str | None = Field(
         default=None,
         description="Stack Component Type of the stack flavor",
     )
-    integration: Optional[str] = Field(
+    integration: str | None = Field(
         default=None,
         description="Integration associated with the flavor",
     )

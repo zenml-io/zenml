@@ -14,7 +14,8 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-from typing import Any, ClassVar, Optional, Sequence, Type, cast
+from typing import Any, ClassVar, Optional, Type, cast
+from collections.abc import Sequence
 
 import pandas as pd
 import whylogs as why  # type: ignore
@@ -50,7 +51,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     """
 
     NAME: ClassVar[str] = "whylogs"
-    FLAVOR: ClassVar[Type[BaseDataValidatorFlavor]] = (
+    FLAVOR: ClassVar[type[BaseDataValidatorFlavor]] = (
         WhylogsDataValidatorFlavor
     )
 
@@ -64,7 +65,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         return cast(WhylogsDataValidatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Whylogs data validator.
 
         Returns:
@@ -75,9 +76,9 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     def data_profiling(
         self,
         dataset: pd.DataFrame,
-        comparison_dataset: Optional[pd.DataFrame] = None,
-        profile_list: Optional[Sequence[str]] = None,
-        dataset_timestamp: Optional[datetime.datetime] = None,
+        comparison_dataset: pd.DataFrame | None = None,
+        profile_list: Sequence[str] | None = None,
+        dataset_timestamp: datetime.datetime | None = None,
         **kwargs: Any,
     ) -> DatasetProfileView:
         """Analyze a dataset and generate a data profile with whylogs.
@@ -105,7 +106,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
     def upload_profile_view(
         self,
         profile_view: DatasetProfileView,
-        dataset_id: Optional[str] = None,
+        dataset_id: str | None = None,
     ) -> None:
         """Upload a whylogs data profile view to Whylabs, if configured to do so.
 

@@ -41,7 +41,7 @@ class BaseFeatureStore(StackComponent, ABC):
     def get_historical_features(
         self,
         entity_df: Any,
-        features: List[str],
+        features: list[str],
         full_feature_names: bool = False,
     ) -> Any:
         """Returns the historical features for training or batch scoring.
@@ -58,10 +58,10 @@ class BaseFeatureStore(StackComponent, ABC):
     @abstractmethod
     def get_online_features(
         self,
-        entity_rows: List[Dict[str, Any]],
-        features: List[str],
+        entity_rows: list[dict[str, Any]],
+        features: list[str],
         full_feature_names: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Returns the latest online feature data.
 
         Args:
@@ -87,7 +87,7 @@ class BaseFeatureStoreFlavor(Flavor):
         return StackComponentType.FEATURE_STORE
 
     @property
-    def config_class(self) -> Type[BaseFeatureStoreConfig]:
+    def config_class(self) -> type[BaseFeatureStoreConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -97,7 +97,7 @@ class BaseFeatureStoreFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseFeatureStore]:
+    def implementation_class(self) -> type[BaseFeatureStore]:
         """Implementation class.
 
         Returns:

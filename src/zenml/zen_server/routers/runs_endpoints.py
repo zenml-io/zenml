@@ -99,9 +99,9 @@ logger = get_logger(__name__)
 @async_fastapi_endpoint_wrapper
 def get_or_create_pipeline_run(
     pipeline_run: PipelineRunRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
-) -> Tuple[PipelineRunResponse, bool]:
+) -> tuple[PipelineRunResponse, bool]:
     """Get or create a pipeline run.
 
     Args:
@@ -139,7 +139,7 @@ def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     include_full_metadata: bool = False,
     _: AuthContext = Security(authorize),
@@ -310,7 +310,7 @@ def get_run_steps(
 def get_pipeline_configuration(
     run_id: UUID,
     _: AuthContext = Security(authorize),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get the pipeline configuration of a specific pipeline run using its ID.
 
     Args:
@@ -440,7 +440,7 @@ def run_logs(
     run_id: UUID,
     source: str,
     _: AuthContext = Security(authorize),
-) -> List[LogEntry]:
+) -> list[LogEntry]:
     """Get log entries for efficient pagination.
 
     This endpoint returns the log entries.

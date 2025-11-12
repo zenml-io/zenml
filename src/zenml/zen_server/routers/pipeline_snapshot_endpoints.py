@@ -70,7 +70,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_pipeline_snapshot(
     snapshot: PipelineSnapshotRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineSnapshotResponse:
     """Creates a snapshot.
@@ -101,7 +101,7 @@ def list_pipeline_snapshots(
     snapshot_filter_model: PipelineSnapshotFilter = Depends(
         make_dependable(PipelineSnapshotFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineSnapshotResponse]:
@@ -136,8 +136,8 @@ def list_pipeline_snapshots(
 def get_pipeline_snapshot(
     snapshot_id: UUID,
     hydrate: bool = True,
-    step_configuration_filter: Optional[List[str]] = Query(None),
-    include_config_schema: Optional[bool] = None,
+    step_configuration_filter: list[str] | None = Query(None),
+    include_config_schema: bool | None = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineSnapshotResponse:
     """Gets a specific snapshot using its unique id.

@@ -387,7 +387,7 @@ class ZenStoreInterface(ABC):
     def get_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key for a service account.
@@ -432,7 +432,7 @@ class ZenStoreInterface(ABC):
     def update_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         api_key_update: APIKeyUpdate,
     ) -> APIKeyResponse:
         """Update an API key for a service account.
@@ -457,7 +457,7 @@ class ZenStoreInterface(ABC):
     def rotate_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         rotate_request: APIKeyRotateRequest,
     ) -> APIKeyResponse:
         """Rotate an API key for a service account.
@@ -480,7 +480,7 @@ class ZenStoreInterface(ABC):
     def delete_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
     ) -> None:
         """Delete an API key for a service account.
 
@@ -670,8 +670,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def batch_create_artifact_versions(
-        self, artifact_versions: List[ArtifactVersionRequest]
-    ) -> List[ArtifactVersionResponse]:
+        self, artifact_versions: list[ArtifactVersionRequest]
+    ) -> list[ArtifactVersionResponse]:
         """Creates a batch of artifact versions.
 
         Args:
@@ -751,7 +751,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def prune_artifact_versions(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: str | UUID,
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
@@ -1309,8 +1309,8 @@ class ZenStoreInterface(ABC):
         self,
         snapshot_id: UUID,
         hydrate: bool = True,
-        step_configuration_filter: Optional[List[str]] = None,
-        include_config_schema: Optional[bool] = None,
+        step_configuration_filter: list[str] | None = None,
+        include_config_schema: bool | None = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -1618,7 +1618,7 @@ class ZenStoreInterface(ABC):
     def run_template(
         self,
         template_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
+        run_configuration: PipelineRunConfiguration | None = None,
     ) -> PipelineRunResponse:
         """Run a template.
 
@@ -1718,7 +1718,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
+    ) -> tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2067,7 +2067,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a specific service account.
@@ -2106,7 +2106,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         service_account_update: ServiceAccountUpdate,
     ) -> ServiceAccountResponse:
         """Updates an existing service account.
@@ -2127,7 +2127,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
     ) -> None:
         """Delete a service account.
 
@@ -2276,8 +2276,8 @@ class ZenStoreInterface(ABC):
     def verify_service_connector(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
@@ -2304,8 +2304,8 @@ class ZenStoreInterface(ABC):
     def get_service_connector_client(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
     ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
@@ -2328,7 +2328,7 @@ class ZenStoreInterface(ABC):
     def list_service_connector_resources(
         self,
         filter_model: ServiceConnectorFilter,
-    ) -> List[ServiceConnectorResourcesModel]:
+    ) -> list[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -2343,10 +2343,10 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_types(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-    ) -> List[ServiceConnectorTypeModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+    ) -> list[ServiceConnectorTypeModel]:
         """Get a list of service connector types.
 
         Args:
@@ -2475,7 +2475,7 @@ class ZenStoreInterface(ABC):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> StackDeploymentConfig:
         """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
@@ -2494,9 +2494,9 @@ class ZenStoreInterface(ABC):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
-        date_start: Optional[datetime.datetime] = None,
-    ) -> Optional[DeployedStack]:
+        location: str | None = None,
+        date_start: datetime.datetime | None = None,
+    ) -> DeployedStack | None:
         """Return a matching ZenML stack that was deployed and registered.
 
         Args:
@@ -2746,7 +2746,7 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_user(
         self,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: str | UUID | None = None,
         include_private: bool = False,
         hydrate: bool = True,
     ) -> UserResponse:
@@ -2801,7 +2801,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+    def delete_user(self, user_name_or_id: str | UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -2829,7 +2829,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_project(
-        self, project_name_or_id: Union[UUID, str], hydrate: bool = True
+        self, project_name_or_id: UUID | str, hydrate: bool = True
     ) -> ProjectResponse:
         """Get an existing project by name or ID.
 
@@ -2881,7 +2881,7 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+    def delete_project(self, project_name_or_id: str | UUID) -> None:
         """Deletes a project.
 
         Args:
@@ -3102,7 +3102,7 @@ class ZenStoreInterface(ABC):
     def delete_model_version_artifact_link(
         self,
         model_version_id: UUID,
-        model_version_artifact_link_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to artifact link.
 
@@ -3170,7 +3170,7 @@ class ZenStoreInterface(ABC):
     def delete_model_version_pipeline_run_link(
         self,
         model_version_id: UUID,
-        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to pipeline run link.
 
@@ -3286,8 +3286,8 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def batch_create_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
-    ) -> List[TagResourceResponse]:
+        self, tag_resources: list[TagResourceRequest]
+    ) -> list[TagResourceResponse]:
         """Create a new tag resource relationship.
 
         Args:
@@ -3310,7 +3310,7 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def batch_delete_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
+        self, tag_resources: list[TagResourceRequest]
     ) -> None:
         """Delete a batch of tag resource relationships.
 

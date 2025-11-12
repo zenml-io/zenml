@@ -44,7 +44,7 @@ class CodeArchive(Archivable):
     excluded by gitignores will be included in the archive.
     """
 
-    def __init__(self, root: Optional[str] = None) -> None:
+    def __init__(self, root: str | None = None) -> None:
         """Initialize the object.
 
         Args:
@@ -74,7 +74,7 @@ class CodeArchive(Archivable):
 
         return git_repo
 
-    def _get_all_files(self, archive_root: str) -> Dict[str, str]:
+    def _get_all_files(self, archive_root: str) -> dict[str, str]:
         """Get all files inside the archive root.
 
         Args:
@@ -92,7 +92,7 @@ class CodeArchive(Archivable):
 
         return all_files
 
-    def get_files(self) -> Dict[str, str]:
+    def get_files(self) -> dict[str, str]:
         """Gets all regular files that should be included in the archive.
 
         Raises:

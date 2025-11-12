@@ -65,8 +65,8 @@ class DeploymentOperationalState(BaseModel):
     """Operational state of a deployment."""
 
     status: DeploymentStatus = Field(default=DeploymentStatus.UNKNOWN)
-    url: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    url: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 # ------------------ Request Model ------------------
@@ -89,12 +89,12 @@ class DeploymentRequest(ProjectScopedRequest):
         title="The deployer ID.",
         description="The ID of the deployer component managing this deployment.",
     )
-    auth_key: Optional[str] = Field(
+    auth_key: str | None = Field(
         default=None,
         title="The auth key of the deployment.",
         description="The auth key of the deployment.",
     )
-    tags: Optional[List[Union[str, Tag]]] = Field(
+    tags: list[str | Tag] | None = Field(
         default=None,
         title="Tags of the deployment.",
     )
@@ -106,35 +106,35 @@ class DeploymentRequest(ProjectScopedRequest):
 class DeploymentUpdate(BaseUpdate):
     """Update model for deployments."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The new name of the deployment.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    snapshot_id: Optional[UUID] = Field(
+    snapshot_id: UUID | None = Field(
         default=None,
         title="New pipeline snapshot ID.",
     )
-    url: Optional[str] = Field(
+    url: str | None = Field(
         default=None,
         title="The new URL of the deployment.",
     )
-    status: Optional[DeploymentStatus] = Field(
+    status: DeploymentStatus | None = Field(
         default=None,
         title="The new status of the deployment.",
     )
-    deployment_metadata: Optional[Dict[str, Any]] = Field(
+    deployment_metadata: dict[str, Any] | None = Field(
         default=None,
         title="The new metadata of the deployment.",
     )
-    auth_key: Optional[str] = Field(
+    auth_key: str | None = Field(
         default=None,
         title="The new auth key of the deployment.",
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: list[str] | None = Field(
         default=None, title="New tags to add to the deployment."
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: list[str] | None = Field(
         default=None, title="Tags to remove from the deployment."
     )
 
@@ -163,12 +163,12 @@ class DeploymentUpdate(BaseUpdate):
 class DeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for deployments."""
 
-    url: Optional[str] = Field(
+    url: str | None = Field(
         default=None,
         title="The URL of the deployment.",
         description="The HTTP URL where the deployment can be accessed.",
     )
-    status: Optional[DeploymentStatus] = Field(
+    status: DeploymentStatus | None = Field(
         default=None,
         title="The status of the deployment.",
         description="Current operational status of the deployment.",
@@ -178,10 +178,10 @@ class DeploymentResponseBody(ProjectScopedResponseBody):
 class DeploymentResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for deployments."""
 
-    deployment_metadata: Dict[str, Any] = Field(
+    deployment_metadata: dict[str, Any] = Field(
         title="The metadata of the deployment.",
     )
-    auth_key: Optional[str] = Field(
+    auth_key: str | None = Field(
         default=None,
         title="The auth key of the deployment.",
         description="The auth key of the deployment.",
@@ -206,10 +206,10 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
         title="The pipeline.",
         description="The pipeline being deployed.",
     )
-    tags: List["TagResponse"] = Field(
+    tags: list["TagResponse"] = Field(
         title="Tags associated with the deployment.",
     )
-    visualizations: List["CuratedVisualizationResponse"] = Field(
+    visualizations: list["CuratedVisualizationResponse"] = Field(
         default_factory=list,
         title="Curated deployment visualizations.",
     )
@@ -248,7 +248,7 @@ class DeploymentResponse(
 
     # Helper properties
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         """The URL of the deployment.
 
         Returns:
@@ -257,7 +257,7 @@ class DeploymentResponse(
         return self.get_body().url
 
     @property
-    def status(self) -> Optional[DeploymentStatus]:
+    def status(self) -> DeploymentStatus | None:
         """The status of the deployment.
 
         Returns:
@@ -266,7 +266,7 @@ class DeploymentResponse(
         return self.get_body().status
 
     @property
-    def deployment_metadata(self) -> Dict[str, Any]:
+    def deployment_metadata(self) -> dict[str, Any]:
         """The metadata of the deployment.
 
         Returns:
@@ -275,7 +275,7 @@ class DeploymentResponse(
         return self.get_metadata().deployment_metadata
 
     @property
-    def auth_key(self) -> Optional[str]:
+    def auth_key(self) -> str | None:
         """The auth key of the deployment.
 
         Returns:
@@ -310,7 +310,7 @@ class DeploymentResponse(
         """
         return self.get_resources().pipeline
 
-    def tags(self) -> List["TagResponse"]:
+    def tags(self) -> list["TagResponse"]:
         """The tags of the deployment.
 
         Returns:
@@ -319,7 +319,7 @@ class DeploymentResponse(
         return self.get_resources().tags
 
     @property
-    def visualizations(self) -> List["CuratedVisualizationResponse"]:
+    def visualizations(self) -> list["CuratedVisualizationResponse"]:
         """The visualizations of the deployment.
 
         Returns:
@@ -337,7 +337,7 @@ class DeploymentResponse(
         return self.get_resources().stack
 
     @property
-    def snapshot_id(self) -> Optional[UUID]:
+    def snapshot_id(self) -> UUID | None:
         """The pipeline snapshot ID.
 
         Returns:
@@ -349,7 +349,7 @@ class DeploymentResponse(
         return None
 
     @property
-    def deployer_id(self) -> Optional[UUID]:
+    def deployer_id(self) -> UUID | None:
         """The deployer ID.
 
         Returns:
@@ -367,13 +367,13 @@ class DeploymentResponse(
 class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of deployments."""
 
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         "snapshot",
         "pipeline",
     ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline",
@@ -383,37 +383,37 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the deployment.",
     )
-    url: Optional[str] = Field(
+    url: str | None = Field(
         default=None,
         description="URL of the deployment.",
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         default=None,
         description="Status of the deployment.",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUID | str | None = Field(
         default=None,
         description="Pipeline associated with the deployment.",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUID | str | None = Field(
         default=None,
         description="Pipeline snapshot ID associated with the deployment.",
         union_mode="left_to_right",
     )
-    deployer_id: Optional[Union[UUID, str]] = Field(
+    deployer_id: UUID | str | None = Field(
         default=None,
         description="Deployer ID managing the deployment.",
         union_mode="left_to_right",
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:
@@ -447,7 +447,7 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
     def apply_sorting(
         self,
         query: "AnyQuery",
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> "AnyQuery":
         """Apply sorting to the query.
 

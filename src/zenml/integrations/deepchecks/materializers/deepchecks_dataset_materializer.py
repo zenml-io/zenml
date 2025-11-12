@@ -29,10 +29,10 @@ if TYPE_CHECKING:
 class DeepchecksDatasetMaterializer(PandasMaterializer):
     """Materializer to read data to and from Deepchecks dataset."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Dataset,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (Dataset,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> Dataset:
+    def load(self, data_type: type[Any]) -> Dataset:
         """Reads pandas dataframes and creates `deepchecks.Dataset` from it.
 
         Args:
@@ -54,7 +54,7 @@ class DeepchecksDatasetMaterializer(PandasMaterializer):
 
     def save_visualizations(
         self, dataset: Dataset
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Saves visualizations for the given Deepchecks dataset.
 
         Args:
@@ -65,7 +65,7 @@ class DeepchecksDatasetMaterializer(PandasMaterializer):
         """
         return super().save_visualizations(dataset.data)
 
-    def extract_metadata(self, dataset: Dataset) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, dataset: Dataset) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:

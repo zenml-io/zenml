@@ -453,7 +453,7 @@ class BaseIdentifiedResponse(
         return super().get_metadata()
 
     # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for base response models.
 
         Returns:

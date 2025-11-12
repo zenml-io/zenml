@@ -28,10 +28,10 @@ DEFAULT_FILEPATH = "data"
 class SparkDataFrameMaterializer(BaseMaterializer):
     """Materializer to read/write Spark dataframes."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DataFrame,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (DataFrame,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> DataFrame:
+    def load(self, data_type: type[Any]) -> DataFrame:
         """Reads and returns a spark dataframe.
 
         Args:
@@ -57,7 +57,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
         path = os.path.join(self.uri, DEFAULT_FILEPATH)
         df.write.parquet(path)
 
-    def extract_metadata(self, df: DataFrame) -> Dict[str, "MetadataType"]:
+    def extract_metadata(self, df: DataFrame) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `DataFrame` object.
 
         Args:

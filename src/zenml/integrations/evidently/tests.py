@@ -71,14 +71,14 @@ class EvidentlyTestConfig(BaseModel):
     """
 
     class_path: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
+    parameters: dict[str, Any] = Field(default_factory=dict)
     is_generator: bool = False
-    columns: Optional[Union[str, List[str]]] = Field(
+    columns: str | list[str] | None = Field(
         default=None, union_mode="left_to_right"
     )
 
     @staticmethod
-    def get_test_class(test_name: str) -> Union[Test, TestPreset]:
+    def get_test_class(test_name: str) -> Test | TestPreset:
         """Get the Evidently test or test preset class from a string.
 
         Args:
@@ -126,8 +126,8 @@ class EvidentlyTestConfig(BaseModel):
     @classmethod
     def test_generator(
         cls,
-        test: Union[Type[Test], str],
-        columns: Optional[Union[str, List[str]]] = None,
+        test: type[Test] | str,
+        columns: str | list[str] | None = None,
         **parameters: Any,
     ) -> "EvidentlyTestConfig":
         """Create a declarative configuration for an Evidently column Test generator.
@@ -223,7 +223,7 @@ class EvidentlyTestConfig(BaseModel):
     @classmethod
     def test(
         cls,
-        test: Union[Type[Test], Type[TestPreset], str],
+        test: type[Test] | type[TestPreset] | str,
         **parameters: Any,
     ) -> "EvidentlyTestConfig":
         """Create a declarative configuration for an Evidently Test.
@@ -294,7 +294,7 @@ class EvidentlyTestConfig(BaseModel):
         return config
 
     @classmethod
-    def default_tests(cls) -> List["EvidentlyTestConfig"]:
+    def default_tests(cls) -> list["EvidentlyTestConfig"]:
         """Default Evidently test configurations.
 
         Call this to fetch a default list of Evidently tests to use in cases
@@ -309,7 +309,7 @@ class EvidentlyTestConfig(BaseModel):
             for test_preset_class_name in test_preset.__all__
         ]
 
-    def to_evidently_test(self) -> Union[Test, TestPreset, BaseGenerator]:
+    def to_evidently_test(self) -> Test | TestPreset | BaseGenerator:
         """Create an Evidently Test, TestPreset or test generator object.
 
         Call this method to create an Evidently Test, TestPreset or test
