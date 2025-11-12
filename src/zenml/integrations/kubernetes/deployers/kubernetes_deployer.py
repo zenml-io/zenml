@@ -719,39 +719,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                         f"Error checking service '{service_item.name}': {e}"
                     )
 
-    def _cleanup_failed_deployment(
-        self,
-        inventory: List[ResourceInventoryItem],
-        deployment_name: str,
-    ) -> None:
-        """Cleanup resources after deployment failure using inventory.
-
-        Args:
-            inventory: The inventory of resources that were created.
-            deployment_name: Name of the deployment for logging.
-        """
-        if not inventory:
-            logger.warning("No inventory available for cleanup")
-            return
-
-        logger.warning(
-            f"Provisioning failed for '{deployment_name}', "
-            f"cleaning up {len(inventory)} resource(s)"
-        )
-        try:
-            deleted_count = self.k8s_applier.delete_from_inventory(
-                inventory=inventory,
-                propagation_policy="Foreground",
-            )
-            logger.info(
-                f"Cleanup deleted {deleted_count}/{len(inventory)} resource(s)"
-            )
-        except Exception as cleanup_error:
-            logger.error(
-                f"Cleanup failed: {cleanup_error}. "
-                f"Some resources may still exist and require manual cleanup."
-            )
-
     def _initialize_deployment_context(
         self, deployment: DeploymentResponse
     ) -> _DeploymentCtx:
@@ -979,7 +946,10 @@ class KubernetesDeployer(ContainerizedDeployer):
                 timeout=timeout,
             )
 
-            state = self.do_get_deployment_state(deployment)
+            state = self._get_deployment_state_from_inventory(
+                inventory=new_inventory,
+                settings=ctx.settings,
+            )
 
             if state.metadata is None:
                 state.metadata = {}
@@ -990,18 +960,36 @@ class KubernetesDeployer(ContainerizedDeployer):
             return state
 
         except Exception as e:
-            # Only attempt cleanup if we have an inventory (i.e., resources were created)
             if "new_inventory" in locals() and new_inventory:
-                try:
-                    self._cleanup_failed_deployment(
-                        inventory=new_inventory,
-                        deployment_name=deployment.name,
+                logger.warning(
+                    f"Provisioning failed for '{deployment.name}', but {len(new_inventory)} "
+                    f"resource(s) were created. Use 'zenml deployment delete {deployment.name}' "
+                    f"to clean them up."
+                )
+
+                # Return an ERROR state with the inventory so it's saved
+                state = DeploymentOperationalState(
+                    status=DeploymentStatus.ERROR,
+                    metadata={
+                        "namespace": ctx.namespace,
+                        "labels": ctx.labels,
+                        "resource_inventory": [
+                            item.model_dump() for item in new_inventory
+                        ],
+                        "error": str(e),
+                    },
+                )
+
+                logger.info(
+                    "Created resources before failure:\n"
+                    + "\n".join(
+                        f"  - {item.kind}/{item.name} in namespace {item.namespace}"
+                        for item in new_inventory
                     )
-                except Exception as cleanup_error:
-                    logger.error(
-                        f"Additional error during cleanup: {cleanup_error}. "
-                        f"Original error will be raised."
-                    )
+                )
+
+                return state
+
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -1010,40 +998,28 @@ class KubernetesDeployer(ContainerizedDeployer):
     # State Management
     # ========================================================================
 
-    def do_get_deployment_state(
-        self, deployment: DeploymentResponse
+    def _get_deployment_state_from_inventory(
+        self,
+        inventory: List[ResourceInventoryItem],
+        settings: KubernetesDeployerSettings,
     ) -> DeploymentOperationalState:
-        """Get deployment state based on inventory.
+        """Get deployment state from a resource inventory.
 
-        This method checks ALL resources in the inventory to determine status:
-        - Checks all Deployment resources to see if they're ready
-        - Checks all Service resources to get URLs
-        - Works with both built-in and custom templates
+        This helper method extracts state determination logic so it can be
+        used both during provisioning (when inventory is in memory) and when
+        querying (when inventory comes from stored metadata).
 
         Args:
-            deployment: The deployment.
+            inventory: The resource inventory to check.
+            settings: The deployer settings.
 
         Returns:
             The operational state.
 
         Raises:
-            DeployerError: If deployment has no snapshot or inventory.
-            DeploymentNotFoundError: If no resources found in cluster.
+            DeploymentNotFoundError: If no deployment resources found in cluster.
+            DeployerError: If an error occurs checking resources.
         """
-        ctx = self._initialize_deployment_context(deployment)
-
-        # Get inventory from metadata
-        stored_metadata = deployment.deployment_metadata
-        if not stored_metadata or "resource_inventory" not in stored_metadata:
-            raise DeployerError(
-                f"Deployment '{deployment.name}' has no resource inventory"
-            )
-
-        inventory = [
-            ResourceInventoryItem(**item)
-            for item in stored_metadata["resource_inventory"]
-        ]
-
         # Find all Deployment resources in inventory
         deployment_items = [
             item
@@ -1108,7 +1084,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             if not any_exists:
                 raise DeploymentNotFoundError(
-                    f"Deployment '{deployment.name}' not found in cluster"
+                    "No deployment resources found in cluster"
                 )
 
             if all_ready:
@@ -1116,6 +1092,10 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             # Try to get URL from any Service
             url = None
+            namespace = (
+                settings.namespace or self.config.namespace or "default"
+            )
+
             for service_item in service_items:
                 k8s_service = self.k8s_applier.get_resource(
                     name=service_item.name,
@@ -1128,7 +1108,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     service_url = kube_utils.build_service_url(
                         core_api=self.k8s_core_api,
                         service=k8s_service,
-                        namespace=service_item.namespace or ctx.namespace,
+                        namespace=service_item.namespace or namespace,
                         ingress=None,
                     )
                     if service_url:
@@ -1136,9 +1116,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                         break  # Use first valid URL
 
             metadata = {
-                "namespace": ctx.namespace,
-                "labels": ctx.labels,
-                "resource_inventory": stored_metadata["resource_inventory"],
+                "namespace": namespace,
+                "labels": settings.labels,
             }
 
             return DeploymentOperationalState(
@@ -1150,11 +1129,58 @@ class KubernetesDeployer(ContainerizedDeployer):
         except ApiException as e:
             if e.status == 404:
                 raise DeploymentNotFoundError(
-                    f"Deployment '{deployment.name}' not found"
+                    "Deployment resources not found in cluster"
                 )
+            raise DeployerError(f"Failed to get deployment state: {e}")
+
+    def do_get_deployment_state(
+        self, deployment: DeploymentResponse
+    ) -> DeploymentOperationalState:
+        """Get deployment state based on inventory.
+
+        This method checks ALL resources in the inventory to determine status:
+        - Checks all Deployment resources to see if they're ready
+        - Checks all Service resources to get URLs
+        - Works with both built-in and custom templates
+
+        Args:
+            deployment: The deployment.
+
+        Returns:
+            The operational state.
+
+        Raises:
+            DeployerError: If deployment has no snapshot or inventory.
+            DeploymentNotFoundError: If no resources found in cluster.
+        """
+        ctx = self._initialize_deployment_context(deployment)
+
+        # Get inventory from metadata
+        stored_metadata = deployment.deployment_metadata
+        if not stored_metadata or "resource_inventory" not in stored_metadata:
             raise DeployerError(
-                f"Failed to get state for '{deployment.name}': {e}"
+                f"Deployment '{deployment.name}' has no resource inventory"
             )
+
+        inventory = [
+            ResourceInventoryItem(**item)
+            for item in stored_metadata["resource_inventory"]
+        ]
+
+        # Use the helper method to get state from inventory
+        state = self._get_deployment_state_from_inventory(
+            inventory=inventory,
+            settings=ctx.settings,
+        )
+
+        # Add the resource inventory to metadata for this query path
+        if state.metadata is None:
+            state.metadata = {}
+        state.metadata["resource_inventory"] = stored_metadata[
+            "resource_inventory"
+        ]
+
+        return state
 
     # ========================================================================
     # Logs
@@ -1267,34 +1293,41 @@ class KubernetesDeployer(ContainerizedDeployer):
         )
 
         try:
-            deleted_count = self.k8s_applier.delete_from_inventory(
+            result = self.k8s_applier.delete_from_inventory(
                 inventory=inventory,
                 propagation_policy="Foreground",
             )
 
-            # All resources already deleted (404s) - this is success
-            if deleted_count == 0:
+            # All resources already deleted (404s) or skipped - this is success
+            if result.deleted_count == 0 and result.failed_count == 0:
                 logger.info(
                     f"All resources for deployment '{deployment.name}' "
-                    f"were already deleted"
+                    f"were already deleted or skipped"
                 )
                 return None
 
             # All resources successfully deleted - this is success
-            if deleted_count == len(inventory):
+            if result.failed_count == 0:
                 logger.info(
                     f"Successfully deprovisioned deployment '{deployment.name}' "
-                    f"({deleted_count}/{len(inventory)} resource(s) deleted)"
+                    f"({result.deleted_count} deleted, {result.skipped_count} skipped)"
                 )
                 return None
 
             # Partial deletion - this is a FAILURE to prevent orphan resources
+            # Show what failed to be deleted
+            failed_list = "\n".join(
+                f"  ❌ {r}" for r in result.failed_resources
+            )
+
             error_msg = (
-                f"Partial deprovisioning failure for deployment '{deployment.name}': "
-                f"only deleted {deleted_count}/{len(inventory)} resource(s). "
-                f"Some resources could not be deleted and will remain in the cluster. "
-                f"The deployment will NOT be removed from ZenML to allow retry or manual cleanup. "
-                f"Check the logs above for specific deletion failures."
+                f"Partial deprovisioning failure for deployment '{deployment.name}':\n"
+                f"  ✅ Deleted: {result.deleted_count} resource(s)\n"
+                f"  ⏭️  Skipped: {result.skipped_count} resource(s)\n"
+                f"  ❌ Failed: {result.failed_count} resource(s)\n\n"
+                f"Resources that failed to delete:\n{failed_list}\n\n"
+                f"The deployment will NOT be removed from ZenML to allow retry or manual cleanup.\n"
+                f"You can retry deletion with: zenml deployment delete {deployment.name}"
             )
             logger.error(error_msg)
             raise DeploymentDeprovisionError(error_msg)

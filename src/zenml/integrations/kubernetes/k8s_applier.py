@@ -87,6 +87,17 @@ class ResourceInventoryItem(BaseModel):
     name: str
 
 
+class DeletionResult(BaseModel):
+    """Result of deleting resources from inventory."""
+
+    deleted_count: int
+    skipped_count: int
+    failed_count: int
+    deleted_resources: List[str]
+    skipped_resources: List[str]
+    failed_resources: List[str]
+
+
 class KubernetesApplier:
     """Kubernetes applier using Server-Side Apply with inventory-based deletion."""
 
@@ -234,7 +245,7 @@ class KubernetesApplier:
         *,
         propagation_policy: Optional[str] = "Foreground",
         grace_period_seconds: Optional[int] = None,
-    ) -> int:
+    ) -> DeletionResult:
         """Delete resources from an inventory list (Helm/Flux/Argo pattern).
 
         Args:
@@ -243,11 +254,10 @@ class KubernetesApplier:
             grace_period_seconds: Optional grace period override.
 
         Returns:
-            Total number of resources actually deleted (excluding 404s and skipped namespaces).
+            DeletionResult containing counts and lists of deleted, skipped, and failed resources.
         """
-        total_deleted = 0
         deleted_resources: List[str] = []
-        already_deleted_resources: List[str] = []
+        skipped_resources: List[str] = []
         failed_resources: List[str] = []
 
         body = k8s_client.V1DeleteOptions()
@@ -263,14 +273,13 @@ class KubernetesApplier:
                 f"namespace: {item.namespace or 'cluster-scoped'})"
             )
 
-            # Never delete namespaces - they may be shared by multiple deployments
-            # and deleting them would cascade-delete all resources in the namespace
             if item.kind == "Namespace":
                 logger.info(
                     f"⏩ Skipping namespace '{item.name}' "
                     f"(namespaces are never deleted to prevent accidental "
                     f"cascade deletion of shared resources)"
                 )
+                skipped_resources.append(resource_desc)
                 continue
 
             try:
@@ -283,13 +292,10 @@ class KubernetesApplier:
                     kwargs["namespace"] = item.namespace
 
                 res.delete(**kwargs)
-                total_deleted += 1
                 deleted_resources.append(resource_desc)
-                logger.info(f"✅ Deleted {resource_desc}")
-
             except ApiException as e:
                 if e.status == 404:
-                    already_deleted_resources.append(resource_desc)
+                    skipped_resources.append(resource_desc)
                     logger.info(f"⏭️  Already deleted: {resource_desc}")
                     continue
                 error_msg = f"{resource_desc}: {e.reason}"
@@ -300,98 +306,20 @@ class KubernetesApplier:
                 failed_resources.append(error_msg)
                 logger.error(f"❌ Failed to delete {error_msg}")
 
-        # Log summary if there were any issues
         if failed_resources:
             logger.warning(
                 f"Failed to delete {len(failed_resources)}/{len(inventory)} resource(s)"
             )
 
-        return total_deleted
+        return DeletionResult(
+            deleted_count=len(deleted_resources),
+            skipped_count=len(skipped_resources),
+            failed_count=len(failed_resources),
+            deleted_resources=deleted_resources,
+            skipped_resources=skipped_resources,
+            failed_resources=failed_resources,
+        )
 
-    def delete_by_label_selector(
-        self,
-        label_selector: str,
-        namespace: str,
-        *,
-        propagation_policy: Optional[str] = "Foreground",
-        grace_period_seconds: Optional[int] = None,
-    ) -> int:
-        """Delete resources by label selector (fallback/utility method).
-
-        Args:
-            label_selector: Kubernetes label selector (e.g., "app=myapp,env=prod").
-            namespace: Namespace to delete from.
-            propagation_policy: 'Foreground', 'Background', or None.
-            grace_period_seconds: Optional grace period override.
-
-        Returns:
-            Total number of resources deleted.
-        """
-        kinds = [
-            ("Ingress", "networking.k8s.io/v1"),
-            ("Service", "v1"),
-            ("Deployment", "apps/v1"),
-            ("StatefulSet", "apps/v1"),
-            ("DaemonSet", "apps/v1"),
-            ("ReplicaSet", "apps/v1"),
-            ("Job", "batch/v1"),
-            ("CronJob", "batch/v1"),
-            ("Pod", "v1"),
-            ("HorizontalPodAutoscaler", "autoscaling/v2"),
-            ("PodDisruptionBudget", "policy/v1"),
-            ("NetworkPolicy", "networking.k8s.io/v1"),
-            ("ConfigMap", "v1"),
-            ("Secret", "v1"),
-            ("PersistentVolumeClaim", "v1"),
-            ("ServiceAccount", "v1"),
-            ("Role", "rbac.authorization.k8s.io/v1"),
-            ("RoleBinding", "rbac.authorization.k8s.io/v1"),
-        ]
-
-        total_deleted = 0
-        body = k8s_client.V1DeleteOptions()
-        if propagation_policy:
-            body.propagation_policy = propagation_policy
-        if grace_period_seconds is not None:
-            body.grace_period_seconds = grace_period_seconds
-
-        for kind, api_version in kinds:
-            try:
-                res = self.dynamic.resources.get(
-                    api_version=api_version, kind=kind
-                )
-
-                items = res.get(
-                    namespace=namespace,
-                    label_selector=label_selector,
-                )
-
-                resources_list = items.items if hasattr(items, "items") else []
-                if not resources_list:
-                    continue
-
-                for item in resources_list:
-                    name = item.metadata.name
-                    try:
-                        res.delete(name=name, body=body, namespace=namespace)
-                        total_deleted += 1
-                        logger.debug(f"Deleted {kind}/{name} in {namespace}")
-                    except ApiException as e:
-                        if e.status == 404:
-                            continue
-                        raise
-
-            except ApiException as e:
-                if e.status == 404:
-                    logger.debug(
-                        f"Resource type {kind} ({api_version}) not found, skipping"
-                    )
-                    continue
-                logger.warning(
-                    f"Failed to delete {kind} resources: {e.reason}"
-                )
-
-        return total_deleted
 
     # --------------------------------------------------------------------- #
     # GET / LIST
