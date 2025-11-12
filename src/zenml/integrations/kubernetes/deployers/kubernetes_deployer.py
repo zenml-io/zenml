@@ -712,7 +712,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                         f"  1. Check if IP appears: kubectl get svc {service_item.name} -n {service_item.namespace}\n"
                         f"  2. Refresh deployment status later to check if IP was assigned: zenml deployment refresh <deployment-name>\n"
                         f"  3. For local clusters, consider using service_type='NodePort' instead\n"
-                        f"  4. For immediate access: kubectl port-forward -n {service_item.namespace} service/{service_item.name} 8080:{settings.service_port}"
+                        f"  4. For immediate access: kubectl port-forward -n {service_item.namespace} service/{service_item.name} <local-port>:<service-port>"
                     )
                 except Exception as e:
                     logger.warning(
@@ -1013,12 +1013,12 @@ class KubernetesDeployer(ContainerizedDeployer):
     def do_get_deployment_state(
         self, deployment: DeploymentResponse
     ) -> DeploymentOperationalState:
-        """Get deployment state.
+        """Get deployment state based on inventory.
 
-        This method requires both the Deployment and Service resources to be present.
-        If either is missing, it raises DeploymentNotFoundError. This behavior treats
-        a partially present deployment as "not found" rather than distinguishing
-        between "missing", "partially created", or "misconfigured" states.
+        This method checks ALL resources in the inventory to determine status:
+        - Checks all Deployment resources to see if they're ready
+        - Checks all Service resources to get URLs
+        - Works with both built-in and custom templates
 
         Args:
             deployment: The deployment.
@@ -1027,72 +1027,119 @@ class KubernetesDeployer(ContainerizedDeployer):
             The operational state.
 
         Raises:
-            DeployerError: If deployment has no snapshot.
-            DeploymentNotFoundError: If deployment not found or either the Deployment
-                or Service resource is missing.
+            DeployerError: If deployment has no snapshot or inventory.
+            DeploymentNotFoundError: If no resources found in cluster.
         """
         ctx = self._initialize_deployment_context(deployment)
 
-        try:
-            k8s_deployment = self.k8s_applier.get_resource(
-                name=ctx.resource_name,
-                namespace=ctx.namespace,
-                kind="Deployment",
-                api_version="apps/v1",
-            )
-            k8s_service = self.k8s_applier.get_resource(
-                name=ctx.resource_name,
-                namespace=ctx.namespace,
-                kind="Service",
-                api_version="v1",
+        # Get inventory from metadata
+        stored_metadata = deployment.deployment_metadata
+        if not stored_metadata or "resource_inventory" not in stored_metadata:
+            raise DeployerError(
+                f"Deployment '{deployment.name}' has no resource inventory"
             )
 
-            if not k8s_deployment or not k8s_service:
-                raise DeploymentNotFoundError(
-                    f"Deployment '{deployment.name}' not found"
+        inventory = [
+            ResourceInventoryItem(**item)
+            for item in stored_metadata["resource_inventory"]
+        ]
+
+        # Find all Deployment resources in inventory
+        deployment_items = [
+            item
+            for item in inventory
+            if item.kind == "Deployment" and item.api_version == "apps/v1"
+        ]
+
+        # Find all Service resources in inventory
+        service_items = [
+            item
+            for item in inventory
+            if item.kind == "Service" and item.api_version == "v1"
+        ]
+
+        try:
+            # Check if ANY Deployment exists and is ready
+            status = DeploymentStatus.PENDING
+            all_ready = True
+            any_exists = False
+
+            for deployment_item in deployment_items:
+                k8s_deployment = self.k8s_applier.get_resource(
+                    name=deployment_item.name,
+                    namespace=deployment_item.namespace,
+                    kind="Deployment",
+                    api_version="apps/v1",
                 )
 
-            status = DeploymentStatus.PENDING
-            if hasattr(k8s_deployment, "to_dict"):
-                deployment_dict = k8s_deployment.to_dict()
-                status_data = deployment_dict.get("status", {})
-                spec_data = deployment_dict.get("spec", {})
-                available = status_data.get("availableReplicas", 0)
-                desired = spec_data.get("replicas", 0)
-            else:
-                if k8s_deployment.status:
-                    available = k8s_deployment.status.available_replicas or 0
-                    desired = k8s_deployment.spec.replicas or 0
+                if not k8s_deployment:
+                    logger.debug(
+                        f"Deployment '{deployment_item.name}' not found in cluster"
+                    )
+                    all_ready = False
+                    continue
+
+                any_exists = True
+
+                # Check readiness
+                if hasattr(k8s_deployment, "to_dict"):
+                    deployment_dict = k8s_deployment.to_dict()
+                    status_data = deployment_dict.get("status", {})
+                    spec_data = deployment_dict.get("spec", {})
+                    available = status_data.get("availableReplicas", 0)
+                    desired = spec_data.get("replicas", 0)
                 else:
-                    available = 0
-                    desired = 0
+                    if k8s_deployment.status:
+                        available = (
+                            k8s_deployment.status.available_replicas or 0
+                        )
+                        desired = k8s_deployment.spec.replicas or 0
+                    else:
+                        available = 0
+                        desired = 0
 
-            if available == desired and desired > 0:
+                logger.debug(
+                    f"Deployment '{deployment_item.name}': "
+                    f"available={available}, desired={desired}"
+                )
+
+                if available < desired or desired == 0:
+                    all_ready = False
+
+            if not any_exists:
+                raise DeploymentNotFoundError(
+                    f"Deployment '{deployment.name}' not found in cluster"
+                )
+
+            if all_ready:
                 status = DeploymentStatus.RUNNING
-            else:
-                status = DeploymentStatus.PENDING
 
-            url = kube_utils.build_service_url(
-                core_api=self.k8s_core_api,
-                service=k8s_service,
-                namespace=ctx.namespace,
-                ingress=None,
-            )
+            # Try to get URL from any Service
+            url = None
+            for service_item in service_items:
+                k8s_service = self.k8s_applier.get_resource(
+                    name=service_item.name,
+                    namespace=service_item.namespace,
+                    kind="Service",
+                    api_version="v1",
+                )
+
+                if k8s_service:
+                    service_url = kube_utils.build_service_url(
+                        core_api=self.k8s_core_api,
+                        service=k8s_service,
+                        namespace=service_item.namespace or ctx.namespace,
+                        ingress=None,
+                    )
+                    if service_url:
+                        url = service_url
+                        break  # Use first valid URL
 
             metadata = {
-                "deployment_name": ctx.resource_name,
                 "namespace": ctx.namespace,
-                "service_name": ctx.resource_name,
-                "port": ctx.settings.service_port,
-                "service_type": ctx.settings.service_type,
                 "labels": ctx.labels,
+                "resource_inventory": stored_metadata["resource_inventory"],
             }
-
-            stored_metadata = deployment.deployment_metadata
-            if stored_metadata and "resource_inventory" in stored_metadata:
-                metadata["resource_inventory"] = stored_metadata[
-                    "resource_inventory"
-                ]
 
             return DeploymentOperationalState(
                 status=status,
