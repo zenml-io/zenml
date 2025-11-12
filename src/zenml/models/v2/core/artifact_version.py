@@ -427,7 +427,6 @@ class ArtifactVersionResponse(
         Returns:
             the value of the property.
         """
-        return 3
         return self.get_body().length
 
     # Helper methods

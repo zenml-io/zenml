@@ -644,7 +644,8 @@ def find_mapped_inputs(
                 "data that is not a step output artifact is currently not "
                 "supported, and the complete data will be passed to all steps. "
                 "If you want to silence this warning, wrap your input with the "
-                "`no_map(...)` function."
+                "`no_map(...)` function.",
+                key,
             )
             # TODO: Add support for mapping values that are not step output
             # artifacts

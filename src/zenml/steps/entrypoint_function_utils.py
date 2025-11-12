@@ -167,6 +167,12 @@ class EntrypointFunctionDefinition(NamedTuple):
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)
             return
+        elif isinstance(value, list) and all(
+            isinstance(item, StepArtifact) for item in value
+        ):
+            # Same as above, we don't do any type validation for a list of
+            # artifacts here.
+            return
 
         # Not an artifact -> This is a parameter
         if parameter.annotation is UnmaterializedArtifact:

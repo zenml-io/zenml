@@ -121,6 +121,8 @@ def generate_cache_key(
             elif cache_policy.include_artifact_ids:
                 hash_.update(artifact_version.id.bytes)
 
+            # TODO: do we need to include the chunk info here?
+
     # Output artifacts and materializers
     for name, output in step.config.outputs.items():
         hash_.update(name.encode())

@@ -325,3 +325,42 @@ class PandasMaterializer(BaseMaterializer):
                 }
 
         return pandas_metadata
+
+    def get_chunk_count(self, data: Any) -> Optional[int]:
+        """Get the number of chunks for the given data.
+
+        Args:
+            data: The data to get the number of chunks for.
+
+        Returns:
+            The number of chunks for the given data.
+        """
+        if isinstance(data, pd.Series):
+            return len(data)
+        elif isinstance(data, pd.DataFrame):
+            return data.shape[1]
+        return None
+
+    def load_chunk(
+        self, data_type: Type[Any], chunk_index: int, chunk_length: int
+    ) -> Any:
+        """Load a specific chunk of the data.
+
+        Args:
+            data_type: The type of the data to load.
+            chunk_index: The index of the chunk to load.
+            chunk_length: The length of the chunk to load.
+
+        Returns:
+            The loaded chunk of the data.
+        """
+        data = self.load(data_type)
+        if chunk_length == 1:
+            chunk = data_type(data[chunk_index])
+        else:
+            chunk = data[chunk_index : chunk_index + chunk_length]
+
+        if not isinstance(chunk, data_type):
+            chunk = data_type(chunk)
+
+        return chunk

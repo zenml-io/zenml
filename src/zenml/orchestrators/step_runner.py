@@ -533,7 +533,7 @@ class StepRunner:
                     chunk_length=artifact.chunk_length or 1,
                 )
             else:
-                materializer.validate_load_type_compatibility(data_type)
+                # materializer.validate_load_type_compatibility(data_type)
                 return materializer.load(data_type=data_type)
 
         if artifact.artifact_store_id == self._stack.artifact_store.id:

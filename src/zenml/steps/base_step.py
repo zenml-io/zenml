@@ -406,6 +406,16 @@ class BaseStep:
                         "provided as artifact.",
                         key,
                     )
+            elif isinstance(value, list) and all(
+                isinstance(item, StepArtifact) for item in value
+            ):
+                artifacts[key] = value
+                if key in self.configuration.parameters:
+                    logger.warning(
+                        "Got duplicate value for step input %s, using value "
+                        "provided as artifact.",
+                        key,
+                    )
             elif isinstance(value, ExternalArtifact):
                 external_artifacts[key] = value
                 if not value.id:
