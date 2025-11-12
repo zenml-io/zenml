@@ -204,11 +204,12 @@ When you call `.load()` on an artifact in a dynamic pipeline, it synchronously l
 
 Dynamic pipelines are ideal for:
 
+- **AI agent orchestration**: Coordinating multiple autonomous agents (e.g., retrieval or reasoning agents) whose interactions or number of invocations are determined at runtime
 - **Hyperparameter tuning**: Spawning multiple training runs with different configurations
 - **Data processing**: Processing variable numbers of data chunks in parallel
-- **A/B testing**: Running multiple model variants simultaneously
 - **Conditional workflows**: Adapting pipeline structure based on runtime data
 - **Dynamic batching**: Creating batches based on available data
+- **Multi-agent and collaborative AI workflows**: Building flexible, adaptive workflows where agents or LLM-driven components can be dynamically spawned, routed, or looped based on outputs, results, or user input
 
 For most standard ML workflows, traditional static pipelines are simpler and more maintainable. Use dynamic pipelines when you specifically need runtime flexibility that static pipelines cannot provide.
 
