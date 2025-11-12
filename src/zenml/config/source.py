@@ -15,7 +15,7 @@
 
 from enum import Enum
 from types import BuiltinFunctionType, FunctionType, ModuleType
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Union
 from collections.abc import Callable
 from uuid import UUID
 

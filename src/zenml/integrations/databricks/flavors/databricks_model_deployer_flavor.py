@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Databricks model deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 

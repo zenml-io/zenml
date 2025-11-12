@@ -14,7 +14,6 @@
 """Time utils."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
 
 
 def utc_now(tz_aware: bool | datetime = False) -> datetime:

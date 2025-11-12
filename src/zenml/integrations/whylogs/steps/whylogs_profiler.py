@@ -14,7 +14,7 @@
 """Implementation of the whylogs profiler step."""
 
 import datetime
-from typing import Optional, cast
+from typing import cast
 
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore

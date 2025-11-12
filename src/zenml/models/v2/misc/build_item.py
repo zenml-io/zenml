@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model definition for pipeline build item."""
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 

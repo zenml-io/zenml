@@ -17,9 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 from uuid import UUID

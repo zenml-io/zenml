@@ -20,10 +20,7 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
 )
 from collections.abc import Sequence
 

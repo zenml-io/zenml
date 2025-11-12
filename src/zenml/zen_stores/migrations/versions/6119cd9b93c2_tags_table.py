@@ -10,7 +10,6 @@ import json
 import random
 from collections import defaultdict
 from datetime import datetime
-from typing import Set
 from uuid import uuid4
 
 import sqlalchemy as sa

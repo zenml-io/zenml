@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model definitions for ZenML service connectors."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator

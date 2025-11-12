@@ -17,7 +17,7 @@ import logging
 from asyncio import Lock
 from asyncio.log import logger
 from datetime import datetime, timedelta
-from typing import Any, Set
+from typing import Any
 
 from anyio import CapacityLimiter, to_thread
 from fastapi import FastAPI, Request

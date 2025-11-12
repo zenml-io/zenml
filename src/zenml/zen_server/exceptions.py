@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """REST API exception handling."""
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any
 
 import requests
 from pydantic import BaseModel

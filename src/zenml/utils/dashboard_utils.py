@@ -14,7 +14,6 @@
 """Utility class to help with interacting with the dashboard."""
 
 import os
-from typing import Optional
 from urllib.parse import urlparse
 
 from zenml import constants

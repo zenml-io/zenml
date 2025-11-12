@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GCP artifact store flavor."""
 
-from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
+from typing import TYPE_CHECKING, ClassVar
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,

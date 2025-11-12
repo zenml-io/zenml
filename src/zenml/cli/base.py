@@ -17,7 +17,6 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
 
 import click
 from packaging import version

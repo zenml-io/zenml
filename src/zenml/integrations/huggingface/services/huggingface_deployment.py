@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Hugging Face Deployment service."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 from collections.abc import Generator
 
 from huggingface_hub import (

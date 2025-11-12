@@ -15,7 +15,7 @@
 
 import os
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urlparse
 from uuid import uuid4
 

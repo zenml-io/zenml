@@ -16,7 +16,7 @@
 import hashlib
 import os
 import uuid
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type
+from typing import Any, ClassVar
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import ArtifactType

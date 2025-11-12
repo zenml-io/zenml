@@ -14,7 +14,7 @@
 """Implementation of the Spark Step Operator."""
 
 import subprocess
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from pyspark.conf import SparkConf
 

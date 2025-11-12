@@ -16,7 +16,6 @@
 import os
 import subprocess
 import sys
-from typing import Optional, Tuple
 
 import click
 from rich.progress import track

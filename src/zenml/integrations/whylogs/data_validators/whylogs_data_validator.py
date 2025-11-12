@@ -14,7 +14,7 @@
 """Implementation of the whylogs data validator."""
 
 import datetime
-from typing import Any, ClassVar, Optional, Type, cast
+from typing import Any, ClassVar, cast
 from collections.abc import Sequence
 
 import pandas as pd

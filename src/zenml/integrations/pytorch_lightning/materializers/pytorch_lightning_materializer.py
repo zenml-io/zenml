@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the PyTorch Lightning Materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from torch.nn import Module
 

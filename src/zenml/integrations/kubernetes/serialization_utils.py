@@ -15,7 +15,7 @@
 
 import re
 from datetime import date, datetime
-from typing import Any, Dict, List, Type, cast
+from typing import Any, cast
 
 
 def serialize_kubernetes_model(model: Any) -> dict[str, Any]:

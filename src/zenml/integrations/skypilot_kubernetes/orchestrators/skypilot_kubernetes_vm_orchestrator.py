@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the a Skypilot based Kubernetes VM orchestrator."""
 
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import sky
 

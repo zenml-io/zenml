@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, ClassVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field

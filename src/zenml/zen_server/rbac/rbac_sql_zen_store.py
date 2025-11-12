@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """RBAC SQL Zen Store implementation."""
 
-from typing import (
-    Optional,
-    Tuple,
-)
 from uuid import UUID
 
 from zenml.logger import get_logger

@@ -14,7 +14,6 @@
 """Databricks utilities."""
 
 import re
-from typing import Dict, List, Optional
 
 from databricks.sdk.service.compute import Library, PythonPyPiLibrary
 from databricks.sdk.service.jobs import PythonWheelTask, TaskDependency

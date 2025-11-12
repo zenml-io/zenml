@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 """SQLModel implementation of curated visualization tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
 from uuid import UUID
 

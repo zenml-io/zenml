@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration to run a dynamic pipeline."""
 
-from typing import Any, Dict, List
+from typing import Any
 from uuid import UUID
 
 from zenml.client import Client

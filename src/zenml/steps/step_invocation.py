@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Step invocation class definition."""
 
-from typing import TYPE_CHECKING, Any, Dict, Set, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from zenml.models import ArtifactVersionResponse
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Google credentials mixin."""
 
-from typing import TYPE_CHECKING, Optional, Tuple, cast
+from typing import TYPE_CHECKING, cast
 
 from pydantic import Field
 

@@ -16,7 +16,7 @@
 import time
 from collections import OrderedDict
 from threading import Lock
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Callable
 from collections import OrderedDict as OrderedDictType
 from uuid import UUID

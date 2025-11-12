@@ -29,7 +29,7 @@
 
 import re
 from threading import Lock
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
 

@@ -14,7 +14,7 @@
 """Base model definitions."""
 
 from datetime import datetime
-from typing import Any, Dict, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field

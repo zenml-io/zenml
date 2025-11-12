@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Feast Feature Store for ZenML."""
 
-from typing import Any, Dict, List, Union, cast
+from typing import Any, cast
 
 import pandas as pd
 from feast import FeatureService, FeatureStore  # type: ignore

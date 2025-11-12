@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model deployer pipeline step."""
 
-from typing import Optional, cast
+from typing import cast
 
 from mlflow.tracking import MlflowClient, artifact_utils
 

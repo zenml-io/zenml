@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for SQLModel schemas."""
 
-from typing import Any, List, Optional
+from typing import Any
 
 from sqlalchemy import Column, ForeignKey, Index
 from sqlmodel import Field

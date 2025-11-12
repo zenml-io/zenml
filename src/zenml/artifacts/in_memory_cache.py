@@ -14,7 +14,7 @@
 """In-memory artifact cache."""
 
 import contextvars
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 from zenml.utils import context_utils

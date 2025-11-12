@@ -14,7 +14,7 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List, Tuple, Type, cast
+from typing import Any, ClassVar, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent

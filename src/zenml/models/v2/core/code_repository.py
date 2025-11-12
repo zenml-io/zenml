@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing code repositories."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import Field
 

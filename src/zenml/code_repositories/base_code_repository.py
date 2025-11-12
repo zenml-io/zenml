@@ -14,7 +14,7 @@
 """Base class for code repositories."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID, uuid4
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin

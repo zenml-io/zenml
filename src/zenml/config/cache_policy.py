@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Cache policy."""
 
-from typing import Any, List, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, BeforeValidator, Field, field_validator
 from typing import Annotated

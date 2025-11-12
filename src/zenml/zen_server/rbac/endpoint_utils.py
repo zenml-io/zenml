@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """High-level helper functions to write endpoints with RBAC."""
 
-from typing import Any, List, Optional, Tuple, TypeVar, Union
+from typing import Any, TypeVar, Union
 from collections.abc import Callable
 from uuid import UUID
 

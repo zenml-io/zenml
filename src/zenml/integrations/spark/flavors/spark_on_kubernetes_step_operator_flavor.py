@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Spark on Kubernetes step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.integrations.spark.flavors.spark_step_operator_flavor import (

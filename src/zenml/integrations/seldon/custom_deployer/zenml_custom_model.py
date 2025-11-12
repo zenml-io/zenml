@@ -14,7 +14,7 @@
 """Implements a custom model for the Seldon integration."""
 
 import subprocess
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 import click
 import numpy as np

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """AzureML definitions."""
 
-from typing import Optional
 
 from pydantic import model_validator
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML representation of an Evidently column mapping."""
 
-from typing import List, Optional, Union
 from collections.abc import Sequence
 
 from evidently import ColumnMapping  # type: ignore[import-untyped]

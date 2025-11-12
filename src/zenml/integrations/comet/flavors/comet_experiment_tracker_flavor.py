@@ -16,10 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Optional,
-    Type,
 )
 
 from zenml.config.base_settings import BaseSettings

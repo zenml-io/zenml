@@ -18,7 +18,6 @@ The base functionalities are adapted to work with the ZenML analytics server.
 """
 
 import logging
-from typing import List
 
 import requests
 

@@ -14,7 +14,7 @@
 """SQLModel implementation of idempotent API transaction tables."""
 
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, String

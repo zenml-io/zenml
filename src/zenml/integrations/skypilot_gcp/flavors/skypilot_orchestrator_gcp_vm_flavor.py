@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator GCP flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,

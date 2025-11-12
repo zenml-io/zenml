@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with API keys."""
 
-from typing import Any, Optional
+from typing import Any
 
 import click
 

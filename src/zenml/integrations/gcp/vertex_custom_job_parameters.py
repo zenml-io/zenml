@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex custom job parameter model."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel
 

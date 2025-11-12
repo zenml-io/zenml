@@ -16,7 +16,7 @@
 import inspect
 import json
 from json.decoder import JSONDecodeError
-from typing import Any, Dict, Optional, Type, TypeVar, Union, cast
+from typing import Any, TypeVar, Union, cast
 from collections.abc import Callable
 
 import yaml

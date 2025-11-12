@@ -19,7 +19,7 @@ import os
 import re
 import sys
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from zenml.logging.step_logging import ArtifactStoreHandler

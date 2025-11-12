@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator Kubernetes flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (

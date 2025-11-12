@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kaniko image builder flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, PositiveInt
 

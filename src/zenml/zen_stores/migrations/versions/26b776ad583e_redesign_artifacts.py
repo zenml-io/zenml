@@ -6,7 +6,7 @@ Create Date: 2022-11-17 08:00:24.936750
 
 """
 
-from typing import Any, Dict
+from typing import Any
 
 import sqlalchemy as sa
 import sqlmodel

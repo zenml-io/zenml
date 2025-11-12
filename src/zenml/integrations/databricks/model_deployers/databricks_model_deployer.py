@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Databricks Model Deployer."""
 
-from typing import ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent

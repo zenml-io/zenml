@@ -14,7 +14,7 @@
 """Implementation of ZenML's Langchain Document materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from langchain.docstore.document import Document
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for run templates."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import (

@@ -14,7 +14,7 @@
 """CLI functionality to interact with deployments."""
 
 import json
-from typing import Any, List, Optional
+from typing import Any
 from uuid import UUID
 
 import click

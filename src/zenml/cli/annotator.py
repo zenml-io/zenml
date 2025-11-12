@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality for annotator CLI subcommands."""
 
-from typing import TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 

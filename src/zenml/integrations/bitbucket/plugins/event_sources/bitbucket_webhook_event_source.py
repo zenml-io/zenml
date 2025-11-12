@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Bitbucket webhook event source."""
 
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field

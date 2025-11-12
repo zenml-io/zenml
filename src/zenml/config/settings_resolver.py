@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for resolving settings."""
 
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from pydantic import ValidationError
 

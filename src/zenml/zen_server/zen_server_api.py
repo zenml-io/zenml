@@ -24,7 +24,7 @@ import logging
 import os
 from asyncio.log import logger
 from genericpath import isfile
-from typing import Any, List
+from typing import Any
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request

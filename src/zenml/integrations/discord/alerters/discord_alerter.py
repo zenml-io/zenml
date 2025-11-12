@@ -14,7 +14,7 @@
 """Implementation for discord flavor of alerter component."""
 
 import asyncio
-from typing import List, Optional, cast
+from typing import cast
 
 from discord import Client, DiscordException, Embed, Intents, Message
 from pydantic import BaseModel

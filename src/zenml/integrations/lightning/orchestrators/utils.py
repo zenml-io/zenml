@@ -15,7 +15,6 @@
 
 import itertools
 import re
-from typing import List
 
 from zenml.client import Client
 from zenml.config import DockerSettings

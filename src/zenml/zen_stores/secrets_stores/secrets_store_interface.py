@@ -14,7 +14,6 @@
 """ZenML secrets store interface."""
 
 from abc import ABC, abstractmethod
-from typing import Dict
 from uuid import UUID
 
 

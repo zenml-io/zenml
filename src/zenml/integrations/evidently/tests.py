@@ -15,11 +15,6 @@
 
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
 )
 
 from evidently import test_preset, tests  # type: ignore[import-untyped]

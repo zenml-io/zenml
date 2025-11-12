@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing curated visualizations."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import Field, NonNegativeInt

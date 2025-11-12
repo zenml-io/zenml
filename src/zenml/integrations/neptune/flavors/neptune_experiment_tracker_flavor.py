@@ -19,7 +19,7 @@ __all__ = [
     "NeptuneExperimentTrackerSettings",
 ]
 
-from typing import TYPE_CHECKING, Optional, Set, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

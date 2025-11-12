@@ -15,7 +15,7 @@
 
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 from uuid import UUID
 
 from zenml.analytics.enums import AnalyticsEvent

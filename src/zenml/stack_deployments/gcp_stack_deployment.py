@@ -14,7 +14,7 @@
 """Functionality to deploy a ZenML stack to GCP."""
 
 import re
-from typing import ClassVar, Dict, List
+from typing import ClassVar
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig

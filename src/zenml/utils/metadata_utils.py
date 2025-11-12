@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
-from typing import Dict, List, Optional, Set, Union, overload
+from typing import overload
 from uuid import UUID
 
 from zenml.client import Client

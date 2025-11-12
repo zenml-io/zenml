@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow model registry flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.mlflow import MLFLOW_MODEL_REGISTRY_FLAVOR
 from zenml.model_registries.base_model_registry import (

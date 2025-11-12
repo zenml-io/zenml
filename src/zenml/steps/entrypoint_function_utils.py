@@ -17,10 +17,8 @@ import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     NamedTuple,
     NoReturn,
-    Type,
     Union,
 )
 from collections.abc import Callable, Sequence

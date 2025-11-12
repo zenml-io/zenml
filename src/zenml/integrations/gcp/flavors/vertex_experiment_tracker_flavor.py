@@ -14,7 +14,7 @@
 """Vertex experiment tracker flavor."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, field_validator
 

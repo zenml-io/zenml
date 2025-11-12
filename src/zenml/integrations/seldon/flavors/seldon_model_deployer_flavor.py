@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Seldon model deployer flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR

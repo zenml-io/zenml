@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with code repositories."""
 
-from typing import Any, List, Optional
+from typing import Any
 
 import click
 

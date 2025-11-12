@@ -14,7 +14,7 @@
 """GCP Authentication Secret Schema definition."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from zenml.secret.base_secret import BaseSecretSchema
 

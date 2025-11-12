@@ -22,11 +22,6 @@ from threading import RLock
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )

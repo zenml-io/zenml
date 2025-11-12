@@ -14,7 +14,7 @@
 """Implementation of the Huggingface t5 materializer."""
 
 import os
-from typing import Any, ClassVar, Type, Union
+from typing import Any, ClassVar
 
 from transformers import (
     T5ForConditionalGeneration,

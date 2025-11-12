@@ -15,7 +15,7 @@
 
 import json
 from datetime import datetime
-from typing import Any, Optional, Set
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column

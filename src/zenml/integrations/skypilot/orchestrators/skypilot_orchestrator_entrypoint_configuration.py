@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Skypilot master/orchestrator VM."""
 
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from uuid import UUID

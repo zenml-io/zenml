@@ -14,7 +14,7 @@
 """Implementation of the Prodigy annotation integration."""
 
 import json
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, cast
 
 import prodigy
 from peewee import Database as PeeweeDatabase

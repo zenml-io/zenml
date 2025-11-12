@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Airflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import field_validator
 

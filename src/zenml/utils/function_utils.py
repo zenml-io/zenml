@@ -17,7 +17,7 @@ import inspect
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, List, Tuple, TypeVar, Union
+from typing import Any, TypeVar, Union
 from collections.abc import Callable, Iterator
 
 import click

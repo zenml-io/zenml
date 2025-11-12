@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Slack alerter flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.config.base_settings import BaseSettings

@@ -15,7 +15,7 @@
 
 from datetime import datetime, timedelta
 from secrets import token_hex
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 from collections.abc import Sequence
 from uuid import UUID
 

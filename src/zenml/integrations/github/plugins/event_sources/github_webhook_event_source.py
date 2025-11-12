@@ -14,7 +14,7 @@
 """Implementation of the github webhook event source."""
 
 import urllib
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field

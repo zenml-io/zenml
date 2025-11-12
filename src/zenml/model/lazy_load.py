@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 

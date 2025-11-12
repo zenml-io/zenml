@@ -14,7 +14,7 @@
 """Contains objects that create a Neptune run and store its state throughout the pipeline."""
 
 from hashlib import md5
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import neptune
 

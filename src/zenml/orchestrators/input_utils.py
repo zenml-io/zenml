@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities for inputs."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step

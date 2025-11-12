@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for linking step outputs to model versions."""
 
-from typing import Dict, Optional, Union
+from typing import Optional
 from uuid import UUID
 
 from zenml.client import Client

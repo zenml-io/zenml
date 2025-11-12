@@ -7,7 +7,6 @@ Create Date: 2024-06-20 15:01:22.414801
 """
 
 import json
-from typing import Dict, List
 
 import sqlalchemy as sa
 from alembic import op

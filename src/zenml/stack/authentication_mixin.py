@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Stack component mixin for authentication."""
 
-from typing import Optional, Type, TypeVar, cast
+from typing import TypeVar, cast
 
 from pydantic import BaseModel, Field
 

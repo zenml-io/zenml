@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with tags."""
 
-from typing import Any, Optional, Union
+from typing import Any
 from uuid import UUID
 
 import click

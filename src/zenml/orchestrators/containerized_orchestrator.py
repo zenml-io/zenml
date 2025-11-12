@@ -14,7 +14,6 @@
 """Containerized orchestrator class."""
 
 from abc import ABC
-from typing import List, Optional, Set
 
 import zenml
 from zenml.config.build_configuration import BuildConfiguration

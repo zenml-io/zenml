@@ -14,7 +14,7 @@
 """Implementation of the a Skypilot based Lambda VM orchestrator."""
 
 import os
-from typing import TYPE_CHECKING, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import sky
 

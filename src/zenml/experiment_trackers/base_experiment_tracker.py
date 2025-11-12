@@ -14,7 +14,7 @@
 """Base class for all ZenML experiment trackers."""
 
 from abc import ABC, abstractmethod
-from typing import Type, cast
+from typing import cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent

@@ -14,7 +14,7 @@
 """Implementation of the PyTorch DataLoader materializer."""
 
 import os
-from typing import Any, ClassVar, Type
+from typing import Any, ClassVar
 
 import cloudpickle
 import torch

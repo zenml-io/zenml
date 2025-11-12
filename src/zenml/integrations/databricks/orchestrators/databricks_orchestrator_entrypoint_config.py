@@ -16,7 +16,7 @@
 import os
 import sys
 from importlib.metadata import distribution
-from typing import Any, Dict, List
+from typing import Any
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,

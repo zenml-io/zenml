@@ -18,11 +18,6 @@ import re
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
     cast,
 )
 from collections.abc import Generator

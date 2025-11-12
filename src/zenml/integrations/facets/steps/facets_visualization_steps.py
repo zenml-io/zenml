@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Facets Standard Steps."""
 
-from typing import Dict, List, Union
 
 import pandas as pd
 

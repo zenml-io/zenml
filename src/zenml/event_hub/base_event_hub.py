@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 from collections.abc import Callable
 
 from zenml import EventSourceResponse

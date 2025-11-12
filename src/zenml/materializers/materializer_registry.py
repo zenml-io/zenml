@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a default materializer registry."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from zenml.logger import get_logger
 

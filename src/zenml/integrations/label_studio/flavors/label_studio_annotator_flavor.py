@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Label Studio annotator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.annotators.base_annotator import (
     BaseAnnotatorConfig,

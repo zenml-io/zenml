@@ -14,7 +14,7 @@
 """Implementation of a base container registry class."""
 
 import re
-from typing import TYPE_CHECKING, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from pydantic import Field, field_validator
 

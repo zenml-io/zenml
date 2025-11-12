@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """WhyLabs whylogs data validator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

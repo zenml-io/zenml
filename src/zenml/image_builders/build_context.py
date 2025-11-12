@@ -14,7 +14,7 @@
 """Image build context."""
 
 import os
-from typing import IO, Dict, List, Optional, Set, cast
+from typing import IO, cast
 
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio

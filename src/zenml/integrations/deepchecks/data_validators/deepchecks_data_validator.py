@@ -16,12 +16,6 @@
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
 )
 from collections.abc import Sequence
 

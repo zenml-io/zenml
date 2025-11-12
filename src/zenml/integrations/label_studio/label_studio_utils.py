@@ -14,7 +14,7 @@
 """Utility functions for the Label Studio annotator integration."""
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 from urllib.parse import quote, urlparse
 
 

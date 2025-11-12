@@ -14,7 +14,7 @@
 """Custom types that can be used as metadata of ZenML artifacts."""
 
 import json
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Union
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema

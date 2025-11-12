@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML HyperAI orchestrator."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

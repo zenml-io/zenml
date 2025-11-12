@@ -15,7 +15,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import Dict, List, Optional, Type, cast
+from typing import cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient

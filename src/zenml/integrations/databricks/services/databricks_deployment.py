@@ -14,7 +14,7 @@
 """Implementation of the Databricks Deployment service."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Union
 from collections.abc import Generator
 
 import numpy as np

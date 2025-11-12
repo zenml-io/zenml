@@ -17,7 +17,7 @@ import queue
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any
 from collections.abc import Callable
 
 from pydantic import BaseModel

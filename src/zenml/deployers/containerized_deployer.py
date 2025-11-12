@@ -14,10 +14,6 @@
 """Base class for all containerized deployers."""
 
 from abc import ABC
-from typing import (
-    List,
-    Set,
-)
 
 import zenml
 from zenml.config.build_configuration import BuildConfiguration

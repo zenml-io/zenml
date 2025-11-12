@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Github webhook event source flavor."""
 
-from typing import ClassVar, Type
+from typing import ClassVar
 
 from zenml.event_sources.webhooks.base_webhook_event_source import (
     BaseWebhookEventSourceFlavor,

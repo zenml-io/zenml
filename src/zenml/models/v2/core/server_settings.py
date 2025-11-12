@@ -14,9 +14,6 @@
 """Models representing server settings stored in the database."""
 
 from datetime import datetime
-from typing import (
-    Optional,
-)
 from uuid import UUID
 
 from pydantic import Field

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Discord alerter flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.integrations.discord import DISCORD_ALERTER_FLAVOR

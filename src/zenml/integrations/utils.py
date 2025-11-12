@@ -16,7 +16,6 @@
 import importlib
 import inspect
 import sys
-from typing import List, Optional, Type
 
 from zenml.integrations.integration import Integration, IntegrationMeta
 

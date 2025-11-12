@@ -19,10 +19,6 @@ import re
 import tempfile
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
     cast,
 )
 from collections.abc import Generator

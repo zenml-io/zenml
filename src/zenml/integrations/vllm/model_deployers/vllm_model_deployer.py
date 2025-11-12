@@ -15,7 +15,7 @@
 
 import os
 import shutil
-from typing import ClassVar, Dict, Optional, Type, cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration

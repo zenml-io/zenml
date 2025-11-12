@@ -14,7 +14,6 @@
 """Definition of the Deepchecks validation check types."""
 
 import re
-from typing import Type
 
 import deepchecks.tabular.checks as tabular_checks
 import deepchecks.vision.checks as vision_checks

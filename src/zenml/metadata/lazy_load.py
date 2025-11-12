@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Run Metadata Lazy Loader definition."""
 
-from typing import Optional
 
 from pydantic import BaseModel
 

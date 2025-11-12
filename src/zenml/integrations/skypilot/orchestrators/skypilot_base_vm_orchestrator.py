@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 from uuid import uuid4
 
 import sky

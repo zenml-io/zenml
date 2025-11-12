@@ -19,7 +19,7 @@ import sys
 import tempfile
 import time
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from collections.abc import Generator
 
 import docker.errors as docker_errors

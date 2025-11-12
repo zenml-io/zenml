@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for builds."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

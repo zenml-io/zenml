@@ -14,7 +14,7 @@
 """Resource settings class used to specify resources for a step."""
 
 from enum import Enum
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from pydantic import (
     ConfigDict,

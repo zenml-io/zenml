@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator AWS flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,

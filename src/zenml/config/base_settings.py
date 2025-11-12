@@ -14,7 +14,7 @@
 """Base class for all ZenML settings."""
 
 from enum import IntFlag, auto
-from typing import Any, ClassVar, Dict, Union
+from typing import Any, ClassVar, Union
 
 from pydantic import ConfigDict
 

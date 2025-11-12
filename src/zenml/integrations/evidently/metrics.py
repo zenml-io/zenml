@@ -15,11 +15,6 @@
 
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
 )
 
 from evidently import metric_preset, metrics  # type: ignore[import-untyped]

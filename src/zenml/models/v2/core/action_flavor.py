@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Action flavor model definitions."""
 
-from typing import Any, Dict
+from typing import Any
 
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,

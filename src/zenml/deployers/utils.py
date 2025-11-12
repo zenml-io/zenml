@@ -14,7 +14,7 @@
 """ZenML deployers utilities."""
 
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 import jsonref

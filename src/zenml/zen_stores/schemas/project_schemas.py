@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for projects."""
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship

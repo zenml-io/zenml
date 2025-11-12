@@ -14,7 +14,7 @@
 """Implementation of an XGBoost booster materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 import xgboost as xgb
 

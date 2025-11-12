@@ -6,7 +6,6 @@ Create Date: 2024-07-04 14:00:32.830722
 
 """
 
-from typing import Dict, Optional
 
 import sqlalchemy as sa
 import sqlmodel

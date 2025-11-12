@@ -17,7 +17,7 @@ import json
 import os
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, cast
+from typing import Any, cast
 
 from label_studio_sdk import Client, Project
 

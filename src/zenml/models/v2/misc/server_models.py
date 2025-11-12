@@ -14,7 +14,6 @@
 """Model definitions for ZenML servers."""
 
 from datetime import datetime
-from typing import Dict, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Langchain OpenAI embedding materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from langchain_community.embeddings import (
     OpenAIEmbeddings,

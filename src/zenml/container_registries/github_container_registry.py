@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Container Registry."""
 
-from typing import Optional
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistryConfig,

@@ -19,7 +19,7 @@ database connection.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 from collections.abc import Callable, Sequence
 
 from alembic.config import Config

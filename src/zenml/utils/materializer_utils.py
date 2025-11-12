@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for materializers."""
 
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any
 from collections.abc import Sequence
 
 if TYPE_CHECKING:

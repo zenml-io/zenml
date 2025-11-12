@@ -14,7 +14,7 @@
 """Implementation of the Scipy Sparse Materializer."""
 
 import os
-from typing import Any, ClassVar, Dict, Tuple, Type
+from typing import Any, ClassVar
 
 from scipy.sparse import load_npz, save_npz, spmatrix
 

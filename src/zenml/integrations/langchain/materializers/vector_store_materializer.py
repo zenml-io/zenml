@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the langchain vector store materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from langchain.vectorstores.base import VectorStore
 

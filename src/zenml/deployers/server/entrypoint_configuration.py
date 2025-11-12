@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from zenml.client import Client

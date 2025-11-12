@@ -22,13 +22,8 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
 )
 from collections.abc import Callable, Generator, Mapping, Sequence

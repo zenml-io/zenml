@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import field_validator
 

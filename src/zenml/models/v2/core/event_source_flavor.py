@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing event source flavors.."""
 
-from typing import Any, Dict
+from typing import Any
 
 from zenml.models.v2.base.base_plugin_flavor import (
     BasePluginFlavorResponse,

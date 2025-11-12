@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """FastAPI adapter implementations."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException

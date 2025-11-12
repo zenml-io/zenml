@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

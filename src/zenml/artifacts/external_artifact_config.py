@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """External artifact definition."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator

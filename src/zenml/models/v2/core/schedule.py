@@ -14,7 +14,6 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of Neptune Experiment Tracker."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (

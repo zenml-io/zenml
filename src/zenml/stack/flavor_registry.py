@@ -14,7 +14,7 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Type
+from typing import DefaultDict
 
 from zenml.analytics.utils import analytics_disabler
 from zenml.enums import StackComponentType

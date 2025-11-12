@@ -14,7 +14,7 @@
 """Utility functions for handling UUIDs."""
 
 import hashlib
-from typing import Any, Optional, Union
+from typing import Any
 from uuid import UUID
 
 

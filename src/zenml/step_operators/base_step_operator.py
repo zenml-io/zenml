@@ -14,7 +14,7 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger

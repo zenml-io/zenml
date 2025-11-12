@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions."""
 
-from typing import Dict, Optional
 
 
 class ZenMLBaseException(Exception):

@@ -14,7 +14,7 @@
 """Implementation of the Seldon Deployer step."""
 
 import os
-from typing import Optional, cast
+from typing import cast
 
 from zenml import get_step_context, step
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact

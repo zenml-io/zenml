@@ -14,7 +14,6 @@
 """Util functions for enums."""
 
 from enum import Enum
-from typing import List
 
 
 class StrEnum(str, Enum):

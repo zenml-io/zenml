@@ -14,7 +14,7 @@
 """Implementation for the Comet experiment tracker."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from comet_ml import Experiment  # type: ignore
 

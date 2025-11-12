@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from collections.abc import Sequence
 from uuid import UUID
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Evidently data validator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR

@@ -14,7 +14,7 @@
 """Utility functions for networking."""
 
 import socket
-from typing import List, Optional, Tuple, cast
+from typing import cast
 from urllib.parse import urlparse
 
 from zenml.environment import Environment

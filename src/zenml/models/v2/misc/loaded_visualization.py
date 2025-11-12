@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Model representing loaded visualizations."""
 
-from typing import Union
 
 from pydantic import BaseModel, Field
 

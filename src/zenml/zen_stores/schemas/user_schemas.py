@@ -14,7 +14,7 @@
 """SQLModel implementation of user tables."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint

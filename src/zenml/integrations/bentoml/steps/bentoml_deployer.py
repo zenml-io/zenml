@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
 
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 import bentoml
 from bentoml._internal.bento import bento

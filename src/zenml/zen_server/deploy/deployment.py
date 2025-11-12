@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Zen Server deployment definitions."""
 
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for the link between tags and resources."""
 
-from typing import List
 
 from fastapi import APIRouter, Security
 

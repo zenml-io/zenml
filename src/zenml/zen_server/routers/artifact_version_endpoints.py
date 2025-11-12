@@ -14,7 +14,6 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

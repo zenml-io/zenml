@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Collection of all models concerning trigger executions."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from pydantic import Field

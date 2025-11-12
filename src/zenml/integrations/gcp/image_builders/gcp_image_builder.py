@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Google Cloud Builder image builder implementation."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from urllib.parse import urlparse
 
 from google.cloud.devtools import cloudbuild_v1

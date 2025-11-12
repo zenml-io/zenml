@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 from collections.abc import Sequence
 from uuid import UUID
 

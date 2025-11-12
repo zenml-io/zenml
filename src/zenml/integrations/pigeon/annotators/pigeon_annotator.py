@@ -25,7 +25,7 @@ https://github.com/agermanidis/pigeon
 import json
 import os
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, cast
 
 import ipywidgets as widgets  # type: ignore
 from IPython.core.display_functions import clear_output, display

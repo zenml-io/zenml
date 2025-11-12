@@ -21,10 +21,6 @@ from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Tuple,
-    Type,
 )
 
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact

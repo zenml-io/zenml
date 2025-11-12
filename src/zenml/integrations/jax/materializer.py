@@ -17,8 +17,6 @@ import os
 from typing import (
     Any,
     ClassVar,
-    Tuple,
-    Type,
 )
 
 import jax

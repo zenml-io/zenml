@@ -14,7 +14,7 @@
 """Models representing tags."""
 
 import random
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from pydantic import Field, field_validator
 

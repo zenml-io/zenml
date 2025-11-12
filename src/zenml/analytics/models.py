@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Helper models for ZenML analytics."""
 
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar
 
 from pydantic import BaseModel
 

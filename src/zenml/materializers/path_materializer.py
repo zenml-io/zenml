@@ -17,7 +17,7 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from zenml.constants import (
     ENV_ZENML_DISABLE_PATH_MATERIALIZER,

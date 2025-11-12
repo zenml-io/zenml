@@ -14,7 +14,7 @@
 """Utility functions for secrets and secret references."""
 
 import re
-from typing import TYPE_CHECKING, Any, List, NamedTuple, Union
+from typing import TYPE_CHECKING, Any, NamedTuple, Union
 
 from pydantic import Field, PlainSerializer, SecretStr
 from typing import Annotated

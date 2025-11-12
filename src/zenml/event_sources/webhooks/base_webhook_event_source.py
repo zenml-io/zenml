@@ -17,7 +17,7 @@ import hashlib
 import hmac
 import json
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar, Type
 
 from zenml.enums import PluginSubType
 from zenml.event_sources.base_event import BaseEvent

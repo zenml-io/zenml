@@ -14,7 +14,7 @@
 """Implementation of the TensorBoard service."""
 
 import uuid
-from typing import Any, Dict, Union
+from typing import Any
 
 from zenml.logger import get_logger
 from zenml.models.v2.misc.service import ServiceType

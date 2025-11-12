@@ -14,7 +14,7 @@
 """Implementation of the ZenML local orchestrator."""
 
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
 from zenml.enums import ExecutionMode

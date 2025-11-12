@@ -15,7 +15,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from zenml.enums import ArtifactType
 from zenml.io import fileio

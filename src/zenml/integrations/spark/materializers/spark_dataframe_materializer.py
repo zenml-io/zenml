@@ -14,7 +14,7 @@
 """Implementation of the Spark Dataframe Materializer."""
 
 import os.path
-from typing import Any, ClassVar, Dict, Tuple, Type
+from typing import Any, ClassVar
 
 from pyspark.sql import DataFrame, SparkSession
 

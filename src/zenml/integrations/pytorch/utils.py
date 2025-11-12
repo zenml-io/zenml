@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """PyTorch utils."""
 
-from typing import Dict
 
 import torch
 

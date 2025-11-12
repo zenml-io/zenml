@@ -15,7 +15,7 @@
 
 import argparse
 import os
-from typing import Dict, cast
+from typing import cast
 
 from lightning_sdk import Machine, Studio
 

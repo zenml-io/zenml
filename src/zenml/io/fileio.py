@@ -14,7 +14,7 @@
 """Functionality for reading, writing and managing files."""
 
 import os
-from typing import Any, List, Optional, Tuple, Type
+from typing import Any
 from collections.abc import Callable, Iterable
 
 # this import required for CI to get local filesystem

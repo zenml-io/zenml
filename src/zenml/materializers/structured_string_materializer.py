@@ -15,7 +15,7 @@
 
 import hashlib
 import os
-from typing import Dict, Optional, Type, Union
+from typing import Union
 
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Secret reference mixin implementation."""
 
-from typing import TYPE_CHECKING, Any, Set
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 

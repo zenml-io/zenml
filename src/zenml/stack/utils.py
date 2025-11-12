@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Util functions for handling stacks, components, and flavors."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from zenml.client import Client
 from zenml.enums import StackComponentType, StoreType

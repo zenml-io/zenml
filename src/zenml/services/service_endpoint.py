@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a ZenML service endpoint."""
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.enums import ServiceState

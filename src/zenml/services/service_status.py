@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the ServiceStatus class."""
 
-from typing import Optional
 
 from zenml.enums import ServiceState
 from zenml.logger import get_logger

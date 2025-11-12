@@ -15,7 +15,6 @@
 
 import base64
 import os
-from typing import Dict
 
 from facets_overview.generic_feature_statistics_generator import (
     GenericFeatureStatisticsGenerator,

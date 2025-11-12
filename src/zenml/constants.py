@@ -16,7 +16,7 @@
 import json
 import logging
 import os
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 from zenml.enums import AuthScheme
 

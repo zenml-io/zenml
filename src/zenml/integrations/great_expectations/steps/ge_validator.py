@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Great Expectations data validation standard step."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import-untyped]

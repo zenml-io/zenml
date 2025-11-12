@@ -16,11 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Type,
     TypeVar,
 )
 from collections.abc import Sequence

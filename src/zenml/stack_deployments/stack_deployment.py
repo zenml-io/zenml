@@ -15,7 +15,7 @@
 
 import datetime
 from abc import abstractmethod
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 from pydantic import BaseModel
 

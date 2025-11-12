@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
 
-from typing import Dict
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request

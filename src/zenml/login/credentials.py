@@ -14,7 +14,7 @@
 """ZenML login credentials models."""
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Union
+from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 

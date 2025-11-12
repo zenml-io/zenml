@@ -14,7 +14,7 @@
 """Implementation for the BentoML local deployment service."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from bentoml import AsyncHTTPClient, SyncHTTPClient
 from pydantic import BaseModel, Field

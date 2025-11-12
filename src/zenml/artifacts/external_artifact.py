@@ -14,7 +14,7 @@
 """External artifact definition."""
 
 import os
-from typing import Any, Optional, Type, Union
+from typing import Any, Union
 from uuid import UUID, uuid4
 
 from pydantic import Field, model_validator

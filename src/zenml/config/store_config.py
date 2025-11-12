@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML store configurations."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, SerializeAsAny, model_validator
 

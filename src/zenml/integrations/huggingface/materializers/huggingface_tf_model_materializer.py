@@ -15,7 +15,7 @@
 
 import importlib
 import os
-from typing import Any, ClassVar, Dict, Tuple, Type
+from typing import Any, ClassVar
 
 from transformers import (
     AutoConfig,

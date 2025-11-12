@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to deploy a ZenML stack to AWS."""
 
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig

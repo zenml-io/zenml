@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility methods for S3."""
 
-from typing import Tuple
 
 
 def split_s3_path(s3_path: str) -> tuple[str, str]:

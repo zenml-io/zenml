@@ -15,7 +15,7 @@
 
 from abc import ABC
 from functools import wraps
-from typing import Any, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
 from collections.abc import Callable
 
 C = TypeVar("C", bound=type[ABC])

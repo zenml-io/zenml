@@ -14,7 +14,7 @@
 """Implementation of the TensorFlow Keras materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import tensorflow as tf
 from tensorflow.python import keras as tf_keras

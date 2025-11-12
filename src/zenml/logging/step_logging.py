@@ -26,10 +26,6 @@ from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
-    List,
-    Optional,
-    Type,
-    Union,
 )
 from collections.abc import Generator, Iterator
 from uuid import UUID, uuid4

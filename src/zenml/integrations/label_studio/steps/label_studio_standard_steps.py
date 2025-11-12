@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of standard steps for the Label Studio annotator integration."""
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from pydantic import BaseModel

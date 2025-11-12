@@ -15,7 +15,7 @@
 """Implementation of Deepchecks suite results materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult

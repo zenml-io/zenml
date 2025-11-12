@@ -18,7 +18,7 @@ import json
 import logging
 import re
 import subprocess
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from uuid import UUID
 
 import requests

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import List, Optional
 
 from fastapi import APIRouter, Security
 

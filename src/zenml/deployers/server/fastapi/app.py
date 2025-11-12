@@ -16,7 +16,7 @@
 import os
 from contextlib import asynccontextmanager
 from genericpath import isdir, isfile
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 from collections.abc import AsyncGenerator
 
 from anyio import to_thread

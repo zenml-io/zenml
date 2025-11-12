@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Requirement utils."""
 
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
 from zenml.integrations.utils import get_integration_for_module
 

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security

@@ -14,7 +14,6 @@
 """Class for defining a pipeline schedule."""
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 from pydantic import (
     BaseModel,

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Step that allows you to post messages to Slack."""
 
-from typing import Optional
 
 from zenml import get_step_context, step
 from zenml.client import Client

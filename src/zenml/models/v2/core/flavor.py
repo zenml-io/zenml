@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing flavors."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from pydantic import Field
 

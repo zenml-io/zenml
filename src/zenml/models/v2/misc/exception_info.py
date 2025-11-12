@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Exception information models."""
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 

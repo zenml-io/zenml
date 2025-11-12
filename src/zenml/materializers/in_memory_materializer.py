@@ -16,10 +16,6 @@
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    Optional,
-    Tuple,
-    Type,
 )
 
 from zenml.enums import ArtifactType

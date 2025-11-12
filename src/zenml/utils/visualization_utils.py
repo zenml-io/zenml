@@ -14,7 +14,7 @@
 """Utility functions for dashboard visualizations."""
 
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from IPython.core.display_functions import display
 from IPython.display import HTML, JSON, Image, Markdown

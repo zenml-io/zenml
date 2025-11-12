@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Spark step operator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from zenml.config.base_settings import BaseSettings
 from zenml.step_operators.base_step_operator import (

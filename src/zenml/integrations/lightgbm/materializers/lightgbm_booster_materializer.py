@@ -14,7 +14,7 @@
 """Implementation of the LightGBM booster materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 import lightgbm as lgb
 

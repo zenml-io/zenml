@@ -15,7 +15,6 @@
 
 import ipaddress
 import re
-from typing import List, Optional, Union
 
 import click
 from rich.errors import MarkupError

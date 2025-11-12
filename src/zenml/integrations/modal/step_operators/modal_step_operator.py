@@ -14,7 +14,7 @@
 """Modal step operator implementation."""
 
 import asyncio
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import modal
 from modal_proto import api_pb2

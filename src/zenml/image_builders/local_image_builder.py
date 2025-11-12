@@ -15,7 +15,7 @@
 
 import shutil
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from zenml.image_builders import (
     BaseImageBuilder,

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Deepchecks data validator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.data_validators.base_data_validator import BaseDataValidatorFlavor
 from zenml.integrations.deepchecks import DEEPCHECKS_DATA_VALIDATOR_FLAVOR

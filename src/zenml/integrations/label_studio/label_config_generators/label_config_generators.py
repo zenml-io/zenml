@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of label config generators for Label Studio."""
 
-from typing import List, Tuple
 
 from zenml.enums import AnnotationTasks
 from zenml.logger import get_logger

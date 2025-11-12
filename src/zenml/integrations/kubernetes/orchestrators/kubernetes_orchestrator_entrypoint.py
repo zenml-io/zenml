@@ -18,7 +18,7 @@ import random
 import socket
 import threading
 import time
-from typing import List, Optional, Tuple, cast
+from typing import cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client

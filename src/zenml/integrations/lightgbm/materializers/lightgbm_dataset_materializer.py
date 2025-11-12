@@ -14,7 +14,7 @@
 """Implementation of the LightGBM materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import lightgbm as lgb
 

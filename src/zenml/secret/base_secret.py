@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Base SecretSchema class."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 

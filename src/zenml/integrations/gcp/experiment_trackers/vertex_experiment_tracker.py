@@ -14,7 +14,7 @@
 """Implementation of the VertexAI experiment tracker for ZenML."""
 
 import re
-from typing import TYPE_CHECKING, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from google.api_core import exceptions
 from google.cloud import aiplatform

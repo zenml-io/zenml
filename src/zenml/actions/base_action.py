@@ -14,7 +14,7 @@
 """Base implementation of actions."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar
 
 from zenml.enums import PluginType
 from zenml.event_hub.base_event_hub import BaseEventHub

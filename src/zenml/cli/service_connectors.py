@@ -14,7 +14,7 @@
 """Service connector CLI commands."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, cast
 from uuid import UUID
 
 import click

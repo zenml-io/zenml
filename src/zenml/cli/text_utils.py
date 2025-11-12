@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utilities for CLI output."""
 
-from typing import List
 
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Heading, Markdown

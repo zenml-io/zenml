@@ -15,7 +15,6 @@
 
 import io
 import sys
-from typing import Optional
 
 from openai import OpenAI
 from rich.console import Console

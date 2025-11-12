@@ -18,7 +18,7 @@ import tarfile
 import zipfile
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import IO, Any, Dict, Optional
+from typing import IO, Any
 
 from zenml.io import fileio
 from zenml.utils.enum_utils import StrEnum

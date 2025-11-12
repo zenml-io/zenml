@@ -37,7 +37,7 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, cast
+from typing import Any, TypeVar, cast
 from collections.abc import Callable
 
 from kubernetes import client as k8s_client

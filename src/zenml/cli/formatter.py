@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Helper functions to format output for CLI."""
 
-from typing import Dict, Optional, Tuple
 from collections.abc import Iterable, Iterator, Sequence
 
 from click import formatting

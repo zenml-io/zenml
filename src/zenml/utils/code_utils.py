@@ -19,7 +19,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Dict, Optional
+from typing import IO, TYPE_CHECKING, Optional
 
 from zenml.client import Client
 from zenml.io import fileio

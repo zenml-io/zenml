@@ -15,7 +15,6 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration

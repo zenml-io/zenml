@@ -1,7 +1,7 @@
 """Utility functions for Skypilot orchestrators."""
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import sky
 

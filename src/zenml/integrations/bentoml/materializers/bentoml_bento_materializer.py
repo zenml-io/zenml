@@ -14,7 +14,7 @@
 """Materializer for BentoML Bento objects."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import bentoml
 from bentoml._internal.bento import Bento, bento

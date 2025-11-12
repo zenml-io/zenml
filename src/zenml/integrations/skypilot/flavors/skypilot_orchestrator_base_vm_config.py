@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator base config and settings."""
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import Field
 

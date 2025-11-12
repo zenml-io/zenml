@@ -17,9 +17,8 @@ Check out the latest version here:
 https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/typing.py
 """
 
-import sys
 import typing
-from typing import Any, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Union, cast
 from typing import get_args as _typing_get_args
 from typing import get_origin as _typing_get_origin
 

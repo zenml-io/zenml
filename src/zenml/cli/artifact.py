@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with artifacts."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import click
 

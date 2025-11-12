@@ -14,7 +14,7 @@
 """Zen Server daemon provider implementation."""
 
 import shutil
-from typing import ClassVar, Optional, Tuple, Type, cast
+from typing import ClassVar, cast
 from uuid import uuid4
 
 from zenml import __version__

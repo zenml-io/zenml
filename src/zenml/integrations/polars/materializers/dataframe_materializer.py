@@ -14,7 +14,7 @@
 """Polars materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type, Union
+from typing import Any, ClassVar
 
 import polars as pl
 import pyarrow as pa  # type: ignore

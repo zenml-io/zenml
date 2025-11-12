@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utility methods for Service Connectors."""
 
-from typing import Dict, List, Union
 from uuid import UUID
 
 from zenml.client import Client

@@ -24,13 +24,8 @@ from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     overload,
 )
 from collections.abc import Awaitable, Callable

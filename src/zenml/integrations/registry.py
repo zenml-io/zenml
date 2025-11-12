@@ -15,7 +15,7 @@
 
 import importlib
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from zenml.exceptions import IntegrationError
 from zenml.logger import get_logger

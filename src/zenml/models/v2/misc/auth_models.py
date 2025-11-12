@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing OAuth2 requests and responses."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict

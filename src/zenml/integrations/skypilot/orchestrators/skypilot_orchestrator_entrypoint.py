@@ -16,7 +16,7 @@
 import argparse
 import socket
 import time
-from typing import Dict, cast
+from typing import cast
 
 import sky
 

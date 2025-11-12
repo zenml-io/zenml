@@ -14,7 +14,6 @@
 """Utility function to clone a Git repository."""
 
 import os
-from typing import Optional
 
 from git.exc import GitCommandError
 from git.repo import Repo

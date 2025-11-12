@@ -14,7 +14,7 @@
 """Implementation of the whylogs materializer."""
 
 import os
-from typing import Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 from whylogs.viz import NotebookProfileVisualizer  # type: ignore

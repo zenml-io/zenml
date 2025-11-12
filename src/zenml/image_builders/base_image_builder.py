@@ -17,7 +17,7 @@ import hashlib
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from zenml.client import Client
 from zenml.enums import StackComponentType

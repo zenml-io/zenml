@@ -14,7 +14,7 @@
 """Kubernetes step operator implementation."""
 
 import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from kubernetes import client as k8s_client
 

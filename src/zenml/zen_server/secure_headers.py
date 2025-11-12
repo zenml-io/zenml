@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Secure headers for the ZenML Server."""
 
-from typing import Optional
 
 import secure
 

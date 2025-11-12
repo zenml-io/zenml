@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML Pro workspace client."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from zenml.logger import get_logger

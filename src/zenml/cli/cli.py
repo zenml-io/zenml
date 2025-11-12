@@ -14,7 +14,7 @@
 """Core CLI functionality."""
 
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 from collections.abc import Sequence
 
 import click

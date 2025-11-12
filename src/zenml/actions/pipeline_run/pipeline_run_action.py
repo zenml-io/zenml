@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Example file of what an action Plugin could look like."""
 
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar
 from uuid import UUID
 
 from zenml.actions.base_action import (

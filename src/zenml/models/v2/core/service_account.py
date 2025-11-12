@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing service accounts."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, ClassVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field

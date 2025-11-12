@@ -16,7 +16,6 @@
 import platform
 import time
 import webbrowser
-from typing import Optional, Union
 
 import requests
 

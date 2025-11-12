@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML Pro workspace models."""
 
-from typing import Optional
 from uuid import UUID
 
 from pydantic import Field

@@ -14,7 +14,6 @@
 """ZenML Pro organization models."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from zenml.login.pro.models import BaseRestAPIModel

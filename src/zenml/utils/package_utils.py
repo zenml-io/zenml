@@ -18,7 +18,7 @@ from importlib.metadata import (
     distribution,
     distributions,
 )
-from typing import Dict, List, Optional, Union, cast
+from typing import cast
 
 import requests
 from packaging import version

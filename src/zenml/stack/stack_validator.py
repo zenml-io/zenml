@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Validator."""
 
-from typing import TYPE_CHECKING, AbstractSet, Optional, Tuple
+from typing import TYPE_CHECKING, AbstractSet
 from collections.abc import Callable
 
 from zenml.enums import StackComponentType

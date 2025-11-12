@@ -19,7 +19,7 @@ The base functionalities are adapted to work with the ZenML analytics server.
 
 import locale
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID
 
 from zenml import __version__

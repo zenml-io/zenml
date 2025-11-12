@@ -14,7 +14,7 @@
 """The base class for feature stores."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Type, cast
+from typing import Any, cast
 
 from zenml.enums import StackComponentType
 from zenml.stack import Flavor, StackComponent

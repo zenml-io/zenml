@@ -17,10 +17,7 @@ import json
 from typing import (
     TYPE_CHECKING,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )

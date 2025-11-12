@@ -14,7 +14,7 @@
 """Utilities for outputs."""
 
 import os
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from collections.abc import Sequence
 from uuid import uuid4
 

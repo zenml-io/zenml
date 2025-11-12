@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """AWS Code Build image builder flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.aws import (

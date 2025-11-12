@@ -21,7 +21,7 @@ import base64
 import os
 import subprocess
 import tempfile
-from typing import Any, List, Optional
+from typing import Any
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config

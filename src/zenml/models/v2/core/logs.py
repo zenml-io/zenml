@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing logs."""
 
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import Field, field_validator

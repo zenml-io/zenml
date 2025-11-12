@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Neural Prophet materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from neuralprophet import NeuralProphet
 

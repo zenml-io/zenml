@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registration pipeline step."""
 
-from typing import Optional
 
 from mlflow.tracking import artifact_utils
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pro implementation of the feature gate."""
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field

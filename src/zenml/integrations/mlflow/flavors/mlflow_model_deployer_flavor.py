@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow model deployer flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

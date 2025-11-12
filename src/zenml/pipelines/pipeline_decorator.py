@@ -16,8 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
     TypeVar,
     Union,

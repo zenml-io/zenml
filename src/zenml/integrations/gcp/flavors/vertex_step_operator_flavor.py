@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Vertex step operator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import (

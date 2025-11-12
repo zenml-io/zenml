@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Lightning orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

@@ -14,7 +14,7 @@
 """Functionality for model-deployer CLI subcommands."""
 
 import uuid
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 from rich.errors import MarkupError

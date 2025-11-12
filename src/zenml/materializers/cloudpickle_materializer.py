@@ -14,7 +14,7 @@
 """Implementation of ZenML's cloudpickle materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 import cloudpickle
 

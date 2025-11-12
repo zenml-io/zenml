@@ -14,7 +14,7 @@
 """Implementation of the Huggingface tokenizer materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from transformers import AutoTokenizer
 from transformers.tokenization_utils_base import (

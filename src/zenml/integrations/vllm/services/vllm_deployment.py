@@ -15,7 +15,7 @@
 
 import argparse
 import os
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger

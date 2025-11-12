@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact visualization table."""
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column

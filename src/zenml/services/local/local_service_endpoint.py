@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Implementation of a local service endpoint."""
 
-from typing import Optional, Union
 
 from pydantic import Field
 

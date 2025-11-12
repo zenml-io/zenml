@@ -19,9 +19,6 @@ import re
 import shutil
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
     cast,
 )
 from collections.abc import Callable, Generator

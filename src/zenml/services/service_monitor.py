@@ -14,7 +14,7 @@
 """Implementation of the service health monitor."""
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import requests
 from pydantic import Field

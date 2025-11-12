@@ -15,10 +15,7 @@
 
 from typing import (
     TYPE_CHECKING,
-    List,
-    Optional,
     TypeVar,
-    Union,
     overload,
 )
 from uuid import UUID

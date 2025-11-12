@@ -17,10 +17,7 @@ import contextvars
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Type,
 )
 from collections.abc import Mapping, Sequence
 

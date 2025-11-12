@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """RBAC model classes."""
 
-from typing import Optional
 from uuid import UUID
 
 from pydantic import (

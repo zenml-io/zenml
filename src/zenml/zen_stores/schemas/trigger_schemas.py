@@ -15,7 +15,7 @@
 
 import base64
 import json
-from typing import Any, List, Optional, cast
+from typing import Any, Optional, cast
 from collections.abc import Sequence
 from uuid import UUID
 

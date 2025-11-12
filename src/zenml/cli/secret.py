@@ -14,7 +14,7 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import Any, List, Optional
+from typing import Any
 
 import click
 

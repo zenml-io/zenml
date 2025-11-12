@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for authentication (login)."""
 
-from typing import Optional, Union
+from typing import Union
 from urllib.parse import urlencode
 from uuid import UUID
 

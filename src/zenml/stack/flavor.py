@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, cast
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import CustomFlavorImportError

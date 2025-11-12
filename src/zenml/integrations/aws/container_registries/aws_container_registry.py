@@ -14,7 +14,7 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import List, Optional, cast
+from typing import cast
 
 import boto3
 from botocore.client import BaseClient

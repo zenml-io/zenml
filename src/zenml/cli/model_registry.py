@@ -14,7 +14,7 @@
 """Functionality for model deployer CLI subcommands."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import click
 

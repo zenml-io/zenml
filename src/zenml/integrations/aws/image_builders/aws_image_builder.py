@@ -14,7 +14,7 @@
 """AWS Code Build image builder implementation."""
 
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from urllib.parse import urlparse
 from uuid import uuid4
 

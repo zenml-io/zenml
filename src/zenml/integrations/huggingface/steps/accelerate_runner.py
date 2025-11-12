@@ -17,7 +17,7 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Dict, Optional, TypeVar, Union, cast
+from typing import Any, TypeVar, cast
 from collections.abc import Callable
 
 import cloudpickle as pickle

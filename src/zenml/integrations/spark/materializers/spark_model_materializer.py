@@ -14,7 +14,7 @@
 """Implementation of the Spark Model Materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type, Union
+from typing import Any, ClassVar
 
 from pyspark.ml import Estimator, Model, Transformer
 

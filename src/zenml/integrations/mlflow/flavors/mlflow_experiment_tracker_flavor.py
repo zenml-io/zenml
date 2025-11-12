@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow experiment tracker flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import Field, model_validator
 

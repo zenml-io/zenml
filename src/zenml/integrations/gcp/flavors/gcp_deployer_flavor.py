@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GCP Cloud Run deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 

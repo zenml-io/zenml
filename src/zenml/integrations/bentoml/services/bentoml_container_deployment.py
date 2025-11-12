@@ -15,7 +15,7 @@
 
 import os
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import bentoml
 import docker.errors as docker_errors

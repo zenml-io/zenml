@@ -14,7 +14,7 @@
 """Implementation of a service connector registry."""
 
 import threading
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from zenml.logger import get_logger
 from zenml.models import ServiceConnectorTypeModel

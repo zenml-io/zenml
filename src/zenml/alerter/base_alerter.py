@@ -14,7 +14,7 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Optional, Type, cast
+from typing import cast
 
 from pydantic import BaseModel
 

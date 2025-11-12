@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the PyTorch DataLoader materializer."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader

@@ -19,7 +19,7 @@ The Docker Service Connector is responsible for authenticating with a Docker
 
 import re
 import subprocess
-from typing import Any, List, Optional
+from typing import Any
 
 from docker.client import DockerClient
 from docker.errors import DockerException

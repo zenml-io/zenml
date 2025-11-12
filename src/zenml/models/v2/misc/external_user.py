@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Models representing users."""
 
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict

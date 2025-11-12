@@ -15,7 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
