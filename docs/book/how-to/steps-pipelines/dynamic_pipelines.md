@@ -1,5 +1,5 @@
 ---
-description: Experimental feature for dynamically generated DAGs
+description: Write dynamic pipelines
 ---
 
 # Dynamic Pipelines (Experimental)
@@ -186,13 +186,13 @@ Other orchestrators will raise an error if you try to run a dynamic pipeline wit
 
 ### Artifact Loading
 
-When you call `.load()` on an artifact in a dynamic pipeline, it synchronously loads the data. For large artifacts or when you want to maintain parallelism, consider passing `StepRunFuture` objects directly to downstream steps instead of loading them immediately.
+When you call `.load()` on an artifact in a dynamic pipeline, it synchronously loads the data. For large artifacts or when you want to maintain parallelism, consider passing the step outputs (future or artifact) directly to downstream steps instead of loading them.
 
 ## Best Practices
 
 1. **Use `runtime="isolated"` for parallel steps**: This ensures better resource isolation and prevents interference between concurrent step executions.
 
-2. **Handle futures appropriately**: If you need the data immediately, use `.load()`. If you're just passing to another step, pass the future directly.
+2. **Handle step outputs appropriately**: If you need the data immediately, use `.load()`. If you're just passing to another step, pass the output directly.
 
 3. **Be mindful of resource usage**: Running many steps in parallel can consume significant resources. Monitor your orchestrator's resource limits.
 
