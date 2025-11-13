@@ -17,8 +17,37 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
 - Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
-- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid: change‑tracking comments ("Updated from previous version", "New implementation", "Changed to use X instead of Y", "Refactored this section").
 - Avoid simple explanatory comments, where it is already clear from the code itself.
+- Avoid useless one-line comments interleaved with code that restate the obvious. Prefer clear names and small functions.
+
+  ```python
+  # Bad
+  i = 0  # initialize i
+  i += 1  # increment
+
+  # Good
+  index = 0
+  index += 1
+  ```
+
+- Do not use multi-line banner comments to group classes/functions in a module. Prefer a concise module-level docstring or separate modules.
+
+  ```python
+  # Bad
+  """
+  ===== Handlers =====
+  """
+  class FileHandler: ...
+  class RemoteHandler: ...
+
+  # Good (module-level docstring at top)
+  """
+  Handlers used by the logging subsystem (file and remote variants).
+  """
+  class FileHandler: ...
+  class RemoteHandler: ...
+  ```
 
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
@@ -38,6 +67,42 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
+
+#### Prefer typing over dynamic attribute checks
+- Don't use getattr/hasattr for capability checks when static typing can express the contract
+- Prefer Protocols/ABCs for required methods, Unions with isinstance narrowing, or typed adapters around dynamic third-party objects
+- Only use getattr/hasattr when the object is truly untyped and can't be reasonably typed; isolate in a small helper with a typed public surface
+
+Examples:
+```python
+# Bad
+if hasattr(handler, "close"):
+    handler.close()
+
+# Good: structural typing
+from typing import Protocol
+
+class Closable(Protocol):
+    def close(self) -> None: ...
+
+def shutdown(h: Closable) -> None:
+    h.close()
+
+# Good: union + narrowing
+from typing import Union
+
+class FileHandler:
+    def close(self) -> None: ...
+
+class RemoteHandler:
+    def shutdown(self) -> None: ...
+
+def stop(h: Union[FileHandler, RemoteHandler]) -> None:
+    if isinstance(h, FileHandler):
+        h.close()
+    else:
+        h.shutdown()
+```
 
 ### Testing Requirements
 - Most new code requires test coverage

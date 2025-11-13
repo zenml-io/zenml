@@ -27,8 +27,35 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
 - Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
-- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid: change‑tracking comments ("Updated from previous version", "New implementation", "Changed to use X instead of Y", "Refactored this section").
 - Avoid simple explanatory comments, where it is already clear from the code itself.
+- Avoid useless one-line comments interleaved with code that merely narrate the implementation. Favor expressive names and small, focused functions.
+
+  ```python
+  # Bad
+  x = x + 1  # increment x
+
+  # Good
+  count += 1
+  ```
+
+- Do not use multi-line banner comments to group classes/functions. Use a concise module-level docstring or split code into dedicated modules.
+
+  ```python
+  # Bad
+  """
+  ===== Dataset Loaders =====
+  """
+  class CSVLoader: ...
+  class ParquetLoader: ...
+
+  # Good (module-level docstring at top)
+  """
+  Dataset loaders used by data ingestion (CSV, Parquet).
+  """
+  class CSVLoader: ...
+  class ParquetLoader: ...
+  ```
 
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
@@ -48,6 +75,27 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
+
+#### Prefer typing over dynamic attribute checks
+- Don't use getattr/hasattr for capability checks when static typing can express the contract
+- Prefer Protocols/ABCs, Unions with isinstance narrowing, or typed adapters around untyped third-party objects
+- If getattr/hasattr is unavoidable, isolate it in a small helper and expose a typed interface
+
+Example:
+```python
+# Bad
+if hasattr(handler, "close"):
+    handler.close()
+
+# Good
+from typing import Protocol
+
+class Closable(Protocol):
+    def close(self) -> None: ...
+
+def shutdown(h: Closable) -> None:
+    h.close()
+```
 
 ### Testing Requirements
 - Most new code requires test coverage
