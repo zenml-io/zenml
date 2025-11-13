@@ -117,7 +117,6 @@ class S3ArtifactStoreConfig(
         if value is None:
             return value
 
-        value = value.copy()
 
         if "endpoint_url" in value and value["endpoint_url"]:
             url = value["endpoint_url"].rstrip("/")
