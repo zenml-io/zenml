@@ -37,7 +37,7 @@ from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
     MLFlowModelRegistryConfig,
 )
 from zenml.integrations.mlflow.mlflow_utils import (
-    construct_runs_uri,
+    get_model_uri_from_version,
     is_mlflow_3x,
 )
 from zenml.logger import get_logger
@@ -787,14 +787,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
             version=version,
         )
 
-        # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
-        if is_mlflow_3x() and mlflow_model_version.run_id:
-            source_path = mlflow_model_version.source
-            model_uri = construct_runs_uri(
-                mlflow_model_version.run_id, source_path or ""
-            )
-        else:
-            model_uri = mlflow_model_version.source or ""
+        model_uri = get_model_uri_from_version(mlflow_model_version)
 
         return load_model(
             model_uri=model_uri,
@@ -838,17 +831,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata["mlflow_run_link"] = mlflow_model_version.run_link
 
         try:
-            # In MLflow 3.x, models are stored separately and source URI is incorrect
-            # Use runs:/ URI which MLflow resolves to the actual model location
-            if is_mlflow_3x() and mlflow_model_version.run_id:
-                source_path = mlflow_model_version.source
-                model_uri = construct_runs_uri(
-                    mlflow_model_version.run_id, source_path or ""
-                )
-            else:
-                # In MLflow 2.x, use the source path directly
-                source = mlflow_model_version.source
-                model_uri = _remove_file_scheme(source) if source else ""
+            model_uri = get_model_uri_from_version(mlflow_model_version)
+            # In MLflow 2.x, we need to remove the file:// scheme
+            if not is_mlflow_3x():
+                model_uri = _remove_file_scheme(model_uri)
 
             model_library = (
                 get_model_info(model_uri=model_uri)

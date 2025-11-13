@@ -34,24 +34,28 @@ def is_mlflow_3x() -> bool:
     return version.parse(mlflow.version.VERSION) >= version.parse("3.0.0")
 
 
-def construct_runs_uri(run_id: str, source_path: str) -> str:
-    """Construct a runs:/ URI from a run ID and source path.
+def get_model_uri_from_version(
+    mlflow_model_version: "mlflow.entities.model_registry.ModelVersion",
+) -> str:
+    """Get the model URI from an MLflow model version.
 
-    Extracts the artifact path from the source path and constructs a runs:/ URI
-    that MLflow can use to resolve the model location. This is particularly
-    useful in MLflow 3.x where models are stored separately.
+    This function handles the differences between MLflow 2.x and 3.x:
+    - In MLflow 3.x, models are stored separately and we construct a runs:/ URI
+    - In MLflow 2.x, we use the source path directly
 
     Args:
-        run_id: The MLflow run ID.
-        source_path: The source path containing "/artifacts/" segment.
+        mlflow_model_version: The MLflow model version object.
 
     Returns:
-        The constructed URI or the original source path if it cannot be parsed.
+        The model URI that can be used to load the model.
     """
-    if source_path and "/artifacts/" in source_path:
-        artifact_name = source_path.split("/artifacts/")[-1]
-        return f"runs:/{run_id}/{artifact_name}"
-    return source_path
+    if is_mlflow_3x() and mlflow_model_version.run_id:
+        source_path = mlflow_model_version.source
+        if source_path and "/artifacts/" in source_path:
+            artifact_name = source_path.split("/artifacts/")[-1]
+            return f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
+        return source_path or ""
+    return mlflow_model_version.source or ""
 
 
 def build_runs_uri(run_id: str, artifact_path: str) -> str:
@@ -62,7 +66,7 @@ def build_runs_uri(run_id: str, artifact_path: str) -> str:
         artifact_path: The artifact path (e.g., "model").
 
     Returns:
-        The runs:/ URI in format "runs:/{run_id}/{artifact_path}".
+        The constructed URI.
     """
     return f"runs:/{run_id}/{artifact_path}"
 
