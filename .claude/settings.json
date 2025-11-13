@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.command' 2>/dev/null | grep -q 'git commit'; then echo '🔍 Running pre-commit formatting...'; bash \"$CLAUDE_PROJECT_DIR\"/scripts/format.sh && echo '✅ Formatting complete' || { echo '❌ Formatting failed - commit blocked'; exit 1; }; fi",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}
