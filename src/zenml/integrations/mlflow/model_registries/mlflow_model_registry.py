@@ -104,14 +104,6 @@ class MLFlowModelRegistry(BaseModelRegistry):
 
     _client: Optional[MlflowClient] = None
 
-    def _is_mlflow_3x(self) -> bool:
-        """Check if MLflow version is 3.x or higher.
-
-        Returns:
-            True if MLflow version is 3.x or higher, False otherwise.
-        """
-        return is_mlflow_3x()
-
     def _stage_to_alias(self, stage: ModelVersionStage) -> Optional[str]:
         """Convert a ModelVersionStage to an MLflow alias.
 
@@ -591,7 +583,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model stage.
         if stage:
             try:
-                if self._is_mlflow_3x():
+                if is_mlflow_3x():
                     # In MLflow 3.x, use aliases instead of stages
                     alias = self._stage_to_alias(stage)
                     if alias:
@@ -796,7 +788,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         )
 
         # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
-        if self._is_mlflow_3x() and mlflow_model_version.run_id:
+        if is_mlflow_3x() and mlflow_model_version.run_id:
             source_path = mlflow_model_version.source
             model_uri = construct_runs_uri(
                 mlflow_model_version.run_id, source_path or ""
@@ -848,7 +840,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         try:
             # In MLflow 3.x, models are stored separately and source URI is incorrect
             # Use runs:/ URI which MLflow resolves to the actual model location
-            if self._is_mlflow_3x() and mlflow_model_version.run_id:
+            if is_mlflow_3x() and mlflow_model_version.run_id:
                 source_path = mlflow_model_version.source
                 model_uri = construct_runs_uri(
                     mlflow_model_version.run_id, source_path or ""
@@ -876,7 +868,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         stage = ModelVersionStage(mlflow_model_version.current_stage)
 
         # In MLflow 3.x, also track aliases
-        if self._is_mlflow_3x() and hasattr(mlflow_model_version, "aliases"):
+        if is_mlflow_3x() and hasattr(mlflow_model_version, "aliases"):
             if mlflow_model_version.aliases:
                 metadata["mlflow_aliases"] = ",".join(
                     mlflow_model_version.aliases
