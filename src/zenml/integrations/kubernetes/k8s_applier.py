@@ -526,11 +526,9 @@ class KubernetesApplier:
             observed = status.get("observedGeneration")
             generation = meta.get("generation")
 
-            # Check that the controller has observed the latest generation
             if generation and observed and observed < generation:
                 return False
 
-            # Check for Available=True AND Progressing!=False (not stuck)
             conditions = {
                 c.get("type"): c for c in (status.get("conditions") or [])
             }
@@ -538,11 +536,9 @@ class KubernetesApplier:
             available = conditions.get("Available", {})
             progressing = conditions.get("Progressing", {})
 
-            # Must be Available=True
             if available.get("status") != "True":
                 return False
 
-            # Must NOT be Progressing=False (stuck rollout)
             if progressing.get("status") == "False":
                 reason = progressing.get("reason", "")
                 if reason == "ProgressDeadlineExceeded":
