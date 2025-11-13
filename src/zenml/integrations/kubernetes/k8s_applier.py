@@ -234,6 +234,7 @@ class KubernetesApplier:
 
         Raises:
             ProvisioningError: If provisioning fails, with partial inventory and error details.
+            Exception: If provisioning fails for KeyboardInterrupt or SystemExit.
         """
         results: List[Any] = []
         inventory: List[ResourceInventoryItem] = []
@@ -510,10 +511,46 @@ class KubernetesApplier:
 
         def _ready(dep: Any) -> bool:
             d = dep.to_dict() if hasattr(dep, "to_dict") else dep
-            for c in (d.get("status") or {}).get("conditions") or []:
-                if c.get("type") == "Available" and c.get("status") == "True":
-                    return True
-            return False
+            meta = d.get("metadata") or {}
+            status = d.get("status") or {}
+            observed = status.get("observedGeneration")
+            generation = meta.get("generation")
+
+            # Check that the controller has observed the latest generation
+            if generation and observed and observed < generation:
+                return False
+
+            # Check for Available=True AND Progressing!=False (not stuck)
+            conditions = {
+                c.get("type"): c for c in (status.get("conditions") or [])
+            }
+
+            available = conditions.get("Available", {})
+            progressing = conditions.get("Progressing", {})
+
+            # Must be Available=True
+            if available.get("status") != "True":
+                return False
+
+            # Must NOT be Progressing=False (stuck rollout)
+            if progressing.get("status") == "False":
+                reason = progressing.get("reason", "")
+                if reason == "ProgressDeadlineExceeded":
+                    raise RuntimeError(
+                        f"Deployment rollout stuck: {progressing.get('message', 'Unknown')}"
+                    )
+                return False
+
+            replicas = status.get("replicas", 0)
+            updated_replicas = status.get("updatedReplicas", 0)
+            available_replicas = status.get("availableReplicas", 0)
+
+            if replicas == 0:
+                return True
+
+            return bool(
+                updated_replicas == replicas and available_replicas == replicas
+            )
 
         return self.wait_for_resource_condition(
             name,

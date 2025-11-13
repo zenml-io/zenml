@@ -18,6 +18,7 @@ from zenml.integrations.kubernetes.template_engine import (
 
 
 def test_load_yaml_documents_multi_doc():
+    """Test loading multiple YAML documents separated by ---."""
     yaml_content = """
 apiVersion: v1
 kind: ConfigMap
@@ -32,6 +33,44 @@ metadata:
     docs = KubernetesTemplateEngine.load_yaml_documents(yaml_content)
     assert len(docs) == 2
     assert {d["metadata"]["name"] for d in docs} == {"cm1", "s1"}
+
+
+def test_load_yaml_documents_list_format():
+    """Test loading YAML with top-level list of resources."""
+    yaml_content = """
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: cm1
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: s1
+"""
+    docs = KubernetesTemplateEngine.load_yaml_documents(yaml_content)
+    assert len(docs) == 2
+    assert {d["metadata"]["name"] for d in docs} == {"cm1", "s1"}
+
+
+def test_load_yaml_documents_empty():
+    """Test loading empty YAML returns empty list."""
+    yaml_content = ""
+    docs = KubernetesTemplateEngine.load_yaml_documents(yaml_content)
+    assert len(docs) == 0
+
+
+def test_load_yaml_documents_single_resource():
+    """Test loading single YAML resource (no list, no ---)."""
+    yaml_content = """
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-svc
+"""
+    docs = KubernetesTemplateEngine.load_yaml_documents(yaml_content)
+    assert len(docs) == 1
+    assert docs[0]["kind"] == "Service"
+    assert docs[0]["metadata"]["name"] == "my-svc"
 
 
 def test_render_file_with_templating(tmp_path):

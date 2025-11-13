@@ -445,7 +445,9 @@ class KubernetesDeployer(ContainerizedDeployer):
         pod_settings_for_template = settings.pod_settings
         if secret_env_list and settings.pod_settings:
             pod_settings_for_template = settings.pod_settings.model_copy(
-                update={"env": settings.pod_settings.env + secret_env_list}
+                update={
+                    "env": (settings.pod_settings.env or []) + secret_env_list
+                }
             )
         elif secret_env_list:
             pod_settings_for_template = KubernetesPodSettings(
@@ -859,9 +861,16 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         for additional_resource in ctx.settings.additional_resources or []:
             try:
-                rendered_resources.extend(
-                    engine.render_template(additional_resource, context)
+                additional_docs = engine.render_template(
+                    additional_resource, context
                 )
+                if additional_docs:
+                    rendered_resources.extend(additional_docs)
+                else:
+                    logger.debug(
+                        f"Additional resource '{additional_resource}' rendered "
+                        f"to no documents (empty or all conditionals False)"
+                    )
             except Exception as e:
                 error_msg = f"Failed to render additional resource '{additional_resource}': {e}"
                 if ctx.settings.strict_additional_resources:
@@ -1088,7 +1097,12 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"available={available}, desired={desired}"
                 )
 
-                if available < desired or desired == 0:
+                if desired == 0:
+                    logger.debug(
+                        f"Deployment '{deployment_item.name}' is scaled to zero "
+                        f"(idle-ready state)"
+                    )
+                elif available < desired:
                     all_ready = False
 
             if not any_exists:
@@ -1156,7 +1170,6 @@ class KubernetesDeployer(ContainerizedDeployer):
             The operational state.
 
         Raises:
-            DeployerError: If deployment has no snapshot or inventory.
             DeploymentNotFoundError: If no resources found in cluster.
         """
         ctx = self._initialize_deployment_context(deployment)
@@ -1237,23 +1250,40 @@ class KubernetesDeployer(ContainerizedDeployer):
         deployment_item = deployment_items[0]
 
         try:
-            k8s_deployment = self.k8s_applier.get_resource(
+            k8s_deployment_obj = self.k8s_applier.get_resource(
                 name=deployment_item.name,
                 namespace=deployment_item.namespace,
                 kind="Deployment",
                 api_version="apps/v1",
             )
 
-            if not k8s_deployment:
+            if not k8s_deployment_obj:
                 raise DeploymentLogsNotFoundError(
                     f"Deployment '{deployment_item.name}' not found in cluster"
                 )
 
-            label_selector = (
-                k8s_deployment.spec.selector.match_labels
-                if hasattr(k8s_deployment.spec, "selector")
-                else {}
-            )
+            if hasattr(k8s_deployment_obj, "to_dict"):
+                k8s_deployment = k8s_deployment_obj.to_dict()
+            else:
+                k8s_deployment = k8s_deployment_obj
+
+            label_selector: Dict[str, str] = {}
+            try:
+                spec = k8s_deployment.get("spec", {})
+                selector = spec.get("selector", {})
+                label_selector = (
+                    selector.get("matchLabels")
+                    or selector.get("match_labels")
+                    or {}
+                )
+            except (AttributeError, TypeError):
+                pass
+
+            if not label_selector:
+                raise DeploymentLogsNotFoundError(
+                    f"Deployment '{deployment_item.name}' has no label selector"
+                )
+
             label_selector_str = ",".join(
                 f"{k}={v}" for k, v in label_selector.items()
             )
@@ -1270,11 +1300,21 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"No pods found for Deployment '{deployment_item.name}'"
                 )
 
-            container_name = (
-                k8s_deployment.spec.template.spec.containers[0].name
-                if hasattr(k8s_deployment.spec, "template")
-                else "main"
-            )
+            # Extract container name from pod template
+            container_name = "main"
+            try:
+                spec = k8s_deployment.get("spec", {})
+                template = spec.get("template", {})
+                template_spec = template.get("spec", {})
+                containers = template_spec.get("containers", [])
+                if (
+                    containers
+                    and isinstance(containers, list)
+                    and len(containers) > 0
+                ):
+                    container_name = containers[0].get("name", "main")
+            except (AttributeError, TypeError, IndexError):
+                pass
 
             if follow:
                 pod_name = pods[0].metadata.name
@@ -1336,6 +1376,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentDeprovisionError: If deprovisioning fails.
+            DeploymentNotFoundError: If deployment has no inventory.
         """
         stored_metadata = deployment.deployment_metadata
         inventory_data = stored_metadata.get("resource_inventory")

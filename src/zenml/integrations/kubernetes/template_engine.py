@@ -127,6 +127,24 @@ class KubernetesTemplateEngine:
     def load_yaml_documents(yaml_content: str) -> List[Dict[str, Any]]:
         """Load one or more YAML documents from a string.
 
+        Supports two common Kubernetes YAML patterns:
+        1. Multiple documents separated by `---`:
+           ```yaml
+           ---
+           apiVersion: v1
+           kind: ConfigMap
+           ---
+           apiVersion: apps/v1
+           kind: Deployment
+           ```
+        2. Top-level list of resources:
+           ```yaml
+           - apiVersion: v1
+             kind: ConfigMap
+           - apiVersion: apps/v1
+             kind: Deployment
+           ```
+
         Args:
             yaml_content: YAML string potentially containing multiple documents.
 
@@ -145,13 +163,22 @@ class KubernetesTemplateEngine:
         for index, document in enumerate(documents):
             if document is None:
                 continue
-            if not isinstance(document, dict):
+            if isinstance(document, list):
+                for item_index, item in enumerate(document):
+                    if item is None:
+                        continue
+                    if not isinstance(item, dict):
+                        raise ValueError(
+                            f"YAML document {index + 1}, item {item_index + 1} "
+                            f"must be a dictionary, got {type(item).__name__}"
+                        )
+                    resources.append(item)
+            elif isinstance(document, dict):
+                resources.append(document)
+            else:
                 raise ValueError(
-                    f"YAML document {index + 1} must be a dictionary, got {type(document).__name__}"
+                    f"YAML document {index + 1} must be a dictionary or list, "
+                    f"got {type(document).__name__}"
                 )
-            resources.append(document)
-
-        if not resources:
-            raise ValueError("YAML contains no valid documents")
 
         return resources

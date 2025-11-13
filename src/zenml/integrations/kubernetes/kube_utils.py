@@ -1202,9 +1202,6 @@ def convert_resource_settings_to_k8s_format(
         - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
         - limits: Dict with same keys as requests (GPUs require limits=requests)
         - replicas: Number of replicas
-
-    Raises:
-        ValueError: If replica configuration is invalid.
     """
     requests: Dict[str, str] = {}
     limits: Dict[str, str] = {}
