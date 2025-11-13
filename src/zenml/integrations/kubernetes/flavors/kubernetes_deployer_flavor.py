@@ -204,6 +204,14 @@ class KubernetesDeployerSettings(BaseDeployerSettings):
         "See docs for available template variables and examples.",
     )
 
+    atomic_provision: bool = Field(
+        default=False,
+        description="If True, attempt to rollback (delete) all provisioned resources if deployment fails. "
+        "Mimics Helm's --atomic flag behavior. This is best-effort cleanup, not a true transaction. "
+        "If False (default), partial resources remain on failure for inspection and manual cleanup. "
+        "The resource inventory is always tracked regardless of this setting.",
+    )
+
     # ========================================================================
     # Template and Development Settings
     # ========================================================================

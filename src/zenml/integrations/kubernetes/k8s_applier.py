@@ -28,6 +28,51 @@ logger = get_logger(__name__)
 ResourceLike = Union[Dict[str, Any], Any]
 
 
+class ResourceInventoryItem(BaseModel):
+    """A single resource in the inventory."""
+
+    api_version: str
+    kind: str
+    namespace: Optional[str]
+    name: str
+
+
+class DeletionResult(BaseModel):
+    """Result of deleting resources from inventory."""
+
+    deleted_count: int
+    skipped_count: int
+    failed_count: int
+    deleted_resources: List[str]
+    skipped_resources: List[str]
+    failed_resources: List[str]
+
+
+class ProvisioningError(RuntimeError):
+    """Exception raised when resource provisioning fails.
+
+    This exception carries partial results (inventory and errors) to enable
+    proper error handling and rollback without losing track of what was created.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        inventory: List[ResourceInventoryItem],
+        errors: List[str],
+    ) -> None:
+        """Initialize provisioning error.
+
+        Args:
+            message: High-level error message.
+            inventory: List of resources successfully provisioned before failure.
+            errors: List of error messages for failed resources.
+        """
+        super().__init__(message)
+        self.inventory = inventory
+        self.errors = errors
+
+
 def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
     """Yield single resources from possibly 'List' wrappers.
 
@@ -76,26 +121,6 @@ def _to_dict(
             d["apiVersion"] = d.pop("api_version")
         return d
     raise ValueError(f"Unsupported resource type: {type(resource)}")
-
-
-class ResourceInventoryItem(BaseModel):
-    """A single resource in the inventory."""
-
-    api_version: str
-    kind: str
-    namespace: Optional[str]
-    name: str
-
-
-class DeletionResult(BaseModel):
-    """Result of deleting resources from inventory."""
-
-    deleted_count: int
-    skipped_count: int
-    failed_count: int
-    deleted_resources: List[str]
-    skipped_resources: List[str]
-    failed_resources: List[str]
 
 
 class KubernetesApplier:
@@ -170,6 +195,7 @@ class KubernetesApplier:
         field_manager: str = "zenml-deployer",
         force: bool = False,
         timeout: Optional[int] = None,
+        stop_on_error: bool = True,
     ) -> Tuple[List[Any], List[ResourceInventoryItem]]:
         """Provision (create/update) resources using Server-Side Apply.
 
@@ -179,6 +205,8 @@ class KubernetesApplier:
             field_manager: Field manager identity for SSA ownership tracking.
             force: If True, force ownership on SSA conflicts (override other managers).
             timeout: Optional request timeout (seconds) passed to the Python client.
+            stop_on_error: If True, stop provisioning on first error. If False, continue
+                with remaining resources and collect all errors.
 
         Returns:
             A tuple of:
@@ -186,11 +214,11 @@ class KubernetesApplier:
             - List of inventory items tracking what was created
 
         Raises:
-            RuntimeError: If provisioning of a resource fails.
-            Exception: If the resource cannot be applied.
+            ProvisioningError: If provisioning fails, with partial inventory and error details.
         """
         results: List[Any] = []
         inventory: List[ResourceInventoryItem] = []
+        errors: List[str] = []
 
         all_resources = list(
             _flatten_items([_to_dict(o, self.api_client) for o in objs])
@@ -203,6 +231,9 @@ class KubernetesApplier:
         sorted_resources = namespaces + other_resources
 
         for raw in sorted_resources:
+            kind = raw.get("kind", "unknown")
+            name = (raw.get("metadata") or {}).get("name", "unknown")
+
             try:
                 created = self._apply_resource(
                     raw,
@@ -217,21 +248,36 @@ class KubernetesApplier:
                 inventory.append(
                     ResourceInventoryItem(
                         api_version=raw.get("apiVersion", "v1"),
-                        kind=raw.get("kind", ""),
+                        kind=kind,
                         namespace=metadata.get("namespace")
                         or default_namespace,
-                        name=metadata.get("name", ""),
+                        name=name,
                     )
                 )
+                logger.debug(f"✓ Applied {kind}/{name}")
 
             except Exception as exc:
                 if isinstance(exc, (KeyboardInterrupt, SystemExit)):
                     raise
-                kind = raw.get("kind", "unknown")
-                name = (raw.get("metadata") or {}).get("name", "unknown")
-                raise RuntimeError(
-                    f"Failed to provision {kind}/{name}: {exc}"
-                ) from exc
+
+                error_msg = f"Failed to provision {kind}/{name}: {exc}"
+                errors.append(error_msg)
+
+                if stop_on_error:
+                    raise ProvisioningError(
+                        f"Failed while provisioning {kind}/{name}",
+                        inventory=inventory,
+                        errors=errors,
+                    ) from exc
+                else:
+                    continue
+
+        if errors:
+            raise ProvisioningError(
+                f"Provisioning completed with {len(errors)} error(s)",
+                inventory=inventory,
+                errors=errors,
+            )
 
         return results, inventory
 
@@ -296,7 +342,6 @@ class KubernetesApplier:
             except ApiException as e:
                 if e.status == 404:
                     skipped_resources.append(resource_desc)
-                    logger.info(f"⏭️  Already deleted: {resource_desc}")
                     continue
                 error_msg = f"{resource_desc}: {e.reason}"
                 failed_resources.append(error_msg)
@@ -319,7 +364,6 @@ class KubernetesApplier:
             skipped_resources=skipped_resources,
             failed_resources=failed_resources,
         )
-
 
     # --------------------------------------------------------------------- #
     # GET / LIST

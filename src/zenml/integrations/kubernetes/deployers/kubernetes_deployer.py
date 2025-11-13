@@ -54,6 +54,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_deployer_flavor import (
 )
 from zenml.integrations.kubernetes.k8s_applier import (
     KubernetesApplier,
+    ProvisioningError,
     ResourceInventoryItem,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
@@ -887,7 +888,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Args:
             deployment: The deployment to provision.
-            stack: The stack to use.
+            stack: The stack the pipeline will be deployed on.
             environment: Environment variables.
             secrets: Secret environment variables.
             timeout: Timeout in seconds.
@@ -902,12 +903,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             deployment, environment, secrets
         )
 
-        stored_metadata = deployment.deployment_metadata
-        old_inventory_data = (
-            stored_metadata.get("resource_inventory")
-            if stored_metadata
-            else None
-        )
+        stored_metadata = deployment.deployment_metadata or {}
+        old_inventory_data = stored_metadata.get("resource_inventory")
 
         try:
             created_objects, new_inventory = self.k8s_applier.provision(
@@ -916,7 +913,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                 timeout=timeout,
             )
             logger.info(
-                f"Successfully created {len(created_objects)} Kubernetes resource(s)"
+                f"Successfully created/updated {len(created_objects)} "
+                f"Kubernetes resource(s) for deployment '{deployment.name}'"
             )
 
             if old_inventory_data:
@@ -929,15 +927,19 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
                 if resources_to_delete:
                     logger.info(
-                        f"Cleaning up {len(resources_to_delete)} obsolete resource(s) "
-                        f"from previous deployment"
+                        f"Cleaning up {len(resources_to_delete)} obsolete "
+                        f"resource(s) from previous deployment of "
+                        f"'{deployment.name}'"
                     )
-                    deleted_count = self.k8s_applier.delete_from_inventory(
+                    delete_result = self.k8s_applier.delete_from_inventory(
                         inventory=resources_to_delete,
                         propagation_policy="Foreground",
                     )
                     logger.info(
-                        f"Deleted {deleted_count} obsolete resource(s)"
+                        "Obsolete resource cleanup result: "
+                        f"deleted={delete_result.deleted_count} "
+                        f"skipped={delete_result.skipped_count} "
+                        f"failed={delete_result.failed_count}"
                     )
 
             self._wait_for_deployment_readiness(
@@ -959,37 +961,53 @@ class KubernetesDeployer(ContainerizedDeployer):
 
             return state
 
-        except Exception as e:
-            if "new_inventory" in locals() and new_inventory:
+        except ProvisioningError as e:
+            new_inventory = e.inventory
+            for error_line in e.errors:
+                logger.error(f"  • {error_line}")
+
+            if ctx.settings.atomic_provision and new_inventory:
                 logger.warning(
-                    f"Provisioning failed for '{deployment.name}', but {len(new_inventory)} "
-                    f"resource(s) were created. Use 'zenml deployment delete {deployment.name}' "
-                    f"to clean them up."
+                    f"Atomic provision enabled – rolling back "
+                    f"{len(new_inventory)} resource(s) for '{deployment.name}'"
                 )
-
-                # Return an ERROR state with the inventory so it's saved
-                state = DeploymentOperationalState(
-                    status=DeploymentStatus.ERROR,
-                    metadata={
-                        "namespace": ctx.namespace,
-                        "labels": ctx.labels,
-                        "resource_inventory": [
-                            item.model_dump() for item in new_inventory
-                        ],
-                        "error": str(e),
-                    },
+                delete_result = self.k8s_applier.delete_from_inventory(
+                    inventory=new_inventory,
+                    propagation_policy="Foreground",
                 )
+                raise DeploymentProvisionError(
+                    "Kubernetes provisioning failed for deployment "
+                    f"'{deployment.name}' with atomic_provision=True.\n"
+                    f"Errors ({len(e.errors)}):\n"
+                    + "\n".join(f"  • {err}" for err in e.errors)
+                    + "\n\nRollback summary:\n"
+                    f"  deleted={delete_result.deleted_count}, "
+                    f"skipped={delete_result.skipped_count}, "
+                    f"failed={delete_result.failed_count}"
+                ) from e
 
-                logger.info(
-                    "Created resources before failure:\n"
-                    + "\n".join(
-                        f"  - {item.kind}/{item.name} in namespace {item.namespace}"
-                        for item in new_inventory
-                    )
+            deployment_state = DeploymentOperationalState(
+                status=DeploymentStatus.ERROR,
+                metadata={
+                    "namespace": ctx.namespace,
+                    "labels": ctx.labels,
+                    "resource_inventory": [
+                        item.model_dump() for item in new_inventory
+                    ],
+                    "errors": e.errors,
+                },
+            )
+            deployment = self._update_deployment(
+                    deployment, deployment_state
                 )
+            
+            raise DeploymentProvisionError(
+                f"Kubernetes provisioning failed for deployment "
+                f"'{deployment.name}'. Errors:\n"
+                + "\n".join(f"  • {err}" for err in e.errors)
+            ) from e
 
-                return state
-
+        except Exception as e:
             raise DeploymentProvisionError(
                 f"Failed to provision deployment '{deployment.name}': {e}"
             ) from e
@@ -1020,14 +1038,12 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentNotFoundError: If no deployment resources found in cluster.
             DeployerError: If an error occurs checking resources.
         """
-        # Find all Deployment resources in inventory
         deployment_items = [
             item
             for item in inventory
             if item.kind == "Deployment" and item.api_version == "apps/v1"
         ]
 
-        # Find all Service resources in inventory
         service_items = [
             item
             for item in inventory
@@ -1035,7 +1051,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         ]
 
         try:
-            # Check if ANY Deployment exists and is ready
             status = DeploymentStatus.PENDING
             all_ready = True
             any_exists = False
@@ -1057,7 +1072,6 @@ class KubernetesDeployer(ContainerizedDeployer):
 
                 any_exists = True
 
-                # Check readiness
                 if hasattr(k8s_deployment, "to_dict"):
                     deployment_dict = k8s_deployment.to_dict()
                     status_data = deployment_dict.get("status", {})
@@ -1090,11 +1104,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             if all_ready:
                 status = DeploymentStatus.RUNNING
 
-            # Try to get URL from any Service
             url = None
-            namespace = (
-                settings.namespace or self.config.namespace or "default"
-            )
+            namespace = settings.namespace
 
             for service_item in service_items:
                 k8s_service = self.k8s_applier.get_resource(
@@ -1113,7 +1124,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     )
                     if service_url:
                         url = service_url
-                        break  # Use first valid URL
+                        break
 
             metadata = {
                 "namespace": namespace,
@@ -1155,11 +1166,12 @@ class KubernetesDeployer(ContainerizedDeployer):
         """
         ctx = self._initialize_deployment_context(deployment)
 
-        # Get inventory from metadata
-        stored_metadata = deployment.deployment_metadata
-        if not stored_metadata or "resource_inventory" not in stored_metadata:
-            raise DeployerError(
-                f"Deployment '{deployment.name}' has no resource inventory"
+        stored_metadata = deployment.deployment_metadata or {}
+        inventory_data = stored_metadata.get("resource_inventory")
+
+        if not inventory_data:
+            raise DeploymentNotFoundError(
+                f"Deployment '{deployment.name}' has no stored resource inventory"
             )
 
         inventory = [
@@ -1192,41 +1204,91 @@ class KubernetesDeployer(ContainerizedDeployer):
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get deployment logs from the first pod only.
+        """Get deployment logs from all pods.
 
         Args:
             deployment: The deployment.
-            follow: Whether to follow logs.
-            tail: Number of lines to tail.
+            follow: Whether to follow logs (only follows first pod if true).
+            tail: Number of lines to tail per pod.
 
         Yields:
-            Log lines from the first pod matching the deployment label.
+            Log lines from all pods, prefixed with pod name.
 
         Raises:
-            DeploymentLogsNotFoundError: If no pods are found for the deployment.
+            DeploymentLogsNotFoundError: If no Deployment found or pods unavailable.
+            DeployerError: If deployment has no inventory.
         """
         ctx = self._initialize_deployment_context(deployment)
 
-        label_selector = f"zenml-deployment-id={deployment.id}"
+        stored_metadata = deployment.deployment_metadata or {}
+        inventory_data = stored_metadata.get("resource_inventory")
+
+        if not inventory_data:
+            raise DeployerError(
+                f"Deployment '{deployment.name}' has no resource inventory"
+            )
+
+        inventory = [ResourceInventoryItem(**item) for item in inventory_data]
+
+        deployment_items = [
+            item
+            for item in inventory
+            if item.kind == "Deployment" and item.api_version == "apps/v1"
+        ]
+
+        if not deployment_items:
+            raise DeploymentLogsNotFoundError(
+                f"No Deployment resources in inventory for '{deployment.name}'"
+            )
+
+        deployment_item = deployment_items[0]
 
         try:
-            pods = self.k8s_applier.list_resources(
-                namespace=ctx.namespace,
-                kind="Pod",
-                api_version="v1",
-                label_selector=label_selector,
+            k8s_deployment = self.k8s_applier.get_resource(
+                name=deployment_item.name,
+                namespace=deployment_item.namespace,
+                kind="Deployment",
+                api_version="apps/v1",
             )
-            if not pods:
+
+            if not k8s_deployment:
                 raise DeploymentLogsNotFoundError(
-                    f"No pods found for deployment '{deployment.name}'"
+                    f"Deployment '{deployment_item.name}' not found in cluster"
                 )
 
-            pod_name = pods[0].metadata.name
+            label_selector = (
+                k8s_deployment.spec.selector.match_labels
+                if hasattr(k8s_deployment.spec, "selector")
+                else {}
+            )
+            label_selector_str = ",".join(
+                f"{k}={v}" for k, v in label_selector.items()
+            )
+
+            pods = self.k8s_applier.list_resources(
+                namespace=deployment_item.namespace or ctx.namespace,
+                kind="Pod",
+                api_version="v1",
+                label_selector=label_selector_str,
+            )
+
+            if not pods:
+                raise DeploymentLogsNotFoundError(
+                    f"No pods found for Deployment '{deployment_item.name}'"
+                )
+
+            container_name = (
+                k8s_deployment.spec.template.spec.containers[0].name
+                if hasattr(k8s_deployment.spec, "template")
+                else "main"
+            )
 
             if follow:
+                pod_name = pods[0].metadata.name
                 resp = self.k8s_core_api.read_namespaced_pod_log(
                     name=pod_name,
-                    namespace=ctx.namespace,
+                    namespace=deployment_item.namespace or ctx.namespace,
+                    container=container_name,
                     follow=True,
                     tail_lines=tail,
                     _preload_content=False,
@@ -1237,14 +1299,24 @@ class KubernetesDeployer(ContainerizedDeployer):
                     else:
                         yield str(line).rstrip()
             else:
-                logs = self.k8s_core_api.read_namespaced_pod_log(
-                    name=pod_name,
-                    namespace=ctx.namespace,
-                    tail_lines=tail,
-                )
-                for line in logs.split("\n"):
-                    if line:
-                        yield line
+                for pod in pods:
+                    pod_name = pod.metadata.name
+                    try:
+                        logs = self.k8s_core_api.read_namespaced_pod_log(
+                            name=pod_name,
+                            namespace=deployment_item.namespace
+                            or ctx.namespace,
+                            container=container_name,
+                            tail_lines=tail,
+                        )
+                        for line in logs.split("\n"):
+                            if line:
+                                yield f"[{pod_name}] {line}"
+                    except ApiException as pod_err:
+                        logger.warning(
+                            f"Failed to get logs from pod '{pod_name}': {pod_err}"
+                        )
+                        continue
 
         except ApiException as e:
             raise DeploymentLogsNotFoundError(
@@ -1273,18 +1345,16 @@ class KubernetesDeployer(ContainerizedDeployer):
             DeploymentDeprovisionError: If deprovisioning fails.
         """
         stored_metadata = deployment.deployment_metadata
-        inventory_data = (
-            stored_metadata.get("resource_inventory")
-            if stored_metadata
-            else None
-        )
+        inventory_data = stored_metadata.get("resource_inventory")
 
         if not inventory_data:
             logger.info(
                 f"No inventory found for deployment '{deployment.name}'. "
-                f"Nothing to deprovision."
+                f"Treating as already deprovisioned."
             )
-            return None
+            raise DeploymentNotFoundError(
+                f"No resource inventory stored for deployment '{deployment.name}'"
+            )
 
         inventory = [ResourceInventoryItem(**item) for item in inventory_data]
         logger.info(
@@ -1298,7 +1368,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 propagation_policy="Foreground",
             )
 
-            # All resources already deleted (404s) or skipped - this is success
             if result.deleted_count == 0 and result.failed_count == 0:
                 logger.info(
                     f"All resources for deployment '{deployment.name}' "
