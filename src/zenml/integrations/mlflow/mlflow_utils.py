@@ -54,6 +54,19 @@ def construct_runs_uri(run_id: str, source_path: str) -> str:
     return source_path
 
 
+def build_runs_uri(run_id: str, artifact_path: str) -> str:
+    """Build a runs:/ URI from a run ID and artifact path.
+
+    Args:
+        run_id: The MLflow run ID.
+        artifact_path: The artifact path (e.g., "model").
+
+    Returns:
+        The runs:/ URI in format "runs:/{run_id}/{artifact_path}".
+    """
+    return f"runs:/{run_id}/{artifact_path}"
+
+
 def get_missing_mlflow_experiment_tracker_error() -> ValueError:
     """Returns description of how to add an MLflow experiment tracker to your stack.
 
