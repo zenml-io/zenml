@@ -23,6 +23,7 @@ from materializers import UltralyticsYOLOMaterializer
 from ultralytics import YOLO
 
 from zenml import ArtifactConfig, add_tags, step
+from zenml.enums import ArtifactType
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -35,7 +36,12 @@ def train_yolo_model(
     epochs: int = 1,
     image_size: int = 640,
 ) -> Annotated[
-    YOLO, ArtifactConfig(name="yolo-model", tags=["computer-vision"])
+    YOLO,
+    ArtifactConfig(
+        name="yolo-model",
+        tags=["computer-vision"],
+        artifact_type=ArtifactType.MODEL,
+    ),
 ]:
     """Train a YOLO model on the provided dataset.
 

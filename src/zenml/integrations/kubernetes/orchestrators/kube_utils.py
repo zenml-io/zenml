@@ -1159,12 +1159,7 @@ def apply_default_resource_requests(
     if not pod_settings:
         pod_settings = KubernetesPodSettings(resources=resources)
     elif not pod_settings.resources:
-        # We can't update the pod settings in place (because it's a frozen
-        # pydantic model), so we have to create a new one.
-        pod_settings = KubernetesPodSettings(
-            **pod_settings.model_dump(exclude_unset=True),
-            resources=resources,
-        )
+        pod_settings = pod_settings.model_copy(update={"resources": resources})
     else:
         set_requests = pod_settings.resources.get("requests", {})
         resources["requests"].update(set_requests)
