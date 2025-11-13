@@ -540,7 +540,7 @@ def test_get_resource_found_and_not_found(applier):
     assert not_found is None
 
 
-def test_get_resource_propogates_non_404_api_errors(applier):
+def test_get_resource_propagates_non_404_api_errors(applier):
     res = applier._test_dyn.register("v1", "Service", namespaced=True)
 
     def bad_get(**kwargs):

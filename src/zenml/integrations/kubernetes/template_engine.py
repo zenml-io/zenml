@@ -77,7 +77,6 @@ class KubernetesTemplateEngine:
             keep_trailing_newline=True,
         )
 
-        # Register custom filters for YAML/JSON conversion
         self.env.filters["to_yaml"] = _to_yaml_filter
         self.env.filters["tojson"] = _to_json_filter
 
