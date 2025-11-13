@@ -46,6 +46,7 @@ from typing import (
     Optional,
     Tuple,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -64,6 +65,9 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_service_account_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.integrations.kubernetes.serialization_utils import (
+    normalize_resource_to_dict,
+)
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
@@ -1250,66 +1254,77 @@ def convert_resource_settings_to_k8s_format(
 
 def build_service_url(
     core_api: k8s_client.CoreV1Api,
-    service: k8s_client.V1Service,
+    service: Union[k8s_client.V1Service, Dict[str, Any]],
     namespace: str,
-    ingress: Optional[k8s_client.V1Ingress] = None,
+    ingress: Optional[Union[k8s_client.V1Ingress, Dict[str, Any]]] = None,
 ) -> Optional[str]:
     """Build URL for accessing a Kubernetes service.
 
+    Supports multiple service types:
+    - LoadBalancer: Returns http://<external-ip>:<port> if IP is assigned
+    - NodePort: Returns http://<node-ip>:<node-port> if nodes have external IPs
+    - ClusterIP: Returns internal cluster URL with warning about port-forwarding
+
     Args:
         core_api: Kubernetes Core V1 API client.
-        service: Kubernetes Service resource.
+        service: Kubernetes Service resource (model or dict).
         namespace: Kubernetes namespace.
         ingress: Optional Kubernetes Ingress resource.
 
     Returns:
-        Service URL or None if not yet available.
+        Service URL
     """
-    if ingress and ingress.spec:
-        protocol = "https" if ingress.spec.tls else "http"
-        if ingress.spec.rules:
-            rule = ingress.spec.rules[0]
-            if rule.host and rule.http and rule.http.paths:
-                path = rule.http.paths[0].path or "/"
-                return f"{protocol}://{rule.host}{path}"
+    service_dict = normalize_resource_to_dict(service)
 
-    if not service.spec or not service.spec.type or not service.spec.ports:
+    if ingress:
+        ingress_dict = normalize_resource_to_dict(ingress)
+
+        ingress_spec = ingress_dict.get("spec")
+        if ingress_spec:
+            protocol = "https" if ingress_spec.get("tls") else "http"
+            rules = ingress_spec.get("rules", [])
+            if rules:
+                rule = rules[0]
+                host = rule.get("host")
+                http_config = rule.get("http", {})
+                paths = http_config.get("paths", [])
+                if host and paths:
+                    path = paths[0].get("path", "/")
+                    return f"{protocol}://{host}{path}"
+
+    metadata = service_dict.get("metadata", {})
+    spec = service_dict.get("spec", {})
+
+    service_name = metadata.get("name", "unknown")
+    service_type = spec.get("type")
+    ports = spec.get("ports", [])
+
+    if not service_type or not ports:
         return None
 
-    service_name = service.metadata.name if service.metadata else "unknown"
-    service_type = service.spec.type
-    service_port = service.spec.ports[0].port
+    service_port = ports[0].get("port")
 
     if service_type == "LoadBalancer":
-        host = None
-        if hasattr(service, "to_dict"):
-            service_dict = service.to_dict()
-            lb_status = service_dict.get("status", {}).get("loadBalancer", {})
-            ingress_list = lb_status.get("ingress", [])
-            if ingress_list:
-                lb_ingress = ingress_list[0]
-                host = lb_ingress.get("ip") or lb_ingress.get("hostname")
-        elif (
-            hasattr(service, "status")
-            and service.status
-            and hasattr(service.status, "load_balancer")
-            and service.status.load_balancer
-            and hasattr(service.status.load_balancer, "ingress")
-            and service.status.load_balancer.ingress
-        ):
-            lb_ingress = service.status.load_balancer.ingress[0]
-            host = lb_ingress.ip or lb_ingress.hostname
-        if host:
-            return f"http://{host}:{service_port}"
+        status = service_dict.get("status", {})
+        lb_status = status.get("loadBalancer", {})
+        ingress_list = lb_status.get("ingress", [])
+
+        if ingress_list:
+            lb_ingress = ingress_list[0]
+            host = lb_ingress.get("ip") or lb_ingress.get("hostname")
+            if host:
+                return f"http://{host}:{service_port}"
+
         return None
 
     if service_type == "NodePort":
-        node_port = service.spec.ports[0].node_port
+        node_port = ports[0].get("nodePort")
         if not node_port:
             return None
 
         try:
             nodes = core_api.list_node()
+
             for node in nodes.items:
                 if node.status and node.status.addresses:
                     for address in node.status.addresses:
@@ -1328,6 +1343,7 @@ def build_service_url(
                             return f"http://{address.address}:{node_port}"
         except Exception as e:
             logger.error(f"Failed to get node IPs: {e}")
+
         return None
 
     if service_type == "ClusterIP":

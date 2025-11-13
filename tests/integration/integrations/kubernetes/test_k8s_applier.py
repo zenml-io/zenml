@@ -27,7 +27,9 @@ from zenml.integrations.kubernetes.k8s_applier import (
     ProvisioningError,
     ResourceInventoryItem,
     _flatten_items,
-    _to_dict,
+)
+from zenml.integrations.kubernetes.serialization_utils import (
+    normalize_resource_to_dict,
 )
 
 # ---------------------------------------------------------------------------
@@ -67,7 +69,7 @@ class DummyModel:
 
 
 class DummyBadModel:
-    """Model whose to_dict() returns a non-dict, to exercise _to_dict error path."""
+    """Model whose to_dict() returns a non-dict, to exercise normalize_resource_to_dict error path."""
 
     def to_dict(self):
         return ["not", "a", "dict"]
@@ -200,7 +202,7 @@ def applier(api_client, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Helper function tests: _flatten_items / _to_dict
+# Helper function tests: _flatten_items / normalize_resource_to_dict
 # ---------------------------------------------------------------------------
 
 
@@ -223,23 +225,27 @@ def test_flatten_items_expands_kind_list_and_leaves_others():
     assert {o["metadata"]["name"] for o in out} == {"a", "b", "c", "weird"}
 
 
-def test_to_dict_with_dict_returns_same_instance(api_client):
+def test_normalize_resource_to_dict_with_dict_returns_same_instance(
+    api_client,
+):
     obj = {"apiVersion": "v1", "kind": "ConfigMap"}
-    out = _to_dict(obj, api_client)
+    out = normalize_resource_to_dict(obj, api_client)
     assert out is obj
 
 
-def test_to_dict_with_model_uses_sanitize_and_normalizes_api_version(
+def test_normalize_resource_to_dict_with_model_uses_sanitize_and_normalizes_api_version(
     api_client,
 ):
     model = DummyModel(api_version="v1", kind="ConfigMap", name="cm1")
-    out = _to_dict(model, api_client)
+    out = normalize_resource_to_dict(model, api_client)
     assert out["apiVersion"] == "v1"
     assert out["kind"] == "ConfigMap"
     assert out["metadata"]["name"] == "cm1"
 
 
-def test_to_dict_with_model_wrapping_api_version_key(api_client):
+def test_normalize_resource_to_dict_with_model_wrapping_api_version_key(
+    api_client,
+):
     """If sanitize_for_serialization returns 'api_version', we normalize to 'apiVersion'."""
 
     class ModelWithApiVersionAttr:
@@ -261,19 +267,21 @@ def test_to_dict_with_model_wrapping_api_version_key(api_client):
 
     api_client2 = ApiClientWithApiVersion()
     model = ModelWithApiVersionAttr()
-    out = _to_dict(model, api_client2)
+    out = normalize_resource_to_dict(model, api_client2)
     assert out["apiVersion"] == "batch/v1"
     assert "api_version" not in out
 
 
-def test_to_dict_with_model_returning_non_dict_raises(api_client):
+def test_normalize_resource_to_dict_with_model_returning_non_dict_raises(
+    api_client,
+):
     with pytest.raises(ValueError, match="Expected dict after serialization"):
-        _to_dict(DummyBadModel(), api_client)
+        normalize_resource_to_dict(DummyBadModel(), api_client)
 
 
-def test_to_dict_with_unsupported_type_raises(api_client):
+def test_normalize_resource_to_dict_with_unsupported_type_raises(api_client):
     with pytest.raises(ValueError, match="Unsupported resource type"):
-        _to_dict(42, api_client)
+        normalize_resource_to_dict(42, api_client)
 
 
 # ---------------------------------------------------------------------------
@@ -575,6 +583,42 @@ def test_list_resources_returns_items(applier):
     # Our dummy does not filter by label; we only assert items are returned.
     assert len(out) == 2
     assert {o.metadata.name for o in out} == {"a", "b"}
+
+
+def test_list_resources_raises_when_items_attribute_missing(applier):
+    """list_resources should raise TypeError if response has no .items attribute."""
+    res = applier._test_dyn.register("v1", "ConfigMap", namespaced=True)
+
+    # Mock get() to return object without .items
+    def bad_get(**kwargs):
+        return types.SimpleNamespace(status="ok")  # No .items!
+
+    res.get = bad_get  # type: ignore[assignment]
+
+    with pytest.raises(TypeError, match="missing .items attribute"):
+        applier.list_resources(
+            kind="ConfigMap",
+            api_version="v1",
+            namespace="default",
+        )
+
+
+def test_list_resources_raises_when_items_is_not_list(applier):
+    """list_resources should raise TypeError if .items is not a list."""
+    res = applier._test_dyn.register("v1", "Secret", namespaced=True)
+
+    # Mock get() to return object with non-list .items
+    def bad_get(**kwargs):
+        return types.SimpleNamespace(items="not-a-list")
+
+    res.get = bad_get  # type: ignore[assignment]
+
+    with pytest.raises(TypeError, match=".items is not a list"):
+        applier.list_resources(
+            kind="Secret",
+            api_version="v1",
+            namespace="default",
+        )
 
 
 # ---------------------------------------------------------------------------

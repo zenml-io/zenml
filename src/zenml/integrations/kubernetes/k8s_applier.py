@@ -21,6 +21,9 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.dynamic import DynamicClient
 from pydantic import BaseModel
 
+from zenml.integrations.kubernetes.serialization_utils import (
+    normalize_resource_to_dict,
+)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -76,8 +79,7 @@ class ProvisioningError(RuntimeError):
 def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
     """Yield individual Kubernetes resources, unwrapping any `kind: List` objects.
 
-    Kubernetes allows manifests that wrap multiple resources in a single object
-    [like this](https://kubernetes.io/docs/reference/using-api/api-concepts/) :
+    Kubernetes allows manifests that wrap multiple resources in a single object:
 
         kind: List
         items:
@@ -86,20 +88,11 @@ def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
           - kind: Service
             ...
 
-    This helper normalizes such inputs so that downstream code can work with a
-    flat stream of single-resource dicts:
-
-    - If an item has `kind: "List"` and an `items` list, each element of
-      `items` is yielded as its own resource dict.
-    - Otherwise, the item itself is yielded as-is.
-
     Args:
-        objs: Iterable of already-normalized resource dicts. Each element can
-            be either a single resource or a `kind: List` wrapper containing
-            multiple resources in its `items` field.
+        objs: Iterable of pre-normalized resource dicts
 
     Yields:
-        Individual resource dicts, with all `kind: List` wrappers expanded.
+        Individual resource dicts
     """
     for o in objs:
         if (
@@ -113,35 +106,6 @@ def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
             yield o
 
 
-def _to_dict(
-    resource: ResourceLike, api_client: k8s_client.ApiClient
-) -> Dict[str, Any]:
-    """Normalize a Kubernetes resource (dict or client model) to a plain dict.
-
-    Args:
-        resource: A manifest dict or a Kubernetes client model (with .to_dict()).
-        api_client: ApiClient used to sanitize/serialize models.
-
-    Returns:
-        Normalized manifest as a dict with canonical field casing.
-
-    Raises:
-        ValueError: If the resource cannot be converted to a dict.
-    """
-    if isinstance(resource, dict):
-        return resource
-    if hasattr(resource, "to_dict"):
-        d = api_client.sanitize_for_serialization(resource)
-        if not isinstance(d, dict):
-            raise ValueError(
-                f"Expected dict after serialization, got {type(d)}"
-            )
-        if "api_version" in d and "apiVersion" not in d:
-            d["apiVersion"] = d.pop("api_version")
-        return d
-    raise ValueError(f"Unsupported resource type: {type(resource)}")
-
-
 class KubernetesApplier:
     """Kubernetes applier using Server-Side Apply with inventory-based deletion."""
 
@@ -149,7 +113,7 @@ class KubernetesApplier:
         """Initialize the applier.
 
         Args:
-            api_client: A configured Kubernetes ApiClient (in-cluster or from kubeconfig).
+            api_client: A configured Kubernetes ApiClient.
         """
         self.api_client = api_client
         self.dynamic = DynamicClient(api_client)
@@ -241,12 +205,18 @@ class KubernetesApplier:
         errors: List[str] = []
 
         all_resources = list(
-            _flatten_items([_to_dict(o, self.api_client) for o in objs])
+            _flatten_items([normalize_resource_to_dict(obj) for obj in objs])
         )
 
-        namespaces = [r for r in all_resources if r.get("kind") == "Namespace"]
+        namespaces = [
+            resource
+            for resource in all_resources
+            if resource.get("kind") == "Namespace"
+        ]
         other_resources = [
-            r for r in all_resources if r.get("kind") != "Namespace"
+            resource
+            for resource in all_resources
+            if resource.get("kind") != "Namespace"
         ]
         sorted_resources = namespaces + other_resources
 
@@ -284,7 +254,7 @@ class KubernetesApplier:
                         name=name,
                     )
                 )
-                logger.debug(f"✓ Applied {kind}/{name}")
+                logger.debug(f"Applied {kind}/{name}")
 
             except Exception as exc:
                 if isinstance(exc, (KeyboardInterrupt, SystemExit)):
@@ -441,13 +411,19 @@ class KubernetesApplier:
         """List resources of a given kind/apiVersion (optionally by namespace/labels).
 
         Args:
-            kind: Kinds like 'Deployment', 'Service', etc.
-            api_version: API version string, e.g., 'apps/v1'.
-            namespace: Namespace (ignored for cluster-scoped kinds).
-            label_selector: Optional label selector to filter resources.
+            kind: Resource kind (e.g., 'Deployment', 'Service', 'Pod')
+            api_version: API version string (e.g., 'apps/v1', 'v1')
+            namespace: Namespace for namespaced resources (ignored for cluster-scoped)
+            label_selector: Optional label selector to filter resources
+                (e.g., 'app=myapp,env=prod')
 
         Returns:
-            A list of resources.
+            List of resource objects matching the query criteria.
+            Returns empty list only if the API explicitly returns zero items.
+
+        Raises:
+            TypeError: If the API response is malformed (missing .items attribute
+                or .items is not a list). This indicates a serious API or client issue.
         """
         res = self.dynamic.resources.get(api_version=api_version, kind=kind)
         kwargs: Dict[str, Any] = {}
@@ -456,7 +432,31 @@ class KubernetesApplier:
         if label_selector:
             kwargs["label_selector"] = label_selector
         out = res.get(**kwargs)
-        return out.items if hasattr(out, "items") else []
+
+        try:
+            items = out.items
+        except AttributeError:
+            logger.error(
+                f"API response for {kind} list has no .items attribute. "
+                f"Response type: {type(out).__name__}. "
+                f"This indicates a serious issue with the Kubernetes API or client."
+            )
+            raise TypeError(
+                f"Malformed API response for {kind} list: missing .items attribute. "
+                f"Response type: {type(out).__name__}"
+            )
+
+        if not isinstance(items, list):
+            logger.error(
+                f"API response for {kind} list has non-list .items: {type(items).__name__}. "
+                f"This indicates a serious issue with the Kubernetes API or client."
+            )
+            raise TypeError(
+                f"Malformed API response for {kind} list: .items is not a list. "
+                f"Got {type(items).__name__} instead."
+            )
+
+        return items
 
     # --------------------------------------------------------------------- #
     # WAITERS
@@ -516,21 +516,30 @@ class KubernetesApplier:
             check_interval: Seconds between polls.
 
         Returns:
-            The resource object if found, None otherwise.
+            The raw resource object from the dynamic client.
+
+        Note:
+            Internally normalizes the deployment to a dict for inspection,
+            but returns the original object from the API.
         """
 
-        def _ready(dep: Any) -> bool:
-            d = dep.to_dict() if hasattr(dep, "to_dict") else dep
-            meta = d.get("metadata") or {}
-            status = d.get("status") or {}
-            observed = status.get("observedGeneration")
-            generation = meta.get("generation")
+        def _ready(deployment: Any) -> bool:
+            deployment_dict = normalize_resource_to_dict(deployment)
+            metadata = deployment_dict.get("metadata") or {}
+            status = deployment_dict.get("status") or {}
+            observed_generation = status.get("observedGeneration")
+            generation = metadata.get("generation")
 
-            if generation and observed and observed < generation:
+            if (
+                generation
+                and observed_generation
+                and observed_generation < generation
+            ):
                 return False
 
             conditions = {
-                c.get("type"): c for c in (status.get("conditions") or [])
+                condition.get("type"): condition
+                for condition in (status.get("conditions") or [])
             }
 
             available = conditions.get("Available", {})
@@ -612,17 +621,13 @@ class KubernetesApplier:
         """Extract LoadBalancer IP/hostname if present.
 
         Args:
-            service_obj: Service object.
+            service_obj: Service object from dynamic client.
 
         Returns:
-            LoadBalancer IP/hostname if present.
+            LoadBalancer IP/hostname if present, None otherwise.
         """
-        s = (
-            service_obj.to_dict()
-            if hasattr(service_obj, "to_dict")
-            else service_obj
-        )
-        lb = (s.get("status") or {}).get("loadBalancer") or {}
+        service_dict = normalize_resource_to_dict(service_obj)
+        lb = (service_dict.get("status") or {}).get("loadBalancer") or {}
         ingress = lb.get("ingress") or []
         if not ingress:
             return None

@@ -64,6 +64,9 @@ from zenml.integrations.kubernetes.manifest_utils import (
 from zenml.integrations.kubernetes.pod_settings import (
     KubernetesPodSettings,
 )
+from zenml.integrations.kubernetes.serialization_utils import (
+    normalize_resource_to_dict,
+)
 from zenml.integrations.kubernetes.template_engine import (
     KubernetesTemplateEngine,
 )
@@ -668,15 +671,11 @@ class KubernetesDeployer(ContainerizedDeployer):
                     if not service:
                         continue
 
-                    service_type = None
-                    if hasattr(service, "spec") and hasattr(
-                        service.spec, "type"
-                    ):
-                        service_type = service.spec.type
-                    elif hasattr(service, "to_dict"):
-                        service_dict = service.to_dict()
-                        service_type = service_dict.get("spec", {}).get("type")
-
+                    service_type = (
+                        normalize_resource_to_dict(service)
+                        .get("spec", {})
+                        .get("type")
+                    )
                     if service_type != "LoadBalancer":
                         continue
 
@@ -1076,21 +1075,11 @@ class KubernetesDeployer(ContainerizedDeployer):
 
                 any_exists = True
 
-                if hasattr(k8s_deployment, "to_dict"):
-                    deployment_dict = k8s_deployment.to_dict()
-                    status_data = deployment_dict.get("status", {})
-                    spec_data = deployment_dict.get("spec", {})
-                    available = status_data.get("availableReplicas", 0)
-                    desired = spec_data.get("replicas", 0)
-                else:
-                    if k8s_deployment.status:
-                        available = (
-                            k8s_deployment.status.available_replicas or 0
-                        )
-                        desired = k8s_deployment.spec.replicas or 0
-                    else:
-                        available = 0
-                        desired = 0
+                deployment_dict = normalize_resource_to_dict(k8s_deployment)
+                status_data = deployment_dict.get("status", {})
+                spec_data = deployment_dict.get("spec", {})
+                available = status_data.get("availableReplicas", 0)
+                desired = spec_data.get("replicas", 0)
 
                 logger.debug(
                     f"Deployment '{deployment_item.name}': "
@@ -1262,11 +1251,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"Deployment '{deployment_item.name}' not found in cluster"
                 )
 
-            if hasattr(k8s_deployment_obj, "to_dict"):
-                k8s_deployment = k8s_deployment_obj.to_dict()
-            else:
-                k8s_deployment = k8s_deployment_obj
-
+            k8s_deployment = normalize_resource_to_dict(k8s_deployment_obj)
             label_selector: Dict[str, str] = {}
             try:
                 spec = k8s_deployment.get("spec", {})
@@ -1300,7 +1285,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"No pods found for Deployment '{deployment_item.name}'"
                 )
 
-            # Extract container name from pod template
             container_name = "main"
             try:
                 spec = k8s_deployment.get("spec", {})
