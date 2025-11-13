@@ -109,18 +109,6 @@ class PipelineSnapshotBase(BaseZenModel):
         title="Whether this is a snapshot of a dynamic pipeline.",
     )
 
-    @property
-    def should_prevent_build_reuse(self) -> bool:
-        """Whether the snapshot prevents a build reuse.
-
-        Returns:
-            Whether the snapshot prevents a build reuse.
-        """
-        return any(
-            step.config.docker_settings.prevent_build_reuse
-            for step in self.step_configurations.values()
-        )
-
 
 class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     """Request model for pipeline snapshots."""
