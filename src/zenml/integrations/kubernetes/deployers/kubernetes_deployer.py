@@ -164,7 +164,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     f"{e}. {message}"
                 )
 
-        # Refresh the client also if the connector has expired
         if self._k8s_client and not self.connector_has_expired():
             return self._k8s_client
 
@@ -463,7 +462,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         args = settings.args
         if not args:
             entrypoint_kwargs = {DEPLOYMENT_ID_OPTION: deployment.id}
-            # Add snapshot_id if available for code download
             if deployment.snapshot:
                 entrypoint_kwargs[SNAPSHOT_ID_OPTION] = deployment.snapshot.id
             args = cast(
@@ -474,10 +472,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             )
 
         context = {
-            # Core objects - users can access deployment.X and settings.X
             "deployment": deployment,
             "settings": settings,
-            # Computed/helper values
             "name": resource_name,
             "namespace": namespace,
             "labels": labels,
@@ -536,7 +532,6 @@ class KubernetesDeployer(ContainerizedDeployer):
         Raises:
             DeploymentProvisionError: If key is invalid or causes a collision.
         """
-        # Kubernetes env var names must match: [A-Za-z_][A-Za-z0-9_]*
         if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", key):
             raise DeploymentProvisionError(
                 f"Secret key '{key}' is not a valid Kubernetes environment variable name. "
@@ -660,10 +655,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                 MAX_LOAD_BALANCER_TIMEOUT,
             )
 
-            # Wait for each LoadBalancer Service to get an external IP
             for service_item in services:
                 try:
-                    # Check if this is a LoadBalancer service by fetching it
                     service = self.k8s_applier.get_resource(
                         name=service_item.name,
                         namespace=service_item.namespace,
@@ -673,7 +666,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                     if not service:
                         continue
 
-                    # Check service type
                     service_type = None
                     if hasattr(service, "spec") and hasattr(
                         service.spec, "type"
@@ -1182,13 +1174,11 @@ class KubernetesDeployer(ContainerizedDeployer):
             for item in stored_metadata["resource_inventory"]
         ]
 
-        # Use the helper method to get state from inventory
         state = self._get_deployment_state_from_inventory(
             inventory=inventory,
             settings=ctx.settings,
         )
 
-        # Add the resource inventory to metadata for this query path
         if state.metadata is None:
             state.metadata = {}
         state.metadata["resource_inventory"] = stored_metadata[
@@ -1378,7 +1368,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
                 return None
 
-            # All resources successfully deleted - this is success
             if result.failed_count == 0:
                 logger.info(
                     f"Successfully deprovisioned deployment '{deployment.name}' "
@@ -1386,8 +1375,6 @@ class KubernetesDeployer(ContainerizedDeployer):
                 )
                 return None
 
-            # Partial deletion - this is a FAILURE to prevent orphan resources
-            # Show what failed to be deleted
             failed_list = "\n".join(
                 f"  ❌ {r}" for r in result.failed_resources
             )
