@@ -53,6 +53,7 @@ from zenml.models import (
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
+    ScheduleRequest,
     StackResponse,
 )
 from zenml.pipelines.build_utils import compute_stack_checksum
@@ -63,6 +64,7 @@ from zenml.pipelines.run_utils import (
 )
 from zenml.stack.flavor import Flavor
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
+from zenml.utils.string_utils import format_name_template
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -556,6 +558,8 @@ def snapshot_request_from_source_snapshot(
             step_config_overrides=step_config,
         )
 
+    run_name_template = config.run_name or source_snapshot.run_name_template
+
     code_reference_request = None
     if source_snapshot.code_reference:
         code_reference_request = CodeReferenceRequest(
@@ -563,6 +567,32 @@ def snapshot_request_from_source_snapshot(
             subdirectory=source_snapshot.code_reference.subdirectory,
             code_repository=source_snapshot.code_reference.code_repository.id,
         )
+
+    schedule_id = None
+    if schedule := config.schedule:
+        orchestrator = source_snapshot.stack.components[
+            StackComponentType.ORCHESTRATOR
+        ][0]
+        schedule_request = ScheduleRequest(
+            project=source_snapshot.project_id,
+            pipeline_id=source_snapshot.pipeline.id,
+            orchestrator_id=orchestrator.id,
+            name=schedule.name
+            or format_name_template(
+                run_name_template,
+                substitutions=source_snapshot.pipeline_configuration.substitutions,
+            ),
+            active=True,
+            cron_expression=schedule.cron_expression,
+            start_time=schedule.start_time,
+            end_time=schedule.end_time,
+            interval_second=schedule.interval_second,
+            catchup=schedule.catchup,
+            run_once_start_time=schedule.run_once_start_time,
+        )
+        schedule_id = zen_store().create_schedule(schedule_request).id
+    elif source_snapshot.schedule:
+        schedule_id = source_snapshot.schedule.id
 
     zenml_version = zen_store().get_store_info().version
     assert source_snapshot.stack
@@ -586,7 +616,7 @@ def snapshot_request_from_source_snapshot(
 
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
-        run_name_template=config.run_name or source_snapshot.run_name_template,
+        run_name_template=run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},
@@ -597,7 +627,7 @@ def snapshot_request_from_source_snapshot(
         if source_snapshot.pipeline
         else None,
         build=source_snapshot.build.id,
-        schedule=None,
+        schedule=schedule_id,
         code_reference=code_reference_request,
         code_path=source_snapshot.code_path,
         template=template_id,

@@ -219,10 +219,7 @@ def validate_run_config_is_runnable_from_server(
     if run_configuration.build:
         raise ValueError("Can't set build when running pipeline via Rest API.")
 
-    if run_configuration.schedule:
-        raise ValueError(
-            "Can't set schedule when running pipeline via Rest API."
-        )
+    # TODO: only allow schedule if orchestrator is schedulable
 
     if run_configuration.settings and run_configuration.settings.get("docker"):
         raise ValueError(

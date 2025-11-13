@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Utilities for run templates."""
 
+import base64
+import json
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
@@ -34,6 +36,7 @@ from zenml.zen_stores.schemas import (
 if TYPE_CHECKING:
     from zenml.config.pipeline_configurations import PipelineConfiguration
     from zenml.config.step_configurations import Step
+    from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 
 logger = get_logger(__name__)
 
@@ -118,7 +121,7 @@ def generate_config_template(
 
     pipeline_config = pipeline_configuration.model_dump(
         include=set(PipelineRunConfiguration.model_fields),
-        exclude={"schedule", "build", "parameters"},
+        exclude={"build", "parameters"},
         exclude_none=True,
         exclude_defaults=True,
     )
@@ -154,6 +157,7 @@ def generate_config_schema(
     stack = snapshot.build.stack
     experiment_trackers = []
     step_operators = []
+    supports_schedule = False
 
     settings_fields: Dict[str, Any] = {
         "resources": (Optional[ResourceSettings], None)
@@ -184,6 +188,15 @@ def generate_config_schema(
             experiment_trackers.append(component.name)
         if component.type == StackComponentType.STEP_OPERATOR:
             step_operators.append(component.name)
+
+        if component.type == StackComponentType.ORCHESTRATOR:
+            config: "BaseOrchestratorConfig" = flavor.config_class(
+                **json.loads(
+                    base64.b64decode(component.configuration).decode()
+                )
+            )
+            if config.is_schedulable:
+                supports_schedule = True
 
     settings_model = create_model("Settings", **settings_fields)
 
@@ -276,7 +289,10 @@ def generate_config_schema(
     top_level_fields: Dict[str, Any] = {}
 
     for key, field_info in PipelineRunConfiguration.model_fields.items():
-        if key in ["schedule", "build", "steps", "settings", "parameters"]:
+        if key in ["build", "steps", "settings", "parameters"]:
+            continue
+
+        if key == "schedule" and not supports_schedule:
             continue
 
         if field_info.annotation == Optional[SourceWithValidator]:  # type: ignore[comparison-overlap]
