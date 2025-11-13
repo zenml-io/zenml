@@ -74,13 +74,32 @@ class ProvisioningError(RuntimeError):
 
 
 def _flatten_items(objs: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
-    """Yield single resources from possibly 'List' wrappers.
+    """Yield individual Kubernetes resources, unwrapping any `kind: List` objects.
+
+    Kubernetes allows manifests that wrap multiple resources in a single object
+    [like this](https://kubernetes.io/docs/reference/using-api/api-concepts/) :
+
+        kind: List
+        items:
+          - kind: Deployment
+            ...
+          - kind: Service
+            ...
+
+    This helper normalizes such inputs so that downstream code can work with a
+    flat stream of single-resource dicts:
+
+    - If an item has `kind: "List"` and an `items` list, each element of
+      `items` is yielded as its own resource dict.
+    - Otherwise, the item itself is yielded as-is.
 
     Args:
-        objs: Iterable of resource dicts (already normalized). Supports 'kind: List'.
+        objs: Iterable of already-normalized resource dicts. Each element can
+            be either a single resource or a `kind: List` wrapper containing
+            multiple resources in its `items` field.
 
     Yields:
-        Individual resource dicts.
+        Individual resource dicts, with all `kind: List` wrappers expanded.
     """
     for o in objs:
         if (

@@ -1196,72 +1196,51 @@ def apply_default_resource_requests(
 
 def convert_resource_settings_to_k8s_format(
     resource_settings: "ResourceSettings",
-) -> Tuple[Dict[str, str], int]:
+) -> Tuple[Dict[str, str], Dict[str, str], int]:
     """Convert ZenML ResourceSettings to Kubernetes resource format.
 
     Args:
         resource_settings: The resource settings from pipeline configuration.
 
     Returns:
-        Tuple of (requests, replicas) in Kubernetes format.
+        Tuple of (requests, limits, replicas) in Kubernetes format.
         - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - limits: Dict with same keys as requests (GPUs require limits=requests)
         - replicas: Number of replicas
 
     Raises:
         ValueError: If replica configuration is invalid.
     """
     requests: Dict[str, str] = {}
+    limits: Dict[str, str] = {}
 
     if resource_settings.cpu_count is not None:
         cpu_value = resource_settings.cpu_count
-        # Kubernetes accepts CPU as whole numbers (e.g., "2") or millicores (e.g., "500m")
-        if cpu_value < 1:
-            # Fractional CPUs: 0.5 → "500m"
-            cpu_str = f"{int(cpu_value * 1000)}m"
+        if cpu_value == int(cpu_value):
+            cpu_str = str(int(cpu_value))
         else:
-            if cpu_value == int(cpu_value):
-                cpu_str = str(int(cpu_value))  # 2.0 → "2"
-            else:
-                cpu_str = f"{int(cpu_value * 1000)}m"  # 1.5 → "1500m"
+            cpu_str = f"{int(cpu_value * 1000)}m"
 
         requests["cpu"] = cpu_str
 
-    if resource_settings.memory is not None:
-        memory_mib = resource_settings.get_memory(unit=ByteUnit.MIB)
-        if memory_mib is not None:
-            requests["memory"] = f"{int(memory_mib)}Mi"
+    if memory_mib := resource_settings.get_memory(unit=ByteUnit.MIB):
+        memory_str = f"{int(memory_mib)}Mi"
+        requests["memory"] = memory_str
 
-    # Determine replica count from min/max settings
-    # For standard K8s Deployments, we use min_replicas as the baseline
-    # (autoscaling requires a separate HPA resource)
     min_r = resource_settings.min_replicas
     max_r = resource_settings.max_replicas
 
-    # Validate and determine replica count
-    if min_r is not None and max_r is not None:
-        if min_r > max_r:
-            raise ValueError(
-                f"min_replicas ({min_r}) cannot be greater than max_replicas ({max_r})"
-            )
-        # Use min_replicas as baseline for HPA
-        replicas = min_r if min_r > 0 else 1  # At least 1 unless explicitly 0
-    elif min_r is not None:
-        # Only min_replicas specified
-        replicas = min_r if min_r > 0 else 1
-    elif max_r is not None:
-        # Only max_replicas specified - use it as baseline
-        replicas = max(1, max_r)  # At least 1
+    if min_r is not None and min_r > 0:
+        replicas = min_r
+    elif max_r is not None and max_r > 0:
+        replicas = max_r
     else:
-        # Neither specified - default to 1
         replicas = 1
 
-    if (
-        resource_settings.gpu_count is not None
-        and resource_settings.gpu_count > 0
-    ):
-        # GPU requests must be integers; Kubernetes auto-sets requests=limits for GPUs
+    if resource_settings.gpu_count:
         gpu_str = str(resource_settings.gpu_count)
         requests["nvidia.com/gpu"] = gpu_str
+        limits["nvidia.com/gpu"] = gpu_str
         logger.info(
             f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
             f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
@@ -1269,7 +1248,7 @@ def convert_resource_settings_to_k8s_format(
             f"https://github.com/NVIDIA/k8s-device-plugin"
         )
 
-    return requests, replicas
+    return requests, limits, replicas
 
 
 # ============================================================================
@@ -1294,7 +1273,6 @@ def build_service_url(
     Returns:
         Service URL or None if not yet available.
     """
-    # Handle ingress
     if ingress and ingress.spec:
         protocol = "https" if ingress.spec.tls else "http"
         if ingress.spec.rules:
@@ -1303,7 +1281,6 @@ def build_service_url(
                 path = rule.http.paths[0].path or "/"
                 return f"{protocol}://{rule.host}{path}"
 
-    # Handle service
     if not service.spec or not service.spec.type or not service.spec.ports:
         return None
 
@@ -1311,7 +1288,6 @@ def build_service_url(
     service_type = service.spec.type
     service_port = service.spec.ports[0].port
 
-    # LoadBalancer
     if service_type == "LoadBalancer":
         host = None
         if hasattr(service, "to_dict"):
@@ -1335,7 +1311,6 @@ def build_service_url(
             return f"http://{host}:{service_port}"
         return None
 
-    # NodePort
     if service_type == "NodePort":
         node_port = service.spec.ports[0].node_port
         if not node_port:
@@ -1343,14 +1318,12 @@ def build_service_url(
 
         try:
             nodes = core_api.list_node()
-            # Try external IP first
             for node in nodes.items:
                 if node.status and node.status.addresses:
                     for address in node.status.addresses:
                         if address.type == "ExternalIP":
                             return f"http://{address.address}:{node_port}"
 
-            # Fall back to internal IP with warning
             for node in nodes.items:
                 if node.status and node.status.addresses:
                     for address in node.status.addresses:
@@ -1365,7 +1338,6 @@ def build_service_url(
             logger.error(f"Failed to get node IPs: {e}")
         return None
 
-    # ClusterIP
     if service_type == "ClusterIP":
         logger.warning(
             f"Service '{service_name}' uses ClusterIP (cluster-internal only). "

@@ -32,7 +32,7 @@ class KubernetesIntegration(Integration):
     """Definition of Kubernetes integration for ZenML."""
 
     NAME = KUBERNETES
-    REQUIREMENTS = ["kubernetes>=21.7,<26"]
+    REQUIREMENTS = ["kubernetes>=21.7,<26", "Jinja2"]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = [
         "kfp", # it is used by many others
     ]

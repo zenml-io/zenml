@@ -401,6 +401,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         secret_env_vars: Dict[str, str],
         secret_name: str,
         resource_requests: Dict[str, str],
+        resource_limits: Dict[str, str],
         replicas: int,
     ) -> Dict[str, Any]:
         """Build template rendering context from deployment configuration.
@@ -416,6 +417,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_env_vars: Secret environment variables dict.
             secret_name: Kubernetes secret name.
             resource_requests: Resource requests dict.
+            resource_limits: Resource limits dict.
             replicas: Number of replicas.
 
         Returns:
@@ -424,6 +426,8 @@ class KubernetesDeployer(ContainerizedDeployer):
         resources = {}
         if resource_requests:
             resources["requests"] = resource_requests
+        if resource_limits:
+            resources["limits"] = resource_limits
 
         secret_env_list = []
         for key in secret_env_vars.keys():
@@ -796,7 +800,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         engine = KubernetesTemplateEngine()
 
         try:
-            resource_requests, replicas = (
+            resource_requests, resource_limits, replicas = (
                 kube_utils.convert_resource_settings_to_k8s_format(
                     ctx.snapshot.pipeline_configuration.resource_settings
                 )
@@ -825,6 +829,7 @@ class KubernetesDeployer(ContainerizedDeployer):
             secret_env_vars=validated_secrets,
             secret_name=ctx.secret_name,
             resource_requests=resource_requests,
+            resource_limits=resource_limits,
             replicas=replicas,
         )
 
@@ -997,10 +1002,8 @@ class KubernetesDeployer(ContainerizedDeployer):
                     "errors": e.errors,
                 },
             )
-            deployment = self._update_deployment(
-                    deployment, deployment_state
-                )
-            
+            deployment = self._update_deployment(deployment, deployment_state)
+
             raise DeploymentProvisionError(
                 f"Kubernetes provisioning failed for deployment "
                 f"'{deployment.name}'. Errors:\n"
