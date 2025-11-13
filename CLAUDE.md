@@ -103,7 +103,6 @@ def shutdown(h: Closable) -> None:
 - Keep all shared state inside FastAPI's dependency system or app factory; never introduce fresh global variables outside the initializer.
 - Use descriptive auxiliary-verb-prefixed names and lower_snake_case paths (for example `routers/manage_invitation.py`, `services/issue_token.py`) so reviewers immediately understand intent.
 - Apply the Receive an Object, Return an Object (RORO) convention on public interfaces to keep payloads self-documenting and testable.
-- Whenever these zenml-oss FastAPI directives inform your Claude response, prefix the message with `rule:zenml-oss` to signal the rule set you followed.
 
 ### FastAPI Project Structure
 - Each FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static assets, and schema/model definitions; keep imports explicit via named exports.

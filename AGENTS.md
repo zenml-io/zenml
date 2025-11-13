@@ -74,7 +74,6 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Keep shared state inside FastAPI dependency injection or the application factory; never introduce new global variables outside initialization.
 - Use descriptive auxiliary-verb-prefixed names and keep directories/files in lower_snake_case (for example `routers/user_routes.py`, `services/user_service.py`).
 - Apply the Receive an Object, Return an Object (RORO) pattern for all public interfaces so inputs/outputs remain self-describing.
-- Whenever these ZenML OSS FastAPI rules inform your response, prefix the answer with `rule:zenml-oss` so reviewers know which rule set you followed.
 
 ### FastAPI Project Structure
 - Every FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static resources, and types (Pydantic models or schemas).
