@@ -264,13 +264,23 @@ class KubernetesApplier:
                 )
                 results.append(created)
 
+                api_version = raw.get("apiVersion", "v1")
+                api_resource = self.dynamic.resources.get(
+                    api_version=api_version, kind=kind
+                )
                 metadata = raw.get("metadata", {})
+
+                item_namespace = None
+                if api_resource.namespaced:
+                    item_namespace = (
+                        metadata.get("namespace") or default_namespace
+                    )
+
                 inventory.append(
                     ResourceInventoryItem(
-                        api_version=raw.get("apiVersion", "v1"),
+                        api_version=api_version,
                         kind=kind,
-                        namespace=metadata.get("namespace")
-                        or default_namespace,
+                        namespace=item_namespace,
                         name=name,
                     )
                 )

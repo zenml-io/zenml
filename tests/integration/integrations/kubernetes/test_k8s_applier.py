@@ -9,22 +9,30 @@
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
+#  OR implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+import time
 import types
 
 import pytest
 from kubernetes import client as k8s_client
 from kubernetes.client.exceptions import ApiException
 
-# Import the module so we can monkeypatch its DynamicClient reference
+# Import module so we can monkeypatch the DynamicClient symbol it uses
 from zenml.integrations.kubernetes import k8s_applier as k8s_applier_module
 from zenml.integrations.kubernetes.k8s_applier import (
+    DeletionResult,
     KubernetesApplier,
+    ProvisioningError,
     ResourceInventoryItem,
     _flatten_items,
     _to_dict,
 )
+
+# ---------------------------------------------------------------------------
+# Test doubles
+# ---------------------------------------------------------------------------
 
 
 class DummyApiClient(k8s_client.ApiClient):
@@ -37,44 +45,61 @@ class DummyApiClient(k8s_client.ApiClient):
 
 
 class DummyModel:
-    def __init__(self, api_version="v1", kind="ConfigMap", name="cm"):
+    """Simple model type that mimics Kubernetes client models."""
+
+    def __init__(
+        self, api_version="v1", kind="ConfigMap", name="cm", extra=None
+    ):
         self.api_version = api_version
         self.kind = kind
         self.metadata = types.SimpleNamespace(name=name)
+        self.extra = extra
 
     def to_dict(self):
-        return {
+        data = {
             "apiVersion": self.api_version,
             "kind": self.kind,
             "metadata": {"name": self.metadata.name},
         }
+        if self.extra is not None:
+            data["extra"] = self.extra
+        return data
+
+
+class DummyBadModel:
+    """Model whose to_dict() returns a non-dict, to exercise _to_dict error path."""
+
+    def to_dict(self):
+        return ["not", "a", "dict"]
 
 
 class DummyResource:
-    """Fake dynamic resource wrapper implementing the subset used by KubernetesApplier."""
+    """Fake dynamic resource wrapper implementing subset used by KubernetesApplier."""
 
     def __init__(self, kind: str, api_version: str, namespaced: bool = True):
         self.kind = kind
         self.api_version = api_version
         self.namespaced = namespaced
-        self.applied = []
-        self.deleted = []
-        self.list_items = []
+        self.applied = []  # patch() calls
+        self.deleted = []  # delete() calls
+        self.list_items = []  # returned by get(..., label_selector=...) or list calls
+        self.raise_on_patch = {}  # name -> Exception to raise on patch
+        self.raise_on_delete = {}  # name -> Exception to raise on delete
 
     # Server-side apply / patch
     def patch(self, **kwargs):
-        self.applied.append(kwargs)
         name = kwargs.get("name")
+        if name in self.raise_on_patch:
+            raise self.raise_on_patch[name]
+        self.applied.append(kwargs)
+
         namespace = kwargs.get("namespace")
 
         def _to_dict():
             return {
                 "apiVersion": self.api_version,
                 "kind": self.kind,
-                "metadata": {
-                    "name": name,
-                    "namespace": namespace,
-                },
+                "metadata": {"name": name, "namespace": namespace},
             }
 
         return types.SimpleNamespace(
@@ -84,9 +109,7 @@ class DummyResource:
             to_dict=_to_dict,
         )
 
-    # get() is used for:
-    # - get_resource (by name)
-    # - list_resources (when called as get(..., namespace=..., label_selector=...))
+    # get() is used both for single get and list-style get
     def get(self, **kwargs):
         # list-style invocation
         if "label_selector" in kwargs or (
@@ -102,19 +125,17 @@ class DummyResource:
 
         raise ApiException(status=404, reason="Not Found")
 
-    # delete() is used by delete_from_inventory
     def delete(self, **kwargs):
         name = kwargs["name"]
+        if name in self.raise_on_delete:
+            raise self.raise_on_delete[name]
         self.deleted.append(kwargs)
-        # simulate 404 for a specific sentinel if needed
-        if name == "missing":
-            raise ApiException(status=404, reason="Not Found")
 
 
 class DummyDynamic:
     """In-memory DynamicClient-like registry.
 
-    KubernetesApplier only relies on `dynamic.resources.get(api_version=..., kind=...)`.
+    KubernetesApplier only relies on dynamic.resources.get(api_version=..., kind=...).
     """
 
     def __init__(self):
@@ -137,7 +158,6 @@ class DummyDynamic:
 
     @property
     def resources(self):
-        # Return an object that supports .get(api_version=..., kind=...)
         return DummyDynamic._ResourcesView(self._registry)
 
 
@@ -155,35 +175,36 @@ def applier(api_client, monkeypatch):
     ns_res = dyn.register("v1", "Namespace", namespaced=False)
     cm_res = dyn.register("v1", "ConfigMap", namespaced=True)
     dep_res = dyn.register("apps/v1", "Deployment", namespaced=True)
+    svc_res = dyn.register("v1", "Service", namespaced=True)
+    pod_res = dyn.register("v1", "Pod", namespaced=True)
 
-    # Fake DynamicClient that KubernetesApplier.__init__ will use.
-    # IMPORTANT: This prevents any HTTP / discovery against a real cluster.
     class FakeDynamicClient:
         def __init__(self, _api_client):
             self._dyn = dyn
             self.resources = dyn.resources
 
-    # Patch the symbol used in k8s_applier.py
+    # Patch symbol used inside k8s_applier.py
     monkeypatch.setattr(k8s_applier_module, "DynamicClient", FakeDynamicClient)
 
-    # Now this is safe: it will use FakeDynamicClient
     k = KubernetesApplier(api_client=api_client)
 
-    # Expose handles for assertions in tests
+    # Expose handles for assertions
     k._test_dyn = dyn
     k._test_ns = ns_res
     k._test_cm = cm_res
     k._test_dep = dep_res
+    k._test_svc = svc_res
+    k._test_pod = pod_res
 
     return k
 
 
 # ---------------------------------------------------------------------------
-# Helper function tests
+# Helper function tests: _flatten_items / _to_dict
 # ---------------------------------------------------------------------------
 
 
-def test_flatten_items_basic():
+def test_flatten_items_expands_kind_list_and_leaves_others():
     objs = [
         {"kind": "ConfigMap", "metadata": {"name": "a"}},
         {
@@ -193,25 +214,66 @@ def test_flatten_items_basic():
                 {"kind": "Secret", "metadata": {"name": "c"}},
             ],
         },
+        # Not a list because "items" is not a list → should be yielded as-is
+        {"kind": "List", "items": "not-a-list", "metadata": {"name": "weird"}},
     ]
 
     out = list(_flatten_items(objs))
-    assert len(out) == 3
-    assert {o["metadata"]["name"] for o in out} == {"a", "b", "c"}
+    assert len(out) == 4
+    assert {o["metadata"]["name"] for o in out} == {"a", "b", "c", "weird"}
 
 
-def test_to_dict_with_dict(api_client):
+def test_to_dict_with_dict_returns_same_instance(api_client):
     obj = {"apiVersion": "v1", "kind": "ConfigMap"}
     out = _to_dict(obj, api_client)
     assert out is obj
 
 
-def test_to_dict_with_model_normalizes_api_version(api_client):
+def test_to_dict_with_model_uses_sanitize_and_normalizes_api_version(
+    api_client,
+):
     model = DummyModel(api_version="v1", kind="ConfigMap", name="cm1")
     out = _to_dict(model, api_client)
     assert out["apiVersion"] == "v1"
     assert out["kind"] == "ConfigMap"
     assert out["metadata"]["name"] == "cm1"
+
+
+def test_to_dict_with_model_wrapping_api_version_key(api_client):
+    """If sanitize_for_serialization returns 'api_version', we normalize to 'apiVersion'."""
+
+    class ModelWithApiVersionAttr:
+        def __init__(self):
+            self.api_version = "batch/v1"
+
+        def to_dict(self):
+            # Won't actually be used because DummyApiClient uses its own to_dict
+            return {"api_version": "batch/v1", "metadata": {"name": "job"}}
+
+    # We want DummyApiClient.sanitize_for_serialization to return a dict with api_version
+    class ApiClientWithApiVersion(DummyApiClient):
+        def sanitize_for_serialization(self, obj):
+            return {
+                "api_version": "batch/v1",
+                "kind": "Job",
+                "metadata": {"name": "job"},
+            }
+
+    api_client2 = ApiClientWithApiVersion()
+    model = ModelWithApiVersionAttr()
+    out = _to_dict(model, api_client2)
+    assert out["apiVersion"] == "batch/v1"
+    assert "api_version" not in out
+
+
+def test_to_dict_with_model_returning_non_dict_raises(api_client):
+    with pytest.raises(ValueError, match="Expected dict after serialization"):
+        _to_dict(DummyBadModel(), api_client)
+
+
+def test_to_dict_with_unsupported_type_raises(api_client):
+    with pytest.raises(ValueError, match="Unsupported resource type"):
+        _to_dict(42, api_client)
 
 
 # ---------------------------------------------------------------------------
@@ -249,14 +311,18 @@ def test_apply_resource_namespaced_and_cluster_scoped(applier):
     applier._apply_resource(
         cm_manifest,
         field_manager="fm",
-        force=False,
+        force=True,
         namespace="default",
         timeout=10,
     )
 
     cm_calls = applier._test_cm.applied
     assert len(cm_calls) == 1
-    assert cm_calls[0]["namespace"] == "default"
+    call = cm_calls[0]
+    assert call["namespace"] == "default"
+    assert call["field_manager"] == "fm"
+    assert call["force"] is True
+    assert call["_request_timeout"] == 10
 
 
 def test_provision_orders_namespaces_and_builds_inventory(applier):
@@ -282,9 +348,10 @@ def test_provision_orders_namespaces_and_builds_inventory(applier):
     assert len(created) == 2
     assert len(inventory) == 2
 
-    # Namespace should be first
+    # Namespace should be first in inventory
     assert inventory[0].kind == "Namespace"
     assert inventory[0].name == "ns1"
+    assert inventory[0].namespace is None  # cluster-scoped
 
     # Then ConfigMap with default namespace filled in
     assert inventory[1].kind == "ConfigMap"
@@ -292,18 +359,99 @@ def test_provision_orders_namespaces_and_builds_inventory(applier):
     assert inventory[1].namespace == "def"
 
 
+def test_provision_stop_on_error_true_raises_with_partial_inventory(applier):
+    # cm1 applies OK, cm2 fails
+    applier._test_cm.raise_on_patch["cm2"] = ApiException(
+        status=500, reason="boom"
+    )
+
+    manifests = [
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "cm1"},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "cm2"},
+        },
+    ]
+
+    with pytest.raises(ProvisioningError) as exc:
+        applier.provision(
+            manifests,
+            default_namespace="def",
+            field_manager="fm",
+            stop_on_error=True,
+        )
+
+    err = exc.value
+    # cm1 should be in inventory, cm2 not
+    assert len(err.inventory) == 1
+    assert err.inventory[0].name == "cm1"
+    # we recorded at least one error message
+    assert err.errors
+    assert "cm2" in err.errors[0]
+
+
+def test_provision_stop_on_error_false_collects_all_errors(applier):
+    # cm1 OK, cm2 + cm3 fail, but we continue
+    applier._test_cm.raise_on_patch["cm2"] = ApiException(
+        status=400, reason="bad"
+    )
+    applier._test_cm.raise_on_patch["cm3"] = RuntimeError("boom")
+
+    manifests = [
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "cm1"},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "cm2"},
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "cm3"},
+        },
+    ]
+
+    with pytest.raises(ProvisioningError) as exc:
+        applier.provision(
+            manifests,
+            default_namespace="def",
+            field_manager="fm",
+            stop_on_error=False,
+        )
+
+    err = exc.value
+    # Only cm1 should have been added to inventory
+    assert [item.name for item in err.inventory] == ["cm1"]
+    # 2 errors collected
+    assert len(err.errors) == 2
+    assert "cm2" in err.errors[0]
+    assert "cm3" in err.errors[1]
+
+
 # ---------------------------------------------------------------------------
 # delete_from_inventory
 # ---------------------------------------------------------------------------
 
 
-def test_delete_from_inventory_respects_reverse_order_and_namespaces(applier):
-    # Register deployment resource used for deletion
-    dep_res = applier._test_dyn.register(
-        "apps/v1", "Deployment", namespaced=True
-    )
+def test_delete_from_inventory_deletes_in_reverse_order_and_skips_namespaces(
+    applier,
+):
+    dep_res = applier._test_dep
+    cm_res = applier._test_cm
 
     inv = [
+        ResourceInventoryItem(
+            api_version="v1", kind="Namespace", namespace=None, name="ns1"
+        ),
         ResourceInventoryItem(
             api_version="v1", kind="ConfigMap", namespace="ns", name="cm1"
         ),
@@ -315,16 +463,49 @@ def test_delete_from_inventory_respects_reverse_order_and_namespaces(applier):
         ),
     ]
 
-    deleted = applier.delete_from_inventory(
-        inventory=inv,
-        propagation_policy="Foreground",
-    )
+    result: DeletionResult = applier.delete_from_inventory(inventory=inv)
 
-    assert deleted == 2
+    # stats
+    assert result.deleted_count == 2
+    assert result.skipped_count == 1
+    assert result.failed_count == 0
+
+    # Namespace is skipped
+    assert any("Namespace/ns1" in r for r in result.skipped_resources)
 
     # Deletion should be in reverse order: dep1 then cm1
     assert dep_res.deleted[0]["name"] == "dep1"
-    assert applier._test_cm.deleted[0]["name"] == "cm1"
+    assert cm_res.deleted[0]["name"] == "cm1"
+
+
+def test_delete_from_inventory_404_is_skipped_and_other_errors_are_failed(
+    applier,
+):
+    res = applier._test_dyn.register("batch/v1", "Job", namespaced=True)
+    # "missing" returns a 404, "bad" raises a 500
+    res.raise_on_delete["missing"] = ApiException(
+        status=404, reason="Not Found"
+    )
+    res.raise_on_delete["bad"] = ApiException(status=500, reason="Internal")
+
+    inv = [
+        ResourceInventoryItem(
+            api_version="batch/v1", kind="Job", namespace="ns", name="missing"
+        ),
+        ResourceInventoryItem(
+            api_version="batch/v1", kind="Job", namespace="ns", name="bad"
+        ),
+    ]
+
+    result = applier.delete_from_inventory(inventory=inv)
+
+    assert result.deleted_count == 0
+    assert result.skipped_count == 1
+    assert result.failed_count == 1
+
+    # Check error messages contain resource names
+    assert any("missing" in r for r in result.skipped_resources)
+    assert any("bad" in r for r in result.failed_resources)
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +514,7 @@ def test_delete_from_inventory_respects_reverse_order_and_namespaces(applier):
 
 
 def test_get_resource_found_and_not_found(applier):
-    pod_res = applier._test_dyn.register("v1", "Pod", namespaced=True)
+    pod_res = applier._test_pod
 
     pod = types.SimpleNamespace(
         metadata=types.SimpleNamespace(name="mypod"),
@@ -357,6 +538,20 @@ def test_get_resource_found_and_not_found(applier):
         api_version="v1",
     )
     assert not_found is None
+
+
+def test_get_resource_propogates_non_404_api_errors(applier):
+    res = applier._test_dyn.register("v1", "Service", namespaced=True)
+
+    def bad_get(**kwargs):
+        raise ApiException(status=500, reason="boom")
+
+    res.get = bad_get  # type: ignore[assignment]
+
+    with pytest.raises(ApiException) as exc:
+        applier.get_resource("svc", "ns", "Service", "v1")
+
+    assert exc.value.status == 500
 
 
 def test_list_resources_returns_items(applier):
@@ -423,3 +618,116 @@ def test_wait_for_deployment_ready_happy_path(applier, monkeypatch):
         check_interval=0,
     )
     assert obj is ready
+
+
+def test_wait_for_deployment_ready_times_out(applier, monkeypatch):
+    # Always returns an object that is never "Available"
+    never_ready = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {
+                "conditions": [
+                    {"type": "Available", "status": "False"},
+                ]
+            }
+        }
+    )
+
+    monkeypatch.setattr(applier, "get_resource", lambda *a, **k: never_ready)
+
+    start = time.time()
+    with pytest.raises(RuntimeError, match="Deployment 'dep' not ready"):
+        applier.wait_for_deployment_ready(
+            name="dep",
+            namespace="ns",
+            timeout=0,  # immediate timeout
+            check_interval=0,
+        )
+    assert time.time() - start < 1.0  # sanity check: didn't spin forever
+
+
+def test_wait_for_service_loadbalancer_ip_happy_path(applier, monkeypatch):
+    svc_obj = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {
+                "loadBalancer": {
+                    "ingress": [{"ip": "1.2.3.4"}],
+                }
+            }
+        }
+    )
+
+    monkeypatch.setattr(
+        applier,
+        "wait_for_resource_condition",
+        lambda *a, **k: svc_obj,
+    )
+
+    host = applier.wait_for_service_loadbalancer_ip(
+        name="svc",
+        namespace="ns",
+        timeout=5,
+        check_interval=0,
+    )
+    assert host == "1.2.3.4"
+
+
+def test_wait_for_service_loadbalancer_ip_but_no_host_raises(
+    applier, monkeypatch
+):
+    svc_obj = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {
+                "loadBalancer": {
+                    "ingress": [],
+                }
+            }
+        }
+    )
+
+    monkeypatch.setattr(
+        applier,
+        "wait_for_resource_condition",
+        lambda *a, **k: svc_obj,
+    )
+
+    with pytest.raises(RuntimeError, match="no external IP/hostname"):
+        applier.wait_for_service_loadbalancer_ip(
+            name="svc",
+            namespace="ns",
+            timeout=1,
+            check_interval=0,
+        )
+
+
+def test_svc_lb_host_handles_ip_hostname_and_absence(applier):
+    # via to_dict()
+    svc_ip = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {"loadBalancer": {"ingress": [{"ip": "1.2.3.4"}]}},
+        }
+    )
+    assert applier._svc_lb_host(svc_ip) == "1.2.3.4"
+
+    # via hostname
+    svc_hostname = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {
+                "loadBalancer": {"ingress": [{"hostname": "lb.example.com"}]}
+            },
+        }
+    )
+    assert applier._svc_lb_host(svc_hostname) == "lb.example.com"
+
+    # no ingress
+    svc_none = types.SimpleNamespace(
+        to_dict=lambda: {
+            "status": {"loadBalancer": {"ingress": []}},
+        }
+    )
+    assert applier._svc_lb_host(svc_none) is None
+
+    # direct dict without to_dict
+    svc_dict = {
+        "status": {"loadBalancer": {"ingress": [{"ip": "5.6.7.8"}]}},
+    }
+    assert applier._svc_lb_host(svc_dict) == "5.6.7.8"
