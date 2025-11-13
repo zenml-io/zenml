@@ -15,6 +15,7 @@
 
 import mlflow
 from mlflow.entities import Run
+from packaging import version
 
 from zenml.client import Client
 from zenml.logger import get_logger
@@ -22,6 +23,35 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 ZENML_TAG_KEY = "zenml"
+
+
+def is_mlflow_3x() -> bool:
+    """Check if MLflow version is 3.x or higher.
+
+    Returns:
+        True if MLflow version is 3.x or higher, False otherwise.
+    """
+    return version.parse(mlflow.version.VERSION) >= version.parse("3.0.0")
+
+
+def construct_runs_uri(run_id: str, source_path: str) -> str:
+    """Construct a runs:/ URI from a run ID and source path.
+
+    Extracts the artifact path from the source path and constructs a runs:/ URI
+    that MLflow can use to resolve the model location. This is particularly
+    useful in MLflow 3.x where models are stored separately.
+
+    Args:
+        run_id: The MLflow run ID.
+        source_path: The source path containing "/artifacts/" segment.
+
+    Returns:
+        The constructed URI or the original source path if it cannot be parsed.
+    """
+    if source_path and "/artifacts/" in source_path:
+        artifact_name = source_path.split("/artifacts/")[-1]
+        return f"runs:/{run_id}/{artifact_name}"
+    return source_path
 
 
 def get_missing_mlflow_experiment_tracker_error() -> ValueError:

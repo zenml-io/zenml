@@ -26,7 +26,6 @@ from mlflow.entities.model_registry import (
 from mlflow.exceptions import MlflowException
 from mlflow.models import get_model_info
 from mlflow.pyfunc import load_model
-from packaging import version
 
 from zenml.client import Client
 from zenml.constants import MLFLOW_MODEL_FORMAT
@@ -36,6 +35,10 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
 )
 from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
     MLFlowModelRegistryConfig,
+)
+from zenml.integrations.mlflow.mlflow_utils import (
+    construct_runs_uri,
+    is_mlflow_3x,
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -107,7 +110,7 @@ class MLFlowModelRegistry(BaseModelRegistry):
         Returns:
             True if MLflow version is 3.x or higher, False otherwise.
         """
-        return version.parse(mlflow.version.VERSION) >= version.parse("3.0.0")
+        return is_mlflow_3x()
 
     def _stage_to_alias(self, stage: ModelVersionStage) -> Optional[str]:
         """Convert a ModelVersionStage to an MLflow alias.
@@ -795,13 +798,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
         if self._is_mlflow_3x() and mlflow_model_version.run_id:
             source_path = mlflow_model_version.source
-            if source_path and "/artifacts/" in source_path:
-                artifact_name = source_path.split("/artifacts/")[-1]
-                model_uri = (
-                    f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
-                )
-            else:
-                model_uri = source_path or ""
+            model_uri = construct_runs_uri(
+                mlflow_model_version.run_id, source_path or ""
+            )
         else:
             model_uri = mlflow_model_version.source or ""
 
@@ -850,17 +849,10 @@ class MLFlowModelRegistry(BaseModelRegistry):
             # In MLflow 3.x, models are stored separately and source URI is incorrect
             # Use runs:/ URI which MLflow resolves to the actual model location
             if self._is_mlflow_3x() and mlflow_model_version.run_id:
-                # Construct runs:/ URI from run_id
-                # We need to extract the artifact path from the source URI
                 source_path = mlflow_model_version.source
-                if source_path and "/artifacts/" in source_path:
-                    artifact_name = source_path.split("/artifacts/")[-1]
-                    model_uri = (
-                        f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
-                    )
-                else:
-                    # Fallback to source if we can't parse it
-                    model_uri = source_path or ""
+                model_uri = construct_runs_uri(
+                    mlflow_model_version.run_id, source_path or ""
+                )
             else:
                 # In MLflow 2.x, use the source path directly
                 source = mlflow_model_version.source
