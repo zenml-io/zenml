@@ -9,7 +9,7 @@ description: Write dynamic pipelines
 {% endhint %}
 
 {% hint style="info" %}
-**Version Requirement**: Dynamic pipelines are available starting from ZenML version 0.91.1.
+**Important**: Before using dynamic pipelines, please review the [Limitations and Known Issues](#limitations-and-known-issues) section below. This section contains critical information about requirements and known bugs that may affect your pipeline execution, especially when running remotely.
 {% endhint %}
 
 ## Why Dynamic Pipelines?
@@ -183,6 +183,23 @@ Dynamic pipelines are currently only supported by:
 - `kubernetes` orchestrator
 
 Other orchestrators will raise an error if you try to run a dynamic pipeline with them.
+
+### Remote Execution Requirement
+
+When running dynamic pipelines remotely (e.g., with the `kubernetes` orchestrator), you **must** include `depends_on` for at least one step in your pipeline definition. This is currently required due to a bug in remote execution.
+
+{% hint style="warning" %}
+**Required for Remote Execution**: Without `depends_on`, remote execution will fail. This requirement does not apply when running locally with the `local` orchestrator.
+{% endhint %}
+
+For example:
+
+```python
+@pipeline(dynamic=True, depends_on=[some_step])
+def dynamic_pipeline():
+    some_step()
+    # ... rest of your pipeline
+```
 
 ### Artifact Loading
 
