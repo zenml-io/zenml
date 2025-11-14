@@ -134,6 +134,12 @@ def shutdown(h: Closable) -> None:
 - For full coverage, use CI (see CI section below)
 - Some tests use: `bash scripts/test-coverage-xml.sh` (but this won't run all tests)
 
+#### CLI Testing Best Practices
+- When writing new CLI tests, use the `cli_runner()` helper from `tests/integration/functional/cli/utils.py` instead of directly instantiating `CliRunner()`
+- The helper handles Click version compatibility (Click 8.2+ removed the `mix_stderr` parameter)
+- Always check `result.exit_code` after invoking CLI commands to catch failures early
+- Existing tests with `CliRunner()` (no arguments) are fine - only new tests need the helper
+
 ## Dependencies & Runtime Constraints
 - Align contributions with the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm any new dependency in `pyproject.toml` before adoption.
 - The OSS runtime forbids async I/O in Claude-authored code even though FastAPI supports it—implement synchronous `def` handlers and delegate background/long-running work to workers or dependency-injected services; this supersedes generic async advice found elsewhere.

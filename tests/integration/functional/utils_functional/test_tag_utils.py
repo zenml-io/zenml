@@ -17,8 +17,8 @@ import os
 from typing import Annotated, Tuple
 
 import pytest
-from tests.integration.functional.zen_stores.utils import PipelineRunContext
 
+from tests.integration.functional.zen_stores.utils import PipelineRunContext
 from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
