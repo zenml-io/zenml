@@ -28,7 +28,7 @@ from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus, MetadataResourceTypes
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -61,6 +61,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotResponse,
+    RunMetadataResource,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
@@ -521,6 +522,16 @@ def main() -> None:
                 batch_api=batch_api,
                 namespace=namespace,
                 job_manifest=job_manifest,
+            )
+
+            Client().create_run_metadata(
+                metadata={"step_jobs": {step_name: job_name}},
+                resources=[
+                    RunMetadataResource(
+                        id=pipeline_run.id,
+                        type=MetadataResourceTypes.PIPELINE_RUN,
+                    )
+                ],
             )
 
             node.metadata["job_name"] = job_name
