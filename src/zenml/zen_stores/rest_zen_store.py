@@ -386,6 +386,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if os.path.isfile(verify_ssl):
             with open(verify_ssl, "r") as f:
                 cert_content = f.read()
+        else:
+            cert_content = verify_ssl
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")

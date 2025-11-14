@@ -41,6 +41,7 @@
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
   * [Source Code and Imports](how-to/steps-pipelines/sources.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
+  * [Dynamic Pipelines (Experimental)](how-to/steps-pipelines/dynamic_pipelines.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)
   * [Visualizations](how-to/artifacts/visualizations.md)

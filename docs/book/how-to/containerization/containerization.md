@@ -314,8 +314,8 @@ you already want this automatic detection in current versions of ZenML, set `dis
         "uv",
         "export",
         "--extra=train",
-        "--format=requirements-txt"
-        "--directory={directory}
+        "--format=requirements-txt",
+        "--directory={directory}"
     ])
 
 

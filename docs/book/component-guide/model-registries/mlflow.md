@@ -43,7 +43,7 @@ The MLFlow model registry will automatically use the same configuration as the M
 {% endhint %}
 
 {% hint style="warning" %}
-Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using MLflow version 2.2.1 or higher.
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using MLflow version 2.2.1 or higher. ZenML supports both MLflow 2.x and 3.x versions.
 {% endhint %}
 
 ## How do you use it?
@@ -178,6 +178,19 @@ $ zenml model-registry models get-version tensorflow-mnist-model -v 1
 ```
 
 Finally, to delete a registered model or a specific model version, you can use the `zenml model-registry models delete REGISTERED_MODEL_NAME` and `zenml model-registry models delete-version REGISTERED_MODEL_NAME -v VERSION` commands respectively.
+
+### MLflow 3.x and Model Stages
+
+{% hint style="info" %}
+**MLflow 3.x Users:** MLflow 3.x introduced [model aliases](https://mlflow.org/docs/latest/model-registry.html#using-registered-model-aliases) as a more flexible replacement for the traditional model stages (None, Staging, Production, Archived). When using ZenML with MLflow 3.x:
+
+* ZenML automatically maps stages to aliases: `Staging` → `staging`, `Production` → `champion`, `Archived` → `archived`
+* The stage transition API still works for backward compatibility, but uses aliases under the hood
+* Model aliases are stored in the model version metadata and can be viewed in the MLflow UI
+* You can use multiple aliases per model version for more flexible deployment workflows
+
+For more information, see the [MLflow Model Registry documentation](https://mlflow.org/docs/latest/model-registry.html).
+{% endhint %}
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) to see more about the interface and implementation.
 

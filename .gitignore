@@ -208,6 +208,9 @@ zenml_tutorial/
 # AI code tools
 **/.claude/settings.local.json
 .claude/
+!.claude/agents/**
+!.claude/commands/**
+!.claude/settings.json
 .repoprompt/
 
 .local/

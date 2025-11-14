@@ -168,25 +168,7 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=release-cloudbuild-preparation.yaml \
-            --substitutions=_ZENML_BRANCH=${{ github.ref }},_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
-      # Sign in to AWS
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
-          aws-region: eu-central-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        run: |
-          aws ecr get-login-password --region eu-central-1 | docker login 715803424590.dkr.ecr.eu-central-1.amazonaws.com --username AWS --password-stdin
-      # Publish the AWS image
-      - name: Pull quickstart image from Dockerhub
-        run: |
-          docker pull zenmldocker/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
-      - name: Push quickstart image to ECR
-        run: |
-          docker tag zenmldocker/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }} 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
-          docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
+            --substitutions=_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
   setup-prep-release-tenant:
     needs: [fetch-versions, build-test-images]
     env:
@@ -230,15 +212,23 @@ jobs:
           - cloud: azure
           - cloud: gcp
     steps:
-      # Check out the code
+      - name: Maximize space for Docker
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker/
+      - name: Reload Docker
+        run: sudo systemctl restart docker
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-      # Setting up Python
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      # ZenML Integrations
       - name: Install ZenML
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"

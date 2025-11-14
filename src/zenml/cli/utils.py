@@ -2494,10 +2494,10 @@ def pretty_print_deployment(
         no_truncate: Whether to truncate the metadata.
     """
     # Header section
-    status = format_deployment_status(deployment.status)
+    status_label = (deployment.status or "UNKNOWN").upper()
     status_emoji = get_deployment_status_emoji(deployment.status)
     declare(
-        f"\n🚀 Deployment: [bold cyan]{deployment.name}[/bold cyan] is: {status} {status_emoji}"
+        f"\n[bold]Deployment:[/bold] [bold cyan]{deployment.name}[/bold cyan] status: {status_label} {status_emoji}"
     )
     if deployment.snapshot is None:
         pipeline_name = "N/A"
@@ -2515,7 +2515,7 @@ def pretty_print_deployment(
 
     # Connection section
     if deployment.url:
-        declare("\n📡 [bold]Connection Information:[/bold]")
+        declare("\n[bold]Connection information:[/bold]")
 
         declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
         declare(
@@ -2526,15 +2526,14 @@ def pretty_print_deployment(
         auth_key = deployment.auth_key
         if auth_key:
             if show_secret:
-                declare(f"[bold]Auth Key:[/bold] [yellow]{auth_key}[/yellow]")
+                declare(f"[bold]Auth key:[/bold] [yellow]{auth_key}[/yellow]")
             else:
                 masked_key = (
                     f"{auth_key[:8]}***" if len(auth_key) > 8 else "***"
                 )
                 declare(
-                    f"[bold]Auth Key:[/bold] [yellow]{masked_key}[/yellow] "
-                    f"[dim](run [green]`zenml deployment describe {deployment.name} "
-                    "--show-secret`[/green] to reveal)[/dim]"
+                    f"[bold]Auth key:[/bold] [yellow]{masked_key}[/yellow] "
+                    f"[dim](run `zenml deployment describe {deployment.name} --show-secret` to reveal)[/dim]"
                 )
 
         example = get_deployment_invocation_example(deployment)
@@ -2553,11 +2552,11 @@ def pretty_print_deployment(
         )
         cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
 
-        declare("[bold]CLI Command Example:[/bold]")
-        console.print(f"[green]{cli_command}[/green]")
+        declare("[bold]CLI command example:[/bold]")
+        console.print(cli_command)
 
         # cURL example
-        declare("\n[bold]cURL Example:[/bold]")
+        declare("\n[bold]cURL example:[/bold]")
         curl_headers = []
         if auth_key:
             if show_secret:
@@ -2578,21 +2577,23 @@ def pretty_print_deployment(
     "parameters": {curl_params}
   }}'"""
 
-        console.print(f"[green]{curl_command}[/green]")
+        console.print(curl_command)
 
+    # JSON Schemas
     if show_schema:
         input_schema = get_deployment_input_schema(deployment)
         output_schema = get_deployment_output_schema(deployment)
-        declare("\n📋 [bold]Deployment JSON Schemas:[/bold]")
-        declare("\n[bold]Input Schema:[/bold]")
+        declare("\n[bold]Deployment JSON schemas:[/bold]")
+        declare("\n[bold]Input schema:[/bold]")
         schema_json = json.dumps(input_schema, indent=2)
-        console.print(f"[green]{schema_json}[/green]")
-        declare("\n[bold]Output Schema:[/bold]")
+        console.print(schema_json)
+        declare("\n[bold]Output schema:[/bold]")
         schema_json = json.dumps(output_schema, indent=2)
-        console.print(f"[green]{schema_json}[/green]")
+        console.print(schema_json)
 
+    # Metadata section
     if show_metadata:
-        declare("\n📋 [bold]Deployment Metadata[/bold]")
+        declare("\n[bold]Deployment metadata:[/bold]")
 
         # Get the metadata - it could be from deployment_metadata property or metadata
         metadata = deployment.deployment_metadata
@@ -2603,7 +2604,7 @@ def pretty_print_deployment(
                 if isinstance(value, dict):
                     if not value:
                         return "[dim]{}[/dim]"
-                    formatted_items = []
+                    formatted_items: List[str] = []
                     for k, v in value.items():
                         formatted_v = format_value(v, indent_level + 1)
                         formatted_items.append(
@@ -2640,34 +2641,23 @@ def pretty_print_deployment(
             declare("  [dim]No metadata available[/dim]")
 
     # Management section
-    declare("\n⚙️  [bold]Management Commands[/bold]")
+    declare("\n[bold]Management commands[/bold]\n")
 
-    mgmt_table = table.Table(
-        box=box.ROUNDED,
-        show_header=False,
-        border_style="dim",
-        padding=(0, 1),
-    )
-    mgmt_table.add_column("Command", style="bold")
-    mgmt_table.add_column("Description")
+    console.print(f"[bold]zenml deployment logs {deployment.name} -f[/bold]")
+    console.print("  [dim]Follow deployment logs in real time[/dim]\n")
 
-    mgmt_table.add_row(
-        f"zenml deployment logs {deployment.name} -f",
-        "Follow deployment logs in real-time",
+    console.print(f"[bold]zenml deployment describe {deployment.name}[/bold]")
+    console.print("  [dim]Show detailed deployment information[/dim]\n")
+
+    console.print(
+        f"[bold]zenml deployment deprovision {deployment.name}[/bold]"
     )
-    mgmt_table.add_row(
-        f"zenml deployment describe {deployment.name}",
-        "Show detailed deployment information",
+    console.print(
+        "  [dim]Deprovision this deployment and keep a record of it[/dim]\n"
     )
-    mgmt_table.add_row(
-        f"zenml deployment deprovision {deployment.name}",
-        "Deprovision this deployment and keep a record of it",
-    )
-    mgmt_table.add_row(
-        f"zenml deployment delete {deployment.name}",
-        "Deprovision and delete this deployment",
-    )
-    console.print(mgmt_table)
+
+    console.print(f"[bold]zenml deployment delete {deployment.name}[/bold]")
+    console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
 def check_zenml_pro_project_availability() -> None:
