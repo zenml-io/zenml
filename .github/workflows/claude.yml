@@ -75,4 +75,4 @@ jobs:
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
           claude_args: --max-turns 5 --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
             issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh
-            pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+            pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(bash scripts/format.sh:*)"
