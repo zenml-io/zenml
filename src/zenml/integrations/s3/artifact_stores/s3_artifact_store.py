@@ -485,12 +485,23 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                             version.delete()
 
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
-        """Align boto3 kwargs with filesystem config; client regions override credentials."""
+        """Build boto3 kwargs by layering config overrides over connector credentials.
+
+        Returns:
+            Dict[str, Any]: A fresh dictionary that callers can safely mutate. It
+            starts with a copy of `config.client_kwargs`, so explicit overrides
+            from the artifact store configuration take precedence. Credential
+            fields (`aws_access_key_id`, `aws_secret_access_key`, `aws_session_token`)
+            are then injected when available, and the connector-provided region
+            is only used as a fallback if no `region_name` override exists.
+        """
         key, secret, token, region = self.get_credentials()
 
-        kwargs: Dict[str, Any] = {}
-        if self.config.client_kwargs:
-            kwargs.update(dict(self.config.client_kwargs))
+        kwargs: Dict[str, Any] = (
+            self.config.client_kwargs.copy()
+            if self.config.client_kwargs
+            else {}
+        )
 
         if key is not None:
             kwargs["aws_access_key_id"] = key
