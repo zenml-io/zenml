@@ -88,7 +88,7 @@ fiftyone app launch
 # Then in Python: fo.load_dataset('coco-2017-validation-50samples')
 ```
 
-**Dataset-Artifact Connection**: Each FiftyOne dataset (named by parameters like `coco-2017-validation-50samples`) stores predictions from your latest ZenML run. Re-running pipelines overwrites predictions while preserving ground truth, so the dashboard always shows your current model's performance.
+**Dataset-Artifact Connection**: Each FiftyOne dataset (named by parameters like `coco-2017-validation-50samples`) stores predictions from your ZenML runs. Re-running pipelines now creates a new versioned predictions field (e.g., `predictions_v8_a1b2c3d4`) and updates the stable `predictions` alias to point to the latest, preserving all prior versions for comparison. See the "Versioned Predictions and ZenML Lineage Tracking" section below for details.
 
 In the FiftyOne dashboard you can:
 - Compare predictions vs ground truth side-by-side
@@ -143,6 +143,62 @@ This example features a [custom ZenML materializer](https://docs.zenml.io/how-to
 
 - 📖 [ZenML Materializers Documentation](https://docs.zenml.io/concepts/artifacts/materializers)
 - 📄 [View YOLO model materializer code](./materializers/ultralytics_materializer.py)
+
+### **Versioned Predictions and ZenML Lineage Tracking**
+
+Predictions are versioned. Every inference run writes to a new field on your FiftyOne dataset (for example, `predictions_v8_a1b2c3d4`) so you can compare model versions, track changes over time, and never lose history. For backwards compatibility, a stable `predictions` alias mirrors the latest version.
+
+Why this matters:
+- Compare different model versions side-by-side in the FiftyOne App
+- Track how performance changes across runs and parameter tweaks
+- Preserve a complete history of your predictions for auditability
+
+How it works:
+- Versioned fields:
+  - Each run writes predictions to a unique field named `predictions_{suffix}`
+  - Suffix scheme is timestamp + short UUID by default (e.g., `20250310T134501Z_1a2b3c4d`)
+  - If ZenML context is available, a human-friendly suffix is used (e.g., `v{model_version}_{run_id[:8]}`)
+- Latest field pointer:
+  - The dataset stores the current "latest" field in `dataset.info["latest_predictions_field"]`
+  - The stable `predictions` alias mirrors the latest field for existing code
+- Full lineage metadata:
+  - Each prediction version appends a record to `dataset.info["prediction_versions"]` with creation time, parameters, model info, and ZenML lineage
+
+ZenML lineage captured per version includes:
+- Pipeline run ID and name
+- Step run ID and name
+- Model artifact information (name/version; class list if available)
+- Parameters used (e.g., confidence threshold)
+- UTC timestamps
+
+Inspecting metadata:
+```python
+import fiftyone as fo
+
+# Load dataset and inspect versions
+ds = fo.load_dataset("coco-2017-validation-50samples")
+
+# View all prediction versions
+versions = ds.info.get("prediction_versions", [])
+for v in versions:
+    print(f"Field: {v['field']}")
+    print(f"Created: {v['created_at']}")
+    print(f"ZenML Run: {v['zenml']['pipeline_run_id']}")
+    print(f"Model: {v['model']['name']} v{v['model']['version']}")
+    print()
+
+# Get latest field
+latest = ds.info.get("latest_predictions_field")
+print(f"Latest predictions: {latest}")
+```
+
+Comparing versions in FiftyOne:
+- Open the FiftyOne App and use the left sidebar field selector to switch between prediction fields (e.g., `predictions_v8_a1b2c3d4`, `predictions_20250310T134501Z_1a2b3c4d`)
+- Evaluate, filter, and visualize each field to compare performance across runs
+
+Backward compatibility:
+- Existing code that reads from `predictions` continues to work
+- The `predictions` alias always mirrors the latest version so dashboards and scripts remain compatible
 
 ### 🎨 Customization
 

@@ -25,7 +25,7 @@ from steps import (
     train_yolo_model,
 )
 
-from zenml import pipeline
+from zenml import Model, pipeline
 from zenml.config import DockerSettings
 from zenml.logger import get_logger
 
@@ -35,12 +35,15 @@ docker_settings = DockerSettings(
     requirements="requirements.txt",
 )
 
+model = Model(name="yolov8n-model")
+
 
 @pipeline(
     enable_cache=False,
     settings={
         "docker": docker_settings,
     },
+    model=model,
 )
 def object_detection_training_pipeline(
     max_samples: int = 50,

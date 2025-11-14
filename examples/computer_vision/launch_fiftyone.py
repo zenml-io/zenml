@@ -38,6 +38,18 @@ def list_available_datasets():
             logger.info(
                 f"{i}. {name} ({total_samples} samples) - {pred_status}"
             )
+            # Compact prediction version summary (if available)
+            versions = annotator.describe_prediction_versions(name)
+            if versions:
+                latest = next(
+                    (v for v in versions if v.get("is_latest")), None
+                )
+                latest_field = (
+                    latest.get("field") if latest else versions[0].get("field")
+                )
+                logger.info(
+                    f"   ↳ {len(versions)} prediction versions available; latest: {latest_field}"
+                )
         except Exception as e:
             logger.warning(f"Could not get stats for dataset {name}: {e}")
 
@@ -66,6 +78,33 @@ def launch_dataset(dataset_name: str, port: int = 5151):
             )
         else:
             logger.info("❌ Dataset has no predictions - run training first")
+
+        # Detailed prediction version list (if available)
+        versions = annotator.describe_prediction_versions(dataset_name)
+        if versions:
+            logger.info("Prediction versions:")
+            for v in versions:
+                field = v.get("field")
+                created = v.get("created_at")
+                is_latest = v.get("is_latest")
+                latest_marker = " (latest)" if is_latest else ""
+                if created:
+                    logger.info(
+                        f"  • {field}{latest_marker} - created_at: {created}"
+                    )
+                else:
+                    logger.info(f"  • {field}{latest_marker}")
+            logger.info(f"Total versions: {len(versions)}")
+            latest = next((v for v in versions if v.get("is_latest")), None)
+            latest_field = (
+                latest.get("field") if latest else versions[0].get("field")
+            )
+            logger.info(f"Using latest predictions field: '{latest_field}'")
+            logger.info(
+                "Tip: Use the FiftyOne field selector (left sidebar) to switch between prediction versions."
+            )
+        else:
+            logger.info("No prediction versions found for this dataset yet.")
 
         logger.info("Launching FiftyOne App...")
         logger.info(f"🌐 Opening browser to http://localhost:{port}")
@@ -97,6 +136,7 @@ def main():
     print("=" * 40)
 
     dataset_name = None
+    port = None
 
     # Parse command line arguments
     args = sys.argv[1:]

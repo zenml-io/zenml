@@ -9,8 +9,6 @@ from zenml import (
     PipelineSnapshotRequest,
     StepRunRequest,
     StepRunUpdate,
-    pipeline,
-    step,
 )
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
@@ -18,19 +16,6 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus, StoreType
-
-
-@step()
-def greet():
-    import time
-
-    time.sleep(5)
-    pass
-
-
-@pipeline()
-def test_heartbeat_pipeline():
-    greet()
 
 
 def test_heartbeat_rest_functionality():

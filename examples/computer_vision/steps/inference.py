@@ -20,9 +20,10 @@ import base64
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Annotated, Any, Dict, List, Tuple
 
 import cv2
+from PIL import Image
 
 from zenml import get_step_context, step
 from zenml.logger import get_logger
@@ -31,10 +32,21 @@ logger = get_logger(__name__)
 
 
 @step
+def process_detection_results(
+    detection_results: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Process detection results."""
+    return detection_results
+
+
+@step
 def run_detection(
     image_path: str,
     confidence_threshold: float = 0.25,
-) -> Dict[str, Any]:
+) -> Tuple[
+    Annotated[Dict[str, Any], "detection_results"],
+    Annotated[Image.Image, "annotated_image"],
+]:
     """Run object detection on a single image.
 
     This step performs inference using the pre-loaded YOLO model from the
@@ -49,11 +61,16 @@ def run_detection(
         confidence_threshold: Minimum confidence score for detections
 
     Returns:
-        Dictionary containing:
-            - detections: List of detected objects with bboxes, labels, scores
-            - num_detections: Total number of objects detected
-            - annotated_image_path: Path to image with drawn bounding boxes
-            - image_size: Original image dimensions
+        Tuple containing:
+            - detection_results: Dictionary containing:
+                - detections: List of detected objects with bboxes, labels, scores
+                - num_detections: Total number of objects detected
+                - annotated_image_path: Path to image with drawn bounding boxes
+                - image_size: Original image dimensions
+                - model_version: Version of the YOLO model used
+                - original_image_base64: Base64 encoded original image
+                - annotated_image_base64: Base64 encoded annotated image
+            - annotated_image: PIL Image with predictions drawn (automatically visualized by ZenML)
     """
     logger.info(f"Running detection on image: {image_path}")
 
@@ -96,11 +113,13 @@ def run_detection(
 
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
+        # Create a blank image for error cases
+        error_image = Image.new("RGB", (1, 1), color="black")
         return {
             "error": str(e),
             "detections": [],
             "num_detections": 0,
-        }
+        }, error_image
 
     # Handle different image input types
     temp_image_path = None
@@ -135,11 +154,13 @@ def run_detection(
         else:
             error_msg = f"Image not found or invalid format: {image_path}"
             logger.error(error_msg)
+            # Create a blank image for error cases
+            error_image = Image.new("RGB", (1, 1), color="black")
             return {
                 "error": error_msg,
                 "detections": [],
                 "num_detections": 0,
-            }
+            }, error_image
 
         # Run inference
         logger.info("Running YOLO inference...")
@@ -148,11 +169,13 @@ def run_detection(
     except Exception as e:
         error_msg = f"Error processing image: {str(e)}"
         logger.error(error_msg)
+        # Create a blank image for error cases
+        error_image = Image.new("RGB", (1, 1), color="black")
         return {
             "error": error_msg,
             "detections": [],
             "num_detections": 0,
-        }
+        }, error_image
 
     finally:
         # Clean up temporary file if created
@@ -168,11 +191,13 @@ def run_detection(
     detections: List[Dict[str, Any]] = []
 
     if not results:
+        # Create a blank image for error cases
+        error_image = Image.new("RGB", (1, 1), color="black")
         return {
             "error": "No inference results returned",
             "detections": [],
             "num_detections": 0,
-        }
+        }, error_image
 
     # Process the first result (YOLO inference typically returns one result per image)
     result = results[0]
@@ -213,6 +238,12 @@ def run_detection(
 
     logger.info(f"Annotated image saved to: {annotated_image_path.absolute()}")
 
+    # Convert annotated image from BGR (OpenCV) to RGB (PIL)
+    annotated_img_rgb = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
+
+    # Convert numpy array to PIL Image for ZenML visualization
+    annotated_image_pil = Image.fromarray(annotated_img_rgb)
+
     # Convert images to base64 for web display
     # Get the original image
     original_img = result.orig_img
@@ -225,7 +256,7 @@ def run_detection(
     _, annotated_buffer = cv2.imencode(".jpg", annotated_img)
     annotated_base64 = base64.b64encode(annotated_buffer).decode("utf-8")
 
-    return {
+    detection_results = {
         "detections": detections,
         "num_detections": len(detections),
         "annotated_image_path": str(annotated_image_path.absolute()),
@@ -234,3 +265,5 @@ def run_detection(
         "original_image_base64": original_base64,
         "annotated_image_base64": annotated_base64,
     }
+
+    return detection_results, annotated_image_pil

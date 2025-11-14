@@ -186,6 +186,7 @@ def create_workspace(
 
     data = {
         "name": workspace_name,
+        "display_name": workspace_name,
         "organization_id": organization_id,
         "zenml_service": {
             "configuration": configuration,

@@ -24,6 +24,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
+    ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT,
     ENV_ZENML_ANALYTICS_OPT_IN,
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -35,6 +36,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER_DEPLOYMENT_TYPE,
     ENV_ZENML_USER_ID,
     ZEN_SERVER_ENTRYPOINT,
+    handle_int_env_var,
 )
 from zenml.enums import AuthScheme, StoreType
 from zenml.logger import get_logger
@@ -51,7 +53,9 @@ from zenml.zen_server.deploy.deployment import LocalServerDeploymentConfig
 logger = get_logger(__name__)
 
 ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
-DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT = 30
+DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT = handle_int_env_var(
+    var=ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT, default=60
+)
 
 
 class DaemonServerDeploymentConfig(LocalServerDeploymentConfig):

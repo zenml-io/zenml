@@ -57,6 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       branch_name: ${{ steps.slugify-branch.outputs.branch_slug }}  # Docker-compatible tag
+      workspace_name: ${{ steps.slugify-branch.outputs.workspace_name }}  # Workspace name (max 50 chars)
       original_branch: ${{ steps.determine-branch.outputs.branch }}  # Original branch name
       zenml_version: ${{ steps.get-version.outputs.zenml_version }}  # ZenML version
     steps:
@@ -101,6 +102,21 @@ jobs:
           fi
           echo "Created Docker-compatible tag: $BRANCH_SLUG"
           echo "branch_slug=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
+
+          # Create workspace name (max 50 chars for API limit)
+          # If the slug is <= 50 chars, use it directly
+          # Otherwise, truncate to 41 chars and append 8-char hash for uniqueness
+          if [ ${#BRANCH_SLUG} -le 50 ]; then
+            WORKSPACE_NAME="${BRANCH_SLUG}"
+          else
+            # Generate a short hash from the original branch name for uniqueness
+            HASH=$(echo -n "$BRANCH_NAME" | sha256sum | cut -c 1-8)
+            # Truncate to 41 chars to leave room for the hash (8 chars) and separator (1 dash) = 50 total
+            TRUNCATED=$(echo "$BRANCH_SLUG" | cut -c 1-41 | sed 's/-$//')
+            WORKSPACE_NAME="${TRUNCATED}-${HASH}"
+          fi
+          echo "Created workspace name: $WORKSPACE_NAME"
+          echo "workspace_name=${WORKSPACE_NAME}" >> $GITHUB_OUTPUT
       - name: Get ZenML version
         id: get-version
         run: |
@@ -167,12 +183,12 @@ jobs:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
           CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
-          WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.branch_name }}
+          WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.workspace_name }}
           DOCKER_IMAGE: zenmldocker/zenml-server-dev:${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
       - name: Set tenant URL
-        run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.branch_name }}/projects"
+        run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.workspace_name }}/projects"
           >> $GITHUB_ENV
       - name: Check if deployment comment exists
         id: check-comment
