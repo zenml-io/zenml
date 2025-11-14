@@ -1,0 +1,55 @@
+---
+name: Close stale PRs
+
+on:
+  schedule:
+    # Run daily at 1:30 AM UTC
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/stale@v10
+        with:
+          # Only process PRs, not issues
+          days-before-stale: -1
+          days-before-issue-stale: -1
+          days-before-close: -1
+          days-before-issue-close: -1
+          
+          # PR-specific configuration
+          days-before-pr-stale: 14  # 2 weeks - first reminder
+          days-before-pr-close: 14  # Closes 14 days after stale (28 days total = 4 weeks)
+          
+          # Messages
+          stale-pr-message: |
+            ⚠️ This PR has been inactive for 2 weeks and has been marked as stale.
+            
+            **Timeline:**
+            - Week 2 (now): First reminder - PR marked as stale
+            - Week 4: PR will be automatically closed if no activity
+            
+            Please update this PR or leave a comment to keep it active. Any activity will reset the timer and remove the stale label.
+          
+          close-pr-message: |
+            🔒 This PR has been automatically closed due to 4 weeks of inactivity.
+            
+            If you'd like to continue working on this, please feel free to reopen it. We're happy to help you get it merged!
+          
+          # Labels
+          stale-pr-label: 'stale'
+          
+          # Reset behavior - remove stale label when PR is updated or commented
+          remove-stale-when-updated: true
+          remove-pr-stale-when-updated: true
+          
+          # Remove stale label when activity occurs
+          labels-to-remove-when-unstale: 'stale'
+        
+          # Operations limit
+          operations-per-run: 5000
