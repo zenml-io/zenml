@@ -1,0 +1,114 @@
+---
+name: Claude Code Review
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  check-team-member:
+    runs-on: ubuntu-latest
+    outputs:
+      is-team-member: ${{ steps.check.outputs.is-member }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Check if actor is team member
+        id: check
+        run: |
+          ACTOR="${{ github.actor }}"
+          if grep -q "@${ACTOR}" .github/teams.yml; then
+            echo "is-member=true" >> $GITHUB_OUTPUT
+            echo "✅ $ACTOR is a team member"
+          else
+            echo "is-member=false" >> $GITHUB_OUTPUT
+            echo "❌ $ACTOR is not a team member"
+          fi
+  claude-review:
+    needs: check-team-member
+    if: |
+      needs.check-team-member.outputs.is-team-member == 'true' &&
+      github.actor != 'github-actions[bot]' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude /full-review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: claude-review-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.CLAUDE_GITHUB_ACTIONS_ANTHROPIC_KEY }}
+          track_progress: true
+          prompt: |
+            You are reviewing code changes with git diffs included in the prompt. Focus on ensuring the changes are sound, clean, intentional, and void of regressions.
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            Context:
+            - You can fetch additional PR context via:
+              - gh pr view ${{ github.event.pull_request.number }} --json title,body,author,headRefName,baseRefName,commits
+              - gh pr diff ${{ github.event.pull_request.number }} --name-only
+            - Use the repository's CLAUDE.md (if present) and existing code patterns for conventions.
+            Primary Review Goals:
+            1) Verify Change Correctness
+               - Confirm the changes achieve their intended purpose
+               - Check for unintended side effects or regressions
+               - Validate edge cases are handled properly
+               - Ensure error paths are covered
+            2) Code Quality & Cleanliness
+               - Is the code readable and self-documenting?
+               - Are the changes minimal and focused?
+               - Do they follow existing patterns in the codebase?
+               - Are there any code smells or anti-patterns?
+            3) Intentionality Check
+               - Does every change have a clear purpose?
+               - Are there any accidental modifications?
+               - Is there dead code being introduced?
+               - Are the commit boundaries logical?
+            4) Potential Issues to Flag
+               - Performance degradations
+               - Security vulnerabilities
+               - Race conditions or concurrency issues
+               - Resource leaks (memory, file handles, etc.)
+               - Breaking changes to internal or public APIs
+            5) Constructive Suggestions
+               - Alternative approaches that might be cleaner
+               - Opportunities to reduce complexity
+               - Missing test coverage for critical paths
+               - Documentation gaps for complex logic
+            Documentation & Release Notes Review:
+            - Determine if user-facing behavior, APIs, CLI commands/flags, configuration options, or defaults have changed.
+            - Heuristics (run): gh pr diff ${{ github.event.pull_request.number }} --name-only
+              - If code changes are present under src/ or cli/ or other user-facing modules but docs/ are not updated, flag as "docs update needed".
+              - If docs/ changes exist, check if they match the code changes and are placed in the correct sections (e.g., docs/book/, docs/how-to/, docs/reference/).
+              - If CLI or config flags changed, ensure corresponding docs and examples are updated (including any README or quickstart sections if applicable).
+              - If migration or breaking changes are introduced, recommend adding an explicit migration note or changelog item.
+            - If documentation is needed, explicitly call it out in the review with concrete file/section suggestions.
+            Review Format:
+            - Start with a summary of what the changes accomplish.
+            - List any critical issues that must be addressed.
+            - Note minor improvements that would enhance quality.
+            - Acknowledge what's done particularly well.
+            - End with specific, actionable next steps if needed.
+            Output Instructions:
+            - Provide detailed feedback using inline-style code references in your comment for specific issues (quote file paths and line ranges when possible).
+            - Use top-level comments for general observations or praise.
+            - Use `gh pr comment` to post your review comment to the PR.
+            Be constructive and helpful in your feedback.
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
+          claude_args: --max-turns 5 --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh
+            issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh
+            pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
