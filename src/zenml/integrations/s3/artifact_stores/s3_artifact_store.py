@@ -484,6 +484,31 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                         ):
                             version.delete()
 
+    def _build_boto3_kwargs(self) -> Dict[str, Any]:
+        """Build boto3 kwargs by layering config overrides over connector credentials.
+
+        Returns:
+            A fresh dictionary of boto3 kwargs that callers can safely mutate.
+        """
+        key, secret, token, region = self.get_credentials()
+
+        kwargs: Dict[str, Any] = (
+            self.config.client_kwargs.copy()
+            if self.config.client_kwargs
+            else {}
+        )
+
+        if key is not None:
+            kwargs["aws_access_key_id"] = key
+        if secret is not None:
+            kwargs["aws_secret_access_key"] = secret
+        if token is not None:
+            kwargs["aws_session_token"] = token
+        if region is not None and "region_name" not in kwargs:
+            kwargs["region_name"] = region
+
+        return kwargs
+
     @property
     def _boto3_bucket(self) -> Any:
         """Get the boto3 bucket object.
@@ -494,14 +519,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self._boto3_bucket_holder and not self.connector_has_expired():
             return self._boto3_bucket_holder
 
-        key, secret, token, region = self.get_credentials()
-        s3 = boto3.resource(
-            "s3",
-            aws_access_key_id=key,
-            aws_secret_access_key=secret,
-            aws_session_token=token,
-            region_name=region,
-        )
+        s3 = boto3.resource("s3", **self._build_boto3_kwargs())
         self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
         return self._boto3_bucket_holder
 
