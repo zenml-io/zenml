@@ -2,7 +2,8 @@
 name: General Issue
 description: I have a general issue I would like to write about
 type: Task
-labels: [backend]
+labels: [core-team]
+projects: [zenml-io/1]
 body:
   - type: markdown
     attributes:
