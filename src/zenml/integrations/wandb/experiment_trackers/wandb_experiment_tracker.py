@@ -39,6 +39,18 @@ logger = get_logger(__name__)
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
+def sanitize_tag(tag: str) -> str:
+    """Sanitize a tag to be a valid Wandb tag.
+
+    Args:
+        tag: The tag to sanitize.
+
+    Returns:
+        The sanitized tag.
+    """
+    return tag[:64]
+
+
 class WandbExperimentTracker(BaseExperimentTracker):
     """Track experiment using Wandb."""
 
@@ -70,7 +82,11 @@ class WandbExperimentTracker(BaseExperimentTracker):
         settings = cast(
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
-        tags = settings.tags + [info.run_name, info.pipeline.name]
+        tags = settings.tags + [
+            sanitize_tag(info.run_name),
+            sanitize_tag(info.pipeline.name),
+        ]
+
         wandb_run_name = (
             settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
         )
