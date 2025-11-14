@@ -44,6 +44,11 @@ class DeploymentInvocationResponseMetadata(BaseModel):
         title="The parameters used for the pipeline execution."
     )
 
+    session_id: Optional[str] = Field(
+        default=None,
+        title="The session ID used for this invocation (if sessions enabled).",
+    )
+
 
 class BaseDeploymentInvocationRequest(BaseModel):
     """Base pipeline invoke request model."""
@@ -61,6 +66,14 @@ class BaseDeploymentInvocationRequest(BaseModel):
         default=False,
         title="Whether to keep outputs in memory for fast access instead of "
         "storing them as artifacts.",
+    )
+
+    session_id: Optional[str] = Field(
+        default=None,
+        title="Optional session ID to resume existing session state. "
+        "If provided and sessions are enabled, the deployment will attempt "
+        "to load the session. If not found or expired, a new session with "
+        "this ID will be created.",
     )
 
 

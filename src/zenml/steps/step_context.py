@@ -232,6 +232,39 @@ class StepContext(context_utils.BaseContext):
         return get_or_create_run_context().state
 
     @property
+    def session_state(self) -> Dict[str, Any]:
+        """Returns the current session state.
+
+        This property provides access to deployment-scoped session data
+        that persists across multiple invocations of the same deployment.
+        The returned dictionary is live - modifications to it will update
+        the session state for the current invocation.
+
+        Returns:
+            Dictionary containing session state data. Empty dict if sessions
+            are not enabled or no session is active.
+
+        Example:
+            ```python
+            from zenml import step, get_step_context
+
+            @step
+            def my_step() -> None:
+                context = get_step_context()
+
+                # Read session state
+                counter = context.session_state.get("counter", 0)
+
+                # Modify session state (changes persist to session)
+                context.session_state["counter"] = counter + 1
+                context.session_state["last_run"] = str(datetime.now())
+            ```
+        """
+        from zenml.deployers.server import runtime
+
+        return runtime.get_session_state()
+
+    @property
     def model(self) -> "Model":
         """Returns configured Model.
 

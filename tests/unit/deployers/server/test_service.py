@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Dict, List, Type
+from typing import Any, Dict, List, Type
 from uuid import uuid4
 
 import pytest
@@ -64,6 +64,7 @@ def _make_snapshot() -> SimpleNamespace:
         source="test.module.pipeline",
     )
     stack = SimpleNamespace(name="test_stack")
+    pipeline = SimpleNamespace(id=uuid4(), name="test_pipeline")
 
     return SimpleNamespace(
         id=uuid4(),
@@ -72,6 +73,7 @@ def _make_snapshot() -> SimpleNamespace:
         pipeline_spec=pipeline_spec,
         step_configurations={},
         stack=stack,
+        pipeline=pipeline,
     )
 
 
@@ -129,6 +131,7 @@ def _make_service_stub(mocker: MockerFixture) -> PipelineDeploymentService:
     service = PipelineDeploymentService(app_runner)
     service._client = mocker.MagicMock()
     service._orchestrator = mocker.MagicMock()
+    service.session_manager = None
     mocker.patch.object(
         type(service),
         "input_model",
@@ -150,13 +153,14 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
     captured_outputs: Dict[str, Dict[str, object]] = {
         "step1": {"result": "value"}
     }
+    session_state_snapshot: Dict[str, Any] = {}
     mapped_outputs = {"result": "value"}
 
     service._prepare_execute_with_orchestrator = mocker.MagicMock(
         return_value=(placeholder_run, deployment_snapshot)
     )
     service._execute_with_orchestrator = mocker.MagicMock(
-        return_value=captured_outputs
+        return_value=(captured_outputs, session_state_snapshot)
     )
     service._map_outputs = mocker.MagicMock(return_value=mapped_outputs)
     service._build_response = mocker.MagicMock(return_value="response")
@@ -175,6 +179,7 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
         deployment_snapshot=deployment_snapshot,
         resolved_params={"city": "Berlin", "temperature": 20},
         skip_artifact_materialization=False,
+        session=None,
     )
     service._map_outputs.assert_called_once_with(captured_outputs)
     service._build_response.assert_called_once()
@@ -299,3 +304,97 @@ def test_input_output_schema_properties(mocker: MockerFixture) -> None:
 
     assert service.input_schema == {"type": "object"}
     assert service.output_schema == {"type": "object"}
+
+
+def test_resolve_session_returns_none_without_manager(
+    mocker: MockerFixture,
+) -> None:
+    """_resolve_session should return None when no session manager is configured."""
+    service = _make_service_stub(mocker)
+
+    # Ensure session_manager is None
+    assert service.session_manager is None
+
+    # Should return None without error
+    session = service._resolve_session("some-session-id")
+    assert session is None
+
+
+def test_resolve_session_invokes_manager_with_ids(
+    mocker: MockerFixture,
+) -> None:
+    """_resolve_session should forward request to session manager with correct IDs."""
+    service = _make_service_stub(mocker)
+
+    # Configure mock session manager
+    mock_manager = mocker.MagicMock()
+    mock_session = SimpleNamespace(
+        id="session-123",
+        deployment_id=str(service.deployment.id),
+        state={"counter": 1},
+    )
+    mock_manager.resolve.return_value = mock_session
+    service.session_manager = mock_manager
+
+    # Call _resolve_session
+    result = service._resolve_session("session-123")
+
+    # Verify manager was called with correct arguments
+    mock_manager.resolve.assert_called_once_with(
+        requested_id="session-123",
+        deployment_id=str(service.deployment.id),
+        pipeline_id=str(service.snapshot.pipeline.id),
+    )
+
+    # Verify result matches mock return
+    assert result == mock_session
+
+
+def test_persist_session_state_noop_when_state_unchanged(
+    mocker: MockerFixture,
+) -> None:
+    """_persist_session_state should skip persistence when state hasn't changed."""
+    service = _make_service_stub(mocker)
+
+    # Configure mock session manager
+    mock_manager = mocker.MagicMock()
+    service.session_manager = mock_manager
+
+    # Create session with initial state
+    session = SimpleNamespace(
+        id="session-123",
+        deployment_id=str(service.deployment.id),
+        state={"counter": 1, "data": "value"},
+    )
+
+    # Call with identical state snapshot
+    state_snapshot = {"counter": 1, "data": "value"}
+    service._persist_session_state(session, state_snapshot)
+
+    # Verify manager.persist_state was NOT called
+    mock_manager.persist_state.assert_not_called()
+
+
+def test_persist_session_state_persists_changes(
+    mocker: MockerFixture,
+) -> None:
+    """_persist_session_state should delegate to manager when state differs."""
+    service = _make_service_stub(mocker)
+
+    # Configure mock session manager
+    mock_manager = mocker.MagicMock()
+    service.session_manager = mock_manager
+
+    # Create session with initial state
+    session = SimpleNamespace(
+        id="session-123",
+        deployment_id=str(service.deployment.id),
+        state={"counter": 1},
+    )
+
+    # Call with modified state snapshot
+    state_snapshot = {"counter": 2, "new_field": "added"}
+    service._persist_session_state(session, state_snapshot)
+
+    # Verify manager.persist_state was called with correct arguments
+    mock_manager.persist_state.assert_called_once_with(session, state_snapshot)
