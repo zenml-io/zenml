@@ -208,6 +208,9 @@ zenml_tutorial/
 # Claude settings
 **/.claude/settings.local.json
 .claude/
+!.claude/agents/**
+!.claude/commands/**
+!.claude/settings.json
 
 .local/
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow

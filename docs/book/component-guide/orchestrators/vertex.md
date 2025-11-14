@@ -102,10 +102,10 @@ This use-case assumes you have already configured a GCP service account with the
 * permissions to run a Vertex AI pipeline, (e.g. [the `Vertex AI Service Agent` role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.serviceAgent)).
 * the [Storage Object Creator Role](https://cloud.google.com/iam/docs/understanding-roles#storage.objectCreator) to be able to write the pipeline JSON file to the artifact store directly.
 
-It also assumes you have already created a service account key for this service account and downloaded it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file). This is not recommended if you are conscious about security. The principle of least privilege is not applied here and the environment in which the pipeline steps are running has many permissions that it doesn't need.
+It also assumes you have already created a service account key for this service account and downloaded it to your local machine (e.g. in a `connectors-vertex-ai.json` file). This is not recommended if you are conscious about security. The principle of least privilege is not applied here and the environment in which the pipeline steps are running has many permissions that it doesn't need.
 
 ```shell
-zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-workload.json --resource-type gcp-generic
+zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai.json --resource-type gcp-generic
 
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=vertex \
@@ -154,12 +154,12 @@ For even more granular control, you can create custom roles instead of using the
 This provides the absolute minimum permissions required for Vertex AI pipeline operations.
 {% endhint %}
 
-A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
+A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-client.json` file).
 
 With all the service accounts and the key ready, we can register [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) and Vertex AI orchestrator as follows:
 
 ```shell
-zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-workload.json --resource-type gcp-generic
+zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-client.json --resource-type gcp-generic
 
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=vertex \

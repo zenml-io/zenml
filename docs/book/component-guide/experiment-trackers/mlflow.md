@@ -41,7 +41,7 @@ zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 * [Remote Experiment Tracking with MLflow Tracking Server](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
-Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using MLflow version 2.2.1 or higher.
+Due to a [critical severity vulnerability](https://github.com/advisories/GHSA-xg73-94fp-g449) found in older versions of MLflow, we recommend using MLflow version 2.2.1 or higher. ZenML supports both MLflow 2.x and 3.x versions.
 {% endhint %}
 
 * [Databricks scenario](https://www.databricks.com/product/managed-mlflow): This scenario assumes that you have a Databricks workspace, and you want to use the managed MLflow Tracking server it provides. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
