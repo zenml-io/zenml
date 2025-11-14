@@ -15,6 +15,7 @@
 
 import mlflow
 from mlflow.entities import Run
+from packaging import version
 
 from zenml.client import Client
 from zenml.logger import get_logger
@@ -22,6 +23,52 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 ZENML_TAG_KEY = "zenml"
+
+
+def is_mlflow_3x() -> bool:
+    """Check if MLflow version is 3.x or higher.
+
+    Returns:
+        True if MLflow version is 3.x or higher, False otherwise.
+    """
+    return version.parse(mlflow.version.VERSION) >= version.parse("3.0.0")
+
+
+def get_model_uri_from_version(
+    mlflow_model_version: "mlflow.entities.model_registry.ModelVersion",
+) -> str:
+    """Get the model URI from an MLflow model version.
+
+    This function handles the differences between MLflow 2.x and 3.x:
+    - In MLflow 3.x, models are stored separately and we construct a runs:/ URI
+    - In MLflow 2.x, we use the source path directly
+
+    Args:
+        mlflow_model_version: The MLflow model version object.
+
+    Returns:
+        The model URI that can be used to load the model.
+    """
+    if is_mlflow_3x() and mlflow_model_version.run_id:
+        source_path = mlflow_model_version.source
+        if source_path and "/artifacts/" in source_path:
+            artifact_name = source_path.split("/artifacts/")[-1]
+            return f"runs:/{mlflow_model_version.run_id}/{artifact_name}"
+        return source_path or ""
+    return mlflow_model_version.source or ""
+
+
+def build_runs_uri(run_id: str, artifact_path: str) -> str:
+    """Build a runs:/ URI from a run ID and artifact path.
+
+    Args:
+        run_id: The MLflow run ID.
+        artifact_path: The artifact path (e.g., "model").
+
+    Returns:
+        The constructed URI.
+    """
+    return f"runs:/{run_id}/{artifact_path}"
 
 
 def get_missing_mlflow_experiment_tracker_error() -> ValueError:
