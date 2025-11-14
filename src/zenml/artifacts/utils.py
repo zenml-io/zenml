@@ -173,6 +173,8 @@ def _store_artifact_data_and_prepare_request(
     materializer.validate_save_type_compatibility(data_type)
     materializer.save(data)
 
+    length = materializer.get_chunk_count(data)
+
     visualizations = (
         _save_artifact_visualizations(data=data, materializer=materializer)
         if store_visualizations
@@ -208,6 +210,7 @@ def _store_artifact_data_and_prepare_request(
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,
+        length=length,
         metadata=validate_metadata(combined_metadata)
         if combined_metadata
         else None,

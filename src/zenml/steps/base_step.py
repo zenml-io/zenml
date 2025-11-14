@@ -350,7 +350,7 @@ class BaseStep:
     def _parse_call_args(
         self, *args: Any, **kwargs: Any
     ) -> Tuple[
-        Dict[str, "StepArtifact"],
+        Dict[str, List["StepArtifact"]],
         Dict[str, Union["ExternalArtifact", "ArtifactVersionResponse"]],
         Dict[str, "ModelVersionDataLazyLoader"],
         Dict[str, "ClientLazyLoader"],
@@ -399,6 +399,16 @@ class BaseStep:
             self.entrypoint_definition.validate_input(key=key, value=value)
 
             if isinstance(value, StepArtifact):
+                artifacts[key] = [value]
+                if key in self.configuration.parameters:
+                    logger.warning(
+                        "Got duplicate value for step input %s, using value "
+                        "provided as artifact.",
+                        key,
+                    )
+            elif isinstance(value, list) and all(
+                isinstance(item, StepArtifact) for item in value
+            ):
                 artifacts[key] = value
                 if key in self.configuration.parameters:
                     logger.warning(
@@ -563,7 +573,9 @@ class BaseStep:
         ) = self._parse_call_args(*args, **kwargs)
 
         upstream_steps = {
-            artifact.invocation_id for artifact in input_artifacts.values()
+            artifact.invocation_id
+            for artifact_list in input_artifacts.values()
+            for artifact in artifact_list
         }
         if isinstance(after, str):
             upstream_steps.add(after)
@@ -669,6 +681,49 @@ class BaseStep:
             kwargs=kwargs,
             after=after,
             concurrent=True,
+        )
+
+    def map(
+        self,
+        *args: Any,
+        after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        **kwargs: Any,
+    ) -> List["StepRunOutputsFuture"]:
+        """Map over step inputs.
+
+        This method will launch a separate step for each chunk of the input
+        artifacts. This currently is only supported for inputs that are outputs
+        from upstream steps in the same pipeline.
+
+        Args:
+            *args: The arguments to pass to the step function.
+            after: The step run output futures to wait for before executing the
+                steps.
+            **kwargs: The keyword arguments to pass to the step function.
+
+        Raises:
+            RuntimeError: If this method is called outside of a dynamic
+                pipeline.
+
+        Returns:
+            The step run output futures.
+        """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        context = DynamicPipelineRunContext.get()
+        if not context:
+            raise RuntimeError(
+                "Mapping over step inputs is only possible within a dynamic "
+                "pipeline."
+            )
+
+        return context.runner.map(
+            step=self,
+            args=args,
+            kwargs=kwargs,
+            after=after,
         )
 
     @property
@@ -1140,7 +1195,7 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _validate_inputs(
         self,
-        input_artifacts: Dict[str, "StepArtifact"],
+        input_artifacts: Dict[str, List["StepArtifact"]],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],
@@ -1174,7 +1229,7 @@ To avoid this consider setting step parameters only in one place (config or code
 
     def _finalize_configuration(
         self,
-        input_artifacts: Dict[str, "StepArtifact"],
+        input_artifacts: Dict[str, List["StepArtifact"]],
         external_artifacts: Dict[str, "ExternalArtifactConfiguration"],
         model_artifacts_or_metadata: Dict[str, "ModelVersionDataLazyLoader"],
         client_lazy_loaders: Dict[str, "ClientLazyLoader"],

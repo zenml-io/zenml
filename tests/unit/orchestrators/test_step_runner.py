@@ -21,12 +21,13 @@ from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import ArtifactSaveType
+from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
 from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
     StepRunResponse,
 )
+from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
@@ -196,6 +197,10 @@ def test_loading_input_artifact_without_specified_data_type(
     artifact_response = save_artifact(
         42, "main_answer", save_type=ArtifactSaveType.STEP_OUTPUT
     )
+    step_run_input_response = StepRunInputResponse(
+        **artifact_response.get_hydrated_version().model_dump(),
+        input_type=StepRunInputArtifactType.STEP_OUTPUT,
+    )
 
     step = Step.model_validate(
         {
@@ -210,7 +215,7 @@ def test_loading_input_artifact_without_specified_data_type(
     )
     runner = StepRunner(step=step, stack=local_stack)
     data = runner._load_input_artifact(
-        artifact=artifact_response, data_type=None
+        artifact=step_run_input_response, data_type=None
     )
     assert isinstance(data, int)
     assert data == 42
