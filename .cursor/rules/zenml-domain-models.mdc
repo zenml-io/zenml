@@ -1,0 +1,283 @@
+---
+description: How to understand, add or modify ZenML domain models
+globs: src/zenml/models/**/*.py
+---
+# ZenML Domain Models
+
+## Overview
+
+ZenML domain models represent the core business entities in the ZenML ecosystem. They are built using a sophisticated layered architecture that emphasizes clean separation of concerns, type safety, and maintainable code. This document outlines the key patterns and conventions used in implementing domain models. Make sure to follow these patterns when implementing new domain models or modifying existing ones.
+
+All model files are located in the @src/zenml/models directory.
+
+## Base Class Hierarchy
+
+The domain models follow two main hierarchies: the Model Hierarchy and the Filter Hierarchy.
+
+### Model Hierarchy
+
+```
+BaseZenModel (base.py)
+├── BaseRequest
+│   ├── UserScopedRequest
+│   │   └── WorkspaceScopedRequest
+│   └── [Entity]Request
+├── BaseUpdate
+│   └── [Entity]Update
+└── BaseResponse[Body, Metadata, Resources]
+    ├── BaseResponseBody
+    │   └── BaseDatedResponseBody
+    │       ├── UserScopedResponseBody
+    │       └── WorkspaceScopedResponseBody
+    ├── BaseResponseMetadata
+    │   ├── UserScopedResponseMetadata
+    │   └── WorkspaceScopedResponseMetadata
+    ├── BaseResponseResources
+    │   ├── UserScopedResponseResources
+    │   └── WorkspaceScopedResponseResources
+    └── BaseIdentifiedResponse[DatedBody, Metadata, Resources]
+        └── UserScopedResponse[Body, Metadata, Resources]
+            └── WorkspaceScopedResponse[Body, Metadata, Resources]
+```
+
+### Filter Hierarchy
+
+```
+BaseFilter (filter.py)
+├── Filter (ABC)
+│   ├── BoolFilter
+│   ├── StrFilter
+│   │   └── UUIDFilter
+│   ├── NumericFilter
+│   └── DatetimeFilter
+├── UserScopedFilter
+│   └── WorkspaceScopedFilter
+└── TaggableFilter
+
+FilterGenerator
+└── Used to create appropriate Filter instances
+```
+
+### Key Characteristics
+
+1. **Model Base Classes**:
+   - `BaseZenModel`: Root class with analytics tracking and YAML serialization
+   - `BaseRequest`: For creating new entities
+   - `BaseUpdate`: For modifying existing entities
+   - `BaseResponse`: Tripartite structure with Body/Metadata/Resources
+   - `BaseIdentifiedResponse`: Adds UUID and permission handling
+   - `BaseDatedResponseBody`: Adds creation/update timestamps
+
+2. **Filter Base Classes**:
+   - `BaseFilter`: Core filtering, sorting, and pagination
+   - `Filter` (ABC): Abstract base for specific filter types
+   - Type-specific filters (Bool, Str, UUID, Numeric, Datetime)
+   - Scope-specific filters (User, Workspace)
+   - `FilterGenerator`: Factory for creating appropriate filters
+
+3. **Scoping Classes**:
+   - User scoping: Associates entities with a user
+   - Workspace scoping: Associates entities with both user and workspace
+   - Each scope has its own Request/Response/Filter variants
+
+4. **Generic Type Parameters**:
+   - `Body`: Type parameter for response body (extends BaseResponseBody)
+   - `Metadata`: Type parameter for metadata (extends BaseResponseMetadata)
+   - `Resources`: Type parameter for resources (extends BaseResponseResources)
+
+5. **Filter Operations**:
+   - Each filter type defines its own set of allowed operations
+   - Operations include: equals, not_equals, contains, startswith, etc.
+   - Filters can be combined using logical operators (AND/OR)
+
+There is a tight relationship between ORM schemas and their associated domain models, especially concerning the names and types of attributes. Make sure to keep them in sync. Read [zenml-orm-schema.mdc](mdc:zenml/.cursor/rules/zenml-orm-schema.mdc) to understand what ZenML domain models are and how they work.
+
+## Domain Model Types
+
+ZenML uses four main types of domain models to handle different aspects of entity lifecycle:
+
+1. **Request Models** (`{Entity}Request`)
+   - Used for creating new entities
+   - Inherit from `BaseRequest`, `UserScopedRequest`, or `WorkspaceScopedRequest`
+   - Contain all required fields for entity creation
+   - Example: `ArtifactRequest` includes `name`, `has_custom_name`, and optional `tags`
+   - Validate input data before entity creation
+
+2. **Response Models** (`{Entity}Response`)
+   - Used for retrieving and representing entities
+   - Follow the tripartite structure (Body, Metadata, Resources)
+   - Implement hydration logic through `get_hydrated_version()`
+   - Include property accessors for convenient data access
+   - Example: `ServiceResponse` provides access to service state, endpoints, and configuration
+
+3. **Update Models** (`{Entity}Update`)
+   - Used for modifying existing entities
+   - Inherit from `BaseUpdate`
+   - All fields are typically Optional
+   - Only include fields that can be modified
+   - Some entities may not have update models if they're immutable
+   - Example: `ServiceUpdate` allows updating name, admin_state, endpoints, etc.
+
+4. **Filter Models** (`{Entity}Filter`)
+   - Used for querying and filtering entities
+   - Inherit from `BaseFilter`, `UserScopedFilter`, or `WorkspaceScopedFilter`
+   - Define custom sorting options and filter fields
+   - Support complex query building
+   - Can include scope-specific filtering logic
+   - Example: `ArtifactFilter` supports filtering by name, custom_name, and tags
+
+### Special Characteristics
+
+1. **Request Models**:
+   - Must include all mandatory fields
+   - Often include validation logic
+   - May have scope-specific fields (user/workspace)
+   - Can include default values
+
+2. **Response Models**:
+   - Split into Body/Metadata/Resources
+   - Include hydration logic
+   - Provide property accessors
+   - Support analytics tracking
+   - May include helper methods
+
+3. **Update Models**:
+   - All fields are Optional
+   - May include validation logic
+   - Some entities are immutable (no update model)
+   - Support partial updates
+   - May include helper methods (e.g., `from_response()`)
+
+4. **Filter Models**:
+   - Define custom sorting options
+   - Include filter exclusion rules
+   - Support complex query building
+   - May include scope-specific filtering
+   - Can have custom filter methods
+
+## Hydration Pattern
+
+ZenML uses a sophisticated hydration pattern that splits entity response data into three components:
+
+1. **Body**: Core data of the entity
+   - Inherits from `BaseResponseBody`
+   - Contains the essential attributes of the entity
+   - Is always included in the response
+
+2. **Metadata**: Additional information about the entity
+   - Inherits from `BaseResponseMetadata`
+   - Contains metadata like relationships to other entities
+   - Is optional and not always included in the response. Needs to be explicitly requested by asking for a hydrated response.
+
+3. **Resources**: Related resources and computed data
+   - Inherits from `BaseResponseResources`
+   - Contains dynamic or computed data
+
+### Hydration Methods
+
+Key methods for hydration:
+- `hydrate()`: Loads the complete entity data
+- `get_hydrated_version()`: Fetches a fresh copy from the store
+- `get_body()`, `get_metadata()`, `get_resources()`: Accessors for components
+
+## Scoping Pattern
+
+ZenML implements two levels of scoping:
+
+1. **User Scoping** (`UserScopedResponse`)
+   - Associates entities with a user
+   - Provides user-specific filtering and analytics
+   - Base class for workspace-scoped entities
+
+2. **Workspace Scoping** (`WorkspaceScopedResponse`)
+   - Associates entities with both a user and a workspace
+   - Extends user scoping with workspace-specific logic
+   - Used for most business entities
+
+### Scoping Components
+
+For each scope level (User/Workspace), there are corresponding classes:
+- `*ScopedRequest`: For creating scoped entities
+- `*ScopedResponseBody`: For core scoped data
+- `*ScopedResponseMetadata`: For scoped metadata
+- `*ScopedResponseResources`: For scoped resources
+- `*ScopedFilter`: For filtering scoped entities
+
+## Filtering Pattern
+
+Each domain model type can have an associated filter class that inherits from:
+- `BaseFilter`: Basic filtering capabilities
+- `UserScopedFilter`: User-scoped filtering
+- `WorkspaceScopedFilter`: Workspace-scoped filtering
+- `TaggableFilter`: For entities that support tagging
+
+Filter classes provide:
+- Custom sorting options
+- Field exclusion rules
+- Query building methods
+- Scope-specific filtering logic
+
+## Naming Conventions
+
+1. **Class Names**:
+   - Request models: `{Entity}Request`
+   - Response models: `{Entity}Response`
+   - Update models: `{Entity}Update`
+   - Filter models: `{Entity}Filter`
+   - Body models: `{Entity}ResponseBody`
+   - Metadata models: `{Entity}ResponseMetadata`
+   - Resource models: `{Entity}ResponseResources`
+
+2. **File Structure**:
+   - One entity per file
+   - File named after the entity in snake_case
+   - Located in appropriate subdirectory (core/, base/, misc/)
+
+## Implementation Guidelines
+
+When creating a new domain model:
+
+1. **Determine Scope**:
+   - Does it belong to a user? → Use `UserScoped*`
+   - Does it belong to a workspace? → Use `WorkspacedScoped*`
+   - Is it global? → Use base classes directly
+
+2. **Create Required Classes**:
+   ```python
+   class NewEntityRequest(WorkspaceScopedRequest):
+       # Request fields here
+   
+   class NewEntityResponseBody(WorkspaceScopedResponseBody):
+       # Core entity fields here
+   
+   class NewEntityResponseMetadata(WorkspaceScopedResponseMetadata):
+       # Metadata fields here
+   
+   class NewEntityResponseResources(WorkspaceScopedResponseResources):
+       # Resource fields here
+   
+   class NewEntityResponse(WorkspaceScopedResponse[
+       NewEntityResponseBody,
+       NewEntityResponseMetadata,
+       NewEntityResponseResources
+   ]):
+       # Response-specific methods here
+   
+   class NewEntityFilter(WorkspaceScopedFilter):
+       # Filter fields and methods here
+   ```
+
+3. **Define Fields**:
+   - Use Pydantic Field with clear titles and descriptions
+   - Include type hints for all fields
+   - Consider optional vs required fields carefully
+   - Remember that the domain models are also used in the REST API and it is important to document each field carefully
+
+4. **Implement Methods**:
+   - Override `get_hydrated_version()` if needed
+   - Add property accessors for convenience
+   - Include analytics methods if relevant
+
+
+
+Remember: Domain models are the backbone of the ZenML system. They should be implemented with care, following these patterns to ensure consistency and maintainability across the codebase.

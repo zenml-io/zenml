@@ -376,3 +376,8 @@ module = [
     "jsonref",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)
+follow_imports = 'skip'
+follow_imports_for_stubs = true

@@ -17,8 +17,37 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
 - Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
-- Avoid: change‑tracking comments (“Updated from previous version”, “New implementation”, “Changed to use X instead of Y”, “Refactored this section”).
+- Avoid: change‑tracking comments ("Updated from previous version", "New implementation", "Changed to use X instead of Y", "Refactored this section").
 - Avoid simple explanatory comments, where it is already clear from the code itself.
+- Avoid useless one-line comments interleaved with code that restate the obvious. Prefer clear names and small functions.
+
+  ```python
+  # Bad
+  i = 0  # initialize i
+  i += 1  # increment
+
+  # Good
+  index = 0
+  index += 1
+  ```
+
+- Do not use multi-line banner comments to group classes/functions in a module. Prefer a concise module-level docstring or separate modules.
+
+  ```python
+  # Bad
+  """
+  ===== Handlers =====
+  """
+  class FileHandler: ...
+  class RemoteHandler: ...
+
+  # Good (module-level docstring at top)
+  """
+  Handlers used by the logging subsystem (file and remote variants).
+  """
+  class FileHandler: ...
+  class RemoteHandler: ...
+  ```
 
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
@@ -39,6 +68,62 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
 
+### FastAPI Agent Profile
+- ZenML OSS FastAPI work expects senior-level API expertise covering FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 features.
+- Default to object-oriented patterns—extend existing service classes or create cohesive new ones instead of scattering helpers or global functions.
+- Keep shared state inside FastAPI dependency injection or the application factory; never introduce new global variables outside initialization.
+- Use descriptive auxiliary-verb-prefixed names and keep directories/files in lower_snake_case (for example `routers/user_routes.py`, `services/user_service.py`).
+- Apply the Receive an Object, Return an Object (RORO) pattern for all public interfaces so inputs/outputs remain self-describing.
+
+### FastAPI Project Structure
+- Every FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static resources, and types (Pydantic models or schemas).
+- Favor named exports for routers, dependencies, and helper utilities to keep imports explicit and observable during reviews.
+- Co-locate Pydantic models with their consuming routes and keep reusable business logic inside service or repository modules referenced via dependency injection.
+- Name directories/files with descriptive verbs or nouns that express behavior (e.g., `routers/register_user.py`, `services/create_invitation.py`) to keep navigation predictable.
+
+#### Prefer typing over dynamic attribute checks
+- Don't use getattr/hasattr for capability checks when static typing can express the contract
+- Prefer Protocols/ABCs for required methods, Unions with isinstance narrowing, or typed adapters around dynamic third-party objects
+- Only use getattr/hasattr when the object is truly untyped and can't be reasonably typed; isolate in a small helper with a typed public surface
+
+Examples:
+```python
+# Bad
+if hasattr(handler, "close"):
+    handler.close()
+
+# Good: structural typing
+from typing import Protocol
+
+class Closable(Protocol):
+    def close(self) -> None: ...
+
+def shutdown(h: Closable) -> None:
+    h.close()
+
+# Good: union + narrowing
+from typing import Union
+
+class FileHandler:
+    def close(self) -> None: ...
+
+class RemoteHandler:
+    def shutdown(self) -> None: ...
+
+def stop(h: Union[FileHandler, RemoteHandler]) -> None:
+    if isinstance(h, FileHandler):
+        h.close()
+    else:
+        h.shutdown()
+```
+
+### Error Handling & Validation
+- Start each route, dependency, or service with guard clauses that validate payloads and dependencies; prefer early returns over nested branches and keep the happy path last.
+- Avoid redundant `else` blocks after a return; handle error cases up front with clear log messages and user-safe responses.
+- Use custom exception classes or error factories so FastAPI middleware can translate them into consistent JSON payloads.
+- Raise `HTTPException` (with precise status codes and detail messages) for expected client/server errors, and rely on middleware for unexpected failures plus centralized logging and metrics.
+- Define inputs/outputs with Pydantic models to make validation explicit and keep documentation in sync automatically.
+
 ### Testing Requirements
 - Most new code requires test coverage
   - Key exceptions are when the code involves integrations with external
@@ -56,6 +141,13 @@ Use filesystem navigation tools to explore the codebase structure as needed.
   - `pytest tests/unit/path/to/test_file.py::test_specific_function`
 - For full coverage, use CI (see CI section below)
 - Some tests use: `bash scripts/test-coverage-xml.sh` (but this won't run all tests)
+
+## Dependencies & Runtime Constraints
+- Target the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm new third-party additions align with `pyproject.toml`.
+- The current ZenML OSS runtime disallows async I/O in Codex contributions even though FastAPI supports it; implement synchronous `def` route handlers and coordinate background tasks via dependencies or workers rather than `async def`.
+- Document minimum supported versions when touching dependency-heavy modules and prefer dependency injection over module-level singletons for stateful clients.
+- Cache static or frequently accessed data through in-memory stores (for example, dependency-scoped caches) and lazy-load heavyweight resources to optimize cold-start performance.
+- Use middleware hooks for logging, error monitoring, and performance profiling so route handlers stay focused on business logic.
 
 ## Development Workflow
 
@@ -215,6 +307,8 @@ When tackling complex tasks:
 - API stability is important - don't break public interfaces
 - Review similar PRs for implementation patterns
 - Pipeline execution is complex - test thoroughly when modifying
+- Centralize FastAPI request logging, tracing, and unexpected error handling inside middleware so route handlers stay lean.
+- Evaluate latency/throughput for every new endpoint; cache static data, lazy-load heavyweight resources, and document serialization trade-offs to protect performance budgets.
 
 ## Documentation Guidelines
 

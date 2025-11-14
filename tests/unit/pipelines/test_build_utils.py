@@ -595,3 +595,34 @@ def test_finding_existing_build(
     )
 
     assert not build
+
+
+def test_should_upload_code_dynamic_snapshot_no_steps(
+    sample_snapshot_response_model, sample_build_response_model
+):
+    """Test should_upload_code with a dynamic pipeline snapshot and no steps."""
+
+    sample_snapshot_response_model.body.is_dynamic = True
+    sample_build_response_model.metadata.contains_code = False
+
+    assert (
+        build_utils.should_upload_code(
+            snapshot=sample_snapshot_response_model,
+            build=sample_build_response_model,
+            can_download_from_code_repository=False,
+        )
+        is True
+    )
+
+    sample_snapshot_response_model.metadata.pipeline_configuration.settings[
+        "docker"
+    ] = DockerSettings(allow_download_from_artifact_store=False)
+
+    assert (
+        build_utils.should_upload_code(
+            snapshot=sample_snapshot_response_model,
+            build=sample_build_response_model,
+            can_download_from_code_repository=False,
+        )
+        is False
+    )
