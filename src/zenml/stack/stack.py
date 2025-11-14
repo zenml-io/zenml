@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     )
     from zenml.feature_stores import BaseFeatureStore
     from zenml.image_builders import BaseImageBuilder
+    from zenml.log_stores import BaseLogStore
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
@@ -112,6 +113,7 @@ class Stack:
         image_builder: Optional["BaseImageBuilder"] = None,
         model_registry: Optional["BaseModelRegistry"] = None,
         deployer: Optional["BaseDeployer"] = None,
+        log_store: Optional["BaseLogStore"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -135,6 +137,7 @@ class Stack:
             image_builder: Image builder component of the stack.
             model_registry: Model registry component of the stack.
             deployer: Deployer component of the stack.
+            log_store: Log store component of the stack.
         """
         self._id = id
         self._name = name
@@ -153,6 +156,7 @@ class Stack:
         self._model_registry = model_registry
         self._image_builder = image_builder
         self._deployer = deployer
+        self._log_store = log_store
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -239,6 +243,7 @@ class Stack:
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
+        from zenml.log_stores import BaseLogStore
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
@@ -334,6 +339,10 @@ class Stack:
         if deployer is not None and not isinstance(deployer, BaseDeployer):
             _raise_type_error(deployer, BaseDeployer)
 
+        log_store = components.get(StackComponentType.LOG_STORE)
+        if log_store is not None and not isinstance(log_store, BaseLogStore):
+            _raise_type_error(log_store, BaseLogStore)
+
         return Stack(
             id=id,
             name=name,
@@ -352,6 +361,7 @@ class Stack:
             image_builder=image_builder,
             model_registry=model_registry,
             deployer=deployer,
+            log_store=log_store,
         )
 
     @property
@@ -377,6 +387,7 @@ class Stack:
                 self.image_builder,
                 self.model_registry,
                 self.deployer,
+                self.log_store,
             ]
             if component is not None
         }
@@ -516,6 +527,15 @@ class Stack:
             The deployer of the stack.
         """
         return self._deployer
+
+    @property
+    def log_store(self) -> Optional["BaseLogStore"]:
+        """The log store of the stack.
+
+        Returns:
+            The log store of the stack.
+        """
+        return self._log_store
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.

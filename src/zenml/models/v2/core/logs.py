@@ -14,7 +14,7 @@
 """Models representing logs."""
 
 from typing import Any, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator
 
@@ -33,11 +33,23 @@ from zenml.models.v2.base.base import (
 class LogsRequest(BaseRequest):
     """Request model for logs."""
 
-    uri: str = Field(title="The uri of the logs file")
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="The unique id.",
+    )
+    uri: Optional[str] = Field(
+        default=None,
+        title="The URI of the logs file (for artifact store logs)",
+    )
     # TODO: Remove default value when not supporting clients <0.84.0 anymore
     source: str = Field(default="", title="The source of the logs file")
-    artifact_store_id: UUID = Field(
-        title="The artifact store ID to associate the logs with.",
+    artifact_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The artifact store ID (for artifact store logs)",
+    )
+    log_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The log store ID that collected these logs",
     )
 
     @field_validator("uri")
@@ -55,10 +67,11 @@ class LogsRequest(BaseRequest):
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
         """
-        assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
-            "The length of the value for this field can not "
-            f"exceed {TEXT_FIELD_MAX_LENGTH}"
-        )
+        if value is not None:
+            assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
+                "The length of the value for this field can not "
+                f"exceed {TEXT_FIELD_MAX_LENGTH}"
+            )
         return value
 
 
@@ -72,8 +85,9 @@ class LogsRequest(BaseRequest):
 class LogsResponseBody(BaseDatedResponseBody):
     """Response body for logs."""
 
-    uri: str = Field(
-        title="The uri of the logs file",
+    uri: Optional[str] = Field(
+        default=None,
+        title="The URI of the logs file (for artifact store logs)",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     source: str = Field(
@@ -95,8 +109,13 @@ class LogsResponseMetadata(BaseResponseMetadata):
         default=None,
         description="When this is set, step_run_id should be set to None.",
     )
-    artifact_store_id: UUID = Field(
-        title="The artifact store ID to associate the logs with.",
+    artifact_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The artifact store ID that collected these logs",
+    )
+    log_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The log store ID that collected these logs",
     )
 
 
@@ -123,7 +142,7 @@ class LogsResponse(
 
     # Body and metadata properties
     @property
-    def uri(self) -> str:
+    def uri(self) -> Optional[str]:
         """The `uri` property.
 
         Returns:
@@ -159,13 +178,22 @@ class LogsResponse(
         return self.get_metadata().pipeline_run_id
 
     @property
-    def artifact_store_id(self) -> UUID:
+    def artifact_store_id(self) -> Optional[UUID]:
         """The `artifact_store_id` property.
 
         Returns:
             the value of the property.
         """
         return self.get_metadata().artifact_store_id
+
+    @property
+    def log_store_id(self) -> Optional[UUID]:
+        """The `log_store_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().log_store_id
 
 
 # ------------------ Filter Model ------------------
