@@ -928,7 +928,7 @@ class FiftyOneAnnotator:
             self.set_latest_prediction_field(dataset_name, versioned_field)
         except Exception as e:
             logger.warning(
-                f"Failed to record prediction metadata or update latest field for dataset '{dataset_name}': {e}"
+                f"Failed to record prediction metadata or update latest field for dataset '{dataset_name}': {e}"  # nosec B608
             )
 
         return dataset_name
