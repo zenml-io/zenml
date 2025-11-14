@@ -1,0 +1,305 @@
+---
+description: How to understand, add or update ZenML ORM schemas
+globs: src/zenml/zen_stores/schemas/*.py
+---
+# ZenML ORM Schemas
+
+These are common patterns, rules and conventions used in defining ORM schemas within the ZenML project. Make sure to understand these patterns and adhere to these practices when working with the ORM schema.
+
+All ORM schemas are located in the @zenml/src/zenml/zen_stores/schemas directory and referenced in the `__init__.py` file. The files are named following the convention `<concept>_schemas.py` (e.g. `stack_schemas.py` and `component_schemas.py`) and usually contain only one schema ORM class, unless multiple classes are required to define the same concept.
+
+## ORM Model Definition
+
+### Base Class Usage
+
+ORM models typically inherit from the `BaseSchema` or `NamedSchema` class to ensure consistency and reuse common functionality. BaseSchema is defined in @zenml/src/zenml/zen_stores/schemas/base_schemas.py:
+
+```python
+class BaseSchema(SQLModel):
+    """Base SQL Model for ZenML entities."""
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    created: datetime = Field(default_factory=datetime.utcnow)
+    updated: datetime = Field(default_factory=datetime.utcnow)
+```
+
+NamedSchema is defined in @zenml/src/zenml/zen_stores/schemas/base_schemas.py, inheriting from BaseSchema and adding a `name` field:
+
+```python
+class NamedSchema(BaseSchema):
+    name: str
+```
+
+### Declarative Style
+
+Models are defined using a declarative style, where classes represent tables and attributes represent columns. For instance, in @zenml/src/zenml/zen_stores/schemas/component_schemas.py:
+
+```python
+class StackComponentSchema(NamedSchema, table=True):
+    """SQL Model for stack components."""
+
+    __tablename__ = "stack_component"
+
+    type: str
+    flavor: str
+    configuration: bytes
+    labels: Optional[bytes]
+    component_spec_path: Optional[str]
+    ...
+```
+
+Note that the `table=True` argument is used to indicate that the model should be a table in the database and the `__tablename__` attribute is used to specify the name of the table.
+
+There is a tight relationship between ORM schemas and their associated domain models, especially concerning the names and types of attributes. Make sure to keep them in sync. Read [zenml-domain-models.mdc](mdc:zenml/zenml/zenml/zenml/zenml/zenml/zenml/zenml/zenml/zenml/.cursor/rules/zenml-domain-models.mdc) to understand what ZenML domain models are and how they work.
+
+## Relationships
+
+Use the [schema_utils.py](mdc:zenml/zenml/zenml/zenml/zenml/src/zenml/zen_stores/schemas/schema_utils.py) helper functions to build indexes and foreign keys.
+
+### Foreign Keys
+
+Used to establish relationships between models, ensuring referential integrity.
+Example from @zenml/src/zenml/zen_stores/schemas/service_connector_schemas.py:
+
+```python
+class ServiceConnectorSchema(NamedSchema, table=True):
+    ...
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="service_connectors"
+    )        
+```
+
+### One-to-Many and Many-to-One
+
+Common relationship types that reflect database normalization practices.  Relationships often include backrefs for bidirectional access and lazy loading for performance optimization.
+
+Example from @zenml/src/zenml/zen_stores/schemas/component_schemas.py:
+
+```python
+class StackComponentSchema(NamedSchema, table=True):
+    ...
+
+    connector_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=ServiceConnectorSchema.__tablename__,
+        source_column="connector_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    connector: Optional["ServiceConnectorSchema"] = Relationship(
+        back_populates="components"
+    )
+```
+
+correlated with the backref relationship in @zenml/src/zenml/zen_stores/schemas/service_connector_schemas.py:
+
+```python
+class ServiceConnectorSchema(NamedSchema, table=True):
+    ...
+
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="connector",
+    )
+```
+
+### Many-to-Many Relationships
+
+Many-to-many relationships are used when multiple records in one table are associated with multiple records in another table. This is typically implemented using an association table.
+
+Example using `StackSchema` and `StackComponentSchema`:
+
+1. **Association Table**: Define an association table to link `StackSchema` and `StackComponentSchema`. Example from @zenml/src/zenml/zen_stores/schemas/stack_schemas.py:
+
+```python
+class StackCompositionSchema(SQLModel, table=True):
+    """SQL Model for stack definitions.
+
+    Join table between Stacks and StackComponents.
+    """
+
+    __tablename__ = "stack_composition"
+
+    stack_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="stack",
+        source_column="stack_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    component_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="stack_component",
+        source_column="component_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+```
+
+2. **Defining the Relationship**: Use the association table to define the many-to-many relationship in both models.
+
+In @zenml/src/zenml/zen_stores/schemas/stack_schemas.py:
+
+```python
+class StackSchema(NamedSchema, table=True):
+    ...
+
+    components: List["StackComponentSchema"] = Relationship(
+        back_populates="stacks",
+        link_model=StackCompositionSchema,
+    )
+```
+
+In @zenml/src/zenml/zen_stores/schemas/component_schemas.py:
+
+```python
+class StackComponentSchema(NamedSchema, table=True):
+    ...
+
+    stacks: List["StackSchema"] = Relationship(
+        back_populates="components", link_model=StackCompositionSchema
+    )
+```
+
+This setup allows each `StackSchema` to be associated with multiple `StackComponentSchema` instances and vice versa, facilitating a flexible and normalized database design.
+
+## Indexes, Foreign Keys, and Constraints
+
+- **Indexes**: Applied to frequently queried columns to enhance performance.
+- **Unique Constraints**: Ensure fields like emails or usernames are unique.
+- **Nullable Constraints**: Reflect whether fields are optional or required based on business rules.
+
+## Naming Patterns
+
+- **Consistent Naming**: Class names are singular and capitalized (PascalCase), while attributes use snake_case.
+- **Descriptive Names**: Names are descriptive and reflect the domain model for better understanding.
+- **Aligned Naming**: ORM class attributes are usually named the same as those in the associated domain model classes.
+
+## Common Fields
+
+- **ID Fields**: Primary key fields are UUIDs generated via `uuid4` and inherited from `BaseSchema` as `id: UUID`. Avoid integer auto-increment keys for consistency across stores.
+- **Timestamps**: Fields like `created` and `updated` provide audit trails. Inherited from `BaseSchema`.
+
+## Common Methods
+
+ORM classes typically implement these patterns for domain model conversion and data management:
+
+**`to_model()`** - Converts ORM object to domain model. Example from @zenml/src/zenml/zen_stores/schemas/secret_schemas.py:
+```python
+def to_model(
+    self,
+    include_metadata: bool = False,
+    include_resources: bool = False,
+    **kwargs: Any,
+) -> SecretResponse:
+    metadata = None
+    if include_metadata:
+        metadata = SecretResponseMetadata(
+            workspace=self.workspace.to_model(),
+        )
+
+    body = SecretResponseBody(
+        user=self.user.to_model() if self.user else None,
+        created=self.created,
+        updated=self.updated,
+        scope=SecretScope(self.scope),
+    )
+    return SecretResponse(
+        id=self.id,
+        name=self.name,
+        body=body,
+        metadata=metadata,
+    )
+```
+
+The `to_model()` method usually takes a `include_metadata` flag to indicate whether to include the metadata in the response and a `include_resources` flag to indicate whether to include resources (i.e. unpack and include other objects that the ORM object is related to) in the response.
+
+**`from_model()`** - Class method that creates ORM instance from domain model. This is used to create a new ORM object from a domain model object. Example from @zenml/src/zenml/zen_stores/schemas/pipeline_run_schemas.py:
+
+```python
+@classmethod
+def from_request(
+    cls, request: "PipelineRunRequest"
+) -> "PipelineRunSchema":
+    """Convert a `PipelineRunRequest` to a `PipelineRunSchema`.
+
+    Args:
+        request: The request to convert.
+
+    Returns:
+        The created `PipelineRunSchema`.
+    """
+    orchestrator_environment = json.dumps(request.orchestrator_environment)
+
+    return cls(
+        workspace_id=request.workspace,
+        user_id=request.user,
+        name=request.name,
+        orchestrator_run_id=request.orchestrator_run_id,
+        orchestrator_environment=orchestrator_environment,
+        start_time=request.start_time,
+        status=request.status.value,
+        pipeline_id=request.pipeline,
+        deployment_id=request.deployment,
+        trigger_execution_id=request.trigger_execution_id,
+        model_version_id=request.model_version_id,
+    )
+```
+
+**`update_from_model()`** - Handles updates from a domain model object. 
+
+This is used to update the ORM object from a domain model object. The usual convention is that an ORM attribute is updated only if the corresponding attribute in the domain model object is set. There are some exceptions to this rule however, particularly concerning compound types like lists and dictionaries. The implementation of the `update()` method should be such that it doesn't need to be update every time an attribute is added or removed from the ORM schema.
+
+Example from @zenml/src/zenml/zen_stores/schemas/component_schemas.py:
+```python
+def update(
+    self, component_update: "ComponentUpdate"
+) -> "StackComponentSchema":
+    """Updates a `StackComponentSchema` from a `ComponentUpdate`.
+
+    Args:
+        component_update: The `ComponentUpdate` to update from.
+
+    Returns:
+        The updated `StackComponentSchema`.
+    """
+    for field, value in component_update.model_dump(
+        exclude_unset=True, exclude={"workspace", "user", "connector"}
+    ).items():
+        if field == "configuration":
+            self.configuration = base64.b64encode(
+                json.dumps(component_update.configuration).encode("utf-8")
+            )
+        elif field == "labels":
+            self.labels = base64.b64encode(
+                json.dumps(component_update.labels).encode("utf-8")
+            )
+        elif field == "type":
+            component_type = component_update.type
+
+            if component_type is not None:
+                self.type = component_type
+        else:
+            setattr(self, field, value)
+
+    self.updated = datetime.utcnow()
+    return self
+```
+
+## Formatting
+
+- **Docstrings**: Mandatory to add docstrings to all functions, classes and methods, including all arguments, return values and raised exceptions.
+- **Comments**: Use comments to explain complex logic or business rules.

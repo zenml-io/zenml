@@ -27,6 +27,7 @@ from zenml.constants import (
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
+from zenml.integrations.mlflow.mlflow_utils import build_runs_uri, is_mlflow_3x
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
@@ -114,9 +115,14 @@ def mlflow_model_deployer_step(
     # Fetch the model URI from the MLflow artifact store
     model_uri = ""
     if mlflow_run_id and client.list_artifacts(mlflow_run_id, model_name):
-        model_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]
-            run_id=mlflow_run_id, artifact_path=model_name
-        )
+        # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
+        # In MLflow 2.x, use the artifact URI directly
+        if is_mlflow_3x():
+            model_uri = build_runs_uri(mlflow_run_id, model_name)
+        else:
+            model_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]
+                run_id=mlflow_run_id, artifact_path=model_name
+            )
 
     predictor_cfg = MLFlowDeploymentConfig(
         model_name=model_name or "",
