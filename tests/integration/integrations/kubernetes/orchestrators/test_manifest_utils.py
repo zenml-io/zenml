@@ -21,7 +21,7 @@ from kubernetes.client import (
     V1Toleration,
 )
 
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings

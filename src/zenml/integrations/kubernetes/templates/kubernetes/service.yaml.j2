@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ name }}
+  namespace: {{ namespace }}
+  labels:
+    app: {{ name }}
+    managed-by: zenml
+    {% if labels %}
+    {% for key, value in labels.items() %}
+    {{ key }}: {{ value | tojson }}
+    {% endfor %}
+    {% endif %}
+spec:
+  type: {{ settings.service_type }}
+  selector:
+    app: {{ name }}
+  ports:
+    - port: {{ settings.service_port }}
+      targetPort: {{ settings.service_port }}
+      protocol: TCP
+      name: http

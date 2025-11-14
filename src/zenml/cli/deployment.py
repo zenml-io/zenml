@@ -402,7 +402,7 @@ def deprovision_deployment(
                 )
                 cli_utils.declare(
                     "Hint: to permanently delete the deployment, run `zenml "
-                    f"deployments delete {deployment.name}`."
+                    f"deployment delete {deployment.name}`."
                 )
             except KeyError as e:
                 error_message = (

@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ name }}
+  namespace: {{ namespace }}
+  labels:
+    app: {{ name }}
+    managed-by: zenml
+    {% if labels %}
+    {% for key, value in labels.items() %}
+    {{ key }}: {{ value | tojson }}
+    {% endfor %}
+    {% endif %}
+spec:
+  replicas: {{ replicas | default(1) }}
+  selector:
+    matchLabels:
+      managed-by: zenml
+      zenml-deployment-id: {{ labels.get('zenml-deployment-id') | tojson }}
+      zenml-deployment-name: {{ labels.get('zenml-deployment-name') | tojson }}
+  template:
+    metadata:
+      labels:
+        app: {{ name }}
+        managed-by: zenml
+        {% if labels %}
+        {% for key, value in labels.items() %}
+        {{ key }}: {{ value | tojson }}
+        {% endfor %}
+        {% endif %}
+        {% if pod_settings and pod_settings.labels %}
+        {% for key, value in pod_settings.labels.items() %}
+        {{ key }}: {{ value | tojson }}
+        {% endfor %}
+        {% endif %}
+      {% if settings.annotations or (pod_settings and pod_settings.annotations) %}
+      annotations:
+        {% if settings.annotations %}
+        {% for key, value in settings.annotations.items() %}
+        {{ key }}: {{ value | tojson }}
+        {% endfor %}
+        {% endif %}
+        {% if pod_settings and pod_settings.annotations %}
+        {% for key, value in pod_settings.annotations.items() %}
+        {{ key }}: {{ value | tojson }}
+        {% endfor %}
+        {% endif %}
+      {% endif %}
+    spec:
+      {% if settings.service_account_name %}
+      serviceAccountName: {{ settings.service_account_name }}
+      {% endif %}
+      
+      {% if settings.image_pull_secrets %}
+      imagePullSecrets:
+      {% for secret in settings.image_pull_secrets %}
+        - name: {{ secret }}
+      {% endfor %}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.node_selectors %}
+      nodeSelector:
+      {% for key, value in pod_settings.node_selectors.items() %}
+        {{ key }}: {{ value | tojson }}
+      {% endfor %}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.affinity %}
+      affinity:
+{{ pod_settings.affinity | to_yaml | indent(8, first=True) }}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.tolerations %}
+      tolerations:
+{{ pod_settings.tolerations | to_yaml | indent(8, first=True) }}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.scheduler_name %}
+      schedulerName: {{ pod_settings.scheduler_name }}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.host_ipc %}
+      hostIPC: true
+      {% endif %}
+      
+      containers:
+      - name: main
+        image: {{ image }}
+        imagePullPolicy: {{ settings.image_pull_policy | default("IfNotPresent") }}
+        
+        {% if command %}
+        command:
+{{ command | to_yaml | indent(10, first=True) }}
+        {% endif %}
+        
+        {% if args %}
+        args:
+{{ args | to_yaml | indent(10, first=True) }}
+        {% endif %}
+        
+        {% if env %}
+        env:
+        {% for key, value in env.items() %}
+          - name: {{ key }}
+            value: {{ value | tojson }}
+        {% endfor %}
+        {% endif %}
+        
+        {% if pod_settings and pod_settings.env %}
+        {% if not env %}
+        env:
+        {% endif %}
+        {% for env_var in pod_settings.env %}
+          - {{ env_var | to_yaml | indent(12) }}
+        {% endfor %}
+        {% endif %}
+        
+        {% if pod_settings and pod_settings.env_from %}
+        envFrom: {{ pod_settings.env_from | to_yaml | indent(10) }}
+        {% endif %}
+        
+        {% if resources %}
+        resources:
+          {% if "requests" in resources %}
+          requests:
+          {% for key, value in resources.requests.items() %}
+            {{ key }}: {{ value | tojson }}
+          {% endfor %}
+          {% endif %}
+          {% if "limits" in resources %}
+          limits:
+          {% for key, value in resources.limits.items() %}
+            {{ key }}: {{ value | tojson }}
+          {% endfor %}
+          {% endif %}
+        {% endif %}
+        
+        readinessProbe:
+          httpGet:
+            path: {{ settings.readiness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.readiness_probe_initial_delay }}
+          periodSeconds: {{ settings.readiness_probe_period }}
+          timeoutSeconds: {{ settings.readiness_probe_timeout }}
+          failureThreshold: {{ settings.readiness_probe_failure_threshold }}
+        
+        livenessProbe:
+          httpGet:
+            path: {{ settings.liveness_probe_path }}
+            port: {{ settings.service_port }}
+          initialDelaySeconds: {{ settings.liveness_probe_initial_delay }}
+          periodSeconds: {{ settings.liveness_probe_period }}
+          timeoutSeconds: {{ settings.liveness_probe_timeout }}
+          failureThreshold: {{ settings.liveness_probe_failure_threshold }}
+        
+        {% if pod_settings and pod_settings.volume_mounts %}
+        volumeMounts:
+{{ pod_settings.volume_mounts | to_yaml | indent(10, first=True) }}
+        {% endif %}
+        
+      {% if pod_settings and pod_settings.volumes %}
+      volumes:
+{{ pod_settings.volumes | to_yaml | indent(8, first=True) }}
+      {% endif %}
+      
+      {% if pod_settings and pod_settings.additional_pod_spec_args %}
+      {% for key, value in pod_settings.additional_pod_spec_args.items() %}
+      {{ key }}: {{ value | to_yaml | indent(6) }}
+      {% endfor %}
+      {% endif %}

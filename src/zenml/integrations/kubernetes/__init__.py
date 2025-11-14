@@ -25,13 +25,14 @@ from zenml.stack import Flavor
 
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 KUBERNETES_STEP_OPERATOR_FLAVOR = "kubernetes"
+KUBERNETES_DEPLOYER_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
     """Definition of Kubernetes integration for ZenML."""
 
     NAME = KUBERNETES
-    REQUIREMENTS = ["kubernetes>=21.7,<26"]
+    REQUIREMENTS = ["kubernetes>=21.7,<26", "Jinja2"]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = [
         "kfp", # it is used by many others
     ]
@@ -43,8 +44,14 @@ class KubernetesIntegration(Integration):
             List of new stack component flavors.
         """
         from zenml.integrations.kubernetes.flavors import (
-            KubernetesOrchestratorFlavor, KubernetesStepOperatorFlavor
+            KubernetesDeployerFlavor,
+            KubernetesOrchestratorFlavor,
+            KubernetesStepOperatorFlavor,
         )
 
-        return [KubernetesOrchestratorFlavor, KubernetesStepOperatorFlavor]
+        return [
+            KubernetesDeployerFlavor,
+            KubernetesOrchestratorFlavor,
+            KubernetesStepOperatorFlavor,
+        ]
 

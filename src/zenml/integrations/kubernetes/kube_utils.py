@@ -37,24 +37,42 @@ import json
 import re
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
+from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+from zenml.integrations.kubernetes.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
     build_secret_manifest,
     build_service_account_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.integrations.kubernetes.serialization_utils import (
+    normalize_resource_to_dict,
+)
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.config.resource_settings import ResourceSettings
 
 logger = get_logger(__name__)
 
@@ -637,14 +655,16 @@ def retry_on_api_exception(
 
                 retries += 1
                 if retries <= max_retries:
-                    logger.warning("Error calling %s: %s.", func.__name__, e)
+                    func_name = getattr(func, "__name__", repr(func))
+                    logger.warning("Error calling %s: %s.", func_name, e)
                     time.sleep(_delay)
                     _delay *= backoff
                 else:
                     raise
 
+        func_name = getattr(func, "__name__", repr(func))
         raise RuntimeError(
-            f"Failed to call {func.__name__} after {max_retries} retries."
+            f"Failed to call {func_name} after {max_retries} retries."
         )
 
     return wrapper
@@ -1166,3 +1186,172 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+# ============================================================================
+# Resource Conversion Utilities
+# ============================================================================
+
+
+def convert_resource_settings_to_k8s_format(
+    resource_settings: "ResourceSettings",
+) -> Tuple[Dict[str, str], Dict[str, str], int]:
+    """Convert ZenML ResourceSettings to Kubernetes resource format.
+
+    Args:
+        resource_settings: The resource settings from pipeline configuration.
+
+    Returns:
+        Tuple of (requests, limits, replicas) in Kubernetes format.
+        - requests: Dict with 'cpu', 'memory', and optionally 'nvidia.com/gpu' keys
+        - limits: Dict with same keys as requests (GPUs require limits=requests)
+        - replicas: Number of replicas
+    """
+    requests: Dict[str, str] = {}
+    limits: Dict[str, str] = {}
+
+    if resource_settings.cpu_count is not None:
+        cpu_value = resource_settings.cpu_count
+        if cpu_value == int(cpu_value):
+            cpu_str = str(int(cpu_value))
+        else:
+            cpu_str = f"{int(cpu_value * 1000)}m"
+
+        requests["cpu"] = cpu_str
+
+    if memory_mib := resource_settings.get_memory(unit=ByteUnit.MIB):
+        memory_str = f"{int(memory_mib)}Mi"
+        requests["memory"] = memory_str
+
+    min_r = resource_settings.min_replicas
+    max_r = resource_settings.max_replicas
+
+    if min_r is not None and min_r > 0:
+        replicas = min_r
+    elif max_r is not None and max_r > 0:
+        replicas = max_r
+    else:
+        replicas = 1
+
+    if resource_settings.gpu_count:
+        gpu_str = str(resource_settings.gpu_count)
+        requests["nvidia.com/gpu"] = gpu_str
+        limits["nvidia.com/gpu"] = gpu_str
+        logger.info(
+            f"Configured {resource_settings.gpu_count} GPU(s) per pod. "
+            f"Ensure your cluster has GPU nodes with the nvidia.com/gpu resource. "
+            f"You may need to install the NVIDIA device plugin: "
+            f"https://github.com/NVIDIA/k8s-device-plugin"
+        )
+
+    return requests, limits, replicas
+
+
+# ============================================================================
+# URL Building Utilities
+# ============================================================================
+
+
+def build_service_url(
+    core_api: k8s_client.CoreV1Api,
+    service: Union[k8s_client.V1Service, Dict[str, Any]],
+    namespace: str,
+    ingress: Optional[Union[k8s_client.V1Ingress, Dict[str, Any]]] = None,
+) -> Optional[str]:
+    """Build URL for accessing a Kubernetes service.
+
+    Supports multiple service types:
+    - LoadBalancer: Returns http://<external-ip>:<port> if IP is assigned
+    - NodePort: Returns http://<node-ip>:<node-port> if nodes have external IPs
+    - ClusterIP: Returns internal cluster URL with warning about port-forwarding
+
+    Args:
+        core_api: Kubernetes Core V1 API client.
+        service: Kubernetes Service resource (model or dict).
+        namespace: Kubernetes namespace.
+        ingress: Optional Kubernetes Ingress resource.
+
+    Returns:
+        Service URL
+    """
+    service_dict = normalize_resource_to_dict(service)
+
+    if ingress:
+        ingress_dict = normalize_resource_to_dict(ingress)
+
+        ingress_spec = ingress_dict.get("spec")
+        if ingress_spec:
+            protocol = "https" if ingress_spec.get("tls") else "http"
+            rules = ingress_spec.get("rules", [])
+            if rules:
+                rule = rules[0]
+                host = rule.get("host")
+                http_config = rule.get("http", {})
+                paths = http_config.get("paths", [])
+                if host and paths:
+                    path = paths[0].get("path", "/")
+                    return f"{protocol}://{host}{path}"
+
+    metadata = service_dict.get("metadata", {})
+    spec = service_dict.get("spec", {})
+
+    service_name = metadata.get("name", "unknown")
+    service_type = spec.get("type")
+    ports = spec.get("ports", [])
+
+    if not service_type or not ports:
+        return None
+
+    service_port = ports[0].get("port")
+
+    if service_type == "LoadBalancer":
+        status = service_dict.get("status", {})
+        lb_status = status.get("loadBalancer", {})
+        ingress_list = lb_status.get("ingress", [])
+
+        if ingress_list:
+            lb_ingress = ingress_list[0]
+            host = lb_ingress.get("ip") or lb_ingress.get("hostname")
+            if host:
+                return f"http://{host}:{service_port}"
+
+        return None
+
+    if service_type == "NodePort":
+        node_port = ports[0].get("nodePort")
+        if not node_port:
+            return None
+
+        try:
+            nodes = core_api.list_node()
+
+            for node in nodes.items:
+                if node.status and node.status.addresses:
+                    for address in node.status.addresses:
+                        if address.type == "ExternalIP":
+                            return f"http://{address.address}:{node_port}"
+
+            for node in nodes.items:
+                if node.status and node.status.addresses:
+                    for address in node.status.addresses:
+                        if address.type == "InternalIP":
+                            logger.warning(
+                                f"NodePort service '{service_name}' has no ExternalIP. "
+                                f"Use: kubectl port-forward -n {namespace} "
+                                f"service/{service_name} 8080:{service_port}"
+                            )
+                            return f"http://{address.address}:{node_port}"
+        except Exception as e:
+            logger.error(f"Failed to get node IPs: {e}")
+
+        return None
+
+    if service_type == "ClusterIP":
+        logger.warning(
+            f"Service '{service_name}' uses ClusterIP (cluster-internal only). "
+            f"Use: kubectl port-forward -n {namespace} "
+            f"service/{service_name} 8080:{service_port}"
+        )
+        return f"http://{service_name}.{namespace}.svc.cluster.local:{service_port}"
+
+    return None
