@@ -2,10 +2,8 @@
 name: Bug Report
 description: File a bug report
 type: Bug
-labels: 
-  - core-team
-projects: 
-  - zenml-io/1
+labels: [core-team]
+projects: [zenml-io/1]
 body:
   - type: markdown
     attributes:

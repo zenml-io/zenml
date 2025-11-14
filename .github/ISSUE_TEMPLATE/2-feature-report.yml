@@ -2,10 +2,8 @@
 name: Feature Request
 description: Suggest a new feature or enhancement
 type: Feature
-labels: 
-  - core-team
-projects: 
-  - zenml-io/1
+labels: [core-team]
+projects: [zenml-io/1]
 body:
   - type: markdown
     attributes:
