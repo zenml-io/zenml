@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Skypilot orchestrator AWS flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_config import (
     SkypilotBaseOrchestratorConfig,
@@ -58,7 +58,7 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -73,7 +73,7 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -82,7 +82,7 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -100,7 +100,7 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/aws-skypilot.png"
 
     @property
-    def config_class(self) -> Type[BaseOrchestratorConfig]:
+    def config_class(self) -> type[BaseOrchestratorConfig]:
         """Config class for the base orchestrator flavor.
 
         Returns:
@@ -109,7 +109,7 @@ class SkypilotAWSOrchestratorFlavor(BaseOrchestratorFlavor):
         return SkypilotAWSOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SkypilotAWSOrchestrator"]:
+    def implementation_class(self) -> type["SkypilotAWSOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

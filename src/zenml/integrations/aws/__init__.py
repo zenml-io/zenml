@@ -54,7 +54,7 @@ class AWSIntegration(Integration):
         from zenml.integrations.aws import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the AWS integration.
 
         Returns:

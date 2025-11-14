@@ -23,7 +23,7 @@ to access deployment parameters without tight coupling.
 """
 
 import contextvars
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -35,13 +35,13 @@ class _DeploymentState(BaseModel):
 
     active: bool = False
     skip_artifact_materialization: bool = False
-    request_id: Optional[str] = None
-    snapshot_id: Optional[str] = None
-    pipeline_parameters: Dict[str, Any] = Field(default_factory=dict)
-    outputs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    request_id: str | None = None
+    snapshot_id: str | None = None
+    pipeline_parameters: dict[str, Any] = Field(default_factory=dict)
+    outputs: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     # In-memory data storage for artifacts
-    in_memory_data: Dict[str, Any] = Field(default_factory=dict)
+    in_memory_data: dict[str, Any] = Field(default_factory=dict)
 
     def reset(self) -> None:
         """Reset the deployment state."""
@@ -71,7 +71,7 @@ def _get_context() -> _DeploymentState:
 def start(
     request_id: str,
     snapshot: PipelineSnapshotResponse,
-    parameters: Dict[str, Any],
+    parameters: dict[str, Any],
     skip_artifact_materialization: bool = False,
 ) -> None:
     """Initialize deployment state for the current request context.
@@ -107,7 +107,7 @@ def is_active() -> bool:
     return _get_context().active
 
 
-def record_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
+def record_step_outputs(step_name: str, outputs: dict[str, Any]) -> None:
     """Record raw outputs for a step by invocation id.
 
     Args:
@@ -122,7 +122,7 @@ def record_step_outputs(step_name: str, outputs: Dict[str, Any]) -> None:
     state.outputs.setdefault(step_name, {}).update(outputs)
 
 
-def get_outputs() -> Dict[str, Dict[str, Any]]:
+def get_outputs() -> dict[str, dict[str, Any]]:
     """Return the outputs for all steps in the current context.
 
     Returns:

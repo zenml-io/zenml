@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for webhooks."""
 
-from typing import Dict
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
@@ -53,7 +52,7 @@ async def get_body(request: Request) -> bytes:
 
 @router.post(
     "/{event_source_id}",
-    response_model=Dict[str, str],
+    response_model=dict[str, str],
 )
 @async_fastapi_endpoint_wrapper
 def webhook(
@@ -61,7 +60,7 @@ def webhook(
     request: Request,
     background_tasks: BackgroundTasks,
     raw_body: bytes = Depends(get_body),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Webhook to receive events from external event sources.
 
     Args:

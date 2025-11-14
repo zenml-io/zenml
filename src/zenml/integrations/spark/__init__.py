@@ -36,7 +36,7 @@ class SparkIntegration(Integration):
         from zenml.integrations.spark import materializers  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Spark integration.
 
         Returns:

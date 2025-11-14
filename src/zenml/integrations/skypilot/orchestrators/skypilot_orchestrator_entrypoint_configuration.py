@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration for the Skypilot master/orchestrator VM."""
 
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -26,7 +26,7 @@ class SkypilotOrchestratorEntrypointConfiguration:
     """Entrypoint configuration for the Skypilot master/orchestrator VM."""
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> set[str]:
         """Gets all the options required for running this entrypoint.
 
         Returns:
@@ -39,7 +39,7 @@ class SkypilotOrchestratorEntrypointConfiguration:
         return options
 
     @classmethod
-    def get_entrypoint_command(cls) -> List[str]:
+    def get_entrypoint_command(cls) -> list[str]:
         """Returns a command that runs the entrypoint module.
 
         Returns:
@@ -57,7 +57,7 @@ class SkypilotOrchestratorEntrypointConfiguration:
         cls,
         run_name: str,
         snapshot_id: "UUID",
-    ) -> List[str]:
+    ) -> list[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:

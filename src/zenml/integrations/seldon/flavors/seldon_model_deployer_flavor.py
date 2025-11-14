@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Seldon model deployer flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
@@ -60,13 +60,13 @@ class SeldonModelDeployerConfig(BaseModelDeployerConfig):
             ZenML and is already present in the Kubernetes cluster.
     """
 
-    kubernetes_context: Optional[str] = None
-    kubernetes_namespace: Optional[str] = None
+    kubernetes_context: str | None = None
+    kubernetes_namespace: str | None = None
     base_url: str  # TODO: unused?
-    secret: Optional[str]
-    kubernetes_secret_name: Optional[
+    secret: str | None
+    kubernetes_secret_name: None | (
         str
-    ]  # TODO: Add full documentation section on this
+    )  # TODO: Add full documentation section on this
 
 
 class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -84,7 +84,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -99,7 +99,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -108,7 +108,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -126,7 +126,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png"
 
     @property
-    def config_class(self) -> Type[SeldonModelDeployerConfig]:
+    def config_class(self) -> type[SeldonModelDeployerConfig]:
         """Returns `SeldonModelDeployerConfig` config class.
 
         Returns:
@@ -135,7 +135,7 @@ class SeldonModelDeployerFlavor(BaseModelDeployerFlavor):
         return SeldonModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["SeldonModelDeployer"]:
+    def implementation_class(self) -> type["SeldonModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

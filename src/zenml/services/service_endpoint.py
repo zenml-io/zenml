@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of a ZenML service endpoint."""
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.enums import ServiceState
@@ -65,11 +65,11 @@ class ServiceEndpointStatus(ServiceStatus):
     """
 
     protocol: ServiceEndpointProtocol = ServiceEndpointProtocol.TCP
-    hostname: Optional[str] = None
-    port: Optional[int] = None
+    hostname: str | None = None
+    port: int | None = None
 
     @property
-    def uri(self) -> Optional[str]:
+    def uri(self) -> str | None:
         """Get the URI of the service endpoint.
 
         Returns:
@@ -106,7 +106,7 @@ class BaseServiceEndpoint(BaseTypedModel):
     config: ServiceEndpointConfig
     status: ServiceEndpointStatus
     # TODO [ENG-701]: allow multiple monitors per endpoint
-    monitor: Optional[BaseServiceEndpointHealthMonitor] = None
+    monitor: BaseServiceEndpointHealthMonitor | None = None
 
     def __init__(
         self,
@@ -122,7 +122,7 @@ class BaseServiceEndpoint(BaseTypedModel):
         super().__init__(*args, **kwargs)
         self.config.name = self.config.name or self.__class__.__name__
 
-    def check_status(self) -> Tuple[ServiceState, str]:
+    def check_status(self) -> tuple[ServiceState, str]:
         """Check the the current operational state of the external service endpoint.
 
         Returns:

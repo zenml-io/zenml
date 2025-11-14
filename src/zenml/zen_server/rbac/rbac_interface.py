@@ -14,7 +14,7 @@
 """RBAC interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
 from zenml.zen_server.rbac.models import Action, Resource
 
@@ -27,8 +27,8 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def check_permissions(
-        self, user: "UserResponse", resources: Set[Resource], action: Action
-    ) -> Dict[Resource, bool]:
+        self, user: "UserResponse", resources: set[Resource], action: Action
+    ) -> dict[Resource, bool]:
         """Checks if a user has permissions to perform an action on resources.
 
         Args:
@@ -44,7 +44,7 @@ class RBACInterface(ABC):
     @abstractmethod
     def list_allowed_resource_ids(
         self, user: "UserResponse", resource: Resource, action: Action
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """Lists all resource IDs of a resource type that a user can access.
 
         Args:
@@ -66,9 +66,9 @@ class RBACInterface(ABC):
         self,
         sharing_user: "UserResponse",
         resource: Resource,
-        actions: List[Action],
-        user_id: Optional[str] = None,
-        team_id: Optional[str] = None,
+        actions: list[Action],
+        user_id: str | None = None,
+        team_id: str | None = None,
     ) -> None:
         """Update the resource membership of a user.
 
@@ -82,7 +82,7 @@ class RBACInterface(ABC):
         """
 
     @abstractmethod
-    def delete_resources(self, resources: List[Resource]) -> None:
+    def delete_resources(self, resources: list[Resource]) -> None:
         """Delete resource membership information for a list of resources.
 
         Args:

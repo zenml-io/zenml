@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Source classes."""
 
+from collections.abc import Callable
 from enum import Enum
 from types import BuiltinFunctionType, FunctionType, ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Union
 from uuid import UUID
 
 from pydantic import (
@@ -26,7 +27,6 @@ from pydantic import (
     SerializeAsAny,
     field_validator,
 )
-from typing_extensions import Annotated
 
 from zenml.logger import get_logger
 
@@ -68,7 +68,7 @@ class Source(BaseModel):
     """
 
     module: str
-    attribute: Optional[str] = None
+    attribute: str | None = None
     type: SourceType
 
     @classmethod
@@ -142,7 +142,7 @@ class Source(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Dump the source as a dictionary.
 
         Args:
@@ -181,7 +181,7 @@ class Source(BaseModel):
 
 
 ObjectType = Union[
-    Type[Any],
+    type[Any],
     Callable[..., Any],
     ModuleType,
     FunctionType,
@@ -210,7 +210,7 @@ class SourceOrObject(Source):
         _is_loaded: Whether the callable has been loaded.
     """
 
-    _object: Optional[ObjectType] = None
+    _object: ObjectType | None = None
     _is_loaded: bool = False
 
     @classmethod
@@ -296,9 +296,9 @@ class SourceOrObject(Source):
     def convert_source_or_object(
         cls,
         source: Union[
-            str, "SourceOrObject", Source, Dict[str, Any], ObjectType
+            str, "SourceOrObject", Source, dict[str, Any], ObjectType
         ],
-    ) -> Union["SourceOrObject", Dict[str, Any]]:
+    ) -> Union["SourceOrObject", dict[str, Any]]:
         """Converts a source string or object to a SourceOrObject object.
 
         Args:
@@ -321,7 +321,7 @@ class SourceOrObject(Source):
 
         return cls.from_object(source)
 
-    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Dump the source as a dictionary.
 
         Args:
@@ -348,7 +348,7 @@ class SourceOrObject(Source):
     @classmethod
     def serialize_source_or_object(
         cls, value: "SourceOrObject"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Serialize the source or object as a dictionary.
 
         Args:
@@ -369,7 +369,7 @@ class DistributionPackageSource(Source):
     """
 
     package_name: str
-    version: Optional[str] = None
+    version: str | None = None
     type: SourceType = SourceType.DISTRIBUTION_PACKAGE
 
     @field_validator("type")
@@ -437,8 +437,8 @@ class NotebookSource(Source):
             module code is stored.
     """
 
-    replacement_module: Optional[str] = None
-    artifact_store_id: Optional[UUID] = None
+    replacement_module: str | None = None
+    artifact_store_id: UUID | None = None
     type: SourceType = SourceType.NOTEBOOK
 
     @field_validator("type")

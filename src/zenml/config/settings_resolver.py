@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Class for resolving settings."""
 
-from typing import TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from pydantic import ValidationError
 
@@ -77,7 +77,7 @@ class SettingsResolver:
 
     def _resolve_general_settings_class(
         self,
-    ) -> Type["BaseSettings"]:
+    ) -> type["BaseSettings"]:
         """Resolves general settings.
 
         Returns:
@@ -87,7 +87,7 @@ class SettingsResolver:
 
     def _resolve_stack_component_setting_class(
         self, stack: "Stack"
-    ) -> Type["BaseSettings"]:
+    ) -> type["BaseSettings"]:
         """Resolves stack component settings with the given stack.
 
         Args:
@@ -110,7 +110,7 @@ class SettingsResolver:
 
         return settings_class
 
-    def _convert_settings(self, target_class: Type["T"]) -> "T":
+    def _convert_settings(self, target_class: type["T"]) -> "T":
         """Converts the settings to their correct class.
 
         Args:

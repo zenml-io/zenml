@@ -23,10 +23,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Type,
     Union,
     cast,
 )
@@ -80,7 +77,7 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
-    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+    MaterializerClassOrSource = Union[str, Source, type[BaseMaterializer]]
 
 logger = get_logger(__name__)
 
@@ -92,7 +89,7 @@ logger = get_logger(__name__)
 
 def _save_artifact_visualizations(
     data: Any, materializer: "BaseMaterializer"
-) -> List[ArtifactVisualizationRequest]:
+) -> list[ArtifactVisualizationRequest]:
     """Save artifact visualizations.
 
     Args:
@@ -122,15 +119,15 @@ def _store_artifact_data_and_prepare_request(
     data: Any,
     name: str,
     uri: str,
-    materializer_class: Type["BaseMaterializer"],
+    materializer_class: type["BaseMaterializer"],
     save_type: ArtifactSaveType,
-    version: Optional[Union[int, str]] = None,
-    artifact_type: Optional[ArtifactType] = None,
-    tags: Optional[List[str]] = None,
+    version: int | str | None = None,
+    artifact_type: ArtifactType | None = None,
+    tags: list[str] | None = None,
     store_metadata: bool = True,
     store_visualizations: bool = True,
     has_custom_name: bool = True,
-    metadata: Optional[Dict[str, "MetadataType"]] = None,
+    metadata: dict[str, "MetadataType"] | None = None,
 ) -> ArtifactVersionRequest:
     """Store artifact data and prepare a request to the server.
 
@@ -179,7 +176,7 @@ def _store_artifact_data_and_prepare_request(
         else None
     )
 
-    combined_metadata: Dict[str, "MetadataType"] = {}
+    combined_metadata: dict[str, "MetadataType"] = {}
     if store_metadata:
         try:
             combined_metadata = materializer.extract_full_metadata(data)
@@ -219,14 +216,14 @@ def _store_artifact_data_and_prepare_request(
 def save_artifact(
     data: Any,
     name: str,
-    version: Optional[Union[int, str]] = None,
-    artifact_type: Optional[ArtifactType] = None,
-    tags: Optional[List[str]] = None,
+    version: int | str | None = None,
+    artifact_type: ArtifactType | None = None,
+    tags: list[str] | None = None,
     extract_metadata: bool = True,
     include_visualizations: bool = True,
-    user_metadata: Optional[Dict[str, "MetadataType"]] = None,
+    user_metadata: dict[str, "MetadataType"] | None = None,
     materializer: Optional["MaterializerClassOrSource"] = None,
-    uri: Optional[str] = None,
+    uri: str | None = None,
     # TODO: remove these once external artifact does not use this function anymore
     save_type: ArtifactSaveType = ArtifactSaveType.MANUAL,
     has_custom_name: bool = True,
@@ -316,11 +313,11 @@ def save_artifact(
 def register_artifact(
     folder_or_file_uri: str,
     name: str,
-    version: Optional[Union[int, str]] = None,
-    artifact_type: Optional[ArtifactType] = None,
-    tags: Optional[List[str]] = None,
+    version: int | str | None = None,
+    artifact_type: ArtifactType | None = None,
+    tags: list[str] | None = None,
     has_custom_name: bool = True,
-    artifact_metadata: Dict[str, "MetadataType"] = {},
+    artifact_metadata: dict[str, "MetadataType"] = {},
 ) -> "ArtifactVersionResponse":
     """Register existing data stored in the artifact store as a ZenML Artifact.
 
@@ -389,8 +386,8 @@ def register_artifact(
 
 
 def load_artifact(
-    name_or_id: Union[str, UUID],
-    version: Optional[str] = None,
+    name_or_id: str | UUID,
+    version: str | None = None,
 ) -> Any:
     """Load an artifact.
 
@@ -407,9 +404,9 @@ def load_artifact(
 
 
 def log_artifact_metadata(
-    metadata: Dict[str, "MetadataType"],
-    artifact_name: Optional[str] = None,
-    artifact_version: Optional[str] = None,
+    metadata: dict[str, "MetadataType"],
+    artifact_name: str | None = None,
+    artifact_version: str | None = None,
 ) -> None:
     """Log artifact metadata.
 
@@ -659,7 +656,7 @@ def get_producer_step_of_artifact(
 
 def get_artifacts_versions_of_pipeline_run(
     pipeline_run: "PipelineRunResponse", only_produced: bool = False
-) -> List["ArtifactVersionResponse"]:
+) -> list["ArtifactVersionResponse"]:
     """Get all artifact versions produced during a pipeline run.
 
     Args:
@@ -670,7 +667,7 @@ def get_artifacts_versions_of_pipeline_run(
     Returns:
         A list of all artifact versions produced during the pipeline run.
     """
-    artifact_versions: List["ArtifactVersionResponse"] = []
+    artifact_versions: list["ArtifactVersionResponse"] = []
     for step in pipeline_run.steps.values():
         if not only_produced or step.status == ExecutionStatus.COMPLETED:
             for output in step.outputs.values():
@@ -925,7 +922,7 @@ def _load_file_from_artifact_store(
     artifact_store: "BaseArtifactStore",
     mode: str = "rb",
     offset: int = 0,
-    length: Optional[int] = None,
+    length: int | None = None,
 ) -> Any:
     """Load the given uri from the given artifact store.
 
@@ -965,7 +962,7 @@ def _load_file_from_artifact_store(
             f"File '{uri}' does not exist in artifact store "
             f"'{artifact_store.name}'."
         )
-    except (IOError, IllegalOperationError) as e:
+    except (OSError, IllegalOperationError) as e:
         raise e
     except Exception as e:
         logger.exception(e)

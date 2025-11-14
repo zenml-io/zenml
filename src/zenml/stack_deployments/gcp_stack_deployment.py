@@ -14,7 +14,7 @@
 """Functionality to deploy a ZenML stack to GCP."""
 
 import re
-from typing import ClassVar, Dict, List
+from typing import ClassVar
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
@@ -125,7 +125,7 @@ GCP project and to clean up the resources created by the stack by using
 """
 
     @classmethod
-    def integrations(cls) -> List[str]:
+    def integrations(cls) -> list[str]:
         """Return the ZenML integrations required for the stack.
 
         Returns:
@@ -137,7 +137,7 @@ GCP project and to clean up the resources created by the stack by using
         ]
 
     @classmethod
-    def permissions(cls) -> Dict[str, List[str]]:
+    def permissions(cls) -> dict[str, list[str]]:
         """Return the permissions granted to ZenML to access the cloud resources.
 
         Returns:
@@ -163,7 +163,7 @@ GCP project and to clean up the resources created by the stack by using
         }
 
     @classmethod
-    def locations(cls) -> Dict[str, str]:
+    def locations(cls) -> dict[str, str]:
         """Return the locations where the ZenML stack can be deployed.
 
         Returns:
@@ -218,7 +218,7 @@ GCP project and to clean up the resources created by the stack by using
         }
 
     @classmethod
-    def skypilot_default_regions(cls) -> Dict[str, str]:
+    def skypilot_default_regions(cls) -> dict[str, str]:
         """Returns the regions supported by default for the Skypilot.
 
         Returns:

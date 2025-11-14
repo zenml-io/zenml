@@ -16,10 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 
@@ -49,7 +45,7 @@ if TYPE_CHECKING:
 class SecretRequest(UserScopedRequest):
     """Request model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",
@@ -60,12 +56,12 @@ class SecretRequest(UserScopedRequest):
         title="Whether the secret is private. A private secret is only "
         "accessible to the user who created it.",
     )
-    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
+    values: dict[str, PlainSerializedSecretStr | None] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
     @property
-    def secret_values(self) -> Dict[str, str]:
+    def secret_values(self) -> dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
         The values are returned as strings, not SecretStr. If a value is
@@ -89,24 +85,24 @@ class SecretRequest(UserScopedRequest):
 class SecretUpdate(BaseUpdate):
     """Update model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["private"]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    private: Optional[bool] = Field(
+    private: bool | None = Field(
         default=None,
         title="Whether the secret is private. A private secret is only "
         "accessible to the user who created it.",
     )
-    values: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
+    values: dict[str, PlainSerializedSecretStr | None] | None = Field(
         title="The values stored in this secret.",
         default=None,
     )
 
-    def get_secret_values_update(self) -> Dict[str, Optional[str]]:
+    def get_secret_values_update(self) -> dict[str, str | None]:
         """Returns a dictionary with the secret values to update.
 
         Returns:
@@ -132,7 +128,7 @@ class SecretResponseBody(UserScopedResponseBody):
         title="Whether the secret is private. A private secret is only "
         "accessible to the user who created it.",
     )
-    values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
+    values: dict[str, PlainSerializedSecretStr | None] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
@@ -154,7 +150,7 @@ class SecretResponse(
 ):
     """Response model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",
@@ -183,7 +179,7 @@ class SecretResponse(
         return self.get_body().private
 
     @property
-    def values(self) -> Dict[str, Optional[SecretStr]]:
+    def values(self) -> dict[str, SecretStr | None]:
         """The `values` property.
 
         Returns:
@@ -193,7 +189,7 @@ class SecretResponse(
 
     # Helper methods
     @property
-    def secret_values(self) -> Dict[str, str]:
+    def secret_values(self) -> dict[str, str]:
         """A dictionary with all un-obfuscated values stored in this secret.
 
         The values are returned as strings, not SecretStr. If a value is
@@ -243,7 +239,7 @@ class SecretResponse(
         """Removes all secret values from the secret but keep the keys."""
         self.get_body().values = {k: None for k in self.values.keys()}
 
-    def set_secrets(self, values: Dict[str, str]) -> None:
+    def set_secrets(self, values: dict[str, str]) -> None:
         """Sets the secret values of the secret.
 
         Args:
@@ -258,16 +254,16 @@ class SecretResponse(
 class SecretFilter(UserScopedFilter):
     """Model to enable advanced secret filtering."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the secret",
     )
-    private: Optional[bool] = Field(
+    private: bool | None = Field(
         default=None,
         description="Whether to filter secrets by private status",
     )
@@ -275,7 +271,7 @@ class SecretFilter(UserScopedFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Applies the filter to a query.
 

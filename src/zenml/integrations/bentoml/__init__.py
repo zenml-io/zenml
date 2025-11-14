@@ -41,7 +41,7 @@ class BentoMLIntegration(Integration):
         from zenml.integrations.bentoml import services  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for BentoML.
 
         Returns:

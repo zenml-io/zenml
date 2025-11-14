@@ -17,7 +17,7 @@ import logging
 from asyncio import Lock
 from asyncio.log import logger
 from datetime import datetime, timedelta
-from typing import Any, Set
+from typing import Any
 
 from anyio import CapacityLimiter, to_thread
 from fastapi import FastAPI, Request
@@ -111,7 +111,7 @@ class RequestBodyLimit(BaseHTTPMiddleware):
 class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
     """Restrict file uploads to certain paths."""
 
-    def __init__(self, app: ASGIApp, allowed_paths: Set[str]):
+    def __init__(self, app: ASGIApp, allowed_paths: set[str]):
         """Restrict file uploads to certain paths.
 
         Args:
@@ -156,7 +156,7 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
             )
 
 
-ALLOWED_FOR_FILE_UPLOAD: Set[str] = set()
+ALLOWED_FOR_FILE_UPLOAD: set[str] = set()
 
 
 async def track_last_user_activity(request: Request, call_next: Any) -> Any:

@@ -24,7 +24,7 @@ import logging
 import os
 from asyncio.log import logger
 from genericpath import isfile
-from typing import Any, List
+from typing import Any
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -310,7 +310,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
     app.include_router(users_endpoints.activation_router)
 
 
-def get_root_static_files() -> List[str]:
+def get_root_static_files() -> list[str]:
     """Get the list of static files in the root dashboard directory.
 
     These files are static files that are not in the /static subdirectory

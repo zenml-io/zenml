@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing full stack requests."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -28,22 +28,22 @@ class ServiceConnectorInfo(BaseModel):
 
     type: str
     auth_method: str
-    configuration: Dict[str, Any] = {}
+    configuration: dict[str, Any] = {}
 
 
 class ComponentInfo(BaseModel):
     """Information about each stack components when creating a full stack."""
 
     flavor: str
-    service_connector_index: Optional[int] = Field(
+    service_connector_index: int | None = Field(
         default=None,
         title="The id of the service connector from the list "
         "`service_connectors`.",
         description="The id of the service connector from the list "
         "`service_connectors` from `FullStackRequest`.",
     )
-    service_connector_resource_id: Optional[str] = None
-    configuration: Dict[str, Any] = {}
+    service_connector_resource_id: str | None = None
+    configuration: dict[str, Any] = {}
 
 
 class ResourcesInfo(BaseModel):
@@ -51,11 +51,11 @@ class ResourcesInfo(BaseModel):
 
     flavor: str
     flavor_display_name: str
-    required_configuration: Dict[str, str] = {}
+    required_configuration: dict[str, str] = {}
     use_resource_value_as_fixed_config: bool = False
 
-    accessible_by_service_connector: List[str]
-    connected_through_service_connector: List["ComponentResponse"]
+    accessible_by_service_connector: list[str]
+    connected_through_service_connector: list["ComponentResponse"]
 
     @model_validator(mode="after")
     def _validate_resource_info(self) -> "ResourcesInfo":
@@ -75,4 +75,4 @@ class ServiceConnectorResourcesInfo(BaseModel):
 
     connector_type: str
 
-    components_resources_info: Dict[StackComponentType, List[ResourcesInfo]]
+    components_resources_info: dict[StackComponentType, list[ResourcesInfo]]

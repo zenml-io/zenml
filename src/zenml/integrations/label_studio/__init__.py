@@ -30,7 +30,7 @@ class LabelStudioIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Label Studio integration.
 
         Returns:

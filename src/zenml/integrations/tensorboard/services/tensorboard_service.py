@@ -14,7 +14,7 @@
 """Implementation of the TensorBoard service."""
 
 import uuid
-from typing import Any, Dict, Union
+from typing import Any
 
 from zenml.logger import get_logger
 from zenml.models.v2.misc.service import ServiceType
@@ -71,7 +71,7 @@ class TensorboardService(LocalDaemonService):
 
     def __init__(
         self,
-        config: Union[TensorboardServiceConfig, Dict[str, Any]],
+        config: TensorboardServiceConfig | dict[str, Any],
         **attrs: Any,
     ) -> None:
         """Initialization for TensorBoard service.

@@ -15,7 +15,7 @@
 
 import json
 import webbrowser
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
+from typing import Any, cast
 
 import argilla as rg
 from argilla._exceptions._api import ArgillaAPIError
@@ -47,7 +47,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         return cast(ArgillaAnnotatorConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[ArgillaAnnotatorSettings]:
+    def settings_class(self) -> type[ArgillaAnnotatorSettings]:
         """Settings class for the Argilla annotator.
 
         Returns:
@@ -124,7 +124,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         ).id
         return f"{self.get_url()}/dataset/{dataset_id}/annotation-mode"
 
-    def get_datasets(self, **kwargs: Any) -> List[Any]:
+    def get_datasets(self, **kwargs: Any) -> list[Any]:
         """Gets the datasets currently available for annotation.
 
         Args:
@@ -144,7 +144,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
         return datasets
 
-    def get_dataset_names(self, **kwargs: Any) -> List[str]:
+    def get_dataset_names(self, **kwargs: Any) -> list[str]:
         """Gets the names of the datasets.
 
         Args:
@@ -168,7 +168,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
         return dataset_names
 
     def _get_data_by_status(
-        self, dataset_name: str, status: str, workspace: Optional[str]
+        self, dataset_name: str, status: str, workspace: str | None
     ) -> Any:
         """Gets the dataset containing the data with the specified status.
 
@@ -196,7 +196,7 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
 
     def get_dataset_stats(
         self, dataset_name: str, **kwargs: Any
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Gets the statistics of the given dataset.
 
         Args:
@@ -299,9 +299,9 @@ class ArgillaAnnotator(BaseAnnotator, AuthenticationMixin):
     def add_records(
         self,
         dataset_name: str,
-        records: Union[Any, List[Dict[str, Any]]],
-        workspace: Optional[str] = None,
-        mapping: Optional[Dict[str, str]] = None,
+        records: Any | list[dict[str, Any]],
+        workspace: str | None = None,
+        mapping: dict[str, str] | None = None,
     ) -> Any:
         """Add records to an Argilla dataset for annotation.
 

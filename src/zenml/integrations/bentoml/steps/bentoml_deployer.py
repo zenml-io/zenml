@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the BentoML model deployer pipeline step."""
 
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 import bentoml
 from bentoml._internal.bento import bento
@@ -49,21 +49,21 @@ def bentoml_model_deployer_step(
     port: int,
     deployment_type: BentoMLDeploymentType = BentoMLDeploymentType.LOCAL,
     deploy_decision: bool = True,
-    workers: Optional[int] = 1,
-    backlog: Optional[int] = 2048,
+    workers: int | None = 1,
+    backlog: int | None = 2048,
     production: bool = False,
-    working_dir: Optional[str] = None,
-    host: Optional[str] = None,
-    image: Optional[str] = None,
-    image_tag: Optional[str] = None,
-    platform: Optional[str] = None,
-    ssl_certfile: Optional[str] = None,
-    ssl_keyfile: Optional[str] = None,
-    ssl_keyfile_password: Optional[str] = None,
-    ssl_version: Optional[str] = None,
-    ssl_cert_reqs: Optional[str] = None,
-    ssl_ca_certs: Optional[str] = None,
-    ssl_ciphers: Optional[str] = None,
+    working_dir: str | None = None,
+    host: str | None = None,
+    image: str | None = None,
+    image_tag: str | None = None,
+    platform: str | None = None,
+    ssl_certfile: str | None = None,
+    ssl_keyfile: str | None = None,
+    ssl_keyfile_password: str | None = None,
+    ssl_version: str | None = None,
+    ssl_cert_reqs: str | None = None,
+    ssl_ca_certs: str | None = None,
+    ssl_ciphers: str | None = None,
     timeout: int = 30,
 ) -> BaseService:
     """Model deployer pipeline step for BentoML.
@@ -109,7 +109,7 @@ def bentoml_model_deployer_step(
     # Return the apis endpoint of the defined service to use in the predict.
     # This is a workaround to get the endpoints of the service defined as functions
     # from the user code in the BentoML service.
-    def service_apis(bento_tag: str) -> List[str]:
+    def service_apis(bento_tag: str) -> list[str]:
         # Add working dir in the bentoml load
         service = bentoml.load(
             bento_identifier=bento_tag,
@@ -121,7 +121,7 @@ def bentoml_model_deployer_step(
 
     def create_deployment_config(
         deployment_type: BentoMLDeploymentType,
-    ) -> Tuple[ServiceConfig, ServiceType]:
+    ) -> tuple[ServiceConfig, ServiceType]:
         common_config = {
             "model_name": model_name,
             "bento_tag": str(bento.tag),
@@ -167,7 +167,7 @@ def bentoml_model_deployer_step(
     )
 
     # Creating a new service with inactive state and status by default
-    service: Optional[BaseService] = None
+    service: BaseService | None = None
     if existing_services:
         if deployment_type == BentoMLDeploymentType.CONTAINER:
             service = cast(

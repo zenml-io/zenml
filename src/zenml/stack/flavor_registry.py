@@ -14,7 +14,7 @@
 """Implementation of the ZenML flavor registry."""
 
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Type
+from typing import DefaultDict
 
 from zenml.analytics.utils import analytics_disabler
 from zenml.enums import StackComponentType
@@ -40,7 +40,7 @@ class FlavorRegistry:
     def __init__(self) -> None:
         """Initialization of the flavors."""
         self._flavors: DefaultDict[
-            StackComponentType, Dict[str, FlavorResponse]
+            StackComponentType, dict[str, FlavorResponse]
         ] = defaultdict(dict)
 
     def register_flavors(self, store: BaseZenStore) -> None:
@@ -53,7 +53,7 @@ class FlavorRegistry:
         self.register_integration_flavors(store=store)
 
     @property
-    def builtin_flavors(self) -> List[Type[Flavor]]:
+    def builtin_flavors(self) -> list[type[Flavor]]:
         """A list of all default in-built flavors.
 
         Returns:
@@ -90,7 +90,7 @@ class FlavorRegistry:
         return flavors
 
     @property
-    def integration_flavors(self) -> List[Type[Flavor]]:
+    def integration_flavors(self) -> list[type[Flavor]]:
         """A list of all default integration flavors.
 
         Returns:

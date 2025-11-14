@@ -18,9 +18,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     Optional,
-    Type,
 )
 from uuid import UUID
 
@@ -57,12 +55,12 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     _zen_store: Optional["BaseZenStore"] = None
 
     TYPE: ClassVar[SecretsStoreType]
-    CONFIG_TYPE: ClassVar[Type[SecretsStoreConfiguration]]
+    CONFIG_TYPE: ClassVar[type[SecretsStoreConfiguration]]
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def convert_config(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def convert_config(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Method to infer the correct type of the config and convert.
 
         Args:
@@ -164,7 +162,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     @staticmethod
     def _load_custom_store_class(
         store_config: SecretsStoreConfiguration,
-    ) -> Type["BaseSecretsStore"]:
+    ) -> type["BaseSecretsStore"]:
         """Loads the custom secrets store class from the given config.
 
         Args:
@@ -196,7 +194,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     @staticmethod
     def get_store_class(
         store_config: SecretsStoreConfiguration,
-    ) -> Type["BaseSecretsStore"]:
+    ) -> type["BaseSecretsStore"]:
         """Returns the class of the given secrets store type.
 
         Args:
@@ -301,8 +299,8 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
 
     def _get_secret_metadata(
         self,
-        secret_id: Optional[UUID] = None,
-    ) -> Dict[str, str]:
+        secret_id: UUID | None = None,
+    ) -> dict[str, str]:
         """Get a dictionary with metadata that can be used as tags/labels.
 
         This utility method can be used with Secrets Managers that can
@@ -325,7 +323,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
         # from other secrets that might be stored in the same backend and
         # to distinguish between different ZenML deployments using the same
         # backend.
-        metadata: Dict[str, str] = {
+        metadata: dict[str, str] = {
             ZENML_SECRET_LABEL: str(self.zen_store.get_store_info().id)
         }
 
@@ -338,7 +336,7 @@ class BaseSecretsStore(BaseModel, SecretsStoreInterface, ABC):
     def _verify_secret_metadata(
         self,
         secret_id: UUID,
-        metadata: Dict[str, str],
+        metadata: dict[str, str],
     ) -> None:
         """Verify that the given metadata corresponds to a valid ZenML secret.
 

@@ -17,10 +17,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 from uuid import UUID
@@ -62,7 +58,7 @@ class ArtifactRequest(ProjectScopedRequest):
         title="Whether the name is custom (True) or auto-generated (False).",
         default=False,
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         title="Artifact tags.",
         description="Should be a list of plain strings, e.g., ['tag1', 'tag2']",
         default=None,
@@ -75,10 +71,10 @@ class ArtifactRequest(ProjectScopedRequest):
 class ArtifactUpdate(BaseUpdate):
     """Artifact update model."""
 
-    name: Optional[str] = None
-    add_tags: Optional[List[str]] = None
-    remove_tags: Optional[List[str]] = None
-    has_custom_name: Optional[bool] = None
+    name: str | None = None
+    add_tags: list[str] | None = None
+    remove_tags: list[str] | None = None
+    has_custom_name: bool | None = None
 
 
 # ------------------ Response Model ------------------
@@ -100,12 +96,12 @@ class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
 class ArtifactResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
 
-    tags: List[TagResponse] = Field(
+    tags: list[TagResponse] = Field(
         title="Tags associated with the artifact.",
     )
     # TODO: maybe move these back to body or figure out a better solution
-    latest_version_name: Optional[str] = None
-    latest_version_id: Optional[UUID] = None
+    latest_version_name: str | None = None
+    latest_version_id: UUID | None = None
 
 
 class ArtifactResponse(
@@ -134,7 +130,7 @@ class ArtifactResponse(
 
     # Body and metadata properties
     @property
-    def tags(self) -> List[TagResponse]:
+    def tags(self) -> list[TagResponse]:
         """The `tags` property.
 
         Returns:
@@ -143,7 +139,7 @@ class ArtifactResponse(
         return self.get_resources().tags
 
     @property
-    def latest_version_name(self) -> Optional[str]:
+    def latest_version_name(self) -> str | None:
         """The `latest_version_name` property.
 
         Returns:
@@ -152,7 +148,7 @@ class ArtifactResponse(
         return self.get_resources().latest_version_name
 
     @property
-    def latest_version_id(self) -> Optional[UUID]:
+    def latest_version_id(self) -> UUID | None:
         """The `latest_version_id` property.
 
         Returns:
@@ -171,7 +167,7 @@ class ArtifactResponse(
 
     # Helper methods
     @property
-    def versions(self) -> Dict[str, "ArtifactVersionResponse"]:
+    def versions(self) -> dict[str, "ArtifactVersionResponse"]:
         """Get a list of all versions of this artifact.
 
         Returns:
@@ -189,29 +185,29 @@ class ArtifactResponse(
 class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
     ]
 
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
 
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
-    name: Optional[str] = None
-    has_custom_name: Optional[bool] = None
+    name: str | None = None
+    has_custom_name: bool | None = None
 
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query for Artifacts.
 

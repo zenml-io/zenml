@@ -15,7 +15,6 @@
 
 from typing import (
     Any,
-    Type,
 )
 
 from catboost import CatBoostClassifier, CatBoostRegressor  # type: ignore
@@ -122,7 +121,7 @@ class PyCaretMaterializer(BaseMaterializer):
     )
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads and returns a PyCaret model after copying it to temporary path.
 
         Args:

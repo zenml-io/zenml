@@ -14,7 +14,6 @@
 """Workload manager interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
 from uuid import UUID
 
 
@@ -26,9 +25,9 @@ class WorkloadManagerInterface(ABC):
         self,
         workload_id: UUID,
         image: str,
-        command: List[str],
-        arguments: List[str],
-        environment: Optional[Dict[str, str]] = None,
+        command: list[str],
+        arguments: list[str],
+        environment: dict[str, str] | None = None,
         sync: bool = True,
         timeout_in_seconds: int = 0,
     ) -> None:

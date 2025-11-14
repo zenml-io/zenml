@@ -36,7 +36,7 @@ class KubernetesIntegration(Integration):
         "kfp", # it is used by many others
     ]
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Kubernetes integration.
 
         Returns:

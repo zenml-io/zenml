@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML server information retrieval."""
 
-from typing import Optional
-
 from zenml.logger import get_logger
 from zenml.models import ServerModel
 from zenml.zen_stores.rest_zen_store import (
@@ -25,7 +23,7 @@ from zenml.zen_stores.rest_zen_store import (
 logger = get_logger(__name__)
 
 
-def get_server_info(url: str) -> Optional[ServerModel]:
+def get_server_info(url: str) -> ServerModel | None:
     """Retrieve server information from a remote ZenML server.
 
     Args:

@@ -14,7 +14,7 @@
 """Implementation of the whylogs materializer."""
 
 import os
-from typing import Any, ClassVar, Dict, Tuple, Type, cast
+from typing import Any, ClassVar, cast
 
 from whylogs.core import DatasetProfileView  # type: ignore
 from whylogs.viz import NotebookProfileVisualizer  # type: ignore
@@ -34,12 +34,12 @@ HTML_FILENAME = "profile.html"
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profile views."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (DatasetProfileView,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (DatasetProfileView,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = (
         ArtifactType.DATA_ANALYSIS
     )
 
-    def load(self, data_type: Type[Any]) -> DatasetProfileView:
+    def load(self, data_type: type[Any]) -> DatasetProfileView:
         """Reads and returns a whylogs dataset profile view.
 
         Args:
@@ -85,7 +85,7 @@ class WhylogsMaterializer(BaseMaterializer):
     def save_visualizations(
         self,
         profile_view: DatasetProfileView,
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Saves visualizations for the given whylogs dataset profile view.
 
         Args:

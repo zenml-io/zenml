@@ -14,8 +14,9 @@
 """SQLModel implementation of step run tables."""
 
 import json
+from collections.abc import Sequence
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -93,23 +94,23 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Fields
-    start_time: Optional[datetime] = Field(nullable=True)
-    end_time: Optional[datetime] = Field(nullable=True)
-    latest_heartbeat: Optional[datetime] = Field(
+    start_time: datetime | None = Field(nullable=True)
+    end_time: datetime | None = Field(nullable=True)
+    latest_heartbeat: datetime | None = Field(
         nullable=True,
         description="The latest execution heartbeat.",
     )
     status: str = Field(nullable=False)
 
-    docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    cache_key: Optional[str] = Field(nullable=True)
-    cache_expires_at: Optional[datetime] = Field(nullable=True)
-    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    code_hash: Optional[str] = Field(nullable=True)
+    docstring: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    cache_key: str | None = Field(nullable=True)
+    cache_expires_at: datetime | None = Field(nullable=True)
+    source_code: str | None = Field(sa_column=Column(TEXT, nullable=True))
+    code_hash: str | None = Field(nullable=True)
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
 
-    exception_info: Optional[str] = Field(
+    exception_info: str | None = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -119,7 +120,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Foreign keys
-    original_step_run_id: Optional[UUID] = build_foreign_key_field(
+    original_step_run_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=__tablename__,
         source_column="original_step_run_id",
@@ -127,7 +128,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    snapshot_id: Optional[UUID] = build_foreign_key_field(
+    snapshot_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=PipelineSnapshotSchema.__tablename__,
         source_column="snapshot_id",
@@ -143,7 +144,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    user_id: Optional[UUID] = build_foreign_key_field(
+    user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
         source_column="user_id",
@@ -159,7 +160,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version_id: Optional[UUID] = build_foreign_key_field(
+    model_version_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",
@@ -174,7 +175,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata: List["RunMetadataSchema"] = Relationship(
+    run_metadata: list["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
@@ -182,17 +183,17 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             overlaps="run_metadata",
         ),
     )
-    input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
+    input_artifacts: list["StepRunInputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
-    output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
+    output_artifacts: list["StepRunOutputArtifactSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
     logs: Optional["LogsSchema"] = Relationship(
         back_populates="step_run",
         sa_relationship_kwargs={"cascade": "delete", "uselist": False},
     )
-    parents: List["StepRunParentsSchema"] = Relationship(
+    parents: list["StepRunParentsSchema"] = Relationship(
         sa_relationship_kwargs={
             "cascade": "delete",
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
@@ -204,7 +205,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_version: "ModelVersionSchema" = Relationship(
         back_populates="step_runs",
     )
-    triggered_runs: List["PipelineRunSchema"] = Relationship(
+    triggered_runs: list["PipelineRunSchema"] = Relationship(
         sa_relationship_kwargs={
             "viewonly": True,
             "primaryjoin": f"and_(foreign(PipelineRunSchema.triggered_by) == StepRunSchema.id, foreign(PipelineRunSchema.triggered_by_type) == '{PipelineRunTriggeredByType.STEP_RUN.value}')",
@@ -316,7 +317,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     def from_request(
         cls,
         request: StepRunRequest,
-        snapshot_id: Optional[UUID],
+        snapshot_id: UUID | None,
         version: int,
         is_retriable: bool,
     ) -> "StepRunSchema":
@@ -457,7 +458,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if self.model_version:
                 model_version = self.model_version.to_model()
 
-            input_artifacts: Dict[str, List[StepRunInputResponse]] = {}
+            input_artifacts: dict[str, list[StepRunInputResponse]] = {}
             for input_artifact in self.input_artifacts:
                 if input_artifact.name not in input_artifacts:
                     input_artifacts[input_artifact.name] = []
@@ -467,7 +468,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
                 input_artifacts[input_artifact.name].append(step_run_input)
 
-            output_artifacts: Dict[str, List["ArtifactVersionResponse"]] = {}
+            output_artifacts: dict[str, list["ArtifactVersionResponse"]] = {}
             for output_artifact in self.output_artifacts:
                 if output_artifact.name not in output_artifacts:
                     output_artifacts[output_artifact.name] = []

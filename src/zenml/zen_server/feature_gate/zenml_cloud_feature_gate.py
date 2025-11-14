@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pro implementation of the feature gate."""
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -52,7 +52,7 @@ class RawUsageEvent(BaseModel):
     total: int = Field(
         description="The total amount of entities of this type."
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default={},
         description="Allows attaching additional metadata to events.",
     )

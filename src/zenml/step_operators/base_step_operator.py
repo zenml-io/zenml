@@ -14,7 +14,7 @@
 """Base class for ZenML step operators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Type, cast
+from typing import TYPE_CHECKING, cast
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -49,7 +49,7 @@ class BaseStepOperator(StackComponent, ABC):
     @property
     def entrypoint_config_class(
         self,
-    ) -> Type[StepOperatorEntrypointConfiguration]:
+    ) -> type[StepOperatorEntrypointConfiguration]:
         """Returns the entrypoint configuration class for this step operator.
 
         Concrete step operator implementations may override this property
@@ -65,8 +65,8 @@ class BaseStepOperator(StackComponent, ABC):
     def launch(
         self,
         info: "StepRunInfo",
-        entrypoint_command: List[str],
-        environment: Dict[str, str],
+        entrypoint_command: list[str],
+        environment: dict[str, str],
     ) -> None:
         """Abstract method to execute a step.
 
@@ -94,7 +94,7 @@ class BaseStepOperatorFlavor(Flavor):
         return StackComponentType.STEP_OPERATOR
 
     @property
-    def config_class(self) -> Type[BaseStepOperatorConfig]:
+    def config_class(self) -> type[BaseStepOperatorConfig]:
         """Returns the config class for this flavor.
 
         Returns:
@@ -104,7 +104,7 @@ class BaseStepOperatorFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[BaseStepOperator]:
+    def implementation_class(self) -> type[BaseStepOperator]:
         """Returns the implementation class for this flavor.
 
         Returns:

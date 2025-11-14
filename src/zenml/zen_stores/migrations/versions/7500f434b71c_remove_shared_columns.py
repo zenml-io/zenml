@@ -8,7 +8,6 @@ Create Date: 2023-10-16 15:15:34.865337
 
 import base64
 from collections import defaultdict
-from typing import Dict, Optional, Set
 from uuid import uuid4
 
 import sqlalchemy as sa
@@ -24,7 +23,7 @@ depends_on = None
 
 
 def _rename_duplicate_entities(
-    table: sa.Table, reserved_names: Optional[Set[str]] = None
+    table: sa.Table, reserved_names: set[str] | None = None
 ) -> None:
     """Include owner id in the name of duplicate entities.
 
@@ -75,7 +74,7 @@ def _rename_duplicate_components(table: sa.Table) -> None:
         table.c.user_id,
     )
 
-    names_per_type: Dict[str, Set[str]] = defaultdict(lambda: {"default"})
+    names_per_type: dict[str, set[str]] = defaultdict(lambda: {"default"})
 
     for id, type_, name, user_id in connection.execute(query).fetchall():
         if user_id is None:
@@ -138,7 +137,7 @@ def resolve_duplicate_names() -> None:
             "name": "default",
             "type": "artifact_store",
             "flavor": "local",
-            "configuration": base64.b64encode("{}".encode("utf-8")),
+            "configuration": base64.b64encode(b"{}"),
             "is_shared": True,
             "created": utcnow,
             "updated": utcnow,
@@ -150,7 +149,7 @@ def resolve_duplicate_names() -> None:
             "name": "default",
             "type": "orchestrator",
             "flavor": "local",
-            "configuration": base64.b64encode("{}".encode("utf-8")),
+            "configuration": base64.b64encode(b"{}"),
             "is_shared": True,
             "created": utcnow,
             "updated": utcnow,

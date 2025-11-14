@@ -15,10 +15,10 @@
 
 import re
 from datetime import date, datetime
-from typing import Any, Dict, List, Type, cast
+from typing import Any, cast
 
 
-def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:
+def serialize_kubernetes_model(model: Any) -> dict[str, Any]:
     """Serializes a Kubernetes model.
 
     Args:
@@ -34,7 +34,7 @@ def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:
         raise TypeError(f"Unable to serialize non-kubernetes model {model}.")
 
     assert hasattr(model, "attribute_map")
-    attribute_mapping = cast(Dict[str, str], model.attribute_map)
+    attribute_mapping = cast(dict[str, str], model.attribute_map)
 
     model_attributes = {
         serialized_attribute_name: getattr(model, attribute_name)
@@ -43,7 +43,7 @@ def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:
     return _serialize_dict(model_attributes)
 
 
-def _serialize_dict(dict_: Dict[str, Any]) -> Dict[str, Any]:
+def _serialize_dict(dict_: dict[str, Any]) -> dict[str, Any]:
     """Serializes a dictionary.
 
     Args:
@@ -75,11 +75,11 @@ def _serialize(value: Any) -> Any:
         return value
     elif isinstance(value, (datetime, date)):
         return value.isoformat()
-    elif isinstance(value, List):
+    elif isinstance(value, list):
         return [_serialize(item) for item in value]
     elif isinstance(value, tuple):
         return tuple(_serialize(item) for item in value)
-    elif isinstance(value, Dict):
+    elif isinstance(value, dict):
         return _serialize_dict(value)
     elif is_model_class(value.__class__.__name__):
         return serialize_kubernetes_model(value)
@@ -87,7 +87,7 @@ def _serialize(value: Any) -> Any:
         raise TypeError(f"Failed to serialize unknown object {value}")
 
 
-def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
+def deserialize_kubernetes_model(data: dict[str, Any], class_name: str) -> Any:
     """Deserializes a Kubernetes model.
 
     Args:
@@ -104,14 +104,14 @@ def deserialize_kubernetes_model(data: Dict[str, Any], class_name: str) -> Any:
     assert hasattr(model_class, "openapi_types")
     assert hasattr(model_class, "attribute_map")
     # Mapping of the attribute name of the model class to the attribute type
-    type_mapping = cast(Dict[str, str], model_class.openapi_types)
-    reverse_attribute_mapping = cast(Dict[str, str], model_class.attribute_map)
+    type_mapping = cast(dict[str, str], model_class.openapi_types)
+    reverse_attribute_mapping = cast(dict[str, str], model_class.attribute_map)
     # Mapping of the serialized key to the attribute name of the model class
     attribute_mapping = {
         value: key for key, value in reverse_attribute_mapping.items()
     }
 
-    deserialized_attributes: Dict[str, Any] = {}
+    deserialized_attributes: dict[str, Any] = {}
 
     for key, value in data.items():
         if key not in attribute_mapping:
@@ -164,7 +164,7 @@ def is_model_class(class_name: str) -> bool:
     return hasattr(kubernetes.client.models, class_name)
 
 
-def get_model_class(class_name: str) -> Type[Any]:
+def get_model_class(class_name: str) -> type[Any]:
     """Gets a Kubernetes model class.
 
     Args:
@@ -189,7 +189,7 @@ def get_model_class(class_name: str) -> Type[Any]:
     return class_
 
 
-def _deserialize_list(data: Any, class_name: str) -> List[Any]:
+def _deserialize_list(data: Any, class_name: str) -> list[Any]:
     """Deserializes a list of potential Kubernetes models.
 
     Args:
@@ -199,7 +199,7 @@ def _deserialize_list(data: Any, class_name: str) -> List[Any]:
     Returns:
         The deserialized list.
     """
-    assert isinstance(data, List)
+    assert isinstance(data, list)
     if is_model_class(class_name):
         return [
             deserialize_kubernetes_model(element, class_name)
@@ -209,7 +209,7 @@ def _deserialize_list(data: Any, class_name: str) -> List[Any]:
         return data
 
 
-def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
+def _deserialize_dict(data: Any, class_name: str) -> dict[str, Any]:
     """Deserializes a dict of potential Kubernetes models.
 
     Args:
@@ -219,7 +219,7 @@ def _deserialize_dict(data: Any, class_name: str) -> Dict[str, Any]:
     Returns:
         The deserialized dict.
     """
-    assert isinstance(data, Dict)
+    assert isinstance(data, dict)
     if is_model_class(class_name):
         return {
             key: deserialize_kubernetes_model(value, class_name)

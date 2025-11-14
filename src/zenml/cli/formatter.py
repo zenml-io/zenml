@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 """Helper functions to format output for CLI."""
 
-from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple
+from collections.abc import Iterable, Iterator, Sequence
 
 from click import formatting
 from click._compat import term_len
 
 
-def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
+def measure_table(rows: Iterable[tuple[str, ...]]) -> tuple[int, ...]:
     """Measure the width of each column in a table.
 
     Args:
@@ -28,7 +28,7 @@ def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
     Returns:
         A tuple of the width of each column.
     """
-    widths: Dict[int, int] = {}
+    widths: dict[int, int] = {}
     for row in rows:
         for idx, col in enumerate(row):
             widths[idx] = max(widths.get(idx, 0), term_len(col))
@@ -37,9 +37,9 @@ def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
 
 
 def iter_rows(
-    rows: Iterable[Tuple[str, ...]],
+    rows: Iterable[tuple[str, ...]],
     col_count: int,
-) -> Iterator[Tuple[str, ...]]:
+) -> Iterator[tuple[str, ...]]:
     """Iterate over rows of a table.
 
     Args:
@@ -59,8 +59,8 @@ class ZenFormatter(formatting.HelpFormatter):
     def __init__(
         self,
         indent_increment: int = 2,
-        width: Optional[int] = None,
-        max_width: Optional[int] = None,
+        width: int | None = None,
+        max_width: int | None = None,
     ) -> None:
         """Initialize the formatter.
 
@@ -70,12 +70,12 @@ class ZenFormatter(formatting.HelpFormatter):
             width: The maximum width of the help output.
             max_width: The maximum width of the help output.
         """
-        super(ZenFormatter, self).__init__(indent_increment, width, max_width)
+        super().__init__(indent_increment, width, max_width)
         self.current_indent = 0
 
     def write_dl(
         self,
-        rows: Sequence[Tuple[str, ...]],
+        rows: Sequence[tuple[str, ...]],
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:

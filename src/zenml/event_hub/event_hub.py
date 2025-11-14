@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 """Base class for all the Event Hub."""
 
-from typing import List
-
 from pydantic import ValidationError
 
 from zenml import EventSourceResponse
@@ -112,7 +110,7 @@ class InternalEventHub(BaseEventHub):
         self,
         event: BaseEvent,
         event_source: EventSourceResponse,
-    ) -> List[TriggerResponse]:
+    ) -> list[TriggerResponse]:
         """Get all triggers that match an incoming event.
 
         Args:
@@ -123,7 +121,7 @@ class InternalEventHub(BaseEventHub):
             The list of matching triggers.
         """
         # get all event sources configured for this flavor
-        triggers: List[TriggerResponse] = depaginate(
+        triggers: list[TriggerResponse] = depaginate(
             self.zen_store.list_triggers,
             trigger_filter_model=TriggerFilter(
                 project=event_source.project_id,
@@ -133,7 +131,7 @@ class InternalEventHub(BaseEventHub):
             hydrate=True,
         )
 
-        trigger_list: List[TriggerResponse] = []
+        trigger_list: list[TriggerResponse] = []
 
         for trigger in triggers:
             # For now, the matching of trigger filters vs event is implemented

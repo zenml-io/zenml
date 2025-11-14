@@ -14,12 +14,11 @@
 """Pipeline execution utilities."""
 
 import contextvars
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Generator,
     Optional,
     Union,
 )
@@ -37,7 +36,7 @@ from zenml.stack import Stack
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
-        Dict[str, Any], StepConfigurationUpdate
+        dict[str, Any], StepConfigurationUpdate
     ]
 
 logger = get_logger(__name__)

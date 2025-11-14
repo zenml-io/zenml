@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of Neptune Experiment Tracker."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -57,7 +57,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         return cast(NeptuneExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+    def settings_class(self) -> type["BaseSettings"] | None:
         """Settings class for the Neptune experiment tracker.
 
         Returns:
@@ -86,7 +86,7 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:

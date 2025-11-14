@@ -14,15 +14,12 @@
 """Util functions for step and pipeline entrypoint functions."""
 
 import inspect
+from collections.abc import Callable, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Dict,
     NamedTuple,
     NoReturn,
-    Sequence,
-    Type,
     Union,
 )
 
@@ -44,7 +41,7 @@ if TYPE_CHECKING:
     from zenml.config.source import Source
     from zenml.pipelines.pipeline_definition import Pipeline
 
-    MaterializerClassOrSource = Union[str, "Source", Type["BaseMaterializer"]]
+    MaterializerClassOrSource = Union[str, "Source", type["BaseMaterializer"]]
 
 logger = get_logger(__name__)
 
@@ -113,8 +110,8 @@ class EntrypointFunctionDefinition(NamedTuple):
             names to output annotations.
     """
 
-    inputs: Dict[str, inspect.Parameter]
-    outputs: Dict[str, OutputSignature]
+    inputs: dict[str, inspect.Parameter]
+    outputs: dict[str, OutputSignature]
 
     def validate_input(self, key: str, value: Any) -> None:
         """Validates an input to the step entrypoint function.
