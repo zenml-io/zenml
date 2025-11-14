@@ -229,7 +229,7 @@ def test_normalize_resource_to_dict_with_dict_returns_same_instance(
     api_client,
 ):
     obj = {"apiVersion": "v1", "kind": "ConfigMap"}
-    out = normalize_resource_to_dict(obj, api_client)
+    out = normalize_resource_to_dict(obj)
     assert out is obj
 
 
@@ -237,7 +237,7 @@ def test_normalize_resource_to_dict_with_model_uses_sanitize_and_normalizes_api_
     api_client,
 ):
     model = DummyModel(api_version="v1", kind="ConfigMap", name="cm1")
-    out = normalize_resource_to_dict(model, api_client)
+    out = normalize_resource_to_dict(model)
     assert out["apiVersion"] == "v1"
     assert out["kind"] == "ConfigMap"
     assert out["metadata"]["name"] == "cm1"
@@ -265,9 +265,8 @@ def test_normalize_resource_to_dict_with_model_wrapping_api_version_key(
                 "metadata": {"name": "job"},
             }
 
-    api_client2 = ApiClientWithApiVersion()
     model = ModelWithApiVersionAttr()
-    out = normalize_resource_to_dict(model, api_client2)
+    out = normalize_resource_to_dict(model)
     assert out["apiVersion"] == "batch/v1"
     assert "api_version" not in out
 
@@ -276,12 +275,12 @@ def test_normalize_resource_to_dict_with_model_returning_non_dict_raises(
     api_client,
 ):
     with pytest.raises(ValueError, match="Expected dict after serialization"):
-        normalize_resource_to_dict(DummyBadModel(), api_client)
+        normalize_resource_to_dict(DummyBadModel())
 
 
 def test_normalize_resource_to_dict_with_unsupported_type_raises(api_client):
     with pytest.raises(ValueError, match="Unsupported resource type"):
-        normalize_resource_to_dict(42, api_client)
+        normalize_resource_to_dict(42)
 
 
 # ---------------------------------------------------------------------------
