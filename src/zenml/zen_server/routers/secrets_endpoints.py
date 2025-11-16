@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run secrets."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -84,7 +83,7 @@ op_router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_secret(
     secret: SecretRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> SecretResponse:
     """Creates a secret.
@@ -189,7 +188,7 @@ def get_secret(
 def update_secret(
     secret_id: UUID,
     secret_update: SecretUpdate,
-    patch_values: Optional[bool] = False,
+    patch_values: bool | None = False,
     _: AuthContext = Security(authorize),
 ) -> SecretResponse:
     """Updates the attribute on a specific secret using its unique id.

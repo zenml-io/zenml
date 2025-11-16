@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """MLflow model deployer flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -63,7 +63,7 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
         return MLFLOW_MODEL_DEPLOYER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -72,7 +72,7 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -90,7 +90,7 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/mlflow.png"
 
     @property
-    def config_class(self) -> Type[MLFlowModelDeployerConfig]:
+    def config_class(self) -> type[MLFlowModelDeployerConfig]:
         """Returns `MLFlowModelDeployerConfig` config class.
 
         Returns:
@@ -99,7 +99,7 @@ class MLFlowModelDeployerFlavor(BaseModelDeployerFlavor):
         return MLFlowModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["MLFlowModelDeployer"]:
+    def implementation_class(self) -> type["MLFlowModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

@@ -69,7 +69,7 @@ class GcpIntegration(Integration):
         from zenml.integrations.gcp import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the GCP integration.
 
         Returns:

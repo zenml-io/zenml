@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Model Version Data Lazy Loader definition."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -33,10 +33,10 @@ class ModelVersionDataLazyLoader(BaseModel):
     """
 
     model_name: str
-    model_version: Optional[str] = None
-    artifact_name: Optional[str] = None
-    artifact_version: Optional[str] = None
-    metadata_name: Optional[str] = None
+    model_version: str | None = None
+    artifact_name: str | None = None
+    artifact_version: str | None = None
+    metadata_name: str | None = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -49,7 +49,7 @@ class ModelVersionDataLazyLoader(BaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _root_validator(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _root_validator(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Validate all in one.
 
         Args:

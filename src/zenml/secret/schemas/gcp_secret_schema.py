@@ -14,7 +14,7 @@
 """GCP Authentication Secret Schema definition."""
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 from zenml.secret.base_secret import BaseSecretSchema
 
@@ -24,7 +24,7 @@ class GCPSecretSchema(BaseSecretSchema):
 
     token: str
 
-    def get_credential_dict(self) -> Dict[str, Any]:
+    def get_credential_dict(self) -> dict[str, Any]:
         """Gets a dictionary of credentials for authenticating to GCP.
 
         Returns:
@@ -41,7 +41,7 @@ class GCPSecretSchema(BaseSecretSchema):
                 "valid JSON string."
             )
 
-        if not isinstance(dict_, Dict):
+        if not isinstance(dict_, dict):
             raise ValueError(
                 "Failed to parse GCP secret token. The token value does not "
                 "represent a GCP credential dictionary."

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for projects."""
 
-from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -151,7 +150,7 @@ def create_project(
 )
 @async_fastapi_endpoint_wrapper
 def get_project(
-    project_name_or_id: Union[str, UUID],
+    project_name_or_id: str | UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
@@ -221,7 +220,7 @@ def update_project(
 )
 @async_fastapi_endpoint_wrapper
 def delete_project(
-    project_name_or_id: Union[str, UUID],
+    project_name_or_id: str | UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a project.
@@ -251,7 +250,7 @@ def delete_project(
 )
 @async_fastapi_endpoint_wrapper
 def get_project_statistics(
-    project_name_or_id: Union[str, UUID],
+    project_name_or_id: str | UUID,
     auth_context: AuthContext = Security(authorize),
 ) -> ProjectStatistics:
     """Gets statistics of a project.

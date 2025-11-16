@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for service connectors."""
 
-from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -94,7 +93,7 @@ types_router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_service_connector(
     connector: ServiceConnectorRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponse:
     """Creates a service connector.
@@ -129,7 +128,7 @@ def list_service_connectors(
     connector_filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     expand_secrets: bool = True,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
@@ -195,9 +194,9 @@ def list_service_connector_resources(
     filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     auth_context: AuthContext = Security(authorize),
-) -> List[ServiceConnectorResourcesModel]:
+) -> list[ServiceConnectorResourcesModel]:
     """List resources that can be accessed by service connectors.
 
     Args:
@@ -345,8 +344,8 @@ def validate_and_verify_service_connector_config(
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def validate_and_verify_service_connector(
     connector_id: UUID,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
     list_resources: bool = True,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResourcesModel:
@@ -386,8 +385,8 @@ def validate_and_verify_service_connector(
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_service_connector_client(
     connector_id: UUID,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    resource_type: str | None = None,
+    resource_id: str | None = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponse:
     """Get a service connector client for a service connector and given resource.
@@ -422,11 +421,11 @@ def get_service_connector_client(
 )
 @async_fastapi_endpoint_wrapper
 def list_service_connector_types(
-    connector_type: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    auth_method: Optional[str] = None,
+    connector_type: str | None = None,
+    resource_type: str | None = None,
+    auth_method: str | None = None,
     _: AuthContext = Security(authorize),
-) -> List[ServiceConnectorTypeModel]:
+) -> list[ServiceConnectorTypeModel]:
     """Get a list of service connector types.
 
     Args:
@@ -472,8 +471,8 @@ def get_service_connector_type(
 )
 @async_fastapi_endpoint_wrapper
 def get_resources_based_on_service_connector_info(
-    connector_info: Optional[ServiceConnectorInfo] = None,
-    connector_uuid: Optional[UUID] = None,
+    connector_info: ServiceConnectorInfo | None = None,
+    connector_uuid: UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResourcesInfo:
     """Gets the list of resources that a service connector can access.

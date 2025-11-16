@@ -17,10 +17,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -68,26 +65,26 @@ class ComponentBase(BaseModel):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    environment: Optional[Dict[str, str]] = Field(
+    environment: dict[str, str] | None = Field(
         default=None,
         title="Environment variables to set when running on this component.",
     )
-    secrets: Optional[List[Union[UUID, str]]] = Field(
+    secrets: list[UUID | str] | None = Field(
         default=None,
         title="Secrets to set as environment variables when running on this component.",
     )
 
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The stack component configuration.",
     )
 
-    connector_resource_id: Optional[str] = Field(
+    connector_resource_id: str | None = Field(
         default=None,
         description="The ID of a specific resource instance to "
         "gain access to through the connector",
     )
 
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         default=None,
         title="The stack component labels.",
     )
@@ -99,9 +96,9 @@ class ComponentBase(BaseModel):
 class ComponentRequest(ComponentBase, UserScopedRequest):
     """Request model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["type", "flavor"]
 
-    connector: Optional[UUID] = Field(
+    connector: UUID | None = Field(
         default=None,
         title="The service connector linked to this stack component.",
     )
@@ -138,37 +135,37 @@ class DefaultComponentRequest(ComponentRequest):
 class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    configuration: Optional[Dict[str, Any]] = Field(
+    configuration: dict[str, Any] | None = Field(
         title="The stack component configuration.",
         default=None,
     )
-    environment: Optional[Dict[str, str]] = Field(
+    environment: dict[str, str] | None = Field(
         default=None,
         title="Environment variables to set when running on this component.",
     )
-    connector_resource_id: Optional[str] = Field(
+    connector_resource_id: str | None = Field(
         description="The ID of a specific resource instance to "
         "gain access to through the connector",
         default=None,
     )
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         title="The stack component labels.",
         default=None,
     )
-    connector: Optional[UUID] = Field(
+    connector: UUID | None = Field(
         title="The service connector linked to this stack component.",
         default=None,
     )
-    add_secrets: Optional[List[Union[UUID, str]]] = Field(
+    add_secrets: list[UUID | str] | None = Field(
         default=None,
         title="New secrets to add to the stack component.",
     )
-    remove_secrets: Optional[List[Union[UUID, str]]] = Field(
+    remove_secrets: list[UUID | str] | None = Field(
         default=None,
         title="Secrets to remove from the stack component.",
     )
@@ -187,13 +184,13 @@ class ComponentResponseBody(UserScopedResponseBody):
         title="The flavor of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    integration: Optional[str] = Field(
+    integration: str | None = Field(
         default=None,
         title="The name of the integration that the component's flavor "
         "belongs to.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    logo_url: Optional[str] = Field(
+    logo_url: str | None = Field(
         default=None,
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
@@ -203,23 +200,23 @@ class ComponentResponseBody(UserScopedResponseBody):
 class ComponentResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stack components."""
 
-    configuration: Dict[str, Any] = Field(
+    configuration: dict[str, Any] = Field(
         title="The stack component configuration.",
     )
-    environment: Dict[str, str] = Field(
+    environment: dict[str, str] = Field(
         default={},
         title="Environment variables to set when running on this component.",
     )
-    secrets: List[UUID] = Field(
+    secrets: list[UUID] = Field(
         default=[],
         title="Secrets to set as environment variables when running on this "
         "component.",
     )
-    labels: Optional[Dict[str, Any]] = Field(
+    labels: dict[str, Any] | None = Field(
         default=None,
         title="The stack component labels.",
     )
-    connector_resource_id: Optional[str] = Field(
+    connector_resource_id: str | None = Field(
         default=None,
         description="The ID of a specific resource instance to "
         "gain access to through the connector",
@@ -247,14 +244,14 @@ class ComponentResponse(
 ):
     """Response model for stack components."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["type"]
+    ANALYTICS_FIELDS: ClassVar[list[str]] = ["type"]
 
     name: str = Field(
         title="The name of the stack component.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Add the component labels to analytics metadata.
 
         Returns:
@@ -304,7 +301,7 @@ class ComponentResponse(
         return self.get_body().flavor_name
 
     @property
-    def integration(self) -> Optional[str]:
+    def integration(self) -> str | None:
         """The `integration` property.
 
         Returns:
@@ -313,7 +310,7 @@ class ComponentResponse(
         return self.get_body().integration
 
     @property
-    def logo_url(self) -> Optional[str]:
+    def logo_url(self) -> str | None:
         """The `logo_url` property.
 
         Returns:
@@ -322,7 +319,7 @@ class ComponentResponse(
         return self.get_body().logo_url
 
     @property
-    def configuration(self) -> Dict[str, Any]:
+    def configuration(self) -> dict[str, Any]:
         """The `configuration` property.
 
         Returns:
@@ -331,7 +328,7 @@ class ComponentResponse(
         return self.get_metadata().configuration
 
     @property
-    def environment(self) -> Dict[str, str]:
+    def environment(self) -> dict[str, str]:
         """The `environment` property.
 
         Returns:
@@ -340,7 +337,7 @@ class ComponentResponse(
         return self.get_metadata().environment
 
     @property
-    def secrets(self) -> List[UUID]:
+    def secrets(self) -> list[UUID]:
         """The `secrets` property.
 
         Returns:
@@ -349,7 +346,7 @@ class ComponentResponse(
         return self.get_metadata().secrets
 
     @property
-    def labels(self) -> Optional[Dict[str, Any]]:
+    def labels(self) -> dict[str, Any] | None:
         """The `labels` property.
 
         Returns:
@@ -358,7 +355,7 @@ class ComponentResponse(
         return self.get_metadata().labels
 
     @property
-    def connector_resource_id(self) -> Optional[str]:
+    def connector_resource_id(self) -> str | None:
         """The `connector_resource_id` property.
 
         Returns:
@@ -391,37 +388,37 @@ class ComponentResponse(
 class ComponentFilter(UserScopedFilter):
     """Model to enable advanced stack component filtering."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
-    scope_type: Optional[str] = Field(
+    scope_type: str | None = Field(
         default=None,
         description="The type to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: Optional[str] = Field(
+    flavor: str | None = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: Optional[str] = Field(
+    type: str | None = Field(
         default=None,
         description="Type of the stack component",
     )
-    connector_id: Optional[Union[UUID, str]] = Field(
+    connector_id: UUID | str | None = Field(
         default=None,
         description="Connector linked to the stack component",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUID | str | None = Field(
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",
@@ -436,7 +433,7 @@ class ComponentFilter(UserScopedFilter):
         self.scope_type = component_type
 
     def generate_filter(
-        self, table: Type["AnySchema"]
+        self, table: type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 

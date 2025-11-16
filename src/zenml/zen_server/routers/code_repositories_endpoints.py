@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
-from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -65,7 +64,7 @@ router = APIRouter(
 @async_fastapi_endpoint_wrapper
 def create_code_repository(
     code_repository: CodeRepositoryRequest,
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponse:
     """Creates a code repository.
@@ -104,7 +103,7 @@ def list_code_repositories(
     filter_model: CodeRepositoryFilter = Depends(
         make_dependable(CodeRepositoryFilter)
     ),
-    project_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: str | UUID | None = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[CodeRepositoryResponse]:

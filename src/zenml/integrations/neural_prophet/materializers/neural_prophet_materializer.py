@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Neural Prophet materializer."""
 
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar
 
 from neuralprophet import NeuralProphet
 
@@ -33,6 +33,6 @@ DEFAULT_FILENAME = "entire_model.pt"
 class NeuralProphetMaterializer(BasePyTorchMaterializer):
     """Materializer to read/write NeuralProphet models."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (NeuralProphet,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (NeuralProphet,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.MODEL
     FILENAME: ClassVar[str] = DEFAULT_FILENAME

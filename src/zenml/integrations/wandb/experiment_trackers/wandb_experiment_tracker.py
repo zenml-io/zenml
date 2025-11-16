@@ -14,7 +14,7 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, cast
 
 import wandb
 
@@ -52,7 +52,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         return cast(WandbExperimentTrackerConfig, self._config)
 
     @property
-    def settings_class(self) -> Type[WandbExperimentTrackerSettings]:
+    def settings_class(self) -> type[WandbExperimentTrackerSettings]:
         """Settings class for the Wandb experiment tracker.
 
         Returns:
@@ -78,7 +78,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Get component- and step-specific metadata after a step ran.
 
         Args:
@@ -87,8 +87,8 @@ class WandbExperimentTracker(BaseExperimentTracker):
         Returns:
             A dictionary of metadata.
         """
-        run_url: Optional[str] = None
-        run_name: Optional[str] = None
+        run_url: str | None = None
+        run_name: str | None = None
 
         # Try to get the run name and URL from WandB directly
         current_wandb_run = wandb.run
@@ -129,7 +129,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         self,
         info: "StepRunInfo",
         run_name: str,
-        tags: List[str],
+        tags: list[str],
     ) -> None:
         """Initializes a wandb run.
 

@@ -15,16 +15,13 @@
 
 import contextvars
 import inspect
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
     Union,
     overload,
 )
@@ -116,7 +113,7 @@ class DynamicPipelineRunner:
         self._orchestrator_run_id = (
             self._orchestrator.get_orchestrator_run_id()
         )
-        self._futures: List[StepRunOutputsFuture] = []
+        self._futures: list[StepRunOutputsFuture] = []
 
     @property
     def pipeline(self) -> "DynamicPipeline":
@@ -201,9 +198,9 @@ class DynamicPipelineRunner:
     def launch_step(
         self,
         step: "BaseStep",
-        id: Optional[str],
-        args: Tuple[Any],
-        kwargs: Dict[str, Any],
+        id: str | None,
+        args: tuple[Any],
+        kwargs: dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
@@ -212,9 +209,9 @@ class DynamicPipelineRunner:
     def launch_step(
         self,
         step: "BaseStep",
-        id: Optional[str],
-        args: Tuple[Any],
-        kwargs: Dict[str, Any],
+        id: str | None,
+        args: tuple[Any],
+        kwargs: dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
@@ -222,9 +219,9 @@ class DynamicPipelineRunner:
     def launch_step(
         self,
         step: "BaseStep",
-        id: Optional[str],
-        args: Tuple[Any],
-        kwargs: Dict[str, Any],
+        id: str | None,
+        args: tuple[Any],
+        kwargs: dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
@@ -289,9 +286,9 @@ def compile_dynamic_step_invocation(
     snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
     step: "BaseStep",
-    id: Optional[str],
-    args: Tuple[Any],
-    kwargs: Dict[str, Any],
+    id: str | None,
+    args: tuple[Any],
+    kwargs: dict[str, Any],
     after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.

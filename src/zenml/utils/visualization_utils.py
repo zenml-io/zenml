@@ -14,7 +14,7 @@
 """Utility functions for dashboard visualizations."""
 
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from IPython.core.display_functions import display
 from IPython.display import HTML, JSON, Image, Markdown
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 def visualize_artifact(
-    artifact: "ArtifactVersionResponse", title: Optional[str] = None
+    artifact: "ArtifactVersionResponse", title: str | None = None
 ) -> None:
     """Visualize an artifact in notebook environments.
 

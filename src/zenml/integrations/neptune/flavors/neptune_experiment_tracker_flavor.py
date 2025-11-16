@@ -19,7 +19,7 @@ __all__ = [
     "NeptuneExperimentTrackerSettings",
 ]
 
-from typing import TYPE_CHECKING, Optional, Set, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -44,11 +44,11 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
     will try to find the relevant values in the environment
     """
 
-    project: Optional[str] = Field(
+    project: str | None = Field(
         None,
         description="Name of the Neptune project you want to log the metadata to.",
     )
-    api_token: Optional[str] = SecretField(
+    api_token: str | None = SecretField(
         default=None, description="Your Neptune API token for authentication."
     )
 
@@ -56,7 +56,7 @@ class NeptuneExperimentTrackerConfig(BaseExperimentTrackerConfig):
 class NeptuneExperimentTrackerSettings(BaseSettings):
     """Settings for the Neptune experiment tracker."""
 
-    tags: Set[str] = Field(
+    tags: set[str] = Field(
         default_factory=set, description="Tags for the Neptune run."
     )
 
@@ -74,7 +74,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return NEPTUNE_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -83,7 +83,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -101,7 +101,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/neptune.png"
 
     @property
-    def config_class(self) -> Type[NeptuneExperimentTrackerConfig]:
+    def config_class(self) -> type[NeptuneExperimentTrackerConfig]:
         """Returns `NeptuneExperimentTrackerConfig` config class.
 
         Returns:
@@ -110,7 +110,7 @@ class NeptuneExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         return NeptuneExperimentTrackerConfig
 
     @property
-    def implementation_class(self) -> Type["NeptuneExperimentTracker"]:
+    def implementation_class(self) -> type["NeptuneExperimentTracker"]:
         """Implementation class for this flavor.
 
         Returns:

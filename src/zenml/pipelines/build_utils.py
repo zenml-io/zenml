@@ -18,8 +18,6 @@ import platform
 import time
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -196,7 +194,7 @@ def should_prevent_build_reuse(snapshot: "PipelineSnapshotBase") -> bool:
 def reuse_or_create_pipeline_build(
     snapshot: "PipelineSnapshotBase",
     allow_build_reuse: bool,
-    pipeline_id: Optional[UUID] = None,
+    pipeline_id: UUID | None = None,
     build: Union["UUID", "PipelineBuildBase", None] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
@@ -339,7 +337,7 @@ def find_existing_build(
 
 def create_pipeline_build(
     snapshot: "PipelineSnapshotBase",
-    pipeline_id: Optional[UUID] = None,
+    pipeline_id: UUID | None = None,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Builds images and registers the output in the server.
@@ -373,8 +371,8 @@ def create_pipeline_build(
     start_time = time.time()
 
     docker_image_builder = PipelineDockerImageBuilder()
-    images: Dict[str, BuildItem] = {}
-    checksums: Dict[str, str] = {}
+    images: dict[str, BuildItem] = {}
+    checksums: dict[str, str] = {}
 
     for build_config in required_builds:
         combined_key = PipelineBuildBase.get_image_key(
@@ -482,7 +480,7 @@ def create_pipeline_build(
 
 
 def compute_build_checksum(
-    items: List["BuildConfiguration"],
+    items: list["BuildConfiguration"],
     stack: "Stack",
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> str:
@@ -520,7 +518,7 @@ def compute_build_checksum(
 def verify_local_repository_context(
     snapshot: "PipelineSnapshotBase",
     local_repo_context: Optional["LocalRepositoryContext"],
-) -> Optional[BaseCodeRepository]:
+) -> BaseCodeRepository | None:
     """Verifies the local repository.
 
     If the local repository exists and has no local changes, code download
@@ -728,7 +726,7 @@ def compute_stack_checksum(stack: StackResponse) -> str:
 
 def should_upload_code(
     snapshot: PipelineSnapshotBase,
-    build: Optional[PipelineBuildResponse],
+    build: PipelineBuildResponse | None,
     can_download_from_code_repository: bool,
 ) -> bool:
     """Checks whether the current code should be uploaded for the snapshot.

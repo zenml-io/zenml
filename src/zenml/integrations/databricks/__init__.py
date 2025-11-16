@@ -35,8 +35,8 @@ class DatabricksIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
-    ) -> List[str]:
+        cls, target_os: str | None = None, python_version: str | None = None
+    ) -> list[str]:
         """Method to get the requirements for the integration.
 
         Args:
@@ -54,7 +54,7 @@ class DatabricksIntegration(Integration):
             PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Databricks integration.
 
         Returns:

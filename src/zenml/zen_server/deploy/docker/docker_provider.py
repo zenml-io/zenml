@@ -15,7 +15,7 @@
 
 import os
 import shutil
-from typing import ClassVar, Optional, Tuple, Type, cast
+from typing import ClassVar, cast
 from uuid import uuid4
 
 from zenml.enums import ServerProviderType
@@ -49,7 +49,7 @@ class DockerServerProvider(BaseServerProvider):
     """Docker ZenML server provider."""
 
     TYPE: ClassVar[ServerProviderType] = ServerProviderType.DOCKER
-    CONFIG_TYPE: ClassVar[Type[LocalServerDeploymentConfig]] = (
+    CONFIG_TYPE: ClassVar[type[LocalServerDeploymentConfig]] = (
         DockerServerDeploymentConfig
     )
 
@@ -57,7 +57,7 @@ class DockerServerProvider(BaseServerProvider):
     def _get_service_configuration(
         cls,
         server_config: LocalServerDeploymentConfig,
-    ) -> Tuple[
+    ) -> tuple[
         ServiceConfig,
         ServiceEndpointConfig,
         ServiceEndpointHealthMonitorConfig,
@@ -94,7 +94,7 @@ class DockerServerProvider(BaseServerProvider):
     def _create_service(
         self,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Create, start and return the docker ZenML server deployment service.
 
@@ -145,7 +145,7 @@ class DockerServerProvider(BaseServerProvider):
         self,
         service: BaseService,
         config: LocalServerDeploymentConfig,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Update the docker ZenML server deployment service.
 
@@ -187,7 +187,7 @@ class DockerServerProvider(BaseServerProvider):
     def _start_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Start the docker ZenML server deployment service.
 
@@ -208,7 +208,7 @@ class DockerServerProvider(BaseServerProvider):
     def _stop_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> BaseService:
         """Stop the docker ZenML server deployment service.
 
@@ -229,7 +229,7 @@ class DockerServerProvider(BaseServerProvider):
     def _delete_service(
         self,
         service: BaseService,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> None:
         """Remove the docker ZenML server deployment service.
 

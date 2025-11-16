@@ -15,7 +15,7 @@
 
 import hashlib
 import os
-from typing import Dict, Optional, Type, Union
+from typing import Union
 
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
@@ -39,7 +39,7 @@ class StructuredStringMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (CSVString, HTMLString, MarkdownString, JSONString)
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA_ANALYSIS
 
-    def load(self, data_type: Type[STRUCTURED_STRINGS]) -> STRUCTURED_STRINGS:
+    def load(self, data_type: type[STRUCTURED_STRINGS]) -> STRUCTURED_STRINGS:
         """Loads the data from the HTML or Markdown file.
 
         Args:
@@ -64,7 +64,7 @@ class StructuredStringMaterializer(BaseMaterializer):
 
     def save_visualizations(
         self, data: STRUCTURED_STRINGS
-    ) -> Dict[str, VisualizationType]:
+    ) -> dict[str, VisualizationType]:
         """Save visualizations for the given data.
 
         Args:
@@ -78,7 +78,7 @@ class StructuredStringMaterializer(BaseMaterializer):
         visualization_type = self._get_visualization_type(type(data))
         return {filepath: visualization_type}
 
-    def _get_filepath(self, data_type: Type[STRUCTURED_STRINGS]) -> str:
+    def _get_filepath(self, data_type: type[STRUCTURED_STRINGS]) -> str:
         """Get the file path for the given data type.
 
         Args:
@@ -105,7 +105,7 @@ class StructuredStringMaterializer(BaseMaterializer):
         return os.path.join(self.uri, filename)
 
     def _get_visualization_type(
-        self, data_type: Type[STRUCTURED_STRINGS]
+        self, data_type: type[STRUCTURED_STRINGS]
     ) -> VisualizationType:
         """Get the visualization type for the given data type.
 
@@ -131,7 +131,7 @@ class StructuredStringMaterializer(BaseMaterializer):
                 f"Data type {data_type} is not supported by this materializer."
             )
 
-    def compute_content_hash(self, data: STRUCTURED_STRINGS) -> Optional[str]:
+    def compute_content_hash(self, data: STRUCTURED_STRINGS) -> str | None:
         """Compute the content hash of the given data.
 
         Args:

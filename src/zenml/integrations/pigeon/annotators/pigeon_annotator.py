@@ -25,7 +25,7 @@ https://github.com/agermanidis/pigeon
 import json
 import os
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, cast
 
 import ipywidgets as widgets  # type: ignore
 from IPython.core.display_functions import clear_output, display
@@ -70,7 +70,7 @@ class PigeonAnnotator(BaseAnnotator):
         """
         raise NotImplementedError("Pigeon annotator does not have a URL.")
 
-    def get_datasets(self) -> List[str]:
+    def get_datasets(self) -> list[str]:
         """Get a list of datasets (annotation files) in the output directory.
 
         Returns:
@@ -82,7 +82,7 @@ class PigeonAnnotator(BaseAnnotator):
         except FileNotFoundError:
             return []
 
-    def get_dataset_names(self) -> List[str]:
+    def get_dataset_names(self) -> list[str]:
         """List dataset names (annotation file names) in the output directory.
 
         Returns:
@@ -90,7 +90,7 @@ class PigeonAnnotator(BaseAnnotator):
         """
         return self.get_datasets()
 
-    def get_dataset_stats(self, dataset_name: str) -> Tuple[int, int]:
+    def get_dataset_stats(self, dataset_name: str) -> tuple[int, int]:
         """List labeled and unlabeled examples in a dataset (annotation file).
 
         Args:
@@ -105,7 +105,7 @@ class PigeonAnnotator(BaseAnnotator):
         num_unlabeled_examples = 0
 
         try:
-            with open(dataset_path, "r") as file:
+            with open(dataset_path) as file:
                 num_labeled_examples = sum(1 for _ in file)
         except FileNotFoundError:
             logger.error(f"File not found: {dataset_path}")
@@ -114,10 +114,10 @@ class PigeonAnnotator(BaseAnnotator):
 
     def _annotate(
         self,
-        data: List[Any],
-        options: List[str],
-        display_fn: Optional[Any] = None,
-    ) -> List[Tuple[Any, Any]]:
+        data: list[Any],
+        options: list[str],
+        display_fn: Any | None = None,
+    ) -> list[tuple[Any, Any]]:
         """Internal method to build an interactive widget for annotating.
 
         Args:
@@ -207,10 +207,10 @@ class PigeonAnnotator(BaseAnnotator):
 
     def annotate(
         self,
-        data: List[Any],
-        options: List[str],
-        display_fn: Optional[Any] = None,
-    ) -> List[Tuple[Any, Any]]:
+        data: list[Any],
+        options: list[str],
+        display_fn: Any | None = None,
+    ) -> list[tuple[Any, Any]]:
         """Annotate with the Pigeon annotator in the Jupyter notebook.
 
         Args:
@@ -224,7 +224,7 @@ class PigeonAnnotator(BaseAnnotator):
         annotations = self._annotate(data, options, display_fn)
         return annotations
 
-    def _save_annotations(self, annotations: List[Tuple[Any, Any]]) -> None:
+    def _save_annotations(self, annotations: list[tuple[Any, Any]]) -> None:
         """Save annotations to a file with a unique date-time suffix.
 
         Args:
@@ -269,7 +269,7 @@ class PigeonAnnotator(BaseAnnotator):
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
         os.remove(dataset_path)
 
-    def get_dataset(self, **kwargs: Any) -> List[Tuple[Any, Any]]:
+    def get_dataset(self, **kwargs: Any) -> list[tuple[Any, Any]]:
         """Get the annotated examples from a dataset (annotation file).
 
         Takes the `dataset_name` argument from the kwargs.
@@ -290,11 +290,11 @@ class PigeonAnnotator(BaseAnnotator):
                 "Dataset name (`dataset_name`) is required to retrieve a dataset."
             )
         dataset_path = os.path.join(self.config.output_dir, dataset_name)
-        with open(dataset_path, "r") as f:
+        with open(dataset_path) as f:
             annotations = json.load(f)
-        return cast(List[Tuple[Any, Any]], annotations)
+        return cast(list[tuple[Any, Any]], annotations)
 
-    def get_labeled_data(self, **kwargs: Any) -> List[Tuple[Any, Any]]:
+    def get_labeled_data(self, **kwargs: Any) -> list[tuple[Any, Any]]:
         """Get the labeled examples from a dataset (annotation file).
 
         Takes the `dataset_name` argument from the kwargs.

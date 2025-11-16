@@ -15,7 +15,7 @@
 
 import os
 import uuid
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from zenml.client import Client
 from zenml.enums import ArtifactType
@@ -31,10 +31,10 @@ SERVICE_CONFIG_FILENAME = "service.json"
 class ServiceMaterializer(BaseMaterializer):
     """Materializer to read/write service instances."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (BaseService,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (BaseService,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.SERVICE
 
-    def load(self, data_type: Type[Any]) -> BaseService:
+    def load(self, data_type: type[Any]) -> BaseService:
         """Creates and returns a service.
 
         This service is instantiated from the serialized service configuration
@@ -68,7 +68,7 @@ class ServiceMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, service: BaseService
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given service.
 
         Args:

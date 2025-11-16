@@ -25,11 +25,11 @@ class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
-    REQUIREMENTS: List[str] = ["pygithub"]
+    REQUIREMENTS: list[str] = ["pygithub"]
 
 
     @classmethod
-    def plugin_flavors(cls) -> List[Type[BasePluginFlavor]]:
+    def plugin_flavors(cls) -> list[type[BasePluginFlavor]]:
         """Declare the event flavors for the github integration.
 
         Returns:

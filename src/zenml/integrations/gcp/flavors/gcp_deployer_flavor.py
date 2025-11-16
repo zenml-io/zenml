@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """GCP Cloud Run deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -65,32 +65,32 @@ class GCPDeployerSettings(BaseDeployerSettings):
         "Options: 'all', 'internal', 'internal-and-cloud-load-balancing'.",
     )
 
-    vpc_connector: Optional[str] = Field(
+    vpc_connector: str | None = Field(
         default=None,
         description="VPC connector for private networking. "
         "Format: projects/PROJECT_ID/locations/LOCATION/connectors/CONNECTOR_NAME",
     )
 
     # Service account and IAM
-    service_account: Optional[str] = Field(
+    service_account: str | None = Field(
         default=None,
         description="Service account email to run the Cloud Run service. "
         "If not specified, uses the default Compute Engine service account.",
     )
 
     # Environment and configuration
-    environment_variables: Dict[str, str] = Field(
+    environment_variables: dict[str, str] = Field(
         default_factory=dict,
         description="Environment variables to set in the Cloud Run service.",
     )
 
     # Labels and annotations
-    labels: Dict[str, str] = Field(
+    labels: dict[str, str] = Field(
         default_factory=dict,
         description="Labels to apply to the Cloud Run service.",
     )
 
-    annotations: Dict[str, str] = Field(
+    annotations: dict[str, str] = Field(
         default_factory=dict,
         description="Annotations to apply to the Cloud Run service.",
     )
@@ -102,7 +102,7 @@ class GCPDeployerSettings(BaseDeployerSettings):
     )
 
     # Deployment configuration
-    traffic_allocation: Dict[str, int] = Field(
+    traffic_allocation: dict[str, int] = Field(
         default_factory=lambda: {"LATEST": 100},
         description="Traffic allocation between revisions. "
         "Keys are revision names or 'LATEST', values are percentages.",
@@ -164,7 +164,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -179,7 +179,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -188,7 +188,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -206,7 +206,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/deployer/google-cloud-run.svg"
 
     @property
-    def config_class(self) -> Type[GCPDeployerConfig]:
+    def config_class(self) -> type[GCPDeployerConfig]:
         """Returns the GCPDeployerConfig config class.
 
         Returns:
@@ -215,7 +215,7 @@ class GCPDeployerFlavor(BaseDeployerFlavor):
         return GCPDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["GCPDeployer"]:
+    def implementation_class(self) -> type["GCPDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

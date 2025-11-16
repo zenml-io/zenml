@@ -32,7 +32,7 @@ class ModalIntegration(Integration):
     REQUIREMENTS = ["modal>=0.64.49,<1"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Modal integration.
 
         Returns:

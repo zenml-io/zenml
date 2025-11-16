@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """WhyLabs whylogs data validator flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -38,7 +38,7 @@ class WhylogsDataValidatorSettings(BaseSettings):
         "profile views returned by the step will automatically be uploaded "
         "to the Whylabs platform if Whylabs credentials are configured.",
     )
-    dataset_id: Optional[str] = Field(
+    dataset_id: str | None = Field(
         None,
         description="Dataset ID to use when uploading profiles to Whylabs.",
     )
@@ -65,7 +65,7 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
         return WHYLOGS_DATA_VALIDATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -74,7 +74,7 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -92,7 +92,7 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/whylogs.png"
 
     @property
-    def config_class(self) -> Type[WhylogsDataValidatorConfig]:
+    def config_class(self) -> type[WhylogsDataValidatorConfig]:
         """Returns `WhylogsDataValidatorConfig` config class.
 
         Returns:
@@ -101,7 +101,7 @@ class WhylogsDataValidatorFlavor(BaseDataValidatorFlavor):
         return WhylogsDataValidatorConfig
 
     @property
-    def implementation_class(self) -> Type["WhylogsDataValidator"]:
+    def implementation_class(self) -> type["WhylogsDataValidator"]:
         """Implementation class for this flavor.
 
         Returns:

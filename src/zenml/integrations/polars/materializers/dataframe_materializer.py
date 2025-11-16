@@ -14,7 +14,7 @@
 """Polars materializer."""
 
 import os
-from typing import Any, ClassVar, Tuple, Type, Union
+from typing import Any, ClassVar
 
 import polars as pl
 import pyarrow as pa  # type: ignore
@@ -28,13 +28,13 @@ from zenml.utils import io_utils
 class PolarsMaterializer(BaseMaterializer):
     """Materializer to read/write Polars dataframes."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (
         pl.DataFrame,
         pl.Series,
     )
     ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads and returns Polars data after copying it to temporary path.
 
         Args:
@@ -67,7 +67,7 @@ class PolarsMaterializer(BaseMaterializer):
 
             return data
 
-    def save(self, data: Union[pl.DataFrame, pl.Series]) -> None:
+    def save(self, data: pl.DataFrame | pl.Series) -> None:
         """Writes Polars data to the artifact store.
 
         Args:

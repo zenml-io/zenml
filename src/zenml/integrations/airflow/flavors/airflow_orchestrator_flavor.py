@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Airflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import field_validator
 
@@ -76,16 +76,16 @@ class AirflowOrchestratorSettings(BaseSettings):
             pipeline and ignored if defined on a step.
     """
 
-    dag_output_dir: Optional[str] = None
+    dag_output_dir: str | None = None
 
-    dag_id: Optional[str] = None
-    dag_tags: List[str] = []
-    dag_args: Dict[str, Any] = {}
+    dag_id: str | None = None
+    dag_tags: list[str] = []
+    dag_args: dict[str, Any] = {}
 
     operator: str = OperatorType.DOCKER.source
-    operator_args: Dict[str, Any] = {}
+    operator_args: dict[str, Any] = {}
 
-    custom_dag_generator: Optional[str] = None
+    custom_dag_generator: str | None = None
 
     @field_validator("operator", mode="before")
     @classmethod
@@ -151,7 +151,7 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return AIRFLOW_ORCHESTRATOR_FLAVOR
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -160,7 +160,7 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -178,7 +178,7 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/airflow.png"
 
     @property
-    def config_class(self) -> Type[AirflowOrchestratorConfig]:
+    def config_class(self) -> type[AirflowOrchestratorConfig]:
         """Returns `AirflowOrchestratorConfig` config class.
 
         Returns:
@@ -187,7 +187,7 @@ class AirflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return AirflowOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["AirflowOrchestrator"]:
+    def implementation_class(self) -> type["AirflowOrchestrator"]:
         """Implementation class.
 
         Returns:

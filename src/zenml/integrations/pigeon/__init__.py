@@ -28,7 +28,7 @@ class PigeonIntegration(Integration):
     REQUIREMENTS = ["ipywidgets>=8.0.0"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Pigeon integration.
 
         Returns:

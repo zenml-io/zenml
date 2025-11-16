@@ -17,12 +17,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -71,17 +67,17 @@ class TriggerRequest(ProjectScopedRequest):
     action_id: UUID = Field(
         title="The action that is executed by this trigger.",
     )
-    schedule: Optional[Schedule] = Field(
+    schedule: Schedule | None = Field(
         default=None,
         title="The schedule for the trigger. Either a schedule or an event "
         "source is required.",
     )
-    event_source_id: Optional[UUID] = Field(
+    event_source_id: UUID | None = Field(
         default=None,
         title="The event source that activates this trigger. Either a schedule "
         "or an event source is required.",
     )
-    event_filter: Optional[Dict[str, Any]] = Field(
+    event_filter: dict[str, Any] | None = Field(
         default=None,
         title="Filter applied to events that activate this trigger. Only "
         "set if the trigger is activated by an event source.",
@@ -115,28 +111,28 @@ class TriggerRequest(ProjectScopedRequest):
 class TriggerUpdate(BaseUpdate):
     """Update model for triggers."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         title="The new name for the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The new description for the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_filter: Optional[Dict[str, Any]] = Field(
+    event_filter: dict[str, Any] | None = Field(
         default=None,
         title="New filter applied to events that activate this trigger. Only "
         "valid if the trigger is already configured to be activated by an "
         "event source.",
     )
-    schedule: Optional[Schedule] = Field(
+    schedule: Schedule | None = Field(
         default=None,
         title="The updated schedule for the trigger. Only valid if the trigger "
         "is already configured to be activated by a schedule.",
     )
-    is_active: Optional[bool] = Field(
+    is_active: bool | None = Field(
         default=None,
         title="The new status of the trigger.",
     )
@@ -155,13 +151,13 @@ class TriggerResponseBody(ProjectScopedResponseBody):
     action_subtype: str = Field(
         title="The subtype of the action that is executed by this trigger.",
     )
-    event_source_flavor: Optional[str] = Field(
+    event_source_flavor: str | None = Field(
         default=None,
         title="The flavor of the event source that activates this trigger. Not "
         "set if the trigger is activated by a schedule.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_source_subtype: Optional[str] = Field(
+    event_source_subtype: str | None = Field(
         default=None,
         title="The subtype of the event source that activates this trigger. "
         "Not set if the trigger is activated by a schedule.",
@@ -180,12 +176,12 @@ class TriggerResponseMetadata(ProjectScopedResponseMetadata):
         title="The description of the trigger.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    event_filter: Optional[Dict[str, Any]] = Field(
+    event_filter: dict[str, Any] | None = Field(
         default=None,
         title="The event that activates this trigger. Not set if the trigger "
         "is activated by a schedule.",
     )
-    schedule: Optional[Schedule] = Field(
+    schedule: Schedule | None = Field(
         default=None,
         title="The schedule that activates this trigger. Not set if the "
         "trigger is activated by an event source.",
@@ -249,7 +245,7 @@ class TriggerResponse(
         return self.get_body().action_subtype
 
     @property
-    def event_source_flavor(self) -> Optional[str]:
+    def event_source_flavor(self) -> str | None:
         """The `event_source_flavor` property.
 
         Returns:
@@ -258,7 +254,7 @@ class TriggerResponse(
         return self.get_body().event_source_flavor
 
     @property
-    def event_source_subtype(self) -> Optional[str]:
+    def event_source_subtype(self) -> str | None:
         """The `event_source_subtype` property.
 
         Returns:
@@ -276,7 +272,7 @@ class TriggerResponse(
         return self.get_body().is_active
 
     @property
-    def event_filter(self) -> Optional[Dict[str, Any]]:
+    def event_filter(self) -> dict[str, Any] | None:
         """The `event_filter` property.
 
         Returns:
@@ -327,7 +323,7 @@ class TriggerResponse(
 class TriggerFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all triggers."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "action_flavor",
         "action_subtype",
@@ -335,44 +331,44 @@ class TriggerFilter(ProjectScopedFilter):
         "event_source_subtype",
     ]
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the trigger.",
     )
-    event_source_id: Optional[Union[UUID, str]] = Field(
+    event_source_id: UUID | str | None = Field(
         default=None,
         description="The event source this trigger is attached to.",
         union_mode="left_to_right",
     )
-    action_id: Optional[Union[UUID, str]] = Field(
+    action_id: UUID | str | None = Field(
         default=None,
         description="The action this trigger is attached to.",
         union_mode="left_to_right",
     )
-    is_active: Optional[bool] = Field(
+    is_active: bool | None = Field(
         default=None,
         description="Whether the trigger is active.",
     )
-    action_flavor: Optional[str] = Field(
+    action_flavor: str | None = Field(
         default=None,
         title="The flavor of the action that is executed by this trigger.",
     )
-    action_subtype: Optional[str] = Field(
+    action_subtype: str | None = Field(
         default=None,
         title="The subtype of the action that is executed by this trigger.",
     )
-    event_source_flavor: Optional[str] = Field(
+    event_source_flavor: str | None = Field(
         default=None,
         title="The flavor of the event source that activates this trigger.",
     )
-    event_source_subtype: Optional[str] = Field(
+    event_source_subtype: str | None = Field(
         default=None,
         title="The subtype of the event source that activates this trigger.",
     )
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

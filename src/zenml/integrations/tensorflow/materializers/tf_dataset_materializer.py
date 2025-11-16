@@ -14,7 +14,7 @@
 """Implementation of the TensorFlow dataset materializer."""
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import tensorflow as tf
 
@@ -31,10 +31,10 @@ DEFAULT_FILENAME = "saved_data"
 class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from tf.data.Dataset."""
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (tf.data.Dataset,)
+    ASSOCIATED_TYPES: ClassVar[tuple[type[Any], ...]] = (tf.data.Dataset,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
 
-    def load(self, data_type: Type[Any]) -> Any:
+    def load(self, data_type: type[Any]) -> Any:
         """Reads data into tf.data.Dataset.
 
         Args:
@@ -64,7 +64,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
 
     def extract_metadata(
         self, dataset: tf.data.Dataset
-    ) -> Dict[str, "MetadataType"]:
+    ) -> dict[str, "MetadataType"]:
         """Extract metadata from the given `Dataset` object.
 
         Args:

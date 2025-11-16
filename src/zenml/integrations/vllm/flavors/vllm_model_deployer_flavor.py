@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """vLLM model deployer flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING
 
 from pydantic import Field
 
@@ -50,7 +50,7 @@ class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):
         return VLLM_MODEL_DEPLOYER
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -59,7 +59,7 @@ class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -77,7 +77,7 @@ class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/vllm.png"
 
     @property
-    def config_class(self) -> Type[VLLMModelDeployerConfig]:
+    def config_class(self) -> type[VLLMModelDeployerConfig]:
         """Returns `VLLMModelDeployerConfig` config class.
 
         Returns:
@@ -86,7 +86,7 @@ class VLLMModelDeployerFlavor(BaseModelDeployerFlavor):
         return VLLMModelDeployerConfig
 
     @property
-    def implementation_class(self) -> Type["VLLMModelDeployer"]:
+    def implementation_class(self) -> type["VLLMModelDeployer"]:
         """Implementation class for this flavor.
 
         Returns:

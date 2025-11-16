@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -127,21 +127,21 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUID | str | None = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUID | str | None = Field(
         default=None,
         description="Filter by pipeline run ID",
         union_mode="left_to_right",
     )
-    pipeline_run_name: Optional[str] = Field(
+    pipeline_run_name: str | None = Field(
         default=None,
         description="Name of the pipeline run",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUID | str | None = Field(
         default=None,
         description="Name/ID of the user that created the pipeline run.",
     )
@@ -155,8 +155,8 @@ class ModelVersionPipelineRunFilter(BaseFilter):
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:

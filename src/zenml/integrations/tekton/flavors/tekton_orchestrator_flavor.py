@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Tekton orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any
 
 from pydantic import model_validator
 
@@ -57,20 +57,20 @@ class TektonOrchestratorSettings(BaseSettings):
     synchronous: bool = True
     timeout: int = 1200
 
-    client_args: Dict[str, Any] = {}
-    client_username: Optional[str] = SecretField(default=None)
-    client_password: Optional[str] = SecretField(default=None)
-    user_namespace: Optional[str] = None
-    node_selectors: Dict[str, str] = {}
-    node_affinity: Dict[str, List[str]] = {}
-    pod_settings: Optional[KubernetesPodSettings] = None
+    client_args: dict[str, Any] = {}
+    client_username: str | None = SecretField(default=None)
+    client_password: str | None = SecretField(default=None)
+    user_namespace: str | None = None
+    node_selectors: dict[str, str] = {}
+    node_affinity: dict[str, list[str]] = {}
+    pod_settings: KubernetesPodSettings | None = None
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
     def _validate_and_migrate_pod_settings(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validates settings and migrates pod settings from older version.
 
         Args:
@@ -106,16 +106,16 @@ class TektonOrchestratorConfig(
             pods that run the pipeline steps should be running.
     """
 
-    tekton_hostname: Optional[str] = None
-    kubernetes_context: Optional[str] = None
+    tekton_hostname: str | None = None
+    kubernetes_context: str | None = None
     kubernetes_namespace: str = "kubeflow"
 
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
     def _validate_deprecated_attrs(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
         This root validator is used for backwards compatibility purposes. E.g.
@@ -179,7 +179,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -194,7 +194,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -203,7 +203,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -221,7 +221,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/tekton.png"
 
     @property
-    def config_class(self) -> Type[TektonOrchestratorConfig]:
+    def config_class(self) -> type[TektonOrchestratorConfig]:
         """Returns `TektonOrchestratorConfig` config class.
 
         Returns:
@@ -230,7 +230,7 @@ class TektonOrchestratorFlavor(BaseOrchestratorFlavor):
         return TektonOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["TektonOrchestrator"]:
+    def implementation_class(self) -> type["TektonOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

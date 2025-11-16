@@ -51,7 +51,7 @@ class BasePlugin(ABC):
 
     @property
     @abstractmethod
-    def config_class(self) -> Type[BasePluginConfig]:
+    def config_class(self) -> type[BasePluginConfig]:
         """Returns the `BasePluginConfig` config.
 
         Returns:
@@ -74,7 +74,7 @@ class BasePluginFlavor(ABC):
     TYPE: ClassVar[PluginType]
     SUBTYPE: ClassVar[PluginSubType]
     FLAVOR: ClassVar[str]
-    PLUGIN_CLASS: ClassVar[Type[BasePlugin]]
+    PLUGIN_CLASS: ClassVar[type[BasePlugin]]
 
     @classmethod
     @abstractmethod

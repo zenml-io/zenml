@@ -30,7 +30,7 @@ class ArgillaIntegration(Integration):
     ]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Argilla integration.
 
         Returns:

@@ -14,7 +14,7 @@
 """Implementation of the AWS container registry integration."""
 
 import re
-from typing import List, Optional, cast
+from typing import cast
 
 import boto3
 from botocore.client import BaseClient
@@ -130,7 +130,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             return
 
         try:
-            repo_uris: List[str] = [
+            repo_uris: list[str] = [
                 repository["repositoryUri"]
                 for repository in response["repositories"]
             ]
@@ -153,7 +153,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             )
 
     @property
-    def post_registration_message(self) -> Optional[str]:
+    def post_registration_message(self) -> str | None:
         """Optional message printed after the stack component is registered.
 
         Returns:

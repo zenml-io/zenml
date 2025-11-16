@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -47,8 +47,8 @@ class RegisteredModel(BaseModel):
     """
 
     name: str
-    description: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    description: str | None = None
+    metadata: dict[str, str] | None = None
 
 
 class ModelRegistryModelMetadata(BaseModel):
@@ -62,16 +62,16 @@ class ModelRegistryModelMetadata(BaseModel):
     model and its development process.
     """
 
-    zenml_version: Optional[str] = None
-    zenml_run_name: Optional[str] = None
-    zenml_pipeline_name: Optional[str] = None
-    zenml_pipeline_uuid: Optional[str] = None
-    zenml_pipeline_run_uuid: Optional[str] = None
-    zenml_step_name: Optional[str] = None
-    zenml_project: Optional[str] = None
+    zenml_version: str | None = None
+    zenml_run_name: str | None = None
+    zenml_pipeline_name: str | None = None
+    zenml_pipeline_uuid: str | None = None
+    zenml_pipeline_run_uuid: str | None = None
+    zenml_step_name: str | None = None
+    zenml_project: str | None = None
 
     @property
-    def custom_attributes(self) -> Dict[str, str]:
+    def custom_attributes(self) -> dict[str, str]:
         """Returns a dictionary of custom attributes.
 
         Returns:
@@ -89,7 +89,7 @@ class ModelRegistryModelMetadata(BaseModel):
         exclude_unset: bool = False,
         exclude_none: bool = True,
         **kwargs: Any,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Returns a dictionary representation of the metadata.
 
         This method overrides the default Pydantic `model_dump` method to allow
@@ -151,13 +151,13 @@ class RegistryModelVersion(BaseModel):
     version: str
     model_source_uri: str
     model_format: str
-    model_library: Optional[str] = None
+    model_library: str | None = None
     registered_model: RegisteredModel
-    description: Optional[str] = None
-    created_at: Optional[datetime] = None
-    last_updated_at: Optional[datetime] = None
+    description: str | None = None
+    created_at: datetime | None = None
+    last_updated_at: datetime | None = None
     stage: ModelVersionStage = ModelVersionStage.NONE
-    metadata: Optional[ModelRegistryModelMetadata] = None
+    metadata: ModelRegistryModelMetadata | None = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
@@ -192,8 +192,8 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model(
         self,
         name: str,
-        description: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
+        description: str | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> RegisteredModel:
         """Registers a model in the model registry.
 
@@ -229,9 +229,9 @@ class BaseModelRegistry(StackComponent, ABC):
     def update_model(
         self,
         name: str,
-        description: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-        remove_metadata: Optional[List[str]] = None,
+        description: str | None = None,
+        metadata: dict[str, str] | None = None,
+        remove_metadata: list[str] | None = None,
     ) -> RegisteredModel:
         """Updates a registered model in the model registry.
 
@@ -264,9 +264,9 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def list_models(
         self,
-        name: Optional[str] = None,
-        metadata: Optional[Dict[str, str]] = None,
-    ) -> List[RegisteredModel]:
+        name: str | None = None,
+        metadata: dict[str, str] | None = None,
+    ) -> list[RegisteredModel]:
         """Lists all registered models in the model registry.
 
         Args:
@@ -285,10 +285,10 @@ class BaseModelRegistry(StackComponent, ABC):
     def register_model_version(
         self,
         name: str,
-        version: Optional[str] = None,
-        model_source_uri: Optional[str] = None,
-        description: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
+        version: str | None = None,
+        model_source_uri: str | None = None,
+        description: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
         **kwargs: Any,
     ) -> RegistryModelVersion:
         """Registers a model version in the model registry.
@@ -331,10 +331,10 @@ class BaseModelRegistry(StackComponent, ABC):
         self,
         name: str,
         version: str,
-        description: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
-        remove_metadata: Optional[List[str]] = None,
-        stage: Optional[ModelVersionStage] = None,
+        description: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
+        remove_metadata: list[str] | None = None,
+        stage: ModelVersionStage | None = None,
     ) -> RegistryModelVersion:
         """Updates a model version in the model registry.
 
@@ -357,16 +357,16 @@ class BaseModelRegistry(StackComponent, ABC):
     @abstractmethod
     def list_model_versions(
         self,
-        name: Optional[str] = None,
-        model_source_uri: Optional[str] = None,
-        metadata: Optional[ModelRegistryModelMetadata] = None,
-        stage: Optional[ModelVersionStage] = None,
-        count: Optional[int] = None,
-        created_after: Optional[datetime] = None,
-        created_before: Optional[datetime] = None,
-        order_by_date: Optional[str] = None,
+        name: str | None = None,
+        model_source_uri: str | None = None,
+        metadata: ModelRegistryModelMetadata | None = None,
+        stage: ModelVersionStage | None = None,
+        count: int | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
+        order_by_date: str | None = None,
         **kwargs: Any,
-    ) -> Optional[List[RegistryModelVersion]]:
+    ) -> list[RegistryModelVersion] | None:
         """Lists all model versions for a registered model.
 
         Args:
@@ -388,8 +388,8 @@ class BaseModelRegistry(StackComponent, ABC):
     def get_latest_model_version(
         self,
         name: str,
-        stage: Optional[ModelVersionStage] = None,
-    ) -> Optional[RegistryModelVersion]:
+        stage: ModelVersionStage | None = None,
+    ) -> RegistryModelVersion | None:
         """Gets the latest model version for a registered model.
 
         This method is used to get the latest model version for a registered
@@ -493,7 +493,7 @@ class BaseModelRegistryFlavor(Flavor):
         return StackComponentType.MODEL_REGISTRY
 
     @property
-    def config_class(self) -> Type[BaseModelRegistryConfig]:
+    def config_class(self) -> type[BaseModelRegistryConfig]:
         """Config class for this flavor.
 
         Returns:
@@ -503,7 +503,7 @@ class BaseModelRegistryFlavor(Flavor):
 
     @property
     @abstractmethod
-    def implementation_class(self) -> Type[StackComponent]:
+    def implementation_class(self) -> type[StackComponent]:
         """Returns the implementation class for this flavor.
 
         Returns:

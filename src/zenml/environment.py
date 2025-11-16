@@ -16,7 +16,7 @@
 import os
 import platform
 import subprocess
-from typing import Any, Dict, List
+from typing import Any
 
 import distro
 
@@ -28,7 +28,7 @@ from zenml.utils.singleton import SingletonMetaClass
 logger = get_logger(__name__)
 
 
-def get_run_environment_dict() -> Dict[str, Any]:
+def get_run_environment_dict() -> dict[str, Any]:
     """Returns a dictionary of the current run environment.
 
     Everything that is returned here will be saved in the DB as
@@ -39,7 +39,7 @@ def get_run_environment_dict() -> Dict[str, Any]:
     Returns:
         A dictionary of the current run environment.
     """
-    env_dict: Dict[str, Any] = {
+    env_dict: dict[str, Any] = {
         "environment": str(get_environment()),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
@@ -113,7 +113,7 @@ class Environment(metaclass=SingletonMetaClass):
         """
 
     @staticmethod
-    def get_system_info() -> Dict[str, str]:
+    def get_system_info() -> dict[str, str]:
         """Information about the operating system.
 
         Returns:
@@ -178,7 +178,7 @@ class Environment(metaclass=SingletonMetaClass):
             return True
 
         try:
-            with open("/proc/1/cgroup", "rt") as ifh:
+            with open("/proc/1/cgroup") as ifh:
                 info = ifh.read()
                 return "docker" in info
         except (FileNotFoundError, Exception):
@@ -196,7 +196,7 @@ class Environment(metaclass=SingletonMetaClass):
             return True
 
         try:
-            with open("/proc/1/cgroup", "rt") as ifh:
+            with open("/proc/1/cgroup") as ifh:
                 info = ifh.read()
                 return "kubepod" in info
         except (FileNotFoundError, Exception):
@@ -364,7 +364,7 @@ class Environment(metaclass=SingletonMetaClass):
         )
 
     @staticmethod
-    def get_python_packages() -> List[str]:
+    def get_python_packages() -> list[str]:
         """Returns a list of installed Python packages.
 
         Raises:

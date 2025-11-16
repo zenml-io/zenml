@@ -14,13 +14,13 @@
 """Base class for all ZenML settings."""
 
 from enum import IntFlag, auto
-from typing import Any, ClassVar, Dict, Union
+from typing import Any, ClassVar, Union
 
 from pydantic import ConfigDict
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 
-SettingsOrDict = Union[Dict[str, Any], "BaseSettings"]
+SettingsOrDict = Union[dict[str, Any], "BaseSettings"]
 
 
 class ConfigurationLevel(IntFlag):

@@ -17,13 +17,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     Generic,
-    List,
     Optional,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -60,7 +56,7 @@ class UserScopedRequest(BaseRequest):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: Optional[UUID] = Field(
+    user: UUID | None = Field(
         default=None,
         title="The id of the user that created this resource. Set "
         "automatically by the server.",
@@ -69,7 +65,7 @@ class UserScopedRequest(BaseRequest):
         exclude=True,
     )
 
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
 
         Returns:
@@ -88,7 +84,7 @@ class ProjectScopedRequest(UserScopedRequest):
 
     project: UUID = Field(title="The project to which this resource belongs.")
 
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for project scoped models.
 
         Returns:
@@ -106,7 +102,7 @@ class ProjectScopedRequest(UserScopedRequest):
 class UserScopedResponseBody(BaseDatedResponseBody):
     """Base user-owned body."""
 
-    user_id: Optional[UUID] = Field(title="The user id.", default=None)
+    user_id: UUID | None = Field(title="The user id.", default=None)
 
 
 class UserScopedResponseMetadata(BaseResponseMetadata):
@@ -136,7 +132,7 @@ class UserScopedResponse(
     """
 
     # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
 
         Returns:
@@ -149,7 +145,7 @@ class UserScopedResponse(
 
     # Body and metadata properties
     @property
-    def user_id(self) -> Optional[UUID]:
+    def user_id(self) -> UUID | None:
         """The user ID property.
 
         Returns:
@@ -170,25 +166,25 @@ class UserScopedResponse(
 class UserScopedFilter(BaseFilter):
     """Model to enable advanced user-based scoping."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "user",
         "scope_user",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
         "scope_user",
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "user",
     ]
 
-    scope_user: Optional[UUID] = Field(
+    scope_user: UUID | None = Field(
         default=None,
         description="The user to scope this query to.",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUID | str | None = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
         union_mode="left_to_right",
@@ -203,8 +199,8 @@ class UserScopedFilter(BaseFilter):
         self.scope_user = user_id
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom filters.
 
         Args:
@@ -235,7 +231,7 @@ class UserScopedFilter(BaseFilter):
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query.
 
@@ -275,7 +271,7 @@ class UserScopedFilter(BaseFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -330,7 +326,7 @@ class ProjectScopedResponse(
     """
 
     # Analytics
-    def get_analytics_metadata(self) -> Dict[str, Any]:
+    def get_analytics_metadata(self) -> dict[str, Any]:
         """Fetches the analytics metadata for project scoped models.
 
         Returns:
@@ -368,11 +364,11 @@ class ProjectScopedResponse(
 class ProjectScopedFilter(UserScopedFilter):
     """Model to enable advanced scoping with project."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "project",
     ]
-    project: Optional[Union[UUID, str]] = Field(
+    project: UUID | str | None = Field(
         default=None,
         description="Name/ID of the project which the search is scoped to. "
         "This field must always be set and is always applied in addition to "
@@ -384,7 +380,7 @@ class ProjectScopedFilter(UserScopedFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -428,26 +424,26 @@ class ProjectScopedFilter(UserScopedFilter):
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
-    tag: Optional[str] = Field(
+    tag: str | None = Field(
         description="Tag to apply to the filter query.", default=None
     )
-    tags: Optional[List[str]] = Field(
+    tags: list[str] | None = Field(
         description="Tags to apply to the filter query.", default=None
     )
 
     CLI_EXCLUDE_FIELDS = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
     ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
         "tags",
     ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[list[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *BaseFilter.API_MULTI_INPUT_PARAMS,
         "tags",
     ]
@@ -476,7 +472,7 @@ class TaggableFilter(BaseFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Applies the filter to a query.
 
@@ -500,8 +496,8 @@ class TaggableFilter(BaseFilter):
         return query
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom tag filters.
 
         Args:
@@ -535,7 +531,7 @@ class TaggableFilter(BaseFilter):
     def apply_sorting(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Apply sorting to the query.
 
@@ -617,15 +613,15 @@ class TaggableFilter(BaseFilter):
 class RunMetadataFilterMixin(BaseFilter):
     """Model to enable filtering and sorting by run metadata."""
 
-    run_metadata: Optional[List[str]] = Field(
+    run_metadata: list[str] | None = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "run_metadata",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+    API_MULTI_INPUT_PARAMS: ClassVar[list[str]] = [
         *BaseFilter.API_MULTI_INPUT_PARAMS,
         "run_metadata",
     ]
@@ -674,8 +670,8 @@ class RunMetadataFilterMixin(BaseFilter):
         return self
 
     def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
+        self, table: type["AnySchema"]
+    ) -> list["ColumnElement[bool]"]:
         """Get custom run metadata filters.
 
         Args:

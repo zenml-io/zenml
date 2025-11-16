@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
+from typing import TYPE_CHECKING, ClassVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -89,7 +89,7 @@ class APIKeyRequest(BaseRequest):
         max_length=STR_FIELD_MAX_LENGTH,
     )
 
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="The description of the API Key.",
         max_length=TEXT_FIELD_MAX_LENGTH,
@@ -112,17 +112,17 @@ class APIKeyRotateRequest(BaseRequest):
 class APIKeyUpdate(BaseUpdate):
     """Update model for API keys."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         title="The name of the API Key.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         title="The description of the API Key.",
         max_length=TEXT_FIELD_MAX_LENGTH,
         default=None,
     )
-    active: Optional[bool] = Field(
+    active: bool | None = Field(
         title="Whether the API key is active.",
         default=None,
     )
@@ -143,7 +143,7 @@ class APIKeyInternalUpdate(APIKeyUpdate):
 class APIKeyResponseBody(BaseDatedResponseBody):
     """Response body for API keys."""
 
-    key: Optional[str] = Field(
+    key: str | None = Field(
         default=None,
         title="The API key. Only set immediately after creation or rotation.",
     )
@@ -168,10 +168,10 @@ class APIKeyResponseMetadata(BaseResponseMetadata):
         title="Number of minutes for which the previous key is still valid "
         "after it has been rotated.",
     )
-    last_login: Optional[datetime] = Field(
+    last_login: datetime | None = Field(
         default=None, title="Time when the API key was last used to log in."
     )
-    last_rotated: Optional[datetime] = Field(
+    last_rotated: datetime | None = Field(
         default=None, title="Time when the API key was last rotated."
     )
 
@@ -218,7 +218,7 @@ class APIKeyResponse(
 
     # Body and metadata properties
     @property
-    def key(self) -> Optional[str]:
+    def key(self) -> str | None:
         """The `key` property.
 
         Returns:
@@ -263,7 +263,7 @@ class APIKeyResponse(
         return self.get_metadata().retain_period_minutes
 
     @property
-    def last_login(self) -> Optional[datetime]:
+    def last_login(self) -> datetime | None:
         """The `last_login` property.
 
         Returns:
@@ -272,7 +272,7 @@ class APIKeyResponse(
         return self.get_metadata().last_login
 
     @property
-    def last_rotated(self) -> Optional[datetime]:
+    def last_rotated(self) -> datetime | None:
         """The `last_rotated` property.
 
         Returns:
@@ -284,7 +284,7 @@ class APIKeyResponse(
 class APIKeyInternalResponse(APIKeyResponse):
     """Response model for API keys used internally."""
 
-    previous_key: Optional[str] = Field(
+    previous_key: str | None = Field(
         default=None,
         title="The previous API key. Only set if the key was rotated.",
     )
@@ -306,7 +306,7 @@ class APIKeyInternalResponse(APIKeyResponse):
         # even when the hashed key is not set, we still want to execute
         # the hash verification to protect against response discrepancy
         # attacks (https://cwe.mitre.org/data/definitions/204.html)
-        key_hash: Optional[str] = None
+        key_hash: str | None = None
         context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         if self.key is not None and self.active:
             key_hash = self.key
@@ -338,38 +338,38 @@ class APIKeyInternalResponse(APIKeyResponse):
 class APIKeyFilter(BaseFilter):
     """Filter model for API keys."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "service_account",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
         "service_account",
     ]
 
-    service_account: Optional[UUID] = Field(
+    service_account: UUID | None = Field(
         default=None,
         description="The service account to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default=None,
         description="Name of the API key",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         title="Filter by the API key description.",
     )
-    active: Optional[Union[bool, str]] = Field(
+    active: bool | str | None = Field(
         default=None,
         title="Whether the API key is active.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str]] = Field(
+    last_login: datetime | str | None = Field(
         default=None,
         title="Time when the API key was last used to log in.",
         union_mode="left_to_right",
     )
-    last_rotated: Optional[Union[datetime, str]] = Field(
+    last_rotated: datetime | str | None = Field(
         default=None,
         title="Time when the API key was last rotated.",
         union_mode="left_to_right",
@@ -386,7 +386,7 @@ class APIKeyFilter(BaseFilter):
     def apply_filter(
         self,
         query: AnyQuery,
-        table: Type["AnySchema"],
+        table: type["AnySchema"],
     ) -> AnyQuery:
         """Override to apply the service account scope as an additional filter.
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubeflow orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import Field, model_validator
 
@@ -49,27 +49,27 @@ class KubeflowOrchestratorSettings(BaseSettings):
         1200, description="How many seconds to wait for synchronous runs."
     )
 
-    client_args: Dict[str, Any] = Field(
+    client_args: dict[str, Any] = Field(
         default_factory=dict,
         description="Arguments to pass when initializing the KFP client. "
         "Example: {'host': 'https://kubeflow.example.com', 'client_id': 'kubeflow-oidc-authservice', 'existing_token': 'your-auth-token'}",
     )
-    client_username: Optional[str] = SecretField(
+    client_username: str | None = SecretField(
         default=None,
         description="Username to generate a session cookie for the kubeflow client. "
         "Both `client_username` and `client_password` need to be set together.",
     )
-    client_password: Optional[str] = SecretField(
+    client_password: str | None = SecretField(
         default=None,
         description="Password to generate a session cookie for the kubeflow client. "
         "Both `client_username` and `client_password` need to be set together.",
     )
-    user_namespace: Optional[str] = Field(
+    user_namespace: str | None = Field(
         None,
         description="The user namespace to use when creating experiments and runs. "
         "Example: 'my-experiments' or 'team-alpha'",
     )
-    pod_settings: Optional[KubernetesPodSettings] = Field(
+    pod_settings: KubernetesPodSettings | None = Field(
         None,
         description="Pod settings to apply to the orchestrator and step pods.",
     )
@@ -78,8 +78,8 @@ class KubeflowOrchestratorSettings(BaseSettings):
     @classmethod
     @before_validator_handler
     def _validate_and_migrate_pod_settings(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Validates settings and migrates pod settings from older version.
 
         Args:
@@ -91,9 +91,9 @@ class KubeflowOrchestratorSettings(BaseSettings):
         Raises:
             ValueError: If username and password are not specified together.
         """
-        node_selectors = cast(Dict[str, str], data.get("node_selectors") or {})
+        node_selectors = cast(dict[str, str], data.get("node_selectors") or {})
         node_affinity = cast(
-            Dict[str, List[str]], data.get("node_affinity") or {}
+            dict[str, list[str]], data.get("node_affinity") or {}
         )
 
         affinity = {}
@@ -142,7 +142,7 @@ class KubeflowOrchestratorConfig(
 ):
     """Configuration for the Kubeflow orchestrator."""
 
-    kubeflow_hostname: Optional[str] = Field(
+    kubeflow_hostname: str | None = Field(
         None,
         description="The hostname to use to talk to the Kubeflow Pipelines API. "
         "If not set, the hostname will be derived from the Kubernetes API proxy. "
@@ -153,7 +153,7 @@ class KubeflowOrchestratorConfig(
         "kubeflow",
         description="The Kubernetes namespace in which Kubeflow Pipelines is deployed.",
     )
-    kubernetes_context: Optional[str] = Field(
+    kubernetes_context: str | None = Field(
         None,
         description="Name of a kubernetes context to run pipelines in. "
         "Not applicable when connecting to a multi-tenant Kubeflow Pipelines "
@@ -166,8 +166,8 @@ class KubeflowOrchestratorConfig(
     @classmethod
     @before_validator_handler
     def _validate_deprecated_attrs(
-        cls, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Pydantic root_validator for deprecated attributes.
 
         This root validator is used for backwards compatibility purposes. E.g.
@@ -249,7 +249,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
     @property
     def service_connector_requirements(
         self,
-    ) -> Optional[ServiceConnectorRequirements]:
+    ) -> ServiceConnectorRequirements | None:
         """Service connector resource requirements for service connectors.
 
         Specifies resource requirements that are used to filter the available
@@ -264,7 +264,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         )
 
     @property
-    def docs_url(self) -> Optional[str]:
+    def docs_url(self) -> str | None:
         """A url to point at docs explaining this flavor.
 
         Returns:
@@ -273,7 +273,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
     @property
-    def sdk_docs_url(self) -> Optional[str]:
+    def sdk_docs_url(self) -> str | None:
         """A url to point at SDK docs explaining this flavor.
 
         Returns:
@@ -291,7 +291,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/kubeflow.png"
 
     @property
-    def config_class(self) -> Type[KubeflowOrchestratorConfig]:
+    def config_class(self) -> type[KubeflowOrchestratorConfig]:
         """Returns `KubeflowOrchestratorConfig` config class.
 
         Returns:
@@ -300,7 +300,7 @@ class KubeflowOrchestratorFlavor(BaseOrchestratorFlavor):
         return KubeflowOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["KubeflowOrchestrator"]:
+    def implementation_class(self) -> type["KubeflowOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:

@@ -15,7 +15,7 @@
 
 import os
 import shutil
-from typing import ClassVar, Dict, Optional, Type, cast
+from typing import ClassVar, cast
 from uuid import UUID
 
 from zenml.config.global_config import GlobalConfiguration
@@ -48,11 +48,11 @@ class BentoMLModelDeployer(BaseModelDeployer):
     """BentoML model deployer stack component implementation."""
 
     NAME: ClassVar[str] = "BentoML"
-    FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
+    FLAVOR: ClassVar[type[BaseModelDeployerFlavor]] = (
         BentoMLModelDeployerFlavor
     )
 
-    _service_path: Optional[str] = None
+    _service_path: str | None = None
 
     @property
     def config(self) -> BentoMLModelDeployerConfig:
@@ -110,7 +110,7 @@ class BentoMLModelDeployer(BaseModelDeployer):
     @staticmethod
     def get_model_server_info(
         service_instance: BaseService,
-    ) -> Dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return implementation specific information on the model server.
 
         Args:

@@ -56,7 +56,7 @@ def launch_service(service_config_file: str) -> None:
     logger = get_logger(__name__)
 
     logger.info("Loading service configuration from %s", service_config_file)
-    with open(service_config_file, "r") as f:
+    with open(service_config_file) as f:
         config = f.read()
 
     integration_registry.activate_integrations()

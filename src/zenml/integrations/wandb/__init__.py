@@ -34,7 +34,7 @@ class WandbIntegration(Integration):
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["Pillow"]
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declare the stack component flavors for the Weights and Biases integration.
 
         Returns:

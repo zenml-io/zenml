@@ -16,18 +16,13 @@
 import os
 import re
 import time
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -296,7 +291,7 @@ from zenml.zen_stores.base_zen_store import BaseZenStore
 logger = get_logger(__name__)
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
-Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+Json = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
@@ -326,9 +321,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     type: StoreType = StoreType.REST
 
-    verify_ssl: Union[bool, str] = Field(
-        default=True, union_mode="left_to_right"
-    )
+    verify_ssl: bool | str = Field(default=True, union_mode="left_to_right")
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
     connection_pool_size: int = 10
 
@@ -363,9 +356,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
     @field_validator("verify_ssl")
     @classmethod
-    def validate_verify_ssl(
-        cls, verify_ssl: Union[bool, str]
-    ) -> Union[bool, str]:
+    def validate_verify_ssl(cls, verify_ssl: bool | str) -> bool | str:
         """Validates that the verify_ssl either points to a file or is a bool.
 
         Args:
@@ -384,7 +375,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
             return verify_ssl
 
         if os.path.isfile(verify_ssl):
-            with open(verify_ssl, "r") as f:
+            with open(verify_ssl) as f:
                 cert_content = f.read()
         else:
             cert_content = verify_ssl
@@ -413,7 +404,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _move_credentials(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _move_credentials(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Moves credentials (API keys, API tokens, passwords) from the config to the credentials store.
 
         Args:
@@ -464,12 +455,12 @@ class RestZenStore(BaseZenStore):
 
     config: RestZenStoreConfiguration
     TYPE: ClassVar[StoreType] = StoreType.REST
-    CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
-    _api_token: Optional[APIToken] = None
-    _session: Optional[requests.Session] = None
-    _server_info: Optional[ServerModel] = None
+    CONFIG_TYPE: ClassVar[type[StoreConfiguration]] = RestZenStoreConfiguration
+    _api_token: APIToken | None = None
+    _session: requests.Session | None = None
+    _server_info: ServerModel | None = None
     _session_lock: RLock = PrivateAttr(default_factory=RLock)
-    _last_authenticated: Optional[datetime] = None
+    _last_authenticated: datetime | None = None
 
     # ====================================
     # ZenML Store interface implementation
@@ -720,7 +711,7 @@ class RestZenStore(BaseZenStore):
     def get_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> APIKeyResponse:
         """Get an API key for a service account.
@@ -771,7 +762,7 @@ class RestZenStore(BaseZenStore):
     def update_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         api_key_update: APIKeyUpdate,
     ) -> APIKeyResponse:
         """Update an API key for a service account.
@@ -795,7 +786,7 @@ class RestZenStore(BaseZenStore):
     def rotate_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
         rotate_request: APIKeyRotateRequest,
     ) -> APIKeyResponse:
         """Rotate an API key for a service account.
@@ -818,7 +809,7 @@ class RestZenStore(BaseZenStore):
     def delete_api_key(
         self,
         service_account_id: UUID,
-        api_key_name_or_id: Union[str, UUID],
+        api_key_name_or_id: str | UUID,
     ) -> None:
         """Delete an API key for a service account.
 
@@ -1024,8 +1015,8 @@ class RestZenStore(BaseZenStore):
         )
 
     def batch_create_artifact_versions(
-        self, artifact_versions: List[ArtifactVersionRequest]
-    ) -> List[ArtifactVersionResponse]:
+        self, artifact_versions: list[ArtifactVersionRequest]
+    ) -> list[ArtifactVersionResponse]:
         """Creates a batch of artifact versions.
 
         Args:
@@ -1117,7 +1108,7 @@ class RestZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
-        project_name_or_id: Union[str, UUID],
+        project_name_or_id: str | UUID,
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
@@ -1664,8 +1655,8 @@ class RestZenStore(BaseZenStore):
         self,
         snapshot_id: UUID,
         hydrate: bool = True,
-        step_configuration_filter: Optional[List[str]] = None,
-        include_config_schema: Optional[bool] = None,
+        step_configuration_filter: list[str] | None = None,
+        include_config_schema: bool | None = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -2037,7 +2028,7 @@ class RestZenStore(BaseZenStore):
     def run_template(
         self,
         template_id: UUID,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
+        run_configuration: PipelineRunConfiguration | None = None,
     ) -> PipelineRunResponse:
         """Run a template.
 
@@ -2165,7 +2156,7 @@ class RestZenStore(BaseZenStore):
 
     def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
+    ) -> tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
         If a run with the same ID or name already exists, it is returned.
@@ -2503,7 +2494,7 @@ class RestZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the primary secrets
                 store to the backup secrets store.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "ignore_errors": ignore_errors,
             "delete_secrets": delete_secrets,
         }
@@ -2525,7 +2516,7 @@ class RestZenStore(BaseZenStore):
                 this flag effectively moves all secrets from the backup secrets
                 store to the primary secrets store.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "ignore_errors": ignore_errors,
             "delete_secrets": delete_secrets,
         }
@@ -2555,7 +2546,7 @@ class RestZenStore(BaseZenStore):
 
     def get_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         hydrate: bool = True,
     ) -> ServiceAccountResponse:
         """Gets a specific service account.
@@ -2599,7 +2590,7 @@ class RestZenStore(BaseZenStore):
 
     def update_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
         service_account_update: ServiceAccountUpdate,
     ) -> ServiceAccountResponse:
         """Updates an existing service account.
@@ -2622,7 +2613,7 @@ class RestZenStore(BaseZenStore):
 
     def delete_service_account(
         self,
-        service_account_name_or_id: Union[str, UUID],
+        service_account_name_or_id: str | UUID,
     ) -> None:
         """Delete a service account.
 
@@ -2797,9 +2788,9 @@ class RestZenStore(BaseZenStore):
 
     def _populate_connector_type(
         self,
-        *connector_models: Union[
-            ServiceConnectorResponse, ServiceConnectorResourcesModel
-        ],
+        *connector_models: (
+            ServiceConnectorResponse | ServiceConnectorResourcesModel
+        ),
     ) -> None:
         """Populates or updates the connector type of the given connector or resource models.
 
@@ -2882,8 +2873,8 @@ class RestZenStore(BaseZenStore):
     def verify_service_connector(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         list_resources: bool = True,
     ) -> ServiceConnectorResourcesModel:
         """Verifies if a service connector instance has access to one or more resources.
@@ -2900,7 +2891,7 @@ class RestZenStore(BaseZenStore):
             The list of resources that the service connector has access to,
             scoped to the supplied resource type and ID, if provided.
         """
-        params: Dict[str, Any] = {"list_resources": list_resources}
+        params: dict[str, Any] = {"list_resources": list_resources}
         if resource_type:
             params["resource_type"] = resource_type
         if resource_id:
@@ -2923,8 +2914,8 @@ class RestZenStore(BaseZenStore):
     def get_service_connector_client(
         self,
         service_connector_id: UUID,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
     ) -> ServiceConnectorResponse:
         """Get a service connector client for a service connector and given resource.
 
@@ -2962,7 +2953,7 @@ class RestZenStore(BaseZenStore):
     def list_service_connector_resources(
         self,
         filter_model: ServiceConnectorFilter,
-    ) -> List[ServiceConnectorResourcesModel]:
+    ) -> list[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
@@ -3031,10 +3022,10 @@ class RestZenStore(BaseZenStore):
 
     def list_service_connector_types(
         self,
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
-    ) -> List[ServiceConnectorTypeModel]:
+        connector_type: str | None = None,
+        resource_type: str | None = None,
+        auth_method: str | None = None,
+    ) -> list[ServiceConnectorTypeModel]:
         """Get a list of service connector types.
 
         Args:
@@ -3105,7 +3096,7 @@ class RestZenStore(BaseZenStore):
         """
         # Use the local registry to get the service connector type, if it
         # exists.
-        local_connector_type: Optional[ServiceConnectorTypeModel] = None
+        local_connector_type: ServiceConnectorTypeModel | None = None
         if service_connector_registry.is_registered(connector_type):
             local_connector_type = (
                 service_connector_registry.get_service_connector_type(
@@ -3247,7 +3238,7 @@ class RestZenStore(BaseZenStore):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
+        location: str | None = None,
     ) -> StackDeploymentConfig:
         """Return the cloud provider console URL and configuration needed to deploy the ZenML stack.
 
@@ -3273,9 +3264,9 @@ class RestZenStore(BaseZenStore):
         self,
         provider: StackDeploymentProvider,
         stack_name: str,
-        location: Optional[str] = None,
-        date_start: Optional[datetime] = None,
-    ) -> Optional[DeployedStack]:
+        location: str | None = None,
+        date_start: datetime | None = None,
+    ) -> DeployedStack | None:
         """Return a matching ZenML stack that was deployed and registered.
 
         Args:
@@ -3575,7 +3566,7 @@ class RestZenStore(BaseZenStore):
 
     def get_user(
         self,
-        user_name_or_id: Optional[Union[str, UUID]] = None,
+        user_name_or_id: str | UUID | None = None,
         include_private: bool = False,
         hydrate: bool = True,
     ) -> UserResponse:
@@ -3648,9 +3639,7 @@ class RestZenStore(BaseZenStore):
             response_model=UserResponse,
         )
 
-    def deactivate_user(
-        self, user_name_or_id: Union[str, UUID]
-    ) -> UserResponse:
+    def deactivate_user(self, user_name_or_id: str | UUID) -> UserResponse:
         """Deactivates a user.
 
         Args:
@@ -3665,7 +3654,7 @@ class RestZenStore(BaseZenStore):
 
         return UserResponse.model_validate(response_body)
 
-    def delete_user(self, user_name_or_id: Union[str, UUID]) -> None:
+    def delete_user(self, user_name_or_id: str | UUID) -> None:
         """Deletes a user.
 
         Args:
@@ -3694,7 +3683,7 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_project(
-        self, project_name_or_id: Union[UUID, str], hydrate: bool = True
+        self, project_name_or_id: UUID | str, hydrate: bool = True
     ) -> ProjectResponse:
         """Get an existing project by name or ID.
 
@@ -3755,7 +3744,7 @@ class RestZenStore(BaseZenStore):
             response_model=ProjectResponse,
         )
 
-    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+    def delete_project(self, project_name_or_id: str | UUID) -> None:
         """Deletes a project.
 
         Args:
@@ -3998,7 +3987,7 @@ class RestZenStore(BaseZenStore):
     def delete_model_version_artifact_link(
         self,
         model_version_id: UUID,
-        model_version_artifact_link_name_or_id: Union[str, UUID],
+        model_version_artifact_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to artifact link.
 
@@ -4078,7 +4067,7 @@ class RestZenStore(BaseZenStore):
     def delete_model_version_pipeline_run_link(
         self,
         model_version_id: UUID,
-        model_version_pipeline_run_link_name_or_id: Union[str, UUID],
+        model_version_pipeline_run_link_name_or_id: str | UUID,
     ) -> None:
         """Deletes a model version to pipeline run link.
 
@@ -4168,10 +4157,10 @@ class RestZenStore(BaseZenStore):
     def get_api_token(
         self,
         token_type: APITokenType = APITokenType.WORKLOAD,
-        expires_in: Optional[int] = None,
-        schedule_id: Optional[UUID] = None,
-        pipeline_run_id: Optional[UUID] = None,
-        deployment_id: Optional[UUID] = None,
+        expires_in: int | None = None,
+        schedule_id: UUID | None = None,
+        pipeline_run_id: UUID | None = None,
+        deployment_id: UUID | None = None,
     ) -> str:
         """Get an API token.
 
@@ -4188,7 +4177,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             ValueError: if the server response is not valid.
         """
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "token_type": token_type.value,
         }
         if expires_in:
@@ -4326,8 +4315,8 @@ class RestZenStore(BaseZenStore):
         )
 
     def batch_create_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
-    ) -> List[TagResourceResponse]:
+        self, tag_resources: list[TagResourceRequest]
+    ) -> list[TagResourceResponse]:
         """Create a batch of tag resource relationships.
 
         Args:
@@ -4354,7 +4343,7 @@ class RestZenStore(BaseZenStore):
         self.delete(path=TAG_RESOURCES, body=tag_resource)
 
     def batch_delete_tag_resource(
-        self, tag_resources: List[TagResourceRequest]
+        self, tag_resources: list[TagResourceRequest]
     ) -> None:
         """Delete a batch of tag resources.
 
@@ -4398,11 +4387,11 @@ class RestZenStore(BaseZenStore):
                     f"Authentication token for {self.url} expired; refreshing..."
                 )
 
-            data: Optional[Dict[str, str]] = None
+            data: dict[str, str] | None = None
 
             # Use a custom user agent to identify the ZenML client in the server
             # logs.
-            headers: Dict[str, str] = {
+            headers: dict[str, str] = {
                 "User-Agent": "zenml/" + zenml.__version__,
             }
 
@@ -4708,8 +4697,8 @@ class RestZenStore(BaseZenStore):
         self,
         method: str,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a request to the REST API.
@@ -4854,8 +4843,8 @@ class RestZenStore(BaseZenStore):
     def get(
         self,
         path: str,
-        params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a GET request to the given endpoint path.
@@ -4880,9 +4869,9 @@ class RestZenStore(BaseZenStore):
     def delete(
         self,
         path: str,
-        body: Optional[BaseModel] = None,
-        params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None,
+        body: BaseModel | None = None,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a DELETE request to the given endpoint path.
@@ -4910,8 +4899,8 @@ class RestZenStore(BaseZenStore):
         self,
         path: str,
         body: BaseModel,
-        params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a POST request to the given endpoint path.
@@ -4938,9 +4927,9 @@ class RestZenStore(BaseZenStore):
     def put(
         self,
         path: str,
-        body: Optional[BaseModel] = None,
-        params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[int] = None,
+        body: BaseModel | None = None,
+        params: dict[str, Any] | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -4970,9 +4959,9 @@ class RestZenStore(BaseZenStore):
     def _create_resource(
         self,
         resource: AnyRequest,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> AnyResponse:
         """Create a new resource.
 
@@ -4992,11 +4981,11 @@ class RestZenStore(BaseZenStore):
 
     def _batch_create_resources(
         self,
-        resources: List[AnyRequest],
-        response_model: Type[AnyResponse],
+        resources: list[AnyRequest],
+        response_model: type[AnyResponse],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> List[AnyResponse]:
+        params: dict[str, Any] | None = None,
+    ) -> list[AnyResponse]:
         """Create a new batch of resources.
 
         Args:
@@ -5027,10 +5016,10 @@ class RestZenStore(BaseZenStore):
     def _get_or_create_resource(
         self,
         resource: AnyRequest,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponse, bool]:
+        params: dict[str, Any] | None = None,
+    ) -> tuple[AnyResponse, bool]:
         """Get or create a resource.
 
         Args:
@@ -5076,10 +5065,10 @@ class RestZenStore(BaseZenStore):
 
     def _get_resource(
         self,
-        resource_id: Union[str, int, UUID],
+        resource_id: str | int | UUID,
         route: str,
-        response_model: Type[AnyResponse],
-        params: Optional[Dict[str, Any]] = None,
+        response_model: type[AnyResponse],
+        params: dict[str, Any] | None = None,
     ) -> AnyResponse:
         """Retrieve a single resource.
 
@@ -5098,9 +5087,9 @@ class RestZenStore(BaseZenStore):
     def _list_paginated_resources(
         self,
         route: str,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         filter_model: BaseFilter,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> Page[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
@@ -5136,9 +5125,9 @@ class RestZenStore(BaseZenStore):
     def _list_resources(
         self,
         route: str,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         **filters: Any,
-    ) -> List[AnyResponse]:
+    ) -> list[AnyResponse]:
         """Retrieve a list of resources filtered by some criteria.
 
         Args:
@@ -5163,11 +5152,11 @@ class RestZenStore(BaseZenStore):
 
     def _update_resource(
         self,
-        resource_id: Union[str, int, UUID],
+        resource_id: str | int | UUID,
         resource_update: BaseModel,
-        response_model: Type[AnyResponse],
+        response_model: type[AnyResponse],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> AnyResponse:
         """Update an existing resource.
 
@@ -5190,9 +5179,9 @@ class RestZenStore(BaseZenStore):
 
     def _delete_resource(
         self,
-        resource_id: Union[str, UUID],
+        resource_id: str | UUID,
         route: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> None:
         """Delete a resource.
 
@@ -5207,7 +5196,7 @@ class RestZenStore(BaseZenStore):
         self,
         resources: Sequence[BaseModel],
         route: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> None:
         """Delete a batch of resources.
 

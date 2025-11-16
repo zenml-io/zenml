@@ -22,6 +22,6 @@ class GitLabIntegration(Integration):
     """Definition of GitLab integration for ZenML."""
 
     NAME = GITLAB
-    REQUIREMENTS: List[str] = ["python-gitlab"]
+    REQUIREMENTS: list[str] = ["python-gitlab"]
 
 

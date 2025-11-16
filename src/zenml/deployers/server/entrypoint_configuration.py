@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML Pipeline Deployment Entrypoint Configuration."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -38,7 +38,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
     of the ZenML pipeline deployment FastAPI application.
     """
 
-    def __init__(self, arguments: List[str]):
+    def __init__(self, arguments: list[str]):
         """Initializes the entrypoint configuration.
 
         Args:
@@ -48,7 +48,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         self._deployment: Optional["DeploymentResponse"] = None
 
     @classmethod
-    def get_entrypoint_options(cls) -> Dict[str, bool]:
+    def get_entrypoint_options(cls) -> dict[str, bool]:
         """Gets all options required for the deployment entrypoint.
 
         Returns:
@@ -59,7 +59,7 @@ class DeploymentEntrypointConfiguration(BaseEntrypointConfiguration):
         }
 
     @classmethod
-    def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
+    def get_entrypoint_arguments(cls, **kwargs: Any) -> list[str]:
         """Gets arguments for the deployment entrypoint command.
 
         Args:

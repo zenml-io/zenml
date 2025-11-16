@@ -15,7 +15,7 @@
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel
 
@@ -47,10 +47,10 @@ class BuildConfiguration(BaseModel):
 
     key: str
     settings: DockerSettings
-    step_name: Optional[str] = None
-    entrypoint: Optional[str] = None
-    extra_files: Dict[str, str] = {}
-    extra_requirements_files: Dict[str, List[str]] = {}
+    step_name: str | None = None
+    entrypoint: str | None = None
+    extra_files: dict[str, str] = {}
+    extra_requirements_files: dict[str, list[str]] = {}
 
     def compute_settings_checksum(
         self,

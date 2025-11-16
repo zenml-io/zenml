@@ -15,7 +15,7 @@
 
 import json
 import math
-from typing import Any, Dict, List, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlmodel import Relationship
@@ -40,8 +40,8 @@ def jl_arg(column: Any) -> InstrumentedAttribute[Any]:
 
 
 def get_page_from_list(
-    items_list: List[S],
-    response_model: Type[BaseResponse],  # type: ignore[type-arg]
+    items_list: list[S],
+    response_model: type[BaseResponse],  # type: ignore[type-arg]
     size: int = 5,
     page: int = 1,
     include_resources: bool = False,
@@ -92,7 +92,7 @@ class RunMetadataInterface:
 
     def fetch_metadata_collection(
         self, **kwargs: Any
-    ) -> Dict[str, List[RunMetadataEntry]]:
+    ) -> dict[str, list[RunMetadataEntry]]:
         """Fetches all the metadata entries related to the entity.
 
         Args:
@@ -102,7 +102,7 @@ class RunMetadataInterface:
             A dictionary, where the key is the key of the metadata entry
                 and the values represent the list of entries with this key.
         """
-        metadata_collection: Dict[str, List[RunMetadataEntry]] = {}
+        metadata_collection: dict[str, list[RunMetadataEntry]] = {}
 
         for rm in self.run_metadata:
             if rm.key not in metadata_collection:
@@ -116,7 +116,7 @@ class RunMetadataInterface:
 
         return metadata_collection
 
-    def fetch_metadata(self, **kwargs: Any) -> Dict[str, MetadataType]:
+    def fetch_metadata(self, **kwargs: Any) -> dict[str, MetadataType]:
         """Fetches the latest metadata entry related to the entity.
 
         Args:
@@ -133,7 +133,7 @@ class RunMetadataInterface:
         }
 
 
-def get_resource_type_name(schema_class: Type[BaseSchema]) -> str:
+def get_resource_type_name(schema_class: type[BaseSchema]) -> str:
     """Get the name of a resource from a schema class.
 
     Args:

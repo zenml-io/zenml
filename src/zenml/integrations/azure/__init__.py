@@ -65,7 +65,7 @@ class AzureIntegration(Integration):
         from zenml.integrations.azure import service_connectors  # noqa
 
     @classmethod
-    def flavors(cls) -> List[Type[Flavor]]:
+    def flavors(cls) -> list[type[Flavor]]:
         """Declares the flavors for the integration.
 
         Returns:
