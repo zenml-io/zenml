@@ -529,12 +529,42 @@ class Stack:
         return self._deployer
 
     @property
-    def log_store(self) -> Optional["BaseLogStore"]:
+    def log_store(self) -> "BaseLogStore":
         """The log store of the stack.
+
+        If no log store is configured, returns a temporary default
+        ArtifactLogStore.
 
         Returns:
             The log store of the stack.
         """
+        if self._log_store:
+            return self._log_store
+
+        # Default to ArtifactLogStore if none configured
+        from uuid import uuid4
+
+        from zenml.log_stores import (
+            ArtifactLogStore,
+            ArtifactLogStoreConfig,
+            ArtifactLogStoreFlavor,
+        )
+
+        flavor = ArtifactLogStoreFlavor()
+        now = utc_now()
+
+        self._log_store = ArtifactLogStore(
+            id=uuid4(),
+            name="default",
+            flavor=flavor.name,
+            type=flavor.type,
+            config=ArtifactLogStoreConfig(),
+            environment={},
+            user=Client().active_user.id,
+            created=now,
+            updated=now,
+            secrets=[],
+        )
         return self._log_store
 
     def dict(self) -> Dict[str, str]:

@@ -468,7 +468,7 @@ def run_logs(
         if (
             snapshot.template_id or snapshot.source_snapshot_id
         ) and server_config().workload_manager_enabled:
-            from zenml.log_stores.default.default_log_store import (
+            from zenml.log_stores.artifact.artifact_log_store import (
                 parse_log_entry,
             )
 

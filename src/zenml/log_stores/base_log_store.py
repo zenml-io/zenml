@@ -19,15 +19,17 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.logging.logging import (
-    DEFAULT_MESSAGE_SIZE,
-    MAX_ENTRIES_PER_REQUEST,
-    LogEntry,
-)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 
 if TYPE_CHECKING:
+    from zenml.log_stores.utils import LogEntry
+    from zenml.logging.logging import LoggingContext
     from zenml.models import LogsResponse
+
+# Maximum number of log entries to return in a single request
+MAX_ENTRIES_PER_REQUEST = 20000
+# Maximum size of a single log message in bytes (5KB)
+DEFAULT_MESSAGE_SIZE = 5 * 1024
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -52,37 +54,21 @@ class BaseLogStore(StackComponent):
         return cast(BaseLogStoreConfig, self._config)
 
     @abstractmethod
-    def activate(self) -> None:
-        """Activate the log store for log collection.
-
-        This method is called when ZenML needs to start collecting and storing
-        logs during pipeline or step execution. It should set up any necessary
-        handlers, threads, or connections.
-        """
-
-    @abstractmethod
-    def deactivate(self) -> None:
-        """Deactivate the log store and stop log collection.
-
-        This method is called when ZenML needs to stop collecting logs.
-        It should clean up handlers, flush any pending logs, and shut down
-        any background threads or connections.
-        """
-
-    @abstractmethod
-    def emit(self, record: logging.LogRecord) -> None:
-        """Process a log record from the routing handler.
+    def emit(
+        self,
+        record: logging.LogRecord,
+        context: "LoggingContext",
+    ) -> None:
+        """Process a log record from the logging system.
 
         This method is called by the ZenML logging system for each log
         record that should be stored by this log store. Implementations
         should process the record according to their backend's requirements.
 
-        The default implementation does nothing. This allows log stores that
-        only need to collect logs during pipeline execution (via activate/
-        deactivate) without real-time processing to skip implementing this.
-
         Args:
             record: The Python logging.LogRecord to process.
+            context: The logging context containing the log_model with routing
+                metadata (pipeline_run_id, step_run_id, etc.).
         """
 
     @abstractmethod
@@ -102,7 +88,7 @@ class BaseLogStore(StackComponent):
 
         Each log store implementation can extract the information it needs
         from logs_model:
-        - DefaultLogStore: uses logs_model.uri and logs_model.artifact_store_id
+        - ArtifactLogStore: uses logs_model.uri and logs_model.artifact_store_id
         - OtelLogStore: uses logs_model.pipeline_run_id, step_run_id, source
         - DatadogLogStore: uses logs_model.pipeline_run_id, step_run_id, source
 

@@ -1046,22 +1046,23 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             logs_context = nullcontext()
             logs_request = None
 
+            snapshot = self._create_snapshot(**self._run_args)
+            self.log_pipeline_snapshot_metadata(snapshot)
+
             if logging_enabled:
-                logs_context = LoggingContext("client")
-                logs_request = logs_context.log_model
+                from zenml.logging.logging import generate_logs_request
 
+                logs_request = generate_logs_request(source="client")
+
+            run = (
+                create_placeholder_run(snapshot=snapshot, logs=logs_request)
+                if not snapshot.schedule
+                else None
+            )
+
+            if logging_enabled and run and run.logs:
+                logs_context = LoggingContext(log_model=run.logs)
             with logs_context:
-                snapshot = self._create_snapshot(**self._run_args)
-
-                self.log_pipeline_snapshot_metadata(snapshot)
-                run = (
-                    create_placeholder_run(
-                        snapshot=snapshot, logs=logs_request
-                    )
-                    if not snapshot.schedule
-                    else None
-                )
-
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,

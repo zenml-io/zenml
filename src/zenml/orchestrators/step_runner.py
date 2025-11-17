@@ -152,7 +152,7 @@ class StepRunner:
         logs_context = nullcontext()
         if step_logging_enabled:
             if step_run.logs:
-                logs_context = LoggingContext(source="step")
+                logs_context = LoggingContext(log_model=step_run.logs)
             else:
                 logger.debug(
                     "There is no LogsResponseModel prepared for the step. The"

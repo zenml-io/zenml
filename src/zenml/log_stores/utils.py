@@ -11,75 +11,52 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility functions for working with log stores."""
+"""Utilities for log stores."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import Optional
+from uuid import UUID, uuid4
 
-if TYPE_CHECKING:
-    from zenml.logging.logging import LogEntry
-    from zenml.models import LogsResponse
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+from pydantic import BaseModel, Field
+
+from zenml.enums import LoggingLevels
 
 
-def fetch_logs(
-    logs: "LogsResponse",
-    zen_store: "BaseZenStore",
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    limit: int = 20000,
-) -> List["LogEntry"]:
-    """Fetch logs using the appropriate log store.
+class LogEntry(BaseModel):
+    """A structured log entry with parsed information."""
 
-    This function determines which log store to use based on the log_store_id
-    in the logs record. If log_store_id is present, it loads that log store.
-    Otherwise, it falls back to DefaultLogStore.
-
-    Args:
-        logs: The logs model containing metadata and log_store_id.
-        zen_store: The zen store to fetch log store component from.
-        start_time: Filter logs after this time.
-        end_time: Filter logs before this time.
-        limit: Maximum number of log entries to return.
-
-    Returns:
-        List of log entries.
-    """
-    from zenml.enums import StackComponentType
-    from zenml.stack import StackComponent
-
-    if logs.log_store_id:
-        log_store_model = zen_store.get_stack_component(logs.log_store_id)
-        log_store = StackComponent.from_model(log_store_model)
-    else:
-        from zenml.log_stores.default.default_log_store import (
-            DefaultLogStore,
-            DefaultLogStoreConfig,
-        )
-        from zenml.utils.time_utils import utc_now
-
-        if not logs.artifact_store_id:
-            return []
-
-        artifact_store_model = zen_store.get_stack_component(
-            logs.artifact_store_id
-        )
-
-        log_store = DefaultLogStore(
-            name="default_log_store_fallback",
-            id=artifact_store_model.id,
-            config=DefaultLogStoreConfig(),
-            flavor="default",
-            type=StackComponentType.LOG_STORE,
-            user=artifact_store_model.user,
-            workspace=artifact_store_model.workspace,
-            created=utc_now(),
-            updated=utc_now(),
-        )
-
-    return log_store.fetch(
-        logs_model=logs,
-        start_time=start_time,
-        end_time=end_time,
-        limit=limit,
+    message: str = Field(description="The log message content")
+    name: Optional[str] = Field(
+        default=None,
+        description="The name of the logger",
+    )
+    level: Optional[LoggingLevels] = Field(
+        default=None,
+        description="The log level",
+    )
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="When the log was created",
+    )
+    module: Optional[str] = Field(
+        default=None, description="The module that generated this log entry"
+    )
+    filename: Optional[str] = Field(
+        default=None,
+        description="The name of the file that generated this log entry",
+    )
+    lineno: Optional[int] = Field(
+        default=None, description="The fileno that generated this log entry"
+    )
+    chunk_index: int = Field(
+        default=0,
+        description="The index of the chunk in the log entry",
+    )
+    total_chunks: int = Field(
+        default=1,
+        description="The total number of chunks in the log entry",
+    )
+    id: UUID = Field(
+        default_factory=uuid4,
+        description="The unique identifier of the log entry",
     )

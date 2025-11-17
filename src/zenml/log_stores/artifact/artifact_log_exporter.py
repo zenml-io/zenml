@@ -13,56 +13,51 @@
 #  permissions and limitations under the License.
 """OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
+import os
 import time
-from typing import TYPE_CHECKING, List, Sequence
-from uuid import uuid4
+from collections import defaultdict
+from typing import TYPE_CHECKING, Dict, List, Sequence
+from uuid import UUID, uuid4
 
+from opentelemetry import context as otel_context
 from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
-    from zenml.artifact_stores import BaseArtifactStore
+    from zenml.logging.logging import LoggingContext
 
+from zenml.artifacts.utils import _load_artifact_store
+from zenml.client import Client
 from zenml.enums import LoggingLevels
-from zenml.log_stores.default.default_log_store import remove_ansi_escape_codes
+from zenml.log_stores.artifact.artifact_log_store import (
+    remove_ansi_escape_codes,
+)
+from zenml.log_stores.base_log_store import DEFAULT_MESSAGE_SIZE
+from zenml.log_stores.otel.otel_log_store import LOGGING_CONTEXT_KEY
+from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
-from zenml.logging.logging import DEFAULT_MESSAGE_SIZE, LogEntry
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
 
-class ArtifactStoreExporter(LogExporter):
+class ArtifactLogExporter(LogExporter):
     """OpenTelemetry exporter that writes logs to ZenML artifact store.
 
-    This exporter adapts OpenTelemetry log records to the ZenML LogEntry format
-    and writes them as JSON lines to the artifact store.
+    Groups logs by context and writes them to the appropriate artifact store
+    location based on the filesystem type.
     """
 
-    def __init__(
-        self,
-        logs_uri: str,
-        artifact_store: "BaseArtifactStore",
-    ):
-        """Initialize the artifact store exporter.
-
-        Args:
-            logs_uri: URI where logs should be written.
-            artifact_store: The artifact store to write to.
-        """
-        self.logs_uri = logs_uri
-        self.artifact_store = artifact_store
-        self.file_counter = 0
+    def __init__(self) -> None:
+        """Initialize the exporter with file counters per context."""
+        self.file_counters: Dict[UUID, int] = {}
 
     def export(self, batch: Sequence["LogData"]) -> LogExportResult:
         """Export a batch of logs to the artifact store.
 
-        Converts OTEL log records to ZenML LogEntry format with proper
-        message chunking and writes them as JSON lines.
-
         Args:
-            batch: Sequence of LogData to export.
+            batch: Sequence of LogData to export (can be from multiple contexts).
 
         Returns:
             LogExportResult indicating success or failure.
@@ -71,17 +66,31 @@ class ArtifactStoreExporter(LogExporter):
             return LogExportResult.SUCCESS
 
         try:
-            log_lines = []
-            for log_data in batch:
-                log_record = log_data.log_record
+            logs_by_context: Dict[UUID, List[str]] = defaultdict(list)
+            context_metadata: Dict[UUID, "LoggingContext"] = {}
 
-                entries = self._otel_record_to_log_entries(log_record)
+            for log_data in batch:
+                if not log_data.log_record.context:
+                    continue
+
+                context = otel_context.get_value(
+                    LOGGING_CONTEXT_KEY, log_data.log_record.context
+                )
+                if not context:
+                    continue
+
+                log_id = context.log_model.id
+                context_metadata[log_id] = context
+
+                entries = self._otel_record_to_log_entries(log_data.log_record)
                 for entry in entries:
                     json_line = entry.model_dump_json(exclude_none=True)
-                    log_lines.append(json_line)
+                    logs_by_context[log_id].append(json_line)
 
-            if log_lines:
-                self._write_to_artifact_store(log_lines)
+            for log_id, log_lines in logs_by_context.items():
+                if log_lines:
+                    context = context_metadata[log_id]
+                    self._write_to_artifact_store(log_lines, context, log_id)
 
             return LogExportResult.SUCCESS
 
@@ -92,10 +101,7 @@ class ArtifactStoreExporter(LogExporter):
     def _otel_record_to_log_entries(
         self, log_record: "LogData"
     ) -> List[LogEntry]:
-        """Convert an OTEL log record to one or more ZenML LogEntry objects.
-
-        Handles message chunking for large messages and extracts all relevant
-        metadata from the OTEL record.
+        """Convert an OTEL log record to ZenML LogEntry objects.
 
         Args:
             log_record: The OpenTelemetry log record.
@@ -183,10 +189,7 @@ class ArtifactStoreExporter(LogExporter):
             return LoggingLevels.INFO
 
     def _split_to_chunks(self, message: str) -> List[str]:
-        """Split a large message into chunks.
-
-        Properly handles UTF-8 boundaries to avoid breaking multi-byte characters.
-        This is the same logic from the original step_logging.py implementation.
+        """Split a large message into chunks, handling UTF-8 boundaries.
 
         Args:
             message: The message to split.
@@ -199,10 +202,8 @@ class ArtifactStoreExporter(LogExporter):
         start = 0
 
         while start < len(message_bytes):
-            # Calculate the end position for this chunk
             end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
 
-            # Try to decode the chunk, backing up if we hit a UTF-8 boundary issue
             while end > start:
                 chunk_bytes = message_bytes[start:end]
                 try:
@@ -210,10 +211,8 @@ class ArtifactStoreExporter(LogExporter):
                     chunks.append(chunk_text)
                     break
                 except UnicodeDecodeError:
-                    # If we can't decode, try a smaller chunk
                     end -= 1
             else:
-                # If we can't decode anything, use replacement characters
                 end = min(start + DEFAULT_MESSAGE_SIZE, len(message_bytes))
                 chunks.append(
                     message_bytes[start:end].decode("utf-8", errors="replace")
@@ -223,52 +222,59 @@ class ArtifactStoreExporter(LogExporter):
 
         return chunks
 
-    def _write_to_artifact_store(self, log_lines: List[str]) -> None:
+    def _write_to_artifact_store(
+        self,
+        log_lines: List[str],
+        context: "LoggingContext",
+        log_id: UUID,
+    ) -> None:
         """Write log lines to the artifact store.
-
-        Generates a unique timestamped filename for each batch and writes
-        the log lines as newline-delimited JSON.
 
         Args:
             log_lines: List of JSON-serialized log entries.
+            context: The LoggingContext containing log_model metadata.
+            log_id: The log ID for tracking file counters.
         """
-        # Generate unique filename with timestamp and counter
-        # This matches the pattern from the original implementation
-        timestamp = int(time.time() * 1000)
-        self.file_counter += 1
+        log_model = context.log_model
+        if not log_model.uri or not log_model.artifact_store_id:
+            logger.warning(
+                f"Skipping log write: missing uri or artifact_store_id for log {log_id}"
+            )
+            return
 
-        # Use the logs_uri as the base - append timestamp and counter
-        base_uri = self.logs_uri
-        if base_uri.endswith(".log"):
-            base_uri = base_uri[:-4]
-
-        file_uri = f"{base_uri}_{timestamp}_{self.file_counter}.jsonl"
-
-        # Join lines and write (one JSON object per line)
-        content = "\n".join(log_lines) + "\n"
+        client = Client()
+        artifact_store = _load_artifact_store(
+            log_model.artifact_store_id, client.zen_store
+        )
 
         try:
-            # Write to artifact store
-            with self.artifact_store.open(file_uri, "w") as f:
-                f.write(content)
+            content = "\n".join(log_lines) + "\n"
 
-            logger.debug(f"Wrote {len(log_lines)} log lines to {file_uri}")
+            if artifact_store.config.IS_IMMUTABLE_FILESYSTEM:
+                timestamp = int(time.time() * 1000)
+                if log_id not in self.file_counters:
+                    self.file_counters[log_id] = 0
+                self.file_counters[log_id] += 1
+
+                file_uri = os.path.join(
+                    log_model.uri,
+                    f"{timestamp}_{self.file_counters[log_id]}.jsonl",
+                )
+
+                with artifact_store.open(file_uri, "w") as f:
+                    f.write(content)
+            else:
+                with artifact_store.open(log_model.uri, "a") as f:
+                    f.write(content)
         except Exception as e:
-            logger.error(f"Failed to write logs to {file_uri}: {e}")
+            logger.error(f"Failed to write logs to {log_model.uri}: {e}")
             raise
+        finally:
+            artifact_store.cleanup()
 
     def shutdown(self) -> None:
-        """Shutdown the exporter and cleanup artifact store resources.
-
-        This is important to prevent memory leaks by cleaning up any
-        cached connections or file handles held by the artifact store.
-        """
-        if hasattr(self, "artifact_store") and self.artifact_store:
-            try:
-                self.artifact_store.cleanup()
-                logger.debug("Artifact store cleanup completed")
-            except Exception as e:
-                logger.warning(f"Error during artifact store cleanup: {e}")
+        """Shutdown the exporter."""
+        pass
 
     def force_flush(self, timeout_millis: int = 30000) -> bool:
         """Force flush any buffered logs.
@@ -277,7 +283,6 @@ class ArtifactStoreExporter(LogExporter):
             timeout_millis: Timeout in milliseconds.
 
         Returns:
-            True if successful (always true - no buffering at this level).
+            True (no buffering at this level).
         """
-        # No-op - OTEL BatchLogRecordProcessor handles all flushing
         return True

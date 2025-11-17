@@ -15,7 +15,6 @@
 
 import signal
 import time
-from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
@@ -30,6 +29,7 @@ from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
+from zenml.logging import LoggingContext
 from zenml.logging import logging as zenml_logging
 from zenml.models import (
     PipelineRunRequest,
@@ -41,7 +41,6 @@ from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
-from zenml.pipelines.build_utils import log_code_repository_usage
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException, StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
@@ -271,77 +270,82 @@ class StepLauncher:
                 is_enabled_on_pipeline=self._snapshot.pipeline_configuration.enable_step_logs,
             )
 
-        logs_context = nullcontext()
         logs_request = None
         if step_logging_enabled:
-            logs_context = zenml_logging.LoggingContext(source="step")
-            logs_request = logs_context.log_model
+            logs_request = zenml_logging.generate_logs_request(source="step")
 
-        with logs_context:
-            if run_was_created:
-                pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
-                    run_id=pipeline_run.id
-                )
-                publish_utils.publish_pipeline_run_metadata(
-                    pipeline_run_id=pipeline_run.id,
-                    pipeline_run_metadata=pipeline_run_metadata,
-                )
-                if model_version := pipeline_run.model_version:
-                    step_run_utils.log_model_version_dashboard_url(
-                        model_version=model_version
-                    )
-
-            request_factory = step_run_utils.StepRunRequestFactory(
-                snapshot=self._snapshot,
-                pipeline_run=pipeline_run,
-                stack=self._stack,
+        if run_was_created:
+            pipeline_run_metadata = self._stack.get_pipeline_run_metadata(
+                run_id=pipeline_run.id
             )
-            dynamic_config = self._step if self._snapshot.is_dynamic else None
-            step_run_request = request_factory.create_request(
-                invocation_id=self._invocation_id,
-                dynamic_config=dynamic_config,
+            publish_utils.publish_pipeline_run_metadata(
+                pipeline_run_id=pipeline_run.id,
+                pipeline_run_metadata=pipeline_run_metadata,
             )
-            step_run_request.logs = logs_request
+            if model_version := pipeline_run.model_version:
+                step_run_utils.log_model_version_dashboard_url(
+                    model_version=model_version
+                )
 
-            try:
-                request_factory.populate_request(request=step_run_request)
-            except BaseException as e:
-                logger.exception(
-                    f"Failed preparing step `{self._invocation_id}`."
+        request_factory = step_run_utils.StepRunRequestFactory(
+            snapshot=self._snapshot,
+            pipeline_run=pipeline_run,
+            stack=self._stack,
+        )
+        dynamic_config = self._step if self._snapshot.is_dynamic else None
+        step_run_request = request_factory.create_request(
+            invocation_id=self._invocation_id,
+            dynamic_config=dynamic_config,
+        )
+        step_run_request.logs = logs_request
+
+        try:
+            request_factory.populate_request(request=step_run_request)
+        except BaseException as e:
+            logger.exception(f"Failed preparing step `{self._invocation_id}`.")
+            step_run_request.status = ExecutionStatus.FAILED
+            step_run_request.end_time = utc_now()
+            step_run_request.exception_info = (
+                exception_utils.collect_exception_information(e)
+            )
+            raise
+        finally:
+            step_run = Client().zen_store.create_run_step(step_run_request)
+            self._step_run = step_run
+            if model_version := step_run.model_version:
+                step_run_utils.log_model_version_dashboard_url(
+                    model_version=model_version
                 )
-                step_run_request.status = ExecutionStatus.FAILED
-                step_run_request.end_time = utc_now()
-                step_run_request.exception_info = (
-                    exception_utils.collect_exception_information(e)
-                )
-                raise
-            finally:
-                step_run = Client().zen_store.create_run_step(step_run_request)
-                self._step_run = step_run
-                if model_version := step_run.model_version:
-                    step_run_utils.log_model_version_dashboard_url(
-                        model_version=model_version
-                    )
 
             if not step_run.status.is_finished:
                 logger.info(f"Step `{self._invocation_id}` has started.")
 
-                try:
-                    self._run_step(
-                        pipeline_run=pipeline_run,
-                        step_run=step_run,
-                        force_write_logs=force_write_logs,
+                if step_run.logs:
+                    logs_context = LoggingContext(log_model=step_run.logs)
+                else:
+                    logger.debug(
+                        "There is no LogsResponseModel prepared for the step. The"
+                        "step logging storage is disabled."
                     )
-                except RunStoppedException as e:
-                    raise e
-                except BaseException as e:  # noqa: E722
-                    logger.error(
-                        "Failed to run step `%s`: %s",
-                        self._invocation_id,
-                        e,
-                    )
-                    publish_utils.publish_failed_step_run(step_run.id)
-                    raise
+
+                with logs_context:
+                    try:
+                        # TODO: We still need to apply the fix for step operators here
+                        self._run_step(
+                            pipeline_run=pipeline_run,
+                            step_run=step_run,
+                            force_write_logs=lambda: None,
+                        )
+                    except RunStoppedException as e:
+                        raise e
+                    except BaseException as e:  # noqa: E722
+                        logger.error(
+                            "Failed to run step `%s`: %s",
+                            self._invocation_id,
+                            e,
+                        )
+                        publish_utils.publish_failed_step_run(step_run.id)
+                        raise
             else:
                 logger.info(
                     f"Using cached version of step `{self._invocation_id}`."

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Default log store implementation."""
+"""Artifact log store implementation."""
 
 import os
 import re
@@ -31,15 +31,13 @@ from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.enums import LoggingLevels
 from zenml.exceptions import DoesNotExistException
-from zenml.log_stores.default.default_log_store_flavor import (
-    DefaultLogStoreConfig,
+from zenml.log_stores.artifact.artifact_log_store_flavor import (
+    ArtifactLogStoreConfig,
 )
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
+from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
-from zenml.logging.logging import (
-    MAX_ENTRIES_PER_REQUEST,
-    LogEntry,
-)
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
 from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -229,45 +227,34 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
     )
 
 
-class DefaultLogStore(OtelLogStore):
+class ArtifactLogStore(OtelLogStore):
     """Log store that saves logs to the artifact store.
 
-    This implementation extends OtelLogStore and uses the ArtifactStoreExporter
+    This implementation extends OtelLogStore and uses the ArtifactLogExporter
     to write logs to the artifact store. Inherits all OTEL infrastructure
     including shared BatchLogRecordProcessor and routing.
     """
 
     @property
-    def config(self) -> DefaultLogStoreConfig:
-        """Returns the configuration of the default log store.
+    def config(self) -> ArtifactLogStoreConfig:
+        """Returns the configuration of the artifact log store.
 
         Returns:
             The configuration.
         """
-        return cast(DefaultLogStoreConfig, self._config)
+        return cast(ArtifactLogStoreConfig, self._config)
 
     def get_exporter(self) -> "LogExporter":
-        """Get the artifact store exporter for this log store.
+        """Get the artifact log exporter for this log store.
 
         Returns:
-            The ArtifactStoreExporter instance.
+            The ArtifactLogExporter instance.
         """
-        from zenml.log_stores.default.artifact_store_exporter import (
-            ArtifactStoreExporter,
+        from zenml.log_stores.artifact.artifact_log_exporter import (
+            ArtifactLogExporter,
         )
-        from zenml.logging.logging import get_active_log_model
 
-        log_model = get_active_log_model()
-        if not log_model:
-            raise RuntimeError(
-                "get_exporter() called outside of an active logging context. "
-                "This should not happen."
-            )
-
-        return ArtifactStoreExporter(
-            logs_uri=log_model.uri,
-            artifact_store=Client().active_stack.artifact_store,
-        )
+        return ArtifactLogExporter()
 
     def fetch(
         self,
@@ -294,12 +281,12 @@ class DefaultLogStore(OtelLogStore):
         """
         if not logs_model.uri:
             raise ValueError(
-                "logs_model.uri is required for DefaultLogStore.fetch()"
+                "logs_model.uri is required for ArtifactLogStore.fetch()"
             )
 
         if not logs_model.artifact_store_id:
             raise ValueError(
-                "logs_model.artifact_store_id is required for DefaultLogStore.fetch()"
+                "logs_model.artifact_store_id is required for ArtifactLogStore.fetch()"
             )
 
         client = Client()

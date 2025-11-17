@@ -70,8 +70,8 @@ class FlavorRegistry:
         from zenml.deployers import DockerDeployerFlavor, LocalDeployerFlavor
         from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.log_stores import (
+            ArtifactLogStoreFlavor,
             DatadogLogStoreFlavor,
-            DefaultLogStoreFlavor,
         )
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
@@ -89,7 +89,7 @@ class FlavorRegistry:
             GitHubContainerRegistryFlavor,
             LocalImageBuilderFlavor,
             DockerDeployerFlavor,
-            DefaultLogStoreFlavor,
+            ArtifactLogStoreFlavor,
             DatadogLogStoreFlavor,
             LocalDeployerFlavor,
         ]

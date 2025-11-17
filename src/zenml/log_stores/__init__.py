@@ -11,26 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Log stores allow you to collect and store logs from pipeline runs.
-
-ZenML log stores provide different backends for storing pipeline and step logs.
-"""
+"""Implements the log stores for ZenML."""
 
 # Base log store
 from zenml.log_stores.base_log_store import (
-    BaseLogStore, 
+    BaseLogStore,
     BaseLogStoreConfig,
     BaseLogStoreFlavor,
 )
 
-# Default log store
-from zenml.log_stores.default.default_log_store import (
-    DefaultLogStore,
+# Artifact log store
+from zenml.log_stores.artifact.artifact_log_store import (
+    ArtifactLogStore,
 )
-from zenml.log_stores.default.default_log_store_flavor import (
-    DefaultLogStoreConfig,
-    DefaultLogStoreFlavor,
-)   
+from zenml.log_stores.artifact.artifact_log_store_flavor import (
+    ArtifactLogStoreConfig,
+    ArtifactLogStoreFlavor,
+)
 
 # OpenTelemetry log store
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
@@ -41,28 +38,24 @@ from zenml.log_stores.otel.otel_flavor import (
 
 # Datadog log store
 from zenml.log_stores.datadog.datadog_log_store import (
-    DatadogLogStore,    
+    DatadogLogStore,
 )
-from zenml.log_stores.datadog.datadog_flavor import (
-    DatadogLogStoreConfig,
-    DatadogLogStoreFlavor,
+from zenml.log_stores.otel.otel_flavor import (
+    OtelLogStoreConfig,
+    OtelLogStoreFlavor,
 )
-
-# Utils
-from zenml.log_stores.utils import fetch_logs
 
 __all__ = [
+    "ArtifactLogStore",
+    "ArtifactLogStoreConfig",
+    "ArtifactLogStoreFlavor",
     "BaseLogStore",
     "BaseLogStoreConfig",
     "BaseLogStoreFlavor",
     "DatadogLogStore",
     "DatadogLogStoreConfig",
     "DatadogLogStoreFlavor",
-    "DefaultLogStore",
-    "DefaultLogStoreConfig",
-    "DefaultLogStoreFlavor",
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",
-    "fetch_logs",
 ]

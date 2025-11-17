@@ -14,10 +14,12 @@
 """OpenTelemetry log store implementation."""
 
 import logging
+import threading
 from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 
+from opentelemetry import context as otel_context
 from opentelemetry._logs.severity import SeverityNumber
 from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
@@ -32,9 +34,13 @@ from zenml.models import LogsResponse
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.logging.logging import LogEntry
+    from zenml.log_stores.utils import LogEntry
+    from zenml.logging.logging import LoggingContext
 
 logger = get_logger(__name__)
+
+# Context key for passing LoggingContext through OTel's context system
+LOGGING_CONTEXT_KEY = otel_context.create_key("zenml.logging_context")
 
 
 class OtelLogStore(BaseLogStore):
@@ -45,7 +51,7 @@ class OtelLogStore(BaseLogStore):
     multiple log stores are active simultaneously.
 
     Subclasses should implement `get_exporter()` to provide the specific
-    log exporter for their backend (e.g., ArtifactStoreExporter, DatadogLogExporter).
+    log exporter for their backend (e.g., ArtifactLogExporter, DatadogLogExporter).
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -61,6 +67,7 @@ class OtelLogStore(BaseLogStore):
         self._exporter: Optional["LogExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["BatchLogRecordProcessor"] = None
+        self._activation_lock = threading.Lock()
 
     @property
     def config(self) -> OtelLogStoreConfig:
@@ -84,15 +91,6 @@ class OtelLogStore(BaseLogStore):
 
     def activate(self) -> None:
         """Activate log collection with OpenTelemetry."""
-        from zenml.logging.logging import get_active_log_model
-
-        log_model = get_active_log_model()
-        if not log_model:
-            raise RuntimeError(
-                "activate() called outside of an active logging context. "
-                "This should not happen."
-            )
-
         self._exporter = self.get_exporter()
         self._processor = BatchLogRecordProcessor(self._exporter)
 
@@ -100,27 +98,37 @@ class OtelLogStore(BaseLogStore):
             {
                 "service.name": self.config.service_name,
                 "service.version": __version__,
-                "zenml.log_id": str(log_model.id),
             }
         )
 
         self._provider = LoggerProvider(resource=self._resource)
         self._provider.add_log_record_processor(self._processor)
 
-    def emit(self, record: logging.LogRecord) -> None:
+    def emit(
+        self,
+        record: logging.LogRecord,
+        context: "LoggingContext",
+    ) -> None:
         """Process a log record by sending to OpenTelemetry.
 
         Args:
             record: The log record to process.
+            context: The logging context containing the log_model.
         """
-        if not self._provider:
-            return
+        with self._activation_lock:
+            if not self._provider:
+                self.activate()
 
         try:
+            # Attach the LoggingContext to OTel's context so the exporter
+            # can access it in the background processor thread
+            ctx = otel_context.set_value(LOGGING_CONTEXT_KEY, context)
+            
             otel_logger = self._provider.get_logger(
                 record.name or "unknown",
                 schema_url=None,
             )
+            
             otel_logger.emit(
                 timestamp=int(record.created * 1e9),
                 observed_timestamp=int(record.created * 1e9),
@@ -131,7 +139,10 @@ class OtelLogStore(BaseLogStore):
                     "code.filepath": record.pathname,
                     "code.lineno": record.lineno,
                     "code.function": record.funcName,
+                    "log_id": str(context.log_model.id),
+                    "log_store_id": str(self.id),
                 },
+                context=ctx,
             )
 
         except Exception:

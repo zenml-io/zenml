@@ -35,8 +35,8 @@ step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
 
-_original_stdout_write: Optional[Any] = None
-_original_stderr_write: Optional[Any] = None
+_original_stdout: Optional[Any] = None
+_original_stderr: Optional[Any] = None
 _stdout_wrapped: bool = False
 _stderr_wrapped: bool = False
 
@@ -214,99 +214,80 @@ class ZenMLFormatter(logging.Formatter):
 
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
-    """Wrap stdout/stderr write method to parse and route logs."""
+    """Wrap stdout/stderr write method to route logs to LoggingContext."""
 
     def wrapped_write(text: str) -> int:
-        """Wrap the write method to parse and route logs."""
-        from zenml.logging.logging import get_active_log_store
+        """Write method that routes logs through LoggingContext."""
+        from zenml.logging.logging import LoggingContext
 
-        message = text
-        name = "unknown"
-        level = (
-            LoggingLevels.INFO
-            if stream_name == "info"
-            else LoggingLevels.ERROR
+        level_int = logging.INFO if stream_name == "stdout" else logging.ERROR
+
+        record = logging.LogRecord(
+            name=stream_name,
+            level=level_int,
+            pathname="",
+            lineno=0,
+            msg=text,
+            args=(),
+            exc_info=None,
+            func="",
         )
-        level_int = getattr(logging, level.name)
-        pathname = ""
-        lineno = 0
-        funcName = ""
+        LoggingContext.emit(record)
 
-        has_newline = text.endswith("\n")
-
-        stripped_text = text.strip()
-        if stripped_text.startswith("{") and stripped_text.endswith("}"):
-            try:
-                data = json.loads(stripped_text)
-                if "zenml" in data and data["zenml"] is True:
-                    message = data.get("msg", text)
-                    name = data.get("name", name)
-                    level_str = data.get("level", level.name)
-                    if hasattr(LoggingLevels, level_str):
-                        level = getattr(LoggingLevels, level_str)
-                        level_int = getattr(logging, level.name)
-                    pathname = data.get("filename", pathname)
-                    lineno = data.get("lineno", lineno)
-                    funcName = data.get("module", funcName)
-            except Exception:
-                pass
-
-        log_store = get_active_log_store()
-        if log_store:
-            record = logging.LogRecord(
-                name=name,
-                level=level_int,
-                pathname=pathname,
-                lineno=lineno,
-                msg=message,
-                args=(),
-                exc_info=None,
-                func=funcName,
-            )
-            log_store.emit(record)
-
-        formatted_message = format_console_message(message, level)
-        if has_newline:
-            formatted_message += "\n"
-
-        return original_write(formatted_message)
+        return original_write(text)
 
     return wrapped_write
 
 
 def wrap_stdout_stderr() -> None:
-    """Wrap stdout and stderr write methods."""
+    """Wrap stdout and stderr write methods to route through LoggingContext."""
     global _stdout_wrapped, _stderr_wrapped
-    global _original_stdout_write, _original_stderr_write
+    global _original_stdout, _original_stderr
 
     if not _stdout_wrapped:
-        _original_stdout_write = getattr(sys.stdout, "write")
-        setattr(
-            sys.stdout,
-            "write",
-            _wrapped_write(_original_stdout_write, "info"),
-        )
+        _original_stdout = sys.stdout
+        original_write = sys.stdout.write
+        sys.stdout.write = _wrapped_write(original_write, "stdout")
         _stdout_wrapped = True
 
     if not _stderr_wrapped:
-        _original_stderr_write = getattr(sys.stderr, "write")
-        setattr(
-            sys.stderr,
-            "write",
-            _wrapped_write(_original_stderr_write, "error"),
-        )
+        _original_stderr = sys.stderr
+        original_write = sys.stderr.write
+        sys.stderr.write = _wrapped_write(original_write, "stderr")
         _stderr_wrapped = True
 
 
-def get_zenml_handler() -> Any:
-    """Get console handler for logging.
+class ZenMLLoggingHandler(logging.Handler):
+    """Custom handler that routes logs through LoggingContext."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record through LoggingContext.
+
+        Args:
+            record: The log record to emit.
+        """
+        from zenml.logging.logging import LoggingContext
+
+        LoggingContext.emit(record)
+
+
+def get_console_handler() -> logging.Handler:
+    """Get console handler that writes to original stdout.
 
     Returns:
         A console handler.
     """
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(ZenMLFormatter())
+    handler = logging.StreamHandler(_original_stdout)
     return handler
+
+
+def get_zenml_handler() -> logging.Handler:
+    """Get ZenML handler that routes logs through LoggingContext.
+
+    Returns:
+        A ZenML handler.
+    """
+    return ZenMLLoggingHandler()
 
 
 def init_logging() -> None:
@@ -314,8 +295,13 @@ def init_logging() -> None:
     set_root_verbosity()
     wrap_stdout_stderr()
 
-    # Add the ZenML handler to the root logger
+    # Add both handlers to the root logger
     root_logger = logging.getLogger()
+
+    # Console handler - writes to original stdout
+    root_logger.addHandler(get_console_handler())
+
+    # ZenML handler - routes through LoggingContext
     root_logger.addHandler(get_zenml_handler())
 
     # Mute tensorflow cuda warnings

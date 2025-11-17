@@ -18,6 +18,7 @@ import random
 import socket
 import threading
 import time
+from contextlib import nullcontext
 from typing import List, Optional, Tuple, cast
 from uuid import UUID
 
@@ -243,7 +244,7 @@ def main() -> None:
         namespace=namespace,
         job_name=job_name,
     )
-    existing_logs_response = None
+    logs_response = None
 
     if run_id and orchestrator_run_id:
         logger.info("Continuing existing run `%s`.", run_id)
@@ -259,22 +260,39 @@ def main() -> None:
         # Continue logging to the same log file if it exists
         for log_response in pipeline_run.log_collection or []:
             if log_response.source == "orchestrator":
-                existing_logs_response = log_response
+                logs_response = log_response
                 break
     else:
         orchestrator_run_id = orchestrator_pod_name
+
+        # Generate logs request for orchestrator logging
+        from zenml.logging.logging import generate_logs_request
+
+        logs_request = generate_logs_request(source="orchestrator")
+
         if args.run_id:
             pipeline_run = client.zen_store.update_run(
                 run_id=args.run_id,
                 run_update=PipelineRunUpdate(
-                    orchestrator_run_id=orchestrator_run_id
+                    orchestrator_run_id=orchestrator_run_id,
+                    add_logs=[logs_request],
                 ),
             )
         else:
             pipeline_run = create_placeholder_run(
                 snapshot=snapshot,
                 orchestrator_run_id=orchestrator_run_id,
+                logs=logs_request,
             )
+
+        # Get logs_response from the created/updated run
+        if pipeline_run.logs:
+            logs_response = pipeline_run.logs
+        elif pipeline_run.log_collection:
+            for log_response in pipeline_run.log_collection:
+                if log_response.source == "orchestrator":
+                    logs_response = log_response
+                    break
 
         # Store in the job annotations so we can continue the run if the pod
         # is restarted
@@ -292,10 +310,14 @@ def main() -> None:
             for step_name, step in snapshot.step_configurations.items()
         ]
 
-    logs_context = setup_orchestrator_logging(
-        run_id=pipeline_run.id,
-        snapshot=snapshot,
-        logs_response=existing_logs_response,
+    logs_context = (
+        setup_orchestrator_logging(
+            run_id=pipeline_run.id,
+            snapshot=snapshot,
+            logs_response=logs_response,
+        )
+        if logs_response
+        else nullcontext()
     )
 
     with logs_context:

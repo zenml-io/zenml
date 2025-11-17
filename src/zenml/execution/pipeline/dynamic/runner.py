@@ -16,6 +16,7 @@
 import contextvars
 import inspect
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -49,7 +50,7 @@ from zenml.execution.pipeline.dynamic.run_context import (
 )
 from zenml.execution.step.utils import launch_step
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_pipeline_logging
+from zenml.logging.logging import setup_pipeline_logging
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,
@@ -147,18 +148,37 @@ class DynamicPipelineRunner:
 
     def run_pipeline(self) -> None:
         """Run the pipeline."""
-        with setup_pipeline_logging(
-            source="orchestrator",
-            snapshot=self._snapshot,
-            run_id=self._run.id if self._run else None,
-        ) as logs_request:
-            with InMemoryArtifactCache():
-                run = self._run or create_placeholder_run(
-                    snapshot=self._snapshot,
-                    orchestrator_run_id=self._orchestrator_run_id,
-                    logs=logs_request,
-                )
+        from zenml.logging.logging import generate_logs_request
 
+        # Generate logs request for orchestrator logging
+        logs_request = generate_logs_request(source="orchestrator")
+
+        with InMemoryArtifactCache():
+            run = self._run or create_placeholder_run(
+                snapshot=self._snapshot,
+                orchestrator_run_id=self._orchestrator_run_id,
+                logs=logs_request,
+            )
+
+            # Get logs response from the run and set up logging context
+            logs_response = run.logs
+            if not logs_response and run.log_collection:
+                for log in run.log_collection:
+                    if log.source == "orchestrator":
+                        logs_response = log
+                        break
+
+            logs_context = (
+                setup_pipeline_logging(
+                    snapshot=self._snapshot,
+                    run_id=run.id,
+                    logs_response=logs_response,
+                )
+                if logs_response
+                else nullcontext()
+            )
+
+            with logs_context:
                 assert (
                     self._snapshot.pipeline_spec
                 )  # Always exists for new snapshots
