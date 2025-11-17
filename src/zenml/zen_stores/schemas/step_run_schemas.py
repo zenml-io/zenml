@@ -56,7 +56,10 @@ from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -80,6 +83,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "pipeline_run_id",
             "version",
             name="unique_step_name_for_pipeline_run",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "cache_key",
+            ],
         ),
     )
 
@@ -215,7 +224,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # In dynamic pipelines, the config is dynamically generated and cannot be
     # included in the compiled snapshot. In this case, we link it directly to
     # the step run.
-    dynamic_config: Optional["StepConfigurationSchema"] = Relationship()
+    dynamic_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+        },
+    )
     # In legacy pipelines (before snapshots, former deployments), the config
     # is stored as a string in the step run.
     step_configuration: str = Field(

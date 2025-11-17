@@ -84,3 +84,103 @@ def test_must_be_s3_path():
             updated=datetime.now(),
         )
     assert artifact_store.path == "s3://mybucket"
+
+
+def test_boto3_resource_receives_client_kwargs():
+    """Tests that boto3.resource receives client_kwargs during initialization."""
+    with patch("boto3.resource") as mock_resource:
+        bucket = MagicMock()
+        bucket.Versioning.return_value.status = "Enabled"
+        mock_resource.return_value.Bucket.return_value = bucket
+
+        S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(
+                path="s3://custom",
+                client_kwargs={
+                    "endpoint_url": "http://minio:9000",
+                    "foo": "bar",
+                },
+            ),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+
+    assert (
+        mock_resource.call_args.kwargs["endpoint_url"] == "http://minio:9000"
+    )
+    assert mock_resource.call_args.kwargs["foo"] == "bar"
+
+
+def test_remove_previous_versions_uses_client_kwargs():
+    """Tests that _remove_previous_file_versions uses client_kwargs when creating boto3 resource."""
+    with patch("boto3.resource") as mock_resource:
+        bucket = MagicMock()
+        bucket.Versioning.return_value.status = "Enabled"
+        bucket.object_versions.filter.return_value = []
+        mock_resource.return_value.Bucket.return_value = bucket
+
+        artifact_store = S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(
+                path="s3://mybucket",
+                client_kwargs={"endpoint_url": "http://minio:9000"},
+            ),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+
+        artifact_store.is_versioned = True
+        artifact_store._boto3_bucket_holder = None
+
+        artifact_store._remove_previous_file_versions("s3://mybucket/path")
+
+    assert len(mock_resource.call_args_list) == 2
+    for call in mock_resource.call_args_list:
+        assert call.kwargs["endpoint_url"] == "http://minio:9000"
+
+
+def test_client_kwargs_region_overrides_credentials_region():
+    """Tests that client_kwargs region_name takes precedence over credential region."""
+    with (
+        patch(
+            "zenml.integrations.s3.artifact_stores.s3_artifact_store.S3ArtifactStore.get_credentials",
+            return_value=("key", "secret", "token", "us-west-2"),
+        ),
+        patch("boto3.resource") as mock_resource,
+    ):
+        bucket = MagicMock()
+        bucket.Versioning.return_value.status = "Enabled"
+        mock_resource.return_value.Bucket.return_value = bucket
+
+        artifact_store = S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(
+                path="s3://override-region",
+                client_kwargs={
+                    "endpoint_url": "http://minio",
+                    "region_name": "eu-central-1",
+                },
+            ),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+
+        _ = artifact_store._boto3_bucket
+
+    assert mock_resource.call_args.kwargs["region_name"] == "eu-central-1"
+    assert mock_resource.call_args.kwargs["aws_access_key_id"] == "key"
+    assert mock_resource.call_args.kwargs["aws_secret_access_key"] == "secret"
+    assert mock_resource.call_args.kwargs["aws_session_token"] == "token"

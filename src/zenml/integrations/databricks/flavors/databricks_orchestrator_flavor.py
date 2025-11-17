@@ -52,7 +52,7 @@ class DatabricksOrchestratorSettings(BaseSettings):
     spark_version: Optional[str] = Field(
         default=None,
         description="Apache Spark version for the Databricks cluster. "
-        "Uses workspace default if not specified. Example: '3.2.x-scala2.12'",
+        "Uses workspace default if not specified. Example: '16.4.x-scala2.12'",
     )
     num_workers: Optional[int] = Field(
         default=None,

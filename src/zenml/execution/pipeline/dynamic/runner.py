@@ -142,6 +142,7 @@ class DynamicPipelineRunner:
                     "Invalid pipeline source: "
                     f"{self._snapshot.pipeline_spec.source.import_path}"
                 )
+            pipeline._configuration = self._snapshot.pipeline_configuration
             self._pipeline = pipeline
 
         return self._pipeline

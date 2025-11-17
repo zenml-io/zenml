@@ -329,27 +329,36 @@ def build_service_account_manifest(
     }
 
 
-def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
+def build_namespace_manifest(
+    namespace: str, labels: Optional[Dict[str, str]] = None
+) -> Dict[str, Any]:
     """Build the manifest for a new namespace.
 
     Args:
         namespace: Kubernetes namespace.
+        labels: Optional labels to apply to the namespace. These labels are used
+            to track namespace ownership for cleanup. For example, adding
+            'zenml-deployment-id' allows us to identify and safely delete
+            namespaces created by ZenML deployments.
 
     Returns:
         Manifest of the new namespace.
     """
+    metadata: Dict[str, Any] = {"name": namespace}
+    if labels:
+        metadata["labels"] = labels
+
     return {
         "apiVersion": "v1",
         "kind": "Namespace",
-        "metadata": {
-            "name": namespace,
-        },
+        "metadata": metadata,
     }
 
 
 def build_secret_manifest(
     name: str,
     data: Mapping[str, Optional[str]],
+    namespace: Optional[str] = None,
     secret_type: str = "Opaque",
 ) -> Dict[str, Any]:
     """Builds a Kubernetes secret manifest.
@@ -357,6 +366,7 @@ def build_secret_manifest(
     Args:
         name: Name of the secret.
         data: The secret data.
+        namespace: The namespace to create the secret in.
         secret_type: The secret type.
 
     Returns:
@@ -370,9 +380,7 @@ def build_secret_manifest(
     return {
         "apiVersion": "v1",
         "kind": "Secret",
-        "metadata": {
-            "name": name,
-        },
+        "metadata": {"name": name, "namespace": namespace},
         "type": secret_type,
         "data": encoded_data,
     }

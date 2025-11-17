@@ -22,6 +22,7 @@ from pydantic import (
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
+    model_validator,
 )
 
 from zenml.config.base_settings import BaseSettings
@@ -140,6 +141,28 @@ class ResourceSettings(BaseSettings):
     ] = None
     autoscaling_target: Optional[PositiveFloat] = None
     max_concurrency: Optional[PositiveInt] = None
+
+    @model_validator(mode="after")
+    def validate_replicas(self) -> "ResourceSettings":
+        """Validate that min_replicas is not greater than max_replicas.
+
+        Returns:
+            The validated settings.
+
+        Raises:
+            ValueError: If min_replicas > max_replicas.
+        """
+        if (
+            self.min_replicas is not None
+            and self.max_replicas is not None
+            and self.max_replicas > 0  # 0 means "no limit"
+            and self.min_replicas > self.max_replicas
+        ):
+            raise ValueError(
+                f"min_replicas ({self.min_replicas}) cannot be greater than "
+                f"max_replicas ({self.max_replicas})"
+            )
+        return self
 
     @property
     def empty(self) -> bool:

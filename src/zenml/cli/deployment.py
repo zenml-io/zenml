@@ -256,8 +256,7 @@ def provision_deployment(
             dashboard_url = get_deployment_url(deployment)
             if dashboard_url:
                 cli_utils.declare(
-                    f"\n✅ [bold green]View in ZenML Cloud:[/bold green] "
-                    f"[link]{dashboard_url}[/link]"
+                    f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]"
                 )
 
 
@@ -403,7 +402,7 @@ def deprovision_deployment(
                 )
                 cli_utils.declare(
                     "Hint: to permanently delete the deployment, run `zenml "
-                    f"deployments delete {deployment.name}`."
+                    f"deployment delete {deployment.name}`."
                 )
             except KeyError as e:
                 error_message = (

@@ -31,6 +31,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
@@ -41,7 +42,11 @@ from zenml.integrations.kubernetes.constants import (
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.manifest_utils import (
+    build_job_manifest,
+    build_pod_manifest,
+    pod_template_manifest_from_pod,
+)
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     DagRunner,
     InterruptMode,
@@ -50,11 +55,6 @@ from zenml.integrations.kubernetes.orchestrators.dag_runner import (
 )
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
-)
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_job_manifest,
-    build_pod_manifest,
-    pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
 from zenml.logging.logging import setup_orchestrator_logging

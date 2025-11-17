@@ -21,6 +21,7 @@ from click.testing import CliRunner
 
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_server.deploy import LocalServerDeployer
 from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
@@ -35,20 +36,17 @@ SERVER_START_STOP_TIMEOUT = 30
 def test_server_cli_up_down(clean_client, mocker):
     """Test spinning up and shutting down ZenServer."""
     mocker.patch.dict(
-        os.environ, {"OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES"}
-    )
-    mocker.patch(
-        "zenml.zen_server.deploy.daemon.daemon_zen_server.DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT",
-        60,
+        os.environ,
+        {
+            "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES",
+            ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT: "90",
+        },
     )
     cli_runner = CliRunner()
 
     port = scan_for_available_port(start=8003, stop=9000)
     login_command = cli.commands["login"]
     cli_runner.invoke(login_command, ["--local", "--port", port])
-
-    # sleep for a bit to let the server start
-    time.sleep(5)
 
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health", timeout=16).status_code == 200
