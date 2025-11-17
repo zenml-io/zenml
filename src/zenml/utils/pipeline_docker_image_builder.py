@@ -318,9 +318,12 @@ class PipelineDockerImageBuilder:
                 # The default parent image is static and doesn't require a pull
                 # each time
                 pull_parent_image = False
-            elif docker_settings.dockerfile and not container_registry:
-                # We built a custom parent image and there was no container
-                # registry in the stack to push to, this is a local image
+            elif docker_settings.dockerfile and (
+                not container_registry or image_builder.is_building_locally
+            ):
+                # We built a custom parent image and there was either no
+                # container registry in the stack to push to or the image was
+                # built locally and not pushed, so this is a local image
                 pull_parent_image = False
             elif not image_builder.is_building_locally:
                 # Remote image builders always need to pull the image
