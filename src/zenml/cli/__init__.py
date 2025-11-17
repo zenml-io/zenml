@@ -1751,7 +1751,19 @@ zenml artifact list
 Each artifact has one or several versions. To list artifact versions, use:
 
 ```bash
-zenml artifact versions list
+zenml artifact version list
+```
+
+You can filter artifact versions by artifact name using the `--artifact` option:
+
+```bash
+zenml artifact version list --artifact <ARTIFACT_NAME>
+```
+
+To view detailed information about a specific artifact version, use:
+
+```bash
+zenml artifact version describe <NAME_OR_ID> [-v <VERSION>]
 ```
 
 If you would like to rename an artifact or adjust the tags of an artifact or
