@@ -224,7 +224,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     # In dynamic pipelines, the config is dynamically generated and cannot be
     # included in the compiled snapshot. In this case, we link it directly to
     # the step run.
-    dynamic_config: Optional["StepConfigurationSchema"] = Relationship()
+    dynamic_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+        },
+    )
     # In legacy pipelines (before snapshots, former deployments), the config
     # is stored as a string in the step run.
     step_configuration: str = Field(
