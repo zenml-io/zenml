@@ -15,18 +15,19 @@
 
 import logging
 import threading
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from contextvars import ContextVar
 from types import TracebackType
 from typing import (
     Any,
-    Generator,
+    List,
     Optional,
     Type,
 )
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     handle_bool_env_var,
@@ -35,6 +36,8 @@ from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
     LogsResponse,
+    PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 
@@ -150,11 +153,44 @@ class LoggingContext:
             active_logging_context.set(self._previous_context)
 
 
-# TODO: Adjust the usage of this function
+def is_logging_enabled(pipeline_configuration: PipelineConfiguration) -> bool:
+    """Check if logging is enabled for a pipeline configuration.
+
+    Args:
+        pipeline_configuration: The pipeline configuration.
+
+    Returns:
+        True if logging is enabled, False if disabled.
+    """
+    if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
+        return False
+    elif pipeline_configuration.enable_pipeline_logs is not None:
+        return pipeline_configuration.enable_pipeline_logs
+    else:
+        return True
+
+
+def search_logs_by_source(
+    logs_collection: List[LogsResponse], source: str
+) -> Optional[LogsResponse]:
+    """Get the logs response for a given source.
+
+    Args:
+        logs_collection: The logs collection.
+        source: The source of the logs.
+
+    Returns:
+        The logs response for the given source.
+    """
+    for log in logs_collection:
+        if log.source == source:
+            return log
+    return None
+
+
 def setup_orchestrator_logging(
-    run_id: UUID,
+    pipeline_run: "PipelineRunResponse",
     snapshot: "PipelineSnapshotResponse",
-    logs_response: LogsResponse,
 ) -> Any:
     """Set up logging for an orchestrator environment.
 
@@ -162,64 +198,35 @@ def setup_orchestrator_logging(
     consistent logging behavior.
 
     Args:
-        run_id: The pipeline run ID.
+        pipeline_run: The pipeline run.
         snapshot: The snapshot of the pipeline run.
-        logs_response: The logs response for this orchestrator context.
 
     Returns:
         The logs context or nullcontext if logging is disabled.
     """
-    try:
-        logging_enabled = True
+    logging_enabled = is_logging_enabled(snapshot.pipeline_configuration)
 
-        if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
-            logging_enabled = False
-        else:
-            if (
-                snapshot.pipeline_configuration.enable_pipeline_logs
-                is not None
-            ):
-                logging_enabled = (
-                    snapshot.pipeline_configuration.enable_pipeline_logs
-                )
-
-        if not logging_enabled:
-            return nullcontext()
-
-        return LoggingContext(log_model=logs_response)
-    except Exception as e:
-        logger.error(
-            f"Failed to setup orchestrator logging for run {run_id}: {e}"
-        )
+    if not logging_enabled:
         return nullcontext()
 
+    if orchestrator_logs := search_logs_by_source(
+        pipeline_run.log_collection, "orchestrator"
+    ):
+        return LoggingContext(log_model=orchestrator_logs)
 
-# TODO: Adjust the usage of this function
-@contextmanager
-def setup_pipeline_logging(
-    snapshot: "PipelineSnapshotResponse",
-    run_id: UUID,
-    logs_response: LogsResponse,
-) -> Generator[LogsResponse, None, None]:
-    """Set up logging for a pipeline run.
+    logs_request = generate_logs_request(source="orchestrator")
+    try:
+        client = Client()
+        run_update = PipelineRunUpdate(add_logs=[logs_request])
+        pipeline_run = client.zen_store.update_run(
+            run_id=pipeline_run.id, run_update=run_update
+        )
+    except Exception as e:
+        logger.error(f"Failed to add logs to the run {pipeline_run.id}: {e}")
 
-    Args:
-        snapshot: The snapshot of the pipeline run.
-        run_id: The ID of the pipeline run.
-        logs_response: The logs response for this pipeline context.
+    if orchestrator_logs := search_logs_by_source(
+        pipeline_run.log_collection, "orchestrator"
+    ):
+        return LoggingContext(log_model=orchestrator_logs)
 
-    Yields:
-        The logs response.
-    """
-    logging_enabled = True
-
-    if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
-        logging_enabled = False
-    elif snapshot.pipeline_configuration.enable_pipeline_logs is not None:
-        logging_enabled = snapshot.pipeline_configuration.enable_pipeline_logs
-
-    if logging_enabled:
-        with LoggingContext(log_model=logs_response):
-            yield logs_response
-    else:
-        yield logs_response
+    return nullcontext()

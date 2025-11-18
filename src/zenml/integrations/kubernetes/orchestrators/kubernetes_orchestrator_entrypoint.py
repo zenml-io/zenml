@@ -18,7 +18,6 @@ import random
 import socket
 import threading
 import time
-from contextlib import nullcontext
 from typing import List, Optional, Tuple, cast
 from uuid import UUID
 
@@ -60,7 +59,6 @@ from zenml.logger import get_logger
 from zenml.logging.logging import setup_orchestrator_logging
 from zenml.models import (
     PipelineRunResponse,
-    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators import publish_utils
@@ -244,7 +242,6 @@ def main() -> None:
         namespace=namespace,
         job_name=job_name,
     )
-    logs_response = None
 
     if run_id and orchestrator_run_id:
         logger.info("Continuing existing run `%s`.", run_id)
@@ -257,42 +254,16 @@ def main() -> None:
         )
         logger.debug("Reconstructed nodes: %s", nodes)
 
-        # Continue logging to the same log file if it exists
-        for log_response in pipeline_run.log_collection or []:
-            if log_response.source == "orchestrator":
-                logs_response = log_response
-                break
     else:
         orchestrator_run_id = orchestrator_pod_name
 
-        # Generate logs request for orchestrator logging
-        from zenml.logging.logging import generate_logs_request
-
-        logs_request = generate_logs_request(source="orchestrator")
-
         if args.run_id:
-            pipeline_run = client.zen_store.update_run(
-                run_id=args.run_id,
-                run_update=PipelineRunUpdate(
-                    orchestrator_run_id=orchestrator_run_id,
-                    add_logs=[logs_request],
-                ),
-            )
+            pipeline_run = client.zen_store.get_pipeline_run(args.run_id)
         else:
             pipeline_run = create_placeholder_run(
                 snapshot=snapshot,
                 orchestrator_run_id=orchestrator_run_id,
-                logs=logs_request,
             )
-
-        # Get logs_response from the created/updated run
-        if pipeline_run.logs:
-            logs_response = pipeline_run.logs
-        elif pipeline_run.log_collection:
-            for log_response in pipeline_run.log_collection:
-                if log_response.source == "orchestrator":
-                    logs_response = log_response
-                    break
 
         # Store in the job annotations so we can continue the run if the pod
         # is restarted
@@ -310,16 +281,9 @@ def main() -> None:
             for step_name, step in snapshot.step_configurations.items()
         ]
 
-    logs_context = (
-        setup_orchestrator_logging(
-            run_id=pipeline_run.id,
-            snapshot=snapshot,
-            logs_response=logs_response,
-        )
-        if logs_response
-        else nullcontext()
+    logs_context = setup_orchestrator_logging(
+        pipeline_run=pipeline_run, snapshot=snapshot,
     )
-
     with logs_context:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local

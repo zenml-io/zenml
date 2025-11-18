@@ -15,6 +15,7 @@
 
 import signal
 import time
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 from zenml.client import Client
@@ -320,13 +321,9 @@ class StepLauncher:
             if not step_run.status.is_finished:
                 logger.info(f"Step `{self._invocation_id}` has started.")
 
+                logs_context = nullcontext()
                 if step_run.logs:
                     logs_context = LoggingContext(log_model=step_run.logs)
-                else:
-                    logger.debug(
-                        "There is no LogsResponseModel prepared for the step. The"
-                        "step logging storage is disabled."
-                    )
 
                 with logs_context:
                     try:

@@ -64,7 +64,7 @@ from zenml.execution.pipeline.utils import (
 )
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.logging import LoggingContext
+from zenml.logging.logging import LoggingContext, generate_logs_request
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,
@@ -1043,15 +1043,11 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     else True,
                 )
 
-            logs_context = nullcontext()
-            logs_request = None
-
             snapshot = self._create_snapshot(**self._run_args)
             self.log_pipeline_snapshot_metadata(snapshot)
 
+            logs_request = None
             if logging_enabled:
-                from zenml.logging.logging import generate_logs_request
-
                 logs_request = generate_logs_request(source="client")
 
             run = (
@@ -1060,8 +1056,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 else None
             )
 
+            logs_context = nullcontext()
             if logging_enabled and run and run.logs:
                 logs_context = LoggingContext(log_model=run.logs)
+
             with logs_context:
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(

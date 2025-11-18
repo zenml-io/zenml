@@ -150,14 +150,8 @@ class StepRunner:
             )
 
         logs_context = nullcontext()
-        if step_logging_enabled:
-            if step_run.logs:
-                logs_context = LoggingContext(log_model=step_run.logs)
-            else:
-                logger.debug(
-                    "There is no LogsResponseModel prepared for the step. The"
-                    "step logging storage is disabled."
-                )
+        if step_logging_enabled and step_run.logs:
+            logs_context = LoggingContext(log_model=step_run.logs)
 
         with logs_context:
             step_instance = self._load_step()
