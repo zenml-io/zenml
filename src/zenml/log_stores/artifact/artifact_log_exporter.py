@@ -275,14 +275,3 @@ class ArtifactLogExporter(LogExporter):
     def shutdown(self) -> None:
         """Shutdown the exporter."""
         pass
-
-    def force_flush(self, timeout_millis: int = 30000) -> bool:
-        """Force flush any buffered logs.
-
-        Args:
-            timeout_millis: Timeout in milliseconds.
-
-        Returns:
-            True (no buffering at this level).
-        """
-        return True
