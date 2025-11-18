@@ -17,7 +17,13 @@ import json
 from typing import Any, Dict, List
 
 import yaml
-from jinja2 import Environment, StrictUndefined, TemplateError, Undefined, select_autoescape
+from jinja2 import (
+    Environment,
+    StrictUndefined,
+    TemplateError,
+    Undefined,
+    select_autoescape,
+)
 
 from zenml.io import fileio
 from zenml.logger import get_logger
