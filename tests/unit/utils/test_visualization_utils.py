@@ -53,7 +53,7 @@ def test_format_large_csv_visualization_as_html(
         expected_row = "<tr>" + "<td>a</td>" * num_cols + "</tr>"
 
     if num_rows > max_rows:
-        expected_html = (
+        expected_html = (  # nosec
             "<table>"
             + expected_row * (max_rows // 2)
             + "<tr><td>...</td></tr>"
@@ -61,6 +61,6 @@ def test_format_large_csv_visualization_as_html(
             + "</table>"
         )
     else:
-        expected_html = "<table>" + expected_row * num_rows + "</table>"
+        expected_html = "<table>" + expected_row * num_rows + "</table>"  # nosec B608
     assert html == expected_html
     BeautifulSoup(html, "html.parser")  # will fail if not valid html

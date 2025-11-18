@@ -17,7 +17,7 @@ import json
 from typing import Any, Dict, List
 
 import yaml
-from jinja2 import Environment, StrictUndefined, TemplateError, Undefined
+from jinja2 import Environment, StrictUndefined, TemplateError, Undefined, select_autoescape
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -73,7 +73,10 @@ class KubernetesTemplateEngine:
         # not HTML. YAML doesn't have XSS concerns like HTML templates.
         self.env = Environment(
             undefined=StrictUndefined if strict_undefined else Undefined,
-            autoescape=False,  # nosec B615
+            autoescape=select_autoescape(
+                enabled_extensions=("html", "htm", "xml"),
+                default=False,
+            ),
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
