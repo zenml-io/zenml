@@ -600,6 +600,11 @@ class StepLauncher:
         self,
         step_run_info: StepRunInfo,
     ) -> None:
+        """Runs the current step with a dynamic orchestrator.
+
+        Args:
+            step_run_info: Additional information needed to run the step.
+        """
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
@@ -611,7 +616,7 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.launch_dynamic_step(
+        self._stack.orchestrator.run_isolated_step(
             step_run_info=step_run_info,
             environment=environment,
         )
