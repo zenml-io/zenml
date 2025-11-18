@@ -75,13 +75,16 @@ class KubernetesTemplateEngine:
             strict_undefined: If True, raise an error for undefined template
                 variables. If False, undefined variables are silently ignored.
         """
-        # autoescape=False is safe here as we render YAML/Kubernetes manifests,
-        # not HTML. YAML doesn't have XSS concerns like HTML templates.
+        # autoescape must be disabled for YAML manifests rendered from plain
+        # strings because select_autoescape defaults to escaping string-based
+        # templates as HTML. That would turn `"foo"` into `&#34;foo&#34;`, making
+        # the rendered YAML invalid.
         self.env = Environment(
             undefined=StrictUndefined if strict_undefined else Undefined,
             autoescape=select_autoescape(
                 enabled_extensions=("html", "htm", "xml"),
                 default=False,
+                default_for_string=False,
             ),
             trim_blocks=True,
             lstrip_blocks=True,
