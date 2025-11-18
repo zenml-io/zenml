@@ -123,12 +123,12 @@ class OtelLogStore(BaseLogStore):
             # Attach the LoggingContext to OTel's context so the exporter
             # can access it in the background processor thread
             ctx = otel_context.set_value(LOGGING_CONTEXT_KEY, context)
-            
+
             otel_logger = self._provider.get_logger(
                 record.name or "unknown",
                 schema_url=None,
             )
-            
+
             otel_logger.emit(
                 timestamp=int(record.created * 1e9),
                 observed_timestamp=int(record.created * 1e9),

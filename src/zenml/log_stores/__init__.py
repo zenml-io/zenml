@@ -40,9 +40,9 @@ from zenml.log_stores.otel.otel_flavor import (
 from zenml.log_stores.datadog.datadog_log_store import (
     DatadogLogStore,
 )
-from zenml.log_stores.otel.otel_flavor import (
-    OtelLogStoreConfig,
-    OtelLogStoreFlavor,
+from zenml.log_stores.datadog.datadog_flavor import (
+    DatadogLogStoreConfig,
+    DatadogLogStoreFlavor,
 )
 
 __all__ = [

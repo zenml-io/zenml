@@ -17,7 +17,6 @@ import os
 import re
 from datetime import datetime
 from typing import (
-    TYPE_CHECKING,
     Iterator,
     List,
     Optional,
@@ -25,6 +24,8 @@ from typing import (
     cast,
 )
 from uuid import UUID
+
+from opentelemetry.sdk._logs.export import LogExporter
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import _load_artifact_store
@@ -41,11 +42,6 @@ from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
 from zenml.zen_stores.base_zen_store import BaseZenStore
-
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs.export import LogExporter
-
-    from zenml.artifact_stores import BaseArtifactStore
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -286,7 +282,8 @@ class ArtifactLogStore(OtelLogStore):
 
         if not logs_model.artifact_store_id:
             raise ValueError(
-                "logs_model.artifact_store_id is required for ArtifactLogStore.fetch()"
+                "logs_model.artifact_store_id is required "
+                "for ArtifactLogStore.fetch()"
             )
 
         client = Client()
