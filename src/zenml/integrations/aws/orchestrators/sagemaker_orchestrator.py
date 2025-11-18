@@ -27,6 +27,7 @@ from typing import (
     cast,
 )
 from uuid import UUID
+import uuid
 
 import boto3
 from botocore.exceptions import WaiterError
@@ -67,6 +68,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 )
 from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_config import (
     SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+    SagemakerDynamicPipelineEntrypointConfiguration,
     SagemakerEntrypointConfiguration,
 )
 from zenml.logger import get_logger
@@ -784,6 +786,300 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 wait_for_completion=_wait_for_completion,
                 metadata=run_metadata,
             )
+
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The snapshot of the pipeline.
+            stack: The stack to use for the pipeline.
+            environment: The environment variables to set in the pipeline.
+            placeholder_run: The placeholder run for the pipeline.
+
+        Returns:
+            Optional submission result.
+        """
+        # sagemaker requires pipelineName to use alphanum and hyphens only
+        unsanitized_orchestrator_run_name = get_orchestrator_run_name(
+            pipeline_name=snapshot.pipeline_configuration.name
+        )
+        # replace all non-alphanum and non-hyphens with hyphens
+        orchestrator_run_name = re.sub(
+            r"[^a-zA-Z0-9\-]", "-", unsanitized_orchestrator_run_name
+        )
+
+        session = self._get_sagemaker_session()
+
+        # Sagemaker does not allow environment variables longer than 256
+        # characters to be passed to Processor steps. If an environment variable
+        # is longer than 256 characters, we split it into multiple environment
+        # variables (chunks) and re-construct it on the other side using the
+        # custom entrypoint configuration.
+        split_environment_variables(
+            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+            env=environment,
+        )
+
+        try:
+            image = self.get_image(snapshot=snapshot)
+        except KeyError:
+            # If no generic pipeline image exists (which means all steps of a
+            # static pipeline have custom builds) we use a random step image as
+            # all of them include dependencies for the active stack
+            invocation_id = next(iter(snapshot.step_configurations))
+            image = self.get_image(snapshot=snapshot, step_name=invocation_id)
+
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(snapshot)
+        )
+
+        command = SagemakerDynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+        arguments = SagemakerDynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+            snapshot_id=snapshot.id,
+            run_id=placeholder_run.id if placeholder_run else None,
+        )
+
+        use_training_step = (
+            settings.use_training_step
+            if settings.use_training_step is not None
+            else (
+                self.config.use_training_step
+                if self.config.use_training_step is not None
+                else True
+            )
+        )
+
+        if use_training_step:
+            orchestrator_args = settings.estimator_args.copy() or {}
+            orchestrator_args.setdefault(
+                "volume_size", settings.volume_size_in_gb
+            )
+            orchestrator_args.setdefault(
+                "max_run", settings.max_runtime_in_seconds
+            )
+        else:
+            orchestrator_args = settings.processor_args.copy() or {}
+            orchestrator_args.setdefault(
+                "volume_size_in_gb", settings.volume_size_in_gb
+            )
+            orchestrator_args.setdefault(
+                "max_runtime_in_seconds",
+                settings.max_runtime_in_seconds,
+            )
+
+        orchestrator_args.setdefault(
+            "role",
+            settings.execution_role or self.config.execution_role,
+        )
+
+        tags = settings.tags
+        orchestrator_args.setdefault(
+            "tags",
+            (
+                [{"Key": key, "Value": value} for key, value in tags.items()]
+                if tags
+                else None
+            ),
+        )
+
+        orchestrator_args.setdefault(
+            "instance_type", settings.instance_type or "ml.m5.large"
+        )
+
+        orchestrator_args["image_uri"] = image
+        orchestrator_args["instance_count"] = 1
+        orchestrator_args["sagemaker_session"] = session
+        orchestrator_args["base_job_name"] = orchestrator_run_name
+
+        # Convert network_config to sagemaker.network.NetworkConfig if
+        # present
+        network_config = orchestrator_args.get("network_config")
+
+        if network_config and isinstance(network_config, dict):
+            try:
+                orchestrator_args["network_config"] = NetworkConfig(
+                    **network_config
+                )
+            except TypeError:
+                # If the network_config passed is not compatible with the
+                # NetworkConfig class, raise a more informative error.
+                raise TypeError(
+                    "Expected a sagemaker.network.NetworkConfig "
+                    "compatible object for the network_config argument, "
+                    "but the network_config processor argument is invalid."
+                    "See https://sagemaker.readthedocs.io/en/stable/api/utility/network.html#sagemaker.network.NetworkConfig "
+                    "for more information about the NetworkConfig class."
+                )
+
+        # Construct S3 inputs to container for step
+        training_inputs: Optional[
+            Union[TrainingInput, Dict[str, TrainingInput]]
+        ] = None
+        processing_inputs: Optional[List[ProcessingInput]] = None
+
+        if settings.input_data_s3_uri is None:
+            pass
+        elif isinstance(settings.input_data_s3_uri, str):
+            if use_training_step:
+                training_inputs = TrainingInput(
+                    s3_data=settings.input_data_s3_uri,
+                    input_mode=settings.input_data_s3_mode,
+                )
+            else:
+                processing_inputs = [
+                    ProcessingInput(
+                        source=settings.input_data_s3_uri,
+                        destination="/opt/ml/processing/input/data",
+                        s3_input_mode=settings.input_data_s3_mode,
+                    )
+                ]
+        elif isinstance(settings.input_data_s3_uri, dict):
+            if use_training_step:
+                training_inputs = {}
+                for (
+                    channel,
+                    s3_uri,
+                ) in settings.input_data_s3_uri.items():
+                    training_inputs[channel] = TrainingInput(
+                        s3_data=s3_uri,
+                        input_mode=settings.input_data_s3_mode,
+                    )
+            else:
+                processing_inputs = []
+                for (
+                    channel,
+                    s3_uri,
+                ) in settings.input_data_s3_uri.items():
+                    processing_inputs.append(
+                        ProcessingInput(
+                            source=s3_uri,
+                            destination=f"/opt/ml/processing/input/data/{channel}",
+                            s3_input_mode=settings.input_data_s3_mode,
+                        )
+                    )
+
+        # Construct S3 outputs from container for step
+        outputs = None
+        output_path = None
+
+        if settings.output_data_s3_uri is None:
+            pass
+        elif isinstance(settings.output_data_s3_uri, str):
+            if use_training_step:
+                output_path = settings.output_data_s3_uri
+            else:
+                outputs = [
+                    ProcessingOutput(
+                        source="/opt/ml/processing/output/data",
+                        destination=settings.output_data_s3_uri,
+                        s3_upload_mode=settings.output_data_s3_mode,
+                    )
+                ]
+        elif isinstance(settings.output_data_s3_uri, dict):
+            outputs = []
+            for (
+                channel,
+                s3_uri,
+            ) in settings.output_data_s3_uri.items():
+                outputs.append(
+                    ProcessingOutput(
+                        source=f"/opt/ml/processing/output/data/{channel}",
+                        destination=s3_uri,
+                        s3_upload_mode=settings.output_data_s3_mode,
+                    )
+                )
+
+        final_environment: Dict[str, Union[str, PipelineVariable]] = {
+            key: str(value) for key, value in environment.items()
+        }
+        final_environment[ENV_ZENML_SAGEMAKER_RUN_ID] = (
+            f"{orchestrator_run_name}-{str(uuid.uuid4())[:8]}"
+        )
+
+        if use_training_step:
+            estimator = Estimator(
+                keep_alive_period_in_seconds=settings.keep_alive_period_in_seconds,
+                output_path=output_path,
+                environment=final_environment,
+                container_entry_point=command,
+                container_arguments=arguments,
+                **orchestrator_args,
+            )
+
+            estimator.fit(
+                wait=True,
+                inputs=training_inputs,
+                job_name=orchestrator_run_name,
+            )
+
+        else:
+            processor = Processor(
+                entrypoint=cast(
+                    Optional[List[Union[str, PipelineVariable]]],
+                    command + arguments,
+                ),
+                env=final_environment,
+                **orchestrator_args,
+            )
+
+            processor.run(
+                wait=False,
+                inputs=processing_inputs,
+                outputs=outputs,
+            )
+
+        # run_metadata = self.compute_metadata(
+        #     execution_arn=execution.arn, settings=settings
+        # )
+
+        _wait_for_completion = None
+        if settings.synchronous:
+
+            def _wait_for_completion() -> None:
+                logger.info(
+                    "Executing synchronously. Waiting for pipeline to "
+                    "finish... \n"
+                    "At this point you can `Ctrl-C` out without cancelling the "
+                    "execution."
+                )
+                try:
+                    if use_training_step:
+                        session.logs_for_job(
+                            estimator.latest_training_job.job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                            timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
+                        )
+
+                    else:
+                        session.logs_for_job(
+                            processor.latest_job.job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                            timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
+                        )
+
+                    logger.info("Pipeline completed successfully.")
+                except WaiterError:
+                    raise RuntimeError(
+                        "Timed out while waiting for pipeline execution to "
+                        "finish. For long-running pipelines we recommend "
+                        "configuring your orchestrator for asynchronous "
+                        "execution. The following command does this for you: \n"
+                        f"`zenml orchestrator update {self.name} "
+                        f"--synchronous=False`"
+                    )
+
+        return SubmissionResult(
+            wait_for_completion=_wait_for_completion,
+            # metadata=run_metadata,
+        )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
