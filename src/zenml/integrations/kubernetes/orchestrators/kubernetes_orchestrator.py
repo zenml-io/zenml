@@ -740,6 +740,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image = self.get_image(snapshot=snapshot, step_name=invocation_id)
 
         labels = {
+            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
             "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
 
@@ -867,6 +868,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         labels = {
+            "project_id": kube_utils.sanitize_label(
+                str(step_run_info.snapshot.project_id)
+            ),
             "pipeline": kube_utils.sanitize_label(step_run_info.pipeline.name),
             "run_id": kube_utils.sanitize_label(str(step_run_info.run_id)),
             "run_name": kube_utils.sanitize_label(str(step_run_info.run_name)),

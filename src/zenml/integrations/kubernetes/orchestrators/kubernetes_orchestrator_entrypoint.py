@@ -329,6 +329,7 @@ def main() -> None:
         step_runs = {}
 
         base_labels = {
+            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
