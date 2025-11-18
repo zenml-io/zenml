@@ -42,11 +42,11 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
         description="Name of the service for telemetry",
     )
     max_queue_size: int = Field(
-        default=2048,
+        default=8096,
         description="Maximum queue size for batch log processor",
     )
     schedule_delay_millis: int = Field(
-        default=1000,
+        default=15000,
         description="Export interval in milliseconds",
     )
     max_export_batch_size: int = Field(

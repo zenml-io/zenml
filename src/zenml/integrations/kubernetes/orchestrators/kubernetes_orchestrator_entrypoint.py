@@ -282,7 +282,8 @@ def main() -> None:
         ]
 
     logs_context = setup_orchestrator_logging(
-        pipeline_run=pipeline_run, snapshot=snapshot,
+        pipeline_run=pipeline_run,
+        snapshot=snapshot,
     )
     with logs_context:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
