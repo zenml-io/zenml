@@ -838,10 +838,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     )
                     return None
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launches a dynamic step on Kubernetes.
+        """Runs an isolated step on Kubernetes.
 
         Args:
             step_run_info: The step run information.
@@ -921,7 +921,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
             stream_logs=True,
         )
-        logger.info("Job completed.")
+        logger.info("Job `%s` completed.", job_name)
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
