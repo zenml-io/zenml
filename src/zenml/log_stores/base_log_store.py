@@ -16,15 +16,13 @@
 import logging
 from abc import abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Type, cast
+from typing import List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
+from zenml.log_stores.utils import LogEntry
+from zenml.logging.logging import LoggingContext
+from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-
-if TYPE_CHECKING:
-    from zenml.log_stores.utils import LogEntry
-    from zenml.logging.logging import LoggingContext
-    from zenml.models import LogsResponse
 
 # Maximum number of log entries to return in a single request
 MAX_ENTRIES_PER_REQUEST = 20000
@@ -57,40 +55,29 @@ class BaseLogStore(StackComponent):
     def emit(
         self,
         record: logging.LogRecord,
-        context: "LoggingContext",
+        context: LoggingContext,
     ) -> None:
         """Process a log record from the logging system.
 
-        This method is called by the ZenML logging system for each log
-        record that should be stored by this log store. Implementations
-        should process the record according to their backend's requirements.
-
         Args:
             record: The Python logging.LogRecord to process.
-            context: The logging context containing the log_model with routing
-                metadata (pipeline_run_id, step_run_id, etc.).
+            context: The logging context containing the log_model.
         """
 
     @abstractmethod
     def fetch(
         self,
-        logs_model: "LogsResponse",
+        logs_model: LogsResponse,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = MAX_ENTRIES_PER_REQUEST,
         message_size: int = DEFAULT_MESSAGE_SIZE,
-    ) -> List["LogEntry"]:
+    ) -> List[LogEntry]:
         """Fetch logs from the log store.
 
         This method is called from the server to retrieve logs for display
         on the dashboard or via API. The implementation should not require
         any integration-specific SDKs that aren't available on the server.
-
-        Each log store implementation can extract the information it needs
-        from logs_model:
-        - ArtifactLogStore: uses logs_model.uri and logs_model.artifact_store_id
-        - OtelLogStore: uses logs_model.pipeline_run_id, step_run_id, source
-        - DatadogLogStore: uses logs_model.pipeline_run_id, step_run_id, source
 
         Args:
             logs_model: The logs model containing metadata about the logs.

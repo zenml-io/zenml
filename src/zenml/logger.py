@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Logger implementation."""
 
-import json
 import logging
 import os
 import re
