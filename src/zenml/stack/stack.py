@@ -540,32 +540,31 @@ class Stack:
         """
         if self._log_store:
             return self._log_store
+        else:
+            from uuid import uuid4
 
-        # Default to ArtifactLogStore if none configured
-        from uuid import uuid4
+            from zenml.log_stores import (
+                ArtifactLogStore,
+                ArtifactLogStoreConfig,
+                ArtifactLogStoreFlavor,
+            )
 
-        from zenml.log_stores import (
-            ArtifactLogStore,
-            ArtifactLogStoreConfig,
-            ArtifactLogStoreFlavor,
-        )
+            flavor = ArtifactLogStoreFlavor()
+            now = utc_now()
 
-        flavor = ArtifactLogStoreFlavor()
-        now = utc_now()
-
-        self._log_store = ArtifactLogStore(
-            id=uuid4(),
-            name="default",
-            flavor=flavor.name,
-            type=flavor.type,
-            config=ArtifactLogStoreConfig(),
-            environment={},
-            user=Client().active_user.id,
-            created=now,
-            updated=now,
-            secrets=[],
-        )
-        return self._log_store
+            self._log_store = ArtifactLogStore(
+                id=uuid4(),
+                name="default",
+                flavor=flavor.name,
+                type=flavor.type,
+                config=ArtifactLogStoreConfig(),
+                environment={},
+                user=Client().active_user.id,
+                created=now,
+                updated=now,
+                secrets=[],
+            )
+            return self._log_store
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
