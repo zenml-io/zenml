@@ -44,7 +44,6 @@ from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
     list_options,
-    prepare_response_data,
     print_model_url,
 )
 from zenml.client import Client
@@ -1112,19 +1111,11 @@ def list_stacks(output_format: str, columns: str, **kwargs: Any) -> None:
     with console.status("Listing stacks..."):
         stacks = client.list_stacks(**kwargs)
 
-        stack_list = []
-        for stack in stacks.items:
-            stack_data = prepare_response_data(stack)
-            stack_data.update(
-                _generate_stack_data(stack, output_format=output_format)
-            )
-            stack_list.append(stack_data)
-
-    cli_utils.handle_output(
-        stack_list,
-        pagination_info=stacks.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=stacks,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_stack_data,
     )
 
 

@@ -173,17 +173,11 @@ def list_models(output_format: str, columns: str, **kwargs: Any) -> None:
     with console.status("Listing models..."):
         models = Client().list_models(**kwargs)
 
-        model_list = []
-        for model in models.items:
-            model_data = cli_utils.prepare_response_data(model)
-            model_data.update(_generate_model_data(model))
-            model_list.append(model_data)
-
-    cli_utils.handle_output(
-        model_list,
-        pagination_info=models.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=models,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_data,
     )
 
 
@@ -495,19 +489,11 @@ def list_model_versions(
     with console.status("Listing model versions..."):
         model_versions = Client().list_model_versions(**kwargs)
 
-        model_version_list = []
-        for model_version in model_versions.items:
-            model_version_data = cli_utils.prepare_response_data(model_version)
-            model_version_data.update(
-                _generate_model_version_data(model_version, output_format)
-            )
-            model_version_list.append(model_version_data)
-
-    cli_utils.handle_output(
-        model_version_list,
-        pagination_info=model_versions.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=model_versions,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_version_data,
     )
 
 
@@ -698,17 +684,11 @@ def list_model_version_data_artifacts(
             **kwargs,
         )
 
-    artifact_list = []
-    for link in links.items:
-        artifact_data = cli_utils.prepare_response_data(link)
-        artifact_data.update(_generate_model_version_artifact_data(link))
-        artifact_list.append(artifact_data)
-
-    cli_utils.handle_output(
-        artifact_list,
-        pagination_info=links.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=links,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_version_artifact_data,
     )
 
 
@@ -748,17 +728,11 @@ def list_model_version_model_artifacts(
             **kwargs,
         )
 
-    artifact_list = []
-    for link in links.items:
-        artifact_data = cli_utils.prepare_response_data(link)
-        artifact_data.update(_generate_model_version_artifact_data(link))
-        artifact_list.append(artifact_data)
-
-    cli_utils.handle_output(
-        artifact_list,
-        pagination_info=links.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=links,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_version_artifact_data,
     )
 
 
@@ -798,17 +772,11 @@ def list_model_version_deployment_artifacts(
             **kwargs,
         )
 
-    artifact_list = []
-    for link in links.items:
-        artifact_data = cli_utils.prepare_response_data(link)
-        artifact_data.update(_generate_model_version_artifact_data(link))
-        artifact_list.append(artifact_data)
-
-    cli_utils.handle_output(
-        artifact_list,
-        pagination_info=links.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=links,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_version_artifact_data,
     )
 
 
@@ -847,15 +815,9 @@ def list_model_version_pipeline_runs(
             **kwargs,
         )
 
-    run_list = []
-    for run in runs.items:
-        run_data = cli_utils.prepare_response_data(run)
-        run_data.update(_generate_model_version_pipeline_run_data(run))
-        run_list.append(run_data)
-
-    cli_utils.handle_output(
-        run_list,
-        pagination_info=runs.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=runs,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_model_version_pipeline_run_data,
     )

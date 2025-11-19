@@ -193,30 +193,27 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
 @list_options(
     CodeRepositoryFilter, default_columns=["name", "type", "url", "created"]
 )
-@code_repository.command("list", help="List all connected code repositories.")
+@code_repository.command(
+    "list",
+)
 def list_code_repositories(
     output_format: str, columns: str, **kwargs: Any
 ) -> None:
-    """List all connected code repositories.
+    """List all registered code repositories.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter code repositories.
+        **kwargs: Keyword arguments to filter code repositories.
     """
-    with console.status("Listing code repositories..."):
-        repos = Client().list_code_repositories(**kwargs)
+    client = Client()
+    with console.status("Listing code repositories...\n"):
+        repos = client.list_code_repositories(**kwargs)
 
-        repo_list = []
-        for repo in repos.items:
-            repo_data = cli_utils.prepare_response_data(repo)
-            repo_list.append(repo_data)
-
-    cli_utils.handle_output(
-        repo_list,
-        pagination_info=repos.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=repos,
         output_format=output_format,
+        columns=columns,
     )
 
 

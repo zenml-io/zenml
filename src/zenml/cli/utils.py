@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import inspect
 import json
 import os
 import platform
@@ -2391,45 +2392,73 @@ def format_deployment_status(status: Optional[str]) -> str:
     return "[dim]UNKNOWN[/dim]"
 
 
+def _generate_deployment_row(
+    deployment: "DeploymentResponse", output_format: str
+) -> Dict[str, Any]:
+    """Generate additional data for deployment display.
+
+    Args:
+        deployment: The deployment response.
+        output_format: The output format.
+
+    Returns:
+        The additional data for the deployment.
+    """
+    if deployment.user:
+        user_name = deployment.user.name
+    else:
+        user_name = "-"
+
+    if deployment.snapshot is None or deployment.snapshot.pipeline is None:
+        pipeline_name = "unlisted"
+    else:
+        pipeline_name = deployment.snapshot.pipeline.name
+
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
+        stack_name = "[DELETED]"
+    else:
+        stack_name = deployment.snapshot.stack.name
+
+    status = deployment.status or DeploymentStatus.UNKNOWN.value
+
+    # For table format, use emoji and colorized status
+    if output_format == "table":
+        status_emoji = get_deployment_status_emoji(status)
+        status_display = f"{status_emoji} {status.upper()}"
+    else:
+        # For other formats, use plain uppercase status
+        status_display = status.upper()
+
+    return {
+        "pipeline": pipeline_name,
+        "snapshot": deployment.snapshot.name or ""
+        if deployment.snapshot
+        else "N/A",
+        "url": deployment.url or "N/A",
+        "status": status_display,
+        "stack": stack_name,
+        "owner": user_name,
+    }
+
+
 def print_deployment_table(
-    deployments: Sequence["DeploymentResponse"],
+    deployments: Page["DeploymentResponse"],
+    output_format: str,
+    columns: str,
 ) -> None:
     """Print a prettified list of all deployments supplied to this method.
 
     Args:
-        deployments: List of deployments
+        deployments: Page of deployments
+        output_format: Output format (table, json, yaml, tsv, csv).
+        columns: Comma-separated list of columns to display.
     """
-    deployment_dicts = []
-    for deployment in deployments:
-        if deployment.user:
-            user_name = deployment.user.name
-        else:
-            user_name = "-"
-
-        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
-            pipeline_name = "unlisted"
-        else:
-            pipeline_name = deployment.snapshot.pipeline.name
-        if deployment.snapshot is None or deployment.snapshot.stack is None:
-            stack_name = "[DELETED]"
-        else:
-            stack_name = deployment.snapshot.stack.name
-        status = deployment.status or DeploymentStatus.UNKNOWN.value
-        status_emoji = get_deployment_status_emoji(status)
-        run_dict = {
-            "ID": deployment.id,
-            "NAME": deployment.name,
-            "PIPELINE": pipeline_name,
-            "SNAPSHOT": deployment.snapshot.name or ""
-            if deployment.snapshot
-            else "N/A",
-            "URL": deployment.url or "N/A",
-            "STATUS": f"{status_emoji} {status.upper()}",
-            "STACK": stack_name,
-            "OWNER": user_name,
-        }
-        deployment_dicts.append(run_dict)
-    print_table(deployment_dicts)
+    render_list_output(
+        page=deployments,
+        output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_deployment_row,
+    )
 
 
 def pretty_print_deployment(
@@ -3085,6 +3114,60 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     return item_data
 
 
+def render_list_output(
+    page: Page[AnyResponse],
+    output_format: str,
+    columns: str,
+    row_formatter: Optional[Callable[[AnyResponse], Dict[str, Any]]] = None,
+) -> None:
+    """Render a page of list results with consistent formatting.
+
+    This helper consolidates the common pattern for list commands:
+    1. Extract base data from each response using prepare_response_data
+    2. Optionally apply a command-specific formatter to add extra fields
+    3. Pass the result to handle_output for final rendering
+
+    The row_formatter can accept either one argument (item) or two arguments
+    (item, output_format), allowing formatters to adapt their output based on
+    the target format (e.g., add rich markup for table output, plain text for JSON).
+
+    Args:
+        page: Page of response items to render
+        output_format: Output format (table, json, yaml, tsv, csv)
+        columns: Comma-separated list of columns to display
+        row_formatter: Optional callable to add command-specific fields to each row.
+            Can accept (item) or (item, output_format) as arguments.
+    """
+    item_list = []
+
+    formatter_accepts_output_format = False
+    if row_formatter:
+        sig = inspect.signature(row_formatter)
+        param_count = len(sig.parameters)
+        formatter_accepts_output_format = param_count >= 2
+
+    for item in page.items:
+        item_data = prepare_response_data(item)
+
+        if row_formatter:
+            if formatter_accepts_output_format:
+                additional_data = row_formatter(item, output_format)
+            else:
+                additional_data = row_formatter(item)
+
+            if additional_data:
+                item_data.update(additional_data)
+
+        item_list.append(item_data)
+
+    handle_output(
+        item_list,
+        pagination_info=page.pagination_info,
+        columns=columns,
+        output_format=output_format,
+    )
+
+
 def handle_output(
     data: List[Dict[str, Any]],
     pagination_info: Dict[str, Any],
@@ -3332,11 +3415,40 @@ def _render_table(
     total_content_width = sum(column_widths.values())
 
     if total_content_width > available_width:
-        scale_factor = available_width / total_content_width
+        # Identify protected columns (ID and URL columns should not be shrunk)
+        protected_headers = set()
+        protected_width = 0
         for header in headers:
-            column_widths[header] = max(
-                6, int(column_widths[header] * scale_factor)
+            if "id" in header.lower() or "url" in header.lower():
+                protected_headers.add(header)
+                protected_width += column_widths[header]
+
+        # Calculate remaining space for non-protected columns
+        remaining_width = available_width - protected_width
+        non_protected_headers = [
+            h for h in headers if h not in protected_headers
+        ]
+
+        # If protected columns alone don't exceed available width, scale only non-protected columns
+        if protected_width <= available_width and non_protected_headers:
+            non_protected_width = sum(
+                column_widths[h] for h in non_protected_headers
             )
+
+            if non_protected_width > remaining_width:
+                # Scale non-protected columns to fit remaining space
+                scale_factor = remaining_width / non_protected_width
+                for header in non_protected_headers:
+                    column_widths[header] = max(
+                        6, int(column_widths[header] * scale_factor)
+                    )
+        else:
+            # Fall back to scaling all columns if protected columns exceed available width
+            scale_factor = available_width / total_content_width
+            for header in headers:
+                column_widths[header] = max(
+                    6, int(column_widths[header] * scale_factor)
+                )
 
     rich_table = Table(
         box=box.SIMPLE_HEAD,
@@ -3353,9 +3465,9 @@ def _render_table(
         header_display = header.replace("_", " ").upper()
 
         # Smart overflow strategy based on column type
-        if "id" in header.lower():
+        if "id" in header.lower() or "url" in header.lower():
             overflow = "fold"
-            no_wrap = True
+            no_wrap = False
         elif "description" in header.lower():
             overflow = "fold"
             no_wrap = False

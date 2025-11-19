@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import click
 
@@ -28,49 +28,53 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.models import ProjectFilter
 
+if TYPE_CHECKING:
+    from zenml.models import ProjectResponse
+
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
 
 
-@list_options(
-    ProjectFilter, default_columns=["name", "description", "created"]
-)
-@project.command("list")
+def _generate_project_row(project: "ProjectResponse") -> Dict[str, Any]:
+    """Generate additional data for project display.
+
+    Args:
+        project: The project response.
+
+    Returns:
+        The additional data for the project.
+    """
+    return {
+        "description": project.description,
+    }
+
+
 @click.pass_context
+@list_options(ProjectFilter, default_columns=["name", "description"])
+@project.command("list", help="List all projects.")
 def list_projects(
-    ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
+    ctx: click.Context, output_format: str, columns: str, **kwargs: Any
 ) -> None:
     """List all projects.
 
     Args:
-        ctx: The click context object
+        ctx: The click context.
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter the list of projects.
+        kwargs: Keyword arguments to filter projects.
     """
     check_zenml_pro_project_availability()
 
-    client = Client()
     with console.status("Listing projects..."):
-        projects = client.list_projects(**kwargs)
+        projects = Client().list_projects(**kwargs)
 
-    project_list = []
-    for project in projects.items:
-        project_data = cli_utils.prepare_response_data(project)
-        project_data.update(
-            {
-                "description": project.description,
-            }
-        )
-        project_list.append(project_data)
-
-    cli_utils.handle_output(
-        project_list,
-        pagination_info=projects.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=projects,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_project_row,
     )
 
 

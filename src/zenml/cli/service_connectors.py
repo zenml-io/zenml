@@ -34,7 +34,11 @@ from zenml.models import (
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
 )
-from zenml.utils.time_utils import seconds_to_human_readable, utc_now
+from zenml.utils.time_utils import (
+    expires_in,
+    seconds_to_human_readable,
+    utc_now,
+)
 
 
 def _get_connector_type_emoji_and_short_name(
@@ -139,48 +143,46 @@ def _format_resource_types_with_emojis(
 
 
 def _generate_service_connector_data(
-    service_connector: ServiceConnectorResponse,
-    output_format: str,
+    connector: ServiceConnectorResponse, output_format: str
 ) -> Dict[str, Any]:
     """Generate additional data for service connector display.
 
     Args:
-        service_connector: The service connector response.
+        connector: The service connector response.
         output_format: The output format.
 
     Returns:
         The additional data for the service connector.
     """
-        # Get active connector IDs from current stack for enrichment
-    active_stack = Client().active_stack_model
-    
-    active_connector_ids = []
-    for components in active_stack.components.values():
-        active_connector_ids.extend(
-            [
-                component.connector.id
-                for component in components
-                if component.connector
-            ]
-        )
-    is_active = service_connector.id in active_connector_ids
+    labels = [f"{label}:{value}" for label, value in connector.labels.items()]
+    resource_name = connector.resource_id or "<multiple>"
 
-    result = {"is_active": is_active}
+    # For table format, use emojified types
+    if output_format == "table":
+        connector_type = connector.emojified_connector_type
+        resource_types = "\n".join(connector.emojified_resource_types)
+    else:
+        # For other formats, use plain text
+        connector_type = connector.type
+        resource_types = ", ".join(connector.resource_types)
 
-    # Add formatted resource types with emojis
-    if output_format == "table" and hasattr(service_connector, "resource_types"):
-        result["resource_types"] = _format_resource_types_with_emojis(
-            service_connector.resource_types, service_connector.type
-        )
-
-    # Add type with emoji and short name
-    if output_format == "table" and hasattr(service_connector, "type"):
-        emoji, short_name = _get_connector_type_emoji_and_short_name(
-            service_connector.type
-        )
-        result["type_display"] = f"{emoji} {short_name}"
-
-    return result
+    return {
+        "type_display": connector_type,
+        "resource_types": resource_types,
+        "resource_name": resource_name,
+        "expires_in": (
+            expires_in(
+                connector.expires_at,
+                ":name_badge: Expired!",
+                connector.expires_skew_tolerance,
+            )
+            if connector.expires_at
+            else ""
+        ),
+        "labels": "\n".join(labels)
+        if output_format == "table"
+        else ", ".join(labels),
+    }
 
 
 # Service connectors
@@ -1134,31 +1136,19 @@ def list_service_connectors(
         labels: Labels to filter by.
         kwargs: Keyword arguments to filter the components.
     """
-    client = Client()
-
     if labels:
         kwargs["labels"] = cli_utils.get_parsed_labels(
             labels, allow_label_only=True
         )
 
     with console.status("Listing service connectors..."):
-        connectors = client.list_service_connectors(**kwargs)
+        connectors = Client().list_service_connectors(**kwargs)
 
-        connector_list = []
-        for connector in connectors.items:
-            connector_data = cli_utils.prepare_response_data(connector)
-            connector_data.update(
-                _generate_service_connector_data(
-                    connector, output_format
-                )
-            )
-            connector_list.append(connector_data)
-
-    cli_utils.handle_output(
-        connector_list,
-        pagination_info=connectors.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=connectors,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_service_connector_data,
     )
 
 

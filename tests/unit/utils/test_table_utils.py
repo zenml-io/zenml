@@ -19,7 +19,6 @@ from unittest.mock import patch
 
 import pytest
 import yaml
-
 from zenml.utils.table_utils import zenml_table
 
 

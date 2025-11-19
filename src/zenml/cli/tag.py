@@ -52,16 +52,10 @@ def list_tags(output_format: str, columns: str, **kwargs: Any) -> None:
     with console.status("Listing tags..."):
         tags = Client().list_tags(**kwargs)
 
-    tag_list = []
-    for tag in tags.items:
-        tag_data = cli_utils.prepare_response_data(tag)
-        tag_list.append(tag_data)
-
-    cli_utils.handle_output(
-        tag_list,
-        pagination_info=tags.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=tags,
         output_format=output_format,
+        columns=columns,
     )
 
 

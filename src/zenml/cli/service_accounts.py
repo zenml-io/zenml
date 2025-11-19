@@ -27,10 +27,46 @@ from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import APIKeyFilter, APIKeyResponse, ServiceAccountFilter
+from zenml.models import (
+    APIKeyFilter,
+    APIKeyResponse,
+    ServiceAccountFilter,
+    ServiceAccountResponse,
+)
 
 logger = get_logger(__name__)
 
+
+def _generate_service_account_row(
+    service_account: ServiceAccountResponse,
+) -> Dict[str, Any]:
+    """Generate additional data for service account display.
+
+    Args:
+        service_account: The service account response.
+
+    Returns:
+        The additional data for the service account.
+    """
+    return {
+        "active": service_account.active,
+    }
+
+
+def _generate_api_key_row(
+    api_key: APIKeyResponse,
+) -> Dict[str, Any]:
+    """Generate additional data for API key display.
+
+    Args:
+        api_key: The API key response.
+
+    Returns:
+        The additional data for the API key.
+    """
+    return {
+        "active": api_key.active,
+    }
 
 
 def _create_api_key(
@@ -204,20 +240,14 @@ def list_service_accounts(
         columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter the list of service accounts.
     """
-    client = Client()
     with console.status("Listing service accounts..."):
-        service_accounts = client.list_service_accounts(**kwargs)
+        service_accounts = Client().list_service_accounts(**kwargs)
 
-        service_account_list = []
-        for service_account in service_accounts.items:
-            service_account_data = cli_utils.prepare_response_data(service_account)
-            service_account_list.append(service_account_data)
-
-    cli_utils.handle_output(
-        service_account_list,
-        pagination_info=service_accounts.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=service_accounts,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_service_account_row,
     )
 
 
@@ -412,42 +442,25 @@ def list_api_keys(
         columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter API keys.
     """
-    with console.status("Listing API keys...\n"):
-        try:
+    try:
+        with console.status("Listing API keys..."):
             api_keys = Client().list_api_keys(
                 service_account_name_id_or_prefix=service_account_name_or_id,
                 **kwargs,
             )
-        except KeyError as e:
-            cli_utils.exception(e)
+    except KeyError as err:
+        cli_utils.exception(err)
+        return
 
-        if not api_keys.items:
-            cli_utils.declare("No API keys found for this filter.")
-            return
+    if not api_keys.items:
+        cli_utils.declare("No API keys found for this filter.")
+        return
 
-        cli_utils.print_pydantic_models(
-            api_keys,
-            exclude_columns=[
-                "created",
-                "updated",
-                "key",
-                "retain_period_minutes",
-            ],
-        )
-
-        api_key_list = []
-        for api_key in api_keys.items:
-            api_key_data = cli_utils.prepare_response_data(api_key)
-            api_key_data.update({
-            "active": api_key.active,
-        })
-            api_key_list.append(api_key_data)
-
-    cli_utils.handle_output(
-        api_key_list,
-        pagination_info=api_keys.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=api_keys,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_api_key_row,
     )
 
 

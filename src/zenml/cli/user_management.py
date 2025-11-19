@@ -36,7 +36,9 @@ from zenml.models import UserFilter, UserResponse
 
 
 def _generate_user_data(
-    user: UserResponse, active_user_id: UUID, output_format: str
+    user: "UserResponse",
+    active_user_id: "UUID",
+    output_format: str,
 ) -> Dict[str, Any]:
     """Generate additional data for user display.
 
@@ -49,12 +51,8 @@ def _generate_user_data(
         The additional data for the user.
     """
     is_active_user = user.id == active_user_id
-
-    # For many users, the name field contains the email and email field is null
     display_name = user.name
     display_email = user.email or ""
-
-    # If name looks like an email and email is empty, separate them nicely
     if "@" in user.name and not user.email:
         display_name = user.full_name or user.name.split("@")[0]
         display_email = user.name
@@ -66,16 +64,14 @@ def _generate_user_data(
         "active": user.active,
     }
 
-    # If this is the active user, format the name for visual distinction in table output
     if is_active_user and output_format == "table":
         result["name"] = (
-            f"[green]●[/green] [bold green]{display_name}[/bold green] (you)"
+            f"[green]●[/green] [bold green]{display_name}[/bold green] (active)"
         )
     else:
         result["name"] = display_name
 
     result["email"] = display_email
-
     return result
 
 
@@ -129,31 +125,27 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
     default_columns=["id", "name", "email", "role", "active", "created"],
 )
 def list_users(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all users.
+    """List users with filter.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter the list of users.
+        kwargs: Keyword arguments to filter users.
     """
     client = Client()
     with console.status("Listing users..."):
         users = client.list_users(**kwargs)
 
     active_user_id = client.active_user.id
-    user_list = []
-    for user in users.items:
-        user_data = cli_utils.prepare_response_data(user)
-        user_data.update(
-            _generate_user_data(user, active_user_id, output_format)
-        )
-        user_list.append(user_data)
 
-    cli_utils.handle_output(
-        user_list,
-        pagination_info=users.pagination_info,
-        columns=columns,
+    # Use lambda to pass extra context to the row formatter
+    cli_utils.render_list_output(
+        page=users,
         output_format=output_format,
+        columns=columns,
+        row_formatter=lambda user: _generate_user_data(
+            user, active_user_id, output_format
+        ),
     )
 
 

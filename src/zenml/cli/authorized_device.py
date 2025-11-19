@@ -60,32 +60,24 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     OAuthDeviceFilter,
     default_columns=["status", "ip_address", "hostname", "os", "created"],
 )
-@authorized_device.command(
-    "list", help="List all authorized devices for the current user."
-)
+@authorized_device.command("list", help="List authorized devices.")
 def list_authorized_devices(
     output_format: str, columns: str, **kwargs: Any
 ) -> None:
-    """List all authorized devices.
+    """List authorized devices.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter authorized devices.
+        kwargs: Keyword arguments to filter devices.
     """
     with console.status("Listing authorized devices..."):
         devices = Client().list_authorized_devices(**kwargs)
 
-        device_list = []
-        for device in devices.items:
-            device_data = cli_utils.prepare_response_data(device)
-            device_list.append(device_data)
-
-    cli_utils.handle_output(
-        device_list,
-        pagination_info=devices.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=devices,
         output_format=output_format,
+        columns=columns,
     )
 
 

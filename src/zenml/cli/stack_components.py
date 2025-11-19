@@ -48,7 +48,9 @@ from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
 
 
-def _generate_component_data(component: ComponentResponse) -> Dict[str, Any]:
+def _generate_component_data(
+    component: "ComponentResponse",
+) -> Dict[str, Any]:
     """Generate additional data for component display.
 
     Args:
@@ -58,11 +60,13 @@ def _generate_component_data(component: ComponentResponse) -> Dict[str, Any]:
         The additional data for the component.
     """
     return {
-        "flavor": component.flavor_name if component.flavor_name else "",
+        "flavor": component.flavor_name,
     }
 
 
-def _generate_flavor_data(flavor: FlavorResponse) -> Dict[str, Any]:
+def _generate_flavor_data(
+    flavor: "FlavorResponse",
+) -> Dict[str, Any]:
     """Generate additional data for flavor display.
 
     Args:
@@ -72,7 +76,9 @@ def _generate_flavor_data(flavor: FlavorResponse) -> Dict[str, Any]:
         The additional data for the flavor.
     """
     return {
-        "integration": flavor.integration if flavor.integration else "",
+        "integration": flavor.integration or "",
+        "connector_type": flavor.connector_type or "",
+        "connector_resource_type": flavor.connector_resource_type or "",
     }
 
 
@@ -202,17 +208,11 @@ def generate_stack_component_list_command(
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
 
-        component_list = []
-        for component in components.items:
-            component_data = cli_utils.prepare_response_data(component)
-            component_data.update(_generate_component_data(component))
-            component_list.append(component_data)
-
-        cli_utils.handle_output(
-            component_list,
-            pagination_info=components.pagination_info,
-            columns=columns,
+        cli_utils.render_list_output(
+            page=components,
             output_format=output_format,
+            columns=columns,
+            row_formatter=_generate_component_data,
         )
 
     return list_stack_components_command
@@ -838,17 +838,11 @@ def generate_stack_component_flavor_list_command(
         with console.status(f"Listing {display_name} flavors..."):
             flavors = client.get_flavors_by_type(component_type=component_type)
 
-        flavor_list = []
-        for flavor in flavors.items:
-            flavor_data = cli_utils.prepare_response_data(flavor)
-            flavor_data.update(_generate_flavor_data(flavor))
-            flavor_list.append(flavor_data)
-
-        cli_utils.handle_output(
-            flavor_list,
-            pagination_info=flavors.pagination_info,
-            columns=columns,
+        cli_utils.render_list_output(
+            page=flavors,
             output_format=output_format,
+            columns=columns,
+            row_formatter=_generate_flavor_data,
         )
 
     return list_stack_component_flavor_command

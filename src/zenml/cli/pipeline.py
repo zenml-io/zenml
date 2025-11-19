@@ -82,26 +82,30 @@ def _generate_schedule_data(schedule: ScheduleResponse) -> Dict[str, Any]:
 
 
 def _generate_pipeline_run_data(
-    pipeline_run: PipelineRunResponse,
+    pipeline_run: PipelineRunResponse, output_format: str
 ) -> Dict[str, Any]:
     """Generate additional data for pipeline run display.
 
     Args:
         pipeline_run: The pipeline run response.
+        output_format: The output format.
 
     Returns:
         The additional data for the pipeline run.
     """
     return {
-        "pipeline": pipeline_run.pipeline.name
+        "pipeline_name": pipeline_run.pipeline.name
         if pipeline_run.pipeline
-        else "",
-        "stack": pipeline_run.stack.name if pipeline_run.stack else "",
+        else "unlisted",
+        "status": pipeline_run.status,
+        "stack_name": pipeline_run.stack.name
+        if pipeline_run.stack
+        else "[DELETED]",
     }
 
 
 def _generate_pipeline_build_data(
-    pipeline_build: PipelineBuildResponse,
+    pipeline_build: "PipelineBuildResponse",
 ) -> Dict[str, Any]:
     """Generate additional data for pipeline build display.
 
@@ -114,11 +118,10 @@ def _generate_pipeline_build_data(
     return {
         "pipeline_name": pipeline_build.pipeline.name
         if pipeline_build.pipeline
-        else "",
-        "zenml_version": pipeline_build.zenml_version,
+        else "unlisted",
         "stack_name": pipeline_build.stack.name
         if pipeline_build.stack
-        else "",
+        else "[DELETED]",
     }
 
 
@@ -665,7 +668,7 @@ def create_run_template(
 )
 @pipeline.command("list", help="List all registered pipelines.")
 def list_pipelines(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all registered pipelines.
+    """List all pipelines that fulfill the filter requirements.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
@@ -675,17 +678,11 @@ def list_pipelines(output_format: str, columns: str, **kwargs: Any) -> None:
     with console.status("Listing pipelines..."):
         pipelines = Client().list_pipelines(**kwargs)
 
-        pipeline_list = []
-        for pipeline in pipelines.items:
-            pipeline_data = cli_utils.prepare_response_data(pipeline)
-            pipeline_data.update(_generate_pipeline_data(pipeline))
-            pipeline_list.append(pipeline_data)
-
-    cli_utils.handle_output(
-        pipeline_list,
-        pagination_info=pipelines.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=pipelines,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_pipeline_data,
     )
 
 
@@ -738,7 +735,7 @@ def schedule() -> None:
 )
 @schedule.command("list", help="List all pipeline schedules.")
 def list_schedules(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all pipeline schedules.
+    """List all schedules that fulfill the filter requirements.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
@@ -748,17 +745,11 @@ def list_schedules(output_format: str, columns: str, **kwargs: Any) -> None:
     with console.status("Listing schedules..."):
         schedules = Client().list_schedules(**kwargs)
 
-        schedule_list = []
-        for schedule in schedules.items:
-            schedule_data = cli_utils.prepare_response_data(schedule)
-            schedule_data.update(_generate_schedule_data(schedule))
-            schedule_list.append(schedule_data)
-
-    cli_utils.handle_output(
-        schedule_list,
-        pagination_info=schedules.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=schedules,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_schedule_data,
     )
 
 
@@ -848,7 +839,7 @@ def runs() -> None:
 def list_pipeline_runs(
     output_format: str, columns: str, **kwargs: Any
 ) -> None:
-    """List all registered pipeline runs for the filter.
+    """List all pipeline runs that fulfill the filter requirements.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
@@ -861,22 +852,16 @@ def list_pipeline_runs(
             pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not pipeline_runs.items:
-            cli_utils.declare("No pipeline runs found for this filter.")
-            return
+        return
+    if not pipeline_runs.items:
+        cli_utils.declare("No pipeline runs found for this filter.")
+        return
 
-        pipeline_run_list = []
-        for pipeline_run in pipeline_runs.items:
-            pipeline_run_data = cli_utils.prepare_response_data(pipeline_run)
-            pipeline_run_data.update(_generate_pipeline_run_data(pipeline_run))
-            pipeline_run_list.append(pipeline_run_data)
-
-    cli_utils.handle_output(
-        pipeline_run_list,
-        pagination_info=pipeline_runs.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=pipeline_runs,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_pipeline_run_data,
     )
 
 
@@ -1022,7 +1007,7 @@ def builds() -> None:
 def list_pipeline_builds(
     output_format: str, columns: str, **kwargs: Any
 ) -> None:
-    """List all pipeline builds for the filter.
+    """List all pipeline builds.
 
     Args:
         output_format: Output format (table, json, yaml, tsv, csv).
@@ -1035,26 +1020,17 @@ def list_pipeline_builds(
             pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-    else:
-        if not pipeline_builds.items:
-            cli_utils.declare("No pipeline builds found for this filter.")
-            return
+        return
 
-        pipeline_build_list = []
-        for pipeline_build in pipeline_builds.items:
-            pipeline_build_data = cli_utils.prepare_response_data(
-                pipeline_build
-            )
-            pipeline_build_data.update(
-                _generate_pipeline_build_data(pipeline_build)
-            )
-            pipeline_build_list.append(pipeline_build_data)
+    if not pipeline_builds.items:
+        cli_utils.declare("No pipeline builds found for this filter.")
+        return
 
-    cli_utils.handle_output(
-        pipeline_build_list,
-        pagination_info=pipeline_builds.pagination_info,
-        columns=columns,
+    cli_utils.render_list_output(
+        page=pipeline_builds,
         output_format=output_format,
+        columns=columns,
+        row_formatter=_generate_pipeline_build_data,
     )
 
 
