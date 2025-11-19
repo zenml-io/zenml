@@ -136,8 +136,7 @@ class StepHeartbeatWorker:
                     # One-shot: signal the main thread and stop the loop.
                     if self._terminated:
                         logger.info(
-                            "%s received HeartBeatTerminationException; "
-                            "interrupting main thread",
+                            "%s is remotely stopped, interrupting main thread",
                             self.name,
                         )
                         _thread.interrupt_main()  # raises KeyboardInterrupt in main thread
