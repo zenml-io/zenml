@@ -2,6 +2,11 @@
 description: Learning how to develop a custom secret store.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Custom secret stores
 
 The secrets store acts as the one-stop shop for all the secrets to which your pipeline or stack components might need access. It is responsible for storing, updating and deleting _only the secrets values_ for ZenML secrets, while the ZenML secret metadata is stored in the SQL database. The secrets store interface implemented by all available secrets store back-ends is defined in the `zenml.zen_stores.secrets_stores.secrets_store_interface` core module and looks more or less like this:
