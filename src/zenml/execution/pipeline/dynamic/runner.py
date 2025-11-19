@@ -14,7 +14,9 @@
 """Dynamic pipeline runner."""
 
 import contextvars
+import copy
 import inspect
+import itertools
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
@@ -25,7 +27,6 @@ from typing import (
     Literal,
     Optional,
     Sequence,
-    Set,
     Tuple,
     Union,
     overload,
@@ -208,7 +209,6 @@ class DynamicPipelineRunner:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
-        chunk_index: Optional[int] = None,
         concurrent: Literal[False] = False,
     ) -> StepRunOutputs: ...
 
@@ -220,7 +220,6 @@ class DynamicPipelineRunner:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
-        chunk_index: Optional[int] = None,
         concurrent: Literal[True] = True,
     ) -> "StepRunOutputsFuture": ...
 
@@ -231,7 +230,6 @@ class DynamicPipelineRunner:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
-        chunk_index: Optional[int] = None,
         concurrent: bool = False,
     ) -> Union[StepRunOutputs, "StepRunOutputsFuture"]:
         """Launch a step.
@@ -242,7 +240,6 @@ class DynamicPipelineRunner:
             args: The arguments for the step function.
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for.
-            chunk_index: The chunk index of this step.
             concurrent: Whether to launch the step concurrently.
 
         Returns:
@@ -256,7 +253,6 @@ class DynamicPipelineRunner:
             id=id,
             inputs=convert_to_keyword_arguments(step.entrypoint, args, kwargs),
             after=after,
-            chunk_index=chunk_index,
         )
 
         def _launch() -> StepRunOutputs:
@@ -291,6 +287,7 @@ class DynamicPipelineRunner:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["StepRunFuture", Sequence["StepRunFuture"], None] = None,
+        product: bool = False,
     ) -> List["StepRunOutputsFuture"]:
         """Map over step inputs.
 
@@ -300,25 +297,26 @@ class DynamicPipelineRunner:
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            product: Whether to produce a cartesian product of the mapped
+                inputs.
 
         Returns:
             The step run output futures.
         """
         kwargs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
         kwargs = await_step_inputs(kwargs)
-        _, _, item_count = find_mapped_inputs(kwargs)
+        step_inputs = expand_mapped_inputs(kwargs, product=product)
 
         return [
             self.launch_step(
                 step,
                 id=None,
                 args=(),
-                kwargs=kwargs,
+                kwargs=inputs,
                 after=after,
-                chunk_index=chunk_index,
                 concurrent=True,
             )
-            for chunk_index in range(item_count)
+            for inputs in step_inputs
         ]
 
     def await_all_step_run_futures(self) -> None:
@@ -340,7 +338,6 @@ def compile_dynamic_step_invocation(
         None,
     ] = None,
     id: Optional[str] = None,
-    chunk_index: Optional[int] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
 
@@ -351,7 +348,6 @@ def compile_dynamic_step_invocation(
         id: Custom invocation ID.
         inputs: The inputs for the step function.
         after: The step run output futures to wait for.
-        chunk_index: The chunk index of this step.
 
     Returns:
         The compiled step.
@@ -385,19 +381,9 @@ def compile_dynamic_step_invocation(
         if key not in inputs
     }
 
-    if chunk_index is not None:
-        inputs, mapped_input_names, _ = find_mapped_inputs(inputs=inputs)
-    else:
-        mapped_input_names = set()
-
     input_artifacts = {}
     external_artifacts = {}
     for name, value in inputs.items():
-        chunk_args = {}
-        if name in mapped_input_names:
-            chunk_args["chunk_index"] = chunk_index
-            chunk_args["chunk_size"] = 1
-
         if isinstance(value, OutputArtifact):
             input_artifacts[name] = [
                 StepArtifact(
@@ -405,7 +391,8 @@ def compile_dynamic_step_invocation(
                     output_name=value.output_name,
                     annotation=OutputSignature(resolved_annotation=Any),
                     pipeline=pipeline,
-                    **chunk_args,
+                    chunk_index=value.chunk_index,
+                    chunk_size=value.chunk_size,
                 )
             ]
         elif isinstance(value, list) and all(
@@ -417,7 +404,8 @@ def compile_dynamic_step_invocation(
                     output_name=item.output_name,
                     annotation=OutputSignature(resolved_annotation=Any),
                     pipeline=pipeline,
-                    **chunk_args,
+                    chunk_index=item.chunk_index,
+                    chunk_size=item.chunk_size,
                 )
                 for item in value
             ]
@@ -569,32 +557,33 @@ def get_config_template(
     return list(snapshot.step_configurations.values())[index]
 
 
-def find_mapped_inputs(
+def expand_mapped_inputs(
     inputs: Dict[str, Any],
-) -> Tuple[Dict[str, Any], Set[str], int]:
+    product: bool = False,
+) -> List[Dict[str, Any]]:
     """Find the mapped and unmapped inputs of a step.
 
     Args:
         inputs: The step function inputs.
+        product: Whether to produce a cartesian product of the mapped inputs.
 
     Raises:
-        RuntimeError: If no mapped inputs are found or the lengths of the mapped
-            inputs are not equal.
+        RuntimeError: If no mapped inputs are found or the input combinations
+            are not valid.
 
     Returns:
-        The unwrapped inputs, the names of the mapped inputs, and the shared
-        item count of all mapped inputs.
+        The step inputs.
     """
-    unwrapped_inputs: Dict[str, Any] = {}
-    mapped_input_names = set()
-    item_count = None
+    static_inputs: Dict[str, Any] = {}
+    mapped_input_names: List[str] = []
+    mapped_inputs: List[Tuple[OutputArtifact, ...]] = []
 
     for key, value in inputs.items():
         if isinstance(value, _Unmapped):
-            unwrapped_inputs[key] = value.value
+            static_inputs[key] = value.value
         elif isinstance(value, OutputArtifact):
             if value.item_count is None:
-                unwrapped_inputs[key] = value
+                static_inputs[key] = value
             elif value.item_count == 0:
                 raise RuntimeError(
                     f"Artifact `{value.id}` has 0 items and cannot be mapped "
@@ -602,23 +591,20 @@ def find_mapped_inputs(
                     "the artifact without mapping over it."
                 )
             else:
-                unwrapped_inputs[key] = value
-                mapped_input_names.add(key)
-                if item_count is None:
-                    item_count = value.item_count
-                elif value.item_count != item_count:
-                    raise RuntimeError(
-                        f"All mapped input artifacts must have the same "
-                        "item counts, but you passed artifacts with item counts "
-                        f"{item_count} and {value.item_count}. If you want "
-                        "to pass sequence-like artifacts without mapping over "
-                        "them, wrap them with the `unmapped(...)` function."
+                mapped_input_names.append(key)
+                mapped_inputs.append(
+                    tuple(
+                        value.model_copy(
+                            update={"chunk_index": i, "chunk_size": 1}
+                        )
+                        for i in range(value.item_count)
                     )
+                )
         elif (
             isinstance(value, ArtifactVersionResponse)
             and value.item_count is not None
         ):
-            unwrapped_inputs[key] = value
+            static_inputs[key] = value
             logger.warning(
                 "Received sequence-like artifact for step input `%s`. Mapping "
                 "over artifacts that are not step output artifacts is "
@@ -636,18 +622,46 @@ def find_mapped_inputs(
                 "`unmapped(...)` function.",
                 key,
             )
-            unwrapped_inputs[key] = value
+            static_inputs[key] = value
         else:
-            unwrapped_inputs[key] = value
+            static_inputs[key] = value
 
-    if item_count is None:
+    if len(mapped_inputs) == 0:
         raise RuntimeError(
-            "No inputs to map over found. When calling `.map(...)` on a step, "
-            "you need to pass at least one sequence-like step output of a "
-            "previous step as input."
+            "No inputs to map over found. When calling `.map(...)` or "
+            "`.product(...)` on a step, you need to pass at least one "
+            "sequence-like step output of a previous step as input."
         )
 
-    return unwrapped_inputs, mapped_input_names, item_count
+    step_inputs = []
+
+    if product:
+        for input_combination in itertools.product(*mapped_inputs):
+            all_inputs = copy.deepcopy(static_inputs)
+            for name, value in zip(mapped_input_names, input_combination):
+                all_inputs[name] = value
+            step_inputs.append(all_inputs)
+    else:
+        item_counts = [len(inputs) for inputs in mapped_inputs]
+        if not all(count == item_counts[0] for count in item_counts):
+            raise RuntimeError(
+                f"All mapped input artifacts must have the same "
+                "item counts, but you passed artifacts with item counts "
+                f"{item_counts}. If you want "
+                "to pass sequence-like artifacts without mapping over "
+                "them, wrap them with the `unmapped(...)` function."
+            )
+
+        for i in range(item_counts[0]):
+            all_inputs = copy.deepcopy(static_inputs)
+            for name, artifact in zip(
+                mapped_input_names,
+                [artifact_list[i] for artifact_list in mapped_inputs],
+            ):
+                all_inputs[name] = artifact
+            step_inputs.append(all_inputs)
+
+    return step_inputs
 
 
 def convert_to_keyword_arguments(

@@ -14,12 +14,10 @@
 """Dynamic pipeline execution outputs."""
 
 from concurrent.futures import Future
-from typing import Any, List, Tuple, Union, overload
+from typing import Any, List, Optional, Tuple, Union, overload
 
 from zenml.logger import get_logger
-from zenml.models import (
-    ArtifactVersionResponse,
-)
+from zenml.models import ArtifactVersionResponse
 
 logger = get_logger(__name__)
 
@@ -29,6 +27,8 @@ class OutputArtifact(ArtifactVersionResponse):
 
     output_name: str
     step_name: str
+    chunk_index: Optional[int] = None
+    chunk_size: Optional[int] = None
 
 
 StepRunOutputs = Union[None, OutputArtifact, Tuple[OutputArtifact, ...]]
