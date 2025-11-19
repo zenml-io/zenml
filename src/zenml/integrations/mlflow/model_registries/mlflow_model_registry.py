@@ -24,6 +24,7 @@ from mlflow.entities.model_registry import (
     ModelVersion as MLflowModelVersion,
 )
 from mlflow.exceptions import MlflowException
+from mlflow.models import get_model_info
 from mlflow.pyfunc import load_model
 
 from zenml.client import Client
@@ -34,6 +35,10 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
 )
 from zenml.integrations.mlflow.flavors.mlflow_model_registry_flavor import (
     MLFlowModelRegistryConfig,
+)
+from zenml.integrations.mlflow.mlflow_utils import (
+    get_model_uri_from_version,
+    is_mlflow_3x,
 )
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
@@ -98,6 +103,25 @@ class MLFlowModelRegistry(BaseModelRegistry):
     """Register models using MLflow."""
 
     _client: Optional[MlflowClient] = None
+
+    def _stage_to_alias(self, stage: ModelVersionStage) -> Optional[str]:
+        """Convert a ModelVersionStage to an MLflow alias.
+
+        Args:
+            stage: The stage to convert.
+
+        Returns:
+            The corresponding alias name, or None for NONE stage.
+        """
+        if stage == ModelVersionStage.NONE:
+            return None
+        elif stage == ModelVersionStage.STAGING:
+            return "staging"
+        elif stage == ModelVersionStage.PRODUCTION:
+            return "champion"
+        elif stage == ModelVersionStage.ARCHIVED:
+            return "archived"
+        return None
 
     @property
     def config(self) -> MLFlowModelRegistryConfig:
@@ -559,11 +583,34 @@ class MLFlowModelRegistry(BaseModelRegistry):
         # Update the model stage.
         if stage:
             try:
-                self.mlflow_client.transition_model_version_stage(
-                    name=name,
-                    version=version,
-                    stage=stage.value,
-                )
+                if is_mlflow_3x():
+                    # In MLflow 3.x, use aliases instead of stages
+                    alias = self._stage_to_alias(stage)
+                    if alias:
+                        # Set the new alias
+                        self.mlflow_client.set_registered_model_alias(
+                            name=name,
+                            alias=alias,
+                            version=version,
+                        )
+                        logger.info(
+                            f"Set alias '{alias}' on model version '{name}:{version}'. "
+                            "Note: MLflow 3.x uses aliases instead of stages."
+                        )
+                    else:
+                        # For NONE stage, we would need to remove all aliases
+                        # but we don't know which aliases to remove, so we skip
+                        logger.warning(
+                            "Cannot set stage to NONE in MLflow 3.x. "
+                            "Use delete_registered_model_alias to remove specific aliases."
+                        )
+                else:
+                    # In MLflow 2.x, use the traditional stage transition
+                    self.mlflow_client.transition_model_version_stage(
+                        name=name,
+                        version=version,
+                        stage=stage.value,
+                    )
             except MlflowException as e:
                 raise RuntimeError(
                     f"Failed to update the current stage of model version "
@@ -739,8 +786,11 @@ class MLFlowModelRegistry(BaseModelRegistry):
             name=name,
             version=version,
         )
+
+        model_uri = get_model_uri_from_version(mlflow_model_version)
+
         return load_model(
-            model_uri=mlflow_model_version.source,
+            model_uri=model_uri,
             **kwargs,
         )
 
@@ -781,17 +831,35 @@ class MLFlowModelRegistry(BaseModelRegistry):
             metadata["mlflow_run_link"] = mlflow_model_version.run_link
 
         try:
-            from mlflow.models import get_model_info
+            model_uri = get_model_uri_from_version(mlflow_model_version)
+            # In MLflow 2.x, we need to remove the file:// scheme
+            if not is_mlflow_3x():
+                model_uri = _remove_file_scheme(model_uri)
 
             model_library = (
-                get_model_info(
-                    model_uri=_remove_file_scheme(mlflow_model_version.source)
-                )
+                get_model_info(model_uri=model_uri)
                 .flavors.get("python_function", {})
                 .get("loader_module")
             )
-        except ImportError:
+        except (ImportError, Exception) as e:
+            logger.debug(
+                f"Could not extract model library from model URI: {e}. "
+                "Setting model_library to None."
+            )
             model_library = None
+
+        # Handle stage extraction for both MLflow 2.x and 3.x
+        # In MLflow 3.x, current_stage is deprecated but still present
+        # We also store aliases in metadata for 3.x compatibility
+        stage = ModelVersionStage(mlflow_model_version.current_stage)
+
+        # In MLflow 3.x, also track aliases
+        if is_mlflow_3x() and hasattr(mlflow_model_version, "aliases"):
+            if mlflow_model_version.aliases:
+                metadata["mlflow_aliases"] = ",".join(
+                    mlflow_model_version.aliases
+                )
+
         return RegistryModelVersion(
             registered_model=RegisteredModel(name=mlflow_model_version.name),
             model_format=MLFLOW_MODEL_FORMAT,
@@ -800,10 +868,14 @@ class MLFlowModelRegistry(BaseModelRegistry):
             created_at=datetime.fromtimestamp(
                 int(mlflow_model_version.creation_timestamp) / 1e3
             ),
-            stage=ModelVersionStage(mlflow_model_version.current_stage),
+            stage=stage,
             description=mlflow_model_version.description,
             last_updated_at=datetime.fromtimestamp(
-                int(mlflow_model_version.last_updated_timestamp) / 1e3
+                int(
+                    mlflow_model_version.last_updated_timestamp
+                    or mlflow_model_version.creation_timestamp
+                )
+                / 1e3
             ),
             metadata=ModelRegistryModelMetadata(**metadata),
             model_source_uri=mlflow_model_version.source,

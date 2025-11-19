@@ -303,7 +303,7 @@ def register_model(
             )
         )
     except (EntityExistsError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
 
 @model.command("update", help="Update an existing model.")
@@ -467,7 +467,7 @@ def delete_model(
             model_name_or_id=model_name_or_id,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Model '{model_name_or_id}' deleted.")
 
@@ -655,7 +655,7 @@ def delete_model_version(
             model_version_id=model_version.id,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(
             f"Model version '{model_version_name_or_number_or_id}' deleted from model '{model_name_or_id}'."

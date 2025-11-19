@@ -1,8 +1,13 @@
 import os
+import time
 from unittest.mock import patch
 
+import pytest
+
 from zenml import pipeline, step
+from zenml.config import CachePolicy
 from zenml.constants import ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING
+from zenml.exceptions import EntityExistsError
 
 
 @step(enable_cache=False)
@@ -27,6 +32,11 @@ def test_pipeline_run_returns_up_to_date_run_info():
 @step
 def noop() -> None:
     pass
+
+
+@step(enable_cache=False)
+def simple_step_for_duplicate_test() -> int:
+    return 42
 
 
 def test_pipeline_run_computes_clientside_cache(clean_client, mocker):
@@ -104,3 +114,55 @@ def test_environment_variable_can_be_used_to_disable_clientside_caching(
         full_cached_pipeline()
 
     mock_submit_pipeline.assert_called()
+
+
+def test_duplicate_pipeline_run_name_raises_improved_error(clean_client):
+    """Test that running a pipeline twice with the same name raises an improved error message."""
+
+    @pipeline
+    def test_pipeline():
+        simple_step_for_duplicate_test()
+
+    # First run should succeed
+    run_name = "duplicate_name_test_run"
+    first_run = test_pipeline.with_options(run_name=run_name)()
+    assert first_run.name == run_name
+
+    # Second run with same name should raise EntityExistsError with clear message
+    with pytest.raises(EntityExistsError) as exc_info:
+        test_pipeline.with_options(run_name=run_name)()
+
+    error_message = str(exc_info.value)
+
+    # Verify it contains a clear duplicate name error message
+    assert (
+        "already exists" in error_message.lower()
+        or "existing pipeline run with the same name" in error_message.lower()
+        or f"Pipeline run name '{run_name}' already exists" in error_message
+    )
+
+
+@step
+def cacheable_step() -> int:
+    return 0
+
+
+def test_cache_expiration(clean_client):
+    """Test cache expiration."""
+
+    @pipeline(cache_policy=CachePolicy(expires_after=1))
+    def test_pipeline():
+        cacheable_step()
+
+    test_pipeline()
+    time.sleep(1)
+    run = test_pipeline()
+    assert run.steps["cacheable_step"].status == "completed"
+
+    @pipeline(cache_policy=CachePolicy(expires_after=3600))
+    def test_pipeline():
+        cacheable_step()
+
+    test_pipeline()
+    run = test_pipeline()
+    assert run.steps["cacheable_step"].status == "cached"

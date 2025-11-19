@@ -13,14 +13,20 @@
 #  permissions and limitations under the License.
 """Utility functions to handle metadata for ZenML entities."""
 
-from typing import Dict, List, Optional, Union, overload
+from typing import Dict, List, Optional, Set, Union, overload
 from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import MetadataResourceTypes, ModelStages
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models import RunMetadataResource
+from zenml.models import (
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
+    PipelineRunIdentifier,
+    RunMetadataResource,
+    StepRunIdentifier,
+)
 from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
@@ -163,11 +169,10 @@ def log_metadata(
 
     # Log metadata to a step by name and run ID
     elif step_name is not None and run_id_name_or_prefix is not None:
-        step_model_id = (
-            client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
-            .steps[step_name]
-            .id
-        )
+        run = client.get_pipeline_run(name_id_or_prefix=run_id_name_or_prefix)
+        step_model_id = client.list_run_steps(
+            pipeline_run_id=run.id, name=step_name
+        )[0].id
         resources = [
             RunMetadataResource(
                 id=step_model_id, type=MetadataResourceTypes.STEP_RUN
@@ -365,4 +370,153 @@ def log_metadata(
         metadata=metadata,
         resources=resources,
         publisher_step_id=publisher_step_id,
+    )
+
+
+def bulk_log_metadata(
+    metadata: Dict[str, MetadataType],
+    pipeline_runs: list[PipelineRunIdentifier] | None = None,
+    step_runs: list[StepRunIdentifier] | None = None,
+    artifact_versions: list[ArtifactVersionIdentifier] | None = None,
+    model_versions: list[ModelVersionIdentifier] | None = None,
+    infer_models: bool = False,
+    infer_artifacts: bool = False,
+) -> None:
+    """Logs metadata for multiple entities in a single invocation.
+
+    Args:
+        metadata: The metadata to log.
+        pipeline_runs: A list of pipeline runs to log metadata for.
+        step_runs: A list of step runs to log metadata for.
+        artifact_versions: A list of artifact versions to log metadata for.
+        model_versions: A list of model versions to log metadata for.
+        infer_models: Flag - when enabled infer model to log metadata for from step context.
+        infer_artifacts: Flag - when enabled infer artifact to log metadata for from step context.
+
+    Raises:
+        ValueError: If options are not passed correctly (empty metadata or no identifier options) or
+            invocation with `infer` options is done outside of a step context.
+    """
+    client = Client()
+
+    resources: Set[RunMetadataResource] = set()
+
+    if not metadata:
+        raise ValueError("You must provide metadata to log.")
+
+    if not any(
+        bool(v)
+        for v in [
+            pipeline_runs,
+            step_runs,
+            artifact_versions,
+            model_versions,
+            infer_models,
+            infer_artifacts,
+        ]
+    ):
+        raise ValueError(
+            "You must select at least one entity to log metadata to."
+        )
+
+    try:
+        step_context = get_step_context()
+    except RuntimeError:
+        step_context = None
+
+    if (infer_models or infer_artifacts) and step_context is None:
+        raise ValueError(
+            "Infer options can be used only within a step function code."
+        )
+
+    # resolve pipeline runs and add metadata resources
+
+    for run in pipeline_runs or []:
+        if not run.id:
+            run.id = client.get_pipeline_run(name_id_or_prefix=run.value).id
+        resources.add(
+            RunMetadataResource(
+                id=run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        )
+
+    # resolve step runs and add metadata resources
+
+    for step in step_runs or []:
+        if not step.id and (step.name and step.run):
+            run_model = client.get_pipeline_run(
+                name_id_or_prefix=step.run.value
+            )
+            step.id = client.list_run_steps(
+                pipeline_run_id=run_model.id, name=step.name
+            )[0].id
+
+        resources.add(
+            RunMetadataResource(
+                id=step.id, type=MetadataResourceTypes.STEP_RUN
+            )
+        )
+
+    # resolve artifacts and add metadata resources
+
+    for artifact_version in artifact_versions or []:
+        if not artifact_version.id and (
+            artifact_version.name and artifact_version.version
+        ):
+            artifact_version.id = client.get_artifact_version(
+                name_id_or_prefix=artifact_version.name,
+                version=artifact_version.version,
+            ).id
+        resources.add(
+            RunMetadataResource(
+                id=artifact_version.id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
+        )
+
+    # resolve models and add metadata resources
+
+    for model_version in model_versions or []:
+        if not model_version.id:
+            model_version.id = client.get_model_version(
+                model_name_or_id=model_version.name,
+                model_version_name_or_number_or_id=model_version.version,
+            ).id
+        resources.add(
+            RunMetadataResource(
+                id=model_version.id, type=MetadataResourceTypes.MODEL_VERSION
+            )
+        )
+
+    # infer models - resolve from step context
+
+    if infer_models and step_context and not step_context.model_version:
+        raise ValueError(
+            "The step context does not feature any model versions."
+        )
+    elif infer_models and step_context and step_context.model_version:
+        resources.add(
+            RunMetadataResource(
+                id=step_context.model_version.id,
+                type=MetadataResourceTypes.MODEL_VERSION,
+            )
+        )
+
+    # infer artifacts - resolve from step context
+
+    if infer_artifacts and step_context:
+        step_output_names = list(step_context._outputs.keys())
+
+        for artifact_name in step_output_names:
+            step_context.add_output_metadata(
+                metadata=metadata, output_name=artifact_name
+            )
+
+    if not resources:
+        return
+
+    client.create_run_metadata(
+        metadata=metadata,
+        resources=list(resources),
+        publisher_step_id=None,
     )

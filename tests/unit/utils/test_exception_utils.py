@@ -5,7 +5,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from zenml.utils.exception_utils import collect_exception_information
+from zenml.utils.exception_utils import (
+    collect_exception_information,
+)
 
 
 def test_regex_pattern_no_syntax_warning():

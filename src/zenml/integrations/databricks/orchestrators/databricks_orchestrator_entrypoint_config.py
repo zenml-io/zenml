@@ -15,12 +15,8 @@
 
 import os
 import sys
-from typing import Any, List, Set
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import distribution
-else:
-    from importlib.metadata import distribution
+from importlib.metadata import distribution
+from typing import Any, Dict, List
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -42,17 +38,16 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
     """
 
     @classmethod
-    def get_entrypoint_options(cls) -> Set[str]:
+    def get_entrypoint_options(cls) -> Dict[str, bool]:
         """Gets all options required for running with this configuration.
 
         Returns:
             The superclass options as well as an option for the wheel package.
         """
-        return (
-            super().get_entrypoint_options()
-            | {WHEEL_PACKAGE_OPTION}
-            | {DATABRICKS_JOB_ID_OPTION}
-        )
+        return super().get_entrypoint_options() | {
+            WHEEL_PACKAGE_OPTION: True,
+            DATABRICKS_JOB_ID_OPTION: True,
+        }
 
     @classmethod
     def get_entrypoint_arguments(
@@ -86,7 +81,9 @@ class DatabricksEntrypointConfiguration(StepEntrypointConfiguration):
         wheel_package = self.entrypoint_args[WHEEL_PACKAGE_OPTION]
 
         dist = distribution(wheel_package)
-        project_root = os.path.join(dist.locate_file("."), wheel_package)
+        project_root = os.path.join(
+            str(dist.locate_file(".")), str(wheel_package)
+        )
 
         if project_root not in sys.path:
             sys.path.insert(0, project_root)

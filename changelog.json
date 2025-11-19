@@ -1,0 +1,40 @@
+[
+  {
+    "id": 3,
+    "slug": "panels-are-now-resizable",
+    "title": "Panels are now resizable",
+    "feature_image_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/whats_new/resizable-panels.gif",
+    "description": "You can now resize the panels in the dashboard to see more or less content at once. This is useful for when you want to see more or less information about a run or a pipeline.",
+    "published": true,
+    "published_at": "2025-10-23T00:00:00Z",
+    "should_highlight": false,
+    "audience": "all",
+    "labels": ["feature"]
+  },
+  {
+    "id": 2,
+    "slug": "introducing-pipeline-deployments",
+    "title": "Introducing Pipeline Deployments",
+    "description": "Pipeline Deployments turn pipelines into persistent HTTP services with warm state, reducing cold start latency by 10–100x while maintaining full traceability. Learn more in our blog post.",
+    "video_url": "https://www.youtube-nocookie.com/embed/whQytRE7kC8",
+    "learn_more_url": "https://www.zenml.io/blog/why-pipelines-are-the-right-abstraction-for-real-time-ai-agents-included",
+    "published": true,
+    "published_at": "2025-10-02T00:00:00Z",
+    "should_highlight": false,
+    "audience": "all",
+    "labels": ["feature"]
+  },
+  {
+    "id": 1,
+    "slug": "new-timeline-view-for-runs",
+    "title": "New Timeline View for Runs",
+    "description": "We've added a new timeline view for runs to help you visualize the execution of your pipelines.",
+    "feature_image_url": "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/whats_new/new_feature_timeline.png",
+    "docs_url": "https://docs.zenml.io/concepts/dashboard-features#timeline-view",
+    "published": true,
+    "published_at": "2025-09-12T00:00:00Z",
+    "should_highlight": false,
+    "audience": "all",
+    "labels": ["feature"]
+  }
+]

@@ -182,7 +182,7 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
             name_id_or_prefix=name_id_or_prefix,
         )
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         cli_utils.print_pydantic_model(
             title=f"Code repository '{code_repository.name}'",
@@ -314,6 +314,6 @@ def delete_code_repository(name_or_id: str, yes: bool = False) -> None:
     try:
         Client().delete_code_repository(name_id_or_prefix=name_or_id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted code repository `{name_or_id}`.")

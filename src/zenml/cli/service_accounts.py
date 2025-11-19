@@ -61,7 +61,7 @@ def _create_api_key(
                 description=description or "",
             )
         except (KeyError, EntityExistsError) as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
 
         cli_utils.declare(f"Successfully created API key `{name}`.")
 
@@ -153,7 +153,7 @@ def create_service_account(
 
         cli_utils.declare(f"Created service account '{service_account.name}'.")
     except EntityExistsError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     if create_api_key:
         _create_api_key(
@@ -179,7 +179,7 @@ def describe_service_account(service_account_name_or_id: str) -> None:
             service_account_name_or_id
         )
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         cli_utils.print_pydantic_model(
             title=f"Service account '{service_account.name}'",
@@ -270,7 +270,7 @@ def update_service_account(
             active=active,
         )
     except (KeyError, EntityExistsError) as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
 
 @service_account.command("delete")
@@ -285,7 +285,7 @@ def delete_service_account(service_account_name_or_id: str) -> None:
     try:
         client.delete_service_account(service_account_name_or_id)
     except (KeyError, IllegalOperationError) as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     cli_utils.declare(
         f"Deleted service account '{service_account_name_or_id}'."
@@ -379,7 +379,7 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
                 name_id_or_prefix=name_or_id,
             )
         except KeyError as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
 
         cli_utils.print_pydantic_model(
             title=f"API key '{api_key.name}'",
@@ -412,10 +412,27 @@ def list_api_keys(
         columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter API keys.
     """
-    with console.status("Listing API keys..."):
-        api_keys = Client().list_api_keys(
-            service_account_name_id_or_prefix=service_account_name_or_id,
-            **kwargs,
+    with console.status("Listing API keys...\n"):
+        try:
+            api_keys = Client().list_api_keys(
+                service_account_name_id_or_prefix=service_account_name_or_id,
+                **kwargs,
+            )
+        except KeyError as e:
+            cli_utils.exception(e)
+
+        if not api_keys.items:
+            cli_utils.declare("No API keys found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            api_keys,
+            exclude_columns=[
+                "created",
+                "updated",
+                "key",
+                "retain_period_minutes",
+            ],
         )
 
         api_key_list = []
@@ -473,7 +490,7 @@ def update_api_key(
             active=active,
         )
     except (KeyError, EntityExistsError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     cli_utils.declare(f"Successfully updated API key `{name_or_id}`.")
 
@@ -528,7 +545,7 @@ def rotate_api_key(
             retain_period_minutes=retain,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     cli_utils.declare(f"Successfully rotated API key `{name_or_id}`.")
     if retain:
@@ -599,6 +616,6 @@ def delete_api_key(
             name_id_or_prefix=name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted API key `{name_or_id}`.")

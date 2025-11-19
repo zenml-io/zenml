@@ -12,7 +12,50 @@ This document provides guidance for Claude Code when working with the ZenML code
 
 Use filesystem navigation tools to explore the codebase structure as needed.
 
+## Use ZenML Docs via MCP
+Claude Code can query ZenML documentation via the built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. This enables real-time, source-of-truth lookups from the docs while you code, reducing hallucinations and speeding up feature discovery.
+
+Quick setup (CLI):
+```bash
+claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
+```
+
+Note: The MCP server indexes the latest released docs, not the develop branch. For full setup details and editor alternatives, see docs/book/reference/llms-txt.md.
+
 ## Code Style & Quality Standards
+
+### Commenting policy — explain why, not what
+- Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
+- Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
+- Avoid: change‑tracking comments ("Updated from previous version", "New implementation", "Changed to use X instead of Y", "Refactored this section").
+- Avoid simple explanatory comments, where it is already clear from the code itself.
+- Avoid useless one-line comments interleaved with code that merely narrate the implementation. Favor expressive names and small, focused functions.
+
+  ```python
+  # Bad
+  x = x + 1  # increment x
+
+  # Good
+  count += 1
+  ```
+
+- Do not use multi-line banner comments to group classes/functions. Use a concise module-level docstring or split code into dedicated modules.
+
+  ```python
+  # Bad
+  """
+  ===== Dataset Loaders =====
+  """
+  class CSVLoader: ...
+  class ParquetLoader: ...
+
+  # Good (module-level docstring at top)
+  """
+  Dataset loaders used by data ingestion (CSV, Parquet).
+  """
+  class CSVLoader: ...
+  class ParquetLoader: ...
+  ```
 
 ### Formatting and Linting
 - Format code with: `bash scripts/format.sh` (requires Python environment with dev dependencies)
@@ -33,6 +76,46 @@ Use filesystem navigation tools to explore the codebase structure as needed.
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
 
+#### Prefer typing over dynamic attribute checks
+- Don't use getattr/hasattr for capability checks when static typing can express the contract
+- Prefer Protocols/ABCs, Unions with isinstance narrowing, or typed adapters around untyped third-party objects
+- If getattr/hasattr is unavoidable, isolate it in a small helper and expose a typed interface
+
+Example:
+```python
+# Bad
+if hasattr(handler, "close"):
+    handler.close()
+
+# Good
+from typing import Protocol
+
+class Closable(Protocol):
+    def close(self) -> None: ...
+
+def shutdown(h: Closable) -> None:
+    h.close()
+```
+
+### FastAPI Agent Profile
+- ZenML OSS FastAPI work demands senior-level proficiency across FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 patterns; study existing routers and services before proposing changes.
+- Favor object-oriented extensions over scattering helpers—extend service/repository classes or introduce cohesive new ones, and rely on dependency injection rather than module-level singletons.
+- Keep all shared state inside FastAPI's dependency system or app factory; never introduce fresh global variables outside the initializer.
+- Use descriptive auxiliary-verb-prefixed names and lower_snake_case paths (for example `routers/manage_invitation.py`, `services/issue_token.py`) so reviewers immediately understand intent.
+- Apply the Receive an Object, Return an Object (RORO) convention on public interfaces to keep payloads self-documenting and testable.
+
+### FastAPI Project Structure
+- Each FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static assets, and schema/model definitions; keep imports explicit via named exports.
+- Co-locate Pydantic request/response models with their consuming routes, and keep reusable business logic inside services or repositories accessed through dependency injection.
+- Name directories/files with verbs or nouns that communicate behavior (e.g., `routers/register_user.py`, `services/create_invitation.py`) so navigation stays predictable.
+
+### FastAPI Error Handling & Validation
+- Lead with guard clauses in routes, dependencies, and services—validate payloads, auth context, and resources early; prefer early returns and keep the happy path last.
+- Skip redundant `else` blocks after returns; log context-rich errors and surface user-safe details while retaining debug information in structured logs.
+- Define custom exception types or factories so middleware can map them to consistent JSON payloads with trace metadata.
+- Raise `HTTPException` (with precise status codes and detail strings) for expected errors, and push unexpected failures through middleware that centralizes logging, metrics, and alerting.
+- Model inputs/outputs with Pydantic BaseModel derivatives to keep validation explicit and documentation synchronized automatically.
+
 ### Testing Requirements
 - Most new code requires test coverage
   - Key exceptions are when the code involves integrations with external
@@ -50,6 +133,13 @@ Use filesystem navigation tools to explore the codebase structure as needed.
   - `pytest tests/unit/path/to/test_file.py::test_specific_function`
 - For full coverage, use CI (see CI section below)
 - Some tests use: `bash scripts/test-coverage-xml.sh` (but this won't run all tests)
+
+## Dependencies & Runtime Constraints
+- Align contributions with the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm any new dependency in `pyproject.toml` before adoption.
+- The OSS runtime forbids async I/O in Claude-authored code even though FastAPI supports it—implement synchronous `def` handlers and delegate background/long-running work to workers or dependency-injected services; this supersedes generic async advice found elsewhere.
+- Prefer dependency injection over module-level singletons for clients, caches, and repositories so state management stays testable.
+- Cache static or frequently accessed data (e.g., dependency-scoped in-memory caches) and lazy-load heavyweight resources to control cold-start latency.
+- Document minimum supported versions when modifying dependency-heavy paths and explain performance trade-offs in PRs when serialization or caching strategies change.
 
 ## Development Workflow
 
@@ -259,6 +349,7 @@ When tackling complex tasks:
 - API stability is important - don't break public interfaces
 - Review similar PRs for implementation patterns
 - Pipeline execution is complex - test thoroughly when modifying
+- Centralize FastAPI logging, tracing, and unexpected error handling inside middleware; measure latency/throughput for new endpoints, cache static payloads, lazy-load heavyweight resources, and articulate serialization trade-offs in PR notes.
 
 ## Documentation Guidelines
 

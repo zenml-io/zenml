@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI for manipulating ZenML local and global config file."""
+"""Stack CLI."""
 
 import getpass
 import re
@@ -84,13 +84,12 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-# Stacks
 @cli.group(
     cls=TagGroup,
     tag=CliCategories.MANAGEMENT_TOOLS,
 )
 def stack() -> None:
-    """Stacks to define various environments."""
+    """Manage stacks."""
 
 
 @stack.command(
@@ -196,6 +195,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-D",
+    "--deployer",
+    "deployer",
+    help="Name of the deployer for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -247,6 +254,7 @@ def register_stack(
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
+    deployer: Optional[str] = None,
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
@@ -269,6 +277,7 @@ def register_stack(
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
+        deployer: Name of the deployer for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
@@ -518,6 +527,7 @@ def register_stack(
             (StackComponentType.STEP_OPERATOR, step_operator),
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
+            (StackComponentType.DEPLOYER, deployer),
         ]:
             if component_name_ and component_type_ not in components:
                 components[component_type_] = [
@@ -540,7 +550,7 @@ def register_stack(
                 )
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Stack '{created_stack.name}' successfully registered!"
@@ -688,6 +698,14 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "-D",
+    "--deployer",
+    "deployer",
+    help="Name of the deployer for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--secret",
     "secrets",
     help="Secrets to attach to the stack.",
@@ -727,6 +745,7 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
+    deployer: Optional[str] = None,
     secrets: List[str] = [],
     remove_secrets: List[str] = [],
     environment_variables: List[str] = [],
@@ -748,6 +767,7 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
+        deployer: Name of the new deployer for this stack.
         secrets: Secrets to attach to the stack.
         remove_secrets: Secrets to remove from the stack.
         environment_variables: Environment variables to set when running on this
@@ -792,6 +812,8 @@ def update_stack(
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = [step_operator]
+        if deployer:
+            updates[StackComponentType.DEPLOYER] = [deployer]
 
         try:
             updated_stack = client.update_stack(
@@ -803,7 +825,7 @@ def update_stack(
             )
 
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
@@ -897,6 +919,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-D",
+    "--deployer",
+    "deployer_flag",
+    help="Include this to remove the deployer from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -909,6 +939,7 @@ def remove_stack_component(
     data_validator_flag: Optional[bool] = False,
     image_builder_flag: Optional[bool] = False,
     model_registry_flag: Optional[str] = None,
+    deployer_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -926,6 +957,7 @@ def remove_stack_component(
         data_validator_flag: To remove the data validator from this stack.
         image_builder_flag: To remove the image builder from this stack.
         model_registry_flag: To remove the model registry from this stack.
+        deployer_flag: To remove the deployer from this stack.
     """
     client = Client()
 
@@ -962,13 +994,16 @@ def remove_stack_component(
         if image_builder_flag:
             stack_component_update[StackComponentType.IMAGE_BUILDER] = []
 
+        if deployer_flag:
+            stack_component_update[StackComponentType.DEPLOYER] = []
+
         try:
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
                 component_updates=stack_component_update,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(
             f"Stack `{updated_stack.name}` successfully updated!"
         )
@@ -996,7 +1031,7 @@ def rename_stack(
                 name=new_stack_name,
             )
         except (KeyError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(
             f"Stack `{stack_name_or_id}` successfully renamed to `"
             f"{new_stack_name}`!"
@@ -1116,7 +1151,7 @@ def describe_stack(stack_name_or_id: Optional[str] = None) -> None:
                 name_id_or_prefix=stack_name_or_id
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.print_stack_configuration(
             stack=stack_,
@@ -1182,7 +1217,7 @@ def delete_stack(
         try:
             client.delete_stack(stack_name_or_id)
         except (KeyError, ValueError, IllegalOperationError) as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         cli_utils.declare(f"Deleted stack '{stack_name_or_id}'.")
 
 
@@ -1203,7 +1238,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
         try:
             client.activate_stack(stack_name_id_or_prefix=stack_name_or_id)
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         cli_utils.declare(
             f"Active {scope} stack set to: '{client.active_stack_model.name}'"
@@ -1222,7 +1257,7 @@ def get_active_stack() -> None:
                 f"The {scope} active stack is: '{client.active_stack_model.name}'"
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
@@ -1243,7 +1278,7 @@ def export_stack(
     try:
         stack_to_export = client.get_stack(name_id_or_prefix=stack_name_or_id)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     # write zenml version and stack dict to YAML
     yaml_data = stack_to_export.to_yaml()
@@ -1411,7 +1446,7 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
                 name_id_or_prefix=source_stack_name_or_id
             )
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
 
         component_mapping: Dict[StackComponentType, Union[str, UUID]] = {}
 
@@ -2118,7 +2153,7 @@ def export_requirements(
             name_id_or_prefix=stack_name_or_id
         )
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
 
     requirements, _ = requirements_utils.get_requirements_for_stack(
         stack_model

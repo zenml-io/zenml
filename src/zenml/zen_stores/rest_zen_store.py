@@ -65,14 +65,17 @@ from zenml.constants import (
     CODE_REFERENCES,
     CODE_REPOSITORIES,
     CONFIG,
+    CURATED_VISUALIZATIONS,
     CURRENT_USER,
     DEACTIVATE,
     DEFAULT_HTTP_TIMEOUT,
+    DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
+    HEARTBEAT,
     INFO,
     LOGIN,
     LOGS,
@@ -112,6 +115,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
     APITokenType,
@@ -164,7 +168,14 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -206,7 +217,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
@@ -249,6 +260,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -307,6 +319,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
             verify the server's TLS certificate, or a string, in which case it
             must be a path to a CA bundle to use or the CA bundle value itself.
         http_timeout: The timeout to use for all requests.
+        connection_pool_size: The size of the connection pool to use for all
+            requests.
 
     """
 
@@ -316,6 +330,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
         default=True, union_mode="left_to_right"
     )
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
+    connection_pool_size: int = 10
 
     @field_validator("url")
     @classmethod
@@ -371,6 +386,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if os.path.isfile(verify_ssl):
             with open(verify_ssl, "r") as f:
                 cert_content = f.read()
+        else:
+            cert_content = verify_ssl
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
@@ -423,7 +440,7 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if api_key := data.pop("api_key", None):
             credentials_store = get_credentials_store()
-            if api_key.startswith("ZENPROKEY_"):
+            if api_key.startswith(ZENML_PRO_API_KEY_PREFIX):
                 credentials_store.set_api_key(
                     ZENML_PRO_API_URL, api_key, is_zenml_pro=True
                 )
@@ -1730,27 +1747,27 @@ class RestZenStore(BaseZenStore):
             route=PIPELINE_SNAPSHOTS,
         )
 
-    def trigger_snapshot(
+    def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        run_request: PipelineSnapshotRunRequest,
     ) -> PipelineRunResponse:
-        """Trigger a snapshot.
+        """Run a snapshot.
 
         Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
+            snapshot_id: The ID of the snapshot to run.
+            run_request: Configuration for the run.
 
         Raises:
             RuntimeError: If the server does not support running a snapshot.
 
         Returns:
-            Model of the pipeline run.
+            The created pipeline run.
         """
         try:
             response_body = self.post(
                 f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
-                body=trigger_request,
+                body=run_request,
             )
         except MethodNotAllowedError as e:
             raise RuntimeError(
@@ -1758,6 +1775,169 @@ class RestZenStore(BaseZenStore):
             ) from e
 
         return PipelineRunResponse.model_validate(response_body)
+
+    # -------------------- Deployments --------------------
+
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+        """
+        return self._create_resource(
+            resource=deployment,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+        )
+
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+        """
+        return self._get_resource(
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_deployments(
+        self,
+        deployment_filter_model: DeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of all deployments matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+            filter_model=deployment_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+        """
+        return self._update_resource(
+            resource_id=deployment_id,
+            resource_update=deployment_update,
+            route=DEPLOYMENTS,
+            response_model=DeploymentResponse,
+        )
+
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+        """
+        self._delete_resource(
+            resource_id=deployment_id,
+            route=DEPLOYMENTS,
+        )
+
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a curated visualization via REST API.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+        """
+        return self._create_resource(
+            resource=visualization,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+            params={"hydrate": True},
+        )
+
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
+        return self._get_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
+            response_model=CuratedVisualizationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated
+                visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
+        return self._update_resource(
+            resource_id=visualization_id,
+            resource_update=visualization_update,
+            response_model=CuratedVisualizationResponse,
+            route=CURATED_VISUALIZATIONS,
+        )
+
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization via REST API.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
+        """
+        self._delete_resource(
+            resource_id=visualization_id,
+            route=CURATED_VISUALIZATIONS,
+        )
 
     # -------------------- Run templates --------------------
 
@@ -3206,6 +3386,24 @@ class RestZenStore(BaseZenStore):
             route=STEPS,
         )
 
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat.
+
+        Args:
+            step_run_id: The ID of the step to update.
+
+        Returns:
+            The step heartbeat response.
+        """
+        response_body = self.put(
+            path=f"{STEPS}/{str(step_run_id)}{HEARTBEAT}",
+            timeout=5,
+        )
+
+        return StepHeartbeatResponse.model_validate(response_body)
+
     # -------------------- Triggers  --------------------
 
     def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
@@ -3964,7 +4162,7 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(resource_id=device_id, route=DEVICES)
 
     # -------------------
-    # Pipeline API Tokens
+    # API Tokens
     # -------------------
 
     def get_api_token(
@@ -3973,7 +4171,7 @@ class RestZenStore(BaseZenStore):
         expires_in: Optional[int] = None,
         schedule_id: Optional[UUID] = None,
         pipeline_run_id: Optional[UUID] = None,
-        step_run_id: Optional[UUID] = None,
+        deployment_id: Optional[UUID] = None,
     ) -> str:
         """Get an API token.
 
@@ -3982,7 +4180,7 @@ class RestZenStore(BaseZenStore):
             expires_in: The time in seconds until the token expires.
             schedule_id: The ID of the schedule to get a token for.
             pipeline_run_id: The ID of the pipeline run to get a token for.
-            step_run_id: The ID of the step run to get a token for.
+            deployment_id: The ID of the deployment to get a token for.
 
         Returns:
             The API token.
@@ -3999,8 +4197,8 @@ class RestZenStore(BaseZenStore):
             params["schedule_id"] = schedule_id
         if pipeline_run_id:
             params["pipeline_run_id"] = pipeline_run_id
-        if step_run_id:
-            params["step_run_id"] = step_run_id
+        if deployment_id:
+            params["deployment_id"] = deployment_id
         response_body = self.get(API_TOKEN, params=params)
         if not isinstance(response_body, str):
             raise ValueError(
@@ -4030,40 +4228,38 @@ class RestZenStore(BaseZenStore):
 
     def delete_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
     ) -> None:
         """Deletes a tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to delete.
+            tag_id: id of the tag to delete.
         """
         self._delete_resource(
-            resource_id=tag_name_or_id,
+            resource_id=tag_id,
             route=TAGS,
         )
 
     def get_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be retrieved.
+            tag_id: id of the tag to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
-        params: Dict[str, Any] = {"hydrate": hydrate}
-
         return self._get_resource(
-            resource_id=tag_name_or_id,
+            resource_id=tag_id,
             route=TAGS,
             response_model=TagResponse,
-            params=params,
+            params={"hydrate": hydrate},
         )
 
     def list_tags(
@@ -4090,21 +4286,20 @@ class RestZenStore(BaseZenStore):
 
     def update_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         tag_update_model: TagUpdate,
     ) -> TagResponse:
         """Update tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be updated.
+            tag_id: id of the tag to be updated.
             tag_update_model: Tag to use for the update.
 
         Returns:
             An updated tag.
         """
-        tag = self.get_tag(tag_name_or_id)
         return self._update_resource(
-            resource_id=tag.id,
+            resource_id=tag_id,
             resource_update=tag_update_model,
             route=TAGS,
             response_model=TagResponse,
@@ -4383,12 +4578,12 @@ class RestZenStore(BaseZenStore):
                     other=3,
                     backoff_factor=1,
                 )
-                self._session.mount(
-                    "https://", HTTPAdapter(max_retries=retries)
+                http_adapter = HTTPAdapter(
+                    max_retries=retries,
+                    pool_maxsize=self.config.connection_pool_size,
                 )
-                self._session.mount(
-                    "http://", HTTPAdapter(max_retries=retries)
-                )
+                self._session.mount("https://", http_adapter)
+                self._session.mount("http://", http_adapter)
                 self._session.verify = self.config.verify_ssl
                 # Use a custom user agent to identify the ZenML client in the server
                 # logs.
@@ -4400,6 +4595,18 @@ class RestZenStore(BaseZenStore):
             # is only fetched and set in the authorization header when and if it is
             # needed.
             return self._session
+
+    def reinitialize_session(self) -> None:
+        """Reinitialize the session.
+
+        This is used to reset the session to a new one with a new connection pool.
+        """
+        with self._session_lock:
+            if self._session is not None:
+                headers = dict(self._session.headers.items())
+                self._session.close()
+                self._session = None
+                self.session.headers.update(headers)
 
     def authenticate(self, force: bool = False) -> None:
         """Authenticate or re-authenticate to the ZenML server.

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
-import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -37,10 +36,11 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.exceptions import (
+    HookExecutionException,
     IllegalOperationError,
     RunMonitoringError,
-    RunStoppedException,
 )
+from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.publish_utils import (
@@ -48,13 +48,15 @@ from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_status_update,
     publish_schedule_metadata,
 )
-from zenml.orchestrators.step_launcher import StepLauncher
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
+from zenml.steps.step_context import RunContext, get_or_create_run_context
+from zenml.utils.env_utils import temporary_environment
 from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
@@ -204,6 +206,27 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         return None
 
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Submits a dynamic pipeline to the orchestrator.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables to set in the orchestration
+                environment.
+            placeholder_run: An optional placeholder run.
+
+        Returns:
+            Optional submission result.
+        """
+        return None
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineSnapshotResponse",
@@ -214,7 +237,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """DEPRECATED: Prepare or run a pipeline.
 
         Args:
-            deployment: The pipeline deployment to prepare or run.
+            deployment: The deployment to prepare or run.
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
@@ -232,12 +255,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             snapshot: The pipeline snapshot.
             stack: The stack on which to run the pipeline.
-            placeholder_run: An optional placeholder run for the deployment.
-                This will be deleted in case the pipeline deployment failed.
+            placeholder_run: An optional placeholder run for the snapshot.
+                This will be deleted in case the pipeline run failed.
 
         Raises:
-            KeyboardInterrupt: If the orchestrator is synchronous and the
-                pipeline run is keyboard interrupted.
             RunMonitoringError: If a failure happened while monitoring the
                 pipeline run.
         """
@@ -250,10 +271,14 @@ class BaseOrchestrator(StackComponent, ABC):
         if placeholder_run:
             pipeline_run_id = placeholder_run.id
 
-        base_environment = get_config_environment_vars(
+        base_environment, secrets = get_config_environment_vars(
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
         )
+
+        # TODO: for now, we don't support separate secrets from environment
+        # in the orchestrator environment
+        base_environment.update(secrets)
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -263,6 +288,7 @@ class BaseOrchestrator(StackComponent, ABC):
             placeholder_run
             and self.config.supports_client_side_caching
             and not snapshot.schedule
+            and not snapshot.is_dynamic
             and not prevent_client_side_caching
         ):
             from zenml.orchestrators import cache_utils
@@ -281,22 +307,10 @@ class BaseOrchestrator(StackComponent, ABC):
         else:
             logger.debug("Skipping client-side caching.")
 
-        step_environments = {}
-        for invocation_id, step in snapshot.step_configurations.items():
-            from zenml.utils.env_utils import get_step_environment
-
-            step_environment = get_step_environment(
-                step_config=step.config,
-                stack=stack,
-            )
-
-            combined_environment = base_environment.copy()
-            combined_environment.update(step_environment)
-            step_environments[invocation_id] = combined_environment
-
         try:
             if (
-                getattr(self.submit_pipeline, "__func__", None)
+                not snapshot.is_dynamic
+                and getattr(self.submit_pipeline, "__func__", None)
                 is BaseOrchestrator.submit_pipeline
             ):
                 logger.warning(
@@ -328,13 +342,37 @@ class BaseOrchestrator(StackComponent, ABC):
                                 f"run metadata: {e}"
                             )
             else:
-                submission_result = self.submit_pipeline(
-                    snapshot=snapshot,
-                    stack=stack,
-                    base_environment=base_environment,
-                    step_environments=step_environments,
-                    placeholder_run=placeholder_run,
-                )
+                if snapshot.is_dynamic:
+                    submission_result = self.submit_dynamic_pipeline(
+                        snapshot=snapshot,
+                        stack=stack,
+                        environment=base_environment,
+                        placeholder_run=placeholder_run,
+                    )
+                else:
+                    step_environments = {}
+                    for (
+                        invocation_id,
+                        step,
+                    ) in snapshot.step_configurations.items():
+                        from zenml.utils.env_utils import get_step_environment
+
+                        step_environment = get_step_environment(
+                            step_config=step.config,
+                            stack=stack,
+                        )
+
+                        combined_environment = base_environment.copy()
+                        combined_environment.update(step_environment)
+                        step_environments[invocation_id] = combined_environment
+
+                    submission_result = self.submit_pipeline(
+                        snapshot=snapshot,
+                        stack=stack,
+                        base_environment=base_environment,
+                        step_environments=step_environments,
+                        placeholder_run=placeholder_run,
+                    )
                 if placeholder_run:
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
@@ -371,78 +409,88 @@ class BaseOrchestrator(StackComponent, ABC):
                     if submission_result.wait_for_completion:
                         try:
                             submission_result.wait_for_completion()
-                        except KeyboardInterrupt:
-                            error_message = "Received KeyboardInterrupt. Note that the run is still executing. "
+                        except KeyboardInterrupt as e:
+                            message = (
+                                "Run monitoring interrupted, but "
+                                "the pipeline is still executing."
+                            )
                             if placeholder_run:
-                                error_message += (
-                                    "If you want to stop the pipeline run, please use: "
-                                    f"`zenml pipeline runs stop {placeholder_run.id}`"
+                                message += (
+                                    " If you want to stop the run, use: `zenml "
+                                    f"pipeline runs stop {placeholder_run.id}`"
                                 )
-                            raise KeyboardInterrupt(error_message)
+                            # TODO: once we don't support Python 3.10 anymore,
+                            # use `exception.add_note` instead.
+                            e.args = (message,)
+                            raise RunMonitoringError(original_exception=e)
                         except BaseException as e:
                             raise RunMonitoringError(original_exception=e)
 
         finally:
             self._cleanup_run()
 
-    def run_step(self, step: "Step") -> None:
+    def run_step(
+        self,
+        step: "Step",
+    ) -> None:
         """Runs the given step.
 
         Args:
             step: The step to run.
+        """
+        from zenml.execution.step.utils import launch_step
+
+        assert self._active_snapshot
+
+        launch_step(
+            snapshot=self._active_snapshot,
+            step=step,
+            orchestrator_run_id=self.get_orchestrator_run_id(),
+            retry=not self.config.handles_step_retries,
+        )
+
+    @property
+    def supports_dynamic_pipelines(self) -> bool:
+        """Whether the orchestrator supports dynamic pipelines.
+
+        Returns:
+            Whether the orchestrator supports dynamic pipelines.
+        """
+        return (
+            getattr(self.submit_dynamic_pipeline, "__func__", None)
+            is not BaseOrchestrator.submit_dynamic_pipeline
+        )
+
+    @property
+    def can_run_isolated_steps(self) -> bool:
+        """Whether the orchestrator can run isolated steps.
+
+        Returns:
+            Whether the orchestrator can run isolated steps.
+        """
+        return (
+            getattr(self.run_isolated_step, "__func__", None)
+            is not BaseOrchestrator.run_isolated_step
+        )
+
+    def run_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Run an isolated step.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
 
         Raises:
-            RunStoppedException: If the run was stopped.
-            BaseException: If the step failed all retries.
+            NotImplementedError: If the orchestrator does not implement this
+                method.
         """
-
-        def _launch_step() -> None:
-            assert self._active_snapshot
-
-            launcher = StepLauncher(
-                snapshot=self._active_snapshot,
-                step=step,
-                orchestrator_run_id=self.get_orchestrator_run_id(),
-            )
-            launcher.launch()
-
-        if self.config.handles_step_retries:
-            _launch_step()
-        else:
-            # The orchestrator subclass doesn't handle step retries, so we
-            # handle it in-process instead
-            retries = 0
-            retry_config = step.config.retry
-            max_retries = retry_config.max_retries if retry_config else 0
-            delay = retry_config.delay if retry_config else 0
-            backoff = retry_config.backoff if retry_config else 1
-
-            while retries <= max_retries:
-                try:
-                    _launch_step()
-                except RunStoppedException:
-                    # Don't retry if the run was stopped
-                    raise
-                except BaseException:
-                    retries += 1
-                    if retries <= max_retries:
-                        logger.info(
-                            "Sleeping for %d seconds before retrying step `%s`.",
-                            delay,
-                            step.config.name,
-                        )
-                        time.sleep(delay)
-                        delay *= backoff
-                    else:
-                        if max_retries > 0:
-                            logger.error(
-                                "Failed to run step `%s` after %d retries.",
-                                step.config.name,
-                                max_retries,
-                            )
-                        raise
-                else:
-                    break
+        raise NotImplementedError(
+            "Running isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
 
     @staticmethod
     def requires_resources_in_orchestration_environment(
@@ -486,6 +534,96 @@ class BaseOrchestrator(StackComponent, ABC):
             A tuple of supported execution modes.
         """
         return [ExecutionMode.CONTINUE_ON_FAILURE]
+
+    @property
+    def run_init_cleanup_at_step_level(self) -> bool:
+        """Whether the orchestrator runs the init and cleanup hooks at step level.
+
+        For orchestrators that run their steps in isolated step environments,
+        the run context cannot be shared between steps. In this case, the init
+        and cleanup hooks need to be run at step level for each individual step.
+
+        For orchestrators that run their steps in a shared environment with a
+        shared memory (e.g. the local orchestrator), the init and cleanup hooks
+        can be run at run level and this property should be overridden to return
+        True.
+
+        Returns:
+            Whether the orchestrator runs the init and cleanup hooks at step
+            level.
+        """
+        return True
+
+    @classmethod
+    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the init hook.
+
+        Args:
+            snapshot: The snapshot to run the init hook for.
+
+        Raises:
+            HookExecutionException: If the init hook fails.
+        """
+        # The lifetime of the run context starts when the init hook is executed
+        # and ends when the cleanup hook is executed
+        run_context = get_or_create_run_context()
+        init_hook_source = snapshot.pipeline_configuration.init_hook_source
+        init_hook_kwargs = snapshot.pipeline_configuration.init_hook_kwargs
+
+        # We only run the init hook once, if the (thread-local) run context
+        # associated with the current run has not been initialized yet. This
+        # allows us to run the init hook only once per run per execution
+        # environment (process, container, etc.).
+        if not run_context.initialized:
+            if not init_hook_source:
+                run_context.initialize(None)
+                return
+
+            logger.info("Executing the pipeline's init hook...")
+            try:
+                with temporary_environment(
+                    snapshot.pipeline_configuration.environment
+                ):
+                    run_state = load_and_run_hook(
+                        init_hook_source,
+                        hook_parameters=init_hook_kwargs,
+                        raise_on_error=True,
+                    )
+            except Exception as e:
+                raise HookExecutionException(
+                    f"Failed to execute init hook for pipeline "
+                    f"{snapshot.pipeline_configuration.name}"
+                ) from e
+
+            run_context.initialize(run_state)
+
+    @classmethod
+    def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+        """Runs the cleanup hook.
+
+        Args:
+            snapshot: The snapshot to run the cleanup hook for.
+        """
+        # The lifetime of the run context starts when the init hook is executed
+        # and ends when the cleanup hook is executed
+        if not RunContext._exists():
+            return
+
+        if (
+            cleanup_hook_source
+            := snapshot.pipeline_configuration.cleanup_hook_source
+        ):
+            logger.info("Executing the pipeline's cleanup hook...")
+            with temporary_environment(
+                snapshot.pipeline_configuration.environment
+            ):
+                load_and_run_hook(
+                    cleanup_hook_source,
+                    raise_on_error=False,
+                )
+
+        # Destroy the run context, so it's created anew for the next run
+        RunContext._clear()
 
     def _validate_execution_mode(
         self, snapshot: "PipelineSnapshotResponse"

@@ -34,8 +34,7 @@ def test_compiling_pipeline_with_invalid_run_name_fails(
 ):
     """Tests that compiling a pipeline with an invalid run name fails."""
     pipeline_instance = empty_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(ValueError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -54,8 +53,7 @@ def _no_step_pipeline():
 def test_compiling_pipeline_without_steps_fails(local_stack):
     """Tests that compiling a pipeline without steps fails."""
     pipeline_instance = _no_step_pipeline
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(ValueError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -71,8 +69,7 @@ def test_compiling_pipeline_with_missing_step_operator(
     pipeline_instance = one_step_pipeline(
         empty_step.configure(step_operator="s")
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -89,8 +86,7 @@ def test_compiling_pipeline_with_missing_experiment_tracker(
     pipeline_instance = one_step_pipeline(
         empty_step.configure(experiment_tracker="e")
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     with pytest.raises(StackValidationError):
         Compiler().compile(
             pipeline=pipeline_instance,
@@ -113,8 +109,7 @@ def test_pipeline_and_steps_dont_get_modified_during_compilation(
             "_empty_step": StepConfigurationUpdate(extra={"key": "new_value"})
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -148,8 +143,7 @@ def test_step_sorting(empty_step, local_stack):
         empty_step(id="step_1")
         empty_step(id="step_2", after="step_1")
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -204,8 +198,7 @@ def test_stack_component_settings_merging(
             )
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -252,8 +245,7 @@ def test_general_settings_merging(one_step_pipeline, empty_step, local_stack):
             )
         },
     )
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -299,8 +291,7 @@ def test_extra_merging(one_step_pipeline, empty_step, local_stack):
         steps={"_empty_step": StepConfigurationUpdate(extra=run_step_extra)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
 
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
@@ -349,16 +340,16 @@ def test_success_hook_merging(
     pipeline_instance.configure(on_success=pipeline_hook)
     step_instance_1.configure(on_success=step_hook)
 
+    success_hook_source, _ = resolve_and_validate_hook(step_hook)
     run_config = PipelineRunConfiguration(
         steps={
             "_empty_step": StepConfigurationUpdate(
-                success_hook_source=resolve_and_validate_hook(step_hook)
+                success_hook_source=success_hook_source
             )
         },
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -368,21 +359,20 @@ def test_success_hook_merging(
     compiled_pipeline_success_hook = (
         snapshot.pipeline_configuration.success_hook_source
     )
-    assert compiled_pipeline_success_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_pipeline_success_hook == resolved_hook
 
     compiled_step_1_success_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.success_hook_source
-    assert compiled_step_1_success_hook == resolve_and_validate_hook(step_hook)
+    resolved_hook, _ = resolve_and_validate_hook(step_hook)
+    assert compiled_step_1_success_hook == resolved_hook
 
     compiled_step_2_success_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.success_hook_source
-    assert compiled_step_2_success_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_step_2_success_hook == resolved_hook
 
 
 def test_failure_hook_merging(
@@ -400,16 +390,16 @@ def test_failure_hook_merging(
     pipeline_instance.configure(on_failure=pipeline_hook)
     step_instance_1.configure(on_failure=step_hook)
 
+    failure_hook_source, _ = resolve_and_validate_hook(step_hook)
     run_config = PipelineRunConfiguration(
         steps={
             "_empty_step": StepConfigurationUpdate(
-                failure_hook_source=resolve_and_validate_hook(step_hook)
+                failure_hook_source=failure_hook_source
             )
         },
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -419,21 +409,20 @@ def test_failure_hook_merging(
     compiled_pipeline_failure_hook = (
         snapshot.pipeline_configuration.failure_hook_source
     )
-    assert compiled_pipeline_failure_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_pipeline_failure_hook == resolved_hook
 
     compiled_step_1_failure_hook = snapshot.step_configurations[
         "_empty_step"
     ].config.failure_hook_source
-    assert compiled_step_1_failure_hook == resolve_and_validate_hook(step_hook)
+    resolved_hook, _ = resolve_and_validate_hook(step_hook)
+    assert compiled_step_1_failure_hook == resolved_hook
 
     compiled_step_2_failure_hook = snapshot.step_configurations[
         "_empty_step_2"
     ].config.failure_hook_source
-    assert compiled_step_2_failure_hook == resolve_and_validate_hook(
-        pipeline_hook
-    )
+    resolved_hook, _ = resolve_and_validate_hook(pipeline_hook)
+    assert compiled_step_2_failure_hook == resolved_hook
 
 
 def test_stack_component_settings_for_missing_component_are_ignored(
@@ -453,8 +442,7 @@ def test_stack_component_settings_for_missing_component_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -500,8 +488,7 @@ def test_invalid_settings_keys_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -551,8 +538,7 @@ def test_empty_settings_classes_are_ignored(
         steps={"_empty_step": StepConfigurationUpdate(settings=settings)},
     )
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     snapshot = Compiler().compile(
         pipeline=pipeline_instance,
         stack=local_stack,
@@ -585,8 +571,7 @@ def test_spec_compilation(local_stack):
     def pipeline_instance():
         s2(s1())
 
-    with pipeline_instance:
-        pipeline_instance.entrypoint()
+    pipeline_instance.prepare()
     spec = (
         Compiler()
         .compile(
@@ -605,7 +590,7 @@ def test_spec_compilation(local_stack):
                 {
                     "source": "tests.unit.config.test_compiler.s1",
                     "upstream_steps": [],
-                    "pipeline_parameter_name": "s1",
+                    "invocation_id": "s1",
                 },
                 {
                     "source": "tests.unit.config.test_compiler.s2",
@@ -616,7 +601,7 @@ def test_spec_compilation(local_stack):
                             "output_name": "output",
                         }
                     },
-                    "pipeline_parameter_name": "s2",
+                    "invocation_id": "s2",
                 },
             ],
         }
@@ -652,8 +637,7 @@ def test_stack_component_shortcut_keys(
         settings={"orchestrator": shortcut_settings}
     )
 
-    with pipeline_instance_with_shortcut_settings:
-        pipeline_instance_with_shortcut_settings.entrypoint()
+    pipeline_instance_with_shortcut_settings.prepare()
 
     with does_not_raise():
         snapshot = Compiler().compile(
@@ -677,8 +661,7 @@ def test_stack_component_shortcut_keys(
         }
     )
 
-    with pipeline_instance_with_duplicate_settings:
-        pipeline_instance_with_duplicate_settings.entrypoint()
+    pipeline_instance_with_duplicate_settings.prepare()
 
     with pytest.raises(ValueError):
         snapshot = Compiler().compile(
@@ -686,3 +669,25 @@ def test_stack_component_shortcut_keys(
             stack=local_stack,
             run_configuration=PipelineRunConfiguration(),
         )
+
+
+def test_pipeline_parameters_are_stored_in_config(empty_step, local_stack):
+    """Tests that both configured and in-code parameters are stored in the
+    compiled pipeline configuration.
+    """
+
+    @pipeline
+    def _pipeline_with_params(a: int, b: int) -> None:
+        empty_step()
+
+    # Config params
+    _pipeline_with_params.configure(parameters={"a": 1})
+    # In-code params
+    _pipeline_with_params.prepare(b=2)
+
+    snapshot = Compiler().compile(
+        pipeline=_pipeline_with_params,
+        stack=local_stack,
+        run_configuration=PipelineRunConfiguration(),
+    )
+    assert snapshot.pipeline_configuration.parameters == {"a": 1, "b": 2}

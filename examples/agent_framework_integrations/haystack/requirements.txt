@@ -1,2 +1,4 @@
 haystack-ai>=2.0.0
-zenml
+zenml[local]
+jinja2>=3.1.0
+secure>=0.3.0

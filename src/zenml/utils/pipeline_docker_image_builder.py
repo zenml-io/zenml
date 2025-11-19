@@ -84,6 +84,7 @@ class PipelineDockerImageBuilder:
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
         code_repository: Optional["BaseCodeRepository"] = None,
+        extra_requirements_files: Dict[str, List[str]] = {},
     ) -> Tuple[str, Optional[str], Optional[str]]:
         """Builds (and optionally pushes) a Docker image to run a pipeline.
 
@@ -102,6 +103,10 @@ class PipelineDockerImageBuilder:
                 content or a file path.
             code_repository: The code repository from which files will be
                 downloaded.
+            extra_requirements_files: Extra requirements to install in the
+                Docker image. Each key is the name of a Python requirements file
+                to be created and the value is the list of requirements to be
+                installed.
 
         Returns:
             A tuple (image_digest, dockerfile, requirements):
@@ -169,6 +174,7 @@ class PipelineDockerImageBuilder:
                 include_files,
                 entrypoint,
                 extra_files,
+                extra_requirements_files,
             ]
         )
 
@@ -276,6 +282,7 @@ class PipelineDockerImageBuilder:
                 docker_settings=docker_settings,
                 stack=stack,
                 code_repository=code_repository,
+                extra_requirements_files=extra_requirements_files,
             )
 
             self._add_requirements_files(
@@ -311,9 +318,12 @@ class PipelineDockerImageBuilder:
                 # The default parent image is static and doesn't require a pull
                 # each time
                 pull_parent_image = False
-            elif docker_settings.dockerfile and not container_registry:
-                # We built a custom parent image and there was no container
-                # registry in the stack to push to, this is a local image
+            elif docker_settings.dockerfile and (
+                not container_registry or image_builder.is_building_locally
+            ):
+                # We built a custom parent image and there was either no
+                # container registry in the stack to push to or the image was
+                # built locally and not pushed, so this is a local image
                 pull_parent_image = False
             elif not image_builder.is_building_locally:
                 # Remote image builders always need to pull the image
@@ -412,6 +422,7 @@ class PipelineDockerImageBuilder:
         stack: "Stack",
         code_repository: Optional["BaseCodeRepository"] = None,
         log: bool = True,
+        extra_requirements_files: Dict[str, List[str]] = {},
     ) -> List[Tuple[str, str, List[str]]]:
         """Gathers and/or generates pip requirements files.
 
@@ -427,6 +438,10 @@ class PipelineDockerImageBuilder:
             code_repository: The code repository from which files will be
                 downloaded.
             log: If True, will log the requirements.
+            extra_requirements_files: Extra requirements to install in the
+                Docker image. Each key is the name of a Python requirements file
+                to be created and the value is the list of requirements to be
+                installed.
 
         Raises:
             RuntimeError: If the command to export the local python packages
@@ -440,6 +455,7 @@ class PipelineDockerImageBuilder:
             The files will be in the following order:
             - Packages installed in the local Python environment
             - Requirements defined by stack integrations
+            - Extra requirements files
             - Requirements defined by user integrations
             - Requirements exported from a pyproject.toml
             - User-defined requirements
@@ -549,6 +565,17 @@ class PipelineDockerImageBuilder:
                         "- Including stack requirements: %s",
                         ", ".join(f"`{r}`" for r in stack_requirements_list),
                     )
+
+        for filename, extra_requirements in extra_requirements_files.items():
+            requirements_list = sorted(extra_requirements)
+            requirements_file = "\n".join(requirements_list)
+            requirements_files.append((filename, requirements_file, []))
+            if log:
+                logger.info(
+                    "- Including extra requirements from file `%s`: %s",
+                    filename,
+                    ", ".join(f"`{r}`" for r in requirements_list),
+                )
 
         # Generate requirements file for all required integrations
         integration_requirements = set(
@@ -766,6 +793,9 @@ class PipelineDockerImageBuilder:
             lines.append(f"RUN chown -R {docker_settings.user} .")
             # Switch back to specified user for subsequent instructions
             lines.append(f"USER {docker_settings.user}")
+
+        for key, value in docker_settings.runtime_environment.items():
+            lines.append(f"ENV {key.upper()}='{value}'")
 
         if entrypoint:
             lines.append(f"ENTRYPOINT {entrypoint}")

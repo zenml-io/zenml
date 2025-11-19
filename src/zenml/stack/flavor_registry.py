@@ -67,6 +67,7 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
         )
+        from zenml.deployers import DockerDeployerFlavor, LocalDeployerFlavor
         from zenml.image_builders import LocalImageBuilderFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
@@ -83,6 +84,8 @@ class FlavorRegistry:
             GCPContainerRegistryFlavor,
             GitHubContainerRegistryFlavor,
             LocalImageBuilderFlavor,
+            DockerDeployerFlavor,
+            LocalDeployerFlavor,
         ]
         return flavors
 

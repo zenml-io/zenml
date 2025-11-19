@@ -30,7 +30,7 @@ from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
+from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     InputSpec,
@@ -43,6 +43,7 @@ from zenml.exceptions import StackValidationError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
+from zenml.utils.warnings import WARNING_CONTROLLER, WarningCodes
 
 if TYPE_CHECKING:
     from zenml.pipelines.pipeline_definition import Pipeline
@@ -123,8 +124,14 @@ class Compiler:
                 environment=pipeline_environment,
                 secrets=pipeline_secrets,
                 settings=pipeline_settings,
+                parameters=pipeline._parameters,
                 merge=False,
             )
+
+        # If we're compiling a dynamic pipeline, the steps are only templates
+        # and might not have all inputs defined, so we skip the input
+        # validation.
+        skip_input_validation = pipeline.is_dynamic
 
         steps = {
             invocation_id: self._compile_step_invocation(
@@ -132,6 +139,7 @@ class Compiler:
                 stack=stack,
                 step_config=(run_configuration.steps or {}).get(invocation_id),
                 pipeline_configuration=pipeline.configuration,
+                skip_input_validation=skip_input_validation,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
                 pipeline=pipeline
@@ -153,6 +161,7 @@ class Compiler:
 
         snapshot = PipelineSnapshotBase(
             run_name_template=run_name,
+            is_dynamic=pipeline.is_dynamic,
             pipeline_configuration=pipeline.configuration,
             step_configurations=steps,
             client_environment=get_run_environment_dict(),
@@ -369,6 +378,42 @@ class Compiler:
                 f"steps in this pipeline: {available_steps}."
             )
 
+    @staticmethod
+    def _validate_docker_settings_usage(
+        docker_settings: "BaseSettings | None",
+        stack: "Stack",
+    ) -> None:
+        """Validates that docker settings are used with a proper stack.
+
+        Generates warning for improper docker settings usage or returns.
+
+        Args:
+            docker_settings: The docker settings specified for the step/pipeline.
+            stack: The stack the settings are validated against.
+
+        """
+        if not docker_settings:
+            return
+
+        warning_message = (
+            "You are specifying docker settings but no component in your stack "
+            "makes use of them. Consider switching stacks or removing the "
+            "settings."
+        )
+
+        used_by_orchestrator = stack.orchestrator.flavor != "local"
+        used_by_step_operator = stack.step_operator is not None
+        used_by_deployer = (
+            stack.deployer is not None and stack.deployer.flavor != "local"
+        )
+
+        if not (
+            used_by_orchestrator or used_by_step_operator or used_by_deployer
+        ):
+            WARNING_CONTROLLER.info(
+                warning_code=WarningCodes.ZML002, message=warning_message
+            )
+
     def _filter_and_validate_settings(
         self,
         settings: Dict[str, "BaseSettings"],
@@ -390,6 +435,8 @@ class Compiler:
         Returns:
             The filtered settings.
         """
+        from zenml.config.constants import DOCKER_SETTINGS_KEY
+
         validated_settings = {}
 
         for key, settings_instance in settings.items():
@@ -397,9 +444,10 @@ class Compiler:
             try:
                 settings_instance = resolver.resolve(stack=stack)
             except KeyError:
-                logger.info(
-                    "Not including stack component settings with key `%s`.",
-                    key,
+                WARNING_CONTROLLER.info(
+                    warning_code=WarningCodes.ZML001,
+                    message="Not including stack component settings with key {key}",
+                    key=key,
                 )
                 continue
 
@@ -429,6 +477,11 @@ class Compiler:
 
             validated_settings[key] = settings_instance
 
+        self._validate_docker_settings_usage(
+            stack=stack,
+            docker_settings=settings.get(DOCKER_SETTINGS_KEY),
+        )
+
         return validated_settings
 
     def _get_step_spec(
@@ -454,7 +507,7 @@ class Compiler:
             source=invocation.step.resolve(),
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
-            pipeline_parameter_name=invocation.id,
+            invocation_id=invocation.id,
         )
 
     def _compile_step_invocation(
@@ -463,6 +516,7 @@ class Compiler:
         stack: "Stack",
         step_config: Optional["StepConfigurationUpdate"],
         pipeline_configuration: "PipelineConfiguration",
+        skip_input_validation: bool = False,
     ) -> Step:
         """Compiles a ZenML step.
 
@@ -471,6 +525,7 @@ class Compiler:
             stack: The stack on which the pipeline will be run.
             step_config: Run configuration for the step.
             pipeline_configuration: Configuration for the pipeline.
+            skip_input_validation: If True, will skip the input validation.
 
         Returns:
             The compiled step.
@@ -480,35 +535,41 @@ class Compiler:
         invocation.step = copy.deepcopy(invocation.step)
 
         step = invocation.step
-        if step_config:
-            step._apply_configuration(
-                step_config, runtime_parameters=invocation.parameters
+        with step._suspend_dynamic_configuration():
+            if step_config:
+                step._apply_configuration(
+                    step_config, runtime_parameters=invocation.parameters
+                )
+
+            # Apply the dynamic configuration (which happened while executing the
+            # pipeline function) after all other step-specific configurations.
+            step._merge_dynamic_configuration()
+
+            convert_component_shortcut_settings_keys(
+                step.configuration.settings, stack=stack
+            )
+            step_spec = self._get_step_spec(invocation=invocation)
+            step_secrets = secret_utils.resolve_and_verify_secrets(
+                step.configuration.secrets
+            )
+            step_settings = self._filter_and_validate_settings(
+                settings=step.configuration.settings,
+                configuration_level=ConfigurationLevel.STEP,
+                stack=stack,
+            )
+            step.configure(
+                secrets=step_secrets,
+                settings=step_settings,
+                merge=False,
             )
 
-        convert_component_shortcut_settings_keys(
-            step.configuration.settings, stack=stack
-        )
-        step_spec = self._get_step_spec(invocation=invocation)
-        step_secrets = secret_utils.resolve_and_verify_secrets(
-            step.configuration.secrets
-        )
-        step_settings = self._filter_and_validate_settings(
-            settings=step.configuration.settings,
-            configuration_level=ConfigurationLevel.STEP,
-            stack=stack,
-        )
-        step.configure(
-            secrets=step_secrets,
-            settings=step_settings,
-            merge=False,
-        )
-
-        parameters_to_ignore = (
-            set(step_config.parameters or {}) if step_config else set()
-        )
-        step_configuration_overrides = invocation.finalize(
-            parameters_to_ignore=parameters_to_ignore
-        )
+            parameters_to_ignore = (
+                set(step_config.parameters or {}) if step_config else set()
+            )
+            step_configuration_overrides = invocation.finalize(
+                parameters_to_ignore=parameters_to_ignore,
+                skip_input_validation=skip_input_validation,
+            )
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
                 pipeline_configuration=pipeline_configuration
@@ -533,8 +594,15 @@ class Compiler:
             pipeline: The pipeline of which to sort the invocations
 
         Returns:
-            The sorted steps.
+            The sorted step invocations.
         """
+        if pipeline.is_dynamic:
+            # In dynamic pipelines, we require the static invocations to be
+            # sorted the same way they were passed in `pipeline.depends_on`, as
+            # we index this list later to figure out the correct template for
+            # each step invocation.
+            return list(pipeline.invocations.items())
+
         from zenml.orchestrators.dag_runner import reverse_dag
         from zenml.orchestrators.topsort import topsorted_layers
 
@@ -634,7 +702,7 @@ class Compiler:
         Raises:
             ValueError: If the pipeline has no steps.
         """
-        if not step_specs:
+        if not step_specs and not pipeline.is_dynamic:
             raise ValueError(
                 f"Pipeline '{pipeline.name}' cannot be compiled because it has "
                 f"no steps. Please make sure that your steps are decorated "
@@ -643,12 +711,24 @@ class Compiler:
                 "https://docs.zenml.io/user-guides/starter-guide"
             )
 
-        additional_spec_args: Dict[str, Any] = {
-            "source": pipeline.resolve(),
-            "parameters": pipeline._parameters,
-        }
+        output_specs = [
+            OutputSpec(
+                step_name=output_artifact.invocation_id,
+                output_name=output_artifact.output_name,
+            )
+            for output_artifact in pipeline._output_artifacts
+        ]
+        input_schema = pipeline._compute_input_schema()
+        output_schema = pipeline._compute_output_schema()
 
-        return PipelineSpec(steps=step_specs, **additional_spec_args)
+        return PipelineSpec(
+            steps=step_specs,
+            outputs=output_specs,
+            output_schema=output_schema,
+            source=pipeline.resolve(),
+            parameters=pipeline._parameters,
+            input_schema=input_schema,
+        )
 
 
 def convert_component_shortcut_settings_keys(

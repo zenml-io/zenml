@@ -161,6 +161,7 @@ class StackComponentType(StrEnum):
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
+    DEPLOYER = "deployer"
 
     @property
     def plural(self) -> str:
@@ -396,6 +397,7 @@ class TaggableResourceTypes(StrEnum):
     PIPELINE_RUN = "pipeline_run"
     RUN_TEMPLATE = "run_template"
     PIPELINE_SNAPSHOT = "pipeline_snapshot"
+    DEPLOYMENT = "deployment"
 
 
 class ResponseUpdateStrategy(StrEnum):
@@ -414,6 +416,41 @@ class MetadataResourceTypes(StrEnum):
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
     SCHEDULE = "schedule"
+
+
+class VisualizationResourceTypes(StrEnum):
+    """Resource types that support curated visualizations.
+
+    Curated visualizations can be attached to these ZenML resources to provide
+    contextual dashboards and visual insights throughout the ML lifecycle:
+
+    - **DEPLOYMENT**: Server-side pipeline deployments - surface visualizations
+      on deployment monitoring dashboards and status pages
+    - **MODEL**: ZenML model entities - surface model evaluation dashboards and
+      performance summaries directly on the model detail pages
+    - **PIPELINE**: Pipeline definitions - associate visualizations with pipeline
+      configurations for reusable visual documentation
+    - **PIPELINE_RUN**: Pipeline execution runs - attach visualizations to specific
+      run results for detailed analysis and debugging
+    - **PIPELINE_SNAPSHOT**: Pipeline snapshots - link visualizations to captured
+      pipeline configurations for version comparison and historical analysis
+    - **PROJECT**: Project-level overviews - provide high-level project dashboards
+      and KPI visualizations for cross-pipeline insights
+    """
+
+    DEPLOYMENT = "deployment"  # Server-side pipeline deployments
+    MODEL = "model"  # ZenML models
+    PIPELINE = "pipeline"  # Pipeline definitions
+    PIPELINE_RUN = "pipeline_run"  # Execution runs
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"  # Snapshot configurations
+    PROJECT = "project"  # Project-level dashboards
+
+
+class CuratedVisualizationSize(StrEnum):
+    """Layout size options for curated visualizations."""
+
+    FULL_WIDTH = "full_width"
+    HALF_WIDTH = "half_width"
 
 
 class SecretResourceTypes(StrEnum):
@@ -493,7 +530,33 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
+class DeploymentStatus(StrEnum):
+    """Status of a deployment."""
+
+    UNKNOWN = "unknown"
+    PENDING = "pending"
+    RUNNING = "running"
+    ABSENT = "absent"
+    ERROR = "error"
+
+
 class PipelineRunTriggeredByType(StrEnum):
     """All possible types that can trigger a pipeline run."""
 
     STEP_RUN = "step_run"
+    DEPLOYMENT = "deployment"
+
+
+class KubernetesServiceType(StrEnum):
+    """Kubernetes Service types for the Kubernetes deployer."""
+
+    LOAD_BALANCER = "LoadBalancer"
+    NODE_PORT = "NodePort"
+    CLUSTER_IP = "ClusterIP"
+
+
+class StepRuntime(StrEnum):
+    """All possible runtime modes for a step."""
+
+    INLINE = "inline"
+    ISOLATED = "isolated"

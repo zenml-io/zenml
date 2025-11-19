@@ -124,7 +124,7 @@ def update_artifact(
             remove_tags=remove_tag,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Artifact '{artifact.id}' updated.")
 
@@ -170,6 +170,52 @@ def list_artifact_versions(
         columns=columns,
         output_format=output_format,
     )
+
+
+@version.command("describe", help="Show details about an artifact version.")
+@click.argument("name_id_or_prefix")
+@click.option(
+    "--version",
+    "-v",
+    type=str,
+    help=(
+        "The version of the artifact to get. Only used if "
+        "`name_id_or_prefix` is the name of the artifact. If not specified, "
+        "the latest version is returned."
+    ),
+)
+def describe_artifact_version(
+    name_id_or_prefix: str,
+    version: Optional[str] = None,
+) -> None:
+    """Show details about an artifact version.
+
+    Usage example:
+    ```
+    zenml artifact version describe <NAME> -v <VERSION>
+    zenml artifact version describe <ARTIFACT_VERSION_ID>
+    ```
+
+    Args:
+        name_id_or_prefix: Either the ID of the artifact version or the name of
+            the artifact.
+        version: The version of the artifact to get. Only used if
+            `name_id_or_prefix` is the name of the artifact. If not specified,
+            the latest version is returned.
+    """
+    client = Client()
+    try:
+        artifact_version = client.get_artifact_version(
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+        )
+    except (KeyError, ValueError) as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.print_pydantic_model(
+            title=f"Artifact version '{artifact_version.artifact.name}' (version: {artifact_version.version})",
+            model=artifact_version,
+        )
 
 
 @version.command("update", help="Update an artifact version.")
@@ -228,7 +274,7 @@ def update_artifact_version(
             remove_tags=remove_tag,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 

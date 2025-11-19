@@ -9,7 +9,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   fetch-versions:
-    if: github.event.created && github.repository == 'zenml-io/zenml'
+    if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     outputs:
       old_version: ${{ steps.old-version.outputs.old_version }}
@@ -73,6 +73,8 @@ jobs:
           uv pip check || true
       # Alembic migration file
       - name: Run Alembic merge
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         shell: bash
         run: |
           alembic merge -m "Release" heads --rev-id ${{ needs.fetch-versions.outputs.new_version }}
@@ -100,6 +102,8 @@ jobs:
           git add examples/quickstart
       # Generate and append release notes
       - name: Generate release notes
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${{ needs.fetch-versions.outputs.new_version }} -F target_commitish=${{ github.sha }} -F previous_tag_name=${{ needs.fetch-versions.outputs.old_version }} | jq -r '.body')
           {
@@ -115,10 +119,16 @@ jobs:
       # Push the changes
       - name: Push the changes
         run: |
-          git commit -m "Adding the new version to the necessary files."
-          git push origin HEAD:${{ github.ref }}
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Adding the new version to the necessary files."
+            git push origin HEAD:${{ github.ref }}
+          fi
       # Create a PR
       - name: Create a pull request
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           gh pr create --base "develop" --head "${{ github.ref }}" \
             --title "Prepare release ${{ needs.fetch-versions.outputs.new_version }}" \
@@ -126,6 +136,8 @@ jobs:
             --label "internal" --label "python" --label "run-slow-ci" --label "release"
       # Send a message to Discord to alert everyone for the release
       - name: Send message to Discord
+        # Only run this part once when the release branch is created
+        if: ${{ github.event.created }}
         run: |
           curl -X POST \
            -H "Content-Type: application/json" \
@@ -156,25 +168,7 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=release-cloudbuild-preparation.yaml \
-            --substitutions=_ZENML_BRANCH=${{ github.ref }},_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
-      # Sign in to AWS
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-quickstart-ecr
-          aws-region: eu-central-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        run: |
-          aws ecr get-login-password --region eu-central-1 | docker login 715803424590.dkr.ecr.eu-central-1.amazonaws.com --username AWS --password-stdin
-      # Publish the AWS image
-      - name: Pull quickstart image from Dockerhub
-        run: |
-          docker pull zenmldocker/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
-      - name: Push quickstart image to ECR
-        run: |
-          docker tag zenmldocker/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }} 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
-          docker push 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws-${{ needs.fetch-versions.outputs.new_version }}
+            --substitutions=_ZENML_NEW_VERSION=${{ needs.fetch-versions.outputs.new_version }}
   setup-prep-release-tenant:
     needs: [fetch-versions, build-test-images]
     env:
@@ -209,36 +203,37 @@ jobs:
     env:
       ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
       ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - cloud: aws
-            parent_image: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/prepare-release:quickstart-aws
           - cloud: azure
-            parent_image: zenmldocker/prepare-release:quickstart-azure
           - cloud: gcp
-            parent_image: zenmldocker/prepare-release:quickstart-gcp
     steps:
-      # Check out the code
+      - name: Maximize space for Docker
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 20000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          build-mount-path: /var/lib/docker/
+      - name: Reload Docker
+        run: sudo systemctl restart docker
       - name: Checkout code
         uses: actions/checkout@v4.2.2
-      # Setting up Python
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      # ZenML Integrations
-      - name: Install ZenML and the required integrations
+      - name: Install ZenML
         run: |
           scripts/install-zenml-dev.sh --system --integrations "no"
-      # Run the Quickstart pipeline
-      - name: Run on ${{ matrix.cloud }}
-        run: |-
-          cd examples/quickstart
-          zenml stack set ${{ matrix.cloud }}
-          sed -i "s|parent_image:.*|parent_image: \"${{ matrix.parent_image }}-${{ needs.fetch-versions.outputs.new_version }}\"|" "configs/training_${{ matrix.cloud }}.yaml"
-          sed -i 's|zenml\[server\]==[^[:space:]]*|git+https://github.com/zenml-io/zenml.git@${{ github.ref }}#egg=zenml[server]|g' requirements_${{ matrix.cloud }}.txt
-          pip install -r requirements_${{ matrix.cloud }}.txt
-          zenml integration install ${{ matrix.cloud }} -y
-          python run.py --model_type=t5-small --no-cache
+      - name: Run Quickstart release flow on ${{ matrix.cloud }}
+        run: |
+          scripts/qs_run_release_flow.sh \
+            --cloud "${{ matrix.cloud }}" \
+            --new-version "${{ needs.fetch-versions.outputs.new_version }}"

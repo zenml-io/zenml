@@ -30,6 +30,10 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
 from zenml.zen_stores.schemas.device_schemas import OAuthDeviceSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
+from zenml.zen_stores.schemas.deployment_schemas import DeploymentSchema
+from zenml.zen_stores.schemas.curated_visualization_schemas import (
+    CuratedVisualizationSchema,
+)
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
 from zenml.zen_stores.schemas.server_settings_schemas import ServerSettingsSchema
@@ -86,6 +90,8 @@ __all__ = [
     "BaseSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
+    "DeploymentSchema",
+    "CuratedVisualizationSchema",
     "EventSourceSchema",
     "FlavorSchema",
     "LogsSchema",

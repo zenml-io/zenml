@@ -149,7 +149,7 @@ def refresh_run_status(
                 if step_status != current_steps[step_name].status:
                     try:
                         zen_store.update_run_step(
-                            step_run_id=run.steps[step_name].id,
+                            step_run_id=current_steps[step_name].id,
                             step_run_update=StepRunUpdate(status=step_status),
                         )
                     except Exception as e:

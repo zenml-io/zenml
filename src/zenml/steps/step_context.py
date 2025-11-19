@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Step context class."""
 
+import contextvars
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,8 +25,11 @@ from typing import (
     Type,
 )
 
+from typing_extensions import Self
+
 from zenml.exceptions import StepContextError
 from zenml.logger import get_logger
+from zenml.utils import context_utils
 from zenml.utils.callback_registry import CallbackRegistry
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -54,18 +58,65 @@ def get_step_context() -> "StepContext":
     Raises:
         RuntimeError: If no step is currently running.
     """
-    if StepContext._exists():
-        return StepContext()  # type: ignore
+    if ctx := StepContext.get():
+        return ctx
+
     raise RuntimeError(
         "The step context is only available inside a step function."
     )
 
 
-class StepContext(metaclass=SingletonMetaClass):
-    """Provides additional context inside a step function.
+def get_or_create_run_context() -> "RunContext":
+    """Get or create the context of the currently running pipeline.
 
-    This singleton class is used to access information about the current run,
-    step run, or its outputs inside a step function.
+    Returns:
+        The context of the currently running pipeline.
+    """
+    return RunContext()
+
+
+class RunContext(metaclass=SingletonMetaClass):
+    """Provides context shared between all steps in a pipeline run."""
+
+    def __init__(self) -> None:
+        """Create the run context."""
+        self.initialized = False
+        self._state: Optional[Any] = None
+
+    @property
+    def state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+
+        Raises:
+            RuntimeError: If the run context is not initialized.
+        """
+        if not self.initialized:
+            raise RuntimeError(
+                "Run context not initialized. The run state is only available "
+                "in the context of a running pipeline."
+            )
+        return self._state
+
+    def initialize(self, state: Optional[Any]) -> None:
+        """Initialize the run context.
+
+        Args:
+            state: Optional state for the pipeline run
+
+        Raises:
+            RuntimeError: If the run context is already initialized.
+        """
+        if self.initialized:
+            raise RuntimeError("Run context already initialized.")
+        self._state = state
+        self.initialized = True
+
+
+class StepContext(context_utils.BaseContext):
+    """Provides additional context inside a step function.
 
     Usage example:
 
@@ -88,6 +139,8 @@ class StepContext(metaclass=SingletonMetaClass):
         ...
     ```
     """
+
+    __context_var__ = contextvars.ContextVar("step_context")
 
     def __init__(
         self,
@@ -114,6 +167,8 @@ class StepContext(metaclass=SingletonMetaClass):
                 output artifacts do not match.
         """
         from zenml.client import Client
+
+        super().__init__()
 
         try:
             pipeline_run = Client().get_pipeline_run(pipeline_run.id)
@@ -166,6 +221,15 @@ class StepContext(metaclass=SingletonMetaClass):
             f"run '{self.pipeline_run.id}': This pipeline run does not have "
             f"a pipeline associated with it."
         )
+
+    @property
+    def pipeline_state(self) -> Optional[Any]:
+        """Returns the pipeline state.
+
+        Returns:
+            The pipeline state or None.
+        """
+        return get_or_create_run_context().state
 
     @property
     def model(self) -> "Model":
@@ -402,6 +466,30 @@ class StepContext(metaclass=SingletonMetaClass):
         if not output.tags:
             return
         output.tags = [tag for tag in output.tags if tag not in tags]
+
+    def __enter__(self) -> Self:
+        """Enter the step context.
+
+        Raises:
+            RuntimeError: If the step context has already been entered.
+
+        Returns:
+            The step context object.
+        """
+        if self._token is not None:
+            raise RuntimeError(
+                "Running a step from within another step is not allowed."
+            )
+        return super().__enter__()
+
+    def __exit__(self, *_: Any) -> None:
+        """Exit the step context.
+
+        Args:
+            *_: Unused keyword arguments.
+        """
+        self._cleanup_registry.execute_callbacks(raise_on_exception=False)
+        super().__exit__(*_)
 
 
 class StepContextOutput:

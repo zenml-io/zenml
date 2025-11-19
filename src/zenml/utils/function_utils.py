@@ -143,7 +143,7 @@ def _cli_wrapped_function(func: F) -> F:
     )
     invalid_types = {}
     for arg_name, arg_type, arg_default in input_args_dict:
-        if _is_valid_optional_arg(arg_type):
+        if arg_type is not None and _is_valid_optional_arg(arg_type):
             arg_type = arg_type.__args__[0]
         arg_name = _cli_arg_name(arg_name)
         if arg_type is bool:
@@ -156,7 +156,7 @@ def _cli_wrapped_function(func: F) -> F:
                     required=False,
                 )
             )
-        elif _is_valid_collection_arg(arg_type):
+        elif arg_type is not None and _is_valid_collection_arg(arg_type):
             member_type = arg_type.__args__[0]
             options.append(
                 click.option(

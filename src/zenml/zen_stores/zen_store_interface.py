@@ -48,7 +48,14 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    CuratedVisualizationRequest,
+    CuratedVisualizationResponse,
+    CuratedVisualizationUpdate,
     DeployedStack,
+    DeploymentFilter,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentUpdate,
     EventSourceFilter,
     EventSourceRequest,
     EventSourceResponse,
@@ -89,7 +96,7 @@ from zenml.models import (
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
-    PipelineSnapshotTriggerRequest,
+    PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
     PipelineUpdate,
     ProjectFilter,
@@ -132,6 +139,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -1313,7 +1321,8 @@ class ZenStoreInterface(ABC):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
-            include_config_schema: Whether the config schema will be filled.
+            include_config_schema: Whether to include the config schema in the
+                response.
 
         Returns:
             The snapshot.
@@ -1368,19 +1377,156 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def trigger_snapshot(
+    def run_snapshot(
         self,
         snapshot_id: UUID,
-        trigger_request: PipelineSnapshotTriggerRequest,
+        run_request: PipelineSnapshotRunRequest,
     ) -> PipelineRunResponse:
-        """Trigger a snapshot.
+        """Run a snapshot.
 
         Args:
-            snapshot_id: The ID of the snapshot to trigger.
-            trigger_request: Configuration for the trigger.
+            snapshot_id: The ID of the snapshot to run.
+            run_request: Configuration for the run.
 
         Returns:
-            Model of the pipeline run.
+            The created pipeline run.
+        """
+
+    # -------------------- Deployments --------------------
+
+    @abstractmethod
+    def create_deployment(
+        self, deployment: DeploymentRequest
+    ) -> DeploymentResponse:
+        """Create a new deployment.
+
+        Args:
+            deployment: The deployment to create.
+
+        Returns:
+            The newly created deployment.
+
+        Raises:
+            EntityExistsError: If a deployment with the same name already
+                exists in the same project.
+        """
+
+    @abstractmethod
+    def get_deployment(
+        self, deployment_id: UUID, hydrate: bool = True
+    ) -> DeploymentResponse:
+        """Get a deployment with a given ID.
+
+        Args:
+            deployment_id: ID of the deployment.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def list_deployments(
+        self,
+        deployment_filter_model: DeploymentFilter,
+        hydrate: bool = False,
+    ) -> Page[DeploymentResponse]:
+        """List all deployments matching the given filter criteria.
+
+        Args:
+            deployment_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all deployments matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_deployment(
+        self, deployment_id: UUID, deployment_update: DeploymentUpdate
+    ) -> DeploymentResponse:
+        """Update a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to update.
+            deployment_update: The update to apply.
+
+        Returns:
+            The updated deployment.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    @abstractmethod
+    def delete_deployment(self, deployment_id: UUID) -> None:
+        """Delete a deployment.
+
+        Args:
+            deployment_id: The ID of the deployment to delete.
+
+        Raises:
+            KeyError: If the deployment does not exist.
+        """
+
+    # -------------------- Curated visualizations --------------------
+
+    @abstractmethod
+    def create_curated_visualization(
+        self, visualization: CuratedVisualizationRequest
+    ) -> CuratedVisualizationResponse:
+        """Create a new curated visualization.
+
+        Args:
+            visualization: The curated visualization to create.
+
+        Returns:
+            The created curated visualization.
+        """
+
+    @abstractmethod
+    def get_curated_visualization(
+        self, visualization_id: UUID, hydrate: bool = True
+    ) -> CuratedVisualizationResponse:
+        """Get a curated visualization by ID.
+
+        Args:
+            visualization_id: The ID of the curated visualization to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The curated visualization with the given ID.
+        """
+
+    @abstractmethod
+    def update_curated_visualization(
+        self,
+        visualization_id: UUID,
+        visualization_update: CuratedVisualizationUpdate,
+    ) -> CuratedVisualizationResponse:
+        """Update a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to update.
+            visualization_update: The update to apply to the curated visualization.
+
+        Returns:
+            The updated curated visualization.
+        """
+
+    @abstractmethod
+    def delete_curated_visualization(self, visualization_id: UUID) -> None:
+        """Delete a curated visualization.
+
+        Args:
+            visualization_id: The ID of the curated visualization to delete.
         """
 
     # -------------------- Run templates --------------------
@@ -2436,6 +2582,19 @@ class ZenStoreInterface(ABC):
             KeyError: if the step run doesn't exist.
         """
 
+    @abstractmethod
+    def update_step_heartbeat(
+        self, step_run_id: UUID
+    ) -> StepHeartbeatResponse:
+        """Updates a step run heartbeat.
+
+        Args:
+            step_run_id: The ID of the step to update.
+
+        Returns:
+            The step heartbeat response.
+        """
+
     # -------------------- Triggers  --------------------
 
     @abstractmethod
@@ -3043,12 +3202,12 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def delete_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
     ) -> None:
         """Deletes a tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to delete.
+            tag_id: id of the tag to delete.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -3057,13 +3216,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def get_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be retrieved.
+            tag_id: id of the tag to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3094,13 +3253,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def update_tag(
         self,
-        tag_name_or_id: Union[str, UUID],
+        tag_id: UUID,
         tag_update_model: TagUpdate,
     ) -> TagResponse:
         """Update tag.
 
         Args:
-            tag_name_or_id: name or id of the tag to be updated.
+            tag_id: id of the tag to be updated.
             tag_update_model: Tag to use for the update.
 
         Returns:

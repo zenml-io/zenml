@@ -91,7 +91,7 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
     try:
         tag = Client().create_tag(**request_dict)
     except (EntityExistsError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     cli_utils.print_pydantic_models(
         [tag],
@@ -160,9 +160,13 @@ def delete_tag(
         yes: If set, don't ask for confirmation.
     """
     try:
-        tagged_count = Client().get_tag(tag_name_or_id).tagged_count
+        tagged_count = (
+            Client()
+            .get_tag(tag_name_or_id, allow_name_prefix_match=False)
+            .tagged_count
+        )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     if not yes or tagged_count > 0:
         confirmation = cli_utils.confirmation(
@@ -182,6 +186,6 @@ def delete_tag(
             tag_name_or_id=tag_name_or_id,
         )
     except (KeyError, ValueError) as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Tag '{tag_name_or_id}' deleted.")

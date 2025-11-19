@@ -44,15 +44,15 @@ zenml info -p tensorflow
 The output should look something like this:
 
 ```yaml
-ZENML_LOCAL_VERSION: 0.40.2
-ZENML_SERVER_VERSION: 0.40.2
+ZENML_LOCAL_VERSION: 0.90.0
+ZENML_SERVER_VERSION: 0.90.0
 ZENML_SERVER_DATABASE: mysql
 ZENML_SERVER_DEPLOYMENT_TYPE: alpha
 ZENML_CONFIG_DIR: /Users/my_username/Library/Application Support/zenml
 ZENML_LOCAL_STORE_DIR: /Users/my_username/Library/Application Support/zenml/local_stores
 ZENML_SERVER_URL: https://someserver.zenml.io
 ZENML_ACTIVE_REPOSITORY_ROOT: /Users/my_username/coding/zenml/repos/zenml
-PYTHON_VERSION: 3.9.13
+PYTHON_VERSION: 3.11.3
 ENVIRONMENT: native
 SYSTEM_INFO: {'os': 'mac', 'mac_version': '13.2'}
 ACTIVE_STACK: default

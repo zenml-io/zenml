@@ -18,7 +18,7 @@ In an ML project, you will typically have the following roles:
 The above is an estimation of roles that you might have in your team. In your case, the names might be different or there might be more roles, but you can relate the responbilities we discuss in this document to your own project loosely.
 
 {% hint style="info" %}
-You can create [Roles in ZenML Pro](https://docs.zenml.io/pro/core-concepts/roles) with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure.
+You can create [Roles in ZenML Pro](https://docs.zenml.io/pro/access-management/roles) with a given set of permissions and assign them to either Users or Teams that represent your real-world team structure.
 {% endhint %}
 
 ## Service Connectors: Gateways to External Services
@@ -41,7 +41,7 @@ On the other hand, the `MLOpsPlatformEngineer` role has the permissions to creat
 ![MLOps Platform Engineer Permissions](../../.gitbook/assets/platform_engineer_connector_role.png)
 
 {% hint style="info" %}
-Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](https://docs.zenml.io/pro/core-concepts/roles).
+Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](https://docs.zenml.io/pro/access-management/roles).
 {% endhint %}
 
 Learn more about the best practices in managing credentials and recommended roles in our [Managing Stacks and Components guide](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment).

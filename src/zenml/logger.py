@@ -240,69 +240,71 @@ def set_root_verbosity() -> None:
         get_logger(__name__).debug("Logging NOTSET")
 
 
+def wrapped_print(*args: Any, **kwargs: Any) -> None:
+    """Wrapped print function.
+
+    Args:
+        *args: Arguments to print
+        **kwargs: Keyword arguments for print
+    """
+    original_print = getattr(builtins, "_zenml_original_print")
+
+    file_arg = kwargs.get("file", sys.stdout)
+
+    # IMPORTANT: Don't intercept internal calls to any objects
+    # other than sys.stdout and sys.stderr. This is especially
+    # critical for handling tracebacks. The default logging
+    # formatter uses StringIO to format tracebacks, we don't
+    # want to intercept it and create a LogRecord about it.
+    if file_arg not in (sys.stdout, sys.stderr):
+        original_print(*args, **kwargs)
+
+    # Convert print arguments to message
+    message = " ".join(str(arg) for arg in args)
+
+    # Call active handlers first (for storage)
+    if message.strip():
+        handlers = logging_handlers.get()
+
+        for handler in handlers:
+            try:
+                # Create a LogRecord for the handler
+                record = logging.LogRecord(
+                    name="print",
+                    level=logging.ERROR
+                    if file_arg == sys.stderr
+                    else logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg=message,
+                    args=(),
+                    exc_info=None,
+                )
+                # Check if handler's level would accept this record
+                if record.levelno >= handler.level:
+                    handler.emit(record)
+            except Exception:
+                # Don't let handler errors break print
+                pass
+
+    if step_names_in_console.get():
+        message = _add_step_name_to_message(message)
+
+    # Then call original print for console display
+    original_print(message, *args[1:], **kwargs)
+
+
 def setup_global_print_wrapping() -> None:
     """Set up global print() wrapping with context-aware handlers."""
-    # Check if we should capture prints
     capture_prints = handle_bool_env_var(
         ENV_ZENML_CAPTURE_PRINTS, default=True
     )
 
-    if not capture_prints:
+    if not capture_prints or hasattr(__builtins__, "_zenml_original_print"):
         return
-
-    # Check if already wrapped to avoid double wrapping
-    if hasattr(__builtins__, "_zenml_original_print"):
-        return
-
-    original_print = builtins.print
-
-    def wrapped_print(*args: Any, **kwargs: Any) -> None:
-        file_arg = kwargs.get("file", sys.stdout)
-
-        # IMPORTANT: Don't intercept internal calls to any objects
-        # other than sys.stdout and sys.stderr. This is especially
-        # critical for handling tracebacks. The default logging
-        # formatter uses StringIO to format tracebacks, we don't
-        # want to intercept it and create a LogRecord about it.
-        if file_arg not in (sys.stdout, sys.stderr):
-            return original_print(*args, **kwargs)
-
-        # Convert print arguments to message
-        message = " ".join(str(arg) for arg in args)
-
-        # Call active handlers first (for storage)
-        if message.strip():
-            handlers = logging_handlers.get()
-
-            for handler in handlers:
-                try:
-                    # Create a LogRecord for the handler
-                    record = logging.LogRecord(
-                        name="print",
-                        level=logging.ERROR
-                        if file_arg == sys.stderr
-                        else logging.INFO,
-                        pathname="",
-                        lineno=0,
-                        msg=message,
-                        args=(),
-                        exc_info=None,
-                    )
-                    # Check if handler's level would accept this record
-                    if record.levelno >= handler.level:
-                        handler.emit(record)
-                except Exception:
-                    # Don't let handler errors break print
-                    pass
-
-        if step_names_in_console.get():
-            message = _add_step_name_to_message(message)
-
-        # Then call original print for console display
-        return original_print(message, *args[1:], **kwargs)
 
     # Store original and replace print
-    setattr(builtins, "_zenml_original_print", original_print)
+    setattr(builtins, "_zenml_original_print", builtins.print)
     setattr(builtins, "print", wrapped_print)
 
 
@@ -356,6 +358,9 @@ def init_logging() -> None:
         and handler.stream == sys.stdout
         for handler in root_logger.handlers
     )
+
+    # logging capture warnings
+    logging.captureWarnings(True)
 
     if not has_console_handler:
         console_handler = logging.StreamHandler(sys.stdout)

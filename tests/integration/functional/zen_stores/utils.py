@@ -181,6 +181,10 @@ class PipelineRunContext:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         for run in self.runs:
             try:
+                self.client.delete_snapshot(run.snapshot.id)
+            except KeyError:
+                pass
+            try:
                 self.client.delete_pipeline_run(run.id)
             except KeyError:
                 pass
@@ -751,6 +755,7 @@ class ModelContext:
                     pipeline_configuration={"name": "pipeline_name"},
                     client_version="0.12.3",
                     server_version="0.12.3",
+                    is_dynamic=False,
                 ),
             )
             self.snapshots.append(snapshot)
@@ -793,7 +798,7 @@ class ModelContext:
         for run in self.prs:
             client.zen_store.delete_run(run.id)
         for snapshot in self.snapshots:
-            client.delete_snapshot(str(snapshot.id))
+            client.delete_snapshot(snapshot.id)
         client.zen_store.delete_pipeline(self.pipeline.id)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -1288,6 +1293,7 @@ snapshot_crud_test_config = CrudTestConfig(
         server_version="0.12.3",
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
+        is_dynamic=False,
     ),
     filter_model=PipelineSnapshotFilter,
     entity_name="snapshot",
@@ -1367,6 +1373,7 @@ remote_snapshot_crud_test_config = CrudTestConfig(
         server_version="0.12.3",
         pipeline_version_hash="random_hash",
         pipeline_spec=PipelineSpec(steps=[]),
+        is_dynamic=False,
     ),
     filter_model=PipelineSnapshotFilter,
     entity_name="snapshot",

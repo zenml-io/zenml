@@ -15,7 +15,48 @@
 
 import re
 from datetime import date, datetime
-from typing import Any, Dict, List, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, Union, cast
+
+if TYPE_CHECKING:
+    pass
+
+
+def normalize_resource_to_dict(
+    resource: Union[Dict[str, Any], Any],
+) -> Dict[str, Any]:
+    """Normalize a Kubernetes resource to a dictionary.
+
+    Args:
+        resource: K8s resource (dict, typed model, or dynamic resource).
+
+    Returns:
+        Normalized dict with camelCase fields (apiVersion, metadata, etc.).
+
+    Raises:
+        ValueError: If resource type is unsupported or serialization fails.
+    """
+    if isinstance(resource, dict):
+        return resource
+
+    if is_model_class(resource.__class__.__name__):
+        serialized = serialize_kubernetes_model(resource)
+    else:
+        try:
+            serialized = resource.to_dict()
+        except AttributeError:
+            raise ValueError(
+                f"Unsupported resource type: {type(resource).__name__}. "
+                f"Expected dict or object with to_dict() method."
+            )
+    if not isinstance(serialized, dict):
+        raise ValueError(
+            f"Expected dict after serialization, got {type(serialized).__name__}. "
+            f"Resource type: {type(resource).__name__}"
+        )
+    if "api_version" in serialized and "apiVersion" not in serialized:
+        serialized["apiVersion"] = serialized.pop("api_version")
+
+    return serialized
 
 
 def serialize_kubernetes_model(model: Any) -> Dict[str, Any]:

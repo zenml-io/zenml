@@ -17,9 +17,9 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String, UniqueConstraint
+from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
@@ -27,7 +27,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import TaggableResourceTypes
+from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotRequest,
@@ -53,6 +53,12 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.curated_visualization_schemas import (
+        CuratedVisualizationSchema,
+    )
+    from zenml.zen_stores.schemas.deployment_schemas import (
+        DeploymentSchema,
+    )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
@@ -81,6 +87,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             nullable=True,
         )
     )
+    is_dynamic: bool = Field(nullable=False, default=False)
 
     pipeline_configuration: str = Field(
         sa_column=Column(
@@ -170,6 +177,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
+    source_snapshot: Optional["PipelineSnapshotSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin="PipelineSnapshotSchema.source_snapshot_id == foreign(PipelineSnapshotSchema.id)",
+            viewonly=True,
+        ),
+    )
     user: Optional["UserSchema"] = Relationship(
         back_populates="snapshots",
     )
@@ -196,6 +209,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "order_by": "asc(StepConfigurationSchema.index)",
         }
     )
+    deployment: Optional["DeploymentSchema"] = Relationship(
+        back_populates="snapshot"
+    )
     step_count: int
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
@@ -204,6 +220,18 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
             order_by="TagSchema.name",
             overlaps="tags",
+        ),
+    )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.PIPELINE_SNAPSHOT.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==PipelineSnapshotSchema.id)"
+            ),
+            overlaps="visualizations",
+            cascade="delete",
+            order_by="CuratedVisualizationSchema.display_order",
         ),
     )
 
@@ -217,8 +245,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The latest run for this snapshot.
         """
-        from sqlmodel import or_
-
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
             PipelineSnapshotSchema,
@@ -234,16 +260,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         == col(PipelineRunSchema.snapshot_id),
                     )
                     .where(
-                        or_(
-                            # The run is created directly from this snapshot
-                            # (e.g. regular run, scheduled runs)
-                            PipelineSnapshotSchema.id == self.id,
-                            # The snapshot for this run used this snapshot as a
-                            # source (e.g. run triggered from the server,
-                            # invocation of a deployment)
-                            PipelineSnapshotSchema.source_snapshot_id
-                            == self.id,
-                        )
+                        # The snapshot for this run used this snapshot as a
+                        # source (e.g. run triggered from the server,
+                        # invocation of a deployment). We currently do not
+                        # include runs created directly from a snapshot (e.g.
+                        # run directly, scheduled runs), as these happen before
+                        # the user officially creates (= assigns a name to) the
+                        # snapshot.
+                        col(PipelineSnapshotSchema.source_snapshot_id)
+                        == self.id,
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
@@ -343,7 +368,14 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
         if include_resources:
-            options.extend([joinedload(jl_arg(PipelineSnapshotSchema.user))])
+            options.extend(
+                [
+                    joinedload(jl_arg(PipelineSnapshotSchema.user)),
+                    selectinload(
+                        jl_arg(PipelineSnapshotSchema.visualizations)
+                    ),
+                ]
+            )
 
         return options
 
@@ -378,6 +410,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return cls(
             name=name,
             description=request.description,
+            is_dynamic=request.is_dynamic,
             stack_id=request.stack,
             project_id=request.project,
             pipeline_id=request.pipeline,
@@ -445,13 +478,26 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 included.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The response.
         """
         runnable = False
-        if self.build and not self.build.is_local and self.build.stack_id:
+        if (
+            not self.is_dynamic
+            and self.build
+            and not self.build.is_local
+            and self.build.stack_id
+        ):
             runnable = True
+
+        deployable = False
+        if (
+            not self.is_dynamic
+            and self.build
+            and self.stack
+            and self.stack.has_deployer
+        ):
+            deployable = True
 
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
@@ -459,6 +505,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             created=self.created,
             updated=self.updated,
             runnable=runnable,
+            deployable=deployable,
+            is_dynamic=self.is_dynamic,
         )
         metadata = None
         if include_metadata:
@@ -516,13 +564,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 client_environment=client_environment,
                 client_version=self.client_version,
                 server_version=self.server_version,
-                pipeline=self.pipeline.to_model(),
-                stack=self.stack.to_model() if self.stack else None,
-                build=self.build.to_model() if self.build else None,
-                schedule=self.schedule.to_model() if self.schedule else None,
-                code_reference=self.code_reference.to_model()
-                if self.code_reference
-                else None,
                 pipeline_version_hash=self.pipeline_version_hash,
                 pipeline_spec=PipelineSpec.model_validate_json(
                     self.pipeline_spec
@@ -539,12 +580,33 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         resources = None
         if include_resources:
             latest_run = self.latest_run
+            latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineSnapshotResponseResources(
                 user=self.user.to_model() if self.user else None,
+                pipeline=self.pipeline.to_model(),
+                stack=self.stack.to_model() if self.stack else None,
+                build=self.build.to_model() if self.build else None,
+                schedule=self.schedule.to_model() if self.schedule else None,
+                code_reference=self.code_reference.to_model()
+                if self.code_reference
+                else None,
+                deployment=self.deployment.to_model()
+                if self.deployment
+                else None,
                 tags=[tag.to_model() for tag in self.tags],
                 latest_run_id=latest_run.id if latest_run else None,
                 latest_run_status=latest_run.status if latest_run else None,
+                latest_run_user=latest_run_user.to_model()
+                if latest_run_user
+                else None,
+                visualizations=[
+                    visualization.to_model(
+                        include_metadata=False,
+                        include_resources=False,
+                    )
+                    for visualization in self.visualizations
+                ],
             )
 
         return PipelineSnapshotResponse(
@@ -563,8 +625,14 @@ class StepConfigurationSchema(BaseSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "snapshot_id",
+            "step_run_id",
             "name",
-            name="unique_step_name_for_snapshot",
+            name="unique_step_configuration_for_snapshot_or_step_run",
+        ),
+        CheckConstraint(
+            "(snapshot_id IS NULL AND step_run_id IS NOT NULL) OR "
+            "(snapshot_id IS NOT NULL AND step_run_id IS NULL)",
+            name="ck_step_configuration_snapshot_step_run_exclusivity",
         ),
     )
 
@@ -585,5 +653,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
         source_column="snapshot_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
+    )
+    step_run_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target="step_run",
+        source_column="step_run_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=True,
     )

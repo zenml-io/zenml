@@ -16,15 +16,15 @@
 import json
 import os
 from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import list_options
+from zenml.cli.utils import fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
+from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import CliCategories
 from zenml.logger import get_logger
 from zenml.models import (
@@ -41,6 +41,7 @@ from zenml.models import (
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
+from zenml.utils.dashboard_utils import get_deployment_url
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -381,6 +382,207 @@ def run_pipeline(
 
 
 @pipeline.command(
+    "deploy",
+    help="Deploy a pipeline. The SOURCE argument needs to be an "
+    "importable source path resolving to a ZenML pipeline instance, e.g. "
+    "`my_module.my_pipeline_instance`.",
+)
+@click.argument("source")
+@click.option(
+    "--name",
+    "-n",
+    "deployment_name",
+    type=str,
+    required=False,
+    help="The name of the deployment resulted from deploying the pipeline. If "
+    "not provided, the name of the pipeline will be used. If an existing "
+    "deployment with the same name already exists, an error will be raised, "
+    "unless the --update or --overtake flag is used.",
+)
+@click.option(
+    "--config",
+    "-c",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Path to configuration file for the deployment.",
+)
+@click.option(
+    "--stack",
+    "-s",
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    help="Name or ID of the stack to deploy on.",
+)
+@click.option(
+    "--build",
+    "-b",
+    "build_path_or_id",
+    type=str,
+    required=False,
+    help="ID or path of the build to use.",
+)
+@click.option(
+    "--prevent-build-reuse",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Prevent automatic build reusing.",
+)
+@click.option(
+    "--update",
+    "-u",
+    "update",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already exists.",
+)
+@click.option(
+    "--overtake",
+    "-o",
+    "overtake",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already "
+    "exists, even if it is owned by a different user.",
+)
+@click.option(
+    "--attach",
+    "-a",
+    "attach",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Attach to the deployment logs.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the pipeline to be deployed.",
+)
+def deploy_pipeline(
+    source: str,
+    deployment_name: Optional[str] = None,
+    config_path: Optional[str] = None,
+    stack_name_or_id: Optional[str] = None,
+    build_path_or_id: Optional[str] = None,
+    prevent_build_reuse: bool = False,
+    update: bool = False,
+    overtake: bool = False,
+    attach: bool = False,
+    timeout: Optional[int] = None,
+) -> None:
+    """Deploy a pipeline for online inference.
+
+    Args:
+        source: Importable source resolving to a pipeline instance.
+        deployment_name: Name of the deployment used to deploy the pipeline on.
+        config_path: Path to pipeline configuration file.
+        stack_name_or_id: Name or ID of the stack on which the pipeline should
+            be deployed.
+        build_path_or_id: ID of file path of the build to use for the pipeline
+            deployment.
+        prevent_build_reuse: If True, prevents automatic reusing of previous
+            builds.
+        update: If True, update the deployment with the same name if it
+            already exists.
+        overtake: If True, update the deployment with the same name if
+            it already exists, even if it is owned by a different user.
+        attach: If True, attach to the deployment logs.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
+    """
+    if not Client().root:
+        cli_utils.warning(
+            "You're running the `zenml pipeline deploy` command without a "
+            "ZenML repository. Your current working directory will be used "
+            "as the source root relative to which the registered step classes "
+            "will be resolved. To silence this warning, run `zenml init` at "
+            "your source code root."
+        )
+
+    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+        pipeline_instance = _import_pipeline(source=source)
+
+        build: Union[str, PipelineBuildBase, None] = None
+        if build_path_or_id:
+            if uuid_utils.is_valid_uuid(build_path_or_id):
+                build = build_path_or_id
+            elif os.path.exists(build_path_or_id):
+                build = PipelineBuildBase.from_yaml(build_path_or_id)
+            else:
+                cli_utils.error(
+                    f"The specified build {build_path_or_id} is not a valid UUID "
+                    "or file path."
+                )
+
+        pipeline_instance = pipeline_instance.with_options(
+            config_path=config_path,
+            build=build,
+            prevent_build_reuse=prevent_build_reuse,
+        )
+        if not deployment_name:
+            deployment_name = pipeline_instance.name
+        client = Client()
+        try:
+            deployment = client.get_deployment(deployment_name)
+        except KeyError:
+            pass
+        else:
+            if (
+                deployment.user
+                and deployment.user.id != client.active_user.id
+                and not overtake
+            ):
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists "
+                    f"and is owned by a different user '{deployment.user.name}'."
+                    "\nDo you want to continue and update the existing deployment "
+                    "(hint: use the --overtake flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
+            elif not update and not overtake:
+                confirmation = cli_utils.confirmation(
+                    f"Deployment with name '{deployment_name}' already exists.\n"
+                    "Do you want to continue and update the existing "
+                    "deployment "
+                    "(hint: use the --update flag to skip this check) ?"
+                )
+                if not confirmation:
+                    cli_utils.declare("Deployment canceled.")
+                    return
+
+        deployment = pipeline_instance.deploy(
+            deployment_name=deployment_name, timeout=timeout
+        )
+
+        cli_utils.pretty_print_deployment(deployment, show_secret=False)
+
+        dashboard_url = get_deployment_url(deployment)
+        if dashboard_url:
+            cli_utils.declare(
+                f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+            )
+
+        if attach:
+            deployer = BaseDeployer.get_active_deployer()
+            for log in deployer.get_deployment_logs(
+                deployment_name_or_id=deployment.id,
+                follow=True,
+            ):
+                print(log)
+
+
+@pipeline.command(
     "create-run-template",
     help="Create a run template for a pipeline. The SOURCE argument needs to "
     "be an importable source path resolving to a ZenML pipeline instance, e.g. "
@@ -520,7 +722,7 @@ def delete_pipeline(
             name_id_or_prefix=pipeline_name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline `{pipeline_name_or_id}`.")
 
@@ -588,7 +790,7 @@ def update_schedule(
             cron_expression=cron_expression,
         )
     except Exception as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Updated schedule '{schedule_name_or_id}'.")
 
@@ -620,7 +822,7 @@ def delete_schedule(schedule_name_or_id: str, yes: bool = False) -> None:
     try:
         Client().delete_schedule(name_id_or_prefix=schedule_name_or_id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted schedule '{schedule_name_or_id}'.")
 
@@ -653,8 +855,16 @@ def list_pipeline_runs(
         columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter pipeline runs.
     """
-    with console.status("Listing pipeline runs..."):
-        pipeline_runs = Client().list_pipeline_runs(**kwargs)
+    client = Client()
+    try:
+        with console.status("Listing pipeline runs...\n"):
+            pipeline_runs = client.list_pipeline_runs(**kwargs)
+    except KeyError as err:
+        cli_utils.exception(err)
+    else:
+        if not pipeline_runs.items:
+            cli_utils.declare("No pipeline runs found for this filter.")
+            return
 
         pipeline_run_list = []
         for pipeline_run in pipeline_runs.items:
@@ -756,7 +966,7 @@ def delete_pipeline_run(
             name_id_or_prefix=run_name_or_id,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline run '{run_name_or_id}'.")
 
@@ -786,7 +996,7 @@ def refresh_pipeline_run(
         )
 
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(
             f"Refreshed the status of pipeline run '{run.name}'."
@@ -819,8 +1029,16 @@ def list_pipeline_builds(
         columns: Comma-separated list of columns to display.
         kwargs: Keyword arguments to filter pipeline builds.
     """
-    with console.status("Listing pipeline builds..."):
-        pipeline_builds = Client().list_builds(hydrate=True, **kwargs)
+    client = Client()
+    try:
+        with console.status("Listing pipeline builds...\n"):
+            pipeline_builds = client.list_builds(hydrate=True, **kwargs)
+    except KeyError as err:
+        cli_utils.exception(err)
+    else:
+        if not pipeline_builds.items:
+            cli_utils.declare("No pipeline builds found for this filter.")
+            return
 
         pipeline_build_list = []
         for pipeline_build in pipeline_builds.items:
@@ -869,7 +1087,7 @@ def delete_pipeline_build(
     try:
         Client().delete_build(build_id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted pipeline build '{build_id}'.")
 
@@ -969,15 +1187,36 @@ def create_pipeline_snapshot(
             tags=tags,
         )
 
-    cli_utils.declare(
-        f"Created pipeline snapshot `{snapshot.id}`. You can now trigger "
-        f"this snapshot from the dashboard or by calling `zenml pipeline "
-        f"snapshot trigger {snapshot.id}`"
-    )
+    cli_utils.declare(f"Created pipeline snapshot `{snapshot.name}`.")
+
+    options = []
+
+    if snapshot.runnable:
+        options.append(
+            "* run this snapshot from the dashboard or by calling "
+            f"`zenml pipeline snapshot run {snapshot.id}`"
+        )
+    if snapshot.deployable:
+        options.append(
+            "* deploy this snapshot by calling "
+            f"`zenml pipeline snapshot deploy {snapshot.id}`"
+        )
+
+    if options:
+        cli_utils.declare("You can now:")
+        cli_utils.declare("\n".join(options))
 
 
-@snapshot.command("trigger", help="Trigger a snapshot.")
-@click.argument("snapshot_id")
+@snapshot.command("run", help="Run a snapshot.")
+@click.argument("snapshot_name_or_id")
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline.",
+)
 @click.option(
     "--config",
     "-c",
@@ -986,24 +1225,169 @@ def create_pipeline_snapshot(
     required=False,
     help="Path to configuration file for the run.",
 )
-def trigger_snapshot(
-    snapshot_id: str,
+def run_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
     config_path: Optional[str] = None,
 ) -> None:
-    """Trigger a snapshot.
+    """Run a snapshot.
 
     Args:
-        snapshot_id: The ID of the snapshot to trigger.
+        snapshot_name_or_id: The name or ID of the snapshot to run.
+        pipeline_name_or_id: The name or ID of the pipeline.
         config_path: Path to configuration file for the run.
     """
-    if not uuid_utils.is_valid_uuid(snapshot_id):
-        cli_utils.error(f"Invalid snapshot ID: {snapshot_id}")
+    snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
+    try:
+        run = Client().trigger_pipeline(
+            snapshot_name_or_id=snapshot.id,
+            config_path=config_path,
+        )
+        cli_utils.declare(f"Started snapshot run `{run.id}`.")
+    except Exception as e:
+        cli_utils.error(f"Failed to run snapshot: {e}")
 
-    run = Client().trigger_pipeline(
-        snapshot_id=UUID(snapshot_id),
-        config_path=config_path,
-    )
-    cli_utils.declare(f"Triggered snapshot run `{run.id}`.")
+
+@snapshot.command("deploy", help="Deploy a snapshot.")
+@click.argument("snapshot_name_or_id")
+@click.option(
+    "--pipeline",
+    "-p",
+    "pipeline_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the pipeline.",
+)
+@click.option(
+    "--deployment",
+    "-d",
+    "deployment_name_or_id",
+    type=str,
+    required=False,
+    help="The name or ID of the deployment to use for the pipeline. If "
+    "not provided, the name of the snapshot or pipeline will be used. If an "
+    "existing deployment with the same name already exists, an error will be "
+    "raised, unless the --update or --overtake flag is used.",
+)
+@click.option(
+    "--update",
+    "-u",
+    "update",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already exists.",
+)
+@click.option(
+    "--overtake",
+    "-o",
+    "overtake",
+    is_flag=True,
+    default=False,
+    required=False,
+    help="Update the deployment with the same name if it already "
+    "exists, even if it is owned by a different user.",
+)
+@click.option(
+    "--timeout",
+    "-t",
+    "timeout",
+    type=int,
+    required=False,
+    default=None,
+    help="Maximum time in seconds to wait for the snapshot to be deployed.",
+)
+def deploy_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+    deployment_name_or_id: Optional[str] = None,
+    update: bool = False,
+    overtake: bool = False,
+    timeout: Optional[int] = None,
+) -> None:
+    """Deploy a pipeline for online inference.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot to deploy.
+        pipeline_name_or_id: The name or ID of the pipeline.
+        deployment_name_or_id: Name or ID of the deployment to use for the
+            pipeline.
+        update: If True, update the deployment with the same name if it
+            already exists.
+        overtake: If True, update the deployment with the same name if
+            it already exists, even if it is owned by a different user.
+        timeout: The maximum time in seconds to wait for the pipeline to be
+            deployed.
+    """
+    snapshot = fetch_snapshot(snapshot_name_or_id, pipeline_name_or_id)
+
+    if not deployment_name_or_id:
+        deployment_name_or_id = snapshot.name or snapshot.pipeline.name
+
+    if not deployment_name_or_id:
+        cli_utils.error(
+            "No deployment name or ID provided. Please provide a deployment name or ID."
+        )
+
+    client = Client()
+    try:
+        deployment = client.get_deployment(deployment_name_or_id)
+    except KeyError:
+        pass
+    else:
+        if (
+            deployment.user
+            and deployment.user.id != client.active_user.id
+            and not overtake
+        ):
+            confirmation = cli_utils.confirmation(
+                f"Deployment with name or ID '{deployment_name_or_id}' is "
+                f"owned by a different user '{deployment.user.name}'.\nDo you "
+                "want to continue and provision it "
+                "(hint: use the --overtake flag to skip this check)?"
+            )
+            if not confirmation:
+                cli_utils.declare("Deployment provisioning canceled.")
+                return
+
+        elif (
+            not update
+            and not overtake
+            and not uuid_utils.is_valid_uuid(deployment_name_or_id)
+        ):
+            confirmation = cli_utils.confirmation(
+                f"Deployment with name or ID '{deployment_name_or_id}' already "
+                "exists.\n"
+                "Do you want to continue and update the existing "
+                "deployment "
+                "(hint: use the --update flag to skip this check) ?"
+            )
+            if not confirmation:
+                cli_utils.declare("Deployment canceled.")
+                return
+
+    with console.status(
+        f"Provisioning deployment '{deployment_name_or_id}'...\n"
+    ):
+        try:
+            deployment = Client().provision_deployment(
+                name_id_or_prefix=deployment_name_or_id,
+                snapshot_id=snapshot.id,
+                timeout=timeout,
+            )
+        except KeyError as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.declare(
+                f"Provisioned deployment '{deployment_name_or_id}'."
+            )
+            cli_utils.pretty_print_deployment(deployment, show_secret=True)
+
+            dashboard_url = get_deployment_url(deployment)
+            if dashboard_url:
+                cli_utils.declare(
+                    f"\nView in the ZenML UI: [link]{dashboard_url}[/link]"
+                )
 
 
 @snapshot.command("list", help="List pipeline snapshots.")
@@ -1019,7 +1403,7 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
         with console.status("Listing pipeline snapshots...\n"):
             pipeline_snapshots = client.list_snapshots(hydrate=True, **kwargs)
     except KeyError as err:
-        cli_utils.error(str(err))
+        cli_utils.exception(err)
     else:
         if not pipeline_snapshots.items:
             cli_utils.declare("No pipeline snapshots found for this filter.")
@@ -1040,8 +1424,6 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "run_name_template",
                 "pipeline_version_hash",
                 "pipeline_spec",
-                "pipeline",
-                "stack",
                 "build",
                 "schedule",
                 "code_reference",
@@ -1049,5 +1431,39 @@ def list_pipeline_snapshots(**kwargs: Any) -> None:
                 "config_template",
                 "source_snapshot_id",
                 "template_id",
+                "code_path",
             ],
         )
+
+
+@snapshot.command("delete", help="Delete a pipeline snapshot.")
+@click.argument("snapshot_name_or_id", type=str, required=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_pipeline_snapshot(
+    snapshot_name_or_id: str, yes: bool = False
+) -> None:
+    """Delete a pipeline snapshot.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot to delete.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete snapshot `{snapshot_name_or_id}`?"
+        )
+        if not confirmation:
+            cli_utils.declare("Snapshot deletion canceled.")
+            return
+
+    try:
+        Client().delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
+    except KeyError as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Deleted snapshot '{snapshot_name_or_id}'.")

@@ -23,6 +23,7 @@ from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
+from zenml.integrations.mlflow.mlflow_utils import build_runs_uri, is_mlflow_3x
 from zenml.integrations.mlflow.model_registries.mlflow_model_registry import (
     MLFlowModelRegistry,
 )
@@ -121,12 +122,21 @@ def mlflow_register_model_step(
     model_source_uri = model_source_uri or None
 
     # Check if the run ID have a model artifact if no model source URI is set.
-    if not model_source_uri and client.list_artifacts(
-        mlflow_run_id, trained_model_name
+    if (
+        not model_source_uri
+        and trained_model_name
+        and client.list_artifacts(mlflow_run_id, trained_model_name)
     ):
-        model_source_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call]
-            run_id=mlflow_run_id, artifact_path=trained_model_name
-        )
+        # In MLflow 3.x, use runs:/ URI which correctly resolves to model location
+        # In MLflow 2.x, use the artifact URI directly
+        if is_mlflow_3x():
+            model_source_uri = build_runs_uri(
+                mlflow_run_id, trained_model_name
+            )
+        else:
+            model_source_uri = artifact_utils.get_artifact_uri(  # type: ignore[no-untyped-call, unused-ignore]
+                run_id=mlflow_run_id, artifact_path=trained_model_name
+            )
     if not model_source_uri:
         raise RuntimeError(
             "No model source URI provided or no model found in the "

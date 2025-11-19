@@ -30,6 +30,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
+from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
@@ -40,7 +41,11 @@ from zenml.integrations.kubernetes.constants import (
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
 )
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.manifest_utils import (
+    build_job_manifest,
+    build_pod_manifest,
+    pod_template_manifest_from_pod,
+)
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     DagRunner,
     InterruptMode,
@@ -49,11 +54,6 @@ from zenml.integrations.kubernetes.orchestrators.dag_runner import (
 )
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
-)
-from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_job_manifest,
-    build_pod_manifest,
-    pod_template_manifest_from_pod,
 )
 from zenml.logger import get_logger
 from zenml.logging.step_logging import setup_orchestrator_logging
@@ -158,8 +158,10 @@ def _reconstruct_nodes(
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
-        if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY, None):
-            node = nodes[step_name]
+        if step_name_annotation := annotations.get(
+            STEP_NAME_ANNOTATION_KEY, None
+        ):
+            node = nodes[str(step_name_annotation)]
             node.metadata["job_name"] = job.metadata.name
 
             if node.status == NodeStatus.NOT_READY:
@@ -300,23 +302,24 @@ def main() -> None:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
 
-        shared_env = get_config_environment_vars()
+        shared_env, secrets = get_config_environment_vars()
         shared_env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
 
-        try:
-            owner_references = kube_utils.get_pod_owner_references(
-                core_api=core_api,
-                pod_name=orchestrator_pod_name,
-                namespace=namespace,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to get pod owner references: {str(e)}")
-            owner_references = []
-        else:
-            # Make sure None of the owner references are marked as controllers of
-            # the created pod, which messes with the garbage collection logic.
-            for owner_reference in owner_references:
-                owner_reference.controller = False
+        owner_references = None
+        if not orchestrator.config.skip_owner_references:
+            try:
+                owner_references = kube_utils.get_pod_owner_references(
+                    core_api=core_api,
+                    pod_name=orchestrator_pod_name,
+                    namespace=namespace,
+                )
+                # Make sure None of the owner references are marked as
+                # controllers of the created pod, which messes with the
+                # garbage collection logic.
+                for owner_reference in owner_references:
+                    owner_reference.controller = False
+            except Exception as e:
+                logger.warning(f"Failed to get pod owner references: {str(e)}")
 
         step_run_request_factory = StepRunRequestFactory(
             snapshot=snapshot,
@@ -326,6 +329,7 @@ def main() -> None:
         step_runs = {}
 
         base_labels = {
+            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
             "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
             "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
             "pipeline": kube_utils.sanitize_label(
@@ -426,6 +430,8 @@ def main() -> None:
                         },
                     }
                 )
+            else:
+                step_env.update(secrets)
 
             pod_manifest = build_pod_manifest(
                 pod_name=None,

@@ -199,7 +199,7 @@ def generate_config_schema(
         ]:
             continue
 
-        if field_info.annotation == Optional[SourceWithValidator]:
+        if field_info.annotation == Optional[SourceWithValidator]:  # type: ignore[comparison-overlap]
             generic_step_fields[key] = (Optional[str], field_info)
         else:
             generic_step_fields[key] = (field_info.annotation, field_info)
@@ -279,7 +279,7 @@ def generate_config_schema(
         if key in ["schedule", "build", "steps", "settings", "parameters"]:
             continue
 
-        if field_info.annotation == Optional[SourceWithValidator]:
+        if field_info.annotation == Optional[SourceWithValidator]:  # type: ignore[comparison-overlap]
             top_level_fields[key] = (Optional[str], field_info)
         else:
             top_level_fields[key] = (field_info.annotation, field_info)

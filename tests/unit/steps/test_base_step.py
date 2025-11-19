@@ -21,7 +21,7 @@ from typing_extensions import Annotated
 
 from zenml import pipeline, step
 from zenml.enums import ExecutionMode
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import HookValidationException, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import ArtifactVersionResponse
@@ -691,7 +691,7 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 2
     is_hook_called = False
-    with pytest.raises(ValueError):
+    with pytest.raises(HookValidationException):
         one_step_pipeline(
             exception_step.with_options(
                 on_failure=on_failure_with_wrong_params
@@ -701,13 +701,13 @@ def test_configure_step_with_failure_hook(one_step_pipeline):
 
     # Test 3
     is_hook_called = False
-    with pytest.raises(ValueError):
+    with pytest.raises(BaseException):
         one_step_pipeline(
             exception_step.with_options(
                 on_failure=on_failure_with_not_annotated_params
             )
         ).with_options(unlisted=True)()
-    assert not is_hook_called
+    assert is_hook_called
 
     # Test 4
     is_hook_called = False
@@ -750,7 +750,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
 
     # Test 1
     is_hook_called = False
-    with pytest.raises(ValueError):
+    with pytest.raises(HookValidationException):
         one_step_pipeline(
             passing_step.with_options(on_success=on_success_with_wrong_params)
         ).with_options(unlisted=True)()
@@ -758,7 +758,7 @@ def test_configure_step_with_success_hook(one_step_pipeline):
 
     # Test 2
     is_hook_called = False
-    with pytest.raises(ValueError):
+    with pytest.raises(HookValidationException):
         one_step_pipeline(
             passing_step.with_options(
                 on_success=on_success_with_not_annotated_params

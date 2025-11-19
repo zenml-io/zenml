@@ -46,8 +46,32 @@ from zenml.utils.pipeline_docker_image_builder import (
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepositoryContext
     from zenml.config.build_configuration import BuildConfiguration
+    from zenml.config.docker_settings import DockerSettings
 
 logger = get_logger(__name__)
+
+
+def get_docker_settings(
+    snapshot: "PipelineSnapshotBase",
+) -> List["DockerSettings"]:
+    """Get a list of all relevant Docker settings for the snapshot.
+
+    Args:
+        snapshot: The snapshot.
+
+    Returns:
+        A list of all relevant Docker settings.
+    """
+    docker_settings = [
+        step.config.docker_settings
+        for step in snapshot.step_configurations.values()
+    ]
+    if snapshot.is_dynamic:
+        # In dynamic pipelines, there is always an orchestration container for
+        # which a Docker image needs to be built.
+        docker_settings.append(snapshot.pipeline_configuration.docker_settings)
+
+    return docker_settings
 
 
 def build_required(snapshot: "PipelineSnapshotBase") -> bool:
@@ -77,9 +101,7 @@ def requires_included_code(
     Returns:
         If the snapshot requires code included in the container images.
     """
-    for step in snapshot.step_configurations.values():
-        docker_settings = step.config.docker_settings
-
+    for docker_settings in get_docker_settings(snapshot=snapshot):
         if docker_settings.local_project_install_command:
             # When installing a local package, we need to include the code
             # files in the container image.
@@ -109,9 +131,7 @@ def requires_download_from_code_repository(
     Returns:
         If the snapshot needs to download code from a code repository.
     """
-    for step in snapshot.step_configurations.values():
-        docker_settings = step.config.docker_settings
-
+    for docker_settings in get_docker_settings(snapshot=snapshot):
         if docker_settings.allow_download_from_artifact_store:
             return False
 
@@ -140,15 +160,15 @@ def code_download_possible(
     Returns:
         Whether code download is possible for the snapshot.
     """
-    for step in snapshot.step_configurations.values():
-        if step.config.docker_settings.local_project_install_command:
+    for docker_settings in get_docker_settings(snapshot=snapshot):
+        if docker_settings.local_project_install_command:
             return False
 
-        if step.config.docker_settings.allow_download_from_artifact_store:
+        if docker_settings.allow_download_from_artifact_store:
             continue
 
         if (
-            step.config.docker_settings.allow_download_from_code_repository
+            docker_settings.allow_download_from_code_repository
             and code_repository
         ):
             continue
@@ -156,6 +176,21 @@ def code_download_possible(
         return False
 
     return True
+
+
+def should_prevent_build_reuse(snapshot: "PipelineSnapshotBase") -> bool:
+    """Whether the snapshot prevents a build reuse.
+
+    Args:
+        snapshot: The snapshot.
+
+    Returns:
+        Whether the snapshot prevents a build reuse.
+    """
+    return any(
+        docker_settings.prevent_build_reuse
+        for docker_settings in get_docker_settings(snapshot=snapshot)
+    )
 
 
 def reuse_or_create_pipeline_build(
@@ -185,7 +220,7 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
-            and not snapshot.should_prevent_build_reuse
+            and not should_prevent_build_reuse(snapshot=snapshot)
             and not requires_included_code(
                 snapshot=snapshot, code_repository=code_repository
             )
@@ -374,11 +409,14 @@ def create_pipeline_build(
             dockerfile = images[item_key].dockerfile
             requirements = images[item_key].requirements
         else:
-            tag = snapshot.pipeline_configuration.name
-            if build_config.step_name:
-                tag += f"-{build_config.step_name}"
-            tag += f"-{build_config.key}"
-            tag = docker_utils.sanitize_tag(tag)
+            if build_config.settings.image_tag:
+                tag = build_config.settings.image_tag
+            else:
+                tag = snapshot.pipeline_configuration.name
+                if build_config.step_name:
+                    tag += f"-{build_config.step_name}"
+                tag += f"-{build_config.key}"
+                tag = docker_utils.sanitize_tag(tag)
 
             include_files = build_config.should_include_files(
                 code_repository=code_repository,
@@ -404,6 +442,7 @@ def create_pipeline_build(
                 entrypoint=build_config.entrypoint,
                 extra_files=build_config.extra_files,
                 code_repository=code_repository if pass_code_repo else None,
+                extra_requirements_files=build_config.extra_requirements_files,
             )
             contains_code = include_files
 
@@ -713,9 +752,7 @@ def should_upload_code(
     if build.contains_code:
         return False
 
-    for step in snapshot.step_configurations.values():
-        docker_settings = step.config.docker_settings
-
+    for docker_settings in get_docker_settings(snapshot=snapshot):
         if (
             can_download_from_code_repository
             and docker_settings.allow_download_from_code_repository
@@ -740,9 +777,7 @@ def allows_download_from_code_repository(
     Returns:
         Whether a code repository can be used to download code.
     """
-    for step in snapshot.step_configurations.values():
-        docker_settings = step.config.docker_settings
-
+    for docker_settings in get_docker_settings(snapshot=snapshot):
         if docker_settings.allow_download_from_code_repository:
             return True
 

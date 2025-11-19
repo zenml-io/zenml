@@ -16,7 +16,11 @@
 import re
 from typing import TYPE_CHECKING, Dict, Sequence, Type
 
-from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
+from zenml.config.constants import (
+    DEPLOYMENT_SETTINGS_KEY,
+    DOCKER_SETTINGS_KEY,
+    RESOURCE_SETTINGS_KEY,
+)
 from zenml.enums import StackComponentType
 
 if TYPE_CHECKING:
@@ -126,11 +130,16 @@ def get_general_settings() -> Dict[str, Type["BaseSettings"]]:
     Returns:
         Dictionary mapping general settings keys to their type.
     """
-    from zenml.config import DockerSettings, ResourceSettings
+    from zenml.config import (
+        DeploymentSettings,
+        DockerSettings,
+        ResourceSettings,
+    )
 
     return {
         DOCKER_SETTINGS_KEY: DockerSettings,
         RESOURCE_SETTINGS_KEY: ResourceSettings,
+        DEPLOYMENT_SETTINGS_KEY: DeploymentSettings,
     }
 
 

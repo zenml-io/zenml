@@ -104,7 +104,7 @@ Define settings in a YAML configuration file for better separation of code and c
 ```yaml
 settings:
     docker:
-        parent_image: python:3.9-slim
+        parent_image: python:3.11-slim
         apt_packages:
           - git
           - curl
@@ -267,7 +267,7 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 By default, ZenML automatically installs all packages required by your active ZenML stack. 
 
 {% hint style="warning" %}
-In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current source root and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
+In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
 you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
 {% endhint %}
 
@@ -314,8 +314,8 @@ you already want this automatic detection in current versions of ZenML, set `dis
         "uv",
         "export",
         "--extra=train",
-        "--format=requirements-txt"
-        "--directory={directory}
+        "--format=requirements-txt",
+        "--directory={directory}"
     ])
 
 
@@ -354,7 +354,16 @@ you already want this automatic detection in current versions of ZenML, set `dis
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
-7.  **Install Local Projects**:
+7.  **Control Deployment Requirements**:
+    By default, if you have a Deployer stack component in your active stack, ZenML installs the requirements needed by the deployment application configured in your deployment settings. You can disable this behavior if needed:
+
+    ```python
+    from zenml.config import DockerSettings
+    
+    docker_settings = DockerSettings(install_deployment_requirements=False)
+    ```
+
+8.  **Install Local Projects**:
     If your code requires the installation of some local code files as a python package, you can specify a command
     that installs it as follows:
     ```python
@@ -429,12 +438,7 @@ Be cautious with handling credentials. Always use secure methods to manage and d
 
 ## Source Code Management
 
-ZenML determines the root directory of your source files in the following order:
-
-1. If you've initialized zenml (`zenml init`) in your current working directory or one of its parent directories, the repository root directory will be used.
-2. Otherwise, the parent directory of the Python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
-
-You can specify how the files inside this root directory are handled:
+You can specify how the files inside your [source root directory](../steps-pipelines/sources.md#source-root) are handled for containerized steps:
 
 ```python
 docker_settings = DockerSettings(
@@ -470,7 +474,9 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Environment Variables
 
-You can configure environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
+You can configure two types of environment variables:
+
+1. Environment variables that will be set in the beginning of the Docker image building process before any python or apt packages are installed:
 
 ```python
 docker_settings = DockerSettings(
@@ -478,6 +484,18 @@ docker_settings = DockerSettings(
         "PYTHONUNBUFFERED": "1",
         "MODEL_DIR": "/models",
         "API_KEY": "${GLOBAL_API_KEY}"  # Reference a local environment variable
+    }
+)
+```
+
+2. Environment variables that will be set at the end of the Docker image building process after the python and apt packages are installed, right before the container entrypoint (useful for setting proxy environment variables for example):
+
+```python
+docker_settings = DockerSettings(
+    runtime_environment={
+        "HTTP_PROXY": "http://proxy.example.com:8080",
+        "HTTPS_PROXY": "http://proxy.example.com:8080",
+        "NO_PROXY": "localhost,127.0.0.1"
     }
 )
 ```
@@ -538,6 +556,19 @@ The repository name will be appended to the registry URI of your container regis
 
 If you don't specify a target repository, the default repository name configured in your container registry stack component settings will be used.
 
+### Specifying Image tags
+
+You can control the tag of the generated Docker images using the image tag option:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(image_tag="1.0.0")
+```
+
+Keep in mind that this will be applied to all images built using the DockerSettings object. If there are multiple
+such images, only one of them will keep the tag while the rest will be untagged.
+
 ### Decoupling Code from Builds
 
 To reuse Docker builds while still using your latest code changes, you need to decouple your code from the build. There are two main approaches:
@@ -564,7 +595,7 @@ zenml integration install github
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the source root is computed
+* First, the [source root](../steps-pipelines/sources.md#source-root) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 #### Tracking code versions for pipeline runs

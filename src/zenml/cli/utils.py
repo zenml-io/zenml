@@ -60,7 +60,17 @@ from zenml.constants import (
     IS_DEBUG_ENV,
     handle_int_env_var,
 )
-from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
+from zenml.deployers.utils import (
+    get_deployment_input_schema,
+    get_deployment_invocation_example,
+    get_deployment_output_schema,
+)
+from zenml.enums import (
+    DeploymentStatus,
+    GenericFilterOps,
+    ServiceState,
+    StackComponentType,
+)
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     RegisteredModel,
@@ -86,6 +96,7 @@ from zenml.utils import secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -98,8 +109,10 @@ if TYPE_CHECKING:
     from zenml.models import (
         AuthenticationMethodModel,
         ComponentResponse,
+        DeploymentResponse,
         FlavorResponse,
         PipelineRunResponse,
+        PipelineSnapshotResponse,
         ResourceTypeModel,
         ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
@@ -182,6 +195,31 @@ def error(text: str) -> NoReturn:
             click.echo(self.message, file=file)
 
     raise StyledClickException(message=error_prefix + error_message)
+
+
+def exception(exception: Exception) -> NoReturn:
+    """Echo an exception string on the CLI.
+
+    Args:
+        exception: Input exception.
+    """
+    # KeyError add quotes around their error message to handle the case when
+    # someone tried to fetch something with the key '' (empty string). In all
+    # other cases where the key is not empty however, this adds unnecessary
+    # quotes around the error message, which this function removes.
+    if (
+        isinstance(exception, KeyError)
+        and len(exception.args) == 1
+        # If the exception is a KeyError with an empty string as the argument,
+        # we use the default string representation which will print ''
+        and exception.args[0]
+        and isinstance(exception.args[0], str)
+    ):
+        error_message = exception.args[0]
+    else:
+        error_message = str(exception)
+
+    error(error_message)
 
 
 def warning(
@@ -2258,6 +2296,323 @@ def print_pipeline_runs_table(
         }
         runs_dicts.append(run_dict)
     print_table(runs_dicts)
+
+
+def fetch_snapshot(
+    snapshot_name_or_id: str,
+    pipeline_name_or_id: Optional[str] = None,
+) -> "PipelineSnapshotResponse":
+    """Fetch a snapshot by name or ID.
+
+    Args:
+        snapshot_name_or_id: The name or ID of the snapshot.
+        pipeline_name_or_id: The name or ID of the pipeline.
+
+    Returns:
+        The snapshot.
+    """
+    if is_valid_uuid(snapshot_name_or_id):
+        return Client().get_snapshot(snapshot_name_or_id)
+    elif pipeline_name_or_id:
+        try:
+            return Client().get_snapshot(
+                snapshot_name_or_id,
+                pipeline_name_or_id=pipeline_name_or_id,
+            )
+        except KeyError:
+            error(
+                f"There are no snapshots with name `{snapshot_name_or_id}` for "
+                f"pipeline `{pipeline_name_or_id}`."
+            )
+    else:
+        snapshots = Client().list_snapshots(
+            name=snapshot_name_or_id,
+        )
+        if snapshots.total == 0:
+            error(f"There are no snapshots with name `{snapshot_name_or_id}`.")
+        elif snapshots.total == 1:
+            return snapshots.items[0]
+
+        snapshot_index = multi_choice_prompt(
+            object_type="snapshots",
+            choices=[
+                [snapshot.pipeline.name, snapshot.name]
+                for snapshot in snapshots.items
+            ],
+            headers=["Pipeline", "Snapshot"],
+            prompt_text=f"There are multiple snapshots with name "
+            f"`{snapshot_name_or_id}`. Please select the snapshot to run",
+        )
+        assert snapshot_index is not None
+        return snapshots.items[snapshot_index]
+
+
+def get_deployment_status_emoji(
+    status: Optional[str],
+) -> str:
+    """Returns an emoji representing the given deployment status.
+
+    Args:
+        status: The deployment status to get the emoji for.
+
+    Returns:
+        An emoji representing the given deployment status.
+    """
+    if status == DeploymentStatus.PENDING:
+        return ":hourglass_flowing_sand:"
+    if status == DeploymentStatus.ERROR:
+        return ":x:"
+    if status == DeploymentStatus.RUNNING:
+        return ":green_circle:"
+    if status == DeploymentStatus.ABSENT:
+        return ":stop_sign:"
+
+    return ":question:"
+
+
+def format_deployment_status(status: Optional[str]) -> str:
+    """Format deployment status with color.
+
+    Args:
+        status: The deployment status.
+
+    Returns:
+        Formatted status string.
+    """
+    if status == DeploymentStatus.RUNNING:
+        return "[green]RUNNING[/green]"
+    elif status == DeploymentStatus.PENDING:
+        return "[yellow]PENDING[/yellow]"
+    elif status == DeploymentStatus.ERROR:
+        return "[red]ERROR[/red]"
+    elif status == DeploymentStatus.ABSENT:
+        return "[dim]ABSENT[/dim]"
+
+    return "[dim]UNKNOWN[/dim]"
+
+
+def print_deployment_table(
+    deployments: Sequence["DeploymentResponse"],
+) -> None:
+    """Print a prettified list of all deployments supplied to this method.
+
+    Args:
+        deployments: List of deployments
+    """
+    deployment_dicts = []
+    for deployment in deployments:
+        if deployment.user:
+            user_name = deployment.user.name
+        else:
+            user_name = "-"
+
+        if deployment.snapshot is None or deployment.snapshot.pipeline is None:
+            pipeline_name = "unlisted"
+        else:
+            pipeline_name = deployment.snapshot.pipeline.name
+        if deployment.snapshot is None or deployment.snapshot.stack is None:
+            stack_name = "[DELETED]"
+        else:
+            stack_name = deployment.snapshot.stack.name
+        status = deployment.status or DeploymentStatus.UNKNOWN.value
+        status_emoji = get_deployment_status_emoji(status)
+        run_dict = {
+            "ID": deployment.id,
+            "NAME": deployment.name,
+            "PIPELINE": pipeline_name,
+            "SNAPSHOT": deployment.snapshot.name or ""
+            if deployment.snapshot
+            else "N/A",
+            "URL": deployment.url or "N/A",
+            "STATUS": f"{status_emoji} {status.upper()}",
+            "STACK": stack_name,
+            "OWNER": user_name,
+        }
+        deployment_dicts.append(run_dict)
+    print_table(deployment_dicts)
+
+
+def pretty_print_deployment(
+    deployment: "DeploymentResponse",
+    show_secret: bool = False,
+    show_metadata: bool = False,
+    show_schema: bool = False,
+    no_truncate: bool = False,
+) -> None:
+    """Print a prettified deployment with organized sections.
+
+    Args:
+        deployment: The deployment to print.
+        show_secret: Whether to show the auth key or mask it.
+        show_metadata: Whether to show the metadata.
+        show_schema: Whether to show the schema.
+        no_truncate: Whether to truncate the metadata.
+    """
+    # Header section
+    status_label = (deployment.status or "UNKNOWN").upper()
+    status_emoji = get_deployment_status_emoji(deployment.status)
+    declare(
+        f"\n[bold]Deployment:[/bold] [bold cyan]{deployment.name}[/bold cyan] status: {status_label} {status_emoji}"
+    )
+    if deployment.snapshot is None:
+        pipeline_name = "N/A"
+        snapshot_name = "N/A"
+    else:
+        pipeline_name = deployment.snapshot.pipeline.name
+        snapshot_name = deployment.snapshot.name or str(deployment.snapshot.id)
+    if deployment.snapshot is None or deployment.snapshot.stack is None:
+        stack_name = "[DELETED]"
+    else:
+        stack_name = deployment.snapshot.stack.name
+    declare(f"\n[bold]Pipeline:[/bold] [bold cyan]{pipeline_name}[/bold cyan]")
+    declare(f"[bold]Snapshot:[/bold] [bold cyan]{snapshot_name}[/bold cyan]")
+    declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
+
+    # Connection section
+    if deployment.url:
+        declare("\n[bold]Connection information:[/bold]")
+
+        declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
+        declare(
+            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]"
+        )
+
+        # Auth key handling with proper security
+        auth_key = deployment.auth_key
+        if auth_key:
+            if show_secret:
+                declare(f"[bold]Auth key:[/bold] [yellow]{auth_key}[/yellow]")
+            else:
+                masked_key = (
+                    f"{auth_key[:8]}***" if len(auth_key) > 8 else "***"
+                )
+                declare(
+                    f"[bold]Auth key:[/bold] [yellow]{masked_key}[/yellow] "
+                    f"[dim](run `zenml deployment describe {deployment.name} --show-secret` to reveal)[/dim]"
+                )
+
+        example = get_deployment_invocation_example(deployment)
+
+        # CLI invoke command
+        cli_args = " ".join(
+            [
+                f"--{k}="
+                + (
+                    f"'{json.dumps(v)}'"
+                    if isinstance(v, (dict, list))
+                    else json.dumps(v)
+                )
+                for k, v in example.items()
+            ]
+        )
+        cli_command = f"zenml deployment invoke {deployment.name} {cli_args}"
+
+        declare("[bold]CLI command example:[/bold]")
+        console.print(cli_command)
+
+        # cURL example
+        declare("\n[bold]cURL example:[/bold]")
+        curl_headers = []
+        if auth_key:
+            if show_secret:
+                curl_headers.append(f'-H "Authorization: Bearer {auth_key}"')
+            else:
+                curl_headers.append(
+                    '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
+                )
+
+        curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
+
+        curl_headers.append('-H "Content-Type: application/json"')
+        headers_str = "\\\n  ".join(curl_headers)
+
+        curl_command = f"""curl -X POST {deployment.url}/invoke \\
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
+
+        console.print(curl_command)
+
+    # JSON Schemas
+    if show_schema:
+        input_schema = get_deployment_input_schema(deployment)
+        output_schema = get_deployment_output_schema(deployment)
+        declare("\n[bold]Deployment JSON schemas:[/bold]")
+        declare("\n[bold]Input schema:[/bold]")
+        schema_json = json.dumps(input_schema, indent=2)
+        console.print(schema_json)
+        declare("\n[bold]Output schema:[/bold]")
+        schema_json = json.dumps(output_schema, indent=2)
+        console.print(schema_json)
+
+    # Metadata section
+    if show_metadata:
+        declare("\n[bold]Deployment metadata:[/bold]")
+
+        # Get the metadata - it could be from deployment_metadata property or metadata
+        metadata = deployment.deployment_metadata
+
+        if metadata:
+            # Recursively format nested dictionaries and lists
+            def format_value(value: Any, indent_level: int = 0) -> str:
+                if isinstance(value, dict):
+                    if not value:
+                        return "[dim]{}[/dim]"
+                    formatted_items: List[str] = []
+                    for k, v in value.items():
+                        formatted_v = format_value(v, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[bold]{k}[/bold]: {formatted_v}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, list):
+                    if not value:
+                        return "[dim][][/dim]"
+                    formatted_items = []
+                    for i, item in enumerate(value):
+                        formatted_item = format_value(item, indent_level + 1)
+                        formatted_items.append(
+                            f"  {'  ' * indent_level}[{i}]: {formatted_item}"
+                        )
+                    return "\n" + "\n".join(formatted_items)
+                elif isinstance(value, str):
+                    # Handle long strings by truncating if needed
+                    if len(value) > 100 and not no_truncate:
+                        return f"[green]{value[:97]}...[/green]"
+                    return f"[green]{value}[/green]"
+                elif isinstance(value, bool):
+                    return f"[yellow]{value}[/yellow]"
+                elif isinstance(value, (int, float)):
+                    return f"[blue]{value}[/blue]"
+                elif value is None:
+                    return "[dim]null[/dim]"
+                else:
+                    return f"[white]{str(value)}[/white]"
+
+            formatted_metadata = format_value(metadata)
+            console.print(formatted_metadata)
+        else:
+            declare("  [dim]No metadata available[/dim]")
+
+    # Management section
+    declare("\n[bold]Management commands[/bold]\n")
+
+    console.print(f"[bold]zenml deployment logs {deployment.name} -f[/bold]")
+    console.print("  [dim]Follow deployment logs in real time[/dim]\n")
+
+    console.print(f"[bold]zenml deployment describe {deployment.name}[/bold]")
+    console.print("  [dim]Show detailed deployment information[/dim]\n")
+
+    console.print(
+        f"[bold]zenml deployment deprovision {deployment.name}[/bold]"
+    )
+    console.print(
+        "  [dim]Deprovision this deployment and keep a record of it[/dim]\n"
+    )
+
+    console.print(f"[bold]zenml deployment delete {deployment.name}[/bold]")
+    console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
 def check_zenml_pro_project_availability() -> None:

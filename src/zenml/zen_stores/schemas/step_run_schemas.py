@@ -56,7 +56,10 @@ from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -81,28 +84,31 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "version",
             name="unique_step_name_for_pipeline_run",
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "cache_key",
+            ],
+        ),
     )
 
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
     end_time: Optional[datetime] = Field(nullable=True)
+    latest_heartbeat: Optional[datetime] = Field(
+        nullable=True,
+        description="The latest execution heartbeat.",
+    )
     status: str = Field(nullable=False)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
+    cache_expires_at: Optional[datetime] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_hash: Optional[str] = Field(nullable=True)
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
 
-    step_configuration: str = Field(
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=True,
-        )
-    )
     exception_info: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -208,12 +214,29 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     original_step_run: Optional["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={"remote_side": "StepRunSchema.id"}
     )
-    step_configuration_schema: Optional["StepConfigurationSchema"] = (
-        Relationship(
-            sa_relationship_kwargs=dict(
-                viewonly=True,
-                primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.snapshot_id) == StepRunSchema.snapshot_id)",
+    # In static pipelines, we use the config that is compiled in the snapshot.
+    static_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            viewonly=True,
+            primaryjoin="and_(foreign(StepConfigurationSchema.name) == StepRunSchema.name, foreign(StepConfigurationSchema.snapshot_id) == StepRunSchema.snapshot_id)",
+        ),
+    )
+    # In dynamic pipelines, the config is dynamically generated and cannot be
+    # included in the compiled snapshot. In this case, we link it directly to
+    # the step run.
+    dynamic_config: Optional["StepConfigurationSchema"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+        },
+    )
+    # In legacy pipelines (before snapshots, former deployments), the config
+    # is stored as a string in the step run.
+    step_configuration: str = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
             ),
+            nullable=True,
         )
     )
 
@@ -250,7 +273,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            joinedload(jl_arg(StepRunSchema.step_configuration_schema)),
+            joinedload(jl_arg(StepRunSchema.static_config)),
+            joinedload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
         if include_metadata:
@@ -323,6 +347,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_run_id=request.pipeline_run_id,
             docstring=request.docstring,
             cache_key=request.cache_key,
+            cache_expires_at=request.cache_expires_at,
             code_hash=request.code_hash,
             source_code=request.source_code,
             version=version,
@@ -344,7 +369,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         step = None
 
         if self.snapshot is not None:
-            if self.step_configuration_schema:
+            if config_schema := (self.dynamic_config or self.static_config):
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.snapshot.pipeline_configuration
@@ -355,7 +380,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     inplace=True,
                 )
                 step = Step.from_dict(
-                    json.loads(self.step_configuration_schema.config),
+                    json.loads(config_schema.config),
                     pipeline_configuration=pipeline_configuration,
                 )
         if not step and self.step_configuration:
@@ -401,6 +426,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             is_retriable=self.is_retriable,
             start_time=self.start_time,
             end_time=self.end_time,
+            latest_heartbeat=self.latest_heartbeat,
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
@@ -412,6 +438,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,
+                cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
                 docstring=self.docstring,
                 source_code=self.source_code,
@@ -485,6 +512,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.end_time = value
             if key == "exception_info":
                 self.exception_info = json.dumps(value)
+            if key == "cache_expires_at":
+                self.cache_expires_at = value
 
         self.updated = utc_now()
 

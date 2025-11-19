@@ -1,9 +1,0 @@
-zenml[server]
-fastapi>=0.110
-uvicorn>=0.23
-pydantic>=2.6
-
-# Optional LLM support via LiteLLM (auto-used if API keys available)
-litellm>=1.40.0
-openai>=1.0.0
-instructor>=1.3.0

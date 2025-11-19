@@ -464,8 +464,8 @@ def run_logs(
     )
 
     # Handle runner logs from workload manager
-    if run.snapshot_id and source == "runner":
-        snapshot = store.get_snapshot(run.snapshot_id)
+    if run.snapshot and source == "runner":
+        snapshot = run.snapshot
         if (
             snapshot.template_id or snapshot.source_snapshot_id
         ) and server_config().workload_manager_enabled:

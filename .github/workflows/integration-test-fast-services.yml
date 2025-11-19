@@ -25,6 +25,11 @@ on:
         type: number
         required: false
         default: 30
+      reruns:
+        description: Pytest rerun count (0 disables)
+        type: number
+        required: false
+        default: 3
   workflow_dispatch:
     inputs:
       os:
@@ -36,7 +41,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.9', '3.10', '3.11', '3.12']
+        options: ['3.10', '3.11', '3.12', '3.13']
         required: false
         default: '3.11'
       test_environment:
@@ -72,6 +77,11 @@ on:
         type: number
         required: false
         default: 30
+      reruns:
+        description: Pytest rerun count (0 disables)
+        type: number
+        required: false
+        default: 3
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
@@ -97,6 +107,7 @@ jobs:
       GCP_US_EAST4_SERVER_URL: ${{ secrets.GCP_US_EAST4_SERVER_URL }}
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
+      PYTEST_RERUNS: ${{ inputs.reruns }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
       run:

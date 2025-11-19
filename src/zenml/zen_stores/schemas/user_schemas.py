@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        DeploymentSchema,
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
@@ -77,7 +78,10 @@ class UserSchema(NamedSchema, table=True):
     full_name: str
     description: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     email: Optional[str] = Field(nullable=True)
-    avatar_url: Optional[str] = Field(default=None, nullable=True)
+    avatar_url: Optional[str] = Field(
+        default=None,
+        sa_column=Column(TEXT, nullable=True),
+    )
     active: bool
     password: Optional[str] = Field(nullable=True)
     activation_token: Optional[str] = Field(nullable=True)
@@ -168,6 +172,9 @@ class UserSchema(NamedSchema, table=True):
     api_keys: List["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["DeploymentSchema"] = Relationship(
+        back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
         back_populates="user",

@@ -56,6 +56,9 @@ if TYPE_CHECKING:
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.models.v2.core.logs import LogsResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
@@ -81,6 +84,10 @@ class PipelineRunTriggerInfo(BaseZenModel):
     step_run_id: Optional[UUID] = Field(
         default=None,
         title="The ID of the step run that triggered the pipeline run.",
+    )
+    deployment_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the deployment that triggered the pipeline run.",
     )
 
 
@@ -171,6 +178,10 @@ class PipelineRunUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     end_time: Optional[datetime] = None
+    is_finished: Optional[bool] = Field(
+        default=None,
+        title="Whether the pipeline run is finished.",
+    )
     orchestrator_run_id: Optional[str] = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
@@ -202,32 +213,6 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
-    )
-    stack: Optional["StackResponse"] = Field(
-        default=None, title="The stack that was used for this run."
-    )
-    pipeline: Optional["PipelineResponse"] = Field(
-        default=None, title="The pipeline this run belongs to."
-    )
-    build: Optional["PipelineBuildResponse"] = Field(
-        default=None, title="The pipeline build that was used for this run."
-    )
-    schedule: Optional["ScheduleResponse"] = Field(
-        default=None, title="The schedule that was used for this run."
-    )
-    code_reference: Optional["CodeReferenceResponse"] = Field(
-        default=None, title="The code reference that was used for this run."
-    )
-    snapshot_id: Optional[UUID] = Field(
-        default=None, title="The snapshot that was used for this run."
-    )
-    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
-        default=None, title="The trigger execution that triggered this run."
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -286,13 +271,13 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         description="DEPRECATED: Template used for the pipeline run.",
         deprecated=True,
     )
-    source_snapshot_id: Optional[UUID] = Field(
-        default=None,
-        description="Source snapshot used for the pipeline run.",
-    )
     is_templatable: bool = Field(
         default=False,
         description="Whether a template can be created from this run.",
+    )
+    trigger_info: Optional[PipelineRunTriggerInfo] = Field(
+        default=None,
+        title="Trigger information for the pipeline run.",
     )
 
 
@@ -300,6 +285,25 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     snapshot: Optional["PipelineSnapshotResponse"] = None
+    source_snapshot: Optional["PipelineSnapshotResponse"] = None
+    stack: Optional["StackResponse"] = Field(
+        default=None, title="The stack that was used for this run."
+    )
+    pipeline: Optional["PipelineResponse"] = Field(
+        default=None, title="The pipeline this run belongs to."
+    )
+    build: Optional["PipelineBuildResponse"] = Field(
+        default=None, title="The pipeline build that was used for this run."
+    )
+    schedule: Optional["ScheduleResponse"] = Field(
+        default=None, title="The schedule that was used for this run."
+    )
+    code_reference: Optional["CodeReferenceResponse"] = Field(
+        default=None, title="The code reference that was used for this run."
+    )
+    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
+        default=None, title="The trigger execution that triggered this run."
+    )
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
@@ -311,6 +315,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this pipeline run.",
         default=None,
+    )
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default=[],
+        title="Curated visualizations associated with the pipeline run.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -382,78 +390,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
-
-    @property
-    def stack(self) -> Optional["StackResponse"]:
-        """The `stack` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().stack
-
-    @property
-    def pipeline(self) -> Optional["PipelineResponse"]:
-        """The `pipeline` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().pipeline
-
-    @property
-    def build(self) -> Optional["PipelineBuildResponse"]:
-        """The `build` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().build
-
-    @property
-    def schedule(self) -> Optional["ScheduleResponse"]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().schedule
-
-    @property
-    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
-        """The `trigger_execution` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().trigger_execution
-
-    @property
-    def code_reference(self) -> Optional["CodeReferenceResponse"]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().code_reference
-
-    @property
-    def snapshot_id(self) -> Optional["UUID"]:
-        """The `snapshot_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().snapshot_id
-
-    @property
-    def model_version_id(self) -> Optional[UUID]:
-        """The `model_version_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().model_version_id
 
     @property
     def run_metadata(self) -> Dict[str, MetadataType]:
@@ -565,15 +501,6 @@ class PipelineRunResponse(
         return self.get_metadata().template_id
 
     @property
-    def source_snapshot_id(self) -> Optional[UUID]:
-        """The `source_snapshot_id` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().source_snapshot_id
-
-    @property
     def is_templatable(self) -> bool:
         """The `is_templatable` property.
 
@@ -590,6 +517,69 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().snapshot
+
+    @property
+    def source_snapshot(self) -> Optional["PipelineSnapshotResponse"]:
+        """The `source_snapshot` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().source_snapshot
+
+    @property
+    def stack(self) -> Optional["StackResponse"]:
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().stack
+
+    @property
+    def pipeline(self) -> Optional["PipelineResponse"]:
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline
+
+    @property
+    def build(self) -> Optional["PipelineBuildResponse"]:
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().build
+
+    @property
+    def schedule(self) -> Optional["ScheduleResponse"]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().schedule
+
+    @property
+    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
+        """The `trigger_execution` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().trigger_execution
+
+    @property
+    def code_reference(self) -> Optional["CodeReferenceResponse"]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().code_reference
 
     @property
     def model_version(self) -> Optional[ModelVersionResponse]:
@@ -640,7 +630,6 @@ class PipelineRunFilter(
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
-        "tag",
         "stack",
         "pipeline",
         "model",
@@ -665,6 +654,8 @@ class PipelineRunFilter(
         "pipeline_name",
         "templatable",
         "triggered_by_step_run_id",
+        "triggered_by_deployment_id",
+        "linked_to_model_version_id",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -731,6 +722,14 @@ class PipelineRunFilter(
         description="Model version associated with the pipeline run.",
         union_mode="left_to_right",
     )
+    linked_to_model_version_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Filter by model version linked to the pipeline run. "
+        "The difference to `model_version_id` is that this filter will "
+        "not only include pipeline runs which are directly linked to the model "
+        "version, but also if any step run is linked to the model version.",
+        union_mode="left_to_right",
+    )
     status: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
@@ -784,6 +783,11 @@ class PipelineRunFilter(
         description="The ID of the step run that triggered this pipeline run.",
         union_mode="left_to_right",
     )
+    triggered_by_deployment_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The ID of the deployment that triggered this pipeline run.",
+        union_mode="left_to_right",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -805,7 +809,9 @@ class PipelineRunFilter(
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
             CodeRepositorySchema,
+            DeploymentSchema,
             ModelSchema,
+            ModelVersionPipelineRunSchema,
             ModelVersionSchema,
             PipelineBuildSchema,
             PipelineRunSchema,
@@ -988,6 +994,33 @@ class PipelineRunFilter(
                 ),
             )
             custom_filters.append(trigger_filter)
+
+        if self.triggered_by_deployment_id:
+            trigger_filter = and_(
+                PipelineRunSchema.triggered_by == DeploymentSchema.id,
+                PipelineRunSchema.triggered_by_type
+                == PipelineRunTriggeredByType.DEPLOYMENT.value,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.triggered_by_deployment_id,
+                    table=DeploymentSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(trigger_filter)
+
+        if self.linked_to_model_version_id:
+            linked_to_model_version_filter = and_(
+                PipelineRunSchema.id
+                == ModelVersionPipelineRunSchema.pipeline_run_id,
+                ModelVersionPipelineRunSchema.model_version_id
+                == ModelVersionSchema.id,
+                self.generate_custom_query_conditions_for_column(
+                    value=self.linked_to_model_version_id,
+                    table=ModelVersionSchema,
+                    column="id",
+                ),
+            )
+            custom_filters.append(linked_to_model_version_filter)
 
         return custom_filters
 

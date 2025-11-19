@@ -140,7 +140,6 @@ ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
-ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -207,6 +206,7 @@ ENV_ZENML_SERVER_PRO_PREFIX = "ZENML_SERVER_PRO_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
+ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT = "ZENML_DAEMON_SERVER_TIMEOUT"
 
 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK = (
     "ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK"
@@ -219,6 +219,7 @@ ENV_ZENML_RUNNER_POD_TIMEOUT = "ZENML_RUNNER_POD_TIMEOUT"
 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
     "ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY"
 )
+
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
@@ -247,11 +248,6 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 
 # ZenML Analytics Server - URL
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
-
-# Container utils
-SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
-    ENV_ZENML_PREVENT_PIPELINE_EXECUTION
-)
 
 # Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
@@ -307,6 +303,7 @@ DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT = 20  # seconds
 DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT = 300  # seconds
 SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT = 120  # seconds
 ZENML_API_KEY_PREFIX = "ZENKEY_"
+ZENML_PRO_API_KEY_PREFIX = "ZENPROKEY_"
 DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW = 60 * 48  # 48 hours
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_MINUTE = 5
 DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY = 1000
@@ -321,13 +318,15 @@ DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
 )
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_XFO = "SAMEORIGIN"
-DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP = "0"
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CONTENT = "nosniff"
-_csp_script_src_urls = ["https://widgets-v3.featureos.app"]
+_csp_script_src_urls = [
+    "https://widgets-v3.featureos.app",
+    "https://static.reo.dev",
+]
 _csp_connect_src_urls = [
-    "https://sdkdocs.zenml.io",
-    "https://analytics.zenml.io",
-    "https://raw.githubusercontent.com",
+    # We need a wildcard here to allow the dashboard deployment playground
+    # to send requests to deployments on any URL.
+    "*",
 ]
 _csp_img_src_urls = [
     "*"
@@ -405,6 +404,8 @@ LOGS = "/logs"
 PIPELINE_BUILDS = "/pipeline_builds"
 PIPELINE_CONFIGURATION = "/pipeline-configuration"
 PIPELINE_DEPLOYMENTS = "/pipeline_deployments"
+DEPLOYMENTS = "/deployments"
+CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
@@ -440,6 +441,7 @@ STATISTICS = "/statistics"
 STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
+HEARTBEAT = "/heartbeat"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
@@ -459,6 +461,10 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
+
+# deployer constants
+DEPLOYER_DOCKER_IMAGE_KEY = "deployer"
+IN_MEMORY_ARTIFACT_URI_PREFIX = "memory://"
 
 # Secret constants
 SECRET_VALUES = "values"

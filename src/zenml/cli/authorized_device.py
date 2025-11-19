@@ -47,7 +47,7 @@ def describe_authorized_device(id_or_prefix: str) -> None:
             id_or_prefix=id_or_prefix,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
 
     cli_utils.print_pydantic_model(
         title=f"Authorized device `{device.id}`",
@@ -103,7 +103,7 @@ def lock_authorized_device(id: str) -> None:
             locked=True,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Locked authorized device `{id}`.")
 
@@ -122,7 +122,7 @@ def unlock_authorized_device(id: str) -> None:
             locked=False,
         )
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Locked authorized device `{id}`.")
 
@@ -153,6 +153,6 @@ def delete_authorized_device(id: str, yes: bool = False) -> None:
     try:
         Client().delete_authorized_device(id_or_prefix=id)
     except KeyError as e:
-        cli_utils.error(str(e))
+        cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted authorized device `{id}`.")

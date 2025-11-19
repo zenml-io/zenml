@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML CLI.
 
-The ZenML CLI tool is usually downloaded and installed via PyPI and a
-``pip install zenml`` command. Please see the Installation & Setup
-section above for more information about that process.
-
 How to use the CLI
 ------------------
 
@@ -1755,7 +1751,19 @@ zenml artifact list
 Each artifact has one or several versions. To list artifact versions, use:
 
 ```bash
-zenml artifact versions list
+zenml artifact version list
+```
+
+You can filter artifact versions by artifact name using the `--artifact` option:
+
+```bash
+zenml artifact version list --artifact <ARTIFACT_NAME>
+```
+
+To view detailed information about a specific artifact version, use:
+
+```bash
+zenml artifact version describe <NAME_OR_ID> [-v <VERSION>]
 ```
 
 If you would like to rename an artifact or adjust the tags of an artifact or
@@ -2510,6 +2518,7 @@ from zenml.cli.authorized_device import *  # noqa
 from zenml.cli.base import *  # noqa
 from zenml.cli.code_repository import *  # noqa
 from zenml.cli.config import *  # noqa
+from zenml.cli.deployment import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa

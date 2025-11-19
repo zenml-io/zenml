@@ -121,7 +121,7 @@ def register_project(
             )
             cli_utils.success("✔ Project created successfully.")
         except Exception as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
 
     if set_project:
         client.set_active_project(project_name)
@@ -163,7 +163,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
                 f"✔ The active project has been set to {project_name_or_id}"
             )
         except Exception as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)
 
     if default:
         client.update_user(
@@ -194,7 +194,7 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
         try:
             project_ = client.get_project(project_name_or_id)
         except KeyError as err:
-            cli_utils.error(str(err))
+            cli_utils.exception(err)
         else:
             cli_utils.print_pydantic_models(
                 [project_], exclude_columns=["created", "updated"]
@@ -218,4 +218,4 @@ def delete_project(project_name_or_id: str) -> None:
                 f"Project '{project_name_or_id}' deleted successfully."
             )
         except Exception as e:
-            cli_utils.error(str(e))
+            cli_utils.exception(e)

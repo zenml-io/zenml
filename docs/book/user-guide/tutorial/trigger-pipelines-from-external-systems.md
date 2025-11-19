@@ -6,7 +6,7 @@ icon: traffic-light-go
 
 # Triggering Pipelines from External Systems
 
-This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
+This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Snapshots](https://docs.zenml.io/concepts/snapshots) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
 
 ## Introduction: The Pipeline Triggering Challenge
 
@@ -21,7 +21,7 @@ In development environments, you typically run your ZenML pipelines directly fro
 Each scenario requires a reliable way to trigger the right version of your pipeline with the correct parameters, while maintaining security and operational standards.
 
 {% hint style="info" %}
-For our full reference documentation on pipeline triggering, see the [Trigger a Pipeline (Run Templates)](https://docs.zenml.io/how-to/trigger-pipelines) page.
+For our full reference documentation on pipeline triggering, see the [Snapshot docs](https://docs.zenml.io/concepts/snapshots) page.
 {% endhint %}
 
 ## Prerequisites
@@ -138,7 +138,7 @@ This pipeline is designed to be configurable with parameters that might change b
 
 These parameters make it an ideal candidate for external triggering scenarios where we want to run the same pipeline with different configurations.
 
-## Method 1: Using Run Templates (ZenML Pro)
+## Method 1: Using Snapshots (ZenML Pro)
 
 {% hint style="success" %}
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://zenml.io/book-your-demo) to get access.
@@ -147,69 +147,28 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](
 {% hint style="info" %}
 **Important: Workspace API vs ZenML Pro API**
 
-Run Templates use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need Workspace API credentials (like service accounts), not ZenML Pro API tokens.
+Snapshots use your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). This distinction is crucial for authentication - you'll need to use ZenML Pro credentials with the Workspace API, not the ZenML Pro management API. See [ZenML Pro Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) and [ZenML Pro Organization Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts).
 {% endhint %}
 
 {% hint style="success" %}
 Production authentication (ZenML Pro)
 
-For production automation in Pro (triggering run templates from CI/CD or external systems), prefer **organization‑level service accounts and API keys** over temporary user tokens. Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your org service account API key. See [Pro Service Accounts](https://docs.zenml.io/pro/core-concepts/service-accounts).
+For production automation in Pro (running snapshots from CI/CD or external systems), you can use [Personal Access Tokens](https://docs.zenml.io/pro/access-management/personal-access-tokens) or [Organization Service Accounts](https://docs.zenml.io/pro/access-management/service-accounts). Set `ZENML_STORE_URL` to your workspace URL and `ZENML_STORE_API_KEY` to your Personal Access Token or Organization Service Account API key.
 {% endhint %}
 
-[Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
+[Snapshots](https://docs.zenml.io/concepts/snapshots) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
-### Creating a Run Template
+### Creating a Snapshot
 
-First, we need to create a template based on our pipeline. This requires having a remote stack with at least a remote orchestrator, artifact store, and container registry.
-
-#### Using Python:
-
-```python
-from zenml.client import Client
-
-# First get the pipeline by name
-pipeline = Client().get_pipeline("training_pipeline")
-
-# Get the most recent runs for this pipeline
-runs = Client().list_pipeline_runs(
-    pipeline_id=pipeline.id, 
-    sort_by="desc:created", 
-    size=1
-)
-
-if runs:
-    # Use the most recent run
-    # assumes this run was run on a remote stack
-    latest_run = runs[0]
-    
-    config = {
-        "steps": {
-            "load_data": {
-                "parameters": {
-                    "data_url": "s3://production-bucket/latest-data.csv"
-                }
-            }
-        }
-    }
-    # Create a template from this run
-    template = latest_run.create_run_template(
-        name="production-training-template",
-        deployment_id=latest_run.deployment_id,
-        config=config
-    )
-    
-    print(f"Created template: {template.name} with ID: {template.id}")
-```
-
-#### Using CLI:
+First, we need to create a snapshot of our pipeline. This requires having a remote stack with at least a remote orchestrator, artifact store, and container registry.
 
 ```bash
 # The source path is the module path to your pipeline
-zenml pipeline create-run-template training_pipeline \
+zenml pipeline snapshot create <PIPELINE_SOURCE_PATH> \
     --name=production-training-template
 ```
 
-You can even pass a config file and specify a stack when using the `create-run-template` command:
+You can also pass a config file and specify a stack:
 
 ```bash
 # Create a config file
@@ -218,33 +177,29 @@ echo "steps:
     parameters:
       data_url: s3://production-bucket/latest-data.csv" > config.yaml
 
-zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+zenml pipeline snapshot create <PIPELINE_SOURCE_PATH> \
     --name=<TEMPLATE_NAME> \
     --config=<PATH_TO_CONFIG_YAML> \
     --stack=<STACK_ID_OR_NAME>
 ```
 
-### Triggering a Template
+### Running a snapshot
 
-Once you have created a template, there are [multiple ways](https://docs.zenml.io/how-to/trigger-pipelines) to trigger it, either programmatically with the Python client or via REST API for external systems.
+Once you have created a snapshot, there are [multiple ways](https://docs.zenml.io/concepts/snapshots#running-pipeline-snapshots) to run it, either programmatically with the Python client or via REST API for external systems.
 
 #### Using the Python Client:
 
 ```python
 from zenml.client import Client
 
-# Find templates for a specific pipeline
-pipeline = Client().get_pipeline("training_pipeline")
-templates = Client().list_run_templates()
-templates = [t for t in templates if t.pipeline.id == pipeline.id]
+# Find snapshots for a specific pipeline
+snapshots = Client().list_snapshots(pipeline=<PIPELINE-NAME-OR-ID>)
 
-if templates:
-    # Use the first matching template
-    template = templates[0]
-    print(f"Using template: {template.name} (ID: {template.id})")
+if snapshots:
+    snapshot = snapshots[0]
+    print(f"Using snapshot: {snapshot.name} (ID: {snapshot.id})")
     
-    # Get the template's configuration
-    config = template.config_template
+    config = snapshot.config_template
     
     # Update the configuration with step parameters
     # Note: Parameters must be set at the step level rather than pipeline level
@@ -263,7 +218,7 @@ if templates:
     
     # Trigger the pipeline with the updated configuration
     run = Client().trigger_pipeline(
-        template_id=template.id,
+        snapshot_name_or_id=snapshot.id,
         run_configuration=config,
     )
     
@@ -286,7 +241,7 @@ zenml status | grep "API:" | awk '{print $2}'
 {% hint style="warning" %}
 **Important: Use Workspace API, Not ZenML Pro API**
 
-Run templates are triggered via your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). Make sure you're using the correct URL from your workspace dashboard.
+Snapshots are triggered via your **Workspace API** (your individual workspace URL), not the ZenML Pro API (cloudapi.zenml.io). Make sure you're using the correct URL from your workspace dashboard.
 {% endhint %}
 
 The REST API is ideal for external system integration, allowing you to trigger pipelines from non-Python environments:
@@ -298,15 +253,15 @@ curl -X 'GET' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer <YOUR_TOKEN>'
 
-# Step 2: Get the template ID using the pipeline_id
+# Step 2: Get the snapshot ID using the pipeline_id
 curl -X 'GET' \
-  'https://<YOUR_ZENML_SERVER>/api/v1/run_templates?pipeline_id=<PIPELINE_ID>' \
+  'https://<YOUR_ZENML_SERVER>/api/v1/pipeline_snapshots?pipeline=<PIPELINE_ID>' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer <YOUR_TOKEN>'
 
 # Step 3: Trigger the pipeline with custom parameters
 curl -X 'POST' \
-  'https://<YOUR_ZENML_SERVER>/api/v1/run_templates/<TEMPLATE_ID>/runs' \
+  'https://<YOUR_ZENML_SERVER>/api/v1/pipeline_snapshots/<SNAPSHOT-ID>/runs' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <YOUR_TOKEN>' \
@@ -621,7 +576,7 @@ if __name__ == "__main__":
 Create a `Dockerfile` to containerize your API:
 
 ```dockerfile
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -789,15 +744,15 @@ When deploying this API in production:
 
 ## Best Practices & Troubleshooting
 
-### Tag Run Templates
+### Tag Snapshots
 
-You should tag your run templates to make them easier to find and manage. It is
+You should tag your snapshots to make them easier to find and manage. It is
 currently only possible using the Python SDK:
 
 ```python
 from zenml import add_tags
 
-add_tags(tags=["my_tag"], run_template="run_template_name_or_id")
+add_tags(tags=["my_tag"], snapshot=<SNAPSHOT-ID>)
 ```
 
 ### Parameter Stability Best Practices
@@ -865,7 +820,7 @@ except Exception as e:
 
 The best approach for triggering pipelines depends on your specific needs:
 
-1. **ZenML Pro Run Templates**: Ideal for teams that need a complete, managed solution with UI support and centralized management
+1. **ZenML Pro Snapshots**: Ideal for teams that need a complete, managed solution with UI support and centralized management
 
 2. **Custom API**: Best for teams that need full control over the triggering mechanism and want to embed it within their own infrastructure
 

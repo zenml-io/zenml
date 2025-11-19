@@ -24,6 +24,7 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 | [HTML reports](#id-11-simple-html-reports) | Create rich visualizations effortlessly | Beautiful stakeholder-friendly outputs |
 | [Model Control Plane](#id-12-register-models-in-the-model-control-plane) | Track models and their lifecycle | Central hub for model lineage and governance |
 | [Parent Docker images](#id-13-create-a-parent-docker-image-for-faster-builds) | Pre-configure your dependencies in a base image | Faster builds and consistent environments |
+| [ZenML docs via MCP](#id-14-enable-ide-ai-zenml-docs-via-mcp-server) | Connect your IDE assistant to live ZenML docs | Faster, grounded answers and doc lookups while coding |
 
 
 ## 1 Log rich metadata on every run
@@ -465,7 +466,7 @@ def experiment_pipeline():
 * **Exclusive tags** - Create tags where only one entity can have the tag at a time (perfect for "production" status)
 * **Cascade tags** - Apply pipeline tags automatically to all artifacts created during execution
 * **Flexible organization** - Create any tagging system that makes sense for your projects
-* **Multiple entity types** - Tag pipelines, runs, artifacts, models, and run templates
+* **Multiple entity types** - Tag pipelines, runs, artifacts, models, snapshots and deployments
 
 ![Filtering by tags](../.gitbook/assets/filtering-by-tags.png)
 
@@ -710,7 +711,7 @@ Learn more: [Models](https://docs.zenml.io/concepts/models#tracking-metrics-and-
 ```bash
 # 1. Create a Dockerfile for your parent image
 cat > Dockerfile.parent << EOF
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -804,3 +805,52 @@ settings:
 For projects with heavy dependencies like deep learning frameworks, this approach can cut build times by 80-90%, turning a 5-minute build into a 30-second one. This is especially valuable in cloud environments where you pay for build time.
 
 Learn more: [Containerization](https://docs.zenml.io/concepts/containerization)
+
+## 14 Enable IDE AI: ZenML docs via MCP server
+
+**Why** -- wire your IDE AI assistant into the live ZenML docs in under 5 minutes. Get grounded answers, code snippets, and API lookups without context switching or hallucinations—perfect if you already use Claude Code or Cursor.
+
+{% hint style="info" %}
+The MCP server works with any MCP-compatible client. Below we demonstrate popular examples using Claude Code (VS Code) and Cursor. The server indexes the latest released documentation, not the develop branch.
+{% endhint %}
+
+**Setup**
+
+### Claude Code (VS Code)
+```bash
+claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
+```
+
+### Cursor (JSON settings)
+```json
+{
+  "mcpServers": {
+    "zenmldocs": {
+      "transport": {
+        "type": "http",
+        "url": "https://docs.zenml.io/~gitbook/mcp"
+      }
+    }
+  }
+}
+```
+
+**Try it**
+```
+Using the zenmldocs MCP server, show me how to register an MLflow experiment tracker in ZenML and add it to my stack. Cite the source page.
+```
+
+**Key features**
+- **Live answers** from ZenML docs directly in your IDE assistant
+- **Fewer hallucinations** thanks to source-of-truth grounding and citations
+- **IDE-native experience** — no code changes required in your project
+- **Great for API lookups** and "how do I" questions while coding
+
+**Best practices**
+- Prefix prompts with: "Use the zenmldocs MCP server …" and ask for citations
+- Remember: it indexes the latest released docs, not develop; for full offline context use `llms-full.txt`, for selective interactive queries prefer MCP
+- Keep the server name consistent (e.g., `zenmldocs`) across machines/projects
+- If your IDE supports tool selection, explicitly enable/select the `zenmldocs` MCP tool
+- For bleeding-edge features on develop, consult the repo or develop docs directly
+
+Learn more: [Access ZenML documentation via llms.txt and MCP](https://docs.zenml.io/reference/llms-txt)

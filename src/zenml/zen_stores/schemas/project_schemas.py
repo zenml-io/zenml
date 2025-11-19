@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, List
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
 
+from zenml.enums import VisualizationResourceTypes
 from zenml.models import (
     ProjectRequest,
     ProjectResponse,
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
         ActionSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
+        CuratedVisualizationSchema,
+        DeploymentSchema,
         EventSourceSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -121,6 +124,22 @@ class ProjectSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    deployments: List["DeploymentSchema"] = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
+    visualizations: List["CuratedVisualizationSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=(
+                "and_(CuratedVisualizationSchema.resource_type"
+                f"=='{VisualizationResourceTypes.PROJECT.value}', "
+                "foreign(CuratedVisualizationSchema.resource_id)==ProjectSchema.id)"
+            ),
+            overlaps="visualizations",
+            cascade="delete",
+            order_by="CuratedVisualizationSchema.display_order",
+        ),
     )
 
     @classmethod

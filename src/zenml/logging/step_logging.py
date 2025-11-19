@@ -20,12 +20,13 @@ import queue
 import re
 import threading
 import time
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
+    Generator,
     Iterator,
     List,
     Optional,
@@ -159,7 +160,7 @@ class ArtifactStoreHandler(logging.Handler):
                     message=message,
                     name=record.name,
                     level=level,
-                    timestamp=utc_now(),
+                    timestamp=utc_now(tz_aware=True),
                     module=record.module,
                     filename=record.filename,
                     lineno=record.lineno,
@@ -178,7 +179,7 @@ class ArtifactStoreHandler(logging.Handler):
                         module=record.module,
                         filename=record.filename,
                         lineno=record.lineno,
-                        timestamp=utc_now(),
+                        timestamp=utc_now(tz_aware=True),
                         chunk_index=i,
                         total_chunks=len(chunks),
                         id=entry_id,
@@ -259,24 +260,30 @@ def parse_log_entry(log_line: str) -> Optional[LogEntry]:
         For plain text logs, only message is populated with INFO level default.
         Returns None only for empty lines.
     """
-    stripped_line = log_line.strip()
-    if not stripped_line:
+    line = log_line.strip()
+    if not line:
         return None
 
-    # Try to parse JSON format first
-    if stripped_line.startswith("{") and stripped_line.endswith("}"):
+    if line.startswith("{") and line.endswith("}"):
         try:
-            return LogEntry.model_validate_json(stripped_line)
+            return LogEntry.model_validate_json(line)
         except Exception:
-            # If JSON parsing or validation fails, treat as plain text
             pass
 
-    # For any other format (plain text), create LogEntry with defaults
+    old_format = re.search(
+        r"^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+UTC\]", line
+    )
+
+    timestamp = None
+    if old_format:
+        timestamp = old_format.group(1) + "Z"
+        line = line.replace(old_format.group(0), "").strip()
+
     return LogEntry(
-        message=stripped_line,
-        name=None,  # No logger name available for plain text logs
-        level=LoggingLevels.INFO,  # Default level for plain text logs
-        timestamp=None,  # No timestamp available for plain text logs
+        message=line,
+        name=None,
+        level=LoggingLevels.INFO,
+        timestamp=timestamp,
     )
 
 
@@ -924,3 +931,71 @@ def setup_orchestrator_logging(
             f"Failed to setup orchestrator logging for run {run_id}: {e}"
         )
         return nullcontext()
+
+
+@contextmanager
+def setup_pipeline_logging(
+    source: str,
+    snapshot: "PipelineSnapshotResponse",
+    run_id: Optional[UUID] = None,
+    logs_response: Optional[LogsResponse] = None,
+) -> Generator[Optional[LogsRequest], None, None]:
+    """Set up logging for a pipeline run.
+
+    Args:
+        source: The log source.
+        snapshot: The snapshot of the pipeline run.
+        run_id: The ID of the pipeline run.
+        logs_response: The logs response to continue from.
+
+    Raises:
+        Exception: If updating the run with the logs request fails.
+
+    Yields:
+        The logs request.
+    """
+    logging_enabled = True
+
+    if handle_bool_env_var(ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False):
+        logging_enabled = False
+    elif snapshot.pipeline_configuration.enable_pipeline_logs is not None:
+        logging_enabled = snapshot.pipeline_configuration.enable_pipeline_logs
+
+    if logging_enabled:
+        client = Client()
+        artifact_store = client.active_stack.artifact_store
+        logs_model = None
+
+        if logs_response:
+            logs_uri = logs_response.uri
+        else:
+            logs_uri = prepare_logs_uri(
+                artifact_store=artifact_store,
+            )
+            logs_model = LogsRequest(
+                uri=logs_uri,
+                source=source,
+                artifact_store_id=artifact_store.id,
+            )
+
+            if run_id:
+                try:
+                    run_update = PipelineRunUpdate(add_logs=[logs_model])
+                    client.zen_store.update_run(
+                        run_id=run_id, run_update=run_update
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to add logs to the run {run_id}: {e}"
+                    )
+                    raise e
+
+        logging_context = PipelineLogsStorageContext(
+            logs_uri=logs_uri,
+            artifact_store=artifact_store,
+            prepend_step_name=False,
+        )
+        with logging_context:
+            yield logs_model
+    else:
+        yield None

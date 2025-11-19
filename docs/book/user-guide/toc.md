@@ -76,11 +76,12 @@
 ## Examples
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
-* [Agent Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/minimal_agent_production)
+* [Deploying ML Models](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)
+* [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [Forecasting time-series prediction](https://github.com/zenml-io/zenml-projects/tree/main/floracasts)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
-* [Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
+* [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)
 * [Deep research agentic workflow](https://github.com/zenml-io/zenml-projects/tree/main/deep_research)
 * [More Projects...](https://github.com/zenml-io/zenml-projects)

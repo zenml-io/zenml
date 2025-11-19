@@ -33,7 +33,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -48,6 +48,7 @@ from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
 )
+from zenml.models.v2.core.deployment import DeploymentResponse
 from zenml.models.v2.core.pipeline import PipelineResponse
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponse,
@@ -55,13 +56,18 @@ from zenml.models.v2.core.pipeline_build import (
 from zenml.models.v2.core.schedule import ScheduleResponse
 from zenml.models.v2.core.stack import StackResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.models.v2.core.user import UserResponse
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
+    from zenml.models.v2.core.curated_visualization import (
+        CuratedVisualizationResponse,
+    )
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+    AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 # ------------------ Request Model ------------------
@@ -98,18 +104,10 @@ class PipelineSnapshotBase(BaseZenModel):
         default=None,
         title="The pipeline spec of the snapshot.",
     )
-
-    @property
-    def should_prevent_build_reuse(self) -> bool:
-        """Whether the snapshot prevents a build reuse.
-
-        Returns:
-            Whether the snapshot prevents a build reuse.
-        """
-        return any(
-            step.config.docker_settings.prevent_build_reuse
-            for step in self.step_configurations.values()
-        )
+    is_dynamic: bool = Field(
+        default=False,
+        title="Whether this is a snapshot of a dynamic pipeline.",
+    )
 
 
 class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
@@ -152,7 +150,6 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     template: Optional[UUID] = Field(
         default=None,
         description="DEPRECATED: Template used for the snapshot.",
-        deprecated=True,
     )
     source_snapshot: Optional[UUID] = Field(
         default=None,
@@ -186,7 +183,6 @@ class PipelineSnapshotUpdate(BaseUpdate):
         default=None,
         title="The name of the snapshot. If set to "
         "False, the name will be removed.",
-        max_length=STR_FIELD_MAX_LENGTH,
     )
     description: Optional[str] = Field(
         default=None,
@@ -229,6 +225,12 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
 
     runnable: bool = Field(
         title="If a run can be started from the snapshot.",
+    )
+    deployable: bool = Field(
+        title="If the snapshot can be deployed.",
+    )
+    is_dynamic: bool = Field(
+        title="Whether this is a snapshot of a dynamic pipeline.",
     )
 
 
@@ -274,23 +276,6 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="Optional path where the code is stored in the artifact store.",
     )
-    pipeline: PipelineResponse = Field(
-        title="The pipeline associated with the snapshot."
-    )
-    stack: Optional[StackResponse] = Field(
-        default=None, title="The stack associated with the snapshot."
-    )
-    build: Optional[PipelineBuildResponse] = Field(
-        default=None,
-        title="The pipeline build associated with the snapshot.",
-    )
-    schedule: Optional[ScheduleResponse] = Field(
-        default=None, title="The schedule associated with the snapshot."
-    )
-    code_reference: Optional[CodeReferenceResponse] = Field(
-        default=None,
-        title="The code reference associated with the snapshot.",
-    )
     template_id: Optional[UUID] = Field(
         default=None,
         description="Template from which this snapshot was created.",
@@ -311,6 +296,27 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
 class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     """Run snapshot resources."""
 
+    pipeline: PipelineResponse = Field(
+        title="The pipeline associated with the snapshot."
+    )
+    stack: Optional[StackResponse] = Field(
+        default=None, title="The stack associated with the snapshot."
+    )
+    build: Optional[PipelineBuildResponse] = Field(
+        default=None,
+        title="The pipeline build associated with the snapshot.",
+    )
+    schedule: Optional[ScheduleResponse] = Field(
+        default=None, title="The schedule associated with the snapshot."
+    )
+    code_reference: Optional[CodeReferenceResponse] = Field(
+        default=None,
+        title="The code reference associated with the snapshot.",
+    )
+    deployment: Optional[DeploymentResponse] = Field(
+        default=None,
+        title="The deployment associated with the snapshot.",
+    )
     tags: List[TagResponse] = Field(
         default=[],
         title="Tags associated with the snapshot.",
@@ -322,6 +328,14 @@ class PipelineSnapshotResponseResources(ProjectScopedResponseResources):
     latest_run_status: Optional[ExecutionStatus] = Field(
         default=None,
         title="The status of the latest run of the snapshot.",
+    )
+    latest_run_user: Optional[UserResponse] = Field(
+        default=None,
+        title="The user that created the latest run of the snapshot.",
+    )
+    visualizations: List["CuratedVisualizationResponse"] = Field(
+        default=[],
+        title="Curated visualizations associated with the pipeline snapshot.",
     )
 
 
@@ -360,6 +374,24 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_body().runnable
+
+    @property
+    def deployable(self) -> bool:
+        """The `deployable` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().deployable
+
+    @property
+    def is_dynamic(self) -> bool:
+        """The `is_dynamic` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_dynamic
 
     @property
     def description(self) -> Optional[str]:
@@ -452,51 +484,6 @@ class PipelineSnapshotResponse(
         return self.get_metadata().code_path
 
     @property
-    def pipeline(self) -> PipelineResponse:
-        """The `pipeline` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().pipeline
-
-    @property
-    def stack(self) -> Optional[StackResponse]:
-        """The `stack` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().stack
-
-    @property
-    def build(self) -> Optional[PipelineBuildResponse]:
-        """The `build` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().build
-
-    @property
-    def schedule(self) -> Optional[ScheduleResponse]:
-        """The `schedule` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().schedule
-
-    @property
-    def code_reference(self) -> Optional[CodeReferenceResponse]:
-        """The `code_reference` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().code_reference
-
-    @property
     def template_id(self) -> Optional[UUID]:
         """The `template_id` property.
 
@@ -533,6 +520,60 @@ class PipelineSnapshotResponse(
         return self.get_metadata().config_template
 
     @property
+    def pipeline(self) -> PipelineResponse:
+        """The `pipeline` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline
+
+    @property
+    def stack(self) -> Optional[StackResponse]:
+        """The `stack` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().stack
+
+    @property
+    def build(self) -> Optional[PipelineBuildResponse]:
+        """The `build` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().build
+
+    @property
+    def schedule(self) -> Optional[ScheduleResponse]:
+        """The `schedule` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().schedule
+
+    @property
+    def code_reference(self) -> Optional[CodeReferenceResponse]:
+        """The `code_reference` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().code_reference
+
+    @property
+    def deployment(self) -> Optional[DeploymentResponse]:
+        """The `deployment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().deployment
+
+    @property
     def tags(self) -> List[TagResponse]:
         """The `tags` property.
 
@@ -559,6 +600,15 @@ class PipelineSnapshotResponse(
         """
         return self.get_resources().latest_run_status
 
+    @property
+    def latest_run_user(self) -> Optional[UserResponse]:
+        """The `latest_run_user` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().latest_run_user
+
 
 # ------------------ Filter Model ------------------
 
@@ -570,10 +620,18 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "named_only",
+        "pipeline",
+        "stack",
+        "runnable",
+        "deployable",
+        "deployed",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "pipeline",
+        "stack",
+        "deployment",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -588,12 +646,12 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether to only return snapshots with a name.",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Stack associated with the snapshot.",
         union_mode="left_to_right",
@@ -608,15 +666,22 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         description="Schedule associated with the snapshot.",
         union_mode="left_to_right",
     )
-    template_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Template used as base for the snapshot.",
-        union_mode="left_to_right",
-    )
     source_snapshot_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
+    )
+    runnable: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is runnable.",
+    )
+    deployable: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is deployable.",
+    )
+    deployed: Optional[bool] = Field(
+        default=None,
+        description="Whether the snapshot is deployed.",
     )
 
     def get_custom_filters(
@@ -630,10 +695,16 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             A list of custom filters.
         """
-        from sqlmodel import col
+        from sqlmodel import and_, col, not_, select
 
         from zenml.zen_stores.schemas import (
+            DeploymentSchema,
+            PipelineBuildSchema,
+            PipelineSchema,
             PipelineSnapshotSchema,
+            StackComponentSchema,
+            StackCompositionSchema,
+            StackSchema,
         )
 
         custom_filters = super().get_custom_filters(table)
@@ -643,14 +714,140 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 col(PipelineSnapshotSchema.name).is_not(None)
             )
 
+        if self.pipeline:
+            pipeline_filter = and_(
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.pipeline, table=PipelineSchema
+                ),
+            )
+            custom_filters.append(pipeline_filter)
+
+        if self.stack:
+            stack_filter = and_(
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.stack,
+                    table=StackSchema,
+                ),
+            )
+            custom_filters.append(stack_filter)
+
+        if self.runnable is True:
+            runnable_filter = and_(
+                # The following condition is not perfect as it does not
+                # consider stacks with custom flavor components or local
+                # components, but the best we can do currently with our
+                # table columns.
+                PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
+                col(PipelineBuildSchema.is_local).is_(False),
+                col(PipelineBuildSchema.stack_id).is_not(None),
+            )
+
+            custom_filters.append(runnable_filter)
+
+        if self.deployable is True:
+            deployer_exists = (
+                select(StackComponentSchema.id)
+                .where(
+                    StackComponentSchema.type
+                    == StackComponentType.DEPLOYER.value
+                )
+                .where(
+                    StackCompositionSchema.component_id
+                    == StackComponentSchema.id
+                )
+                .where(
+                    StackCompositionSchema.stack_id
+                    == PipelineSnapshotSchema.stack_id
+                )
+                .exists()
+            )
+            deployable_filter = and_(
+                col(PipelineSnapshotSchema.build_id).is_not(None),
+                deployer_exists,
+            )
+
+            custom_filters.append(deployable_filter)
+
+        if self.deployed is not None:
+            deployment_exists = (
+                select(DeploymentSchema.id)
+                .where(
+                    DeploymentSchema.snapshot_id == PipelineSnapshotSchema.id
+                )
+                .exists()
+            )
+            if self.deployed is True:
+                deployed_filter = and_(deployment_exists)
+            else:
+                deployed_filter = and_(not_(deployment_exists))
+            custom_filters.append(deployed_filter)
+
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: "AnyQuery",
+        table: Type["AnySchema"],
+    ) -> "AnyQuery":
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            DeploymentSchema,
+            PipelineSchema,
+            PipelineSnapshotSchema,
+            StackSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "pipeline":
+            query = query.outerjoin(
+                PipelineSchema,
+                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
+            )
+            column = PipelineSchema.name
+        elif sort_by == "stack":
+            query = query.outerjoin(
+                StackSchema,
+                PipelineSnapshotSchema.stack_id == StackSchema.id,
+            )
+            column = StackSchema.name
+        elif sort_by == "deployment":
+            query = query.outerjoin(
+                DeploymentSchema,
+                PipelineSnapshotSchema.id == DeploymentSchema.snapshot_id,
+            )
+            column = DeploymentSchema.name
+        else:
+            return super().apply_sorting(query=query, table=table)
+
+        query = query.add_columns(column)
+
+        if operand == SorterOps.ASCENDING:
+            query = query.order_by(asc(column))
+        else:
+            query = query.order_by(desc(column))
+
+        return query
 
 
 # ------------------ Trigger Model ------------------
 
 
-class PipelineSnapshotTriggerRequest(BaseZenModel):
-    """Request model for triggering a pipeline snapshot."""
+class PipelineSnapshotRunRequest(BaseZenModel):
+    """Request model for running a pipeline snapshot."""
 
     run_configuration: Optional[PipelineRunConfiguration] = Field(
         default=None,
@@ -658,5 +855,5 @@ class PipelineSnapshotTriggerRequest(BaseZenModel):
     )
     step_run: Optional[UUID] = Field(
         default=None,
-        title="The ID of the step run that triggered the snapshot.",
+        title="The ID of the step run that ran the snapshot.",
     )

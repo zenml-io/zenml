@@ -735,6 +735,7 @@ def test_listing_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 
@@ -742,7 +743,7 @@ def test_listing_snapshots(clean_client):
     assert len(snapshots) == 1
     assert snapshots[0] == response
 
-    snapshots = clean_client.list_snapshots(named_only=False, stack_id=uuid4())
+    snapshots = clean_client.list_snapshots(named_only=False, stack=uuid4())
     assert len(snapshots) == 0
 
 
@@ -765,6 +766,7 @@ def test_getting_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 
@@ -793,6 +795,7 @@ def test_deleting_snapshots(clean_client):
         client_version="0.12.3",
         server_version="0.12.3",
         pipeline=pipeline.id,
+        is_dynamic=False,
     )
     response = clean_client.zen_store.create_snapshot(request)
 
@@ -1669,7 +1672,7 @@ def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
     run = clean_client_with_run.get_pipeline_run("connected_two_step_pipeline")
     tag = clean_client_with_run.create_tag(name="foo")
     clean_client_with_run.attach_tag(
-        tag.id,
+        tag.name,
         [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
     )
 
@@ -1677,7 +1680,7 @@ def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
     assert "foo" in [t.name for t in run.tags]
 
     clean_client_with_run.detach_tag(
-        tag.id,
+        tag.name,
         [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
     )
     run = clean_client_with_run.get_pipeline_run(run.id)

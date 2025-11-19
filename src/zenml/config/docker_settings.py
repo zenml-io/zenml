@@ -122,6 +122,12 @@ class DockerSettings(BaseSettings):
             this image.
             * If a custom `dockerfile` is specified for this settings
             object, this parent image will be ignored.
+        image_tag: Docker image tag to use for the images that get built.
+
+            Additional notes:
+            * This tag will be used for all images built for the pipeline or step
+            (depending on where you define your DockerSettings). If there are multiple
+            such images, only one of them will keep the tag while the rest will be untagged.
         dockerfile: Path to a custom Dockerfile that should be built. Depending
             on the other values you specify in this object, the resulting
             image will be used directly to run your pipeline or ZenML will use
@@ -192,7 +198,9 @@ class DockerSettings(BaseSettings):
             in the image, not downloaded at runtime.
         apt_packages: APT packages to install inside the Docker image.
         environment: Dictionary of environment variables to set inside the
-            Docker image.
+            Docker image before the requirements are installed.
+        runtime_environment: Dictionary of environment variables to set inside the
+            Docker image after the requirements are installed.
         build_config: Configuration for the main image build.
         user: If not `None`, will set the user, make it owner of the `/app`
             directory which contains all the user code and run the container
@@ -207,6 +215,7 @@ class DockerSettings(BaseSettings):
     """
 
     parent_image: Optional[str] = None
+    image_tag: Optional[str] = None
     dockerfile: Optional[str] = None
     build_context_root: Optional[str] = None
     parent_image_build_config: Optional[DockerBuildConfig] = None
@@ -228,9 +237,11 @@ class DockerSettings(BaseSettings):
     )
     required_integrations: List[str] = []
     install_stack_requirements: bool = True
+    install_deployment_requirements: bool = True
     local_project_install_command: Optional[str] = None
     apt_packages: List[str] = []
     environment: Dict[str, Any] = {}
+    runtime_environment: Dict[str, Any] = {}
     user: Optional[str] = None
     build_config: Optional[DockerBuildConfig] = None
 
