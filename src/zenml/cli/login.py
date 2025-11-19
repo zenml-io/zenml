@@ -29,6 +29,7 @@ from rich.text import Text
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import ZENML_PRO_API_KEY_PREFIX
@@ -223,6 +224,7 @@ def connect_to_server(
     verify_ssl: Union[str, bool] = True,
     refresh: bool = False,
     pro_server: bool = False,
+    project: Optional[str] = None,
 ) -> None:
     """Connect the client to a ZenML server or a SQL database.
 
@@ -233,6 +235,7 @@ def connect_to_server(
             is passed, it is interpreted as the path to a CA bundle file.
         refresh: Whether to force a new login flow with the ZenML server.
         pro_server: Whether the server is a ZenML Pro server.
+        project: Name or ID of the project to set active after connecting.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -277,6 +280,9 @@ def connect_to_server(
             )
         except CredentialsNotValid as e:
             cli_utils.error(f"Authorization error: {e}")
+        else:
+            if project:
+                _set_active_project(project)
 
     else:
         from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
@@ -296,6 +302,9 @@ def connect_to_server(
             )
         except CredentialsNotValid as e:
             cli_utils.warning(f"Authorization error: {e}")
+        else:
+            if project:
+                _set_active_project(project)
 
         cli_utils.declare(f"Connected to SQL database '{url}'")
 
@@ -306,6 +315,7 @@ def connect_to_pro_server(
     refresh: bool = False,
     pro_api_url: Optional[str] = None,
     verify_ssl: Union[str, bool] = True,
+    project: Optional[str] = None,
 ) -> None:
     """Connect the client to a ZenML Pro server.
 
@@ -317,6 +327,7 @@ def connect_to_pro_server(
         pro_api_url: The URL for the ZenML Pro API.
         verify_ssl: Whether to verify the server's TLS certificate. If a string
             is passed, it is interpreted as the path to a CA bundle file.
+        project: Name or ID of the project to set active after connecting.
 
     Raises:
         ValueError: If incorrect parameters are provided.
@@ -374,6 +385,7 @@ def connect_to_pro_server(
                     api_key=api_key,
                     pro_server=True,
                     verify_ssl=verify_ssl,
+                    project=project,
                 )
                 return
             else:
@@ -513,7 +525,11 @@ def connect_to_pro_server(
     )
 
     connect_to_server(
-        server.url, api_key=api_key, pro_server=True, verify_ssl=verify_ssl
+        server.url,
+        api_key=api_key,
+        pro_server=True,
+        verify_ssl=verify_ssl,
+        project=project,
     )
 
     # Update the stored server info with more accurate data taken from the
@@ -578,6 +594,29 @@ def _fail_if_authentication_environment_variables_set() -> None:
             "start interacting with your server right away. If you want to use "
             "the `zenml login` command for authentication, please unset these "
             "environment variables first."
+        )
+
+
+def _set_active_project(project_name_or_id: str) -> None:
+    """Set the active project on the current ZenML store.
+
+    Args:
+        project_name_or_id: Name or ID of the target project.
+    """
+    try:
+        project = Client().set_active_project(project_name_or_id)
+    except KeyError:
+        cli_utils.error(
+            f"No project named or with ID '{project_name_or_id}' exists on "
+            "the connected ZenML server."
+        )
+    except IllegalOperationError as exc:
+        cli_utils.error(
+            f"Failed to set the active project to '{project_name_or_id}': {exc}"
+        )
+    else:
+        cli_utils.declare(
+            f"✔ The active project has been set to {project.name}"
         )
 
 
@@ -672,6 +711,10 @@ def _fail_if_authentication_environment_variables_set() -> None:
     The `--api-key` flag can be used to authenticate with a ZenML server using
     an API key instead of the web login flow.
 
+    Use the `--project` flag to immediately set the active project after
+    connecting, which is helpful when the server default is not the desired
+    project.
+
     Examples:
 
       * connect to a ZenML Pro server using the web login flow:
@@ -713,6 +756,12 @@ def _fail_if_authentication_environment_variables_set() -> None:
     "is already authenticated.",
     default=False,
     type=click.BOOL,
+)
+@click.option(
+    "--project",
+    type=str,
+    default=None,
+    help="Name or ID of the project to set as active after logging in.",
 )
 @click.option(
     "--api-key",
@@ -809,6 +858,7 @@ def login(
     server: Optional[str] = None,
     pro: bool = False,
     refresh: bool = False,
+    project: Optional[str] = None,
     api_key: bool = False,
     no_verify_ssl: bool = False,
     ssl_ca_cert: Optional[str] = None,
@@ -831,6 +881,7 @@ def login(
             server name or ID.
         pro: Log in to a ZenML Pro server.
         refresh: Force a new login flow with the ZenML server.
+        project: Name or ID of the project to set active after connecting.
         api_key: Whether to use an API key to authenticate with the ZenML
             server.
         no_verify_ssl: Whether to verify the server's TLS certificate.
@@ -866,6 +917,8 @@ def login(
             ngrok_token=ngrok_token,
             restart=restart,
         )
+        if project:
+            _set_active_project(project)
         return
 
     api_key_value: Optional[str] = None
@@ -886,6 +939,7 @@ def login(
             pro_server=server,
             api_key=api_key_value,
             pro_api_url=pro_api_url,
+            project=project,
             verify_ssl=ssl_ca_cert
             if ssl_ca_cert is not None
             else not no_verify_ssl,
@@ -913,6 +967,7 @@ def login(
                 api_key=api_key_value,
                 verify_ssl=verify_ssl,
                 refresh=refresh,
+                project=project,
             )
         elif re.match(r"^https?://", server):
             # The server argument is a server URL
@@ -924,6 +979,7 @@ def login(
                     pro_server=server,
                     api_key=api_key_value,
                     refresh=refresh,
+                    project=project,
                     # Prefer the pro API URL extracted from the server info if
                     # available
                     pro_api_url=server_pro_api_url or pro_api_url,
@@ -935,6 +991,7 @@ def login(
                     api_key=api_key_value,
                     verify_ssl=verify_ssl,
                     refresh=refresh,
+                    project=project,
                 )
         else:
             # The server argument is a ZenML Pro server name or UUID
@@ -942,6 +999,7 @@ def login(
                 pro_server=server,
                 api_key=api_key_value,
                 refresh=refresh,
+                project=project,
                 pro_api_url=pro_api_url,
                 verify_ssl=verify_ssl,
             )
@@ -965,6 +1023,7 @@ def login(
                 pro_server=server,
                 api_key=api_key_value,
                 refresh=True,
+                project=project,
                 # Prefer the pro API URL extracted from the server info if
                 # available
                 pro_api_url=server_pro_api_url or pro_api_url,
@@ -983,6 +1042,7 @@ def login(
                 api_key=api_key_value,
                 verify_ssl=verify_ssl,
                 refresh=True,
+                project=project,
             )
     else:
         # If no server argument is provided, and the client is not currently
@@ -1005,6 +1065,7 @@ def login(
             connect_to_pro_server(
                 api_key=api_key_value,
                 pro_api_url=pro_api_url,
+                project=project,
                 verify_ssl=verify_ssl,
             )
         elif login_method.name == "cloud":
@@ -1034,6 +1095,7 @@ def login(
                     pro_server=server_url,
                     api_key=api_key_value,
                     refresh=True,  # Force refresh for manually entered URLs
+                    project=project,
                     # Prefer the pro API URL extracted from the server info if
                     # available
                     pro_api_url=server_pro_api_url or pro_api_url,
@@ -1045,6 +1107,7 @@ def login(
                     api_key=api_key_value,
                     verify_ssl=verify_ssl,
                     refresh=True,  # Force refresh for manually entered URLs
+                    project=project,
                 )
 
 
