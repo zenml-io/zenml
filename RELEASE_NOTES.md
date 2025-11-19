@@ -1,5 +1,41 @@
 <!-- markdown-link-check-disable -->
 
+# 0.91.2
+
+## What's Changed
+* Add version 0.91.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4164
+* Fix missing snapshot in remote deployments by @stefannica in https://github.com/zenml-io/zenml/pull/4167
+* Add 0.91.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4166
+* Add success comments to changelog validation workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4169
+* Fix applying default kubernetes resources by @schustmi in https://github.com/zenml-io/zenml/pull/4171
+* Fix bug in deploy staging workspace workflow by @htahir1 in https://github.com/zenml-io/zenml/pull/4176
+* Fix release docker build workflow by @schustmi in https://github.com/zenml-io/zenml/pull/4168
+* Fix breaking CI checks (Linting & Integration tests) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4143
+* Improvements to CV for FiftyOne (lineage / dataset versioning) by @strickvl in https://github.com/zenml-io/zenml/pull/4147
+* Add custom commands, reviewer subagents and Claude workflows by @strickvl in https://github.com/zenml-io/zenml/pull/4172
+* Fix documentation errors in containerization and Vertex orchestrator by @strickvl in https://github.com/zenml-io/zenml/pull/4187
+* Fix code upload logic for dynamic pipelines without step templates by @schustmi in https://github.com/zenml-io/zenml/pull/4181
+* Fix UnboundLocalError in SSL certificate validation by @htahir1 in https://github.com/zenml-io/zenml/pull/4188
+* Cache key index for faster cache lookup by @schustmi in https://github.com/zenml-io/zenml/pull/4178
+* Add docs for dynamic pipelines experimental feature by @htahir1 in https://github.com/zenml-io/zenml/pull/4173
+* Support MLflow 3.0 by @htahir1 in https://github.com/zenml-io/zenml/pull/4160
+* Give Claude permission to run the formatting script by @strickvl in https://github.com/zenml-io/zenml/pull/4195
+* Fix S3 artifact store endpoint configuration for custom S3 backends by @strickvl in https://github.com/zenml-io/zenml/pull/4186
+* Fix Claude GitHub Actions workflow configuration by @strickvl in https://github.com/zenml-io/zenml/pull/4200
+* Changes to issue templates by @bcdurak in https://github.com/zenml-io/zenml/pull/4199
+* Improve detecting of local images during multi-step-build by @schustmi in https://github.com/zenml-io/zenml/pull/4194
+* Sanitize wandb tags by @schustmi in https://github.com/zenml-io/zenml/pull/4189
+* Add workflow to close stale PRs after 4 weeks of inactivity by @htahir1 in https://github.com/zenml-io/zenml/pull/4192
+* Add Kubernetes Deployer for Pipeline Deployments by @safoinme in https://github.com/zenml-io/zenml/pull/4127
+* Fix deletion of dynamic pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4191
+* Include project ID in Kubernetes labels by @schustmi in https://github.com/zenml-io/zenml/pull/4177
+* Rename method of dynamic orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4206
+* Implemented detail view for artifact version by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4203
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.91.1...0.91.2
+
+
 # 0.91.1
 
 ## New Features
