@@ -15,6 +15,7 @@
 import platform
 
 import pytest
+from packaging.version import Version
 
 from tests.integration.examples.utils import run_example
 from zenml.client import Client
@@ -69,7 +70,13 @@ def test_example(request: pytest.FixtureRequest) -> None:
         client = MlflowClient()
         # fetch the MLflow artifacts logged during the first pipeline run
         artifacts = client.list_artifacts(first_mlflow_run.info.run_id)
-        assert len(artifacts) == 3
+
+        # MLflow 3.x changed autologging behavior - the model directory is no longer
+        # listed as a separate artifact (the expected number was 3 in MLflow 2.x:
+        # estimator.html, model, confusion_matrix.png)
+        mlflow_version = Version(mlflow.__version__)
+        expected_artifact_count = 2 if mlflow_version >= Version("3.0") else 3
+        assert len(artifacts) == expected_artifact_count
 
         # ensure that tracking_url is set in the step metadata
         trainer_step = run.steps["trainer"]
