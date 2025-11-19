@@ -214,6 +214,9 @@ class KubernetesStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         step_labels = {
+            "project_id": kube_utils.sanitize_label(
+                str(info.snapshot.project_id)
+            ),
             "run_id": kube_utils.sanitize_label(str(info.run_id)),
             "run_name": kube_utils.sanitize_label(str(info.run_name)),
             "pipeline": kube_utils.sanitize_label(info.pipeline.name),

@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "zenml"
-version = "0.91.1"
+version = "0.91.2"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"

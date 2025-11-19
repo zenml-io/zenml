@@ -462,21 +462,21 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
     @property
-    def can_launch_dynamic_steps(self) -> bool:
-        """Whether the orchestrator can launch dynamic steps.
+    def can_run_isolated_steps(self) -> bool:
+        """Whether the orchestrator can run isolated steps.
 
         Returns:
-            Whether the orchestrator can launch dynamic steps.
+            Whether the orchestrator can run isolated steps.
         """
         return (
-            getattr(self.launch_dynamic_step, "__func__", None)
-            is not BaseOrchestrator.launch_dynamic_step
+            getattr(self.run_isolated_step, "__func__", None)
+            is not BaseOrchestrator.run_isolated_step
         )
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launch a dynamic step.
+        """Run an isolated step.
 
         Args:
             step_run_info: The step run information.
@@ -488,7 +488,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 method.
         """
         raise NotImplementedError(
-            "Launching dynamic steps is not implemented for "
+            "Running isolated steps is not implemented for "
             f"the {self.__class__.__name__} orchestrator."
         )
 

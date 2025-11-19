@@ -462,7 +462,7 @@ def get_step_runtime(
     if step.config.step_operator:
         return StepRuntime.ISOLATED
 
-    if not Client().active_stack.orchestrator.can_launch_dynamic_steps:
+    if not Client().active_stack.orchestrator.can_run_isolated_steps:
         return StepRuntime.INLINE
 
     runtime = step.config.runtime

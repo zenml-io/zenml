@@ -740,6 +740,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             image = self.get_image(snapshot=snapshot, step_name=invocation_id)
 
         labels = {
+            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
             "pipeline": kube_utils.sanitize_label(pipeline_name),
         }
 
@@ -837,10 +838,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     )
                     return None
 
-    def launch_dynamic_step(
+    def run_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Launches a dynamic step on Kubernetes.
+        """Runs an isolated step on Kubernetes.
 
         Args:
             step_run_info: The step run information.
@@ -867,6 +868,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         labels = {
+            "project_id": kube_utils.sanitize_label(
+                str(step_run_info.snapshot.project_id)
+            ),
             "pipeline": kube_utils.sanitize_label(step_run_info.pipeline.name),
             "run_id": kube_utils.sanitize_label(str(step_run_info.run_id)),
             "run_name": kube_utils.sanitize_label(str(step_run_info.run_name)),
@@ -917,7 +921,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
             stream_logs=True,
         )
-        logger.info("Job completed.")
+        logger.info("Job `%s` completed.", job_name)
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
