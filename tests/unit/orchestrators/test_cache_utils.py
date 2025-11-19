@@ -51,12 +51,14 @@ def _compile_step(step: BaseStep) -> Step:
         pipeline=pipeline,
     )
 
+    pipeline._configuration = PipelineConfiguration(name="")
+
     compiler = Compiler()
     return compiler._compile_step_invocation(
         invocation=invocation,
         stack=Client().active_stack,
         step_config=None,
-        pipeline_configuration=PipelineConfiguration(name=""),
+        pipeline=pipeline,
     )
 
 
