@@ -16,7 +16,9 @@
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.pipelines.dynamic.entrypoint_configuration import DynamicPipelineEntrypointConfiguration
+from zenml.pipelines.dynamic.entrypoint_configuration import (
+    DynamicPipelineEntrypointConfiguration,
+)
 from zenml.utils.env_utils import reconstruct_environment_variables
 
 SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT = 256
@@ -40,8 +42,9 @@ class SagemakerEntrypointConfiguration(StepEntrypointConfiguration):
         super().run()
 
 
-
-class SagemakerDynamicPipelineEntrypointConfiguration(DynamicPipelineEntrypointConfiguration):
+class SagemakerDynamicPipelineEntrypointConfiguration(
+    DynamicPipelineEntrypointConfiguration
+):
     """Entrypoint configuration for ZenML Sagemaker dynamic pipelines.
 
     The only purpose of this entrypoint configuration is to reconstruct the
