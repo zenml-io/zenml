@@ -416,6 +416,7 @@ class StepSpec(FrozenBaseModel):
     upstream_steps: List[str]
     inputs: Dict[str, InputSpec] = {}
     invocation_id: str
+    enable_heartbeat: bool = False
 
     @model_validator(mode="before")
     @classmethod

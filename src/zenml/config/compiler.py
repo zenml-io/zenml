@@ -28,13 +28,13 @@ from typing import (
 
 from zenml import __version__
 from zenml.config.base_settings import BaseSettings, ConfigurationLevel
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import OutputSpec, PipelineSpec
 from zenml.config.settings_resolver import SettingsResolver
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
+    StepConfiguration,
     StepConfigurationUpdate,
     StepSpec,
 )
@@ -138,7 +138,7 @@ class Compiler:
                 invocation=invocation,
                 stack=stack,
                 step_config=(run_configuration.steps or {}).get(invocation_id),
-                pipeline_configuration=pipeline.configuration,
+                pipeline=pipeline,
                 skip_input_validation=skip_input_validation,
             )
             for invocation_id, invocation in self._get_sorted_invocations(
@@ -197,7 +197,7 @@ class Compiler:
         pipeline = copy.deepcopy(pipeline)
 
         invocations = [
-            self._get_step_spec(invocation=invocation)
+            self._get_step_spec(invocation=invocation, enable_heartbeat=False)
             for _, invocation in self._get_sorted_invocations(
                 pipeline=pipeline
             )
@@ -487,11 +487,13 @@ class Compiler:
     def _get_step_spec(
         self,
         invocation: "StepInvocation",
+        enable_heartbeat: bool,
     ) -> StepSpec:
         """Gets the spec for a step invocation.
 
         Args:
             invocation: The invocation for which to get the spec.
+            enable_heartbeat: Whether to enable the heartbeat.
 
         Returns:
             The step spec.
@@ -508,14 +510,41 @@ class Compiler:
             upstream_steps=sorted(invocation.upstream_steps),
             inputs=inputs,
             invocation_id=invocation.id,
+            enable_heartbeat=enable_heartbeat,
         )
+
+    @staticmethod
+    def _get_heartbeat_flag(
+        pipeline: "Pipeline", stack: "Stack", step_config: "StepConfiguration"
+    ) -> bool:
+        if stack.orchestrator.flavor == "local":
+            return False
+        elif not pipeline.is_dynamic:
+            # containerized static pipeline
+            return True
+        else:
+            # dynamic pipelines
+            from zenml.execution.pipeline.dynamic.runner import (
+                StepRuntime,
+                get_step_runtime,
+            )
+
+            step_runtime = get_step_runtime(
+                step_config=step_config,
+                pipeline_docker_settings=pipeline.configuration.docker_settings,
+            )
+            if step_runtime == StepRuntime.ISOLATED:
+                # dynamic pipelines & isolated execution
+                return True
+            # dynamic pipelines & inline execution
+            return False
 
     def _compile_step_invocation(
         self,
         invocation: "StepInvocation",
         stack: "Stack",
         step_config: Optional["StepConfigurationUpdate"],
-        pipeline_configuration: "PipelineConfiguration",
+        pipeline: "Pipeline",
         skip_input_validation: bool = False,
     ) -> Step:
         """Compiles a ZenML step.
@@ -524,7 +553,7 @@ class Compiler:
             invocation: The step invocation to compile.
             stack: The stack on which the pipeline will be run.
             step_config: Run configuration for the step.
-            pipeline_configuration: Configuration for the pipeline.
+            pipeline: Configuration for the pipeline.
             skip_input_validation: If True, will skip the input validation.
 
         Returns:
@@ -548,7 +577,6 @@ class Compiler:
             convert_component_shortcut_settings_keys(
                 step.configuration.settings, stack=stack
             )
-            step_spec = self._get_step_spec(invocation=invocation)
             step_secrets = secret_utils.resolve_and_verify_secrets(
                 step.configuration.secrets
             )
@@ -572,8 +600,17 @@ class Compiler:
             )
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
-                pipeline_configuration=pipeline_configuration
+                pipeline_configuration=pipeline.configuration
             )
+        )
+
+        step_spec = self._get_step_spec(
+            invocation=invocation,
+            enable_heartbeat=self._get_heartbeat_flag(
+                pipeline=pipeline,
+                stack=stack,
+                step_config=full_step_config,
+            ),
         )
         return Step(
             spec=step_spec,
