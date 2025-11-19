@@ -314,6 +314,10 @@ zenml:
     # If set to true, path where the local database is created will be
     # mounted as a persistent volume so the data is not lost on pod restarts.
     # Only relevant for local sqlite database.
+    # When persistence is enabled, ensure that podSecurityContext.fsGroup
+    # is set to 1000 (this is the default) so that the ZenML container can write to
+    # the persistent volume. The container runs as UID 1000, and without fsGroup
+    # set, the PVC will be mounted with root:root ownership, causing permission errors.
     persistence:
       enabled: false
       size: 1Gi
@@ -1173,8 +1177,14 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
+podSecurityContext:
+  # fsGroup must be set to 1000 when using persistent volumes (database persistence or backup PVCs)
+  # to ensure the ZenML container (running as UID 1000) can write to the mounted volumes.
+  # This is set by default to prevent permission issues.
+  fsGroup: 1000
+  # fsGroupChangePolicy controls when fsGroup ownership changes are applied.
+  # "OnRootMismatch" only changes ownership if the root of the volume doesn't match the fsGroup.
+  fsGroupChangePolicy: "OnRootMismatch"
 
 securityContext:
   runAsNonRoot: true
