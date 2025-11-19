@@ -25,7 +25,7 @@ from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
-    from zenml.logging.logging import LoggingContext
+    from zenml.log_stores.utils import LoggingContext
 
 from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client

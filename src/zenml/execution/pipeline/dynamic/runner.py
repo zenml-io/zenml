@@ -48,10 +48,8 @@ from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
 from zenml.execution.step.utils import launch_step
+from zenml.log_stores.utils import setup_orchestrator_logging
 from zenml.logger import get_logger
-from zenml.logging.logging import (
-    setup_orchestrator_logging,
-)
 from zenml.models import (
     ArtifactVersionResponse,
     PipelineRunResponse,

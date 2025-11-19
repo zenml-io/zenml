@@ -19,8 +19,7 @@ from datetime import datetime
 from typing import List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.log_stores.utils import LogEntry
-from zenml.logging.logging import LoggingContext
+from zenml.log_stores.utils import LogEntry, LoggingContext
 from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 

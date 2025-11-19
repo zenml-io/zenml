@@ -40,8 +40,8 @@ from zenml.constants import (
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
+from zenml.log_stores.utils import LoggingContext
 from zenml.logger import get_logger
-from zenml.logging.logging import LoggingContext
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (

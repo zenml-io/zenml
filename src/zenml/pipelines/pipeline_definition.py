@@ -63,8 +63,8 @@ from zenml.execution.pipeline.utils import (
     submit_pipeline,
 )
 from zenml.hooks.hook_validators import resolve_and_validate_hook
+from zenml.log_stores.utils import LoggingContext, generate_logs_request
 from zenml.logger import get_logger
-from zenml.logging.logging import LoggingContext, generate_logs_request
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,

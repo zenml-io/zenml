@@ -29,9 +29,11 @@ from zenml.constants import (
 from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
+from zenml.log_stores.utils import (
+    LoggingContext,
+    generate_logs_request,
+)
 from zenml.logger import get_logger
-from zenml.logging import LoggingContext
-from zenml.logging import logging as zenml_logging
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -273,7 +275,7 @@ class StepLauncher:
 
         logs_request = None
         if step_logging_enabled:
-            logs_request = zenml_logging.generate_logs_request(source="step")
+            logs_request = generate_logs_request(source="step")
 
         if run_was_created:
             pipeline_run_metadata = self._stack.get_pipeline_run_metadata(

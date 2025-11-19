@@ -45,6 +45,16 @@ from zenml.log_stores.datadog.datadog_flavor import (
     DatadogLogStoreFlavor,
 )
 
+# Logging utilities
+from zenml.log_stores.utils import (
+    LogEntry,
+    LoggingContext,
+    generate_logs_request,
+    is_logging_enabled,
+    search_logs_by_source,
+    setup_orchestrator_logging,
+)
+
 __all__ = [
     "ArtifactLogStore",
     "ArtifactLogStoreConfig",
@@ -55,7 +65,13 @@ __all__ = [
     "DatadogLogStore",
     "DatadogLogStoreConfig",
     "DatadogLogStoreFlavor",
+    "LogEntry",
+    "LoggingContext",
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",
+    "generate_logs_request",
+    "is_logging_enabled",
+    "search_logs_by_source",
+    "setup_orchestrator_logging",
 ]
