@@ -2,6 +2,21 @@
 
 # 0.91.2
 
+## New Features
+
+### Kubernetes Deployer
+- New deployer implementation that allows you to deploy your pipelines on Kubernetes
+
+### Other
+- Support for Mlflow 3.0
+
+## Bug Fixes
+
+- The S3 artifact store now works again with custom backends
+- Passing inline SSL certificates for the RestZenStore now works
+- The Weights & Biases experiment tracker now doesn't fail if the pipeline run name exceeds the maximum tag length
+
+
 ## What's Changed
 * Add version 0.91.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4164
 * Fix missing snapshot in remote deployments by @stefannica in https://github.com/zenml-io/zenml/pull/4167
