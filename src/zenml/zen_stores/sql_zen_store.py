@@ -5061,10 +5061,13 @@ class SqlZenStore(BaseZenStore):
             )
             session.refresh(new_snapshot)
 
-            self._update_onboarding_state(
-                completed_steps={OnboardingStep.SNAPSHOT_CREATED},
-                session=session,
-            )
+            # Only track onboarding for user-created named snapshots, not internal
+            # system-generated snapshots created during pipeline runs
+            if snapshot.name:
+                self._update_onboarding_state(
+                    completed_steps={OnboardingStep.SNAPSHOT_CREATED},
+                    session=session,
+                )
 
             return new_snapshot.to_model(
                 include_metadata=True, include_resources=True
