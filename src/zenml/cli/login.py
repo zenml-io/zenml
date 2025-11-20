@@ -305,8 +305,8 @@ def connect_to_server(
         else:
             if project:
                 _set_active_project(project)
-
-        cli_utils.declare(f"Connected to SQL database '{url}'")
+            
+            cli_utils.declare(f"Connected to SQL database '{url}'")
 
 
 def connect_to_pro_server(
@@ -598,14 +598,14 @@ def _fail_if_authentication_environment_variables_set() -> None:
 
 
 def _set_active_project(project_name_or_id: str) -> None:
-    """Set the active project on the current ZenML store.
+    from zenml.exceptions import EntityNotFoundError
+    
+    # Ensure we are using the fresh store config
+    client = Client()
 
-    Args:
-        project_name_or_id: Name or ID of the target project.
-    """
     try:
-        project = Client().set_active_project(project_name_or_id)
-    except KeyError:
+        project = client.set_active_project(project_name_or_id)
+    except (KeyError, EntityNotFoundError):
         cli_utils.error(
             f"No project named or with ID '{project_name_or_id}' exists on "
             "the connected ZenML server."
@@ -615,9 +615,8 @@ def _set_active_project(project_name_or_id: str) -> None:
             f"Failed to set the active project to '{project_name_or_id}': {exc}"
         )
     else:
-        cli_utils.declare(
-            f"✔ The active project has been set to {project.name}"
-        )
+        if project:
+            cli_utils.declare(f"✔ The active project has been set to {project.name}")
 
 
 @cli.command(
@@ -907,6 +906,13 @@ def login(
             cli_utils.error(
                 "An API key cannot be used with the local ZenML server."
             )
+        
+        if project and blocking:
+            cli_utils.warning(
+                "The active project cannot be set while the local server "
+                "runs in blocking mode. Restart the server without "
+                "`--blocking` to apply the project selection."
+            )
 
         start_local_server(
             docker=docker,
@@ -917,8 +923,10 @@ def login(
             ngrok_token=ngrok_token,
             restart=restart,
         )
+        
         if project:
             _set_active_project(project)
+
         return
 
     api_key_value: Optional[str] = None
