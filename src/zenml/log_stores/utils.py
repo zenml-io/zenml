@@ -22,8 +22,6 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, List, Optional, Type
 from uuid import UUID, uuid4
 
-from zenml.enums import StackComponentType
-from zenml.log_stores.base_log_store import BaseLogStore
 from pydantic import BaseModel, Field
 
 from zenml.client import Client
@@ -32,7 +30,8 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels
+from zenml.enums import LoggingLevels, StackComponentType
+from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
