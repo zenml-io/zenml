@@ -5061,6 +5061,11 @@ class SqlZenStore(BaseZenStore):
             )
             session.refresh(new_snapshot)
 
+            self._update_onboarding_state(
+                completed_steps={OnboardingStep.SNAPSHOT_CREATED},
+                session=session,
+            )
+
             return new_snapshot.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -5298,6 +5303,12 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(deployment_schema)
+
+            self._update_onboarding_state(
+                completed_steps={OnboardingStep.SNAPSHOT_DEPLOYED},
+                session=session,
+            )
+
             return deployment_schema.to_model(
                 include_metadata=True, include_resources=True
             )
