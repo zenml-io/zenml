@@ -29,10 +29,6 @@ from zenml.constants import (
 from zenml.enums import ExecutionMode, ExecutionStatus, StepRuntime
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunInterruptedException, RunStoppedException
-from zenml.log_stores.utils import (
-    LoggingContext,
-    generate_logs_request,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
@@ -47,6 +43,10 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException, StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
+from zenml.utils.logging_utils import (
+    LoggingContext,
+    generate_logs_request,
+)
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:

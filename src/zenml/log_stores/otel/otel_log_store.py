@@ -34,7 +34,7 @@ from zenml.models import LogsResponse
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogExporter
 
-    from zenml.log_stores.utils import LogEntry, LoggingContext
+    from zenml.utils.logging_utils import LogEntry, LoggingContext
 
 logger = get_logger(__name__)
 

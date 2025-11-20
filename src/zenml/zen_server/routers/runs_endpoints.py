@@ -30,9 +30,7 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.log_stores import fetch_logs
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
-from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -45,6 +43,7 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.utils import run_utils
+from zenml.utils.logging_utils import LogEntry, fetch_logs
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,

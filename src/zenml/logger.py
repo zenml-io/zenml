@@ -225,7 +225,7 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
 
     def wrapped_write(text: str) -> int:
         """Write method that routes logs through LoggingContext."""
-        from zenml.log_stores.utils import LoggingContext
+        from zenml.utils.logging_utils import LoggingContext
 
         level_int = logging.INFO if stream_name == "stdout" else logging.ERROR
 
@@ -273,7 +273,7 @@ class ZenMLLoggingHandler(logging.Handler):
         Args:
             record: The log record to emit.
         """
-        from zenml.log_stores.utils import LoggingContext
+        from zenml.utils.logging_utils import LoggingContext
 
         LoggingContext.emit(record)
 

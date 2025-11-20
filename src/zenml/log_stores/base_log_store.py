@@ -19,9 +19,9 @@ from datetime import datetime
 from typing import List, Optional, Type, cast
 
 from zenml.enums import StackComponentType
-from zenml.log_stores.utils import LogEntry, LoggingContext
 from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
+from zenml.utils.logging_utils import LogEntry, LoggingContext
 
 # Maximum number of log entries to return in a single request
 MAX_ENTRIES_PER_REQUEST = 20000

@@ -55,7 +55,6 @@ from zenml.integrations.kubernetes.orchestrators.dag_runner import (
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
 )
-from zenml.log_stores.utils import setup_orchestrator_logging
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
@@ -72,6 +71,7 @@ from zenml.orchestrators.utils import (
 )
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
+from zenml.utils.logging_utils import setup_orchestrator_logging
 
 logger = get_logger(__name__)
 

@@ -25,7 +25,7 @@ from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
-    from zenml.log_stores.utils import LoggingContext
+    from zenml.utils.logging_utils import LoggingContext
 
 from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
@@ -35,8 +35,8 @@ from zenml.log_stores.artifact.artifact_log_store import (
 )
 from zenml.log_stores.base_log_store import DEFAULT_MESSAGE_SIZE
 from zenml.log_stores.otel.otel_log_store import LOGGING_CONTEXT_KEY
-from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
+from zenml.utils.logging_utils import LogEntry
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)

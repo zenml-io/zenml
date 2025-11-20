@@ -45,7 +45,7 @@ from zenml.log_stores.otel.otel_flavor import (
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 
 # Logging utilities
-from zenml.log_stores.utils import (
+from zenml.utils.logging_utils import (
     LogEntry,
     LoggingContext,
     fetch_logs,

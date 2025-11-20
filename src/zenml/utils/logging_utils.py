@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utilities for log stores."""
+"""Utility functions for logging."""
 
 import logging
 import threading
@@ -19,7 +19,7 @@ from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -30,7 +30,8 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels
+from zenml.enums import LoggingLevels, StackComponentType
+from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
@@ -39,6 +40,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
+from zenml.stack import StackComponent
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -46,47 +48,56 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# Active logging context
+
 active_logging_context: ContextVar[Optional["LoggingContext"]] = ContextVar(
     "active_logging_context", default=None
 )
 
 
-def generate_logs_request(source: str) -> LogsRequest:
-    """Generate a LogsRequest for logging.
+class LogEntry(BaseModel):
+    """A structured log entry with parsed information.
 
-    Args:
-        source: The source of the logs (e.g., "client", "orchestrator", "step").
-
-    Returns:
-        A LogsRequest object.
+    This is used in two distinct ways:
+        1. If we are using the artifact log store, we save the
+        entries as JSON-serialized LogEntry's in the artifact store.
+        2. When queried, the server returns logs as a list of LogEntry's.
     """
-    from zenml.log_stores.artifact.artifact_log_store import (
-        ArtifactLogStore,
-        prepare_logs_uri,
+
+    message: str = Field(description="The log message content")
+    name: Optional[str] = Field(
+        default=None,
+        description="The name of the logger",
     )
-
-    client = Client()
-    log_store = client.active_stack.log_store
-    log_id = uuid4()
-
-    if isinstance(log_store, ArtifactLogStore):
-        artifact_store = client.active_stack.artifact_store
-        return LogsRequest(
-            id=log_id,
-            source=source,
-            uri=prepare_logs_uri(
-                artifact_store=artifact_store,
-                log_id=log_id,
-            ),
-            artifact_store_id=artifact_store.id,
-        )
-    else:
-        return LogsRequest(
-            id=log_id,
-            source=source,
-            log_store_id=log_store.id if log_store else None,
-        )
+    level: Optional[LoggingLevels] = Field(
+        default=None,
+        description="The log level",
+    )
+    timestamp: Optional[datetime] = Field(
+        default=None,
+        description="When the log was created",
+    )
+    module: Optional[str] = Field(
+        default=None, description="The module that generated this log entry"
+    )
+    filename: Optional[str] = Field(
+        default=None,
+        description="The name of the file that generated this log entry",
+    )
+    lineno: Optional[int] = Field(
+        default=None, description="The fileno that generated this log entry"
+    )
+    chunk_index: int = Field(
+        default=0,
+        description="The index of the chunk in the log entry",
+    )
+    total_chunks: int = Field(
+        default=1,
+        description="The total number of chunks in the log entry",
+    )
+    id: UUID = Field(
+        default_factory=uuid4,
+        description="The unique identifier of the log entry",
+    )
 
 
 class LoggingContext:
@@ -94,7 +105,7 @@ class LoggingContext:
 
     def __init__(
         self,
-        log_model: LogsResponse,
+        log_model: "LogsResponse",
     ) -> None:
         """Initialize the logging context.
 
@@ -154,6 +165,43 @@ class LoggingContext:
 
         with self._lock:
             active_logging_context.set(self._previous_context)
+
+
+def generate_logs_request(source: str) -> LogsRequest:
+    """Generate a LogsRequest for logging.
+
+    Args:
+        source: The source of the logs (e.g., "client", "orchestrator", "step").
+
+    Returns:
+        A LogsRequest object.
+    """
+    from zenml.log_stores.artifact.artifact_log_store import (
+        ArtifactLogStore,
+        prepare_logs_uri,
+    )
+
+    client = Client()
+    log_store = client.active_stack.log_store
+    log_id = uuid4()
+
+    if isinstance(log_store, ArtifactLogStore):
+        artifact_store = client.active_stack.artifact_store
+        return LogsRequest(
+            id=log_id,
+            source=source,
+            uri=prepare_logs_uri(
+                artifact_store=artifact_store,
+                log_id=log_id,
+            ),
+            artifact_store_id=artifact_store.id,
+        )
+    else:
+        return LogsRequest(
+            id=log_id,
+            source=source,
+            log_store_id=log_store.id if log_store else None,
+        )
 
 
 def is_logging_enabled(pipeline_configuration: PipelineConfiguration) -> bool:
@@ -236,7 +284,7 @@ def setup_orchestrator_logging(
 
 
 def fetch_logs(
-    logs: LogsResponse,
+    logs: "LogsResponse",
     zen_store: "BaseZenStore",
     limit: int,
 ) -> List["LogEntry"]:
@@ -258,12 +306,7 @@ def fetch_logs(
         DoesNotExistException: If the log store doesn't exist or is not the right type.
         NotImplementedError: If the log store's dependencies are not installed.
     """
-    from typing import cast
-
-    from zenml.enums import StackComponentType
-    from zenml.exceptions import DoesNotExistException
     from zenml.log_stores.base_log_store import BaseLogStore
-    from zenml.stack import StackComponent
 
     log_store: Optional[BaseLogStore] = None
 
@@ -312,43 +355,3 @@ def fetch_logs(
         )
 
     return log_store.fetch(logs_model=logs, limit=limit)
-
-
-class LogEntry(BaseModel):
-    """A structured log entry with parsed information."""
-
-    message: str = Field(description="The log message content")
-    name: Optional[str] = Field(
-        default=None,
-        description="The name of the logger",
-    )
-    level: Optional[LoggingLevels] = Field(
-        default=None,
-        description="The log level",
-    )
-    timestamp: Optional[datetime] = Field(
-        default=None,
-        description="When the log was created",
-    )
-    module: Optional[str] = Field(
-        default=None, description="The module that generated this log entry"
-    )
-    filename: Optional[str] = Field(
-        default=None,
-        description="The name of the file that generated this log entry",
-    )
-    lineno: Optional[int] = Field(
-        default=None, description="The fileno that generated this log entry"
-    )
-    chunk_index: int = Field(
-        default=0,
-        description="The index of the chunk in the log entry",
-    )
-    total_chunks: int = Field(
-        default=1,
-        description="The total number of chunks in the log entry",
-    )
-    id: UUID = Field(
-        default_factory=uuid4,
-        description="The unique identifier of the log entry",
-    )

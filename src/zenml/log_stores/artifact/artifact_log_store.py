@@ -37,10 +37,10 @@ from zenml.log_stores.artifact.artifact_log_store_flavor import (
 )
 from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
-from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
 from zenml.utils.io_utils import sanitize_remote_path
+from zenml.utils.logging_utils import LogEntry
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")

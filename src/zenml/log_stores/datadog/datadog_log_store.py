@@ -22,9 +22,9 @@ from opentelemetry.sdk._logs.export import LogExporter
 from zenml.enums import LoggingLevels
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
-from zenml.log_stores.utils import LogEntry
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
+from zenml.utils.logging_utils import LogEntry
 
 logger = get_logger(__name__)
 

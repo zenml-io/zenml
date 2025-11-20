@@ -40,7 +40,6 @@ from zenml.constants import (
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
-from zenml.log_stores.utils import LoggingContext
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
@@ -73,6 +72,7 @@ from zenml.utils import (
     string_utils,
     tag_utils,
 )
+from zenml.utils.logging_utils import LoggingContext
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:

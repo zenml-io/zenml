@@ -48,7 +48,6 @@ from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
 from zenml.execution.step.utils import launch_step
-from zenml.log_stores.utils import setup_orchestrator_logging
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -65,6 +64,7 @@ from zenml.stack import Stack
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.utils import OutputSignature
 from zenml.utils import source_utils
+from zenml.utils.logging_utils import setup_orchestrator_logging
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
