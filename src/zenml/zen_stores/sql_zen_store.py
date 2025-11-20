@@ -5061,12 +5061,15 @@ class SqlZenStore(BaseZenStore):
             )
             session.refresh(new_snapshot)
 
+<<<<<<< HEAD
             if snapshot.name:
                 self._update_onboarding_state(
                     completed_steps={OnboardingStep.SNAPSHOT_CREATED},
                     session=session,
                 )
 
+=======
+>>>>>>> 8bd36c5 (Remove SNAPSHOT_CREATED tracking from onboarding)
             return new_snapshot.to_model(
                 include_metadata=True, include_resources=True
             )
