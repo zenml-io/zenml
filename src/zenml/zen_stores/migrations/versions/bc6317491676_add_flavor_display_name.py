@@ -1,7 +1,7 @@
 """add flavor display_name [bc6317491676].
 
 Revision ID: bc6317491676
-Revises: ff538a321a92
+Revises: 0.91.2
 Create Date: 2025-11-20 16:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "bc6317491676"
-down_revision = "ff538a321a92"
+down_revision = "0.91.2"
 branch_labels = None
 depends_on = None
 
