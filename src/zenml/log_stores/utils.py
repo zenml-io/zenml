@@ -30,8 +30,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels, StackComponentType
-from zenml.log_stores.base_log_store import BaseLogStore
+from zenml.enums import LoggingLevels
 from zenml.logger import get_logger
 from zenml.models import (
     LogsRequest,
@@ -254,14 +253,44 @@ def fetch_logs(
 
     Returns:
         List of log entries.
+
+    Raises:
+        DoesNotExistException: If the log store doesn't exist or is not the right type.
+        NotImplementedError: If the log store's dependencies are not installed.
     """
+    from typing import cast
+
+    from zenml.enums import StackComponentType
+    from zenml.exceptions import DoesNotExistException
+    from zenml.log_stores.base_log_store import BaseLogStore
+    from zenml.stack import StackComponent
+
     log_store: Optional[BaseLogStore] = None
 
     if logs.log_store_id:
-        stack_component_response = zen_store.get_stack_component(
-            logs.log_store_id
-        )
-        log_store = BaseLogStore.from_model(stack_component_response)
+        try:
+            log_store_model = zen_store.get_stack_component(logs.log_store_id)
+        except KeyError:
+            raise DoesNotExistException(
+                f"Log store '{logs.log_store_id}' does not exist."
+            )
+
+        if not log_store_model.type == StackComponentType.LOG_STORE:
+            raise DoesNotExistException(
+                f"Stack component '{logs.log_store_id}' is not a log store."
+            )
+
+        try:
+            log_store = cast(
+                BaseLogStore,
+                StackComponent.from_model(log_store_model),
+            )
+        except ImportError:
+            raise NotImplementedError(
+                f"Log store '{log_store_model.name}' could not be "
+                f"instantiated. This is likely because the log store's "
+                f"dependencies are not installed."
+            )
     else:
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
