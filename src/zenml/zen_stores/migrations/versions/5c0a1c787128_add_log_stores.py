@@ -1,7 +1,7 @@
 """add log stores [5c0a1c787128].
 
 Revision ID: 5c0a1c787128
-Revises: 4dd9d3afd2c0
+Revises: 0.91.2
 Create Date: 2025-10-24 10:06:54.402219
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5c0a1c787128"
-down_revision = "4dd9d3afd2c0"
+down_revision = "0.91.2"
 branch_labels = None
 depends_on = None
 
