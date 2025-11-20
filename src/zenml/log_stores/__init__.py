@@ -13,7 +13,20 @@
 #  permissions and limitations under the License.
 """Implements the log stores for ZenML."""
 
-# Base log store
+# Base classes
+from zenml.log_stores.base_log_store import (
+    BaseLogStore,
+    BaseLogStoreConfig,
+    BaseLogStoreFlavor,
+)
+
+# OpenTelemetry log store
+from zenml.log_stores.otel.otel_flavor import (
+    OtelLogStoreConfig,
+    OtelLogStoreFlavor,
+)
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
+
 # Artifact log store
 from zenml.log_stores.artifact.artifact_log_store import (
     ArtifactLogStore,
@@ -22,37 +35,14 @@ from zenml.log_stores.artifact.artifact_log_store_flavor import (
     ArtifactLogStoreConfig,
     ArtifactLogStoreFlavor,
 )
-from zenml.log_stores.base_log_store import (
-    BaseLogStore,
-    BaseLogStoreConfig,
-    BaseLogStoreFlavor,
-)
+
+# Datadog log store
 from zenml.log_stores.datadog.datadog_flavor import (
     DatadogLogStoreConfig,
     DatadogLogStoreFlavor,
 )
-
-# Datadog log store
 from zenml.log_stores.datadog.datadog_log_store import (
     DatadogLogStore,
-)
-from zenml.log_stores.otel.otel_flavor import (
-    OtelLogStoreConfig,
-    OtelLogStoreFlavor,
-)
-
-# OpenTelemetry log store
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
-
-# Logging utilities
-from zenml.utils.logging_utils import (
-    LogEntry,
-    LoggingContext,
-    fetch_logs,
-    generate_logs_request,
-    is_logging_enabled,
-    search_logs_by_source,
-    setup_orchestrator_logging,
 )
 
 __all__ = [
@@ -65,14 +55,7 @@ __all__ = [
     "DatadogLogStore",
     "DatadogLogStoreConfig",
     "DatadogLogStoreFlavor",
-    "LogEntry",
-    "LoggingContext",
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",
-    "fetch_logs",
-    "generate_logs_request",
-    "is_logging_enabled",
-    "search_logs_by_source",
-    "setup_orchestrator_logging",
 ]
