@@ -258,7 +258,7 @@ def main() -> None:
         orchestrator_run_id = orchestrator_pod_name
 
         if args.run_id:
-            pipeline_run = client.zen_store.get_pipeline_run(args.run_id)
+            pipeline_run = client.get_pipeline_run(args.run_id)
         else:
             pipeline_run = create_placeholder_run(
                 snapshot=snapshot,
