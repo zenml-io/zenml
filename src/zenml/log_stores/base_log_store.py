@@ -23,10 +23,7 @@ from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils.logging_utils import LogEntry, LoggingContext
 
-# Maximum number of log entries to return in a single request
 MAX_ENTRIES_PER_REQUEST = 20000
-# Maximum size of a single log message in bytes (5KB)
-DEFAULT_MESSAGE_SIZE = 5 * 1024
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -70,7 +67,6 @@ class BaseLogStore(StackComponent):
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         limit: int = MAX_ENTRIES_PER_REQUEST,
-        message_size: int = DEFAULT_MESSAGE_SIZE,
     ) -> List[LogEntry]:
         """Fetch logs from the log store.
 

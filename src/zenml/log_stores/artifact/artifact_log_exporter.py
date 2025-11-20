@@ -28,7 +28,6 @@ from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
     remove_ansi_escape_codes,
 )
-from zenml.log_stores.base_log_store import DEFAULT_MESSAGE_SIZE
 from zenml.log_stores.otel.otel_log_store import LOGGING_CONTEXT_KEY
 from zenml.logger import get_logger
 from zenml.utils.logging_utils import LogEntry
@@ -38,6 +37,9 @@ if TYPE_CHECKING:
     from opentelemetry.sdk._logs import LogData
 
     from zenml.utils.logging_utils import LoggingContext
+
+DEFAULT_MESSAGE_SIZE = 5 * 1024
+
 logger = get_logger(__name__)
 
 

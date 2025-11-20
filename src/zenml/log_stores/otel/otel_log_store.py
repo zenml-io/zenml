@@ -25,7 +25,10 @@ from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
-from zenml.log_stores.base_log_store import BaseLogStore
+from zenml.log_stores.base_log_store import (
+    MAX_ENTRIES_PER_REQUEST,
+    BaseLogStore,
+)
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.logger import get_logger
 from zenml.models import LogsResponse
@@ -191,8 +194,7 @@ class OtelLogStore(BaseLogStore):
         logs_model: "LogsResponse",
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = 20000,
-        message_size: int = 5120,
+        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from the OpenTelemetry backend.
 

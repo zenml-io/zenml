@@ -20,6 +20,7 @@ import requests
 from opentelemetry.sdk._logs.export import LogExporter
 
 from zenml.enums import LoggingLevels
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.logger import get_logger
@@ -65,8 +66,7 @@ class DatadogLogStore(OtelLogStore):
         logs_model: "LogsResponse",
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = 20000,
-        message_size: int = 5120,
+        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from Datadog's API.
 
