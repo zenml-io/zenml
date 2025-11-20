@@ -358,6 +358,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             The estimator or processor object or pipeline step object and the
             job name.
+
+        Raises:
+            TypeError: If the network_config passed is not compatible with the
+                AWS SageMaker NetworkConfig class.
         """
         # Sagemaker does not allow environment variables longer than 256
         # characters to be passed to Processor steps. If an environment variable
@@ -621,8 +625,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If there is an error creating or scheduling the
                 pipeline.
-            TypeError: If the network_config passed is not compatible with the
-                AWS SageMaker NetworkConfig class.
             ValueError: If the schedule is not valid.
 
         Returns:
