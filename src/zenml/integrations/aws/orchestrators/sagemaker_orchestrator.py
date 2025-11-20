@@ -125,6 +125,30 @@ def dissect_schedule_arn(
     return region, name
 
 
+def construct_pipeline_execution_arn(
+    session: Session,
+    job_name: str,
+    is_training_job: bool = True,
+) -> str:
+    """Construct the pipeline execution ARN.
+
+    Args:
+        session: The SageMaker session.
+        job_name: The name of the job.
+        is_training_job: Whether the job is a training job or a processing job.
+
+    Returns:
+        The pipeline execution ARN.
+    """
+    account_id = session.boto_session.client("sts").get_caller_identity()[
+        "Account"
+    ]
+    region_name = session.boto_session.region_name
+    job_type = "training" if is_training_job else "processing"
+
+    return f"arn:aws:sagemaker:{region_name}:{account_id}:{job_type}-job/{job_name}"
+
+
 def dissect_pipeline_execution_arn(
     pipeline_execution_arn: str,
 ) -> Tuple[
@@ -914,7 +938,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             Optional submission result.
+
+        Raises:
+            NotImplementedError: If the pipeline is scheduled.
         """
+        if snapshot.schedule:
+            raise NotImplementedError(
+                "The AWS SageMaker Orchestrator does not currently support "
+                "scheduling for dynamic pipelines."
+            )
+
         session = self._get_sagemaker_session()
 
         try:
@@ -947,6 +980,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             wait=False,
         )
 
+        assert job_name is not None, "Job name is not set"
+
+        is_training_job = isinstance(job, Estimator)
+
         _wait_for_completion = None
         if settings.synchronous:
 
@@ -958,7 +995,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "execution."
                 )
                 try:
-                    if isinstance(job, Estimator):
+                    if is_training_job:
                         session.logs_for_job(
                             job_name,
                             wait=True,
@@ -983,9 +1020,18 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         f"--synchronous=False`"
                     )
 
+        metadata = self.compute_metadata(
+            execution_arn=construct_pipeline_execution_arn(
+                session=session,
+                job_name=job_name,
+                is_training_job=is_training_job,
+            ),
+            settings=settings,
+        )
+
         return SubmissionResult(
             wait_for_completion=_wait_for_completion,
-            # metadata=run_metadata,
+            metadata=metadata,
         )
 
     def launch_dynamic_step(
@@ -1188,34 +1234,32 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         if pipeline_type is None:
             return None
 
-        try:
-            # We try to get a SageMaker Studio URL if available
-            session = self._get_sagemaker_session()
+        if pipeline_type != "processing":
+            # Processing jobs are not supported in SageMaker Studio
+            try:
+                # We try to get a SageMaker Studio URL if available
+                session = self._get_sagemaker_session()
 
-            # List the Studio domains and get the Studio Domain ID
-            domains_response = session.sagemaker_client.list_domains()
-            studio_domain_id = domains_response["Domains"][0]["DomainId"]
+                # List the Studio domains and get the Studio Domain ID
+                domains_response = session.sagemaker_client.list_domains()
+                studio_domain_id = domains_response["Domains"][0]["DomainId"]
 
-            if pipeline_type == "pipeline":
-                return (
-                    f"https://studio-{studio_domain_id}.studio.{region_name}."
-                    f"sagemaker.aws/pipelines/view/{pipeline_name}/executions"
-                    f"/{execution_id}/graph"
+                if pipeline_type == "pipeline":
+                    return (
+                        f"https://studio-{studio_domain_id}.studio.{region_name}."
+                        f"sagemaker.aws/pipelines/view/{pipeline_name}/executions"
+                        f"/{execution_id}/graph"
+                    )
+                else:  # training:
+                    return (
+                        f"https://studio-{studio_domain_id}.studio.{region_name}."
+                        f"sagemaker.aws/jobs/train/{pipeline_name}"
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"There was an issue while extracting the SageMaker Studio "
+                    f"URL: {e}"
                 )
-            elif pipeline_type == "training":
-                return (
-                    f"https://studio-{studio_domain_id}.studio.{region_name}."
-                    f"sagemaker.aws/jobs/train/{pipeline_name}"
-                )
-            else:
-                # There is no way to view processing jobs in SageMaker Studio
-                pass
-
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the SageMaker Studio "
-                f"URL: {e}"
-            )
 
         if pipeline_type == "pipeline":
             job_type = "jobs" if use_training_job else "processing-jobs"
