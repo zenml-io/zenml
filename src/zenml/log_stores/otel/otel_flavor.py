@@ -27,14 +27,9 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
 
     Attributes:
         service_name: Name of the service (defaults to "zenml").
-        service_version: Version of the service.
-        deployment_environment: Deployment environment (e.g., "production").
         max_queue_size: Maximum queue size for batch processor.
         schedule_delay_millis: Delay between batch exports in milliseconds.
         max_export_batch_size: Maximum batch size for exports.
-        endpoint: Optional OTLP endpoint URL (for HTTP/gRPC exporters).
-        headers: Optional headers for OTLP exporter.
-        insecure: Whether to use insecure connection for OTLP.
     """
 
     service_name: str = Field(

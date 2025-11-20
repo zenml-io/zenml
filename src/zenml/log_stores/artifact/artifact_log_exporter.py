@@ -22,11 +22,6 @@ from uuid import UUID, uuid4
 from opentelemetry import context as otel_context
 from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
 
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs import LogData
-
-    from zenml.utils.logging_utils import LoggingContext
-
 from zenml.artifacts.utils import _load_artifact_store
 from zenml.client import Client
 from zenml.enums import LoggingLevels
@@ -39,15 +34,15 @@ from zenml.logger import get_logger
 from zenml.utils.logging_utils import LogEntry
 from zenml.utils.time_utils import utc_now
 
+if TYPE_CHECKING:
+    from opentelemetry.sdk._logs import LogData
+
+    from zenml.utils.logging_utils import LoggingContext
 logger = get_logger(__name__)
 
 
 class ArtifactLogExporter(LogExporter):
-    """OpenTelemetry exporter that writes logs to ZenML artifact store.
-
-    Groups logs by context and writes them to the appropriate artifact store
-    location based on the filesystem type.
-    """
+    """OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
     def __init__(self) -> None:
         """Initialize the exporter with file counters per context."""

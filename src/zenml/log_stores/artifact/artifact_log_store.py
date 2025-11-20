@@ -257,8 +257,7 @@ class ArtifactLogStore(OtelLogStore):
         logs_model: "LogsResponse",
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = 20000,
-        message_size: int = 5120,
+        limit: int = MAX_ENTRIES_PER_REQUEST
     ) -> List["LogEntry"]:
         """Fetch logs from the artifact store.
 
@@ -286,22 +285,17 @@ class ArtifactLogStore(OtelLogStore):
                 "for ArtifactLogStore.fetch()"
             )
 
+        if start_time or end_time:
+            logger.warning(
+                "start_time and end_time are not supported for "
+                "ArtifactLogStore.fetch(). Both parameters will be ignored."
+            )
+
         client = Client()
         log_entries = fetch_log_records(
             zen_store=client.zen_store,
             artifact_store_id=logs_model.artifact_store_id,
             logs_uri=logs_model.uri,
         )
-
-        if start_time or end_time:
-            filtered_entries = []
-            for entry in log_entries:
-                if entry.timestamp:
-                    if start_time and entry.timestamp < start_time:
-                        continue
-                    if end_time and entry.timestamp > end_time:
-                        continue
-                filtered_entries.append(entry)
-            log_entries = filtered_entries
 
         return log_entries[:limit]
