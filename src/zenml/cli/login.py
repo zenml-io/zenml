@@ -38,6 +38,7 @@ from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
     IllegalOperationError,
+    EntityNotFoundError
 )
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
@@ -598,8 +599,6 @@ def _fail_if_authentication_environment_variables_set() -> None:
 
 
 def _set_active_project(project_name_or_id: str) -> None:
-    from zenml.exceptions import EntityNotFoundError
-    
     # Ensure we are using the fresh store config
     client = Client()
 
