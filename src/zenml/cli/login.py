@@ -923,8 +923,8 @@ def login(
             ngrok_token=ngrok_token,
             restart=restart,
         )
-        
-        if project:
+
+        if project and not blocking:
             _set_active_project(project)
 
         return
