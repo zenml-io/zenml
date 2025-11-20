@@ -257,7 +257,7 @@ class ArtifactLogStore(OtelLogStore):
         logs_model: "LogsResponse",
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = MAX_ENTRIES_PER_REQUEST
+        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from the artifact store.
 

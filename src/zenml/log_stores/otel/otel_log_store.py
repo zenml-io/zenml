@@ -25,7 +25,6 @@ from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
-from zenml import __version__
 from zenml.log_stores.base_log_store import BaseLogStore
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.logger import get_logger
@@ -38,19 +37,15 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# Context key for passing LoggingContext through OTel's context system
+
 LOGGING_CONTEXT_KEY = otel_context.create_key("zenml.logging_context")
 
 
 class OtelLogStore(BaseLogStore):
     """Log store that exports logs using OpenTelemetry.
 
-    Each instance creates its own BatchLogRecordProcessor and background thread.
-    This is simpler than shared infrastructure but means more threads when
-    multiple log stores are active simultaneously.
-
     Subclasses should implement `get_exporter()` to provide the specific
-    log exporter for their backend (e.g., ArtifactLogExporter, DatadogLogExporter).
+    log exporter for their backend.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -96,7 +91,7 @@ class OtelLogStore(BaseLogStore):
         self._resource = Resource.create(
             {
                 "service.name": self.config.service_name,
-                "service.version": __version__,
+                "service.version": self.config.service_version,
             }
         )
 

@@ -17,6 +17,7 @@ from typing import Type
 
 from pydantic import Field
 
+from zenml import __version__
 from zenml.enums import StackComponentType
 from zenml.log_stores import BaseLogStore, BaseLogStoreConfig
 from zenml.stack.flavor import Flavor
@@ -35,6 +36,10 @@ class OtelLogStoreConfig(BaseLogStoreConfig):
     service_name: str = Field(
         default="zenml",
         description="Name of the service for telemetry",
+    )
+    service_version: str = Field(
+        default=__version__,
+        description="Version of the service for telemetry",
     )
     max_queue_size: int = Field(
         default=8096,
