@@ -559,6 +559,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         else:
             processor = Processor(
+                base_job_name=base_job_name,
                 entrypoint=cast(
                     Optional[List[Union[str, PipelineVariable]]],
                     command + arguments,
@@ -582,6 +583,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             processor.run(
                 wait=wait,
+                logs=wait,
                 inputs=processing_inputs,
                 outputs=outputs,
             )
@@ -932,7 +934,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             run_id=placeholder_run.id if placeholder_run else None,
         )
 
-        _, job_name = self._create_job_or_step(
+        job, job_name = self._create_job_or_step(
             session=session,
             base_job_name=snapshot.pipeline_configuration.name,
             environment=environment,
@@ -954,12 +956,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "execution."
                 )
                 try:
-                    session.logs_for_job(
-                        job_name,
-                        wait=True,
-                        poll=POLLING_DELAY,
-                        timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
-                    )
+                    if isinstance(job, Estimator):
+                        session.logs_for_job(
+                            job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                            timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
+                        )
+                    else:
+                        session.logs_for_processing_job(
+                            job_name,
+                            wait=True,
+                            poll=POLLING_DELAY,
+                        )
 
                     logger.info("Pipeline completed successfully.")
                 except WaiterError:
