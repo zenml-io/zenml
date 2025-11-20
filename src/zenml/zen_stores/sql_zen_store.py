@@ -5299,8 +5299,13 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(deployment_schema)
 
+            # Track deployment and mark onboarding as completed
             self._update_onboarding_state(
-                completed_steps={OnboardingStep.SNAPSHOT_DEPLOYED},
+                completed_steps={
+                    OnboardingStep.PIPELINE_DEPLOYED,
+                    OnboardingStep.OSS_ONBOARDING_COMPLETED,
+                    OnboardingStep.PRO_ONBOARDING_COMPLETED,
+                },
                 session=session,
             )
 
@@ -10773,7 +10778,6 @@ class SqlZenStore(BaseZenStore):
 
             completed_onboarding_steps: Set[str] = {
                 OnboardingStep.PIPELINE_RUN,
-                OnboardingStep.OSS_ONBOARDING_COMPLETED,
             }
             if stack_metadata["orchestrator"] not in {
                 "local",
@@ -10788,7 +10792,6 @@ class SqlZenStore(BaseZenStore):
                 completed_onboarding_steps.update(
                     {
                         OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
-                        OnboardingStep.PRO_ONBOARDING_COMPLETED,
                     }
                 )
 

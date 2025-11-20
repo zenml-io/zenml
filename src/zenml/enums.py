@@ -507,7 +507,7 @@ class OnboardingStep(StrEnum):
     PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE = (
         "pipeline_run_with_remote_artifact_store"
     )
-    SNAPSHOT_DEPLOYED = "snapshot_deployed"
+    PIPELINE_DEPLOYED = "pipeline_deployed"
     OSS_ONBOARDING_COMPLETED = "oss_onboarding_completed"
     PRO_ONBOARDING_COMPLETED = "pro_onboarding_completed"
 
