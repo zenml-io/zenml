@@ -14,12 +14,6 @@
 """Implements the log stores for ZenML."""
 
 # Base log store
-from zenml.log_stores.base_log_store import (
-    BaseLogStore,
-    BaseLogStoreConfig,
-    BaseLogStoreFlavor,
-)
-
 # Artifact log store
 from zenml.log_stores.artifact.artifact_log_store import (
     ArtifactLogStore,
@@ -28,27 +22,33 @@ from zenml.log_stores.artifact.artifact_log_store_flavor import (
     ArtifactLogStoreConfig,
     ArtifactLogStoreFlavor,
 )
-
-# OpenTelemetry log store
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
-from zenml.log_stores.otel.otel_flavor import (
-    OtelLogStoreConfig,
-    OtelLogStoreFlavor,
-)
-
-# Datadog log store
-from zenml.log_stores.datadog.datadog_log_store import (
-    DatadogLogStore,
+from zenml.log_stores.base_log_store import (
+    BaseLogStore,
+    BaseLogStoreConfig,
+    BaseLogStoreFlavor,
 )
 from zenml.log_stores.datadog.datadog_flavor import (
     DatadogLogStoreConfig,
     DatadogLogStoreFlavor,
 )
 
+# Datadog log store
+from zenml.log_stores.datadog.datadog_log_store import (
+    DatadogLogStore,
+)
+from zenml.log_stores.otel.otel_flavor import (
+    OtelLogStoreConfig,
+    OtelLogStoreFlavor,
+)
+
+# OpenTelemetry log store
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
+
 # Logging utilities
 from zenml.log_stores.utils import (
     LogEntry,
     LoggingContext,
+    fetch_logs,
     generate_logs_request,
     is_logging_enabled,
     search_logs_by_source,
@@ -70,6 +70,7 @@ __all__ = [
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",
+    "fetch_logs",
     "generate_logs_request",
     "is_logging_enabled",
     "search_logs_by_source",

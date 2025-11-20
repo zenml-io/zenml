@@ -19,9 +19,11 @@ from contextlib import nullcontext
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, List, Optional, Type
 from uuid import UUID, uuid4
 
+from zenml.enums import StackComponentType
+from zenml.log_stores.base_log_store import BaseLogStore
 from pydantic import BaseModel, Field
 
 from zenml.client import Client
@@ -39,6 +41,10 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
+from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -229,6 +235,55 @@ def setup_orchestrator_logging(
         return LoggingContext(log_model=orchestrator_logs)
 
     return nullcontext()
+
+
+def fetch_logs(
+    logs: LogsResponse,
+    zen_store: "BaseZenStore",
+    limit: int,
+) -> List["LogEntry"]:
+    """Fetch logs from the log store.
+
+    This function is designed to be called from the server side where we can't
+    always instantiate the full Stack object due to missing integration dependencies.
+    Instead, it directly instantiates the appropriate log store based on the logs model.
+
+    Args:
+        logs: The logs response model containing metadata about the logs.
+        zen_store: The zen store instance.
+        limit: Maximum number of log entries to return.
+
+    Returns:
+        List of log entries.
+    """
+    log_store: Optional[BaseLogStore] = None
+
+    if logs.log_store_id:
+        stack_component_response = zen_store.get_stack_component(
+            logs.log_store_id
+        )
+        log_store = BaseLogStore.from_model(stack_component_response)
+    else:
+        from zenml.log_stores.artifact.artifact_log_store import (
+            ArtifactLogStore,
+        )
+        from zenml.log_stores.artifact.artifact_log_store_flavor import (
+            ArtifactLogStoreConfig,
+        )
+
+        current_time = utc_now()
+        log_store = ArtifactLogStore(
+            name="default_artifact_log_store",
+            id=uuid4(),
+            config=ArtifactLogStoreConfig(),
+            flavor="artifact",
+            type=StackComponentType.LOG_STORE,
+            user=uuid4(),
+            created=current_time,
+            updated=current_time,
+        )
+
+    return log_store.fetch(logs_model=logs, limit=limit)
 
 
 class LogEntry(BaseModel):
