@@ -331,8 +331,7 @@ def fetch_logs(
         except ImportError:
             raise NotImplementedError(
                 f"Log store '{log_store_model.name}' could not be "
-                f"instantiated. This is likely because the log store's "
-                f"dependencies are not installed."
+                "instantiated."
             )
     else:
         from zenml.log_stores.artifact.artifact_log_store import (
