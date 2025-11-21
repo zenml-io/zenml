@@ -11,7 +11,7 @@ Stay up to date with the latest features, improvements, and fixes in ZenML OSS.
 
 See what's new and improved in version 0.91.2.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" align="left" alt="ZenML 0.91.2" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" align="left" alt="ZenML 0.91.2" width="800">
 
 #### Kubernetes Deployer
 
@@ -60,7 +60,7 @@ See what's new and improved in version 0.91.2.
 
 See what's new and improved in version 0.91.1.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" align="left" alt="ZenML 0.91.1" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" align="left" alt="ZenML 0.91.1" width="800">
 
 #### Hugging Face Deployer
 
@@ -124,7 +124,7 @@ See what's new and improved in version 0.91.1.
 
 See what's new and improved in version 0.91.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" align="left" alt="ZenML 0.91.0" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" align="left" alt="ZenML 0.91.0" width="800">
 
 #### Local Deployer
 
@@ -201,7 +201,7 @@ See what's new and improved in version 0.91.0.
 
 See what's new and improved in version 0.90.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" align="left" alt="ZenML 0.90.0" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" align="left" alt="ZenML 0.90.0" width="800">
 
 #### Pipeline Snapshots & Deployments
 
@@ -250,7 +250,7 @@ See what's new and improved in version 0.90.0.
 
 See what's new and improved in version 0.85.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" align="left" alt="ZenML 0.85.0" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" align="left" alt="ZenML 0.85.0" width="800">
 
 #### Pipeline Execution Modes
 
@@ -299,7 +299,7 @@ See what's new and improved in version 0.85.0.
 
 See what's new and improved in version 0.84.3.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" align="left" alt="ZenML 0.84.3" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" align="left" alt="ZenML 0.84.3" width="800">
 
 #### ZenML Pro Service Account Authentication
 
@@ -327,7 +327,7 @@ See what's new and improved in version 0.84.3.
 
 See what's new and improved in version 0.84.2.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" align="left" alt="ZenML 0.84.2" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" align="left" alt="ZenML 0.84.2" width="800">
 
 #### Kubernetes Orchestrator Improvements
 
@@ -356,7 +356,7 @@ See what's new and improved in version 0.84.2.
 
 See what's new and improved in version 0.84.1.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" align="left" alt="ZenML 0.84.1" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" align="left" alt="ZenML 0.84.1" width="800">
 
 #### Step Exception Handling
 
@@ -427,7 +427,7 @@ See what's new and improved in version 0.84.1.
 
 See what's new and improved in version 0.84.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" align="left" alt="ZenML 0.84.0" width="500">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" align="left" alt="ZenML 0.84.0" width="800">
 
 #### Early Pipeline Stopping
 
