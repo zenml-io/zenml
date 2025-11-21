@@ -150,7 +150,7 @@ def greet(name: str) -> str:
 settings = {
     "deployer": KubernetesDeployerSettings(
         namespace="my-namespace",
-        service_type="LoadBalancer",  # or "NodePort", "ClusterIP"
+        service_type="LoadBalancer",
         service_port=8000,
     ),
     "resources": ResourceSettings(
@@ -174,11 +174,11 @@ For production deployments, add health probes, labels, and resource limits:
 settings = {
     "deployer": KubernetesDeployerSettings(
         namespace="production",
-        service_type="ClusterIP",  # Use with Ingress
+        service_type="ClusterIP",
         service_port=8000,
+        url_preference="ingress",
 
         
-        # Labels for organization
         labels={
             "environment": "production",
             "team": "ml-platform",
@@ -517,11 +517,26 @@ For a complete list of all available settings, see the `KubernetesDeployerSettin
 * `strict_additional_resources`: If `True`, fail deployment if any additional resource fails (default: `True`)
 * `custom_templates_dir`: Path to directory with custom Jinja2 templates
 
+**URL Selection**:
+* `url_preference`: Which URL type to return when multiple are available. Defaults to `auto`, which follows the configured `service_type` priority (`LoadBalancer` → `NodePort` → `ClusterIP`). Set to `ingress` or `gateway_api` when you want those URLs returned; the deployer will fail if the requested URL type cannot be resolved.
+
 **Internal Settings**:
 * `wait_for_load_balancer_timeout`: Timeout for LoadBalancer IP assignment (default: `150` seconds, `0` to skip)
 * `deployment_ready_check_interval`: Interval between readiness checks (default: `2` seconds)
 
 Check out [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
+
+### How deployment URLs are chosen
+
+ZenML stores all discovered URLs (Gateway API, Ingress, LoadBalancer, NodePort, ClusterIP) in deployment metadata, but only returns one URL based on `url_preference`:
+
+- `auto` (default) mirrors your `service_type` choice: LoadBalancer → NodePort → ClusterIP. Gateway/Ingress URLs are ignored unless explicitly requested.
+- Set `url_preference="ingress"` or `url_preference="gateway_api"` when you add those resources (e.g., via `additional_resources`). If the requested URL type cannot be resolved, the deployment state call fails instead of silently falling back.
+- Set `url_preference="load_balancer"` when you want to strictly require an external IP; the deployer will error if the LoadBalancer is still pending.
+
+Tip: When using Ingress or Gateway API, combine `service_type="ClusterIP"` with the matching `url_preference` so the returned URL matches the routing layer you manage.
+
+- Strict preference behavior: If you set `url_preference` to a specific type and that URL can't be discovered (for example, LoadBalancer is still pending), the deployer raises an error instead of returning another URL type. This helps avoid accidental exposure paths.
 
 
 ## Troubleshooting
@@ -592,4 +607,3 @@ If pods can't pull the container image:
 6. **Use HPA** for autoscaling based on actual load
 7. **Configure PodDisruptionBudget** for high availability during cluster updates
 8. **Keep additional resources in version control** alongside your pipeline code
-
