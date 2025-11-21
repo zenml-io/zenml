@@ -14,4 +14,6 @@ if __name__ == "__main__":
     # run = client.get_pipeline_run(run.id)
     if run:
         result = run.steps["analyze_weather_with_llm"].output.load()
+        comparison = run.steps["compare_city_trends"].output.load()
         print(result)
+        print("\n" + comparison)
