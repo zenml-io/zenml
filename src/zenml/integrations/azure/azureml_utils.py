@@ -122,7 +122,7 @@ def create_or_get_compute(
                 compute=compute,
             )
 
-        elif compute_type == "amIcompute":  # Compute Cluster
+        elif compute_type == "amlcompute":  # Compute Cluster
             if settings.mode != AzureMLComputeTypes.COMPUTE_CLUSTER:
                 raise RuntimeError(
                     "The mode of operation for the compute target defined "
