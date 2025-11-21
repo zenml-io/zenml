@@ -49,14 +49,8 @@ See what's new and improved in version 0.91.2.
 
 </details>
 
-<details>
-<summary>Fixed</summary>
-
-* S3 artifact store now works with custom backends ([#4186](https://github.com/zenml-io/zenml/pull/4186))
-* SSL certificate passing for RestZenStore ([#4188](https://github.com/zenml-io/zenml/pull/4188))
-* Weights & Biases tag length limitations ([#4189](https://github.com/zenml-io/zenml/pull/4189))
-
-</details>## 0.91.1
+***
+## 0.91.1
 
 See what's new and improved in version 0.91.1.
 
@@ -112,15 +106,8 @@ See what's new and improved in version 0.91.1.
 
 </details>
 
-<details>
-<summary>Improved</summary>
-
-* Enhanced Kubernetes orchestrator with container security context options ([#4142](https://github.com/zenml-io/zenml/pull/4142))
-* Better handling of owner references in Kubernetes deployments ([#4146](https://github.com/zenml-io/zenml/pull/4146))
-* Expanded HashiCorp Vault secret store authentication methods ([#4110](https://github.com/zenml-io/zenml/pull/4110))
-* Support for newer Databricks versions ([#4144](https://github.com/zenml-io/zenml/pull/4144))
-
-</details>## 0.91.0
+***
+## 0.91.0
 
 See what's new and improved in version 0.91.0.
 
@@ -184,15 +171,6 @@ See what's new and improved in version 0.91.0.
 ### Breaking Changes
 
 * Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
-
-<details>
-<summary>Improved</summary>
-
-* Customizable image tags for Docker builds ([#4025](https://github.com/zenml-io/zenml/pull/4025))
-* Enhanced deployment server configuration ([#4064](https://github.com/zenml-io/zenml/pull/4064))
-* Better integration with MLX arrays ([#4027](https://github.com/zenml-io/zenml/pull/4027))
-
-</details>
 
 ### Breaking Changes
 
