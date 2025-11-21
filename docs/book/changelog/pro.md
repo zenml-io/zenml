@@ -55,6 +55,10 @@ See what's new and improved in version 0.12.17.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Authentication Enhancements"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Lambda Function Updates
 
 * Updated Python version for Lambda functions
@@ -69,9 +73,6 @@ See what's new and improved in version 0.12.17.
 
 [PR #453](https://github.com/zenml-io/zenml-cloud-api/pull/453) | [PR #454](https://github.com/zenml-io/zenml-cloud-api/pull/454)
 
-{% endcolumn %}
-
-{% column %}
 #### Vault Secret Store
 
 * Support for new Hashicorp Vault secret store auth method settings
@@ -392,6 +393,10 @@ See what's new and improved in version 0.12.0.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Codespaces"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Codespaces
 
 * Introducing Codespaces to Cloud API
@@ -406,9 +411,6 @@ See what's new and improved in version 0.12.0.
 
 [PR #402](https://github.com/zenml-io/zenml-cloud-api/pull/402)
 
-{% endcolumn %}
-
-{% column %}
 #### Infrastructure
 
 * Provision shared workspace bucket with Terraform

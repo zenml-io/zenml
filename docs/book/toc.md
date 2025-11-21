@@ -68,3 +68,8 @@
 * [FAQ](reference/faq.md)
 * [Global settings](reference/global-settings.md)
 * [Legacy docs](reference/legacy-docs.md)
+
+## Changelog
+
+* [OSS](changelog/oss.md)
+* [Pro](changelog/pro.md)

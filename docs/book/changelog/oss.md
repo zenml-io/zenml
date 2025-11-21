@@ -27,6 +27,10 @@ See what's new and improved in version 0.91.2.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Kubernetes Deployer"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Kubernetes Deployer
 
 * Deploy your pipelines directly on Kubernetes
@@ -41,9 +45,6 @@ See what's new and improved in version 0.91.2.
 
 [PR #4160](https://github.com/zenml-io/zenml/pull/4160)
 
-{% endcolumn %}
-
-{% column %}
 #### S3 Artifact Store Fixes
 
 * Fixed compatibility with custom S3 backends
@@ -71,6 +72,10 @@ See what's new and improved in version 0.91.1.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Hugging Face Deployer"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Hugging Face Deployer
 
 * Deploy pipelines directly to Hugging Face Spaces
@@ -85,9 +90,6 @@ See what's new and improved in version 0.91.1.
 
 [Read the documentation](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines) | [PR #4074](https://github.com/zenml-io/zenml/pull/4074)
 
-{% endcolumn %}
-
-{% column %}
 #### Kubernetes Orchestrator Enhancements
 
 * Container security context configuration
@@ -127,6 +129,10 @@ See what's new and improved in version 0.91.0.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Local Deployer"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Local Deployer
 
 * Deploy pipelines locally with full control
@@ -142,9 +148,6 @@ See what's new and improved in version 0.91.0.
 
 [Read the documentation](https://docs.zenml.io/how-to/steps-pipelines/advanced_features) | [PR #4040](https://github.com/zenml-io/zenml/pull/4040)
 
-{% endcolumn %}
-
-{% column %}
 #### Deployment Visualizations
 
 * Attach custom visualizations to deployments
@@ -198,6 +201,10 @@ See what's new and improved in version 0.90.0.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Pipeline Snapshots & Deployments"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Pipeline Snapshots & Deployments
 
 * Capture immutable snapshots of pipeline code and configuration
@@ -215,9 +222,6 @@ See what's new and improved in version 0.90.0.
 
 [PR #3336](https://github.com/zenml-io/zenml/pull/3336)
 
-{% endcolumn %}
-
-{% column %}
 #### Dependency Management Improvements
 
 * Reduced base package dependencies
@@ -257,6 +261,10 @@ See what's new and improved in version 0.85.0.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Pipeline Execution Modes"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Pipeline Execution Modes
 
 * Flexible failure handling configuration
@@ -273,9 +281,6 @@ See what's new and improved in version 0.85.0.
 
 [PR #3900](https://github.com/zenml-io/zenml/pull/3900)
 
-{% endcolumn %}
-
-{% column %}
 #### Airflow 3.0 Support
 
 * Full compatibility with Apache Airflow 3.0
