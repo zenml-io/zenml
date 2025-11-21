@@ -251,7 +251,10 @@ class StackComponentSchema(NamedSchema, table=True):
         body = ComponentResponseBody(
             user_id=self.user_id,
             type=StackComponentType(self.type),
-            flavor_name=self.flavor,
+            flavor_name=self.flavor_schema.display_name
+            or self.flavor.replace("_", " ").title()
+            if self.flavor_schema
+            else self.flavor.replace("_", " ").title(),
             created=self.created,
             updated=self.updated,
             logo_url=self.flavor_schema.logo_url

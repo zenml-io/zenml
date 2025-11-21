@@ -158,7 +158,8 @@ class FlavorSchema(NamedSchema, table=True):
         body = FlavorResponseBody(
             user_id=self.user_id,
             type=StackComponentType(self.type),
-            display_name=self.display_name or self.name,
+            display_name=self.display_name
+            or self.name.replace("_", " ").title(),
             integration=self.integration,
             source=self.source,
             logo_url=self.logo_url,
