@@ -536,7 +536,7 @@ def server() -> None:
         `zenml login --pro` to access these servers.
 
       * ZenML servers that the client has logged in to via
-        `zenml login --url` in the past.
+        `zenml login <server-url>` in the past.
 
       * the local ZenML server started with `zenml login --local`, if one is
         running.

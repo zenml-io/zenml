@@ -4471,7 +4471,7 @@ class RestZenStore(BaseZenStore):
                 if not token:
                     raise CredentialsNotValid(
                         "No valid credentials found. Please run 'zenml login "
-                        f"--url {self.url}' to connect to the current server."
+                        f"{self.url}' to connect to the current server."
                     )
                 elif token.expired:
                     raise CredentialsNotValid(
