@@ -2517,10 +2517,9 @@ def pretty_print_deployment(
     if deployment.url:
         declare("\n[bold]Connection information:[/bold]")
 
-        declare(f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]")
-        declare(
-            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]"
-        )
+        endpoint_url = deployment.url.rstrip("/")
+        declare(f"\n[bold]Endpoint URL:[/bold] [link]{endpoint_url}[/link]")
+        declare(f"[bold]Swagger URL:[/bold] [link]{endpoint_url}/docs[/link]")
 
         # Auth key handling with proper security
         auth_key = deployment.auth_key
@@ -2557,27 +2556,34 @@ def pretty_print_deployment(
 
         # cURL example
         declare("\n[bold]cURL example:[/bold]")
-        curl_headers = []
-        if auth_key:
-            if show_secret:
-                curl_headers.append(f'-H "Authorization: Bearer {auth_key}"')
-            else:
-                curl_headers.append(
-                    '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
-                )
+        if not deployment.url:
+            console.print("No endpoint URL available.")
+        else:
+            base_url = deployment.url.rstrip("/")
 
-        curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
+            curl_headers = []
+            if auth_key:
+                if show_secret:
+                    curl_headers.append(
+                        f'-H "Authorization: Bearer {auth_key}"'
+                    )
+                else:
+                    curl_headers.append(
+                        '-H "Authorization: Bearer <YOUR_AUTH_KEY>"'
+                    )
 
-        curl_headers.append('-H "Content-Type: application/json"')
-        headers_str = "\\\n  ".join(curl_headers)
+            curl_params = json.dumps(example, indent=2).replace("\n", "\n    ")
 
-        curl_command = f"""curl -X POST {deployment.url}/invoke \\
+            curl_headers.append('-H "Content-Type: application/json"')
+            headers_str = "\\\n  ".join(curl_headers)
+
+            curl_command = f"""curl -X POST {base_url}/invoke \\
   {headers_str} \\
   -d '{{
     "parameters": {curl_params}
   }}'"""
 
-        console.print(curl_command)
+            console.print(curl_command)
 
     # JSON Schemas
     if show_schema:
