@@ -126,12 +126,26 @@ class OtelLogStore(BaseLogStore):
                 schema_url=None,
             )
 
+            # Get the message and append formatted exception if present
+            message = record.getMessage()
+            if record.exc_info:
+                import traceback
+
+                exc_text = "".join(
+                    traceback.format_exception(*record.exc_info)
+                )
+                # Append to message with separator if message exists
+                if message:
+                    message = f"{message}\n{exc_text}"
+                else:
+                    message = exc_text
+
             otel_logger.emit(
                 timestamp=int(record.created * 1e9),
                 observed_timestamp=int(record.created * 1e9),
                 severity_number=self._get_severity_number(record.levelno),
                 severity_text=record.levelname,
-                body=record.getMessage(),
+                body=message,
                 attributes={
                     "code.filepath": record.pathname,
                     "code.lineno": record.lineno,

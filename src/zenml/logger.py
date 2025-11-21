@@ -47,24 +47,24 @@ _stderr_wrapped: bool = False
 
 class _ZenMLStdoutStream:
     """Stream that writes to the original stdout, bypassing the ZenML wrapper.
-    
+
     This ensures console logging doesn't trigger the LoggingContext wrapper,
     preventing duplicate log entries in stored logs.
     """
-    
+
     def write(self, text: str) -> int:
         """Write text to the original stdout.
-        
+
         Args:
             text: The text to write.
-            
+
         Returns:
             The number of characters written.
         """
         if _original_stdout_write:
             return _original_stdout_write(text)
         return sys.stdout.write(text)
-    
+
     def flush(self) -> None:
         """Flush the stdout buffer."""
         sys.stdout.flush()
@@ -278,12 +278,20 @@ def wrap_stdout_stderr() -> None:
 
     if not _stdout_wrapped:
         _original_stdout_write = getattr(sys.stdout, "write")
-        setattr(sys.stdout, "write", _wrapped_write(_original_stdout_write, "stdout"))
+        setattr(
+            sys.stdout,
+            "write",
+            _wrapped_write(_original_stdout_write, "stdout"),
+        )
         _stdout_wrapped = True
 
     if not _stderr_wrapped:
         _original_stderr_write = getattr(sys.stderr, "write")
-        setattr(sys.stderr, "write", _wrapped_write(_original_stderr_write, "stderr"))
+        setattr(
+            sys.stderr,
+            "write",
+            _wrapped_write(_original_stderr_write, "stderr"),
+        )
         _stderr_wrapped = True
 
 

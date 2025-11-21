@@ -327,6 +327,7 @@ class StepLauncher:
                 if step_run.logs:
                     logs_context = LoggingContext(log_model=step_run.logs)
 
+                start_time = time.time()
                 with logs_context:
                     try:
                         # TODO: We still need to apply the fix for step operators here
@@ -345,6 +346,12 @@ class StepLauncher:
                         )
                         publish_utils.publish_failed_step_run(step_run.id)
                         raise
+
+                duration = time.time() - start_time
+                logger.info(
+                    f"Step `{self._invocation_id}` has finished in "
+                    f"`{string_utils.get_human_readable_time(duration)}`."
+                )
             else:
                 logger.info(
                     f"Using cached version of step `{self._invocation_id}`."
@@ -431,8 +438,6 @@ class StepLauncher:
             skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
 
-        start_time = time.time()
-
         # To have a cross-platform compatible handling of main thread termination
         # we use Python's interrupt_main instead of termination signals (not Windows supported).
         # Since interrupt_main raises KeyboardInterrupt we want in this context to capture it
@@ -513,12 +518,6 @@ class StepLauncher:
             raise
         finally:
             heartbeat_worker.stop()
-
-        duration = time.time() - start_time
-        logger.info(
-            f"Step `{self._invocation_id}` has finished in "
-            f"`{string_utils.get_human_readable_time(duration)}`."
-        )
 
     def _run_step_with_step_operator(
         self,

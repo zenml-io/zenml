@@ -160,9 +160,17 @@ class LoggingContext:
             exc_tb: The traceback of the exception.
         """
         if exc_type is not None:
-            logger.error(
-                "An exception has occurred.",
-                exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
+            LoggingContext.emit(
+                logging.LogRecord(
+                    name="",
+                    level=logging.ERROR,
+                    msg="An exception has occurred.",
+                    args=(),
+                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
+                    func=None,
+                    pathname="",
+                    lineno=0,
+                )
             )
 
         with self._lock:
