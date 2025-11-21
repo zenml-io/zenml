@@ -1,6 +1,6 @@
 ---
 description: Changelog for ZenML Pro.
-icon: star
+icon: clock-rotate-left
 layout:
   width: wide
 ---

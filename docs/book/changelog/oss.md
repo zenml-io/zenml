@@ -1,6 +1,6 @@
 ---
 description: Changelog for ZenML OSS and ZenML Dashboard.
-icon: code-branch
+icon: clock-rotate-left
 layout:
   width: wide
 ---
