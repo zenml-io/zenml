@@ -1,20 +1,8 @@
 ---
 description: Changelog for ZenML Pro.
-icon: list-check
+icon: clock-rotate-left
 layout:
   width: wide
-  title:
-    visible: true
-  description:
-    visible: true
-  tableOfContents:
-    visible: true
-  outline:
-    visible: true
-  pagination:
-    visible: true
-  metadata:
-    visible: true
 ---
 
 # ZenML Pro Changelog
@@ -25,26 +13,14 @@ Stay up to date with the latest features, improvements, and fixes in ZenML Pro.
 
 See what's new and improved in version 0.12.19.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/31.jpg" alt="General Updates"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **General Updates**
 
 * Maintenance and release preparation
 * Continued improvements to platform stability
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>What's Changed</summary>
+### What's Changed
 
 * General maintenance and release preparation (#462)
-
-</details>
 
 ***
 
@@ -52,26 +28,14 @@ See what's new and improved in version 0.12.19.
 
 See what's new and improved in version 0.12.18.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/32.jpg" alt="General Updates"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **General Updates**
 
 * Maintenance and release preparation
 * Continued improvements to platform stability
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>What's Changed</summary>
+### What's Changed
 
 * General maintenance and release preparation (#460)
-
-</details>
 
 ***
 
@@ -79,12 +43,6 @@ See what's new and improved in version 0.12.18.
 
 See what's new and improved in version 0.12.17.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/20.jpg" alt="Authentication Enhancements"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Lambda Function Updates**
 
 * Updated Python version for Lambda functions
@@ -112,18 +70,12 @@ See what's new and improved in version 0.12.17.
 * Enhanced development environment
 
 [PR #455](https://github.com/zenml-io/zenml-cloud-api/pull/455)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * Lambda function Python version updates (#450)
 * Enhanced authentication flexibility (#453, #454)
 * Better Codespace development experience (#455)
-
-</details>
 
 ***
 
@@ -131,26 +83,14 @@ See what's new and improved in version 0.12.17.
 
 See what's new and improved in version 0.12.16.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/33.jpg" alt="General Updates"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **General Updates**
 
 * Maintenance and release preparation
 * Continued improvements to platform stability
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>What's Changed</summary>
+### What's Changed
 
 * General maintenance and release preparation (#449)
-
-</details>
 
 ***
 
@@ -158,26 +98,14 @@ See what's new and improved in version 0.12.16.
 
 See what's new and improved in version 0.12.15.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/34.jpg" alt="Bug Fixes"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Bug Fixes**
 
 * Filter long user avatar URLs at source for older workspace versions
 * Improved compatibility with legacy workspace versions
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Fixed</summary>
+### Fixed
 
 * Filter long user avatar URLs at source for older workspace versions (<= 0.90.0) (#447)
-
-</details>
 
 ***
 
@@ -185,26 +113,14 @@ See what's new and improved in version 0.12.15.
 
 See what's new and improved in version 0.12.14.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/35.jpg" alt="General Updates"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **General Updates**
 
 * Maintenance and release preparation
 * Continued improvements to platform stability
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>What's Changed</summary>
+### What's Changed
 
 * General maintenance and release preparation (#446)
-
-</details>
 
 ***
 
@@ -212,20 +128,12 @@ See what's new and improved in version 0.12.14.
 
 See what's new and improved in version 0.12.12.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/22.jpg" alt="Service Account Enhancements"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Service Account Enhancements**
 
 * Service accounts can now invite users
 * Improved automation capabilities
 
 [PR #440](https://github.com/zenml-io/zenml-cloud-api/pull/440)
-{% endcolumn %}
-{% endcolumns %}
 
 ***
 
@@ -233,20 +141,12 @@ See what's new and improved in version 0.12.12.
 
 See what's new and improved in version 0.12.11.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/23.jpg" alt="Service Account Features"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Service Account Features**
 
 * Service accounts can invite users
 * Enhanced collaboration capabilities
 
 [PR #438](https://github.com/zenml-io/zenml-cloud-api/pull/438)
-{% endcolumn %}
-{% endcolumns %}
 
 ***
 
@@ -254,31 +154,19 @@ See what's new and improved in version 0.12.11.
 
 See what's new and improved in version 0.12.10.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/24.jpg" alt="Service Account Authentication"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Service Account Authentication**
 
 * Service accounts can authenticate to workspaces
 * Better team resource management
 
 [PR #433](https://github.com/zenml-io/zenml-cloud-api/pull/433)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * Service account authentication to workspaces (#433)
 * Team resource member testing (#430)
 * Default workspace version updates (#434)
 * Run template resource improvements (#435)
-
-</details>
 
 ***
 
@@ -286,26 +174,14 @@ See what's new and improved in version 0.12.10.
 
 See what's new and improved in version 0.12.9.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/36.jpg" alt="General Updates"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **General Updates**
 
 * Maintenance and release preparation
 * Continued improvements to platform stability
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>What's Changed</summary>
+### What's Changed
 
 * General maintenance and release preparation (#431)
-
-</details>
 
 ***
 
@@ -313,20 +189,12 @@ See what's new and improved in version 0.12.9.
 
 See what's new and improved in version 0.12.8.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/25.jpg" alt="Workspace Features"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Workspace Features**
 
 * Workspaces can now be renamed
 * Improved workspace management
 
 [PR #428](https://github.com/zenml-io/zenml-cloud-api/pull/428)
-{% endcolumn %}
-{% endcolumns %}
 
 ***
 
@@ -334,20 +202,12 @@ See what's new and improved in version 0.12.8.
 
 See what's new and improved in version 0.12.7.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/26.jpg" alt="RBAC Enhancements"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **RBAC Enhancements**
 
 * Schedule RBAC enabled
 * Team viewer default role added
 
 [PR #423](https://github.com/zenml-io/zenml-cloud-api/pull/423) | [PR #426](https://github.com/zenml-io/zenml-cloud-api/pull/426)
-{% endcolumn %}
-{% endcolumns %}
 
 ***
 
@@ -355,47 +215,29 @@ See what's new and improved in version 0.12.7.
 
 See what's new and improved in version 0.12.6.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/27.jpg" alt="Service Account Improvements"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Service Account Improvements**
 
 * Specify initial service account role
 * New fields in service account schema and models
 
 [PR #416](https://github.com/zenml-io/zenml-cloud-api/pull/416) | [PR #419](https://github.com/zenml-io/zenml-cloud-api/pull/419)
-{% endcolumn %}
 
-{% column %}
 **Workspace Controls**
 
 * Prevent users from creating/updating workspaces to older ZenML releases
 * Prevent users from updating the onboarded flag
 
 [PR #421](https://github.com/zenml-io/zenml-cloud-api/pull/421) | [PR #422](https://github.com/zenml-io/zenml-cloud-api/pull/422)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * Service account role configuration (#416)
 * Enhanced service account schema (#419)
 * Better workspace version control (#421, #422)
 
-</details>
-
-<details>
-
-<summary>Fixed</summary>
+### Fixed
 
 * Service account fixes and membership filtering (#424)
-
-</details>
 
 ***
 
@@ -403,29 +245,17 @@ See what's new and improved in version 0.12.6.
 
 See what's new and improved in version 0.12.5.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/28.jpg" alt="Onboarding"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Onboarding**
 
 * User onboarded flag implementation
 * Better user experience tracking
 
 [PR #414](https://github.com/zenml-io/zenml-cloud-api/pull/414)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * User onboarding tracking (#414)
 * Dependency updates (#418)
-
-</details>
 
 ***
 
@@ -433,29 +263,17 @@ See what's new and improved in version 0.12.5.
 
 See what's new and improved in version 0.12.3.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/29.jpg" alt="Codespaces"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Codespaces**
 
 * Delete codespaces when cleaning up expired tenants
 * Improved resource management
 
 [PR #403](https://github.com/zenml-io/zenml-cloud-api/pull/403)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * Codespace cleanup automation (#403)
 * Workspace default version updates (#407)
-
-</details>
 
 ***
 
@@ -463,29 +281,19 @@ See what's new and improved in version 0.12.3.
 
 See what's new and improved in version 0.12.2.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/30.jpg" alt="Codespaces"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Codespaces**
 
 * Add `zenml_active_project_id` to CodespaceCreate model
 * Delete Codespaces on Workspace Delete
 
 [PR #400](https://github.com/zenml-io/zenml-cloud-api/pull/400) | [PR #401](https://github.com/zenml-io/zenml-cloud-api/pull/401)
-{% endcolumn %}
 
-{% column %}
 **Workspace Storage**
 
 * Workspace storage usage count, limiting, and cleanup
 * Better resource management
 
 [PR #402](https://github.com/zenml-io/zenml-cloud-api/pull/402)
-{% endcolumn %}
-{% endcolumns %}
 
 ***
 
@@ -493,12 +301,6 @@ See what's new and improved in version 0.12.2.
 
 See what's new and improved in version 0.12.0.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/21.jpg" alt="Codespaces"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 **Codespaces**
 
 * Introducing Codespaces to Cloud API
@@ -526,17 +328,11 @@ See what's new and improved in version 0.12.0.
 * Enhanced access control
 
 [PR #392](https://github.com/zenml-io/zenml-cloud-api/pull/392)
-{% endcolumn %}
-{% endcolumns %}
 
-<details>
-
-<summary>Improved</summary>
+### Improved
 
 * Codespaces integration (#380)
 * Workspace storage management (#402)
 * Terraform infrastructure support (#396)
 * RBAC improvements (#392)
 * Team member management (#397)
-
-</details>

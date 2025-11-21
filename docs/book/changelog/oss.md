@@ -13,12 +13,6 @@ Stay up to date with the latest features, improvements, and fixes in ZenML OSS.
 
 See what's new and improved in version 0.91.2.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" alt="Kubernetes Deployer"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Kubernetes Deployer
 
 * Deploy your pipelines directly on Kubernetes
@@ -39,9 +33,6 @@ See what's new and improved in version 0.91.2.
 * Improved SSL certificate handling for RestZenStore
 * Enhanced Weights & Biases experiment tracker reliability
 
-{% endcolumn %}
-{% endcolumns %}
-
 <details>
 <summary>Fixed</summary>
 
@@ -51,15 +42,12 @@ See what's new and improved in version 0.91.2.
 
 </details>
 
-<details>
-<summary>Dashboard Updates (v0.39.1)</summary>
+### Dashboard Updates (v0.39.1)
 
 * Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
 * Update Dependencies (CVE) ([#945](https://github.com/zenml-io/zenml-dashboard/pull/945))
 * Adjust text-color ([#947](https://github.com/zenml-io/zenml-dashboard/pull/947))
 * Sanitize Dockerfile ([#948](https://github.com/zenml-io/zenml-dashboard/pull/948))
-
-</details>
 
 ***
 
@@ -67,12 +55,6 @@ See what's new and improved in version 0.91.2.
 
 See what's new and improved in version 0.91.1.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" alt="Hugging Face Deployer"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Hugging Face Deployer
 
 * Deploy pipelines directly to Hugging Face Spaces
@@ -92,9 +74,6 @@ See what's new and improved in version 0.91.1.
 * Container security context configuration
 * Skip owner references option
 * Improved deployment reliability
-
-{% endcolumn %}
-{% endcolumns %}
 
 <details>
 <summary>Improved</summary>
@@ -116,8 +95,7 @@ See what's new and improved in version 0.91.1.
 
 </details>
 
-<details>
-<summary>Dashboard Updates (v0.39.0)</summary>
+### Dashboard Updates (v0.39.0)
 
 **Features:**
 
@@ -132,20 +110,12 @@ See what's new and improved in version 0.91.1.
 * Input Styling ([#911](https://github.com/zenml-io/zenml-dashboard/pull/911))
 * Display Schedules ([#879](https://github.com/zenml-io/zenml-dashboard/pull/879))
 
-</details>
-
 ***
 
 ## 0.91.0
 
 See what's new and improved in version 0.91.0.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" alt="Local Deployer"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Local Deployer
 
 * Deploy pipelines locally with full control
@@ -176,9 +146,6 @@ See what's new and improved in version 0.91.0.
 
 [PR #4053](https://github.com/zenml-io/zenml/pull/4053) | [PR #4027](https://github.com/zenml-io/zenml/pull/4027)
 
-{% endcolumn %}
-{% endcolumns %}
-
 <details>
 <summary>Improved</summary>
 
@@ -196,15 +163,11 @@ See what's new and improved in version 0.91.0.
 
 </details>
 
-<details>
-<summary>Breaking Changes</summary>
+### Breaking Changes
 
 * Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
 
-</details>
-
-<details>
-<summary>Dashboard Updates (v0.38.0)</summary>
+### Dashboard Updates (v0.38.0)
 
 **New Features:**
 
@@ -217,20 +180,12 @@ See what's new and improved in version 0.91.0.
 * GitHub-Flavored Markdown support ([#876](https://github.com/zenml-io/zenml-dashboard/pull/876))
 * Resizable Panels ([#873](https://github.com/zenml-io/zenml-dashboard/pull/873))
 
-</details>
-
 ***
 
 ## 0.90.0
 
 See what's new and improved in version 0.90.0.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" alt="Pipeline Snapshots & Deployments"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Pipeline Snapshots & Deployments
 
 * Capture immutable snapshots of pipeline code and configuration
@@ -256,9 +211,6 @@ See what's new and improved in version 0.90.0.
 
 [PR #3916](https://github.com/zenml-io/zenml/pull/3916) | [PR #3712](https://github.com/zenml-io/zenml/pull/3712)
 
-{% endcolumn %}
-{% endcolumns %}
-
 <details>
 <summary>Improved</summary>
 
@@ -268,23 +220,17 @@ See what's new and improved in version 0.90.0.
 
 </details>
 
-<details>
-<summary>Breaking Changes</summary>
+### Breaking Changes
 
 * Client-Server compatibility: Must upgrade both simultaneously
 * Run templates need to be recreated
 * Base package no longer includes local database dependencies - install `zenml[local]` if needed ([#3916](https://github.com/zenml-io/zenml/pull/3916))
 
-</details>
-
-<details>
-<summary>Dashboard Updates (v0.37.0)</summary>
+### Dashboard Updates (v0.37.0)
 
 **New Features:**
 
 * **Pipeline Snapshots & Deployments:** Track entities introduced in ZenML 0.90.0 ([#814](https://github.com/zenml-io/zenml-dashboard/pull/814))
-
-</details>
 
 ***
 
@@ -292,12 +238,6 @@ See what's new and improved in version 0.90.0.
 
 See what's new and improved in version 0.85.0.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" alt="Pipeline Execution Modes"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Pipeline Execution Modes
 
 * Flexible failure handling configuration
@@ -321,9 +261,6 @@ See what's new and improved in version 0.85.0.
 
 [PR #3922](https://github.com/zenml-io/zenml/pull/3922)
 
-{% endcolumn %}
-{% endcolumns %}
-
 <details>
 <summary>Improved</summary>
 
@@ -333,17 +270,13 @@ See what's new and improved in version 0.85.0.
 
 </details>
 
-<details>
-<summary>Breaking Changes</summary>
+### Breaking Changes
 
 * Local orchestrator now continues execution after step failures
 * Docker package installer default switched from pip to uv ([#3935](https://github.com/zenml-io/zenml/pull/3935))
 * Log endpoint format changed ([#3845](https://github.com/zenml-io/zenml/pull/3845))
 
-</details>
-
-<details>
-<summary>Dashboard Updates (v0.36.0)</summary>
+### Dashboard Updates (v0.36.0)
 
 **New Features:**
 
@@ -354,20 +287,12 @@ See what's new and improved in version 0.85.0.
 * Client-Side Structured Logs ([#801](https://github.com/zenml-io/zenml-dashboard/pull/801))
 * Default Value for Arrays ([#798](https://github.com/zenml-io/zenml-dashboard/pull/798))
 
-</details>
-
 ***
 
 ## 0.84.3
 
 See what's new and improved in version 0.84.3.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" alt="ZenML Pro Service Account Authentication"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### ZenML Pro Service Account Authentication
 
 * CLI login support via `zenml login --api-key`
@@ -375,9 +300,6 @@ See what's new and improved in version 0.84.3.
 * Organization-level access for automated workflows
 
 [PR #3895](https://github.com/zenml-io/zenml/pull/3895) | [PR #3908](https://github.com/zenml-io/zenml/pull/3908)
-
-{% endcolumn %}
-{% endcolumns %}
 
 <details>
 <summary>Improved</summary>
@@ -400,12 +322,6 @@ See what's new and improved in version 0.84.3.
 
 See what's new and improved in version 0.84.2.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" alt="Kubernetes Orchestrator Improvements"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Kubernetes Orchestrator Improvements
 
 * Complete rework using Jobs instead of raw pods
@@ -413,9 +329,6 @@ See what's new and improved in version 0.84.2.
 * Significantly faster pipeline compilation
 
 [PR #3869](https://github.com/zenml-io/zenml/pull/3869) | [PR #3873](https://github.com/zenml-io/zenml/pull/3873)
-
-{% endcolumn %}
-{% endcolumns %}
 
 <details>
 <summary>Improved</summary>
@@ -441,12 +354,6 @@ See what's new and improved in version 0.84.2.
 
 See what's new and improved in version 0.84.1.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" alt="Step Exception Handling"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Step Exception Handling
 
 * Improved collection of exception information
@@ -461,9 +368,6 @@ See what's new and improved in version 0.84.1.
 
 [PR #3793](https://github.com/zenml-io/zenml/pull/3793)
 
-{% endcolumn %}
-
-{% column %}
 #### Kubernetes Orchestrator Enhancements
 
 * Schedule management capabilities
@@ -478,9 +382,6 @@ See what's new and improved in version 0.84.1.
 * More flexible pipeline architectures
 
 [PR #3826](https://github.com/zenml-io/zenml/pull/3826)
-
-{% endcolumn %}
-{% endcolumns %}
 
 <details>
 <summary>Fixed</summary>
@@ -497,12 +398,6 @@ See what's new and improved in version 0.84.1.
 
 See what's new and improved in version 0.84.0.
 
-{% columns %}
-{% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" alt="Early Pipeline Stopping"><figcaption></figcaption></figure>
-{% endcolumn %}
-
-{% column %}
 #### Early Pipeline Stopping
 
 * Stop pipelines early with Kubernetes orchestrator
@@ -517,9 +412,6 @@ See what's new and improved in version 0.84.0.
 
 [PR #3789](https://github.com/zenml-io/zenml/pull/3789)
 
-{% endcolumn %}
-
-{% column %}
 #### Step Status Refresh
 
 * Real-time status monitoring
@@ -534,9 +426,6 @@ See what's new and improved in version 0.84.0.
 * Enhanced pipeline/step run fetching
 
 [PR #3758](https://github.com/zenml-io/zenml/pull/3758) | [PR #3762](https://github.com/zenml-io/zenml/pull/3762) | [PR #3776](https://github.com/zenml-io/zenml/pull/3776)
-
-{% endcolumn %}
-{% endcolumns %}
 
 <details>
 <summary>Improved</summary>
@@ -558,15 +447,11 @@ See what's new and improved in version 0.84.0.
 
 </details>
 
-<details>
-<summary>Breaking Changes</summary>
+### Breaking Changes
 
 * Kubernetes Orchestrator Compatibility: Client and orchestrator pod versions must match exactly
 
-</details>
-
-<details>
-<summary>Dashboard Updates (v0.35.0)</summary>
+### Dashboard Updates (v0.35.0)
 
 **Features:**
 
@@ -574,7 +459,5 @@ See what's new and improved in version 0.84.0.
 * Stop Runs directly from dashboard ([#755](https://github.com/zenml-io/zenml-dashboard/pull/755))
 * Step Refresh ([#773](https://github.com/zenml-io/zenml-dashboard/pull/773))
 * Support multiple log origins ([#769](https://github.com/zenml-io/zenml-dashboard/pull/769))
-
-</details>
 
 ***
