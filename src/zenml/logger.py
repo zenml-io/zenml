@@ -39,10 +39,35 @@ step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
 
-_original_stdout: Optional[Any] = None
-_original_stderr: Optional[Any] = None
+_original_stdout_write: Optional[Any] = None
+_original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
 _stderr_wrapped: bool = False
+
+
+class _ZenMLStdoutStream:
+    """Stream that writes to the original stdout, bypassing the ZenML wrapper.
+    
+    This ensures console logging doesn't trigger the LoggingContext wrapper,
+    preventing duplicate log entries in stored logs.
+    """
+    
+    def write(self, text: str) -> int:
+        """Write text to the original stdout.
+        
+        Args:
+            text: The text to write.
+            
+        Returns:
+            The number of characters written.
+        """
+        if _original_stdout_write:
+            return _original_stdout_write(text)
+        return sys.stdout.write(text)
+    
+    def flush(self) -> None:
+        """Flush the stdout buffer."""
+        sys.stdout.flush()
 
 
 def get_logger(logger_name: str) -> logging.Logger:
@@ -249,18 +274,16 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
 def wrap_stdout_stderr() -> None:
     """Wrap stdout and stderr write methods to route through LoggingContext."""
     global _stdout_wrapped, _stderr_wrapped
-    global _original_stdout, _original_stderr
+    global _original_stdout_write, _original_stderr_write
 
     if not _stdout_wrapped:
-        _original_stdout = sys.stdout
-        original_write = sys.stdout.write
-        sys.stdout.write = _wrapped_write(original_write, "stdout")
+        _original_stdout_write = getattr(sys.stdout, "write")
+        setattr(sys.stdout, "write", _wrapped_write(_original_stdout_write, "stdout"))
         _stdout_wrapped = True
 
     if not _stderr_wrapped:
-        _original_stderr = sys.stderr
-        original_write = sys.stderr.write
-        sys.stderr.write = _wrapped_write(original_write, "stderr")
+        _original_stderr_write = getattr(sys.stderr, "write")
+        setattr(sys.stderr, "write", _wrapped_write(_original_stderr_write, "stderr"))
         _stderr_wrapped = True
 
 
@@ -284,7 +307,7 @@ def get_console_handler() -> logging.Handler:
     Returns:
         A console handler.
     """
-    handler = logging.StreamHandler(_original_stdout)
+    handler = logging.StreamHandler(_ZenMLStdoutStream())
     handler.setFormatter(ConsoleFormatter())
     return handler
 

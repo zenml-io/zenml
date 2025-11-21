@@ -128,7 +128,9 @@ class LoggingContext:
         """
         try:
             if context := active_logging_context.get():
-                Client().active_stack.log_store.emit(record, context)
+                message = record.getMessage()
+                if message and message.strip():
+                    Client().active_stack.log_store.emit(record, context)
         except Exception:
             pass
 
