@@ -55,7 +55,7 @@ See what's new and improved in version 0.12.17.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Authentication Enhancements"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/20.jpg" alt="Authentication Enhancements"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -150,6 +150,10 @@ See what's new and improved in version 0.12.12.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/22.jpg" alt="Service Account Enhancements"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Service Account Enhancements
 
 * Service accounts can now invite users
@@ -168,6 +172,10 @@ See what's new and improved in version 0.12.11.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/23.jpg" alt="Service Account Features"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Service Account Features
 
 * Service accounts can invite users
@@ -185,6 +193,10 @@ See what's new and improved in version 0.12.11.
 See what's new and improved in version 0.12.10.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/24.jpg" alt="Service Account Authentication"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Service Account Authentication
 
@@ -229,6 +241,10 @@ See what's new and improved in version 0.12.8.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/25.jpg" alt="Workspace Features"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Workspace Features
 
 * Workspaces can now be renamed
@@ -247,6 +263,10 @@ See what's new and improved in version 0.12.7.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/26.jpg" alt="RBAC Enhancements"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### RBAC Enhancements
 
 * Schedule RBAC enabled
@@ -264,6 +284,10 @@ See what's new and improved in version 0.12.7.
 See what's new and improved in version 0.12.6.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/27.jpg" alt="Service Account Improvements"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Service Account Improvements
 
@@ -311,6 +335,10 @@ See what's new and improved in version 0.12.5.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/28.jpg" alt="Onboarding"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Onboarding
 
 * User onboarded flag implementation
@@ -338,6 +366,10 @@ See what's new and improved in version 0.12.3.
 
 {% columns %}
 {% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/29.jpg" alt="Codespaces"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
 #### Codespaces
 
 * Delete codespaces when cleaning up expired tenants
@@ -364,6 +396,10 @@ See what's new and improved in version 0.12.3.
 See what's new and improved in version 0.12.2.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/30.jpg" alt="Codespaces"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Codespaces
 
@@ -393,7 +429,7 @@ See what's new and improved in version 0.12.0.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Codespaces"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/21.jpg" alt="Codespaces"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}

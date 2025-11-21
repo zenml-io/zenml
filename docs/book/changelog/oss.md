@@ -27,7 +27,7 @@ See what's new and improved in version 0.91.2.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Kubernetes Deployer"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" alt="Kubernetes Deployer"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -64,6 +64,17 @@ See what's new and improved in version 0.91.2.
 
 </details>
 
+<details>
+
+<summary>Dashboard Updates (v0.39.1)</summary>
+
+* Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
+* Update Dependencies (CVE) ([#945](https://github.com/zenml-io/zenml-dashboard/pull/945))
+* Adjust text-color ([#947](https://github.com/zenml-io/zenml-dashboard/pull/947))
+* Sanitize Dockerfile ([#948](https://github.com/zenml-io/zenml-dashboard/pull/948))
+
+</details>
+
 ***
 
 ## 0.91.1
@@ -72,7 +83,7 @@ See what's new and improved in version 0.91.1.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Hugging Face Deployer"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" alt="Hugging Face Deployer"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -121,6 +132,25 @@ See what's new and improved in version 0.91.1.
 
 </details>
 
+<details>
+
+<summary>Dashboard Updates (v0.39.0)</summary>
+
+**Features:**
+
+* Display Deployment in Run Detail ([#919](https://github.com/zenml-io/zenml-dashboard/pull/919))
+* Announcements Widget ([#926](https://github.com/zenml-io/zenml-dashboard/pull/926))
+* Add Resize Observer to HTML Viz ([#928](https://github.com/zenml-io/zenml-dashboard/pull/928))
+* Adjust Overview Pipelines ([#914](https://github.com/zenml-io/zenml-dashboard/pull/914))
+
+**Fixes:**
+
+* Fix Panel background ([#882](https://github.com/zenml-io/zenml-dashboard/pull/882))
+* Input Styling ([#911](https://github.com/zenml-io/zenml-dashboard/pull/911))
+* Display Schedules ([#879](https://github.com/zenml-io/zenml-dashboard/pull/879))
+
+</details>
+
 ***
 
 ## 0.91.0
@@ -129,7 +159,7 @@ See what's new and improved in version 0.91.0.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Local Deployer"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" alt="Local Deployer"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -193,6 +223,23 @@ See what's new and improved in version 0.91.0.
 
 </details>
 
+<details>
+
+<summary>Dashboard Updates (v0.38.0)</summary>
+
+**New Features:**
+
+* **Deployment Playground:** Easier to invoke and test deployments ([#861](https://github.com/zenml-io/zenml-dashboard/pull/861))
+* **Global Lists:** Centralized access for deployments ([#851](https://github.com/zenml-io/zenml-dashboard/pull/851)) and snapshots ([#854](https://github.com/zenml-io/zenml-dashboard/pull/854))
+* **Create Snapshots:** Create snapshots directly from the dashboard ([#856](https://github.com/zenml-io/zenml-dashboard/pull/856))
+
+**Misc:**
+
+* GitHub-Flavored Markdown support ([#876](https://github.com/zenml-io/zenml-dashboard/pull/876))
+* Resizable Panels ([#873](https://github.com/zenml-io/zenml-dashboard/pull/873))
+
+</details>
+
 ***
 
 ## 0.90.0
@@ -201,7 +248,7 @@ See what's new and improved in version 0.90.0.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Pipeline Snapshots & Deployments"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" alt="Pipeline Snapshots & Deployments"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -253,6 +300,16 @@ See what's new and improved in version 0.90.0.
 
 </details>
 
+<details>
+
+<summary>Dashboard Updates (v0.37.0)</summary>
+
+**New Features:**
+
+* **Pipeline Snapshots & Deployments:** Track entities introduced in ZenML 0.90.0 ([#814](https://github.com/zenml-io/zenml-dashboard/pull/814))
+
+</details>
+
 ***
 
 ## 0.85.0
@@ -261,7 +318,7 @@ See what's new and improved in version 0.85.0.
 
 {% columns %}
 {% column %}
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/11.jpg" alt="Pipeline Execution Modes"><figcaption></figcaption></figure>
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" alt="Pipeline Execution Modes"><figcaption></figcaption></figure>
 {% endcolumn %}
 
 {% column %}
@@ -311,6 +368,21 @@ See what's new and improved in version 0.85.0.
 
 </details>
 
+<details>
+
+<summary>Dashboard Updates (v0.36.0)</summary>
+
+**New Features:**
+
+* **Timeline View:** New way to visualize pipeline runs alongside the DAG ([#799](https://github.com/zenml-io/zenml-dashboard/pull/799))
+
+**Improvements:**
+
+* Client-Side Structured Logs ([#801](https://github.com/zenml-io/zenml-dashboard/pull/801))
+* Default Value for Arrays ([#798](https://github.com/zenml-io/zenml-dashboard/pull/798))
+
+</details>
+
 ***
 
 ## 0.84.3
@@ -318,6 +390,10 @@ See what's new and improved in version 0.85.0.
 See what's new and improved in version 0.84.3.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" alt="ZenML Pro Service Account Authentication"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### ZenML Pro Service Account Authentication
 
@@ -354,6 +430,10 @@ See what's new and improved in version 0.84.3.
 See what's new and improved in version 0.84.2.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" alt="Kubernetes Orchestrator Improvements"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Kubernetes Orchestrator Improvements
 
@@ -393,6 +473,10 @@ See what's new and improved in version 0.84.2.
 See what's new and improved in version 0.84.1.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" alt="Step Exception Handling"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Step Exception Handling
 
@@ -446,6 +530,10 @@ See what's new and improved in version 0.84.1.
 See what's new and improved in version 0.84.0.
 
 {% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" alt="Early Pipeline Stopping"><figcaption></figcaption></figure>
+{% endcolumn %}
+
 {% column %}
 #### Early Pipeline Stopping
 
@@ -512,69 +600,9 @@ See what's new and improved in version 0.84.0.
 
 </details>
 
-***
-
-## Dashboard Updates
-
-### v0.39.1
-
 <details>
 
-<summary>Fixed</summary>
-
-* Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
-* Update Dependencies (CVE) ([#945](https://github.com/zenml-io/zenml-dashboard/pull/945))
-* Adjust text-color ([#947](https://github.com/zenml-io/zenml-dashboard/pull/947))
-* Sanitize Dockerfile ([#948](https://github.com/zenml-io/zenml-dashboard/pull/948))
-
-</details>
-
-### v0.39.0
-
-**Features:**
-
-* Display Deployment in Run Detail ([#919](https://github.com/zenml-io/zenml-dashboard/pull/919))
-* Announcements Widget ([#926](https://github.com/zenml-io/zenml-dashboard/pull/926))
-* Add Resize Observer to HTML Viz ([#928](https://github.com/zenml-io/zenml-dashboard/pull/928))
-* Adjust Overview Pipelines ([#914](https://github.com/zenml-io/zenml-dashboard/pull/914))
-
-**Fixes:**
-
-* Fix Panel background ([#882](https://github.com/zenml-io/zenml-dashboard/pull/882))
-* Input Styling ([#911](https://github.com/zenml-io/zenml-dashboard/pull/911))
-* Display Schedules ([#879](https://github.com/zenml-io/zenml-dashboard/pull/879))
-
-### v0.38.0
-
-**New Features:**
-
-* **Deployment Playground:** Easier to invoke and test deployments ([#861](https://github.com/zenml-io/zenml-dashboard/pull/861))
-* **Global Lists:** Centralized access for deployments ([#851](https://github.com/zenml-io/zenml-dashboard/pull/851)) and snapshots ([#854](https://github.com/zenml-io/zenml-dashboard/pull/854))
-* **Create Snapshots:** Create snapshots directly from the dashboard ([#856](https://github.com/zenml-io/zenml-dashboard/pull/856))
-
-**Misc:**
-
-* GitHub-Flavored Markdown support ([#876](https://github.com/zenml-io/zenml-dashboard/pull/876))
-* Resizable Panels ([#873](https://github.com/zenml-io/zenml-dashboard/pull/873))
-
-### v0.37.0
-
-**New Features:**
-
-* **Pipeline Snapshots & Deployments:** Track entities introduced in ZenML 0.90.0 ([#814](https://github.com/zenml-io/zenml-dashboard/pull/814))
-
-### v0.36.0
-
-**New Features:**
-
-* **Timeline View:** New way to visualize pipeline runs alongside the DAG ([#799](https://github.com/zenml-io/zenml-dashboard/pull/799))
-
-**Improvements:**
-
-* Client-Side Structured Logs ([#801](https://github.com/zenml-io/zenml-dashboard/pull/801))
-* Default Value for Arrays ([#798](https://github.com/zenml-io/zenml-dashboard/pull/798))
-
-### v0.35.0
+<summary>Dashboard Updates (v0.35.0)</summary>
 
 **Features:**
 
@@ -582,3 +610,7 @@ See what's new and improved in version 0.84.0.
 * Stop Runs directly from dashboard ([#755](https://github.com/zenml-io/zenml-dashboard/pull/755))
 * Step Refresh ([#773](https://github.com/zenml-io/zenml-dashboard/pull/773))
 * Support multiple log origins ([#769](https://github.com/zenml-io/zenml-dashboard/pull/769))
+
+</details>
+
+***
