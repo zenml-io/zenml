@@ -3,18 +3,6 @@ description: Changelog for ZenML OSS and ZenML Dashboard.
 icon: code-branch
 layout:
   width: wide
-  title:
-    visible: true
-  description:
-    visible: true
-  tableOfContents:
-    visible: false
-  outline:
-    visible: true
-  pagination:
-    visible: false
-  metadata:
-    visible: true
 ---
 
 # ZenML OSS Changelog

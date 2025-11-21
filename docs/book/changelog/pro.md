@@ -3,18 +3,6 @@ description: Changelog for ZenML Pro.
 icon: star
 layout:
   width: wide
-  title:
-    visible: true
-  description:
-    visible: true
-  tableOfContents:
-    visible: false
-  outline:
-    visible: true
-  pagination:
-    visible: false
-  metadata:
-    visible: true
 ---
 
 # ZenML Pro Changelog
@@ -24,6 +12,20 @@ Stay up to date with the latest features, improvements, and fixes in ZenML Pro.
 ## 0.12.19
 
 See what's new and improved in version 0.12.19.
+
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/31.jpg" alt="General Updates"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### General Updates
+
+* Maintenance and release preparation
+* Continued improvements to platform stability
+
+{% endcolumn %}
+{% endcolumns %}
 
 <details>
 <summary>What's Changed</summary>
@@ -37,6 +39,20 @@ See what's new and improved in version 0.12.19.
 ## 0.12.18
 
 See what's new and improved in version 0.12.18.
+
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/32.jpg" alt="General Updates"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### General Updates
+
+* Maintenance and release preparation
+* Continued improvements to platform stability
+
+{% endcolumn %}
+{% endcolumns %}
 
 <details>
 <summary>What's Changed</summary>
@@ -103,6 +119,20 @@ See what's new and improved in version 0.12.17.
 
 See what's new and improved in version 0.12.16.
 
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/33.jpg" alt="General Updates"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### General Updates
+
+* Maintenance and release preparation
+* Continued improvements to platform stability
+
+{% endcolumn %}
+{% endcolumns %}
+
 <details>
 <summary>What's Changed</summary>
 
@@ -116,6 +146,20 @@ See what's new and improved in version 0.12.16.
 
 See what's new and improved in version 0.12.15.
 
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/34.jpg" alt="Bug Fixes"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### Bug Fixes
+
+* Filter long user avatar URLs at source for older workspace versions
+* Improved compatibility with legacy workspace versions
+
+{% endcolumn %}
+{% endcolumns %}
+
 <details>
 <summary>Fixed</summary>
 
@@ -128,6 +172,20 @@ See what's new and improved in version 0.12.15.
 ## 0.12.14
 
 See what's new and improved in version 0.12.14.
+
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/35.jpg" alt="General Updates"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### General Updates
+
+* Maintenance and release preparation
+* Continued improvements to platform stability
+
+{% endcolumn %}
+{% endcolumns %}
 
 <details>
 <summary>What's Changed</summary>
@@ -217,6 +275,20 @@ See what's new and improved in version 0.12.10.
 ## 0.12.9
 
 See what's new and improved in version 0.12.9.
+
+{% columns %}
+{% column %}
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/36.jpg" alt="General Updates"><figcaption></figcaption></figure>
+{% endcolumn %}
+
+{% column %}
+#### General Updates
+
+* Maintenance and release preparation
+* Continued improvements to platform stability
+
+{% endcolumn %}
+{% endcolumns %}
 
 <details>
 <summary>What's Changed</summary>
