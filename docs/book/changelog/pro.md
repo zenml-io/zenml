@@ -11,7 +11,7 @@ Stay up to date with the latest features, improvements, and fixes in ZenML Pro.
 
 See what's new and improved in version 0.12.19.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/31.jpg" alt="ZenML Pro 0.12.19"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/31.jpg" alt="ZenML Pro 0.12.19"></figure></p>
 
 **General Updates**
 
@@ -28,7 +28,7 @@ See what's new and improved in version 0.12.19.
 
 See what's new and improved in version 0.12.18.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/32.jpg" alt="ZenML Pro 0.12.18"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/32.jpg" alt="ZenML Pro 0.12.18"></figure></p>
 
 **General Updates**
 
@@ -45,7 +45,7 @@ See what's new and improved in version 0.12.18.
 
 See what's new and improved in version 0.12.17.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/20.jpg" alt="ZenML Pro 0.12.17"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/20.jpg" alt="ZenML Pro 0.12.17"></figure></p>
 
 **Lambda Function Updates**
 
@@ -87,7 +87,7 @@ See what's new and improved in version 0.12.17.
 
 See what's new and improved in version 0.12.16.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/33.jpg" alt="ZenML Pro 0.12.16"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/33.jpg" alt="ZenML Pro 0.12.16"></figure></p>
 
 **General Updates**
 
@@ -104,7 +104,7 @@ See what's new and improved in version 0.12.16.
 
 See what's new and improved in version 0.12.15.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/34.jpg" alt="ZenML Pro 0.12.15"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/34.jpg" alt="ZenML Pro 0.12.15"></figure></p>
 
 **Bug Fixes**
 
@@ -121,7 +121,7 @@ See what's new and improved in version 0.12.15.
 
 See what's new and improved in version 0.12.14.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/35.jpg" alt="ZenML Pro 0.12.14"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/35.jpg" alt="ZenML Pro 0.12.14"></figure></p>
 
 **General Updates**
 
@@ -138,7 +138,7 @@ See what's new and improved in version 0.12.14.
 
 See what's new and improved in version 0.12.12.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/22.jpg" alt="ZenML Pro 0.12.12"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/22.jpg" alt="ZenML Pro 0.12.12"></figure></p>
 
 **Service Account Enhancements**
 
@@ -153,7 +153,7 @@ See what's new and improved in version 0.12.12.
 
 See what's new and improved in version 0.12.11.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/23.jpg" alt="ZenML Pro 0.12.11"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/23.jpg" alt="ZenML Pro 0.12.11"></figure></p>
 
 **Service Account Features**
 
@@ -168,7 +168,7 @@ See what's new and improved in version 0.12.11.
 
 See what's new and improved in version 0.12.10.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/24.jpg" alt="ZenML Pro 0.12.10"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/24.jpg" alt="ZenML Pro 0.12.10"></figure></p>
 
 **Service Account Authentication**
 
@@ -190,7 +190,7 @@ See what's new and improved in version 0.12.10.
 
 See what's new and improved in version 0.12.9.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/36.jpg" alt="ZenML Pro 0.12.9"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/36.jpg" alt="ZenML Pro 0.12.9"></figure></p>
 
 **General Updates**
 
@@ -207,7 +207,7 @@ See what's new and improved in version 0.12.9.
 
 See what's new and improved in version 0.12.8.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/25.jpg" alt="ZenML Pro 0.12.8"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/25.jpg" alt="ZenML Pro 0.12.8"></figure></p>
 
 **Workspace Features**
 
@@ -222,7 +222,7 @@ See what's new and improved in version 0.12.8.
 
 See what's new and improved in version 0.12.7.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/26.jpg" alt="ZenML Pro 0.12.7"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/26.jpg" alt="ZenML Pro 0.12.7"></figure></p>
 
 **RBAC Enhancements**
 
@@ -237,7 +237,7 @@ See what's new and improved in version 0.12.7.
 
 See what's new and improved in version 0.12.6.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/27.jpg" alt="ZenML Pro 0.12.6"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/27.jpg" alt="ZenML Pro 0.12.6"></figure></p>
 
 **Service Account Improvements**
 
@@ -269,7 +269,7 @@ See what's new and improved in version 0.12.6.
 
 See what's new and improved in version 0.12.5.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/28.jpg" alt="ZenML Pro 0.12.5"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/28.jpg" alt="ZenML Pro 0.12.5"></figure></p>
 
 **Onboarding**
 
@@ -289,7 +289,7 @@ See what's new and improved in version 0.12.5.
 
 See what's new and improved in version 0.12.3.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/29.jpg" alt="ZenML Pro 0.12.3"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/29.jpg" alt="ZenML Pro 0.12.3"></figure></p>
 
 **Codespaces**
 
@@ -309,7 +309,7 @@ See what's new and improved in version 0.12.3.
 
 See what's new and improved in version 0.12.2.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/30.jpg" alt="ZenML Pro 0.12.2"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/30.jpg" alt="ZenML Pro 0.12.2"></figure></p>
 
 **Codespaces**
 
@@ -331,7 +331,7 @@ See what's new and improved in version 0.12.2.
 
 See what's new and improved in version 0.12.0.
 
-<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/21.jpg" alt="ZenML Pro 0.12.0"></figure>
+<p align="left"><figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/21.jpg" alt="ZenML Pro 0.12.0"></figure></p>
 
 **Codespaces**
 
