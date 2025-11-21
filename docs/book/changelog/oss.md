@@ -11,6 +11,8 @@ Stay up to date with the latest features, improvements, and fixes in ZenML OSS.
 
 ## 0.91.2
 
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" alt="ZenML 0.91.2"></figure>
+
 See what's new and improved in version 0.91.2.
 
 #### Kubernetes Deployer
@@ -52,6 +54,8 @@ See what's new and improved in version 0.91.2.
 ***
 
 ## 0.91.1
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" alt="ZenML 0.91.1"></figure>
 
 See what's new and improved in version 0.91.1.
 
@@ -113,6 +117,8 @@ See what's new and improved in version 0.91.1.
 ***
 
 ## 0.91.0
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" alt="ZenML 0.91.0"></figure>
 
 See what's new and improved in version 0.91.0.
 
@@ -184,6 +190,8 @@ See what's new and improved in version 0.91.0.
 
 ## 0.90.0
 
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" alt="ZenML 0.90.0"></figure>
+
 See what's new and improved in version 0.90.0.
 
 #### Pipeline Snapshots & Deployments
@@ -235,6 +243,8 @@ See what's new and improved in version 0.90.0.
 ***
 
 ## 0.85.0
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" alt="ZenML 0.85.0"></figure>
 
 See what's new and improved in version 0.85.0.
 
@@ -291,6 +301,8 @@ See what's new and improved in version 0.85.0.
 
 ## 0.84.3
 
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" alt="ZenML 0.84.3"></figure>
+
 See what's new and improved in version 0.84.3.
 
 #### ZenML Pro Service Account Authentication
@@ -319,6 +331,8 @@ See what's new and improved in version 0.84.3.
 ***
 
 ## 0.84.2
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" alt="ZenML 0.84.2"></figure>
 
 See what's new and improved in version 0.84.2.
 
@@ -351,6 +365,8 @@ See what's new and improved in version 0.84.2.
 ***
 
 ## 0.84.1
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" alt="ZenML 0.84.1"></figure>
 
 See what's new and improved in version 0.84.1.
 
@@ -395,6 +411,8 @@ See what's new and improved in version 0.84.1.
 ***
 
 ## 0.84.0
+
+<figure><img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" alt="ZenML 0.84.0"></figure>
 
 See what's new and improved in version 0.84.0.
 
