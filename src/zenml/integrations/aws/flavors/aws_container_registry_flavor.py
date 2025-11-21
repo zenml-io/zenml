@@ -73,6 +73,15 @@ class AWSContainerRegistryFlavor(BaseContainerRegistryFlavor):
         return AWS_CONTAINER_REGISTRY_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "AWS"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:

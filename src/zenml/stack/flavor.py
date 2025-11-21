@@ -42,6 +42,19 @@ class Flavor:
         """
 
     @property
+    def display_name(self) -> Optional[str]:
+        """The display name of the flavor.
+
+        By default, converts the technical name to a human-readable format.
+        For example, "vm_kubernetes" becomes "VM Kubernetes".
+        Flavors can override this to provide custom display names.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return self.name.replace("_", " ").title()
+
+    @property
     def docs_url(self) -> Optional[str]:
         """A url to point at docs explaining this flavor.
 
@@ -189,6 +202,7 @@ class Flavor:
 
         model = FlavorRequest(
             name=self.name,
+            display_name=self.display_name,
             type=self.type,
             source=source_utils.resolve(self.__class__).import_path,
             config_schema=self.config_schema,

@@ -104,6 +104,15 @@ class AzureMLOrchestratorFlavor(BaseOrchestratorFlavor):
         return AZUREML_ORCHESTRATOR_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "AzureML"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:

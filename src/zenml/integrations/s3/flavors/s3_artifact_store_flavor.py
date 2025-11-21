@@ -159,6 +159,15 @@ class S3ArtifactStoreFlavor(BaseArtifactStoreFlavor):
         return S3_ARTIFACT_STORE_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "S3"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:

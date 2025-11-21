@@ -98,6 +98,15 @@ class VertexStepOperatorFlavor(BaseStepOperatorFlavor):
         return GCP_VERTEX_STEP_OPERATOR_FLAVOR
 
     @property
+    def display_name(self) -> str:
+        """Display name of the flavor.
+
+        Returns:
+            The display name of the flavor.
+        """
+        return "Vertex AI"
+
+    @property
     def service_connector_requirements(
         self,
     ) -> Optional[ServiceConnectorRequirements]:
