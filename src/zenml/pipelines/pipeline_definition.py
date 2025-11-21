@@ -64,14 +64,9 @@ from zenml.execution.pipeline.utils import (
 )
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import (
-    PipelineLogsStorageContext,
-    prepare_logs_uri,
-)
 from zenml.models import (
     CodeReferenceRequest,
     DeploymentResponse,
-    LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
     PipelineRequest,
@@ -105,6 +100,7 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.logging_utils import LoggingContext, generate_logs_request
 from zenml.utils.string_utils import format_name_template
 from zenml.utils.tag_utils import Tag
 
@@ -1047,37 +1043,24 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     else True,
                 )
 
-            logs_context = nullcontext()
-            logs_model = None
+            snapshot = self._create_snapshot(**self._run_args)
+            self.log_pipeline_snapshot_metadata(snapshot)
 
+            logs_request = None
             if logging_enabled:
-                # Configure the logs
-                logs_uri = prepare_logs_uri(
-                    stack.artifact_store,
-                )
+                logs_request = generate_logs_request(source="client")
 
-                logs_context = PipelineLogsStorageContext(
-                    logs_uri=logs_uri,
-                    artifact_store=stack.artifact_store,
-                    prepend_step_name=False,
-                )  # type: ignore[assignment]
+            run = (
+                create_placeholder_run(snapshot=snapshot, logs=logs_request)
+                if not snapshot.schedule
+                else None
+            )
 
-                logs_model = LogsRequest(
-                    uri=logs_uri,
-                    source="client",
-                    artifact_store_id=stack.artifact_store.id,
-                )
+            logs_context = nullcontext()
+            if logging_enabled and run and run.logs:
+                logs_context = LoggingContext(log_model=run.logs)
 
             with logs_context:
-                snapshot = self._create_snapshot(**self._run_args)
-
-                self.log_pipeline_snapshot_metadata(snapshot)
-                run = (
-                    create_placeholder_run(snapshot=snapshot, logs=logs_model)
-                    if not snapshot.schedule
-                    else None
-                )
-
                 analytics_handler.metadata = (
                     self._get_pipeline_analytics_metadata(
                         snapshot=snapshot,

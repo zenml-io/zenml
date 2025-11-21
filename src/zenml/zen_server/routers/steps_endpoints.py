@@ -29,10 +29,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import AuthorizationException
-from zenml.logging.step_logging import (
-    LogEntry,
-    fetch_log_records,
-)
+from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -41,6 +38,7 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.utils.logging_utils import LogEntry, fetch_logs
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -341,14 +339,12 @@ def get_step_logs(
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.READ)
 
-    store = zen_store()
-
     # Verify that logs are available for this step
     if step.logs is None:
         raise KeyError("No logs available for this step.")
 
-    return fetch_log_records(
-        zen_store=store,
-        artifact_store_id=step.logs.artifact_store_id,
-        logs_uri=step.logs.uri,
+    return fetch_logs(
+        logs=step.logs,
+        zen_store=zen_store(),
+        limit=MAX_ENTRIES_PER_REQUEST,
     )

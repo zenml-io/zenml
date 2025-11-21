@@ -84,7 +84,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.logging.step_logging import fetch_log_records, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     APIKeyFilter,

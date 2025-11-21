@@ -56,10 +56,8 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import 
     KubernetesOrchestrator,
 )
 from zenml.logger import get_logger
-from zenml.logging.step_logging import setup_orchestrator_logging
 from zenml.models import (
     PipelineRunResponse,
-    PipelineRunUpdate,
     PipelineSnapshotResponse,
 )
 from zenml.orchestrators import publish_utils
@@ -73,6 +71,7 @@ from zenml.orchestrators.utils import (
 )
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
+from zenml.utils.logging_utils import setup_orchestrator_logging
 
 logger = get_logger(__name__)
 
@@ -243,7 +242,6 @@ def main() -> None:
         namespace=namespace,
         job_name=job_name,
     )
-    existing_logs_response = None
 
     if run_id and orchestrator_run_id:
         logger.info("Continuing existing run `%s`.", run_id)
@@ -256,20 +254,11 @@ def main() -> None:
         )
         logger.debug("Reconstructed nodes: %s", nodes)
 
-        # Continue logging to the same log file if it exists
-        for log_response in pipeline_run.log_collection or []:
-            if log_response.source == "orchestrator":
-                existing_logs_response = log_response
-                break
     else:
         orchestrator_run_id = orchestrator_pod_name
+
         if args.run_id:
-            pipeline_run = client.zen_store.update_run(
-                run_id=args.run_id,
-                run_update=PipelineRunUpdate(
-                    orchestrator_run_id=orchestrator_run_id
-                ),
-            )
+            pipeline_run = client.get_pipeline_run(args.run_id)
         else:
             pipeline_run = create_placeholder_run(
                 snapshot=snapshot,
@@ -293,11 +282,9 @@ def main() -> None:
         ]
 
     logs_context = setup_orchestrator_logging(
-        run_id=pipeline_run.id,
+        pipeline_run=pipeline_run,
         snapshot=snapshot,
-        logs_response=existing_logs_response,
     )
-
     with logs_context:
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
