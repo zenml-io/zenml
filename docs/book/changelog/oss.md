@@ -1,5 +1,5 @@
 ---
-description: Changelog for ZenML OSS and ZenML Dashboard.
+description: Changelog for ZenML OSS and ZenML UI.
 icon: clock-rotate-left
 ---
 
@@ -11,7 +11,7 @@ Stay up to date with the latest features, improvements, and fixes in ZenML OSS.
 
 See what's new and improved in version 0.91.2.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" align="left" alt="ZenML 0.91.2">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/1.jpg" align="left" alt="ZenML 0.91.2" width="500">
 
 #### Kubernetes Deployer
 
@@ -33,6 +33,13 @@ See what's new and improved in version 0.91.2.
 * Improved SSL certificate handling for RestZenStore
 * Enhanced Weights & Biases experiment tracker reliability
 
+#### UI Updates
+
+* Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
+* Update Dependencies (CVE) ([#945](https://github.com/zenml-io/zenml-dashboard/pull/945))
+* Adjust text-color ([#947](https://github.com/zenml-io/zenml-dashboard/pull/947))
+* Sanitize Dockerfile ([#948](https://github.com/zenml-io/zenml-dashboard/pull/948))
+
 <details>
 <summary>Fixed</summary>
 
@@ -42,20 +49,18 @@ See what's new and improved in version 0.91.2.
 
 </details>
 
-### Dashboard Updates (v0.39.1)
+<details>
+<summary>Fixed</summary>
 
-* Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
-* Update Dependencies (CVE) ([#945](https://github.com/zenml-io/zenml-dashboard/pull/945))
-* Adjust text-color ([#947](https://github.com/zenml-io/zenml-dashboard/pull/947))
-* Sanitize Dockerfile ([#948](https://github.com/zenml-io/zenml-dashboard/pull/948))
+* S3 artifact store now works with custom backends ([#4186](https://github.com/zenml-io/zenml/pull/4186))
+* SSL certificate passing for RestZenStore ([#4188](https://github.com/zenml-io/zenml/pull/4188))
+* Weights & Biases tag length limitations ([#4189](https://github.com/zenml-io/zenml/pull/4189))
 
-***
-
-## 0.91.1
+</details>## 0.91.1
 
 See what's new and improved in version 0.91.1.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" align="left" alt="ZenML 0.91.1">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/2.jpg" align="left" alt="ZenML 0.91.1" width="500">
 
 #### Hugging Face Deployer
 
@@ -77,6 +82,16 @@ See what's new and improved in version 0.91.1.
 * Skip owner references option
 * Improved deployment reliability
 
+#### UI Updates
+
+* Display Deployment in Run Detail ([#919](https://github.com/zenml-io/zenml-dashboard/pull/919))
+* Announcements Widget ([#926](https://github.com/zenml-io/zenml-dashboard/pull/926))
+* Add Resize Observer to HTML Viz ([#928](https://github.com/zenml-io/zenml-dashboard/pull/928))
+* Adjust Overview Pipelines ([#914](https://github.com/zenml-io/zenml-dashboard/pull/914))
+* Fix Panel background ([#882](https://github.com/zenml-io/zenml-dashboard/pull/882))
+* Input Styling ([#911](https://github.com/zenml-io/zenml-dashboard/pull/911))
+* Display Schedules ([#879](https://github.com/zenml-io/zenml-dashboard/pull/879))
+
 <details>
 <summary>Improved</summary>
 
@@ -97,28 +112,19 @@ See what's new and improved in version 0.91.1.
 
 </details>
 
-### Dashboard Updates (v0.39.0)
+<details>
+<summary>Improved</summary>
 
-**Features:**
+* Enhanced Kubernetes orchestrator with container security context options ([#4142](https://github.com/zenml-io/zenml/pull/4142))
+* Better handling of owner references in Kubernetes deployments ([#4146](https://github.com/zenml-io/zenml/pull/4146))
+* Expanded HashiCorp Vault secret store authentication methods ([#4110](https://github.com/zenml-io/zenml/pull/4110))
+* Support for newer Databricks versions ([#4144](https://github.com/zenml-io/zenml/pull/4144))
 
-* Display Deployment in Run Detail ([#919](https://github.com/zenml-io/zenml-dashboard/pull/919))
-* Announcements Widget ([#926](https://github.com/zenml-io/zenml-dashboard/pull/926))
-* Add Resize Observer to HTML Viz ([#928](https://github.com/zenml-io/zenml-dashboard/pull/928))
-* Adjust Overview Pipelines ([#914](https://github.com/zenml-io/zenml-dashboard/pull/914))
-
-**Fixes:**
-
-* Fix Panel background ([#882](https://github.com/zenml-io/zenml-dashboard/pull/882))
-* Input Styling ([#911](https://github.com/zenml-io/zenml-dashboard/pull/911))
-* Display Schedules ([#879](https://github.com/zenml-io/zenml-dashboard/pull/879))
-
-***
-
-## 0.91.0
+</details>## 0.91.0
 
 See what's new and improved in version 0.91.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" align="left" alt="ZenML 0.91.0">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/3.jpg" align="left" alt="ZenML 0.91.0" width="500">
 
 #### Local Deployer
 
@@ -150,6 +156,14 @@ See what's new and improved in version 0.91.0.
 
 [PR #4053](https://github.com/zenml-io/zenml/pull/4053) | [PR #4027](https://github.com/zenml-io/zenml/pull/4027)
 
+#### UI Updates
+
+* **Deployment Playground:** Easier to invoke and test deployments ([#861](https://github.com/zenml-io/zenml-dashboard/pull/861))
+* **Global Lists:** Centralized access for deployments ([#851](https://github.com/zenml-io/zenml-dashboard/pull/851)) and snapshots ([#854](https://github.com/zenml-io/zenml-dashboard/pull/854))
+* **Create Snapshots:** Create snapshots directly from the UI ([#856](https://github.com/zenml-io/zenml-dashboard/pull/856))
+* GitHub-Flavored Markdown support ([#876](https://github.com/zenml-io/zenml-dashboard/pull/876))
+* Resizable Panels ([#873](https://github.com/zenml-io/zenml-dashboard/pull/873))
+
 <details>
 <summary>Improved</summary>
 
@@ -171,26 +185,23 @@ See what's new and improved in version 0.91.0.
 
 * Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
 
-### Dashboard Updates (v0.38.0)
+<details>
+<summary>Improved</summary>
 
-**New Features:**
+* Customizable image tags for Docker builds ([#4025](https://github.com/zenml-io/zenml/pull/4025))
+* Enhanced deployment server configuration ([#4064](https://github.com/zenml-io/zenml/pull/4064))
+* Better integration with MLX arrays ([#4027](https://github.com/zenml-io/zenml/pull/4027))
 
-* **Deployment Playground:** Easier to invoke and test deployments ([#861](https://github.com/zenml-io/zenml-dashboard/pull/861))
-* **Global Lists:** Centralized access for deployments ([#851](https://github.com/zenml-io/zenml-dashboard/pull/851)) and snapshots ([#854](https://github.com/zenml-io/zenml-dashboard/pull/854))
-* **Create Snapshots:** Create snapshots directly from the dashboard ([#856](https://github.com/zenml-io/zenml-dashboard/pull/856))
+</details>
 
-**Misc:**
+### Breaking Changes
 
-* GitHub-Flavored Markdown support ([#876](https://github.com/zenml-io/zenml-dashboard/pull/876))
-* Resizable Panels ([#873](https://github.com/zenml-io/zenml-dashboard/pull/873))
-
-***
-
+* Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
 ## 0.90.0
 
 See what's new and improved in version 0.90.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" align="left" alt="ZenML 0.90.0">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/4.jpg" align="left" alt="ZenML 0.90.0" width="500">
 
 #### Pipeline Snapshots & Deployments
 
@@ -217,6 +228,10 @@ See what's new and improved in version 0.90.0.
 
 [PR #3916](https://github.com/zenml-io/zenml/pull/3916) | [PR #3712](https://github.com/zenml-io/zenml/pull/3712)
 
+#### UI Updates
+
+* **Pipeline Snapshots & Deployments:** Track entities introduced in ZenML 0.90.0 ([#814](https://github.com/zenml-io/zenml-dashboard/pull/814))
+
 <details>
 <summary>Improved</summary>
 
@@ -231,20 +246,11 @@ See what's new and improved in version 0.90.0.
 * Client-Server compatibility: Must upgrade both simultaneously
 * Run templates need to be recreated
 * Base package no longer includes local database dependencies - install `zenml[local]` if needed ([#3916](https://github.com/zenml-io/zenml/pull/3916))
-
-### Dashboard Updates (v0.37.0)
-
-**New Features:**
-
-* **Pipeline Snapshots & Deployments:** Track entities introduced in ZenML 0.90.0 ([#814](https://github.com/zenml-io/zenml-dashboard/pull/814))
-
-***
-
 ## 0.85.0
 
 See what's new and improved in version 0.85.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" align="left" alt="ZenML 0.85.0">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/5.jpg" align="left" alt="ZenML 0.85.0" width="500">
 
 #### Pipeline Execution Modes
 
@@ -269,6 +275,12 @@ See what's new and improved in version 0.85.0.
 
 [PR #3922](https://github.com/zenml-io/zenml/pull/3922)
 
+#### UI Updates
+
+* **Timeline View:** New way to visualize pipeline runs alongside the DAG ([#799](https://github.com/zenml-io/zenml-dashboard/pull/799))
+* Client-Side Structured Logs ([#801](https://github.com/zenml-io/zenml-dashboard/pull/801))
+* Default Value for Arrays ([#798](https://github.com/zenml-io/zenml-dashboard/pull/798))
+
 <details>
 <summary>Improved</summary>
 
@@ -283,25 +295,19 @@ See what's new and improved in version 0.85.0.
 * Local orchestrator now continues execution after step failures
 * Docker package installer default switched from pip to uv ([#3935](https://github.com/zenml-io/zenml/pull/3935))
 * Log endpoint format changed ([#3845](https://github.com/zenml-io/zenml/pull/3845))
-
-### Dashboard Updates (v0.36.0)
-
-**New Features:**
-
-* **Timeline View:** New way to visualize pipeline runs alongside the DAG ([#799](https://github.com/zenml-io/zenml-dashboard/pull/799))
-
-**Improvements:**
-
-* Client-Side Structured Logs ([#801](https://github.com/zenml-io/zenml-dashboard/pull/801))
-* Default Value for Arrays ([#798](https://github.com/zenml-io/zenml-dashboard/pull/798))
-
-***
-
 ## 0.84.3
 
 See what's new and improved in version 0.84.3.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" align="left" alt="ZenML 0.84.3">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/6.jpg" align="left" alt="ZenML 0.84.3" width="500">
+
+#### ZenML Pro Service Account Authentication
+
+* CLI login support via `zenml login --api-key`
+* Service account API keys for programmatic access
+* Organization-level access for automated workflows
+
+[PR #3895](https://github.com/zenml-io/zenml/pull/3895) | [PR #3908](https://github.com/zenml-io/zenml/pull/3908)
 
 #### ZenML Pro Service Account Authentication
 
@@ -317,22 +323,19 @@ See what's new and improved in version 0.84.3.
 * Enhanced Kubernetes resource name sanitization ([#3887](https://github.com/zenml-io/zenml/pull/3887))
 * Relaxed Click dependency version constraints ([#3905](https://github.com/zenml-io/zenml/pull/3905))
 
-</details>
-
-<details>
-<summary>Fixed</summary>
-
-* Kubernetes resource name sanitization ([#3887](https://github.com/zenml-io/zenml/pull/3887))
-
-</details>
-
-***
-
-## 0.84.2
+</details>## 0.84.2
 
 See what's new and improved in version 0.84.2.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" align="left" alt="ZenML 0.84.2">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/7.jpg" align="left" alt="ZenML 0.84.2" width="500">
+
+#### Kubernetes Orchestrator Improvements
+
+* Complete rework using Jobs instead of raw pods
+* Better robustness and automatic restarts
+* Significantly faster pipeline compilation
+
+[PR #3869](https://github.com/zenml-io/zenml/pull/3869) | [PR #3873](https://github.com/zenml-io/zenml/pull/3873)
 
 #### Kubernetes Orchestrator Improvements
 
@@ -349,24 +352,40 @@ See what's new and improved in version 0.84.2.
 * Faster pipeline compilation for large pipelines ([#3873](https://github.com/zenml-io/zenml/pull/3873))
 * Better logging performance ([#3872](https://github.com/zenml-io/zenml/pull/3872))
 
-</details>
-
-<details>
-<summary>Fixed</summary>
-
-* Fixed deadlock in run creation ([#3876](https://github.com/zenml-io/zenml/pull/3876))
-* Enhanced path materializer security ([#3870](https://github.com/zenml-io/zenml/pull/3870))
-* Fixed WandB experiment tracker flavor initialization ([#3871](https://github.com/zenml-io/zenml/pull/3871))
-
-</details>
-
-***
-
-## 0.84.1
+</details>## 0.84.1
 
 See what's new and improved in version 0.84.1.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" align="left" alt="ZenML 0.84.1">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/8.jpg" align="left" alt="ZenML 0.84.1" width="500">
+
+#### Step Exception Handling
+
+* Improved collection of exception information
+* Better debugging capabilities
+
+[PR #3838](https://github.com/zenml-io/zenml/pull/3838)
+
+#### External Service Accounts
+
+* Added support for external service accounts
+* Improved flexibility
+
+[PR #3793](https://github.com/zenml-io/zenml/pull/3793)
+
+#### Kubernetes Orchestrator Enhancements
+
+* Schedule management capabilities
+* Better error handling
+* Enhanced pod monitoring
+
+[PR #3847](https://github.com/zenml-io/zenml/pull/3847)
+
+#### Dynamic Fan-out/Fan-in
+
+* Support for dynamic patterns with run templates
+* More flexible pipeline architectures
+
+[PR #3826](https://github.com/zenml-io/zenml/pull/3826)
 
 #### Step Exception Handling
 
@@ -404,15 +423,11 @@ See what's new and improved in version 0.84.1.
 * Logging race conditions ([#3855](https://github.com/zenml-io/zenml/pull/3855))
 * Kubernetes secret cleanup when orchestrator pods fail ([#3846](https://github.com/zenml-io/zenml/pull/3846))
 
-</details>
-
-***
-
-## 0.84.0
+</details>## 0.84.0
 
 See what's new and improved in version 0.84.0.
 
-<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" align="left" alt="ZenML 0.84.0">
+<img src="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/projects/9.jpg" align="left" alt="ZenML 0.84.0" width="500">
 
 #### Early Pipeline Stopping
 
@@ -443,6 +458,13 @@ See what's new and improved in version 0.84.0.
 
 [PR #3758](https://github.com/zenml-io/zenml/pull/3758) | [PR #3762](https://github.com/zenml-io/zenml/pull/3762) | [PR #3776](https://github.com/zenml-io/zenml/pull/3776)
 
+#### UI Updates
+
+* Refactor Onboarding ([#772](https://github.com/zenml-io/zenml-dashboard/pull/772)) & Survey ([#770](https://github.com/zenml-io/zenml-dashboard/pull/770))
+* Stop Runs directly from UI ([#755](https://github.com/zenml-io/zenml-dashboard/pull/755))
+* Step Refresh ([#773](https://github.com/zenml-io/zenml-dashboard/pull/773))
+* Support multiple log origins ([#769](https://github.com/zenml-io/zenml-dashboard/pull/769))
+
 <details>
 <summary>Improved</summary>
 
@@ -467,13 +489,6 @@ See what's new and improved in version 0.84.0.
 
 * Kubernetes Orchestrator Compatibility: Client and orchestrator pod versions must match exactly
 
-### Dashboard Updates (v0.35.0)
+### Breaking Changes
 
-**Features:**
-
-* Refactor Onboarding ([#772](https://github.com/zenml-io/zenml-dashboard/pull/772)) & Survey ([#770](https://github.com/zenml-io/zenml-dashboard/pull/770))
-* Stop Runs directly from dashboard ([#755](https://github.com/zenml-io/zenml-dashboard/pull/755))
-* Step Refresh ([#773](https://github.com/zenml-io/zenml-dashboard/pull/773))
-* Support multiple log origins ([#769](https://github.com/zenml-io/zenml-dashboard/pull/769))
-
-***
+* Kubernetes Orchestrator Compatibility: Client and orchestrator pod versions must match exactly
