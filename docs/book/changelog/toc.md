@@ -1,6 +1,5 @@
 # Table of contents
 
-## Release Notes
-
+* [Overview](README.md)
 * [OSS](oss.md)
 * [Pro](pro.md)
