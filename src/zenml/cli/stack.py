@@ -43,8 +43,11 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     _component_display_name,
+    is_sorted_or_filtered,
     list_options,
     print_model_url,
+    print_page_info,
+    print_stacks_table,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -63,7 +66,6 @@ from zenml.models import (
     ServiceConnectorResourcesInfo,
     StackFilter,
     StackRequest,
-    StackResponse,
 )
 from zenml.models.v2.core.service_connector import (
     ServiceConnectorRequest,
@@ -577,7 +579,7 @@ def register_stack(
                     connectors.add(conn_.name)
         for connector in connectors:
             delete_commands.append(
-                f"zenml service-connector delete {connector}"
+                "zenml service-connector delete " + connector
             )
     for each in created_objects:
         if comps_ := created_stack.components[StackComponentType(each)]:
@@ -1039,84 +1041,28 @@ def rename_stack(
     print_model_url(get_stack_url(stack_))
 
 
-def _generate_stack_data(
-    stack: StackResponse, output_format: str
-) -> List[Dict[str, Any]]:
-    """Generate additional data for the stack to display in the output.
-
-    Args:
-        stack: The stack response.
-        table_args: The table arguments.
-
-    Returns:
-        The additional data for the stack.
-    """
-    from zenml.enums import StackComponentType
-
-    client = Client()
-
-    active_stack_id = client.active_stack_model.id
-    is_active = stack.id == active_stack_id
-
-    result = {
-        "orchestrator": "-",
-        "artifact_store": "-",
-        "is_active": is_active,
-        "components": len(stack.components)
-        if hasattr(stack, "components")
-        else 0,
-    }
-
-    if hasattr(stack, "components") and stack.components:
-        if StackComponentType.ORCHESTRATOR in stack.components:
-            result["orchestrator"] = stack.components[
-                StackComponentType.ORCHESTRATOR
-            ][0].name
-        if StackComponentType.ARTIFACT_STORE in stack.components:
-            result["artifact_store"] = stack.components[
-                StackComponentType.ARTIFACT_STORE
-            ][0].name
-
-    result["name"] = stack.name
-
-    if is_active and output_format == "table":
-        result["name"] = (
-            f"[green]●[/green] [bold green]{stack.name}[/bold green] (active)"
-        )
-    return result
-
-
 @stack.command("list")
-@list_options(
-    StackFilter,
-    default_columns=[
-        "id",
-        "name",
-        "owner",
-        "components",
-        "orchestrator",
-        "artifact_store",
-    ],
-)
-def list_stacks(output_format: str, columns: str, **kwargs: Any) -> None:
+@list_options(StackFilter)
+@click.pass_context
+def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
+        ctx: the Click context
         kwargs: Keyword arguments to filter the stacks.
     """
     client = Client()
-
-    with console.status("Listing stacks..."):
+    with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)
-
-    cli_utils.render_list_output(
-        page=stacks,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_stack_data,
-    )
+        if not stacks:
+            cli_utils.declare("No stacks found for the given filters.")
+            return
+        print_stacks_table(
+            client=client,
+            stacks=stacks.items,
+            show_active=not is_sorted_or_filtered(ctx),
+        )
+        print_page_info(stacks)
 
 
 @stack.command(

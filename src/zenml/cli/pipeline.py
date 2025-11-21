@@ -30,14 +30,10 @@ from zenml.logger import get_logger
 from zenml.models import (
     PipelineBuildBase,
     PipelineBuildFilter,
-    PipelineBuildResponse,
     PipelineFilter,
-    PipelineResponse,
     PipelineRunFilter,
-    PipelineRunResponse,
     PipelineSnapshotFilter,
     ScheduleFilter,
-    ScheduleResponse,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
@@ -45,84 +41,6 @@ from zenml.utils.dashboard_utils import get_deployment_url
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
-
-
-def _generate_pipeline_data(pipeline: PipelineResponse) -> Dict[str, Any]:
-    """Generate additional data for pipeline display.
-
-    Args:
-        pipeline: The pipeline response.
-
-    Returns:
-        The additional data for the pipeline.
-    """
-    return {
-        "latest_run_status": pipeline.latest_run_status or "",
-        "latest_run_id": pipeline.latest_run_id or "",
-        "tags": ", ".join(tag.name for tag in pipeline.tags)
-        if pipeline.tags
-        else "",
-        "created": pipeline.created,
-    }
-
-
-def _generate_schedule_data(schedule: ScheduleResponse) -> Dict[str, Any]:
-    """Generate additional data for schedule display.
-
-    Args:
-        schedule: The schedule response.
-
-    Returns:
-        The additional data for the schedule.
-    """
-    return {
-        "active": schedule.active,
-        "cron_expression": schedule.cron_expression,
-    }
-
-
-def _generate_pipeline_run_data(
-    pipeline_run: PipelineRunResponse, output_format: str
-) -> Dict[str, Any]:
-    """Generate additional data for pipeline run display.
-
-    Args:
-        pipeline_run: The pipeline run response.
-        output_format: The output format.
-
-    Returns:
-        The additional data for the pipeline run.
-    """
-    return {
-        "pipeline_name": pipeline_run.pipeline.name
-        if pipeline_run.pipeline
-        else "unlisted",
-        "status": pipeline_run.status,
-        "stack_name": pipeline_run.stack.name
-        if pipeline_run.stack
-        else "[DELETED]",
-    }
-
-
-def _generate_pipeline_build_data(
-    pipeline_build: "PipelineBuildResponse",
-) -> Dict[str, Any]:
-    """Generate additional data for pipeline build display.
-
-    Args:
-        pipeline_build: The pipeline build response.
-
-    Returns:
-        The additional data for the pipeline build.
-    """
-    return {
-        "pipeline_name": pipeline_build.pipeline.name
-        if pipeline_build.pipeline
-        else "unlisted",
-        "stack_name": pipeline_build.stack.name
-        if pipeline_build.stack
-        else "[DELETED]",
-    }
 
 
 def _import_pipeline(source: str) -> Pipeline:
@@ -655,35 +573,26 @@ def create_run_template(
     cli_utils.declare(f"Created run template `{template.id}`.")
 
 
-@list_options(
-    PipelineFilter,
-    default_columns=[
-        "id",
-        "name",
-        "latest_run_status",
-        "latest_run_id",
-        "tags",
-        "created",
-    ],
-)
 @pipeline.command("list", help="List all registered pipelines.")
-def list_pipelines(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all pipelines that fulfill the filter requirements.
+@list_options(PipelineFilter)
+def list_pipelines(**kwargs: Any) -> None:
+    """List all registered pipelines.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter pipelines.
+        **kwargs: Keyword arguments to filter pipelines.
     """
-    with console.status("Listing pipelines..."):
-        pipelines = Client().list_pipelines(**kwargs)
+    client = Client()
+    with console.status("Listing pipelines...\n"):
+        pipelines = client.list_pipelines(**kwargs)
 
-    cli_utils.render_list_output(
-        page=pipelines,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_pipeline_data,
-    )
+        if not pipelines.items:
+            cli_utils.declare("No pipelines found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            pipelines,
+            exclude_columns=["id", "created", "updated", "user", "project"],
+        )
 
 
 @pipeline.command("delete")
@@ -729,27 +638,25 @@ def schedule() -> None:
     """Commands for pipeline run schedules."""
 
 
-@list_options(
-    ScheduleFilter,
-    default_columns=["name", "active", "cron_expression", "user", "created"],
-)
 @schedule.command("list", help="List all pipeline schedules.")
-def list_schedules(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all schedules that fulfill the filter requirements.
+@list_options(ScheduleFilter)
+def list_schedules(**kwargs: Any) -> None:
+    """List all pipeline schedules.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter schedules.
+        **kwargs: Keyword arguments to filter schedules.
     """
-    with console.status("Listing schedules..."):
-        schedules = Client().list_schedules(**kwargs)
+    client = Client()
 
-    cli_utils.render_list_output(
-        page=schedules,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_schedule_data,
+    schedules = client.list_schedules(**kwargs)
+
+    if not schedules:
+        cli_utils.declare("No schedules found for this filter.")
+        return
+
+    cli_utils.print_pydantic_models(
+        schedules,
+        exclude_columns=["id", "created", "updated", "user", "project"],
     )
 
 
@@ -823,28 +730,13 @@ def runs() -> None:
     """Commands for pipeline runs."""
 
 
-@list_options(
-    PipelineRunFilter,
-    default_columns=[
-        "id",
-        "name",
-        "status",
-        "pipeline",
-        "user",
-        "stack",
-        "created",
-    ],
-)
 @runs.command("list", help="List all registered pipeline runs.")
-def list_pipeline_runs(
-    output_format: str, columns: str, **kwargs: Any
-) -> None:
-    """List all pipeline runs that fulfill the filter requirements.
+@list_options(PipelineRunFilter)
+def list_pipeline_runs(**kwargs: Any) -> None:
+    """List all registered pipeline runs for the filter.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter pipeline runs.
+        **kwargs: Keyword arguments to filter pipeline runs.
     """
     client = Client()
     try:
@@ -852,17 +744,13 @@ def list_pipeline_runs(
             pipeline_runs = client.list_pipeline_runs(**kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-        return
-    if not pipeline_runs.items:
-        cli_utils.declare("No pipeline runs found for this filter.")
-        return
+    else:
+        if not pipeline_runs.items:
+            cli_utils.declare("No pipeline runs found for this filter.")
+            return
 
-    cli_utils.render_list_output(
-        page=pipeline_runs,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_pipeline_run_data,
-    )
+        cli_utils.print_pipeline_runs_table(pipeline_runs=pipeline_runs.items)
+        cli_utils.print_page_info(pipeline_runs)
 
 
 @runs.command("stop")
@@ -993,26 +881,13 @@ def builds() -> None:
     """Commands for pipeline builds."""
 
 
-@list_options(
-    PipelineBuildFilter,
-    default_columns=[
-        "id",
-        "pipeline_name",
-        "zenml_version",
-        "stack_name",
-        "created",
-    ],
-)
 @builds.command("list", help="List all pipeline builds.")
-def list_pipeline_builds(
-    output_format: str, columns: str, **kwargs: Any
-) -> None:
-    """List all pipeline builds.
+@list_options(PipelineBuildFilter)
+def list_pipeline_builds(**kwargs: Any) -> None:
+    """List all pipeline builds for the filter.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter pipeline builds.
+        **kwargs: Keyword arguments to filter pipeline builds.
     """
     client = Client()
     try:
@@ -1020,18 +895,22 @@ def list_pipeline_builds(
             pipeline_builds = client.list_builds(hydrate=True, **kwargs)
     except KeyError as err:
         cli_utils.exception(err)
-        return
+    else:
+        if not pipeline_builds.items:
+            cli_utils.declare("No pipeline builds found for this filter.")
+            return
 
-    if not pipeline_builds.items:
-        cli_utils.declare("No pipeline builds found for this filter.")
-        return
-
-    cli_utils.render_list_output(
-        page=pipeline_builds,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_pipeline_build_data,
-    )
+        cli_utils.print_pydantic_models(
+            pipeline_builds,
+            exclude_columns=[
+                "created",
+                "updated",
+                "user",
+                "project",
+                "images",
+                "stack_checksum",
+            ],
+        )
 
 
 @builds.command("delete")

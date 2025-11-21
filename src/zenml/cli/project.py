@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Optional
 
 import click
 
@@ -21,6 +21,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     check_zenml_pro_project_availability,
+    is_sorted_or_filtered,
     list_options,
 )
 from zenml.client import Client
@@ -28,54 +29,39 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.models import ProjectFilter
 
-if TYPE_CHECKING:
-    from zenml.models import ProjectResponse
-
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
 
 
-def _generate_project_row(project: "ProjectResponse") -> Dict[str, Any]:
-    """Generate additional data for project display.
-
-    Args:
-        project: The project response.
-
-    Returns:
-        The additional data for the project.
-    """
-    return {
-        "description": project.description,
-    }
-
-
+@project.command("list")
+@list_options(ProjectFilter)
 @click.pass_context
-@list_options(ProjectFilter, default_columns=["name", "description"])
-@project.command("list", help="List all projects.")
-def list_projects(
-    ctx: click.Context, output_format: str, columns: str, **kwargs: Any
-) -> None:
+def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all projects.
 
     Args:
-        ctx: The click context.
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter projects.
+        ctx: The click context object
+        **kwargs: Keyword arguments to filter the list of projects.
     """
     check_zenml_pro_project_availability()
-
-    with console.status("Listing projects..."):
-        projects = Client().list_projects(**kwargs)
-
-    cli_utils.render_list_output(
-        page=projects,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_project_row,
-    )
+    client = Client()
+    with console.status("Listing projects...\n"):
+        projects = client.list_projects(**kwargs)
+        if projects:
+            try:
+                active_project = [client.active_project]
+            except Exception:
+                active_project = []
+            cli_utils.print_pydantic_models(
+                projects,
+                exclude_columns=["id", "created", "updated"],
+                active_models=active_project,
+                show_active=not is_sorted_or_filtered(ctx),
+            )
+        else:
+            cli_utils.declare("No projects found for the given filter.")
 
 
 @project.command("register")

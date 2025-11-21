@@ -14,11 +14,10 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 import click
 
-from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
@@ -29,6 +28,8 @@ from zenml.cli.utils import (
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
+    print_page_info,
+    print_table,
     validate_keys,
     warning,
 )
@@ -43,20 +44,6 @@ from zenml.logger import get_logger
 from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
-
-
-def _generate_secret_row(secret: "SecretResponse") -> Dict[str, Any]:
-    """Generate additional data for secret display.
-
-    Args:
-        secret: The secret response.
-
-    Returns:
-        The additional data for the secret.
-    """
-    return {
-        "scope": "private" if secret.private else "public",
-    }
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -175,33 +162,36 @@ def create_secret(
         error(f"Centralized secrets management is disabled: {str(e)}")
 
 
-@list_options(
-    SecretFilter, default_columns=["name", "scope", "user", "created"]
+@secret.command(
+    "list", help="List all registered secrets that match the filter criteria."
 )
-@secret.command("list", help="List all secrets.")
-def list_secrets(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List all secrets that fulfill the filter requirements.
+@list_options(SecretFilter)
+def list_secrets(**kwargs: Any) -> None:
+    """List all secrets that fulfill the filter criteria.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter secrets.
+        kwargs: Keyword arguments to filter the secrets.
     """
-    try:
-        with console.status("Listing secrets..."):
-            secrets = Client().list_secrets(**kwargs)
-    except NotImplementedError as e:
-        cli_utils.error(
-            f"The current secrets store does not support listing secrets: "
-            f"{str(e)}"
-        )
+    client = Client()
+    with console.status("Listing secrets..."):
+        try:
+            secrets = client.list_secrets(**kwargs)
+        except NotImplementedError as e:
+            error(f"Centralized secrets management is disabled: {str(e)}")
+        if not secrets.items:
+            warning("No secrets found for the given filters.")
+            return
 
-    cli_utils.render_list_output(
-        page=secrets,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_secret_row,
-    )
+        secret_rows = [
+            dict(
+                name=secret.name,
+                id=str(secret.id),
+                private=secret.private,
+            )
+            for secret in secrets.items
+        ]
+        print_table(secret_rows)
+        print_page_info(secrets)
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

@@ -19,9 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import (
-    list_options,
-)
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.config.source import Source
@@ -190,31 +188,25 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
         )
 
 
-@list_options(
-    CodeRepositoryFilter, default_columns=["name", "type", "url", "created"]
-)
-@code_repository.command(
-    "list",
-)
-def list_code_repositories(
-    output_format: str, columns: str, **kwargs: Any
-) -> None:
-    """List all registered code repositories.
+@code_repository.command("list", help="List all connected code repositories.")
+@list_options(CodeRepositoryFilter)
+def list_code_repositories(**kwargs: Any) -> None:
+    """List all connected code repositories.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
         **kwargs: Keyword arguments to filter code repositories.
     """
-    client = Client()
     with console.status("Listing code repositories...\n"):
-        repos = client.list_code_repositories(**kwargs)
+        repos = Client().list_code_repositories(**kwargs)
 
-    cli_utils.render_list_output(
-        page=repos,
-        output_format=output_format,
-        columns=columns,
-    )
+        if not repos.items:
+            cli_utils.declare("No code repositories found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            repos,
+            exclude_columns=["created", "updated", "user", "project"],
+        )
 
 
 @code_repository.command(

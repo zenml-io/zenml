@@ -56,29 +56,27 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     )
 
 
-@list_options(
-    OAuthDeviceFilter,
-    default_columns=["status", "ip_address", "hostname", "os", "created"],
+@authorized_device.command(
+    "list", help="List all authorized devices for the current user."
 )
-@authorized_device.command("list", help="List authorized devices.")
-def list_authorized_devices(
-    output_format: str, columns: str, **kwargs: Any
-) -> None:
-    """List authorized devices.
+@list_options(OAuthDeviceFilter)
+def list_authorized_devices(**kwargs: Any) -> None:
+    """List all authorized devices.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter devices.
+        **kwargs: Keyword arguments to filter authorized devices.
     """
-    with console.status("Listing authorized devices..."):
+    with console.status("Listing authorized devices...\n"):
         devices = Client().list_authorized_devices(**kwargs)
 
-    cli_utils.render_list_output(
-        page=devices,
-        output_format=output_format,
-        columns=columns,
-    )
+        if not devices.items:
+            cli_utils.declare("No authorized devices found for this filter.")
+            return
+
+        cli_utils.print_pydantic_models(
+            devices,
+            columns=["id", "status", "ip_address", "hostname", "os"],
+        )
 
 
 @authorized_device.command("lock")

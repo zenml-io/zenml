@@ -73,24 +73,12 @@ def deployment() -> None:
 
 @deployment.command("list", help="List all registered deployments.")
 @list_options(
-    DeploymentFilter,
-    default_columns=[
-        "id",
-        "name",
-        "pipeline",
-        "snapshot",
-        "status",
-        "stack",
-        "url",
-        "owner",
-    ],
+    DeploymentFilter, default_columns=["id", "name", "url", "status"]
 )
-def list_deployments(output_format: str, columns: str, **kwargs: Any) -> None:
+def list_deployments(**kwargs: Any) -> None:
     """List all registered deployments for the filter.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
         **kwargs: Keyword arguments to filter deployments.
     """
     client = Client()
@@ -104,11 +92,8 @@ def list_deployments(output_format: str, columns: str, **kwargs: Any) -> None:
             cli_utils.declare("No deployments found for this filter.")
             return
 
-        cli_utils.print_deployment_table(
-            deployments=deployments,
-            output_format=output_format,
-            columns=columns,
-        )
+        cli_utils.print_deployment_table(deployments=deployments.items)
+        cli_utils.print_page_info(deployments)
 
 
 @deployment.command("describe", help="Describe a deployment.")

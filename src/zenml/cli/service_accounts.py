@@ -13,60 +13,21 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with API keys."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import (
-    list_options,
-)
+from zenml.cli.utils import list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.logger import get_logger
-from zenml.models import (
-    APIKeyFilter,
-    APIKeyResponse,
-    ServiceAccountFilter,
-    ServiceAccountResponse,
-)
+from zenml.models import APIKeyFilter, ServiceAccountFilter
 
 logger = get_logger(__name__)
-
-
-def _generate_service_account_row(
-    service_account: ServiceAccountResponse,
-) -> Dict[str, Any]:
-    """Generate additional data for service account display.
-
-    Args:
-        service_account: The service account response.
-
-    Returns:
-        The additional data for the service account.
-    """
-    return {
-        "active": service_account.active,
-    }
-
-
-def _generate_api_key_row(
-    api_key: APIKeyResponse,
-) -> Dict[str, Any]:
-    """Generate additional data for API key display.
-
-    Args:
-        api_key: The API key response.
-
-    Returns:
-        The additional data for the API key.
-    """
-    return {
-        "active": api_key.active,
-    }
 
 
 def _create_api_key(
@@ -224,31 +185,31 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 
 
 @service_account.command("list")
-@list_options(
-    ServiceAccountFilter,
-    default_columns=["id", "name", "description", "active", "created"],
-)
+@list_options(ServiceAccountFilter)
 @click.pass_context
-def list_service_accounts(
-    ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
-) -> None:
-    """List all service accounts.
+def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
+    """List all users.
 
     Args:
         ctx: The click context object
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter the list of service accounts.
+        kwargs: Keyword arguments to filter the list of users.
     """
-    with console.status("Listing service accounts..."):
-        service_accounts = Client().list_service_accounts(**kwargs)
+    client = Client()
+    with console.status("Listing service accounts...\n"):
+        service_accounts = client.list_service_accounts(**kwargs)
+        if not service_accounts:
+            cli_utils.declare(
+                "No service accounts found for the given filters."
+            )
+            return
 
-    cli_utils.render_list_output(
-        page=service_accounts,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_service_account_row,
-    )
+        cli_utils.print_pydantic_models(
+            service_accounts,
+            exclude_columns=[
+                "created",
+                "updated",
+            ],
+        )
 
 
 @service_account.command(
@@ -420,48 +381,39 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         )
 
 
-@list_options(
-    APIKeyFilter,
-    default_columns=["id", "name", "description", "active", "created"],
-)
 @api_key.command("list", help="List all API keys.")
+@list_options(APIKeyFilter)
 @click.pass_obj
-def list_api_keys(
-    service_account_name_or_id: str,
-    output_format: str,
-    columns: str,
-    /,
-    **kwargs: Any,
-) -> None:
+def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
     """List all API keys.
 
     Args:
         service_account_name_or_id: The name or ID of the service account for
             which to list the API keys.
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter API keys.
+        **kwargs: Keyword arguments to filter API keys.
     """
-    try:
-        with console.status("Listing API keys..."):
+    with console.status("Listing API keys...\n"):
+        try:
             api_keys = Client().list_api_keys(
                 service_account_name_id_or_prefix=service_account_name_or_id,
                 **kwargs,
             )
-    except KeyError as err:
-        cli_utils.exception(err)
-        return
+        except KeyError as e:
+            cli_utils.exception(e)
 
-    if not api_keys.items:
-        cli_utils.declare("No API keys found for this filter.")
-        return
+        if not api_keys.items:
+            cli_utils.declare("No API keys found for this filter.")
+            return
 
-    cli_utils.render_list_output(
-        page=api_keys,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=_generate_api_key_row,
-    )
+        cli_utils.print_pydantic_models(
+            api_keys,
+            exclude_columns=[
+                "created",
+                "updated",
+                "key",
+                "retain_period_minutes",
+            ],
+        )
 
 
 @api_key.command("update", help="Update an API key.")

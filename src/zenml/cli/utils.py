@@ -14,6 +14,7 @@
 """Utility functions for the CLI."""
 
 import contextlib
+import functools
 import inspect
 import json
 import os
@@ -22,6 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
+from contextvars import ContextVar
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -31,6 +33,7 @@ from typing import (
     Dict,
     Iterator,
     List,
+    Literal,
     NoReturn,
     Optional,
     Sequence,
@@ -39,12 +42,13 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
 import yaml
 from pydantic import BaseModel, SecretStr
-from rich import box, table
+from rich import table
 from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
@@ -90,10 +94,9 @@ from zenml.models import (
 )
 from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService
-from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import dict_utils, secret_utils
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -131,6 +134,9 @@ MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 T = TypeVar("T", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+LIST_RENDER_OPTIONS: ContextVar[Optional[Dict[str, str]]] = ContextVar(
+    "list_render_options", default=None
+)
 
 
 def title(text: str) -> None:
@@ -261,27 +267,6 @@ def success(
     console.print(text, style=style, **kwargs)
 
 
-def print_markdown(text: str) -> None:
-    """Prints a string as markdown.
-
-    Args:
-        text: Markdown string to be printed.
-    """
-    markdown_text = Markdown(text)
-    console.print(markdown_text)
-
-
-def print_markdown_with_pager(text: str) -> None:
-    """Prints a string as markdown with a pager.
-
-    Args:
-        text: Markdown string to be printed.
-    """
-    markdown_text = Markdown(text)
-    with console.pager():
-        console.print(markdown_text)
-
-
 def print_table(
     obj: List[Dict[str, Any]],
     title: Optional[str] = None,
@@ -302,14 +287,27 @@ def print_table(
     """
     from rich.text import Text
 
+    render_options = LIST_RENDER_OPTIONS.get()
+    if render_options:
+        columns_arg = render_options.get("columns", "")
+        output_format_arg = render_options.get(
+            "output_format", get_default_output_format()
+        )
+        handle_output(
+            data=obj,
+            pagination_info=None,
+            columns=columns_arg,
+            output_format=output_format_arg,
+        )
+        return
+
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(
-        box=box.ROUNDED,
-        show_lines=True,
+        box=None,
+        show_lines=False,
         title=title,
         caption=caption,
-        border_style="dim",
     )
     for col_name in column_names:
         if isinstance(col_name, str):
@@ -514,10 +512,9 @@ def print_pydantic_model(
         columns: Optionally specify subset and order of columns to display.
     """
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -633,11 +630,9 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     if active:
         stack_caption += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title="Stack Configuration",
         caption=stack_caption,
-        show_lines=True,
-        border_style="dim",
     )
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
@@ -655,10 +650,8 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
         declare("No labels are set for this stack.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Labels",
-            show_lines=True,
-            border_style="dim",
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -732,10 +725,9 @@ def print_stack_component_configuration(
         if active_status:
             title_ += " (ACTIVE)"
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title=title_,
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("COMPONENT_PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -756,10 +748,9 @@ def print_stack_component_configuration(
         declare("No labels are set for this component.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Labels",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("LABEL")
         rich_table.add_column("VALUE", overflow="fold")
@@ -773,10 +764,9 @@ def print_stack_component_configuration(
         declare("No connector is set for this component.")
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Service Connector",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1251,9 +1241,8 @@ def print_list_items(list_items: List[str], column_title: str) -> None:
         column_title: Title of the column
     """
     rich_table = table.Table(
-        box=box.ROUNDED,
-        show_lines=True,
-        border_style="dim",
+        box=None,
+        show_lines=False,
     )
     rich_table.add_column(column_title.upper(), overflow="fold")
     list_items.sort()
@@ -1378,10 +1367,9 @@ def pretty_print_model_version_details(
     title_ = f"Properties of model `{model_version.registered_model.name}` version `{model_version.version}`"
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("MODEL VERSION PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1431,10 +1419,9 @@ def print_served_model_configuration(
     title_ = f"Properties of Served Model {model_service.uuid}"
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1536,9 +1523,65 @@ def replace_emojis(text: str) -> str:
         try:
             text = text.replace(f":{emoji}:", str(Emoji(emoji)))
         except NoEmoji:
-            # If the emoji text is not a valid emoji, just ignore it
             pass
     return text
+
+
+def print_stacks_table(
+    client: "Client",
+    stacks: Sequence["StackResponse"],
+    show_active: bool = False,
+) -> None:
+    """Print a prettified list of stacks (legacy helper).
+
+    Args:
+        client: Repository instance.
+        stacks: List of stacks.
+        show_active: Whether to highlight the active stack at the top.
+    """
+    if len(stacks) == 0:
+        warning("No stacks found.")
+        return
+
+    stacks = list(stacks)
+    active_stack = client.active_stack_model
+    if show_active:
+        if active_stack.id not in [s.id for s in stacks]:
+            stacks.append(active_stack)
+
+        stacks = [s for s in stacks if s.id == active_stack.id] + [
+            s for s in stacks if s.id != active_stack.id
+        ]
+
+    all_component_types: Set[StackComponentType] = set()
+    for stack in stacks:
+        all_component_types.update(stack.components.keys())
+
+    active_stack_model_id = client.active_stack_model.id
+    stack_dicts = []
+    for stack in stacks:
+        is_active = stack.id == active_stack_model_id
+        user_name = stack.user.name if stack.user else "-"
+
+        stack_config = {
+            "ACTIVE": ":point_right:" if is_active else "",
+            "STACK NAME": stack.name,
+            "STACK ID": stack.id,
+            "OWNER": user_name,
+        }
+
+        for component_type in all_component_types:
+            component_name = component_type.value.upper().replace("_", " ")
+            if component_type in stack.components:
+                stack_config[component_name] = stack.components[
+                    component_type
+                ][0].name
+            else:
+                stack_config[component_name] = "-"
+
+        stack_dicts.append(stack_config)
+
+    print_table(stack_dicts)
 
 
 def print_components_table(
@@ -1643,19 +1686,20 @@ def print_service_connectors_table(
             ]
 
     configurations = []
-    for connector in connectors:
+    for i, connector in enumerate(connectors):
         is_active = connector.id in [c.id for c in active_connectors]
         labels = [
             f"{label}:{value}" for label, value in connector.labels.items()
         ]
         resource_name = connector.resource_id or "<multiple>"
+        resource_types_str = "\n".join(connector.emojified_resource_types)
 
         connector_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "NAME": connector.name,
             "ID": connector.id,
             "TYPE": connector.emojified_connector_type,
-            "RESOURCE TYPES": "\n".join(connector.emojified_resource_types),
+            "RESOURCE TYPES": resource_types_str,
             "RESOURCE NAME": resource_name,
             "OWNER": f"{connector.user.name if connector.user else '-'}",
             "EXPIRES IN": (
@@ -1670,6 +1714,10 @@ def print_service_connectors_table(
             "LABELS": "\n".join(labels),
         }
         configurations.append(connector_config)
+
+        if i < len(connectors) - 1 and "\n" in resource_types_str:
+            configurations.append({key: "" for key in connector_config.keys()})
+
     print_table(configurations)
 
 
@@ -1683,13 +1731,24 @@ def print_service_connector_resource_table(
         resources: List of service connector resources to print.
         show_resources_only: If True, only the resources will be printed.
     """
+
+    def _truncate_error(error_msg: str, max_length: int = 100) -> str:
+        """Truncate long error messages for better readability."""
+        if len(error_msg) <= max_length:
+            return error_msg
+        truncated = error_msg[:max_length].rsplit(" ", 1)[0]
+        return f"{truncated}... (use --verbose for full error)"
+
     resource_table = []
-    for resource_model in resources:
+    errors_found = False
+
+    for i, resource_model in enumerate(resources):
         printed_connector = False
         resource_row: Dict[str, Any] = {}
 
         if resource_model.error:
             # Global error
+            errors_found = True
             if not show_resources_only:
                 resource_row = {
                     "CONNECTOR ID": str(resource_model.id),
@@ -1701,10 +1760,28 @@ def print_service_connector_resource_table(
                     "RESOURCE TYPE": "\n".join(
                         resource_model.get_emojified_resource_types()
                     ),
-                    "RESOURCE NAMES": f":collision: error: {resource_model.error}",
+                    "RESOURCE NAMES": f":collision: {_truncate_error(resource_model.error)}",
                 }
             )
             resource_table.append(resource_row)
+            if i < len(resources) - 1:
+                if not show_resources_only:
+                    resource_table.append(
+                        {
+                            "CONNECTOR ID": "",
+                            "CONNECTOR NAME": "",
+                            "CONNECTOR TYPE": "",
+                            "RESOURCE TYPE": "",
+                            "RESOURCE NAMES": "",
+                        }
+                    )
+                else:
+                    resource_table.append(
+                        {
+                            "RESOURCE TYPE": "",
+                            "RESOURCE NAMES": "",
+                        }
+                    )
             continue
 
         for resource in resource_model.resources:
@@ -1712,8 +1789,10 @@ def print_service_connector_resource_table(
                 resource.resource_type
             )[0]
             if resource.error:
-                # Error fetching resources
-                resource_ids = [f":collision: error: {resource.error}"]
+                errors_found = True
+                resource_ids = [
+                    f":collision: {_truncate_error(resource.error)}"
+                ]
             elif resource.resource_ids:
                 resource_ids = resource.resource_ids
             else:
@@ -1742,7 +1821,30 @@ def print_service_connector_resource_table(
             )
             resource_table.append(resource_row)
             printed_connector = True
+        if i < len(resources) - 1 and resource_model.resources:
+            if not show_resources_only:
+                resource_table.append(
+                    {
+                        "CONNECTOR ID": "",
+                        "CONNECTOR NAME": "",
+                        "CONNECTOR TYPE": "",
+                        "RESOURCE TYPE": "",
+                        "RESOURCE NAMES": "",
+                    }
+                )
+            else:
+                resource_table.append(
+                    {
+                        "RESOURCE TYPE": "",
+                        "RESOURCE NAMES": "",
+                    }
+                )
     print_table(resource_table)
+    if errors_found:
+        console.print(
+            "\n[dim]💡 Tip: Some error messages were truncated for readability. "
+            "Use describe commands for full error details.[/dim]"
+        )
 
 
 def print_service_connector_configuration(
@@ -1785,10 +1887,9 @@ def print_service_connector_configuration(
     if active_status:
         title_ += " (ACTIVE)"
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title=title_,
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
@@ -1860,10 +1961,9 @@ def print_service_connector_configuration(
 
     else:
         rich_table = table.Table(
-            box=box.ROUNDED,
+            box=None,
             title="Configuration",
-            show_lines=True,
-            border_style="dim",
+            show_lines=False,
         )
         rich_table.add_column("PROPERTY")
         rich_table.add_column("VALUE", overflow="fold")
@@ -1889,10 +1989,9 @@ def print_service_connector_configuration(
         return
 
     rich_table = table.Table(
-        box=box.ROUNDED,
+        box=None,
         title="Labels",
-        show_lines=True,
-        border_style="dim",
+        show_lines=False,
     )
     rich_table.add_column("LABEL")
     rich_table.add_column("VALUE", overflow="fold")
@@ -2143,20 +2242,6 @@ def print_service_connector_type(
     return message
 
 
-def _get_stack_components(
-    stack: "Stack",
-) -> "List[StackComponent]":
-    """Get a dict of all components in a stack.
-
-    Args:
-        stack: A stack
-
-    Returns:
-        A list of all components in a stack.
-    """
-    return list(stack.components.values())
-
-
 def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     """Remove secret values from a configuration.
 
@@ -2371,27 +2456,6 @@ def get_deployment_status_emoji(
     return ":question:"
 
 
-def format_deployment_status(status: Optional[str]) -> str:
-    """Format deployment status with color.
-
-    Args:
-        status: The deployment status.
-
-    Returns:
-        Formatted status string.
-    """
-    if status == DeploymentStatus.RUNNING:
-        return "[green]RUNNING[/green]"
-    elif status == DeploymentStatus.PENDING:
-        return "[yellow]PENDING[/yellow]"
-    elif status == DeploymentStatus.ERROR:
-        return "[red]ERROR[/red]"
-    elif status == DeploymentStatus.ABSENT:
-        return "[dim]ABSENT[/dim]"
-
-    return "[dim]UNKNOWN[/dim]"
-
-
 def _generate_deployment_row(
     deployment: "DeploymentResponse", output_format: str
 ) -> Dict[str, Any]:
@@ -2442,19 +2506,46 @@ def _generate_deployment_row(
 
 
 def print_deployment_table(
-    deployments: Page["DeploymentResponse"],
-    output_format: str,
-    columns: str,
+    deployments: Union[
+        Page["DeploymentResponse"], Sequence["DeploymentResponse"]
+    ],
+    output_format: Optional[str] = None,
+    columns: Optional[str] = None,
 ) -> None:
-    """Print a prettified list of all deployments supplied to this method.
+    """Print a prettified list of deployments.
 
     Args:
-        deployments: Page of deployments
+        deployments: Page or list of deployments.
         output_format: Output format (table, json, yaml, tsv, csv).
         columns: Comma-separated list of columns to display.
     """
+    render_opts = LIST_RENDER_OPTIONS.get() or {}
+    output_format = (
+        output_format
+        or render_opts.get("output_format")
+        or get_default_output_format()
+    )
+    columns = (
+        columns
+        or render_opts.get("columns")
+        or render_opts.get("default_columns")
+        or "id,name,url,status"
+    )
+
+    if isinstance(deployments, Page):
+        page = deployments
+    else:
+        # Build a minimal Page-like object for list inputs
+        page = Page(
+            index=1,
+            max_size=len(deployments) or 1,
+            total_pages=1,
+            total=len(deployments),
+            items=list(deployments),
+        )
+
     render_list_output(
-        page=deployments,
+        page=page,
         output_format=output_format,
         columns=columns,
         row_formatter=_generate_deployment_row,
@@ -2654,12 +2745,17 @@ def check_zenml_pro_project_availability() -> None:
         )
 
 
-def print_page_info(pagination_info: Dict[str, Any]) -> None:
+def print_page_info(
+    pagination_info: Union[Dict[str, Any], "Page[Any]"],
+) -> None:
     """Print all page information showing the number of items and pages.
 
     Args:
         pagination_info: The pagination information to print.
     """
+    if isinstance(pagination_info, Page):
+        pagination_info = pagination_info.pagination_info
+
     declare(
         f"Page `({pagination_info['index']}/{pagination_info['total_pages']})`, "
         f"`{pagination_info['total']}` items found for the applied filters."
@@ -2821,15 +2917,18 @@ def list_options(
                 )
 
         # Add columns and output options
+        default_columns_list = default_columns or []
+        default_columns_str = ",".join(default_columns_list)
+
         options.extend(
             [
                 click.option(
                     "--columns",
+                    "-c",
                     type=str,
-                    default=",".join(default_columns)
-                    if default_columns
-                    else "",
-                    help="Comma-separated list of columns to display.",
+                    default=default_columns_str,
+                    help="Comma-separated list of columns to display. Available columns: "
+                    f"{', '.join(default_columns_list)}.",
                 ),
                 click.option(
                     "--output",
@@ -2845,7 +2944,82 @@ def list_options(
         def wrapper(function: F) -> F:
             for option in reversed(options):
                 function = option(function)
-            return function
+
+            @functools.wraps(function)
+            def wrapped(*args: Any, **kwargs: Any) -> Any:
+                cleaned_kwargs = dict_utils.remove_none_values(kwargs)
+
+                columns_arg = cleaned_kwargs.pop(
+                    "columns", default_columns_str
+                )
+                if not columns_arg and default_columns_str:
+                    columns_arg = default_columns_str
+                output_format_arg = cleaned_kwargs.pop(
+                    "output_format", get_default_output_format()
+                )
+                cleaned_kwargs.pop("default_columns", None)
+
+                # Drop injected args the underlying function does not accept to
+                # keep existing command signatures working.
+                sig = inspect.signature(function)
+                accepts_kwargs = any(
+                    p.kind == inspect.Parameter.VAR_KEYWORD
+                    for p in sig.parameters.values()
+                )
+
+                if "columns" in sig.parameters:
+                    cleaned_kwargs["columns"] = columns_arg
+
+                if "output_format" in sig.parameters:
+                    cleaned_kwargs["output_format"] = output_format_arg
+
+                always_strip = {"columns", "output_format", "default_columns"}
+                if not accepts_kwargs:
+                    allowed = set(sig.parameters.keys())
+                    cleaned_kwargs = {
+                        k: v
+                        for k, v in cleaned_kwargs.items()
+                        if k in allowed and k not in always_strip
+                    }
+                else:
+                    cleaned_kwargs = {
+                        k: v
+                        for k, v in cleaned_kwargs.items()
+                        if k not in always_strip
+                    }
+
+                token = LIST_RENDER_OPTIONS.set(
+                    {
+                        "columns": columns_arg,
+                        "output_format": output_format_arg,
+                        "default_columns": default_columns_str,
+                    }
+                )
+                try:
+                    result = function(*args, **cleaned_kwargs)
+                finally:
+                    LIST_RENDER_OPTIONS.reset(token)
+
+                # Auto-render if the command returns a Page or (Page, row_formatter)
+                if result is None:
+                    return None
+
+                row_formatter = None
+                if isinstance(result, tuple) and len(result) == 2:
+                    result, row_formatter = result
+
+                if isinstance(result, Page):
+                    render_list_output(
+                        page=result,
+                        output_format=output_format_arg,
+                        columns=columns_arg,
+                        row_formatter=row_formatter,
+                    )
+                    return None
+
+                return result
+
+            return cast(F, wrapped)
 
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "
@@ -2953,16 +3127,14 @@ def is_sorted_or_filtered(ctx: click.Context) -> bool:
         ctx: the Click context of the CLI call.
 
     Returns:
-        a boolean indicating whether any sorting or filtering parameters were
-        used during the list CLI call.
+        True if any parameter source differs from default, else False.
     """
     try:
         for _, source in ctx._parameter_source.items():
             if source != click.core.ParameterSource.DEFAULT:
                 return True
         return False
-
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - best-effort safety
         logger.debug(
             f"There was a problem accessing the parameter source for "
             f'the "sort_by" option: {e}'
@@ -3023,9 +3195,8 @@ def multi_choice_prompt(
     table = Table(
         title=f"Available {object_type}",
         show_header=True,
-        border_style="dim",
         expand=True,
-        show_lines=True,
+        show_lines=False,
     )
     table.add_column("Choice", justify="left", width=1)
     for h in headers:
@@ -3097,7 +3268,7 @@ def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
     Returns:
         Dictionary with the data
     """
-    item_data = {"id": item.id}
+    item_data: Dict[str, Any] = {"id": item.id}
 
     if hasattr(item, "name"):
         item_data["name"] = getattr(item, "name")
@@ -3118,7 +3289,7 @@ def render_list_output(
     page: Page[AnyResponse],
     output_format: str,
     columns: str,
-    row_formatter: Optional[Callable[[AnyResponse], Dict[str, Any]]] = None,
+    row_formatter: Optional[Callable[..., Dict[str, Any]]] = None,
 ) -> None:
     """Render a page of list results with consistent formatting.
 
@@ -3140,20 +3311,17 @@ def render_list_output(
     """
     item_list = []
 
-    formatter_accepts_output_format = False
-    if row_formatter:
-        sig = inspect.signature(row_formatter)
-        param_count = len(sig.parameters)
-        formatter_accepts_output_format = param_count >= 2
-
     for item in page.items:
         item_data = prepare_response_data(item)
 
         if row_formatter:
-            if formatter_accepts_output_format:
-                additional_data = row_formatter(item, output_format)
-            else:
-                additional_data = row_formatter(item)
+            sig = inspect.signature(row_formatter)
+            formatter_accepts_output_format = len(sig.parameters) >= 2
+            additional_data = (
+                row_formatter(item, output_format)
+                if formatter_accepts_output_format
+                else row_formatter(item)
+            )
 
             if additional_data:
                 item_data.update(additional_data)
@@ -3170,8 +3338,8 @@ def render_list_output(
 
 def handle_output(
     data: List[Dict[str, Any]],
-    pagination_info: Dict[str, Any],
-    columns: List[str],
+    pagination_info: Optional[Dict[str, Any]],
+    columns: str,
     output_format: str,
 ) -> None:
     """Handle output formatting for CLI commands.
@@ -3183,8 +3351,7 @@ def handle_output(
         data: List of dictionaries to render
         pagination_info: Info about the pagination
         output_format: Optional output format (table, json, yaml, tsv, csv).
-        columns: Optional comma-separated column names. If None and
-            default_columns provided, uses default_columns for table output.
+        columns: Comma-separated column names. If empty, all columns are shown.
     """
     cli_output = prepare_output(
         data=data,
@@ -3204,7 +3371,7 @@ def handle_output(
 def prepare_output(
     data: List[Dict[str, Any]],
     output_format: str = "table",
-    columns: Optional[List[str]] = None,
+    columns: Optional[str] = None,
     pagination: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """Render data in specified format following ZenML CLI table guidelines.
@@ -3231,7 +3398,34 @@ def prepare_output(
     Raises:
         ValueError: If an unsupported output format is provided
     """
-    selected_columns = columns.split(",")
+    if not data:
+        return ""
+
+    # Parse and normalize column names
+    if columns:
+        requested_cols = [c.strip() for c in columns.split(",")]
+        # Create mapping from normalized names to actual keys
+        # Support both "STACK ID" and "id" formats
+        available_keys = list(data[0].keys())
+        col_mapping = {}
+
+        for req_col in requested_cols:
+            req_normalized = req_col.lower().replace("_", " ")
+            # Try exact match first
+            if req_col in available_keys:
+                col_mapping[req_col] = req_col
+            else:
+                # Try case-insensitive match with normalization
+                for key in available_keys:
+                    key_normalized = key.lower().replace("_", " ")
+                    if req_normalized == key_normalized:
+                        col_mapping[req_col] = key
+                        break
+
+        selected_columns = list(col_mapping.values())
+    else:
+        selected_columns = list(data[0].keys())
+
     filtered_data = []
     for entry in data:
         filtered_data.append(
@@ -3265,7 +3459,7 @@ def _render_json(
     Returns:
         JSON string representation of the data
     """
-    output = {"items": data}
+    output: Dict[str, Any] = {"items": data}
 
     if pagination:
         output["pagination"] = pagination
@@ -3286,7 +3480,7 @@ def _render_yaml(
     Returns:
         YAML string representation of the data
     """
-    output = {"items": data}
+    output: Dict[str, Any] = {"items": data}
 
     if pagination:
         output["pagination"] = pagination
@@ -3402,6 +3596,18 @@ def _render_table(
         max(80, min(terminal_width, 200)) if terminal_width else 150
     )
 
+    def _column_cap(header: str) -> int:
+        lower = header.lower()
+        if "id" in lower:
+            return 36
+        if "url" in lower:
+            return 40
+        if "status" in lower:
+            return 18
+        if "name" in lower:
+            return 32
+        return 40
+
     column_widths = {}
     for header in headers:
         content_lengths = [len(str(row.get(header, ""))) for row in data]
@@ -3409,7 +3615,9 @@ def _render_table(
         optimal_width = max(
             header_length, max(content_lengths) if content_lengths else 0
         )
-        column_widths[header] = min(50, max(8, optimal_width + 2))
+        column_widths[header] = min(
+            _column_cap(header), max(8, optimal_width + 2)
+        )
 
     available_width = console_width - (len(headers) * 3)
     total_content_width = sum(column_widths.values())
@@ -3451,13 +3659,13 @@ def _render_table(
                 )
 
     rich_table = Table(
-        box=box.SIMPLE_HEAD,
+        box=None,
         show_header=True,
         show_lines=False,
         pad_edge=False,
         collapse_padding=False,
-        expand=True,
-        width=console_width,
+        expand=False,
+        show_edge=False,
     )
 
     for header in headers:
@@ -3466,7 +3674,7 @@ def _render_table(
 
         # Smart overflow strategy based on column type
         if "id" in header.lower() or "url" in header.lower():
-            overflow = "fold"
+            overflow: Literal["fold", "ellipsis", "crop", "ignore"] = "fold"
             no_wrap = False
         elif "description" in header.lower():
             overflow = "fold"

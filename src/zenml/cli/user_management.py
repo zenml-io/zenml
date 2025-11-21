@@ -13,16 +13,13 @@
 #  permissions and limitations under the License.
 """Functionality to administer users of the ZenML CLI and server."""
 
-from typing import Any, Dict, Optional
-from uuid import UUID
+from typing import Any, Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
-from zenml.cli.utils import (
-    list_options,
-)
+from zenml.cli.utils import is_sorted_or_filtered, list_options
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -32,47 +29,7 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
-from zenml.models import UserFilter, UserResponse
-
-
-def _generate_user_data(
-    user: "UserResponse",
-    active_user_id: "UUID",
-    output_format: str,
-) -> Dict[str, Any]:
-    """Generate additional data for user display.
-
-    Args:
-        user: The user response.
-        active_user_id: The ID of the active user.
-        output_format: The output format.
-
-    Returns:
-        The additional data for the user.
-    """
-    is_active_user = user.id == active_user_id
-    display_name = user.name
-    display_email = user.email or ""
-    if "@" in user.name and not user.email:
-        display_name = user.full_name or user.name.split("@")[0]
-        display_email = user.name
-
-    result = {
-        "display_name": display_name,
-        "display_email": display_email,
-        "role": "admin" if user.is_admin else "user",
-        "active": user.active,
-    }
-
-    if is_active_user and output_format == "table":
-        result["name"] = (
-            f"[green]●[/green] [bold green]{display_name}[/bold green] (active)"
-        )
-    else:
-        result["name"] = display_name
-
-    result["email"] = display_email
-    return result
+from zenml.models import UserFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -120,33 +77,34 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 
 
 @user.command("list")
-@list_options(
-    UserFilter,
-    default_columns=["id", "name", "email", "role", "active", "created"],
-)
-def list_users(output_format: str, columns: str, **kwargs: Any) -> None:
-    """List users with filter.
+@list_options(UserFilter)
+@click.pass_context
+def list_users(ctx: click.Context, /, **kwargs: Any) -> None:
+    """List all users.
 
     Args:
-        output_format: Output format (table, json, yaml, tsv, csv).
-        columns: Comma-separated list of columns to display.
-        kwargs: Keyword arguments to filter users.
+        ctx: The click context object
+        kwargs: Keyword arguments to filter the list of users.
     """
     client = Client()
-    with console.status("Listing users..."):
+    with console.status("Listing stacks...\n"):
         users = client.list_users(**kwargs)
+        if not users:
+            cli_utils.declare("No users found for the given filters.")
+            return
 
-    active_user_id = client.active_user.id
-
-    # Use lambda to pass extra context to the row formatter
-    cli_utils.render_list_output(
-        page=users,
-        output_format=output_format,
-        columns=columns,
-        row_formatter=lambda user: _generate_user_data(
-            user, active_user_id, output_format
-        ),
-    )
+        cli_utils.print_pydantic_models(
+            users,
+            exclude_columns=[
+                "created",
+                "updated",
+                "email",
+                "email_opted_in",
+                "activation_token",
+            ],
+            active_models=[Client().active_user],
+            show_active=not is_sorted_or_filtered(ctx),
+        )
 
 
 @user.command(

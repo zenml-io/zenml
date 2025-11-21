@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, Dict, List, Optional, Tuple, cast
+from typing import Any, Callable, List, Optional, Tuple, cast
 from uuid import UUID
 
 import click
@@ -29,8 +29,10 @@ from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     _component_display_name,
+    is_sorted_or_filtered,
     list_options,
     print_model_url,
+    print_page_info,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -39,47 +41,10 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
 from zenml.models import (
     ComponentFilter,
-    ComponentResponse,
-    FlavorFilter,
-    FlavorResponse,
     ServiceConnectorResourcesModel,
 )
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
-
-
-def _generate_component_data(
-    component: "ComponentResponse",
-) -> Dict[str, Any]:
-    """Generate additional data for component display.
-
-    Args:
-        component: The component response.
-
-    Returns:
-        The additional data for the component.
-    """
-    return {
-        "flavor": component.flavor_name,
-    }
-
-
-def _generate_flavor_data(
-    flavor: "FlavorResponse",
-) -> Dict[str, Any]:
-    """Generate additional data for flavor display.
-
-    Args:
-        flavor: The flavor response.
-
-    Returns:
-        The additional data for the flavor.
-    """
-    return {
-        "integration": flavor.integration or "",
-        "connector_type": flavor.connector_type or "",
-        "connector_resource_type": flavor.connector_resource_type or "",
-    }
 
 
 def generate_stack_component_get_command(
@@ -187,33 +152,32 @@ def generate_stack_component_list_command(
         A function that can be used as a `click` command.
     """
 
-    @list_options(
-        ComponentFilter,
-        default_columns=["id", "name", "flavor", "user", "created"],
-    )
+    @list_options(ComponentFilter)
     @click.pass_context
     def list_stack_components_command(
-        ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
+        ctx: click.Context, /, **kwargs: Any
     ) -> None:
         """Prints a table of stack components.
 
         Args:
             ctx: The click context object
-            output_format: Output format (table, json, yaml, tsv, csv).
-            columns: Comma-separated list of columns to display.
             kwargs: Keyword arguments to filter the components.
         """
         client = Client()
         with console.status(f"Listing {component_type.plural}..."):
             kwargs["type"] = component_type
             components = client.list_stack_components(**kwargs)
+            if not components:
+                cli_utils.declare("No components found for the given filters.")
+                return
 
-        cli_utils.render_list_output(
-            page=components,
-            output_format=output_format,
-            columns=columns,
-            row_formatter=_generate_component_data,
-        )
+            cli_utils.print_components_table(
+                client=client,
+                component_type=component_type,
+                components=components.items,
+                show_active=not is_sorted_or_filtered(ctx),
+            )
+            print_page_info(components)
 
     return list_stack_components_command
 
@@ -818,32 +782,15 @@ def generate_stack_component_flavor_list_command(
     """
     display_name = _component_display_name(component_type)
 
-    @list_options(
-        FlavorFilter,
-        default_columns=["id", "name", "integration", "connector_type"],
-    )
-    @click.pass_context
-    def list_stack_component_flavor_command(
-        ctx: click.Context, output_format: str, columns: str, /, **kwargs: Any
-    ) -> None:
-        """Lists the flavors for a single type of stack component.
-
-        Args:
-            ctx: The click context.
-            output_format: Output format (table, json, yaml, tsv, csv).
-            columns: Comma-separated list of columns to display.
-            kwargs: The keyword arguments.
-        """
+    def list_stack_component_flavor_command() -> None:
+        """Lists the flavors for a single type of stack component."""
         client = Client()
-        with console.status(f"Listing {display_name} flavors..."):
+
+        with console.status(f"Listing {display_name} flavors`...\n"):
             flavors = client.get_flavors_by_type(component_type=component_type)
 
-        cli_utils.render_list_output(
-            page=flavors,
-            output_format=output_format,
-            columns=columns,
-            row_formatter=_generate_flavor_data,
-        )
+            cli_utils.print_flavor_list(flavors=flavors)
+            cli_utils.print_page_info(flavors)
 
     return list_stack_component_flavor_command
 
