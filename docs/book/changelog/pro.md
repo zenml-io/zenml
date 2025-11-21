@@ -26,7 +26,6 @@ Stay up to date with the latest features, improvements, and fixes in ZenML Pro.
 See what's new and improved in version 0.12.19.
 
 <details>
-
 <summary>What's Changed</summary>
 
 * General maintenance and release preparation (#462)
@@ -40,7 +39,6 @@ See what's new and improved in version 0.12.19.
 See what's new and improved in version 0.12.18.
 
 <details>
-
 <summary>What's Changed</summary>
 
 * General maintenance and release preparation (#460)
@@ -91,7 +89,6 @@ See what's new and improved in version 0.12.17.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Lambda function Python version updates (#450)
@@ -107,7 +104,6 @@ See what's new and improved in version 0.12.17.
 See what's new and improved in version 0.12.16.
 
 <details>
-
 <summary>What's Changed</summary>
 
 * General maintenance and release preparation (#449)
@@ -121,7 +117,6 @@ See what's new and improved in version 0.12.16.
 See what's new and improved in version 0.12.15.
 
 <details>
-
 <summary>Fixed</summary>
 
 * Filter long user avatar URLs at source for older workspace versions (<= 0.90.0) (#447)
@@ -135,7 +130,6 @@ See what's new and improved in version 0.12.15.
 See what's new and improved in version 0.12.14.
 
 <details>
-
 <summary>What's Changed</summary>
 
 * General maintenance and release preparation (#446)
@@ -209,7 +203,6 @@ See what's new and improved in version 0.12.10.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Service account authentication to workspaces (#433)
@@ -226,7 +219,6 @@ See what's new and improved in version 0.12.10.
 See what's new and improved in version 0.12.9.
 
 <details>
-
 <summary>What's Changed</summary>
 
 * General maintenance and release preparation (#431)
@@ -310,7 +302,6 @@ See what's new and improved in version 0.12.6.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Service account role configuration (#416)
@@ -320,7 +311,6 @@ See what's new and improved in version 0.12.6.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Service account fixes and membership filtering (#424)
@@ -350,7 +340,6 @@ See what's new and improved in version 0.12.5.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * User onboarding tracking (#414)
@@ -381,7 +370,6 @@ See what's new and improved in version 0.12.3.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Codespace cleanup automation (#403)
@@ -465,7 +453,6 @@ See what's new and improved in version 0.12.0.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Codespaces integration (#380)

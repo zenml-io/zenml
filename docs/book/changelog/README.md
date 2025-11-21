@@ -1,29 +1,18 @@
 ---
-description: Stay up to date with the latest features, improvements, and fixes across ZenML OSS and ZenML Pro.
-icon: clock-rotate-left
-layout:
-  width: wide
-  title:
-    visible: true
-  description:
-    visible: true
-  tableOfContents:
-    visible: true
-  outline:
-    visible: true
-  pagination:
-    visible: true
+description: Stay up to date with the latest features, improvements, and fixes across ---
 ---
 
-# Changelog
+# Overview
+
+## Changelog
 
 Stay up to date with the latest features, improvements, and fixes across ZenML OSS and ZenML Pro.
 
-## OSS Changelog
+### OSS Changelog
 
 View release notes for ZenML OSS (Framework, Server, and Dashboard): [OSS Changelog](oss.md)
 
-## Pro Changelog
+### Pro Changelog
 
 View release notes for ZenML Pro (Cloud API & Control Plane): [Pro Changelog](pro.md)
 

@@ -55,7 +55,6 @@ See what's new and improved in version 0.91.2.
 {% endcolumns %}
 
 <details>
-
 <summary>Fixed</summary>
 
 * S3 artifact store now works with custom backends ([#4186](https://github.com/zenml-io/zenml/pull/4186))
@@ -65,7 +64,6 @@ See what's new and improved in version 0.91.2.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.39.1)</summary>
 
 * Remove Video Modal ([#943](https://github.com/zenml-io/zenml-dashboard/pull/943))
@@ -111,7 +109,6 @@ See what's new and improved in version 0.91.1.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Enhanced Kubernetes orchestrator with container security context options ([#4142](https://github.com/zenml-io/zenml/pull/4142))
@@ -122,7 +119,6 @@ See what's new and improved in version 0.91.1.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Port reuse for local deployments
@@ -133,7 +129,6 @@ See what's new and improved in version 0.91.1.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.39.0)</summary>
 
 **Features:**
@@ -197,7 +192,6 @@ See what's new and improved in version 0.91.0.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Customizable image tags for Docker builds ([#4025](https://github.com/zenml-io/zenml/pull/4025))
@@ -207,7 +201,6 @@ See what's new and improved in version 0.91.0.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Print capturing incompatibility with numba ([#4060](https://github.com/zenml-io/zenml/pull/4060))
@@ -216,7 +209,6 @@ See what's new and improved in version 0.91.0.
 </details>
 
 <details>
-
 <summary>Breaking Changes</summary>
 
 * Dropped Python 3.9 support - upgrade to Python 3.10+ ([#4053](https://github.com/zenml-io/zenml/pull/4053))
@@ -224,7 +216,6 @@ See what's new and improved in version 0.91.0.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.38.0)</summary>
 
 **New Features:**
@@ -281,7 +272,6 @@ See what's new and improved in version 0.90.0.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Slimmer base package for faster installations ([#3916](https://github.com/zenml-io/zenml/pull/3916))
@@ -291,7 +281,6 @@ See what's new and improved in version 0.90.0.
 </details>
 
 <details>
-
 <summary>Breaking Changes</summary>
 
 * Client-Server compatibility: Must upgrade both simultaneously
@@ -301,7 +290,6 @@ See what's new and improved in version 0.90.0.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.37.0)</summary>
 
 **New Features:**
@@ -349,7 +337,6 @@ See what's new and improved in version 0.85.0.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Enhanced caching system with value-based caching ([#3900](https://github.com/zenml-io/zenml/pull/3900))
@@ -359,7 +346,6 @@ See what's new and improved in version 0.85.0.
 </details>
 
 <details>
-
 <summary>Breaking Changes</summary>
 
 * Local orchestrator now continues execution after step failures
@@ -369,7 +355,6 @@ See what's new and improved in version 0.85.0.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.36.0)</summary>
 
 **New Features:**
@@ -407,7 +392,6 @@ See what's new and improved in version 0.84.3.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Enhanced Kubernetes resource name sanitization ([#3887](https://github.com/zenml-io/zenml/pull/3887))
@@ -416,7 +400,6 @@ See what's new and improved in version 0.84.3.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Kubernetes resource name sanitization ([#3887](https://github.com/zenml-io/zenml/pull/3887))
@@ -447,7 +430,6 @@ See what's new and improved in version 0.84.2.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * Enhanced Kubernetes orchestrator robustness ([#3869](https://github.com/zenml-io/zenml/pull/3869))
@@ -457,7 +439,6 @@ See what's new and improved in version 0.84.2.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Fixed deadlock in run creation ([#3876](https://github.com/zenml-io/zenml/pull/3876))
@@ -514,7 +495,6 @@ See what's new and improved in version 0.84.1.
 {% endcolumns %}
 
 <details>
-
 <summary>Fixed</summary>
 
 * Vertex step operator credential refresh ([#3853](https://github.com/zenml-io/zenml/pull/3853))
@@ -571,7 +551,6 @@ See what's new and improved in version 0.84.0.
 {% endcolumns %}
 
 <details>
-
 <summary>Improved</summary>
 
 * New ZenML login experience ([#3790](https://github.com/zenml-io/zenml/pull/3790))
@@ -582,7 +561,6 @@ See what's new and improved in version 0.84.0.
 </details>
 
 <details>
-
 <summary>Fixed</summary>
 
 * Fixed model version fetching by UUID ([#3777](https://github.com/zenml-io/zenml/pull/3777))
@@ -593,7 +571,6 @@ See what's new and improved in version 0.84.0.
 </details>
 
 <details>
-
 <summary>Breaking Changes</summary>
 
 * Kubernetes Orchestrator Compatibility: Client and orchestrator pod versions must match exactly
@@ -601,7 +578,6 @@ See what's new and improved in version 0.84.0.
 </details>
 
 <details>
-
 <summary>Dashboard Updates (v0.35.0)</summary>
 
 **Features:**
