@@ -1395,18 +1395,20 @@ def build_gateway_api_url(
         listener_name = parent_ref.get("name")
         section_name = parent_ref.get("sectionName")
 
-        for listener in gateway_listeners:
-            listener_name_match = listener.get("name") == listener_name
-            if section_name:
-                listener_name_match = listener_name_match and (
-                    listener.get("name") == section_name
-                )
+        if listener_name:
+            for listener in gateway_listeners:
+                current_listener_name = listener.get("name")
+                listener_name_match = current_listener_name == listener_name
+                if section_name:
+                    listener_name_match = listener_name_match and (
+                        current_listener_name == section_name
+                    )
 
-            if listener_name_match:
-                listener_protocol = listener.get("protocol", "").lower()
-                if listener_protocol in ("https", "tls"):
-                    protocol = "https"
-                break
+                if listener_name_match:
+                    listener_protocol = listener.get("protocol", "").lower()
+                    if listener_protocol in ("https", "tls"):
+                        protocol = "https"
+                    break
 
     path = "/"
     if httproute_rules:

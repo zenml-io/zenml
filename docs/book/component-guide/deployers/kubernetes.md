@@ -531,10 +531,10 @@ Check out [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/co
 ZenML stores all discovered URLs (Gateway API, Ingress, LoadBalancer, NodePort, ClusterIP) in deployment metadata, but only returns one URL based on `url_preference`:
 
 - `auto` (default) mirrors your `service_type` choice: LoadBalancer → NodePort → ClusterIP. Gateway/Ingress URLs are ignored unless explicitly requested.
-- Set `url_preference="ingress"` or `url_preference="gateway_api"` when you add those resources (e.g., via `additional_resources`). If the requested URL type cannot be resolved, the deployment state call fails instead of silently falling back.
+- Set `url_preference="ingress"` or `url_preference="gateway_api"` when you add those resources (e.g., via `additional_resources`). If the requested URL type cannot be resolved during state retrieval (`zenml deployment describe`, dashboard/API refresh), the call fails instead of silently falling back.
 - Set `url_preference="load_balancer"` when you want to strictly require an external IP; the deployer will error if the LoadBalancer is still pending.
 
-Tip: When using Ingress or Gateway API, combine `service_type="ClusterIP"` with the matching `url_preference` so the returned URL matches the routing layer you manage.
+Tip: When using Ingress or Gateway API, combine `service_type="ClusterIP"` with the matching `url_preference` so the returned URL matches the routing layer you manage (and you avoid paying for an extra LoadBalancer).
 
 - Strict preference behavior: If you set `url_preference` to a specific type and that URL can't be discovered (for example, LoadBalancer is still pending), the deployer raises an error instead of returning another URL type. This helps avoid accidental exposure paths.
 
