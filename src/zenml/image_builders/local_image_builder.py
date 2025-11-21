@@ -14,8 +14,11 @@
 """Local Docker image builder implementation."""
 
 import shutil
+import subprocess
 import tempfile
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+
+from pydantic import Field
 
 from zenml.image_builders import (
     BaseImageBuilder,
@@ -31,6 +34,12 @@ if TYPE_CHECKING:
 
 class LocalImageBuilderConfig(BaseImageBuilderConfig):
     """Local image builder configuration."""
+
+    use_subprocess_call: bool = Field(
+        default=False,
+        description="Whether to use a subprocess `docker build` call to "
+        "build the image instead of using the Docker python SDK.",
+    )
 
 
 class LocalImageBuilder(BaseImageBuilder):
@@ -109,6 +118,40 @@ class LocalImageBuilder(BaseImageBuilder):
         """
         self._check_prerequisites()
 
+        if self.config.use_subprocess_call:
+            self._build_with_subprocess_call(
+                image_name=image_name,
+                build_context=build_context,
+                docker_build_options=docker_build_options,
+            )
+        else:
+            self._build_with_python_sdk(
+                image_name=image_name,
+                build_context=build_context,
+                docker_build_options=docker_build_options,
+                container_registry=container_registry,
+            )
+
+        if container_registry:
+            return container_registry.push_image(image_name)
+        else:
+            return image_name
+
+    def _build_with_python_sdk(
+        self,
+        image_name: str,
+        build_context: "BuildContext",
+        docker_build_options: Optional[Dict[str, Any]] = None,
+        container_registry: Optional["BaseContainerRegistry"] = None,
+    ) -> None:
+        """Builds an image using the Python Docker SDK.
+
+        Args:
+            image_name: Name of the image to build and push.
+            build_context: The build context to use for the image.
+            docker_build_options: Docker build options.
+            container_registry: Optional container registry.
+        """
         if container_registry:
             # Use the container registry's docker client, which may be
             # authenticated to access additional registries
@@ -128,10 +171,63 @@ class LocalImageBuilder(BaseImageBuilder):
             )
         docker_utils._process_stream(output_stream)
 
-        if container_registry:
-            return container_registry.push_image(image_name)
-        else:
-            return image_name
+    def _build_with_subprocess_call(
+        self,
+        image_name: str,
+        build_context: "BuildContext",
+        docker_build_options: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Builds an image using a subprocess `docker build` call.
+
+        Args:
+            image_name: Name of the image to build and push.
+            build_context: The build context to use for the image.
+            docker_build_options: Docker build options.
+
+        Raises:
+            RuntimeError: If the subprocess call fails.
+        """
+        with tempfile.TemporaryFile(mode="w+b") as f:
+            build_context.write_archive(f)
+
+            # The `-` signals that the build context will be passed as a tar
+            # file to stdin
+            command = ["docker", "build", "-", "-t", image_name]
+
+            docker_build_options = docker_build_options or {}
+            if docker_build_options.pop("pull", False):
+                command.append("--pull")
+
+            build_args = docker_build_options.pop("buildargs", None) or {}
+            for key, value in build_args.items():
+                command.extend(["--build-arg", f"{key}={value}"])
+
+            labels = docker_build_options.pop("labels", None) or {}
+            for key, value in labels.items():
+                command.extend(["--label", f"{key}={value}"])
+
+            cache_from = docker_build_options.pop("cache_from", None) or []
+            for value in cache_from:
+                command.extend(["--cache-from", value])
+
+            for key, value in docker_build_options.items():
+                if isinstance(value, list):
+                    for val in value:
+                        command.extend([f"--{key}", str(val)])
+                elif isinstance(value, bool):
+                    if value:
+                        command.append(f"--{key}")
+                else:
+                    command.extend([f"--{key}", str(value)])
+
+            process = subprocess.Popen(command, stdin=f)
+
+            result = process.wait()
+            if result != 0:
+                raise RuntimeError(
+                    f"Failed to build image {image_name}. Please check the "
+                    "logs above for more information."
+                )
 
 
 class LocalImageBuilderFlavor(BaseImageBuilderFlavor):
